@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Injekt.iml" filepath="$PROJECT_DIR$/Injekt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildSrc/buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt/injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-reflect/injekt-reflect.iml" filepath="$PROJECT_DIR$/injekt-reflect/injekt-reflect.iml" />
+      <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" />
+    </modules>
+  </component>
+</project>
