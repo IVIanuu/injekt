@@ -11,14 +11,13 @@ class Component internal constructor(val name: String?) {
     private val declarations = mutableSetOf<Declaration<*>>()
     private val declarationsByName = mutableMapOf<String, Declaration<*>>()
     private val declarationsByType = mutableMapOf<KClass<*>, Declaration<*>>()
+    private val createOnStartDeclarations = mutableSetOf<Declaration<*>>()
 
     /**
      * Adds all [Declaration]s of the [module]
      */
     fun addModule(module: Module) {
         module.setComponent(this)
-
-        val onStartDeclarations = mutableSetOf<Declaration<*>>()
 
         measureDurationOnly {
             module.declarations.forEach {
@@ -27,17 +26,11 @@ class Component internal constructor(val name: String?) {
                 it.instance.setComponent(this)
 
                 if (it.options.createOnStart) {
-                    onStartDeclarations.add(it)
+                    createOnStartDeclarations.add(it)
                 }
             }
         }.let {
             logger?.debug("${nameString()}Adding module ${module.nameString()}took $it ms")
-        }
-
-        measureDurationOnly {
-            onStartDeclarations.forEach { it.resolveInstance(null) }
-        }.let {
-            logger?.debug("${nameString()}Instantiating eager instances ${module.nameString()}took $it ms")
         }
     }
 
@@ -46,6 +39,17 @@ class Component internal constructor(val name: String?) {
      */
     fun addDependency(dependency: Component) {
         dependency.declarations.forEach { saveDeclaration(it, dependency) }
+    }
+
+    /**
+     * Instantiates all eager instances
+     */
+    fun createEagerInstances() {
+        measureDurationOnly {
+            createOnStartDeclarations.forEach { it.resolveInstance(null) }
+        }.let {
+            logger?.debug("${nameString()}Instantiating eager instances took $it ms")
+        }
     }
 
     private fun saveDeclaration(declaration: Declaration<*>, dependency: Component?) {

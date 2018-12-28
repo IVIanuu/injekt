@@ -15,10 +15,15 @@ fun component(vararg modules: Module) =
 fun component(
     modules: Collection<Module> = emptyList(),
     dependencies: Collection<Component> = emptyList(),
-    name: String? = null
+    name: String? = null,
+    createEagerInstances: Boolean = true
 ) = Component(name).apply {
     dependencies.forEach { addDependency(it) }
     modules.forEach { addModule(it) }
+
+    if (createEagerInstances) {
+        createEagerInstances()
+    }
 }
 
 /**
