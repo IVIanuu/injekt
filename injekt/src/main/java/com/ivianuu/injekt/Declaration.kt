@@ -19,8 +19,6 @@ data class Declaration<T : Any> private constructor(
     lateinit var definition: Definition<T>
     lateinit var instance: Instance<T>
 
-    internal val classes: List<KClass<*>> get() = listOf(primaryType) + secondaryTypes
-
     /**
      * Resolves the instance
      */

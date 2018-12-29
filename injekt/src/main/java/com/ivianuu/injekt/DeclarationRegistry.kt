@@ -131,7 +131,8 @@ class DeclarationRegistry internal constructor(
         if (declaration.name != null) {
             declarationsByName[declaration.name] = declaration
         } else {
-            declaration.classes.forEach { declarationsByType[it] = declaration }
+            declarationsByType[declaration.primaryType] = declaration
+            declaration.secondaryTypes.forEach { declarationsByType[it] = declaration }
         }
 
         declaration.setBindings.forEach { bindingName ->
