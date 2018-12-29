@@ -7,16 +7,8 @@ import com.ivianuu.injekt.InjektPlugins.logger
  */
 abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
-    val component get() = _component ?: error("Component not initialized")
-    private var _component: Component? = null
-
-    internal fun setComponent(component: Component) {
-        if (_component != null) {
-            error("Instances cannot be reused $declaration")
-        }
-
-        _component = component
-    }
+    lateinit var component: Component
+        internal set
 
     abstract val isCreated: Boolean
 

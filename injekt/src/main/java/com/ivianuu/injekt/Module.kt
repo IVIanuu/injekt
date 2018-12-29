@@ -12,16 +12,8 @@ class Module internal constructor(
     val name: String?
 ) {
 
-    val component get() = _component ?: error("${nameString()} component not initialized")
-    private var _component: Component? = null
-
-    internal fun setComponent(component: Component) {
-        if (_component != null) {
-            error("${nameString()}Modules cannot be reused")
-        }
-
-        _component = component
-    }
+    lateinit var component: Component
+        internal set
 
     internal val declarations = arrayListOf<Declaration<*>>()
     internal val declarationsByName = hashMapOf<String, Declaration<*>>()

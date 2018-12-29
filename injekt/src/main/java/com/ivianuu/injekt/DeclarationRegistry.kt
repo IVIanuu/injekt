@@ -22,18 +22,10 @@ import kotlin.reflect.KClass
 /**
  * Manages all [Declaration]s of a [Component]
  */
-class DeclarationRegistry(val name: String?) {
-
-    val component get() = _component ?: error("Component not initialized")
-    private var _component: Component? = null
-
-    internal fun setComponent(component: Component) {
-        if (_component != null) {
-            error("Registries cannot be reused $name")
-        }
-
-        _component = component
-    }
+class DeclarationRegistry internal constructor(
+    val name: String?,
+    val component: Component
+) {
 
     private val declarations = hashSetOf<Declaration<*>>()
     private val declarationsByName: MutableMap<String, Declaration<*>> = ConcurrentHashMap()
@@ -45,11 +37,11 @@ class DeclarationRegistry(val name: String?) {
      */
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
-            module.setComponent(component)
+            module.component = component
             module.declarations.forEach {
                 saveDeclaration(it, null)
 
-                it.instance.setComponent(component)
+                it.instance.component = component
 
                 if (it.options.createOnStart) {
                     createOnStartDeclarations.add(it)

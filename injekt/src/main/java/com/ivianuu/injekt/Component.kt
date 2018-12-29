@@ -7,9 +7,7 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(val name: String?) {
 
-    val declarationRegistry = DeclarationRegistry(name).apply {
-        setComponent(this@Component)
-    }
+    val declarationRegistry = DeclarationRegistry(name, this)
 
     /**
      * Adds all [Declaration]s of the [module]
