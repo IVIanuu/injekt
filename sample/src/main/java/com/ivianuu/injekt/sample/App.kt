@@ -26,7 +26,7 @@ import com.ivianuu.injekt.android.androidLogger
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component { modules(appModule(this@App)) }
+        component { modules(appModule()) }
     }
 
     override fun onCreate() {
@@ -38,8 +38,8 @@ class App : Application(), ComponentHolder {
 
 }
 
-fun appModule(app: App) = module {
-    factory { app }
+fun App.appModule() = module {
+    factory { this@appModule }
     single(createOnStart = true) { AppDependency(get()) }
 }
 
