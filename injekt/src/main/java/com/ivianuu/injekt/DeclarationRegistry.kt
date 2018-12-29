@@ -40,28 +40,31 @@ class DeclarationRegistry(val name: String?) {
     private val createOnStartDeclarations = mutableSetOf<Declaration<*>>()
 
     /**
-     * Adds all [Declaration]s of the [module]
+     * Adds all [Declaration]s of the [modules]
      */
-    fun addModule(module: Module) {
-        module.setComponent(component)
+    fun loadModules(vararg modules: Module) {
+        modules.forEach { module ->
+            module.setComponent(component)
+            module.declarations.forEach {
+                saveDeclaration(it, null)
 
-        module.declarations.forEach {
-            saveDeclaration(it, null)
+                it.instance.setComponent(component)
 
-            it.instance.setComponent(component)
-
-            if (it.options.createOnStart) {
-                createOnStartDeclarations.add(it)
+                if (it.options.createOnStart) {
+                    createOnStartDeclarations.add(it)
+                }
             }
         }
     }
 
     /**
-     * Adds all [Declaration]s of [dependency] to this component
+     * Adds all [Declaration]s of [dependencies] to this component
      */
-    fun addDependency(dependency: Component) {
-        dependency.declarationRegistry.declarations.forEach {
-            saveDeclaration(it, dependency)
+    fun loadDependencies(vararg dependencies: Component) {
+        dependencies.forEach { dependency ->
+            dependency.declarationRegistry.getAllDeclarations().forEach { declaration ->
+                saveDeclaration(declaration, dependency)
+            }
         }
     }
 

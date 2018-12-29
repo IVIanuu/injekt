@@ -1,6 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -15,34 +14,22 @@ class Component internal constructor(val name: String?) {
     /**
      * Adds all [Declaration]s of the [module]
      */
-    fun addModule(module: Module) {
-        measureDurationOnly {
-            declarationRegistry.addModule(module)
-        }.let {
-            InjektPlugins.logger?.debug("${nameString()}Adding module ${module.nameString()}took $it ms")
-        }
+    fun modules(vararg modules: Module) {
+        declarationRegistry.loadModules(*modules)
     }
 
     /**
      * Adds all [Declaration]s of [dependency] to this component
      */
-    fun addDependency(dependency: Component) {
-        measureDurationOnly {
-            declarationRegistry.addDependency(dependency)
-        }.let {
-            InjektPlugins.logger?.debug("${nameString()}Adding dependency ${dependency.nameString()}took $it ms")
-        }
+    fun dependencies(dependency: Component) {
+        declarationRegistry.loadDependencies(dependency)
     }
 
     /**
      * Instantiates all eager instances
      */
-    fun createEagerInstances(params: ParamsDefinition? = null) {
-        measureDurationOnly {
-            declarationRegistry.getEagerInstances().forEach { it.resolveInstance(params) }
-        }.let {
-            logger?.debug("${nameString()}Instantiating eager instances took $it ms")
-        }
+    fun createEagerInstances() {
+        declarationRegistry.getEagerInstances().forEach { it.resolveInstance(null) }
     }
 
     /**
@@ -66,23 +53,19 @@ class Component internal constructor(val name: String?) {
 }
 
 /**
- * Returns a [Component] which contains [modules]
- * And depends on any of [dependencies]
+ * Returns a new [Component] and applies the [definition]
  */
 fun component(
-    modules: Collection<Module> = emptyList(),
-    dependencies: Collection<Component> = emptyList(),
     name: String? = null,
     createEagerInstances: Boolean = true,
-    eagerInstancesParams: ParamsDefinition? = null
-) = Component(name).apply {
-    dependencies.forEach { addDependency(it) }
-    modules.forEach { addModule(it) }
-
-    if (createEagerInstances) {
-        createEagerInstances(eagerInstancesParams)
+    definition: ComponentDefinition
+) = Component(name)
+    .apply(definition)
+    .apply {
+        if (createEagerInstances) {
+            createEagerInstances()
+        }
     }
-}
 
 /**
  * Returns a instance of [T] matching the [name] and [params]
