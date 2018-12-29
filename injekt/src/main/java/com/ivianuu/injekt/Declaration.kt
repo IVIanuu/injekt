@@ -16,7 +16,7 @@ data class Declaration<T : Any> private constructor(
     var mapBindings: Map<String, Any> = emptyMap()
 
     lateinit var kind: Kind
-    lateinit var definition: BeanDefinition<T>
+    lateinit var definition: Definition<T>
     lateinit var instance: Instance<T>
 
     internal val classes: List<KClass<*>> get() = listOf(primaryType) + secondaryTypes
@@ -41,10 +41,16 @@ data class Declaration<T : Any> private constructor(
         }
     }
 
+    /**
+     * Multi binds this [Declaration] into the set with the [setName]
+     */
     infix fun intoSet(setName: String) = apply {
         setBindings += setName
     }
 
+    /**
+     * Multi binds this [Declaration] into the map with the [Pair.first] with the key [Pair.second]
+     */
     infix fun intoMap(pair: Pair<String, Any>) = apply {
         mapBindings += pair
     }
@@ -52,7 +58,7 @@ data class Declaration<T : Any> private constructor(
     override fun toString(): String {
         val kind = kind.toString()
         val name = name?.let { "name:'$name', " } ?: ""
-        val type = "type:'${primaryType.getFullName()}'"
+        val type = "kind:'${primaryType.getFullName()}'"
         val secondaryTypes = if (secondaryTypes.isNotEmpty()) {
             val typesAsString = secondaryTypes.joinToString(", ") { it.getFullName() }
             ", secondary types:$typesAsString"
@@ -68,7 +74,7 @@ data class Declaration<T : Any> private constructor(
             primaryType: KClass<T>,
             name: String? = null,
             kind: Kind,
-            definition: BeanDefinition<T>
+            definition: Definition<T>
         ): Declaration<T> {
             val declaration = Declaration(primaryType, name)
 

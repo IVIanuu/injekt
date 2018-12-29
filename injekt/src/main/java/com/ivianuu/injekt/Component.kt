@@ -20,7 +20,7 @@ class Component internal constructor(val name: String?) {
      * Adds all [Declaration]s of [dependencies] to this component
      */
     fun dependencies(vararg dependencies: Component) {
-        declarationRegistry.loadDependencies(*dependencies)
+        declarationRegistry.loadComponents(*dependencies)
     }
 
     /**
@@ -44,7 +44,7 @@ class Component internal constructor(val name: String?) {
             @Suppress("UNCHECKED_CAST")
             declaration.resolveInstance(params) as T
         } else {
-            throw InjectionException("${nameString()}Could not find declaration for ${type.java.name + name.orEmpty()}")
+            throw InjectionException("${nameString()}Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 
@@ -76,7 +76,7 @@ fun Component.modules(modules: Collection<Module>) {
  * Adds all [Declaration]s of [dependencies] to this component
  */
 fun Component.dependencies(dependencies: Collection<Component>) {
-    declarationRegistry.loadDependencies(*dependencies.toTypedArray())
+    declarationRegistry.loadComponents(*dependencies.toTypedArray())
 }
 
 /**

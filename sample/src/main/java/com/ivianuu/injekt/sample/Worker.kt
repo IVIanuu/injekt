@@ -18,6 +18,7 @@ package com.ivianuu.injekt.sample
 
 const val COMMANDS = "commands"
 const val SERVICES = "services"
+const val MIXED = "mixed"
 
 interface Service {
     fun start()

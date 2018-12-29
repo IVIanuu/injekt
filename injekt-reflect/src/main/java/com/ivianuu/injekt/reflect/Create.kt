@@ -63,9 +63,9 @@ inline fun <reified T : Any> Module.create(
 ) = create(T::class, params)
 
 /**
- * Create instance for type T and inject dependencies into 1st constructor.
+ * Create instance for kind T and inject dependencies into 1st constructor.
  * The first constructor dependencies will be searched in [params] and in the other stored definitions.
- * In parameters of the same type, order matters in the object creation, so they should have the same order as they are in the primary constructor.
+ * In parameters of the same kind, order matters in the object creation, so they should have the same order as they are in the primary constructor.
  */
 fun <T : Any> Module.create(
     clazz: KClass<T>,

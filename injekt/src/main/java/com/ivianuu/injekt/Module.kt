@@ -19,6 +19,9 @@ class Module internal constructor(
     internal val declarationsByName = hashMapOf<String, Declaration<*>>()
     internal val declarationsByType = hashMapOf<KClass<*>, Declaration<*>>()
 
+    internal val setMultiBindings = arrayListOf<SetMultiBindingOptions>()
+    internal val mapMultiBindings = arrayListOf<MapMultiBindingOptions>()
+
     /**
      * Adds the [declaration]
      */
@@ -41,6 +44,23 @@ class Module internal constructor(
 
         return declaration
     }
+
+    /**
+     * Declares a multi binding for [Set]s
+     */
+    fun multiBindingSet(options: SetMultiBindingOptions): SetMultiBindingOptions {
+        setMultiBindings.add(options)
+        return options
+    }
+
+    /**
+     * Declares a multi binding for [Set]s
+     */
+    fun multiBindingMap(options: MapMultiBindingOptions): MapMultiBindingOptions {
+        mapMultiBindings.add(options)
+        return options
+    }
+
 }
 
 /**
@@ -59,7 +79,7 @@ fun module(
 inline fun <reified T : Any> Module.factory(
     name: String? = null,
     override: Boolean = false,
-    noinline definition: BeanDefinition<T>
+    noinline definition: Definition<T>
 ) = factory(T::class, name, override, definition)
 
 /**
@@ -69,7 +89,7 @@ fun <T : Any> Module.factory(
     type: KClass<T>,
     name: String? = null,
     override: Boolean = false,
-    definition: BeanDefinition<T>
+    definition: Definition<T>
 ) = declare(
     type = type,
     kind = Kind.FACTORY,
@@ -86,7 +106,7 @@ inline fun <reified T : Any> Module.single(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    noinline definition: BeanDefinition<T>
+    noinline definition: Definition<T>
 ) = single(T::class, name, override, createOnStart, definition)
 
 /**
@@ -97,7 +117,7 @@ fun <T : Any> Module.single(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    definition: BeanDefinition<T>
+    definition: Definition<T>
 ) = declare(
     type = type,
     kind = Kind.SINGLE,
@@ -115,7 +135,7 @@ inline fun <reified T : Any> Module.declare(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    noinline definition: BeanDefinition<T>
+    noinline definition: Definition<T>
 ) = declare(
     Declaration.create(T::class, name, kind, definition).also {
         it.options.createOnStart = createOnStart
@@ -132,7 +152,7 @@ fun <T : Any> Module.declare(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    definition: BeanDefinition<T>
+    definition: Definition<T>
 ) = declare(
     Declaration.create(type, name, kind, definition).also {
         it.options.createOnStart = createOnStart
@@ -141,7 +161,7 @@ fun <T : Any> Module.declare(
 )
 
 /**
- * Adds a binding for [type] and [name] to [to] to a previously added [Declaration]
+ * Adds a binding for [T] and [name] to [to] to a previously added [Declaration]
  */
 inline fun <reified T : S, reified S : Any> Module.bind(name: String? = null) =
     bind(T::class, S::class, name)
@@ -157,13 +177,27 @@ fun <T : S, S : Any> Module.bind(
     getDeclaration(type, name).bind(to)
 }
 
+inline fun <reified T : Any> Module.multiBindingSet(name: String) =
+    multiBindingSet(T::class, name)
+
+fun Module.multiBindingSet(type: KClass<*>, name: String) {
+    multiBindingSet(SetMultiBindingOptions(type, name))
+}
+
+inline fun <reified K : Any, reified T : Any> Module.multiBindingMap(name: String) =
+    multiBindingMap(K::class, T::class, name)
+
+fun Module.multiBindingMap(keyType: KClass<*>, type: KClass<*>, name: String) {
+    multiBindingMap(MapMultiBindingOptions(keyType, type, name))
+}
+
 @PublishedApi
 internal fun Module.getDeclaration(type: KClass<*>, name: String?): Declaration<*> {
     return if (name != null) {
         declarationsByName[name]
     } else {
         declarationsByType[type]
-    } ?: throw IllegalArgumentException("no declaration found for type: $type name: $name")
+    } ?: throw IllegalArgumentException("no declaration found for kind: $type name: $name")
 }
 
 /** Calls trough [Component.get] */

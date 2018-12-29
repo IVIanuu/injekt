@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import android.util.Log
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
+import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -29,11 +31,17 @@ class App : Application(), ComponentHolder {
         component { modules(appModule()) }
     }
 
+    private val commands by inject<MultiBindingSet<Command>>(COMMANDS)
+    private val services by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES)
+
     override fun onCreate() {
         super.onCreate()
         configureInjekt {
             androidLogger()
         }
+
+        Log.d("App", "commands ${commands.toSet()}")
+        Log.d("App", "services ${services.toMap()}")
     }
 
 }
@@ -41,6 +49,9 @@ class App : Application(), ComponentHolder {
 fun App.appModule() = module {
     factory { this@appModule }
     single(createOnStart = true) { AppDependency(get()) }
+
+    multiBindingSet<Command>(COMMANDS)
+    multiBindingMap<KClass<out Service>, Service>(SERVICES)
 
     factory { CommandOne() } intoSet COMMANDS
     factory { CommandTwo() } intoSet COMMANDS

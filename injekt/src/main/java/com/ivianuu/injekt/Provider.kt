@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Provides dependencies of type [T]
+ * Provides dependencies of kind [T]
  */
 interface Provider<T> {
     fun get(params: ParamsDefinition? = null): T

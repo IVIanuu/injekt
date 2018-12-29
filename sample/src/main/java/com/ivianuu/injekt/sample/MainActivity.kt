@@ -26,8 +26,8 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
         appDependency
         mainActivityDependency
 
-        Log.d("testt", "commands $commands")
-        Log.d("testt", "services $services")
+        Log.d("MainActivity", "commands ${commands.toSet()}")
+        Log.d("MainActivity", "services ${services.toMap()}")
     }
 
 }
