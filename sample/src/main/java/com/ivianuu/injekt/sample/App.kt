@@ -31,8 +31,8 @@ class App : Application(), ComponentHolder {
 
     override fun onCreate() {
         super.onCreate()
-        if (BuildConfig.DEBUG) {
-            InjektPlugins.logger = androidLogger()
+        configureInjekt {
+            androidLogger()
         }
     }
 

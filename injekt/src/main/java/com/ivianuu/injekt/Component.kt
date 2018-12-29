@@ -19,10 +19,10 @@ class Component internal constructor(val name: String?) {
     }
 
     /**
-     * Adds all [Declaration]s of [dependency] to this component
+     * Adds all [Declaration]s of [dependencies] to this component
      */
-    fun dependencies(dependency: Component) {
-        declarationRegistry.loadDependencies(dependency)
+    fun dependencies(vararg dependencies: Component) {
+        declarationRegistry.loadDependencies(*dependencies)
     }
 
     /**
@@ -66,6 +66,20 @@ fun component(
             createEagerInstances()
         }
     }
+
+/**
+ * Adds all [Declaration]s of the [module]
+ */
+fun Component.modules(modules: Collection<Module>) {
+    modules(*modules.toTypedArray())
+}
+
+/**
+ * Adds all [Declaration]s of [dependencies] to this component
+ */
+fun Component.dependencies(dependencies: Collection<Component>) {
+    declarationRegistry.loadDependencies(*dependencies.toTypedArray())
+}
 
 /**
  * Returns a instance of [T] matching the [name] and [params]

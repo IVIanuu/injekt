@@ -11,3 +11,9 @@ object InjektPlugins {
     var logger: Logger? = null
 
 }
+
+/**
+ * Configure injekt
+ */
+fun configureInjekt(configuration: InjektConfiguration) =
+    InjektPlugins.apply(configuration)

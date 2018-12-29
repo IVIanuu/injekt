@@ -47,6 +47,8 @@ class AndroidLogger : Logger {
 }
 
 /**
- * Returns a new [AndroidLogger] instance
+ * Sets the [AndroidLogger]
  */
-fun androidLogger() = AndroidLogger()
+fun InjektPlugins.androidLogger() {
+    logger = AndroidLogger()
+}

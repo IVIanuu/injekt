@@ -7,10 +7,10 @@ import com.ivianuu.injekt.*
 class MainActivity : AppCompatActivity(), ComponentHolder {
 
     override val component by lazy {
-        component(
-            modules = listOf(mainActivityModule(this)),
-            dependencies = listOf((application as ComponentHolder).component)
-        )
+        component {
+            modules(mainActivityModule())
+            dependencies((application as ComponentHolder).component)
+        }
     }
 
     private val appDependency by inject<AppDependency>()
@@ -24,8 +24,8 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
 
 }
 
-fun mainActivityModule(activity: MainActivity) = module {
-    factory { activity }
+fun MainActivity.mainActivityModule() = module {
+    factory { this@mainActivityModule }
     single { MainActivityDependency(get(), get()) }
 }
 
