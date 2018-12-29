@@ -66,6 +66,11 @@ class DeclarationRegistry(val name: String?) {
     }
 
     /**
+     * Returns all [Declaration]s
+     */
+    fun getAllDeclarations(): Set<Declaration<*>> = declarations
+
+    /**
      * Returns the [Declaration] for [type] and [name] or null
      */
     fun findDeclaration(
