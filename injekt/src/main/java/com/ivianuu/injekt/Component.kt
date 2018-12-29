@@ -67,25 +67,20 @@ class Component internal constructor(val name: String?) {
 
 /**
  * Returns a [Component] which contains [modules]
- */
-fun component(vararg modules: Module) =
-    component(modules = modules.toList())
-
-/**
- * Returns a [Component] which contains [modules]
- * And depends on any of [dependsOn]
+ * And depends on any of [dependencies]
  */
 fun component(
     modules: Collection<Module> = emptyList(),
     dependencies: Collection<Component> = emptyList(),
     name: String? = null,
-    createEagerInstances: Boolean = true
+    createEagerInstances: Boolean = true,
+    eagerInstancesParams: ParamsDefinition? = null
 ) = Component(name).apply {
     dependencies.forEach { addDependency(it) }
     modules.forEach { addModule(it) }
 
     if (createEagerInstances) {
-        createEagerInstances()
+        createEagerInstances(eagerInstancesParams)
     }
 }
 
