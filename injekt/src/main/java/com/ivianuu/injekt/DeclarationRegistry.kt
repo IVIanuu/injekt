@@ -39,9 +39,9 @@ class DeclarationRegistry internal constructor(
         modules.forEach { module ->
             module.component = component
             module.declarations.forEach {
-                saveDeclaration(it, null)
-
                 it.instance.component = component
+
+                saveDeclaration(it)
 
                 if (it.options.createOnStart) {
                     createOnStartDeclarations.add(it)
@@ -56,7 +56,7 @@ class DeclarationRegistry internal constructor(
     fun loadDependencies(vararg dependencies: Component) {
         dependencies.forEach { dependency ->
             dependency.declarationRegistry.getAllDeclarations().forEach { declaration ->
-                saveDeclaration(declaration, dependency)
+                saveDeclaration(declaration)
             }
         }
     }
@@ -80,7 +80,10 @@ class DeclarationRegistry internal constructor(
 
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
-    private fun saveDeclaration(declaration: Declaration<*>, dependency: Component?) {
+    /**
+     * Saves the [declaration]
+     */
+    fun saveDeclaration(declaration: Declaration<*>) {
         val isOverride = declarations.remove(declaration)
 
         if (isOverride && !declaration.options.override) {
@@ -89,16 +92,7 @@ class DeclarationRegistry internal constructor(
 
         InjektPlugins.logger?.let { logger ->
             val kw = if (isOverride) "Override" else "Declare"
-            val depString = if (dependency != null) {
-                if (dependency.name != null) {
-                    " from ${dependency.nameString()}"
-                } else {
-                    " from dependency "
-                }
-            } else {
-                " "
-            }
-            logger.debug("${nameString()}$kw$depString$declaration")
+            logger.debug("${nameString()}$kw $declaration")
         }
 
         declarations.add(declaration)

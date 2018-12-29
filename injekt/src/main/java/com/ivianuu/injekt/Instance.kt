@@ -8,7 +8,6 @@ import com.ivianuu.injekt.InjektPlugins.logger
 abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
     lateinit var component: Component
-        internal set
 
     abstract val isCreated: Boolean
 
