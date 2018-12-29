@@ -32,6 +32,16 @@ class DeclarationRegistry internal constructor(
     private val declarationsByType: MutableMap<KClass<*>, Declaration<*>> = ConcurrentHashMap()
     private val createOnStartDeclarations = hashSetOf<Declaration<*>>()
 
+    private val setBindingsByName: MutableMap<String, MutableSet<Declaration<*>>> =
+        ConcurrentHashMap()
+    private val setBindingsByType: MutableMap<KClass<*>, MutableSet<Declaration<*>>> =
+        ConcurrentHashMap()
+
+    private val mapBindingsByName: MutableMap<String, MutableMap<Any, Declaration<*>>> =
+        ConcurrentHashMap()
+    private val mapBindingsByType: MutableMap<KClass<*>, MutableMap<Any, Declaration<*>>> =
+        ConcurrentHashMap()
+
     /**
      * Adds all [Declaration]s of the [modules]
      */
@@ -65,6 +75,34 @@ class DeclarationRegistry internal constructor(
      * Returns all [Declaration]s
      */
     fun getAllDeclarations(): Set<Declaration<*>> = declarations
+
+    /**
+     * Returns a [Set] of [Declaration]s matching [setType] and [setName]
+     */
+    fun getSetDeclarations(
+        setType: KClass<*>,
+        setName: String? = null
+    ): Set<Declaration<*>> {
+        return if (setName != null) {
+            setBindingsByName[setName] ?: emptySet()
+        } else {
+            setBindingsByType[setType] ?: emptySet()
+        }
+    }
+
+    /**
+     * Returns a [Map] of [Declaration]s matching [mapType] and [mapName]
+     */
+    fun getMapDeclarations(
+        mapType: KClass<*>,
+        mapName: String? = null
+    ): Map<Any, Declaration<*>> {
+        return if (mapName != null) {
+            mapBindingsByName[mapName] ?: emptyMap()
+        } else {
+            mapBindingsByType[mapType] ?: emptyMap()
+        }
+    }
 
     /**
      * Returns the [Declaration] for [type] and [name] or null
@@ -101,6 +139,24 @@ class DeclarationRegistry internal constructor(
             declarationsByName[declaration.name] = declaration
         } else {
             declaration.classes.forEach { declarationsByType[it] = declaration }
+        }
+
+        declaration.setBindings.forEach { (type, name) ->
+            if (name != null) {
+                setBindingsByName.getOrPut(name) { hashSetOf() }
+                    .add(declaration)
+            } else {
+                setBindingsByType.getOrPut(type) { hashSetOf() }
+                    .add(declaration)
+            }
+        }
+
+        declaration.mapBindings.forEach { (type, key, name) ->
+            if (name != null) {
+                mapBindingsByName.getOrPut(name) { ConcurrentHashMap() }[key] = declaration
+            } else {
+                mapBindingsByType.getOrPut(type) { ConcurrentHashMap() }[key] = declaration
+            }
         }
     }
 }

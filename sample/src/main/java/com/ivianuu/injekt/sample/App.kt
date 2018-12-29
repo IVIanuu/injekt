@@ -41,6 +41,12 @@ class App : Application(), ComponentHolder {
 fun App.appModule() = module {
     factory { this@appModule }
     single(createOnStart = true) { AppDependency(get()) }
+
+    factory { CommandOne() } intoSet setBinding<Command>(COMMANDS)
+    factory { CommandTwo() } intoSet setBinding<Command>(COMMANDS)
+
+    factory { ServiceOne() } intoMap mapBinding<Service>(ServiceOne::class, SERVICES)
+    factory { ServiceTwo() } intoMap mapBinding<Service>(ServiceTwo::class, SERVICES)
 }
 
 class AppDependency(val app: App)

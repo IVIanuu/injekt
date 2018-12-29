@@ -12,6 +12,8 @@ data class Declaration<T : Any> private constructor(
 
     var options = Options()
     var secondaryTypes: List<KClass<*>> = emptyList()
+    var setBindings: List<SetBinding> = emptyList()
+    var mapBindings: List<MapBinding> = emptyList()
 
     lateinit var kind: Kind
     lateinit var definition: BeanDefinition<T>
@@ -33,9 +35,29 @@ data class Declaration<T : Any> private constructor(
         if (secondaryTypes.contains(type)) return@apply
 
         if (!type.java.isAssignableFrom(this.primaryType.java)) {
-            throw IllegalArgumentException("Can't bind kind '$type' for definition $this")
+            throw IllegalArgumentException("Can't bind kind '$type' for declaration $this")
         } else {
             secondaryTypes += type
+        }
+    }
+
+    infix fun intoSet(binding: SetBinding) = apply {
+        if (setBindings.contains(binding)) return@apply
+
+        if (!binding.type.java.isAssignableFrom(this.primaryType.java)) {
+            throw IllegalArgumentException("Can't add '$binding' for declaration $this")
+        } else {
+            setBindings += binding
+        }
+    }
+
+    infix fun intoMap(binding: MapBinding) = apply {
+        if (mapBindings.contains(binding)) return@apply
+
+        if (!binding.type.java.isAssignableFrom(this.primaryType.java)) {
+            throw IllegalArgumentException("Can't add '$binding' for declaration $this")
+        } else {
+            mapBindings += binding
         }
     }
 
