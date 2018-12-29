@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -34,10 +35,10 @@ class DeclarationRegistry(val name: String?) {
         _component = component
     }
 
-    private val declarations = mutableSetOf<Declaration<*>>()
-    private val declarationsByName = mutableMapOf<String, Declaration<*>>()
-    private val declarationsByType = mutableMapOf<KClass<*>, Declaration<*>>()
-    private val createOnStartDeclarations = mutableSetOf<Declaration<*>>()
+    private val declarations = hashSetOf<Declaration<*>>()
+    private val declarationsByName: MutableMap<String, Declaration<*>> = ConcurrentHashMap()
+    private val declarationsByType: MutableMap<KClass<*>, Declaration<*>> = ConcurrentHashMap()
+    private val createOnStartDeclarations = hashSetOf<Declaration<*>>()
 
     /**
      * Adds all [Declaration]s of the [modules]

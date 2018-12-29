@@ -63,22 +63,20 @@ internal class FactoryInstance<T : Any>(
 
 }
 
-private object UNINITIALIZED_VALUE
-
 internal class SingleInstance<T : Any>(
     declaration: Declaration<T>
 ) : Instance<T>(declaration) {
 
-    private var _value: Any? = UNINITIALIZED_VALUE
+    private var _value: T? = null
 
     override val isCreated: Boolean
-        get() = _value !== UNINITIALIZED_VALUE
+        get() = _value != null
 
     override fun getInternal(params: ParamsDefinition?): T {
         val value = _value
-        return if (value !== UNINITIALIZED_VALUE) {
-            @Suppress("UNCHECKED_CAST")
-            return value as T
+
+        return if (value != null) {
+            return value
         } else {
             val typedValue = declaration.definition
                 .invoke(params?.invoke() ?: emptyParameters())

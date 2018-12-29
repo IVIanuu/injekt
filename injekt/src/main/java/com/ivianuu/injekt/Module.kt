@@ -23,9 +23,9 @@ class Module internal constructor(
         _component = component
     }
 
-    internal val declarations = mutableListOf<Declaration<*>>()
-    internal val declarationsByName = mutableMapOf<String, Declaration<*>>()
-    internal val declarationsByType = mutableMapOf<KClass<*>, Declaration<*>>()
+    internal val declarations = arrayListOf<Declaration<*>>()
+    internal val declarationsByName = hashMapOf<String, Declaration<*>>()
+    internal val declarationsByType = hashMapOf<KClass<*>, Declaration<*>>()
 
     /**
      * Adds the [declaration]
