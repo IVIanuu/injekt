@@ -22,23 +22,10 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
             logger.info(msg)
         }
 
-        return getInternal(params)
+        return getOrCreate(params)
     }
 
-    fun create(params: ParamsDefinition?): T {
-        return try {
-            get(params)
-        } catch (e: InjektException) {
-            throw e
-        } catch (e: Exception) {
-            throw InstanceCreationException(
-                "${component.nameString()}Could not instantiate $declaration",
-                e
-            )
-        }
-    }
-
-    protected abstract fun getInternal(params: ParamsDefinition?): T
+    protected abstract fun getOrCreate(params: ParamsDefinition?): T
 
 }
 
@@ -49,7 +36,7 @@ internal class FactoryInstance<T : Any>(
     override val isCreated: Boolean
         get() = false
 
-    override fun getInternal(params: ParamsDefinition?) =
+    override fun getOrCreate(params: ParamsDefinition?) =
         declaration.definition.invoke(params?.invoke() ?: emptyParameters())
 
 }
@@ -63,7 +50,7 @@ internal class SingleInstance<T : Any>(
     override val isCreated: Boolean
         get() = _value != null
 
-    override fun getInternal(params: ParamsDefinition?): T {
+    override fun getOrCreate(params: ParamsDefinition?): T {
         val value = _value
 
         return if (value != null) {

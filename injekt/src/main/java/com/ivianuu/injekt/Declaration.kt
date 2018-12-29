@@ -54,14 +54,23 @@ data class Declaration<T : Any> private constructor(
     }
 
     override fun toString(): String {
-        val kind = kind.toString()
-        val name = name?.let { "name:'$name', " } ?: ""
-        val type = "kind:'${primaryType.getFullName()}'"
-        val secondaryTypes = if (secondaryTypes.isNotEmpty()) {
+        val kindString = kind.toString()
+        val nameString = name?.let { "name:'$name', " } ?: ""
+        val typeString = "kind:'${primaryType.getFullName()}'"
+        val secondaryTypesString = if (secondaryTypes.isNotEmpty()) {
             val typesAsString = secondaryTypes.joinToString(", ") { it.getFullName() }
             ", secondary types:$typesAsString"
         } else ""
-        return "$kind[$name$type$secondaryTypes]"
+        val setBindingsString = if (setBindings.isNotEmpty()) {
+            val bindingsAsString = setBindings.joinToString(", ") { it }
+            ", set bindings:$bindingsAsString"
+        } else ""
+        val mapBindingsString = if (mapBindings.isNotEmpty()) {
+            val bindingsAsString =
+                mapBindings.entries.joinToString(", ") { it.key + " " + it.value }
+            ", map bindings:$bindingsAsString"
+        } else ""
+        return "$kindString[$nameString$typeString$secondaryTypesString$setBindingsString$mapBindingsString]"
     }
 
     enum class Kind { FACTORY, SINGLE }
