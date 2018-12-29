@@ -14,7 +14,7 @@ data class Declaration<T : Any> private constructor(
     var secondaryTypes: List<KClass<*>> = emptyList()
 
     lateinit var kind: Kind
-    lateinit var definition: Definition<T>
+    lateinit var definition: BeanDefinition<T>
     lateinit var instance: Instance<T>
 
     internal val classes: List<KClass<*>> get() = listOf(primaryType) + secondaryTypes
@@ -58,7 +58,7 @@ data class Declaration<T : Any> private constructor(
             primaryType: KClass<T>,
             name: String? = null,
             kind: Kind,
-            definition: Definition<T>
+            definition: BeanDefinition<T>
         ): Declaration<T> {
             val declaration = Declaration(primaryType, name)
 
@@ -75,4 +75,11 @@ data class Declaration<T : Any> private constructor(
         }
 
     }
+}
+
+/**
+ * Binds this [Declaration] to [types]
+ */
+infix fun Declaration<*>.binds(types: Array<KClass<*>>) = apply {
+    types.forEach { bind(it) }
 }

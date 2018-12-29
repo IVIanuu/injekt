@@ -68,7 +68,7 @@ fun module(
 inline fun <reified T : Any> Module.factory(
     name: String? = null,
     override: Boolean = false,
-    noinline definition: Definition<T>
+    noinline definition: BeanDefinition<T>
 ) = factory(T::class, name, override, definition)
 
 /**
@@ -78,7 +78,7 @@ fun <T : Any> Module.factory(
     type: KClass<T>,
     name: String? = null,
     override: Boolean = false,
-    definition: Definition<T>
+    definition: BeanDefinition<T>
 ) = declare(
     type = type,
     kind = Kind.FACTORY,
@@ -95,7 +95,7 @@ inline fun <reified T : Any> Module.single(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    noinline definition: Definition<T>
+    noinline definition: BeanDefinition<T>
 ) = single(T::class, name, override, createOnStart, definition)
 
 /**
@@ -106,7 +106,7 @@ fun <T : Any> Module.single(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    definition: Definition<T>
+    definition: BeanDefinition<T>
 ) = declare(
     type = type,
     kind = Kind.SINGLE,
@@ -124,7 +124,7 @@ inline fun <reified T : Any> Module.declare(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    noinline definition: Definition<T>
+    noinline definition: BeanDefinition<T>
 ) = declare(
     Declaration.create(T::class, name, kind, definition).also {
         it.options.createOnStart = createOnStart
@@ -141,7 +141,7 @@ fun <T : Any> Module.declare(
     name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
-    definition: Definition<T>
+    definition: BeanDefinition<T>
 ) = declare(
     Declaration.create(type, name, kind, definition).also {
         it.options.createOnStart = createOnStart
@@ -163,10 +163,7 @@ fun <T : S, S : Any> Module.bind(
     to: KClass<S>,
     name: String? = null
 ) {
-    val declaration = declarations.firstOrNull { it.classes.contains(type) && name == name }
-        ?: throw IllegalArgumentException("no declaration found for $type")
-
-    declaration.bind(to)
+    getDeclaration(type, name).bind(to)
 }
 
 @PublishedApi

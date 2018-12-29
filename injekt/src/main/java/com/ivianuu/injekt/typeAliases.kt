@@ -1,6 +1,6 @@
 package com.ivianuu.injekt
 
-typealias Definition<T> = (params: Parameters) -> T
+typealias BeanDefinition<T> = (params: Parameters) -> T
 
 typealias ModuleDefinition = Module.() -> Unit
 
