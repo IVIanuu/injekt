@@ -48,62 +48,6 @@ class Component internal constructor(val name: String?) {
         }
     }
 
-    /**
-     * Returns a [Set] of [T] matching the [setType] and [setName]
-     */
-    fun <T : Any> getSet(
-        setType: KClass<T>,
-        setName: String? = null,
-        params: ParamsDefinition? = null
-    ): Set<T> = synchronized(this) {
-        declarationRegistry.getSetDeclarations(setType, setName)
-            .map { it.resolveInstance(params) }
-            .toSet() as Set<T>
-    }
-
-    /**
-     * Returns a [Set] of [T] matching the [setType] and [setName]
-     */
-    fun <T : Any> getProviderSet(
-        setType: KClass<T>,
-        setName: String? = null,
-        defaultParams: ParamsDefinition? = null
-    ): Set<Provider<T>> = synchronized(this) {
-        declarationRegistry.getSetDeclarations(setType, setName)
-            .map { declaration ->
-                Provider { declaration.resolveInstance(it ?: defaultParams) as T }
-            }
-            .toSet()
-    }
-
-    /**
-     * Returns a [Map] of [K],[T] matching the [mapType] and [mapName]
-     */
-    fun <K : Any, T : Any> getMap(
-        mapType: KClass<T>,
-        mapName: String? = null,
-        params: ParamsDefinition? = null
-    ) = synchronized(this) {
-        declarationRegistry.getMapDeclarations(mapType, mapName)
-            .mapKeys { it.key as K }
-            .mapValues { it.value.resolveInstance(params) as T }
-    }
-
-    /**
-     * Returns a [Map] of [K],[T] matching the [mapType] and [mapName]
-     */
-    fun <K : Any, T : Any> getProviderMap(
-        mapType: KClass<T>,
-        mapName: String? = null,
-        defaultParams: ParamsDefinition? = null
-    ): Map<K, Provider<T>> = synchronized(this) {
-        declarationRegistry.getMapDeclarations(mapType, mapName)
-            .mapKeys { it.key as K }
-            .mapValues { (_, declaration) ->
-                Provider { declaration.resolveInstance(it ?: defaultParams) as T }
-            }
-    }
-
 }
 
 /**
@@ -142,38 +86,6 @@ inline fun <reified T : Any> Component.get(
     name: String? = null,
     noinline params: ParamsDefinition? = null
 ) = get(T::class, name, params)
-
-/**
- * Returns a [Set] of [T] matching [T] and [setName]
- */
-inline fun <reified T : Any> Component.getSet(
-    setName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getSet(T::class, setName, params)
-
-/**
- * Returns a [Set] of [T] matching [T] and [setName]
- */
-inline fun <reified T : Any> Component.getProviderSet(
-    setName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getProviderSet(T::class, setName, params)
-
-/**
- * Returns a [Map] of [K],[T] matching the [T] and [mapName]
- */
-inline fun <reified K : Any, reified T : Any> Component.getMap(
-    mapName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getMap<K, T>(T::class, mapName, params)
-
-/**
- * Returns a [Map] of [K],[T] matching the [T] and [mapName]
- */
-inline fun <reified K : Any, reified T : Any> Component.getProviderMap(
-    mapName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getProviderMap<K, T>(T::class, mapName, params)
 
 /**
  * Lazily returns a instance of [T] matching the [name] and [params]
@@ -229,71 +141,3 @@ fun <T : Any> Component.injectProvider(
     name: String? = null,
     defaultParams: ParamsDefinition? = null
 ) = lazy { Provider { get(type, name, it ?: defaultParams) } }
-
-/**
- * Returns a [Set] of [T] matching [T] and [setName]
- */
-inline fun <reified T : Any> Component.injectSet(
-    setName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = injectSet(T::class, setName, params)
-
-/**
- * Returns a [Set] of [T] matching the [setType] and [setName]
- */
-fun <T : Any> Component.injectSet(
-    setType: KClass<T>,
-    setName: String? = null,
-    params: ParamsDefinition? = null
-) = lazy { getSet(setType, setName, params) }
-
-/**
- * Returns a [Set] of [T] matching [T] and [setName]
- */
-inline fun <reified T : Any> Component.injectProviderSet(
-    setName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = injectProviderSet(T::class, setName, params)
-
-/**
- * Returns a [Set] of [T] matching the [setType] and [setName]
- */
-fun <T : Any> Component.injectProviderSet(
-    setType: KClass<T>,
-    setName: String? = null,
-    params: ParamsDefinition? = null
-) = lazy { getProviderSet(setType, setName, params) }
-
-/**
- * Returns a [Map] of [K],[T] matching the [T] and [mapName]
- */
-inline fun <reified K : Any, reified T : Any> Component.injectMap(
-    mapName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = injectMap<K, T>(T::class, mapName, params)
-
-/**
- * Returns a [Map] of [K],[T] matching the [mapType] and [mapName]
- */
-fun <K : Any, T : Any> Component.injectMap(
-    mapType: KClass<T>,
-    mapName: String? = null,
-    params: ParamsDefinition? = null
-) = lazy { getMap<K, T>(mapType, mapName, params) }
-
-/**
- * Returns a [Map] of [K],[T] matching the [T] and [mapName]
- */
-inline fun <reified K : Any, reified T : Any> Component.injectProviderMap(
-    mapName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = injectProviderMap<K, T>(T::class, mapName, params)
-
-/**
- * Returns a [Map] of [K],[T] matching the [mapType] and [mapName]
- */
-fun <K : Any, T : Any> Component.injectProviderMap(
-    mapType: KClass<T>,
-    mapName: String? = null,
-    params: ParamsDefinition? = null
-) = lazy { getProviderMap<K, T>(mapType, mapName, params) }

@@ -10,21 +10,23 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
 
     override val component by lazy {
         component {
-            modules(mainActivityModule())
             dependencies((application as ComponentHolder).component)
+            modules(mainActivityModule())
         }
     }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
 
-    private val services by injectProviderMap<KClass<out Service>, Service>()
+    private val commands by inject<MultiBindingSet<Command>>(COMMANDS)
+    private val services by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appDependency
         mainActivityDependency
 
+        Log.d("testt", "commands $commands")
         Log.d("testt", "services $services")
     }
 
@@ -32,14 +34,12 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
 
 fun MainActivity.mainActivityModule() = module {
     factory { this@mainActivityModule }
-    single { MainActivityDependency(get(), get(), getSet(), getMap()) }
-    factory { CommandThree() } intoSet setBinding<Command>()
-    factory { ServiceThree() } intoMap mapBinding<Service>(ServiceThree::class)
+    single { MainActivityDependency(get(), get()) }
+    factory { CommandThree() } intoSet COMMANDS
+    factory { ServiceThree() } intoMap (SERVICES to ServiceThree::class)
 }
 
 class MainActivityDependency(
     val app: App,
-    val mainActivity: MainActivity,
-    val commands: Set<Command>,
-    val services: Map<KClass<out Service>, Service>
+    val mainActivity: MainActivity
 )

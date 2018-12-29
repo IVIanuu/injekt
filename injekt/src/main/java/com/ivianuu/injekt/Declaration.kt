@@ -12,8 +12,8 @@ data class Declaration<T : Any> private constructor(
 
     var options = Options()
     var secondaryTypes: List<KClass<*>> = emptyList()
-    var setBindings: List<SetBinding> = emptyList()
-    var mapBindings: List<MapBinding> = emptyList()
+    var setBindings: Set<String> = emptySet()
+    var mapBindings: Map<String, Any> = emptyMap()
 
     lateinit var kind: Kind
     lateinit var definition: BeanDefinition<T>
@@ -41,24 +41,12 @@ data class Declaration<T : Any> private constructor(
         }
     }
 
-    infix fun intoSet(binding: SetBinding) = apply {
-        if (setBindings.contains(binding)) return@apply
-
-        if (!binding.type.java.isAssignableFrom(this.primaryType.java)) {
-            throw IllegalArgumentException("Can't add '$binding' for declaration $this")
-        } else {
-            setBindings += binding
-        }
+    infix fun intoSet(setName: String) = apply {
+        setBindings += setName
     }
 
-    infix fun intoMap(binding: MapBinding) = apply {
-        if (mapBindings.contains(binding)) return@apply
-
-        if (!binding.type.java.isAssignableFrom(this.primaryType.java)) {
-            throw IllegalArgumentException("Can't add '$binding' for declaration $this")
-        } else {
-            mapBindings += binding
-        }
+    infix fun intoMap(pair: Pair<String, Any>) = apply {
+        mapBindings += pair
     }
 
     override fun toString(): String {

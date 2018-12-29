@@ -42,11 +42,11 @@ fun App.appModule() = module {
     factory { this@appModule }
     single(createOnStart = true) { AppDependency(get()) }
 
-    factory { CommandOne() } intoSet setBinding<Command>(COMMANDS)
-    factory { CommandTwo() } intoSet setBinding<Command>(COMMANDS)
+    factory { CommandOne() } intoSet COMMANDS
+    factory { CommandTwo() } intoSet COMMANDS
 
-    factory { ServiceOne() } intoMap mapBinding<Service>(ServiceOne::class, SERVICES)
-    factory { ServiceTwo() } intoMap mapBinding<Service>(ServiceTwo::class, SERVICES)
+    factory { ServiceOne() } intoMap (SERVICES to ServiceOne::class)
+    factory { ServiceTwo() } intoMap (SERVICES to ServiceTwo::class)
 }
 
 class AppDependency(val app: App)

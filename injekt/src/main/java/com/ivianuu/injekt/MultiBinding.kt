@@ -16,45 +16,24 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+data class MultiBindingSet<T : Any>(val set: Set<Declaration<T>>)
 
-/**
- * Describes a set binding for a [Declaration]
- */
-data class SetBinding(
-    val type: KClass<*>,
-    val name: String? = null
-)
+fun <T : Any> MultiBindingSet<T>.toSet(params: ParamsDefinition? = null): Set<T> =
+    set.map { it.resolveInstance(params) }.toSet()
 
-/**
- * Returns a new [SetBinding] for [type] and [name]
- */
-fun setBinding(type: KClass<*>, name: String? = null) =
-    SetBinding(type, name)
+fun <T : Any> MultiBindingSet<T>.toProviderSet(defaultParams: ParamsDefinition? = null): Set<Provider<T>> =
+    set.map { DeclarationProvider(it, defaultParams) }.toSet()
 
-/**
- * Returns a new [SetBinding] for [T] and [name]
- */
-inline fun <reified T : Any> setBinding(name: String? = null) =
-    setBinding(T::class, name)
+fun <T : Any> MultiBindingSet<T>.toLazySet(params: ParamsDefinition? = null): Set<Lazy<T>> =
+    set.map { lazy { it.resolveInstance(params) } }.toSet()
 
-/**
- * Describes a map binding for a [Declaration]
- */
-data class MapBinding(
-    val type: KClass<*>,
-    val key: Any,
-    val name: String? = null
-)
+data class MultiBindingMap<K : Any, T : Any>(val map: Map<K, Declaration<T>>)
 
-/**
- * Returns a new [MapBinding] for [type], [key] and [name]
- */
-fun mapBinding(type: KClass<*>, key: Any, name: String? = null) =
-    MapBinding(type, key, name)
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(params: ParamsDefinition? = null) =
+    map.mapValues { it.value.resolveInstance(params) }
 
-/**
- * Returns a new [MapBinding] for [T], [key] and [name]
- */
-inline fun <reified T : Any> mapBinding(key: Any, name: String? = null) =
-    mapBinding(T::class, key, name)
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParams: ParamsDefinition? = null) =
+    map.mapValues { DeclarationProvider(it.value, defaultParams) }
+
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(params: ParamsDefinition? = null) =
+    map.mapValues { lazy { it.value.resolveInstance(params) } }

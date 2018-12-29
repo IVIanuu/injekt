@@ -41,7 +41,6 @@ class Module internal constructor(
 
         return declaration
     }
-
 }
 
 /**
@@ -218,55 +217,3 @@ fun <T : Any> Module.lazyProvider(
     name: String? = null,
     defaultParams: ParamsDefinition? = null
 ) = component.injectProvider(type, name, defaultParams)
-
-/** Calls trough [Component.getSet] */
-inline fun <reified T : Any> Module.getSet(
-    setName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getSet(T::class, setName, params)
-
-/** Calls trough [Component.getSet] */
-fun <T : Any> Module.getSet(
-    setType: KClass<T>,
-    setName: String? = null,
-    params: ParamsDefinition? = null
-) = component.getSet(setType, setName, params)
-
-/** Calls trough [Component.getProviderSet] */
-inline fun <reified T : Any> Module.getProviderSet(
-    setName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getProviderSet(T::class, setName, params)
-
-/** Calls trough [Component.getProviderSet] */
-fun <T : Any> Module.getProviderSet(
-    setType: KClass<T>,
-    setName: String? = null,
-    params: ParamsDefinition? = null
-) = component.getProviderSet(setType, setName, params)
-
-/** Calls trough [Component.getMap] */
-inline fun <reified K : Any, reified T : Any> Module.getMap(
-    mapName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getMap<K, T>(T::class, mapName, params)
-
-/** Calls trough [Component.getMap] */
-fun <K : Any, T : Any> Module.getMap(
-    mapType: KClass<T>,
-    mapName: String? = null,
-    params: ParamsDefinition? = null
-) = component.getMap<K, T>(mapType, mapName, params)
-
-/** Calls trough [Component.getProviderMap] */
-inline fun <reified K : Any, reified T : Any> Module.getProviderMap(
-    mapName: String? = null,
-    noinline params: ParamsDefinition? = null
-) = getProviderMap<K, T>(T::class, mapName, params)
-
-/** Calls trough [Component.getProviderMap] */
-fun <K : Any, T : Any> Module.getProviderMap(
-    mapType: KClass<T>,
-    mapName: String? = null,
-    params: ParamsDefinition? = null
-) = component.getProviderMap<K, T>(mapType, mapName, params)
