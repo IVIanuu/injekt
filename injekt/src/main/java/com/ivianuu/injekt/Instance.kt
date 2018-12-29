@@ -22,7 +22,11 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
             logger.info(msg)
         }
 
-        return getOrCreate(params)
+        return try {
+            getOrCreate(params)
+        } catch (e: Exception) {
+            throw InstanceCreationException("Couldn't instantiate $declaration", e)
+        }
     }
 
     protected abstract fun getOrCreate(params: ParamsDefinition?): T
