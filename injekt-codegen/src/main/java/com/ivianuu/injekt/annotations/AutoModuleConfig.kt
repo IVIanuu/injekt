@@ -21,6 +21,6 @@ package com.ivianuu.injekt.annotations
  */
 @Retention(AnnotationRetention.SOURCE)
 annotation class AutoModuleConfig(
-    val packageName: String,
+    val packageName: String = "",
     val moduleName: String = ""
 )

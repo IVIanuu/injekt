@@ -59,16 +59,11 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
 
         val config = configurations.first()
 
-        val packageName = config
+        var packageName = config
             .getAnnotationMirror<AutoModuleConfig>()["packageName"].value as String
 
         if (packageName.isEmpty()) {
-            messager.printMessage(
-                Diagnostic.Kind.ERROR,
-                "Package name must not be empty",
-                configurations.first()
-            )
-            return emptySet()
+            packageName = config.getPackage().qualifiedName.toString()
         }
 
         var moduleName = config

@@ -18,8 +18,5 @@ package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.annotations.AutoModuleConfig
 
-@AutoModuleConfig(
-    packageName = "com.ivianuu.injekt.sample",
-    moduleName = "sampleAutoModule"
-)
+@AutoModuleConfig(moduleName = "sampleAutoModule")
 class Config
