@@ -45,8 +45,6 @@ class DeclarationRegistry internal constructor(
 
             module.declarations.forEach {
                 saveDeclaration(it)
-                multiBindingRegistry.saveMultiBindingsForDeclaration(it)
-
                 if (it.options.createOnStart) {
                     createOnStartDeclarations.add(it)
                 }
@@ -61,7 +59,6 @@ class DeclarationRegistry internal constructor(
         components.forEach { component ->
             component.declarationRegistry.getAllDeclarations().forEach {
                 saveDeclaration(it)
-                multiBindingRegistry.saveMultiBindingsForDeclaration(it)
             }
         }
     }
@@ -110,5 +107,7 @@ class DeclarationRegistry internal constructor(
             declarationsByType[declaration.primaryType] = declaration
             declaration.secondaryTypes.forEach { declarationsByType[it] = declaration }
         }
+
+        multiBindingRegistry.saveMultiBindingsForDeclaration(declaration)
     }
 }

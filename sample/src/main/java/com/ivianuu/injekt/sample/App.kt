@@ -50,8 +50,8 @@ fun App.appModule() = module {
     factory { this@appModule }
     single(createOnStart = true) { AppDependency(get()) }
 
-    multiBindingSet<Command>(COMMANDS)
-    multiBindingMap<KClass<out Service>, Service>(SERVICES)
+    multiBindingSet(COMMANDS)
+    multiBindingMap(SERVICES)
 
     factory { CommandOne() } intoSet COMMANDS
     factory { CommandTwo() } intoSet COMMANDS

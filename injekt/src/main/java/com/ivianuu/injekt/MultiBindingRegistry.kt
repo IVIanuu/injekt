@@ -21,32 +21,26 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class MultiBindingRegistry(private val component: Component) {
+class MultiBindingRegistry(
+    private val component: Component
+) {
 
     lateinit var declarationRegistry: DeclarationRegistry
 
-    private val setBindings = hashSetOf<SetBinding>()
-    private val setBindingsByName: MutableMap<String, SetBinding> =
+    private val setBindings: MutableMap<String, MutableSet<Declaration<*>>> =
         ConcurrentHashMap()
-
-    private val mapBindings = hashSetOf<MapBinding>()
-    private val mapBindingsByName: MutableMap<String, MapBinding> =
-        ConcurrentHashMap()
-
-    private val declarationsBySet: MutableMap<String, MutableSet<Declaration<*>>> =
-        ConcurrentHashMap()
-    private val declarationsByMap: MutableMap<String, MutableMap<Any, Declaration<*>>> =
+    private val mapBindings: MutableMap<String, MutableMap<Any, Declaration<*>>> =
         ConcurrentHashMap()
 
     /**
      * Returns all [Declaration]s which are bound into a set
      */
-    fun getAllSetDeclarations(): Map<String, Set<Declaration<*>>> = declarationsBySet
+    fun getAllSetDeclarations(): Map<String, Set<Declaration<*>>> = setBindings
 
     /**
      * Returns all [Declaration]s which are bound into a map
      */
-    fun getAllMapDeclarations(): Map<String, Map<Any, Declaration<*>>> = declarationsByMap
+    fun getAllMapDeclarations(): Map<String, Map<Any, Declaration<*>>> = mapBindings
 
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
@@ -57,52 +51,39 @@ class MultiBindingRegistry(private val component: Component) {
 
     fun loadComponents(vararg components: Component) {
         components.forEach { component ->
-            component.multiBindingRegistry.setBindings.forEach { saveSetMultiBinding(it) }
-            component.multiBindingRegistry.mapBindings.forEach { saveMapMultiBinding(it) }
+            component.multiBindingRegistry.setBindings.forEach { saveSetMultiBinding(it.key) }
+            component.multiBindingRegistry.mapBindings.forEach { saveMapMultiBinding(it.key) }
         }
     }
 
     fun saveMultiBindingsForDeclaration(declaration: Declaration<*>) {
-        declaration.setBindings.forEach { bindingName ->
-            val binding = setBindingsByName[bindingName]
-                ?: throw error("No set multi binding found for $bindingName $declaration")
-
-            if (!binding.type.java.isAssignableFrom(declaration.primaryType.java)) {
-                error("type ${declaration.primaryType.getFullName()} is not assignable from set binding type ${binding.type.getFullName()} $declaration")
-            }
-
-            declarationsBySet.getOrPut(bindingName) { linkedSetOf() }
-                .add(declaration)
+        declaration.setBindings.forEach { name ->
+            val binding =
+                setBindings[name] ?: error("No set multi binding found for $name $declaration")
+            binding.add(declaration)
         }
 
-        declaration.mapBindings.forEach { (bindingName, key) ->
-            val binding = mapBindingsByName[bindingName]
-                ?: throw error("No map multi binding found for $bindingName $declaration")
-
-            if (!binding.type.java.isAssignableFrom(declaration.primaryType.java)) {
-                error("type ${declaration.primaryType.getFullName()} is not assignable from map binding type ${binding.type.getFullName()} $declaration")
+        declaration.mapBindings.forEach { (name, key) ->
+            val binding =
+                mapBindings[name] ?: error("No map multi binding found for $name $declaration")
+            if (binding.containsKey(key)) {
+                error("Keys must be unique but added twice $key")
             }
-
-            if (!binding.keyType.java.isAssignableFrom(key::class.java)) {
-                error("key type ${key::class.getFullName()} is not assignable from map binding key type ${binding.keyType.getFullName()} $declaration")
-            }
-
-            declarationsByMap.getOrPut(bindingName) { ConcurrentHashMap() }[key] = declaration
+            binding[key] = declaration
         }
     }
 
-    fun saveSetMultiBinding(binding: SetBinding) {
-        if (setBindings.contains(binding)) return
-        setBindings.add(binding)
-        setBindingsByName[binding.name] = binding
+    fun saveSetMultiBinding(name: String) {
+        if (setBindings.contains(name)) return
+        setBindings[name] = linkedSetOf()
 
         val declaration = Declaration.create(
             MultiBindingSet::class,
-            binding.name,
+            name,
             Declaration.Kind.FACTORY
         ) {
             MultiBindingSet(
-                declarationsBySet[binding.name]
+                setBindings[name]
                         as? Set<Declaration<Any>> ?: emptySet()
             )
         }.apply {
@@ -112,18 +93,17 @@ class MultiBindingRegistry(private val component: Component) {
         declarationRegistry.saveDeclaration(declaration)
     }
 
-    fun saveMapMultiBinding(binding: MapBinding) {
-        if (mapBindings.contains(binding)) return
-        mapBindings.add(binding)
-        mapBindingsByName[binding.name] = binding
+    fun saveMapMultiBinding(name: String) {
+        if (mapBindings.contains(name)) return
+        mapBindings[name] = hashMapOf()
 
         val declaration = Declaration.create(
             MultiBindingMap::class,
-            binding.name,
+            name,
             Declaration.Kind.FACTORY
         ) {
             MultiBindingMap(
-                declarationsByMap[binding.name]
+                mapBindings[name]
                         as? Map<Any, Declaration<Any>> ?: emptyMap()
             )
         }.apply {

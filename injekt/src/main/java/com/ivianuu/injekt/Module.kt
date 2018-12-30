@@ -19,8 +19,8 @@ class Module internal constructor(
     internal val declarationsByName = hashMapOf<String, Declaration<*>>()
     internal val declarationsByType = hashMapOf<KClass<*>, Declaration<*>>()
 
-    internal val setBindings = arrayListOf<SetBinding>()
-    internal val mapBindings = arrayListOf<MapBinding>()
+    internal val setBindings = arrayListOf<String>()
+    internal val mapBindings = arrayListOf<String>()
 
     /**
      * Adds the [declaration]
@@ -48,17 +48,15 @@ class Module internal constructor(
     /**
      * Declares a multi binding for [Set]s
      */
-    fun multiBindingSet(options: SetBinding): SetBinding {
-        setBindings.add(options)
-        return options
+    fun multiBindingSet(name: String) {
+        setBindings.add(name)
     }
 
     /**
      * Declares a multi binding for [Set]s
      */
-    fun multiBindingMap(options: MapBinding): MapBinding {
-        mapBindings.add(options)
-        return options
+    fun multiBindingMap(name: String) {
+        mapBindings.add(name)
     }
 
 }
@@ -175,20 +173,6 @@ fun <T : S, S : Any> Module.bind(
     name: String? = null
 ) {
     getDeclaration(type, name).bind(to)
-}
-
-inline fun <reified T : Any> Module.multiBindingSet(name: String) =
-    multiBindingSet(T::class, name)
-
-fun Module.multiBindingSet(type: KClass<*>, name: String) {
-    multiBindingSet(SetBinding(type, name))
-}
-
-inline fun <reified K : Any, reified T : Any> Module.multiBindingMap(name: String) =
-    multiBindingMap(K::class, T::class, name)
-
-fun Module.multiBindingMap(keyType: KClass<*>, type: KClass<*>, name: String) {
-    multiBindingMap(MapBinding(keyType, type, name))
 }
 
 @PublishedApi

@@ -16,25 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-/**
- * Describes a set multi binding
- */
-data class SetBinding(
-    val type: KClass<*>,
-    val name: String
-)
-
-/**
- * Describes a map multi binding
- */
-data class MapBinding(
-    val keyType: KClass<*>,
-    val type: KClass<*>,
-    val name: String
-)
-
 /**
  * Wraps a [Set] of [Declaration]s
  */

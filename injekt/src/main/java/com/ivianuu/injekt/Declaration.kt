@@ -31,13 +31,7 @@ data class Declaration<T : Any> private constructor(
      * Binds this [Declaration] to [type]
      */
     infix fun bind(type: KClass<*>) = apply {
-        if (secondaryTypes.contains(type)) return@apply
-
-        if (!type.java.isAssignableFrom(this.primaryType.java)) {
-            throw IllegalArgumentException("Can't bind kind '$type' for declaration $this")
-        } else {
-            secondaryTypes += type
-        }
+        secondaryTypes += type
     }
 
     /**
