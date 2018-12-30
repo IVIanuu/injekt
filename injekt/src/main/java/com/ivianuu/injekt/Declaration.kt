@@ -48,6 +48,18 @@ data class Declaration<T : Any> private constructor(
             return declaration
         }
 
+        fun <T : Any> create(
+            primaryType: KClass<T>,
+            name: String? = null,
+            kind: Kind,
+            instance: Instance<T>,
+            definition: Definition<T>
+        ): Declaration<T> {
+            val declaration = Declaration(primaryType, name, kind, Attributes(), definition)
+            declaration.instance = instance
+            return declaration
+        }
+
     }
 }
 
@@ -75,6 +87,7 @@ infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
             type,
             null,
             kind,
+            instance as Instance<T>,
             definition
         )
     )

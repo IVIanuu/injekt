@@ -1,8 +1,10 @@
 package com.ivianuu.injekt.sample
 
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentActivity
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
@@ -31,13 +33,17 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
         //     appDependency
         //     mainActivityDependency
 
+        get<MainActivity>()
+        get<FragmentActivity>()
+        get<Activity>()
+
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }
 
 }
 
 fun MainActivity.mainActivityModule() = module {
-    factory { this@mainActivityModule }
+    single { this@mainActivityModule } bind FragmentActivity::class bind Activity::class
     factory { MyServiceThree() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceThree::class)
 }
 
