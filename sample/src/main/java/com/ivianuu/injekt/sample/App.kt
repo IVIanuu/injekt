@@ -21,6 +21,10 @@ import android.util.Log
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
+import com.ivianuu.injekt.sample.multibinding.MultiBindingSet
+import com.ivianuu.injekt.sample.multibinding.intoMap
+import com.ivianuu.injekt.sample.multibinding.intoSet
 import kotlin.reflect.KClass
 
 /**
@@ -32,8 +36,8 @@ class App : Application(), ComponentHolder {
         component { modules(appModule()) }
     }
 
-    private val servicesMap by inject<Map<KClass<out Service>, Service>>(SERVICES_MAP)
-    private val servicesSet by inject<Set<Service>>(SERVICES_SET)
+    private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
+    private val servicesSet by inject<MultiBindingSet<Service>>(SERVICES_SET)
 
     override fun onCreate() {
         super.onCreate()

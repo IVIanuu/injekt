@@ -23,10 +23,10 @@ interface Provider<T> {
     fun get(params: ParamsDefinition? = null): T
 }
 
-internal fun <T> Provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
+fun <T> Provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
     SamProvider(provider)
 
-internal fun <T : Any> DeclarationProvider(
+fun <T : Any> DeclarationProvider(
     declaration: Declaration<T>,
     defaultParams: ParamsDefinition? = null
 ) = Provider { declaration.resolveInstance(it ?: defaultParams) }
