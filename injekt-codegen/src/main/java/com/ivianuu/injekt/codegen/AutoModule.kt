@@ -23,6 +23,7 @@ package com.ivianuu.injekt.codegen
 annotation class AutoModule(
     val moduleName: String = "",
     val packageName: String = "",
+    val internal: Boolean = false,
     val override: Boolean = false,
     val createOnStart: Boolean = false
 )

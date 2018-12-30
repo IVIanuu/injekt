@@ -23,10 +23,6 @@ import com.ivianuu.processingx.*
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
-import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
-import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
-import me.eugeniomarletti.kotlin.metadata.visibility
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -79,6 +75,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
 
         val override = configMirror["override"].value as Boolean
         val createOnStart = configMirror["createOnStart"].value as Boolean
+        val internal = configMirror["internal"].value as Boolean
 
         elementsByAnnotation[Name::class.java]
             .filter {
@@ -124,12 +121,6 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
                 .filterIsInstance<TypeElement>()
                 .mapNotNull { createDescriptor(it) }
                 .toSet()
-
-        val internal = when ((config.kotlinMetadata as KotlinClassMetadata).data
-            .classProto.visibility) {
-            ProtoBuf.Visibility.PUBLIC -> false
-            else -> true
-        }
 
         val module = ModuleDescriptor(
             packageName, moduleName,
