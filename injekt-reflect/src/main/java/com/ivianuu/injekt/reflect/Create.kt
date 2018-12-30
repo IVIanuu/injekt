@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.reflect
 
 import com.ivianuu.injekt.*
+import java.lang.reflect.Constructor
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -75,7 +77,9 @@ fun <T : Any> Module.create(
     val paramsArray = ArrayList<Any>().apply {
         addAll(params.values.toMutableList().filterNotNull())
     }
-    val ctor = clazz.java.constructors.firstOrNull() ?: error("No constructor found for class '$clazz'")
+    val ctor = constructors.getOrPut(clazz) {
+        clazz.java.constructors.firstOrNull() ?: error("No constructor found for class '$clazz'")
+    }
     val args = ctor.parameterTypes.map { clz ->
         //first, look in params
         val index = paramsArray.indexOfFirst {
@@ -103,3 +107,5 @@ inline fun <reified R : Any, reified T : R> Module.singleBy(
     override: Boolean = false,
     createOnStart: Boolean = false
 ) = single(name, override, createOnStart) { create<T>() as R }
+
+private val constructors = ConcurrentHashMap<KClass<*>, Constructor<*>>()
