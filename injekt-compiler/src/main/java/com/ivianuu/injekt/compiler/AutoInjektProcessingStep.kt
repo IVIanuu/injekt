@@ -57,7 +57,9 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
             }
         }
 
-        val packageName = configurations.first()
+        val config = configurations.first()
+
+        val packageName = config
             .getAnnotationMirror<AutoModuleConfig>()["packageName"].value as String
 
         if (packageName.isEmpty()) {
@@ -67,6 +69,13 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
                 configurations.first()
             )
             return emptySet()
+        }
+
+        var moduleName = config
+            .getAnnotationMirror<AutoModuleConfig>()["moduleName"].value as String
+
+        if (moduleName.isEmpty()) {
+            moduleName = "autoModule"
         }
 
         elementsByAnnotation[Name::class.java]
@@ -110,7 +119,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
             .mapNotNull { createDescriptor(it) }
                 .toSet()
 
-        val module = ModuleDescriptor(packageName, "autoModule", types)
+        val module = ModuleDescriptor(packageName, moduleName, types)
         val generator = AutoInjektGenerator(module)
 
         generator.generate()

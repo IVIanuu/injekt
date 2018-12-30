@@ -33,7 +33,7 @@ import kotlin.reflect.KClass
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component { modules(appModule(), autoModule) }
+        component { modules(appModule(), sampleAutoModule) }
     }
 
     private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
