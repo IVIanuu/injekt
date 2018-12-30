@@ -133,6 +133,13 @@ fun <T : Any> Module.declare(
 )
 
 /**
+ * Adds all declarations of [module]
+ */
+fun Module.module(module: Module) {
+    module.declarations.forEach { declare(it) }
+}
+
+/**
  * Adds a binding for [T] for a existing declaration of [S]
  */
 inline fun <reified T : Any, reified S : T> Module.bind() =
