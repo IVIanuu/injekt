@@ -19,8 +19,8 @@ class Module internal constructor(
     internal val declarationsByName = hashMapOf<String, Declaration<*>>()
     internal val declarationsByType = hashMapOf<KClass<*>, Declaration<*>>()
 
-    internal val setMultiBindings = arrayListOf<SetBinding>()
-    internal val mapMultiBindings = arrayListOf<MapBinding>()
+    internal val setBindings = arrayListOf<SetBinding>()
+    internal val mapBindings = arrayListOf<MapBinding>()
 
     /**
      * Adds the [declaration]
@@ -49,7 +49,7 @@ class Module internal constructor(
      * Declares a multi binding for [Set]s
      */
     fun multiBindingSet(options: SetBinding): SetBinding {
-        setMultiBindings.add(options)
+        setBindings.add(options)
         return options
     }
 
@@ -57,7 +57,7 @@ class Module internal constructor(
      * Declares a multi binding for [Set]s
      */
     fun multiBindingMap(options: MapBinding): MapBinding {
-        mapMultiBindings.add(options)
+        mapBindings.add(options)
         return options
     }
 

@@ -52,8 +52,8 @@ class DeclarationRegistry internal constructor(
         modules.forEach { module ->
             module.component = component
 
-            module.setMultiBindings.forEach { saveSetMultiBinding(it) }
-            module.mapMultiBindings.forEach { saveMapMultiBinding(it) }
+            module.setBindings.forEach { saveSetMultiBinding(it) }
+            module.mapBindings.forEach { saveMapMultiBinding(it) }
 
             module.declarations.forEach {
                 saveDeclaration(it)
