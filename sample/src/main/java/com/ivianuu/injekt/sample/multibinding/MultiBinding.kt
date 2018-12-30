@@ -53,6 +53,12 @@ fun <T : Any> Module.setBinding(setName: String) {
     factory(name = setName, override = true) { emptySet<T>() }
 }
 
+inline fun <reified T : Any, reified S : T> Module.bindIntoSet(setName: String) =
+    bind<T, S>() intoSet setName
+
+inline fun <K : Any, reified T : Any, reified S : T> Module.bindIntoMap(mapName: String, key: K) =
+    bind<T, S>() intoMap (mapName to key)
+
 infix fun <T : Any, S : T> Declaration<S>.intoSet(setName: String) = apply {
     attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 

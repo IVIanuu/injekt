@@ -135,6 +135,12 @@ fun <T : Any> Module.declare(
     }
 )
 
+/**
+ * Adds a binding for [T] for a existing declaration of [S]
+ */
+inline fun <reified T : Any, reified S : T> Module.bind() =
+    factory<T> { get<S>() }
+
 /** Calls trough [Component.get] */
 inline fun <reified T : Any> Module.get(
     name: String? = null,

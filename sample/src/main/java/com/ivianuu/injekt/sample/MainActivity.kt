@@ -9,8 +9,8 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
 import com.ivianuu.injekt.sample.multibinding.MultiBindingSet
-import com.ivianuu.injekt.sample.multibinding.intoMap
-import com.ivianuu.injekt.sample.multibinding.intoSet
+import com.ivianuu.injekt.sample.multibinding.bindIntoMap
+import com.ivianuu.injekt.sample.multibinding.bindIntoSet
 import kotlin.reflect.KClass
 
 class MainActivity : AppCompatActivity(), ComponentHolder {
@@ -33,18 +33,20 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
         //     appDependency
         //     mainActivityDependency
 
-        get<MainActivity>()
-        get<FragmentActivity>()
-        get<Activity>()
-
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }
 
 }
 
 fun MainActivity.mainActivityModule() = module {
-    single { this@mainActivityModule } bind FragmentActivity::class bind Activity::class
-    factory { MyServiceThree() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceThree::class)
+    single { this@mainActivityModule }
+
+    bind<FragmentActivity, MainActivity>()
+    bind<Activity, FragmentActivity>()
+
+    factory { MyServiceThree() }
+    bindIntoSet<Service, MyServiceThree>(SERVICES_SET)
+    bindIntoMap<KClass<out Service>, Service, MyServiceThree>(SERVICES_MAP, MyServiceThree::class)
 }
 
 @Single
