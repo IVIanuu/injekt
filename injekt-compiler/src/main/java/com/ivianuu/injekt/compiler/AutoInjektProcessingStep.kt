@@ -98,23 +98,25 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
             DeclarationDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
+        var name: String? = annotation["name"].value as String
+        if (name!!.isEmpty()) {
+            name = null
+        }
+
         val override = annotation["override"].value as Boolean
         val createOnStart = annotation["createOnStart"].value as Boolean
 
         val secondaryTypes = annotation.getAsTypeList("secondaryTypes")
             .map { it.asTypeName().javaToKotlinType() }.toSet()
-        val setBindings = annotation.getAsStringList("setBindings").toSet()
-        val mapBindings = annotation.getAsStringList("mapBindings").toSet()
 
         var paramsIndex = -1
         return DeclarationDescriptor(
             element.asClassName().javaToKotlinType() as ClassName,
             kind,
+            name,
             override,
             createOnStart,
             secondaryTypes,
-            setBindings,
-            mapBindings,
             element.enclosedElements
                 .filterIsInstance<ExecutableElement>()
                 .first { it.kind == ElementKind.CONSTRUCTOR }

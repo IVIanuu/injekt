@@ -22,11 +22,10 @@ import com.squareup.kotlinpoet.TypeName
 data class DeclarationDescriptor(
     val target: ClassName,
     val kind: Kind,
+    val name: String?,
     val override: Boolean,
     val createOnStart: Boolean,
     val secondaryTypes: Set<TypeName>,
-    val setBindings: Set<String>,
-    val mapBindings: Set<String>,
     val constructorParams: List<ParamDescriptor>
 ) {
     enum class Kind {

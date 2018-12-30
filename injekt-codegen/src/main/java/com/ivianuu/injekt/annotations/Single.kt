@@ -24,7 +24,5 @@ annotation class Single(
     val name: String = "",
     val override: Boolean = false,
     val createOnStart: Boolean = false,
-    val secondaryTypes: Array<KClass<*>> = [],
-    val setBindings: Array<String> = [],
-    val mapBindings: Array<String> = []
+    val secondaryTypes: Array<KClass<*>> = []
 )

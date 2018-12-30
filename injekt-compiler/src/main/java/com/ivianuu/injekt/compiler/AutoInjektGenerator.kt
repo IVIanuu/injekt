@@ -68,8 +68,8 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
     private fun declaration(declaration: DeclarationDescriptor) = CodeBlock.builder()
         .apply {
             val constructorStatement = "\n%T(\n${declaration.constructorParams.joinToString(",\n") {
-                "${it.name} = " + when {
-                    it.getName != null -> "get(name = \"${it.getName}\")"
+                when {
+                    it.getName != null -> "get(\"${it.getName}\")"
                     it.paramIndex != -1 -> "params.get(${it.paramIndex})"
                     else -> "get()"
                 }
@@ -81,25 +81,19 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
                 ""
             }
 
-            val setBindingsStatement = if (declaration.setBindings.isNotEmpty()) {
-                "intoSet " + declaration.setBindings.joinToString(" intoSet ") { it }
-            } else {
-                ""
-            }
-
-            val mapBindingsStatement = if (declaration.setBindings.isNotEmpty()) {
-                "intoMap " + declaration.setBindings.joinToString(" intoMap ") { it }
-            } else {
-                ""
-            }
-
             val funName = when (declaration.kind) {
                 DeclarationDescriptor.Kind.FACTORY -> "factory"
                 DeclarationDescriptor.Kind.SINGLE -> "single"
             }
-            add("$funName(override = ${declaration.override}")
+            add("$funName(")
+            if (declaration.name != null) {
+                add("\"${declaration.name}\"")
+            } else {
+                add("null")
+            }
+            add(", ${declaration.override}")
             if (declaration.kind == DeclarationDescriptor.Kind.SINGLE) {
-                add(", createOnStart = ${declaration.createOnStart}")
+                add(", ${declaration.createOnStart}")
             }
 
             add(") { ")
