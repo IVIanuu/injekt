@@ -73,7 +73,16 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
         }
         .initializer(
             CodeBlock.builder()
-                .beginControlFlow("module(\"${module.moduleName}\", ${module.override}, ${module.createOnStart})")
+                .apply {
+                    val args = mapOf(
+                        "name" to module.moduleName,
+                        "override" to module.override,
+                        "createOnStart" to module.createOnStart
+                    )
+
+                    addNamed("module(%name:S, %override:L, %createOnStart:L)", args)
+                }
+                .beginControlFlow(" {")
                 .apply {
                     module.declarations.forEach { add(declaration(it)) }
                     module.declarations.forEach { add(declaration(it)) }
@@ -85,34 +94,41 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
 
     private fun declaration(declaration: DeclarationDescriptor) = CodeBlock.builder()
         .apply {
-            var funStatement = ""
-
-            funStatement += when (declaration.kind) {
+            add(
+                when (declaration.kind) {
                 DeclarationDescriptor.Kind.FACTORY -> "factory"
                 DeclarationDescriptor.Kind.SINGLE -> "single"
+                }
+            )
+
+            add("(")
+
+            val declarationArgs = mutableMapOf(
+                "name" to declaration.name,
+                "override" to declaration.override
+            )
+
+            val isSingle = declaration.kind == DeclarationDescriptor.Kind.SINGLE
+
+            if (isSingle) {
+                declarationArgs["createOnStart"] = declaration.createOnStart
             }
 
-            funStatement += "("
-
-            funStatement += if (declaration.name != null) {
-                "\"${declaration.name}\""
+            val declarationStatement = "%name:S, %override:L" + if (isSingle) {
+                ", %createOnStart:L"
             } else {
-                "null"
+                ""
             }
 
-            funStatement += ", ${declaration.override}"
+            addNamed(declarationStatement, declarationArgs)
 
-            if (declaration.kind == DeclarationDescriptor.Kind.SINGLE) {
-                funStatement += ", ${declaration.createOnStart}"
-            }
-
-            funStatement += ")"
+            add(")")
 
             if (declaration.constructorParams.any { it.paramIndex != -1 }) {
-                funStatement += " { params ->"
+                beginControlFlow(" { params ->")
+            } else {
+                beginControlFlow(" {")
             }
-
-            beginControlFlow(funStatement)
 
             val constructorStatement = "%T(${declaration.constructorParams.joinToString(", ") {
                 if (it.paramIndex == -1) {
@@ -146,13 +162,12 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
             endControlFlow()
             add("\n")
 
-            val bindStatement = if (declaration.secondaryTypes.isNotEmpty()) {
-                " bind " + declaration.secondaryTypes.joinToString(" bind ") { "%T::class" }
-            } else {
-                ""
+            if (declaration.secondaryTypes.isNotEmpty()) {
+                add(
+                    " bind " + declaration.secondaryTypes.joinToString(" bind ") { "%T::class" },
+                    *declaration.secondaryTypes.toTypedArray()
+                )
             }
-
-            add(bindStatement, *declaration.secondaryTypes.toTypedArray())
         }
         .build()
 }
