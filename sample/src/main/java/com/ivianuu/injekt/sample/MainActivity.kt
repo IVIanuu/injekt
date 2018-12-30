@@ -16,6 +16,7 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
     }
 
     private val appDependency by inject<AppDependency>()
+    private val appDependencyNamed by inject<AppDependency>("named")
     private val mainActivityDependency by inject<MainActivityDependency>()
 
     private val commands by inject<MultiBindingSet<Command>>(COMMANDS)
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appDependency
+        appDependencyNamed
         mainActivityDependency
 
         Log.d("MainActivity", "commands ${commands.toSet()}")

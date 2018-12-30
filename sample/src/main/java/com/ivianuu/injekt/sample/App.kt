@@ -49,6 +49,7 @@ class App : Application(), ComponentHolder {
 fun App.appModule() = module {
     factory { this@appModule }
     single(createOnStart = true) { AppDependency(get()) }
+    single(name = "named", createOnStart = true) { AppDependency(get()) }
 
     multiBindingSet(COMMANDS)
     multiBindingMap(SERVICES)

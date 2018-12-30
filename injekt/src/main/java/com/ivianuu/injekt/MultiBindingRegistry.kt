@@ -35,13 +35,16 @@ class MultiBindingRegistry(
     /**
      * Returns all [Declaration]s which are bound into a set
      */
-    fun getAllSetDeclarations(): Map<String, Set<Declaration<*>>> = setBindings
+    fun getAllSetBindings(): Map<String, Set<Declaration<*>>> = setBindings
 
     /**
      * Returns all [Declaration]s which are bound into a map
      */
-    fun getAllMapDeclarations(): Map<String, Map<Any, Declaration<*>>> = mapBindings
+    fun getAllMapBindings(): Map<String, Map<Any, Declaration<*>>> = mapBindings
 
+    /**
+     * Loads all map and set bindings of the [modules]
+     */
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
             module.setBindings.forEach { saveSetMultiBinding(it) }
@@ -49,6 +52,9 @@ class MultiBindingRegistry(
         }
     }
 
+    /**
+     * Loads all map and set bindings of the [components]
+     */
     fun loadComponents(vararg components: Component) {
         components.forEach { component ->
             component.multiBindingRegistry.setBindings.forEach { saveSetMultiBinding(it.key) }
@@ -56,6 +62,9 @@ class MultiBindingRegistry(
         }
     }
 
+    /**
+     * Saves multi bindings of [declaration]
+     */
     fun saveMultiBindingsForDeclaration(declaration: Declaration<*>) {
         declaration.setBindings.forEach { name ->
             val binding =
@@ -73,6 +82,9 @@ class MultiBindingRegistry(
         }
     }
 
+    /**
+     * Registers a set multi binding for [name]
+     */
     fun saveSetMultiBinding(name: String) {
         if (setBindings.contains(name)) return
         setBindings[name] = linkedSetOf()
@@ -93,6 +105,9 @@ class MultiBindingRegistry(
         declarationRegistry.saveDeclaration(declaration)
     }
 
+    /**
+     * Registers a map multi binding for [name]
+     */
     fun saveMapMultiBinding(name: String) {
         if (mapBindings.contains(name)) return
         mapBindings[name] = hashMapOf()
