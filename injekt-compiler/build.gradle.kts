@@ -32,7 +32,7 @@ java {
 
 dependencies {
     implementation(project(":injekt"))
-    implementation(project(":injekt-annotations"))
+    implementation(project(":injekt-codegen"))
 
     implementation(Deps.kotlinStdLib)
 

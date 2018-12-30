@@ -1,8 +1,7 @@
 include(
     ":injekt",
     ":injekt-android",
-    ":injekt-annotations",
-    ":injekt-common",
+    ":injekt-codegen",
     ":injekt-compiler",
     ":injekt-reflect",
     ":sample"
