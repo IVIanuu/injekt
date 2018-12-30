@@ -20,7 +20,7 @@ package com.ivianuu.injekt.annotations
  * @author Manuel Wrage (IVIanuu)
  */
 @Retention(AnnotationRetention.SOURCE)
-annotation class ModuleConfig(
+annotation class AutoModuleConfig(
     val moduleName: String = "",
     val packageName: String = "",
     val override: Boolean = false,

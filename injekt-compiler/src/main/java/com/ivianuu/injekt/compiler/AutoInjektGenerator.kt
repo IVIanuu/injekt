@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.Module
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
 
 /**
@@ -68,6 +69,11 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
     }
 
     private fun module() = PropertySpec.builder(module.moduleName, Module::class)
+        .apply {
+            if (module.internal) {
+                addModifiers(KModifier.INTERNAL)
+            }
+        }
         .initializer(
             CodeBlock.builder()
                 .add("module(\"${module.moduleName}\", ${module.override}, ${module.createOnStart}) {\n")

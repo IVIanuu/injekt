@@ -23,6 +23,10 @@ import com.ivianuu.processingx.*
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.visibility
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -34,7 +38,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     ProcessingEnvHolder {
 
     override fun annotations() = setOf(
-        ModuleConfig::class.java,
+        AutoModuleConfig::class.java,
         Factory::class.java,
         Name::class.java,
         Param::class.java,
@@ -42,24 +46,24 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     )
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        val configurations = elementsByAnnotation[ModuleConfig::class.java]
+        val configurations = elementsByAnnotation[AutoModuleConfig::class.java]
 
         when {
             configurations.size > 1 -> {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Only one class should be annotated with ModuleConfig"
+                    "Only one class should be annotated with AutoModuleConfig"
                 )
                 return emptySet()
             }
             configurations.size == 0 -> {
-                messager.printMessage(Diagnostic.Kind.ERROR, "Missing ModuleConfig annotation")
+                messager.printMessage(Diagnostic.Kind.ERROR, "Missing AutoModuleConfig annotation")
                 return emptySet()
             }
         }
 
         val config = configurations.first()
-        val configMirror = config.getAnnotationMirror<ModuleConfig>()
+        val configMirror = config.getAnnotationMirror<AutoModuleConfig>()
 
         var packageName = configMirror["packageName"].value as String
 
@@ -75,7 +79,6 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
 
         val override = configMirror["override"].value as Boolean
         val createOnStart = configMirror["createOnStart"].value as Boolean
-
 
         elementsByAnnotation[Name::class.java]
             .filter {
@@ -122,7 +125,16 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
                 .mapNotNull { createDescriptor(it) }
                 .toSet()
 
-        val module = ModuleDescriptor(packageName, moduleName, override, createOnStart, types)
+        val internal = when ((config.kotlinMetadata as KotlinClassMetadata).data
+            .classProto.visibility) {
+            ProtoBuf.Visibility.PUBLIC -> false
+            else -> true
+        }
+
+        val module = ModuleDescriptor(
+            packageName, moduleName,
+            internal, override, createOnStart, types
+        )
         val generator = AutoInjektGenerator(module)
 
         generator.generate()
