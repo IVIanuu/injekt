@@ -20,7 +20,7 @@ package com.ivianuu.injekt.codegen
  * @author Manuel Wrage (IVIanuu)
  */
 @Retention(AnnotationRetention.SOURCE)
-annotation class Module(
+annotation class AutoModule(
     val moduleName: String = "",
     val packageName: String = "",
     val override: Boolean = false,

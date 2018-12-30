@@ -38,7 +38,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     ProcessingEnvHolder {
 
     override fun annotations() = setOf(
-        Module::class.java,
+        AutoModule::class.java,
         Factory::class.java,
         Name::class.java,
         Param::class.java,
@@ -46,24 +46,24 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     )
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        val configurations = elementsByAnnotation[Module::class.java]
+        val configurations = elementsByAnnotation[AutoModule::class.java]
 
         when {
             configurations.size > 1 -> {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Only one class should be annotated with Module"
+                    "Only one class should be annotated with AutoModule"
                 )
                 return emptySet()
             }
             configurations.size == 0 -> {
-                messager.printMessage(Diagnostic.Kind.ERROR, "Missing Module annotation")
+                messager.printMessage(Diagnostic.Kind.ERROR, "Missing AutoModule annotation")
                 return emptySet()
             }
         }
 
         val config = configurations.first()
-        val configMirror = config.getAnnotationMirror<Module>()
+        val configMirror = config.getAnnotationMirror<AutoModule>()
 
         var packageName = configMirror["packageName"].value as String
 

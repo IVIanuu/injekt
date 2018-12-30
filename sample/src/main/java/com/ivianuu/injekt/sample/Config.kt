@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.codegen.Module
+import com.ivianuu.injekt.codegen.AutoModule
 
-@Module(moduleName = "sampleAutoModule")
+@AutoModule(moduleName = "sampleAutoModule")
 class Config
