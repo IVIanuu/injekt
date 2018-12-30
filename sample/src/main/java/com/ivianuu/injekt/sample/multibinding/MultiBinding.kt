@@ -36,7 +36,7 @@ infix fun <K : Any, T : Any, S : T> Declaration<S>.intoMap(pair: Pair<String, K>
         attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] = mapKey
 
         module.factory(name = mapName, override = true) { params ->
-            instance.component.declarationRegistry
+            component.declarationRegistry
                 .getAllDeclarations()
                 .mapNotNull { declaration ->
                     declaration.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
@@ -63,7 +63,7 @@ infix fun <T : Any, S : T> Declaration<S>.intoSet(setName: String) = apply {
     attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     module.factory(name = setName, override = true) { params ->
-        instance.component.declarationRegistry
+        component.declarationRegistry
             .getAllDeclarations()
             .filter { it.attributes.get<Set<String>>(KEY_SET_BINDINGS)?.contains(setName) == true }
             .map { it as Declaration<T> }

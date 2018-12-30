@@ -34,12 +34,14 @@ class DeclarationRegistry internal constructor(val component: Component) {
      */
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
-            module.declarations.forEach {
-                saveDeclaration(it)
-                if (it.createOnStart) {
-                    createOnStartDeclarations.add(it)
+            module.declarations
+                .map { it.copyIdentity() }
+                .forEach {
+                    saveDeclaration(it)
+                    if (it.createOnStart) {
+                        createOnStartDeclarations.add(it)
+                    }
                 }
-            }
         }
     }
 

@@ -20,9 +20,8 @@ data class Declaration<T : Any> private constructor(
      * Resolves the instance
      */
     fun resolveInstance(
-        context: ComponentContext = instance.component.context,
         params: ParamsDefinition? = null
-    ) = instance.get(context, params)
+    ) = instance.get(params)
 
     override fun toString(): String {
         val kindString = kind.toString()
@@ -92,4 +91,12 @@ infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
             definition
         )
     )
+}
+
+internal fun <T : Any> Declaration<T>.copyIdentity() = copy().apply {
+    module = this@copyIdentity.module
+    instance = when (kind) {
+        Declaration.Kind.FACTORY -> FactoryInstance(this)
+        Declaration.Kind.SINGLE -> SingleInstance(this)
+    }
 }

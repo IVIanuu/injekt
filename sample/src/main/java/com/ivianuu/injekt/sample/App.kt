@@ -33,7 +33,7 @@ import kotlin.reflect.KClass
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component { modules(appModule()) }
+        component { modules(appModule(), autoModule) }
     }
 
     private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
@@ -44,6 +44,18 @@ class App : Application(), ComponentHolder {
         configureInjekt {
             androidLogger()
         }
+
+        val secondComponent = component {
+            modules(appModule(), autoModule)
+        }
+
+        val firstAppDependency = get<AppDependency>()
+        val secondAppDependency = secondComponent.get<AppDependency>()
+
+        Log.d(
+            "App",
+            "first $firstAppDependency, second $secondAppDependency are equal ${firstAppDependency == secondAppDependency}"
+        )
 
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }

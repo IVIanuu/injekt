@@ -11,7 +11,7 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
     abstract val isCreated: Boolean
 
-    fun get(context: ComponentContext = component.context, params: ParamsDefinition? = null): T {
+    fun get(params: ParamsDefinition? = null): T {
         logger?.let { logger ->
             val msg = when {
                 isCreated -> "${component.nameString()}Return existing instance for $declaration"
@@ -23,13 +23,13 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
         }
 
         return try {
-            getOrCreate(context, params)
+            getOrCreate(params)
         } catch (e: Exception) {
             throw InstanceCreationException("Couldn't instantiate $declaration", e)
         }
     }
 
-    protected abstract fun getOrCreate(context: ComponentContext, params: ParamsDefinition?): T
+    protected abstract fun getOrCreate(params: ParamsDefinition?): T
 
 }
 
@@ -40,8 +40,8 @@ internal class FactoryInstance<T : Any>(
     override val isCreated: Boolean
         get() = false
 
-    override fun getOrCreate(context: ComponentContext, params: ParamsDefinition?) =
-        declaration.definition.invoke(context, params?.invoke() ?: emptyParameters())
+    override fun getOrCreate(params: ParamsDefinition?) =
+        declaration.definition.invoke(component.context, params?.invoke() ?: emptyParameters())
 
 }
 
@@ -54,14 +54,14 @@ internal class SingleInstance<T : Any>(
     override val isCreated: Boolean
         get() = _value != null
 
-    override fun getOrCreate(context: ComponentContext, params: ParamsDefinition?): T {
+    override fun getOrCreate(params: ParamsDefinition?): T {
         val value = _value
 
         return if (value != null) {
             return value
         } else {
             val typedValue = declaration.definition
-                .invoke(context, params?.invoke() ?: emptyParameters())
+                .invoke(component.context, params?.invoke() ?: emptyParameters())
             _value = typedValue
             typedValue
         }

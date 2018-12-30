@@ -28,7 +28,7 @@ class Component internal constructor(val name: String?) {
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
-        declarationRegistry.getEagerInstances().forEach { it.resolveInstance(context) }
+        declarationRegistry.getEagerInstances().forEach { it.resolveInstance() }
     }
 
     /**
@@ -43,7 +43,7 @@ class Component internal constructor(val name: String?) {
 
         if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
-            declaration.resolveInstance(context, params) as T
+            declaration.resolveInstance(params) as T
         } else {
             throw InjectionException("${nameString()}Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
