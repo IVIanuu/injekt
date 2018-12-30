@@ -6,7 +6,7 @@ import kotlin.reflect.KClass
  * Represents a dependency declaration.
  */
 data class Declaration<T : Any> private constructor(
-    val primaryType: KClass<T>,
+    val type: KClass<T>,
     val name: String?,
     val kind: Kind,
     val attributes: Attributes,
@@ -27,7 +27,7 @@ data class Declaration<T : Any> private constructor(
     override fun toString(): String {
         val kindString = kind.toString()
         val nameString = name?.let { "name:'$name', " } ?: ""
-        val typeString = "type:'${primaryType.getFullName()}'"
+        val typeString = "type:'${type.getFullName()}'"
         return "$kindString[$nameString$typeString $attributes]"
     }
 

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Module
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.PropertySpec
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -31,7 +32,7 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
 
         file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
 
-        file.addFunction(module())
+        file.addProperty(module())
 
         return file.build()
     }
@@ -56,13 +57,16 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
         return imports
     }
 
-    private fun module() = FunSpec.builder(module.fileName)
-        .returns(Module::class)
-        .addCode("return module {\n")
-        .apply {
-            module.declarations.forEach { addCode(declaration(it)) }
-        }
-        .addCode("}")
+    private fun module() = PropertySpec.builder(module.fileName, Module::class)
+        .getter(
+            FunSpec.getterBuilder()
+                .addCode("return module {\n")
+                .apply {
+                    module.declarations.forEach { addCode(declaration(it)) }
+                }
+                .addCode("}")
+                .build()
+        )
         .build()
 
     private fun declaration(declaration: DeclarationDescriptor) = CodeBlock.builder()

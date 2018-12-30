@@ -95,7 +95,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         if (declaration.name != null) {
             declarationsByName[declaration.name] = declaration
         } else {
-            declarationsByType[declaration.primaryType] = declaration
+            declarationsByType[declaration.type] = declaration
         }
     }
 }
