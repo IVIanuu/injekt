@@ -71,6 +71,9 @@ class CommandTwo(
     }
 }
 
+@Binds([Command::class])
+@IntoClassMap(COMMANDS, CommandThree::class)
+@IntoClassMap(SERVICES, CommandThree::class)
 @Factory(secondaryTypes = [Command::class, Any::class, String::class])
 class CommandThree(
     @Name("app") private val appDependency: AppDependency,

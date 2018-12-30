@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class ParamDescriptor(
     val name: String,
     val getName: String?,

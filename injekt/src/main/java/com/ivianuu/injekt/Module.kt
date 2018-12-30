@@ -16,9 +16,6 @@ class Module internal constructor(
         internal set
 
     internal val declarations = arrayListOf<Declaration<*>>()
-    internal val declarationsByName = hashMapOf<String, Declaration<*>>()
-    internal val declarationsByType = hashMapOf<KClass<*>, Declaration<*>>()
-
     internal val setBindings = arrayListOf<String>()
     internal val mapBindings = arrayListOf<String>()
 
@@ -35,12 +32,6 @@ class Module internal constructor(
         declaration.options.override = override
 
         declarations.add(declaration)
-
-        if (declaration.name != null) {
-            declarationsByName[declaration.name]
-        } else {
-            declarationsByType[declaration.primaryType]
-        }
 
         return declaration
     }
@@ -157,32 +148,6 @@ fun <T : Any> Module.declare(
         it.options.override = override
     }
 )
-
-/**
- * Adds a binding for [T] and [name] to [to] to a previously added [Declaration]
- */
-inline fun <reified T : S, reified S : Any> Module.bind(name: String? = null) =
-    bind(T::class, S::class, name)
-
-/**
- * Adds a binding for [type] and [name] to [to] to a previously added [Declaration]
- */
-fun <T : S, S : Any> Module.bind(
-    type: KClass<T>,
-    to: KClass<S>,
-    name: String? = null
-) {
-    getDeclaration(type, name).bind(to)
-}
-
-@PublishedApi
-internal fun Module.getDeclaration(type: KClass<*>, name: String?): Declaration<*> {
-    return if (name != null) {
-        declarationsByName[name]
-    } else {
-        declarationsByType[type]
-    } ?: throw IllegalArgumentException("no declaration found for kind: $type name: $name")
-}
 
 /** Calls trough [Component.get] */
 inline fun <reified T : Any> Module.get(

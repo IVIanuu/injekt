@@ -20,4 +20,5 @@ package com.ivianuu.injekt.annotations
  * @author Manuel Wrage (IVIanuu)
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.SOURCE)
 annotation class Name(val name: String)

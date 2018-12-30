@@ -19,6 +19,7 @@ package com.ivianuu.injekt.annotations
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
 annotation class Factory(
     val name: String = "",
     val override: Boolean = false,
