@@ -19,12 +19,6 @@ internal fun Component.nameString() = if (name != null) {
     ""
 }
 
-internal fun Module.nameString() = if (name != null) {
-    "$name "
-} else {
-    ""
-}
-
 internal fun DeclarationRegistry.nameString() = if (name != null) {
     "$name "
 } else {

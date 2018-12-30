@@ -32,12 +32,12 @@ class DeclarationRegistry internal constructor(
     private val declarationsByType: MutableMap<KClass<*>, Declaration<*>> = ConcurrentHashMap()
     private val createOnStartDeclarations = hashSetOf<Declaration<*>>()
 
-    private val setMultiBindings = hashSetOf<SetMultiBindingOptions>()
-    private val setMultiBindingsByName: MutableMap<String, SetMultiBindingOptions> =
+    private val setBindings = hashSetOf<SetBinding>()
+    private val setBindingsByName: MutableMap<String, SetBinding> =
         ConcurrentHashMap()
 
-    private val mapMultiBindings = hashSetOf<MapMultiBindingOptions>()
-    private val mapMultiBindingsByName: MutableMap<String, MapMultiBindingOptions> =
+    private val mapBindings = hashSetOf<MapBinding>()
+    private val mapBindingsByName: MutableMap<String, MapBinding> =
         ConcurrentHashMap()
 
     private val declarationsBySet: MutableMap<String, MutableSet<Declaration<*>>> =
@@ -70,8 +70,8 @@ class DeclarationRegistry internal constructor(
      */
     fun loadComponents(vararg components: Component) {
         components.forEach { component ->
-            component.declarationRegistry.setMultiBindings.forEach { saveSetMultiBinding(it) }
-            component.declarationRegistry.mapMultiBindings.forEach { saveMapMultiBinding(it) }
+            component.declarationRegistry.setBindings.forEach { saveSetMultiBinding(it) }
+            component.declarationRegistry.mapBindings.forEach { saveMapMultiBinding(it) }
 
             // collect declarations
             component.declarationRegistry.getAllDeclarations().forEach { declaration ->
@@ -134,9 +134,11 @@ class DeclarationRegistry internal constructor(
             declarationsByType[declaration.primaryType] = declaration
             declaration.secondaryTypes.forEach { declarationsByType[it] = declaration }
         }
+    }
 
+    private fun saveMultiBindingsForDeclaration(declaration: Declaration<*>) {
         declaration.setBindings.forEach { bindingName ->
-            val binding = setMultiBindingsByName[bindingName]
+            val binding = setBindingsByName[bindingName]
                 ?: throw error("No set multi binding found for $bindingName $declaration")
 
             if (!binding.type.java.isAssignableFrom(declaration.primaryType.java)) {
@@ -148,7 +150,7 @@ class DeclarationRegistry internal constructor(
         }
 
         declaration.mapBindings.forEach { (bindingName, key) ->
-            val binding = mapMultiBindingsByName[bindingName]
+            val binding = mapBindingsByName[bindingName]
                 ?: throw error("No map multi binding found for $bindingName $declaration")
 
             if (!binding.type.java.isAssignableFrom(declaration.primaryType.java)) {
@@ -163,10 +165,10 @@ class DeclarationRegistry internal constructor(
         }
     }
 
-    fun saveSetMultiBinding(binding: SetMultiBindingOptions) {
-        if (setMultiBindings.contains(binding)) return
-        setMultiBindings.add(binding)
-        setMultiBindingsByName[binding.name] = binding
+    fun saveSetMultiBinding(binding: SetBinding) {
+        if (setBindings.contains(binding)) return
+        setBindings.add(binding)
+        setBindingsByName[binding.name] = binding
 
         val declaration = Declaration.create(
             MultiBindingSet::class,
@@ -184,10 +186,10 @@ class DeclarationRegistry internal constructor(
         saveDeclaration(declaration)
     }
 
-    fun saveMapMultiBinding(binding: MapMultiBindingOptions) {
-        if (mapMultiBindings.contains(binding)) return
-        mapMultiBindings.add(binding)
-        mapMultiBindingsByName[binding.name] = binding
+    fun saveMapMultiBinding(binding: MapBinding) {
+        if (mapBindings.contains(binding)) return
+        mapBindings.add(binding)
+        mapBindingsByName[binding.name] = binding
 
         val declaration = Declaration.create(
             MultiBindingMap::class,
