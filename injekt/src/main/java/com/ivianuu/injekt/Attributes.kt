@@ -16,12 +16,10 @@
 
 package com.ivianuu.injekt
 
-import java.util.concurrent.ConcurrentHashMap
-
 /**
  * Attributes for [Declaration]s
  */
-data class Attributes(private val data: MutableMap<String, Any> = ConcurrentHashMap()) {
+data class Attributes(private val data: MutableMap<String, Any> = hashMapOf()) {
 
     fun contains(key: String) = data.contains(key)
 

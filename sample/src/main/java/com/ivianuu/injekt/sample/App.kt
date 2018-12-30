@@ -45,18 +45,6 @@ class App : Application(), ComponentHolder {
             androidLogger()
         }
 
-        val secondComponent = component {
-            modules(appModule(), autoModule)
-        }
-
-        val firstAppDependency = get<AppDependency>()
-        val secondAppDependency = secondComponent.get<AppDependency>()
-
-        Log.d(
-            "App",
-            "first $firstAppDependency, second $secondAppDependency are equal ${firstAppDependency == secondAppDependency}"
-        )
-
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }
 

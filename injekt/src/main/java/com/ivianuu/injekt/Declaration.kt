@@ -9,6 +9,8 @@ data class Declaration<T : Any> private constructor(
     val type: KClass<T>,
     val name: String?,
     val kind: Kind,
+    var override: Boolean = false,
+    var createOnStart: Boolean = false,
     val attributes: Attributes,
     val definition: Definition<T>
 ) {
@@ -35,12 +37,12 @@ data class Declaration<T : Any> private constructor(
     companion object {
 
         fun <T : Any> create(
-            primaryType: KClass<T>,
+            type: KClass<T>,
             name: String? = null,
             kind: Kind,
             definition: Definition<T>
         ): Declaration<T> {
-            val declaration = Declaration(primaryType, name, kind, Attributes(), definition)
+            val declaration = Declaration(type, name, kind, false, false, Attributes(), definition)
             declaration.instance = when (kind) {
                 Kind.FACTORY -> FactoryInstance(declaration)
                 Kind.SINGLE -> SingleInstance(declaration)
@@ -49,13 +51,13 @@ data class Declaration<T : Any> private constructor(
         }
 
         fun <T : Any> create(
-            primaryType: KClass<T>,
+            type: KClass<T>,
             name: String? = null,
             kind: Kind,
             instance: Instance<T>,
             definition: Definition<T>
         ): Declaration<T> {
-            val declaration = Declaration(primaryType, name, kind, Attributes(), definition)
+            val declaration = Declaration(type, name, kind, false, false, Attributes(), definition)
             declaration.instance = instance
             return declaration
         }
@@ -63,34 +65,14 @@ data class Declaration<T : Any> private constructor(
     }
 }
 
-const val KEY_CREATE_ON_START = "Declaration.createOnStart"
-const val KEY_OVERRIDE = "Declaration.override"
-
-var Declaration<*>.createOnStart: Boolean
-    get() = attributes[KEY_CREATE_ON_START] ?: false
-    set(value) {
-        attributes[KEY_CREATE_ON_START] = value
-    }
-
-var Declaration<*>.override: Boolean
-    get() = attributes[KEY_OVERRIDE] ?: false
-    set(value) {
-        attributes[KEY_OVERRIDE] = value
-    }
-
 /**
  * Binds this [Declaration] to [type]
  */
 infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
-    module.declare(
-        Declaration.create(
-            type,
-            null,
-            kind,
-            instance as Instance<T>,
-            definition
-        )
-    )
+    val newDeclaration = copy(type = type as KClass<S>, name = null)
+    newDeclaration.module = module
+    newDeclaration.instance = instance
+    module.declare(newDeclaration)
 }
 
 internal fun <T : Any> Declaration<T>.copyIdentity() = copy().apply {

@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * @author Manuel Wrage (IVIanuu)
+ * Environment for [Definition]s
  */
 class ComponentContext(val component: Component)
 

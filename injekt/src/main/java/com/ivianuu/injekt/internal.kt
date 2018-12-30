@@ -1,9 +1,8 @@
 package com.ivianuu.injekt
 
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-private val classNames: MutableMap<KClass<*>, String> = ConcurrentHashMap()
+private val classNames: MutableMap<KClass<*>, String> = hashMapOf()
 
 internal fun KClass<*>.getFullName() = classNames[this] ?: saveFullName()
 

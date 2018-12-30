@@ -18,7 +18,6 @@ package com.ivianuu.injekt.reflect
 
 import com.ivianuu.injekt.*
 import java.lang.reflect.Constructor
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -108,4 +107,4 @@ inline fun <reified R : Any, reified T : R> Module.singleBy(
     createOnStart: Boolean = false
 ) = single(name, override, createOnStart) { create<T>() as R }
 
-private val constructors = ConcurrentHashMap<KClass<*>, Constructor<*>>()
+private val constructors = hashMapOf<KClass<*>, Constructor<*>>()
