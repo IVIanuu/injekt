@@ -20,8 +20,9 @@ data class Declaration<T : Any> private constructor(
      * Resolves the instance
      */
     fun resolveInstance(
-        params: ParamsDefinition?
-    ) = instance.get(params)
+        context: ComponentContext = instance.component.context,
+        params: ParamsDefinition? = null
+    ) = instance.get(context, params)
 
     override fun toString(): String {
         val kindString = kind.toString()

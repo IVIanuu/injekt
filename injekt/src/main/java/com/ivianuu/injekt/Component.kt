@@ -7,6 +7,7 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(val name: String?) {
 
+    val context = ComponentContext(this)
     val declarationRegistry = DeclarationRegistry(this)
 
     /**
@@ -27,7 +28,7 @@ class Component internal constructor(val name: String?) {
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
-        declarationRegistry.getEagerInstances().forEach { it.resolveInstance(null) }
+        declarationRegistry.getEagerInstances().forEach { it.resolveInstance(context) }
     }
 
     /**
@@ -42,7 +43,7 @@ class Component internal constructor(val name: String?) {
 
         if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
-            declaration.resolveInstance(params) as T
+            declaration.resolveInstance(context, params) as T
         } else {
             throw InjectionException("${nameString()}Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }

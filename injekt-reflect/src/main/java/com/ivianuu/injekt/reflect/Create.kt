@@ -60,7 +60,7 @@ fun <T : Any> Module.single(
 /**
  * Create instance for kind T and inject dependencies into 1st constructor
  */
-inline fun <reified T : Any> Module.create(
+inline fun <reified T : Any> ComponentContext.create(
     params: Parameters = emptyParameters()
 ) = create(T::class, params)
 
@@ -69,7 +69,7 @@ inline fun <reified T : Any> Module.create(
  * The first constructor dependencies will be searched in [params] and in the other stored definitions.
  * In parameters of the same kind, order matters in the object creation, so they should have the same order as they are in the primary constructor.
  */
-fun <T : Any> Module.create(
+fun <T : Any> ComponentContext.create(
     clazz: KClass<T>,
     params: Parameters = emptyParameters()
 ): T {

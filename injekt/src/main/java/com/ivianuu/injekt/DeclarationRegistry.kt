@@ -34,8 +34,6 @@ class DeclarationRegistry internal constructor(val component: Component) {
      */
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
-            module.component = component
-
             module.declarations.forEach {
                 saveDeclaration(it)
                 if (it.createOnStart) {

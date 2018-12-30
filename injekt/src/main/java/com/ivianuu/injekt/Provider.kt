@@ -26,11 +26,6 @@ interface Provider<T> {
 fun <T> Provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
     SamProvider(provider)
 
-fun <T : Any> DeclarationProvider(
-    declaration: Declaration<T>,
-    defaultParams: ParamsDefinition? = null
-) = Provider { declaration.resolveInstance(it ?: defaultParams) }
-
 private class SamProvider<T>(private val func: (ParamsDefinition?) -> T) : Provider<T> {
     override fun get(params: ParamsDefinition?) = func(params)
 }

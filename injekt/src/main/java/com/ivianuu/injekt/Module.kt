@@ -12,9 +12,6 @@ class Module internal constructor(
     val name: String?
 ) {
 
-    lateinit var component: Component
-        internal set
-
     internal val declarations = arrayListOf<Declaration<*>>()
 
     /**
@@ -140,55 +137,3 @@ fun <T : Any> Module.declare(
  */
 inline fun <reified T : Any, reified S : T> Module.bind() =
     factory<T> { get<S>() }
-
-/** Calls trough [Component.get] */
-inline fun <reified T : Any> Module.get(
-    name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = get(T::class, name, params)
-
-/** Calls trough [Component.get] */
-fun <T : Any> Module.get(
-    type: KClass<T>,
-    name: String? = null,
-    params: ParamsDefinition? = null
-) = component.get(type, name, params)
-
-/** Calls trough [Component.inject] */
-inline fun <reified T : Any> Module.lazy(
-    name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = lazy(T::class, name, params)
-
-/** Calls trough [Component.inject] */
-fun <T : Any> Module.lazy(
-    type: KClass<T>,
-    name: String? = null,
-    params: ParamsDefinition? = null
-): Lazy<T> = kotlin.lazy { get(type, name, params) }
-
-/** Calls trough [Component.provider] */
-inline fun <reified T : Any> Module.provider(
-    name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = provider(T::class, name, defaultParams)
-
-/** Calls trough [Component.provider] */
-fun <T : Any> Module.provider(
-    type: KClass<T>,
-    name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = component.provider(type, name, defaultParams)
-
-/** Calls trough [Component.injectProvider] */
-inline fun <reified T : Any> Module.lazyProvider(
-    name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = lazyProvider(T::class, name, defaultParams)
-
-/** Calls trough [Component.injectProvider] */
-fun <T : Any> Module.lazyProvider(
-    type: KClass<T>,
-    name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = component.injectProvider(type, name, defaultParams)
