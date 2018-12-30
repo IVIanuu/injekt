@@ -22,19 +22,12 @@ import kotlin.reflect.KClass
 /**
  * Manages all [Declaration]s of a [Component]
  */
-class DeclarationRegistry internal constructor(
-    val component: Component,
-    val multiBindingRegistry: MultiBindingRegistry
-) {
+class DeclarationRegistry internal constructor(val component: Component) {
 
     private val declarations = hashSetOf<Declaration<*>>()
     private val declarationsByName: MutableMap<String, Declaration<*>> = ConcurrentHashMap()
     private val declarationsByType: MutableMap<KClass<*>, Declaration<*>> = ConcurrentHashMap()
     private val createOnStartDeclarations = hashSetOf<Declaration<*>>()
-
-    init {
-        multiBindingRegistry.declarationRegistry = this
-    }
 
     /**
      * Adds all [Declaration]s of the [modules]
@@ -107,7 +100,5 @@ class DeclarationRegistry internal constructor(
             declarationsByType[declaration.primaryType] = declaration
             declaration.secondaryTypes.forEach { declarationsByType[it] = declaration }
         }
-
-        multiBindingRegistry.saveMultiBindingsForDeclaration(declaration)
     }
 }

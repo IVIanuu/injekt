@@ -7,14 +7,12 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(val name: String?) {
 
-    val multiBindingRegistry = MultiBindingRegistry(this)
-    val declarationRegistry = DeclarationRegistry(this, multiBindingRegistry)
+    val declarationRegistry = DeclarationRegistry(this)
 
     /**
      * Adds all [Declaration]s of the [module]
      */
     fun modules(vararg modules: Module) {
-        multiBindingRegistry.loadModules(*modules)
         declarationRegistry.loadModules(*modules)
     }
 
@@ -22,7 +20,6 @@ class Component internal constructor(val name: String?) {
      * Adds all [Declaration]s of [dependencies] to this component
      */
     fun dependencies(vararg dependencies: Component) {
-        multiBindingRegistry.loadComponents(*dependencies)
         declarationRegistry.loadComponents(*dependencies)
     }
 

@@ -16,27 +16,25 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
         }
     }
 
-    private val appDependency by inject<AppDependency>()
-    private val appDependencyNamed by inject<AppDependency>("named")
-    private val mainActivityDependency by inject<MainActivityDependency>()
+    //private val appDependency by inject<AppDependency>()
+    //private val mainActivityDependency by inject<MainActivityDependency>()
 
-    private val commands by inject<MultiBindingSet<Command>>(COMMANDS)
-    private val services by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES)
+    private val servicesMap by inject<Map<KClass<out Service>, Service>>(SERVICES_MAP)
+    private val servicesSet by inject<Set<Service>>(SERVICES_SET)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        appDependency
-        mainActivityDependency
-        appDependencyNamed
+        //     appDependency
+        //     mainActivityDependency
 
-        Log.d("MainActivity", "commands ${commands.toSet()}")
-        Log.d("MainActivity", "services ${services.toMap()}")
+        Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }
 
 }
 
 fun MainActivity.mainActivityModule() = module {
     factory { this@mainActivityModule }
+    factory { MyServiceThree() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceThree::class)
 }
 
 @Single

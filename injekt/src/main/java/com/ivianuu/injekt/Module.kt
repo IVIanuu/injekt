@@ -16,8 +16,6 @@ class Module internal constructor(
         internal set
 
     internal val declarations = arrayListOf<Declaration<*>>()
-    internal val setBindings = arrayListOf<String>()
-    internal val mapBindings = arrayListOf<String>()
 
     /**
      * Adds the [declaration]
@@ -25,6 +23,8 @@ class Module internal constructor(
     fun <T : Any> declare(
         declaration: Declaration<T>
     ): Declaration<T> {
+        declaration.module = this
+
         val createOnStart = if (createOnStart) createOnStart else declaration.options.createOnStart
         val override = if (override) override else declaration.options.override
 
@@ -34,20 +34,6 @@ class Module internal constructor(
         declarations.add(declaration)
 
         return declaration
-    }
-
-    /**
-     * Declares a multi binding for [Set]s
-     */
-    fun multiBindingSet(name: String) {
-        setBindings.add(name)
-    }
-
-    /**
-     * Declares a multi binding for [Set]s
-     */
-    fun multiBindingMap(name: String) {
-        mapBindings.add(name)
     }
 
 }

@@ -29,11 +29,11 @@ import kotlin.reflect.KClass
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component { modules(appModule(), autoModule()) }
+        component { modules(appModule()) }
     }
 
-    private val commands by inject<MultiBindingSet<Command>>(COMMANDS)
-    private val services by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES)
+    private val servicesMap by inject<Map<KClass<out Service>, Service>>(SERVICES_MAP)
+    private val servicesSet by inject<Set<Service>>(SERVICES_SET)
 
     override fun onCreate() {
         super.onCreate()
@@ -41,23 +41,18 @@ class App : Application(), ComponentHolder {
             androidLogger()
         }
 
-        Log.d("App", "commands ${commands.toSet()}")
-        Log.d("App", "services ${services.toMap()}")
+        Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }
 
 }
 
+const val SERVICES_SET = "servicesSet"
+const val SERVICES_MAP = "servicesMap"
+
 fun App.appModule() = module {
     factory { this@appModule }
-
-    multiBindingSet(COMMANDS)
-    multiBindingMap(SERVICES)
-
-    // factory { CommandOne() } intoSet COMMANDS
-    // factory { CommandTwo() } intoSet COMMANDS
-
-    // factory { ServiceOne() } intoMap (SERVICES to ServiceOne::class)
-    // factory { ServiceTwo() } intoMap (SERVICES to ServiceTwo::class)
+    factory { MyServiceOne() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceOne::class)
+    factory { MyServiceTwo() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceTwo::class)
 }
 
 @Single(createOnStart = true)

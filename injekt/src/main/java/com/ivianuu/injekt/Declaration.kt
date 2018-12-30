@@ -10,11 +10,11 @@ data class Declaration<T : Any> private constructor(
     val name: String?
 ) {
 
+    lateinit var module: Module
+
     var attributes = Attributes()
     var options = Options()
     var secondaryTypes: List<KClass<*>> = emptyList()
-    var setBindings: Set<String> = emptySet()
-    var mapBindings: Map<String, Any> = emptyMap()
 
     lateinit var kind: Kind
     lateinit var definition: Definition<T>
@@ -34,20 +34,6 @@ data class Declaration<T : Any> private constructor(
         secondaryTypes += type
     }
 
-    /**
-     * Multi binds this [Declaration] into the set with the [setName]
-     */
-    infix fun intoSet(setName: String) = apply {
-        setBindings += setName
-    }
-
-    /**
-     * Multi binds this [Declaration] into the map with the [Pair.first] with the key [Pair.second]
-     */
-    infix fun intoMap(pair: Pair<String, Any>) = apply {
-        mapBindings += pair
-    }
-
     override fun toString(): String {
         val kindString = kind.toString()
         val nameString = name?.let { "name:'$name', " } ?: ""
@@ -56,16 +42,7 @@ data class Declaration<T : Any> private constructor(
             val typesAsString = secondaryTypes.joinToString(", ") { it.getFullName() }
             ", secondary types:$typesAsString"
         } else ""
-        val setBindingsString = if (setBindings.isNotEmpty()) {
-            val bindingsAsString = setBindings.joinToString(", ") { it }
-            ", set bindings:$bindingsAsString"
-        } else ""
-        val mapBindingsString = if (mapBindings.isNotEmpty()) {
-            val bindingsAsString =
-                mapBindings.entries.joinToString(", ") { it.key + " " + it.value }
-            ", map bindings:$bindingsAsString"
-        } else ""
-        return "$kindString[$nameString$typeString$secondaryTypesString$setBindingsString$mapBindingsString]"
+        return "$kindString[$nameString$typeString$secondaryTypesString]"
     }
 
     enum class Kind { FACTORY, SINGLE }
