@@ -20,9 +20,9 @@ import android.app.Application
 import android.util.Log
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
-import com.ivianuu.injekt.annotations.Name
-import com.ivianuu.injekt.annotations.Param
-import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.injekt.codegen.Name
+import com.ivianuu.injekt.codegen.Param
+import com.ivianuu.injekt.codegen.Single
 import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
 import com.ivianuu.injekt.sample.multibinding.MultiBindingSet
 import com.ivianuu.injekt.sample.multibinding.intoMap

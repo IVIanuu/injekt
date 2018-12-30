@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.annotations
+package com.ivianuu.injekt.codegen
 
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Single(
+annotation class Factory(
     val name: String = "",
     val override: Boolean = false,
     val createOnStart: Boolean = false,

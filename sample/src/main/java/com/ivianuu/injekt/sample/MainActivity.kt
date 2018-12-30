@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.injekt.codegen.Single
 import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
 import com.ivianuu.injekt.sample.multibinding.MultiBindingSet
 import com.ivianuu.injekt.sample.multibinding.bindIntoMap

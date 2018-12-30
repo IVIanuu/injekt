@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.annotations
+package com.ivianuu.injekt.codegen
 
-import kotlin.reflect.KClass
-
-@Target(AnnotationTarget.CLASS)
+/**
+ * @author Manuel Wrage (IVIanuu)
+ */
+@Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Factory(
-    val name: String = "",
-    val override: Boolean = false,
-    val createOnStart: Boolean = false,
-    val secondaryTypes: Array<KClass<*>> = []
-)
+annotation class Name(val name: String)

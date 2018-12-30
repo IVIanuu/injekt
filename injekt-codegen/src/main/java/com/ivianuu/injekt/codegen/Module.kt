@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.annotations
+package com.ivianuu.injekt.codegen
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-@Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Name(val name: String)
+annotation class Module(
+    val moduleName: String = "",
+    val packageName: String = "",
+    val override: Boolean = false,
+    val createOnStart: Boolean = false
+)

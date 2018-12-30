@@ -14,28 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.codegen
 
-import com.ivianuu.injekt.codegen.Single
-
-interface Service {
-    fun execute()
-}
-
-@Single
-class MyServiceOne : Service {
-    override fun execute() {
-    }
-}
-
-@Single
-class MyServiceTwo : Service {
-    override fun execute() {
-    }
-}
-
-@Single
-class MyServiceThree : Service {
-    override fun execute() {
-    }
-}
+@Target(AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.SOURCE)
+annotation class Param

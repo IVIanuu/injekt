@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.annotations
+package com.ivianuu.injekt.codegen
 
-@Target(AnnotationTarget.VALUE_PARAMETER)
+import kotlin.reflect.KClass
+
+@Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Param
+annotation class Single(
+    val name: String = "",
+    val override: Boolean = false,
+    val createOnStart: Boolean = false,
+    val secondaryTypes: Array<KClass<*>> = []
+)

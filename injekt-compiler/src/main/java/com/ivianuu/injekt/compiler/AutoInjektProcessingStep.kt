@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.annotations.*
+import com.ivianuu.injekt.codegen.*
 import com.ivianuu.processingx.*
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
@@ -38,7 +38,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     ProcessingEnvHolder {
 
     override fun annotations() = setOf(
-        AutoModuleConfig::class.java,
+        Module::class.java,
         Factory::class.java,
         Name::class.java,
         Param::class.java,
@@ -46,24 +46,24 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     )
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        val configurations = elementsByAnnotation[AutoModuleConfig::class.java]
+        val configurations = elementsByAnnotation[Module::class.java]
 
         when {
             configurations.size > 1 -> {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Only one class should be annotated with AutoModuleConfig"
+                    "Only one class should be annotated with Module"
                 )
                 return emptySet()
             }
             configurations.size == 0 -> {
-                messager.printMessage(Diagnostic.Kind.ERROR, "Missing AutoModuleConfig annotation")
+                messager.printMessage(Diagnostic.Kind.ERROR, "Missing Module annotation")
                 return emptySet()
             }
         }
 
         val config = configurations.first()
-        val configMirror = config.getAnnotationMirror<AutoModuleConfig>()
+        val configMirror = config.getAnnotationMirror<Module>()
 
         var packageName = configMirror["packageName"].value as String
 
