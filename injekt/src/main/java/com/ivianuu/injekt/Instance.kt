@@ -15,7 +15,7 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
         logger?.let { logger ->
             val msg = when {
                 isCreated -> "${component.nameString()}Return existing instance for $declaration"
-                declaration.options.createOnStart -> "${component.nameString()}Create instance on start up $declaration"
+                declaration.createOnStart -> "${component.nameString()}Create instance on start up $declaration"
                 else -> "${component.nameString()}Create instance $declaration"
             }
 

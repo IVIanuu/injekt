@@ -35,6 +35,8 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     override fun annotations() = setOf(
         AutoModuleConfig::class.java,
         Factory::class.java,
+        Name::class.java,
+        Param::class.java,
         Single::class.java
     )
 
@@ -67,15 +69,46 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
             return emptySet()
         }
 
-        val types = mutableSetOf<DeclarationDescriptor>()
+        elementsByAnnotation[Name::class.java]
+            .filterNot {
+                it.hasAnnotation<Factory>()
+                        || it.hasAnnotation<Single>()
+            }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "@Name annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    it
+                )
+            }
 
-        types += elementsByAnnotation[Factory::class.java]
+        elementsByAnnotation[Param::class.java]
+            .filterNot {
+                it.hasAnnotation<Factory>()
+                        || it.hasAnnotation<Single>()
+            }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "@Param annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    it
+                )
+            }
+
+        (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
+            .filter { it.hasAnnotation<Factory>() && it.hasAnnotation<Single>() }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "It's not possible to annotate classes with @Factory AND @Single", it
+                )
+            }
+
+        val types =
+            (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
             .filterIsInstance<TypeElement>()
             .mapNotNull { createDescriptor(it) }
-
-        types += elementsByAnnotation[Single::class.java]
-            .filterIsInstance<TypeElement>()
-            .mapNotNull { createDescriptor(it) }
+                .toSet()
 
         val module = ModuleDescriptor(packageName, "autoModule", types)
         val generator = AutoInjektGenerator(module)

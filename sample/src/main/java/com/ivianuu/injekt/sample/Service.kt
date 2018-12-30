@@ -16,20 +16,25 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.annotations.Single
+
 interface Service {
     fun execute()
 }
 
+@Single
 class MyServiceOne : Service {
     override fun execute() {
     }
 }
 
+@Single
 class MyServiceTwo : Service {
     override fun execute() {
     }
 }
 
+@Single
 class MyServiceThree : Service {
     override fun execute() {
     }

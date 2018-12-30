@@ -25,11 +25,11 @@ class Module internal constructor(
     ): Declaration<T> {
         declaration.module = this
 
-        val createOnStart = if (createOnStart) createOnStart else declaration.options.createOnStart
-        val override = if (override) override else declaration.options.override
+        val createOnStart = if (createOnStart) createOnStart else declaration.createOnStart
+        val override = if (override) override else declaration.override
 
-        declaration.options.createOnStart = createOnStart
-        declaration.options.override = override
+        declaration.createOnStart = createOnStart
+        declaration.override = override
 
         declarations.add(declaration)
 
@@ -113,8 +113,8 @@ inline fun <reified T : Any> Module.declare(
     noinline definition: Definition<T>
 ) = declare(
     Declaration.create(T::class, name, kind, definition).also {
-        it.options.createOnStart = createOnStart
-        it.options.override = override
+        it.createOnStart = createOnStart
+        it.override = override
     }
 )
 
@@ -130,8 +130,8 @@ fun <T : Any> Module.declare(
     definition: Definition<T>
 ) = declare(
     Declaration.create(type, name, kind, definition).also {
-        it.options.createOnStart = createOnStart
-        it.options.override = override
+        it.createOnStart = createOnStart
+        it.override = override
     }
 )
 

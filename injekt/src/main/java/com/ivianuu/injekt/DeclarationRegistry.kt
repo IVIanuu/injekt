@@ -38,7 +38,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
 
             module.declarations.forEach {
                 saveDeclaration(it)
-                if (it.options.createOnStart) {
+                if (it.createOnStart) {
                     createOnStartDeclarations.add(it)
                 }
             }
@@ -81,7 +81,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun saveDeclaration(declaration: Declaration<*>) {
         val isOverride = declarations.remove(declaration)
 
-        if (isOverride && !declaration.options.override) {
+        if (isOverride && !declaration.override) {
             throw OverrideException("${component.nameString()}Try to override declaration $declaration")
         }
 
@@ -98,7 +98,6 @@ class DeclarationRegistry internal constructor(val component: Component) {
             declarationsByName[declaration.name] = declaration
         } else {
             declarationsByType[declaration.primaryType] = declaration
-            declaration.secondaryTypes.forEach { declarationsByType[it] = declaration }
         }
     }
 }
