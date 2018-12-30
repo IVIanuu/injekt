@@ -19,12 +19,6 @@ internal fun Component.nameString() = if (name != null) {
     ""
 }
 
-internal fun DeclarationRegistry.nameString() = if (name != null) {
-    "$name "
-} else {
-    ""
-}
-
 fun measureDurationOnly(code: () -> Unit): Double {
     val start = System.nanoTime()
     code()
