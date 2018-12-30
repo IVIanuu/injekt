@@ -51,7 +51,18 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
         }
 
         if (module.declarations.flatMap { it.constructorParams }.any { it.paramIndex == -1 }) {
+        }
+
+        if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
+        }
+
+        if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.LAZY }) {
+            imports.add("lazy")
+        }
+
+        if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
+            imports.add("provider")
         }
 
         return imports
@@ -72,10 +83,26 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
     private fun declaration(declaration: DeclarationDescriptor) = CodeBlock.builder()
         .apply {
             val constructorStatement = "\n%T(\n${declaration.constructorParams.joinToString(",\n") {
-                when {
-                    it.getName != null -> "get(\"${it.getName}\")"
-                    it.paramIndex != -1 -> "params.get(${it.paramIndex})"
-                    else -> "get()"
+                when (it.kind) {
+                    ParamDescriptor.Kind.VALUE -> {
+                        when {
+                            it.name != null -> "get(\"${it.name}\")"
+                            it.paramIndex != -1 -> "params.get(${it.paramIndex})"
+                            else -> "get()"
+                        }
+                    }
+                    ParamDescriptor.Kind.LAZY -> {
+                        when {
+                            it.name != null -> "lazy(\"${it.name}\")"
+                            else -> "lazy()"
+                        }
+                    }
+                    ParamDescriptor.Kind.PROVIDER -> {
+                        when {
+                            it.name != null -> "provider(\"${it.name}\")"
+                            else -> "provider()"
+                        }
+                    }
                 }
             }})\n"
 
@@ -110,6 +137,7 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
             add(bindStatement, *declaration.secondaryTypes.toTypedArray())
             add("\n")
             add("\n")
+
         }
         .build()
 }

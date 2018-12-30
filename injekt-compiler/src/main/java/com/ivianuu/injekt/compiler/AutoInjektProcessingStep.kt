@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
+import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.annotations.*
 import com.ivianuu.processingx.*
 import com.squareup.kotlinpoet.ClassName
@@ -185,8 +186,19 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
                         return null
                     }
 
+                    val type = typeUtils.erasure(it.asType())
+                    val lazyType = elementUtils.getTypeElement(Lazy::class.java.name).asType()
+                    val providerType =
+                        elementUtils.getTypeElement(Provider::class.java.name).asType()
+
+                    val paramKind = when {
+                        typeUtils.isAssignable(lazyType, type) -> ParamDescriptor.Kind.LAZY
+                        typeUtils.isAssignable(providerType, type) -> ParamDescriptor.Kind.PROVIDER
+                        else -> ParamDescriptor.Kind.VALUE
+                    }
+
                     ParamDescriptor(
-                        it.simpleName.toString(),
+                        paramKind,
                         getName,
                         paramIndex
                     )

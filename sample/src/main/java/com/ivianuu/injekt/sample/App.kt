@@ -60,4 +60,8 @@ fun App.appModule() = module {
 }
 
 @Single(createOnStart = true)
-class AppDependency(val app: App)
+class AppDependency(
+    val app: App,
+    val appLazy: Lazy<App>,
+    val appProvider: Provider<App>
+)

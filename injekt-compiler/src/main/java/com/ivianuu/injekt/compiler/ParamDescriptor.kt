@@ -17,7 +17,11 @@
 package com.ivianuu.injekt.compiler
 
 class ParamDescriptor(
-    val name: String,
-    val getName: String?,
+    val kind: Kind,
+    val name: String?,
     val paramIndex: Int
-)
+) {
+    enum class Kind {
+        VALUE, LAZY, PROVIDER
+    }
+}
