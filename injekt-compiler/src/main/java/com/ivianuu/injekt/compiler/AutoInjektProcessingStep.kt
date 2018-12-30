@@ -75,9 +75,11 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
         }
 
         elementsByAnnotation[Name::class.java]
-            .filterNot {
-                it.hasAnnotation<Factory>()
-                        || it.hasAnnotation<Single>()
+            .filter {
+                val type = it.enclosingElement.enclosingElement
+                messager.printMessage(Diagnostic.Kind.WARNING, "type $type")
+                !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Single>()
             }
             .forEach {
                 messager.printMessage(
@@ -88,9 +90,11 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
             }
 
         elementsByAnnotation[Param::class.java]
-            .filterNot {
-                it.hasAnnotation<Factory>()
-                        || it.hasAnnotation<Single>()
+            .filter {
+                val type = it.enclosingElement.enclosingElement
+                messager.printMessage(Diagnostic.Kind.WARNING, "type $type")
+                !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Single>()
             }
             .forEach {
                 messager.printMessage(

@@ -20,6 +20,8 @@ import android.app.Application
 import android.util.Log
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
+import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
 import com.ivianuu.injekt.sample.multibinding.MultiBindingSet
@@ -62,6 +64,10 @@ fun App.appModule() = module {
 @Single(createOnStart = true)
 class AppDependency(
     val app: App,
-    val appLazy: Lazy<App>,
-    val appProvider: Provider<App>
+    @Param val appLazy: Lazy<App>,
+    @Name("namedd") val appProvider: Provider<App>,
+    @Param val paramete: String,
+    @Param val parametew: String,
+    @Name("named") val named: String,
+    @Param val parf: String
 )

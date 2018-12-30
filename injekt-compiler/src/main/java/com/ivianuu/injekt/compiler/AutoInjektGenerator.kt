@@ -83,26 +83,29 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
     private fun declaration(declaration: DeclarationDescriptor) = CodeBlock.builder()
         .apply {
             val constructorStatement = "\n%T(\n${declaration.constructorParams.joinToString(",\n") {
-                when (it.kind) {
-                    ParamDescriptor.Kind.VALUE -> {
-                        when {
-                            it.name != null -> "get(\"${it.name}\")"
-                            it.paramIndex != -1 -> "params.get(${it.paramIndex})"
-                            else -> "get()"
+                if (it.paramIndex == -1) {
+                    when (it.kind) {
+                        ParamDescriptor.Kind.VALUE -> {
+                            when {
+                                it.name != null -> "get(\"${it.name}\")"
+                                else -> "get()"
+                            }
+                        }
+                        ParamDescriptor.Kind.LAZY -> {
+                            when {
+                                it.name != null -> "lazy(\"${it.name}\")"
+                                else -> "lazy()"
+                            }
+                        }
+                        ParamDescriptor.Kind.PROVIDER -> {
+                            when {
+                                it.name != null -> "provider(\"${it.name}\")"
+                                else -> "provider()"
+                            }
                         }
                     }
-                    ParamDescriptor.Kind.LAZY -> {
-                        when {
-                            it.name != null -> "lazy(\"${it.name}\")"
-                            else -> "lazy()"
-                        }
-                    }
-                    ParamDescriptor.Kind.PROVIDER -> {
-                        when {
-                            it.name != null -> "provider(\"${it.name}\")"
-                            else -> "provider()"
-                        }
-                    }
+                } else {
+                    "params.get(${it.paramIndex})"
                 }
             }})\n"
 
