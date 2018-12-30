@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.annotations.Single
 import kotlin.reflect.KClass
 
 class MainActivity : AppCompatActivity(), ComponentHolder {
@@ -25,8 +26,8 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appDependency
-        appDependencyNamed
         mainActivityDependency
+        appDependencyNamed
 
         Log.d("MainActivity", "commands ${commands.toSet()}")
         Log.d("MainActivity", "services ${services.toMap()}")
@@ -36,11 +37,9 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
 
 fun MainActivity.mainActivityModule() = module {
     factory { this@mainActivityModule }
-    single { MainActivityDependency(get(), get()) }
-    factory { CommandThree() } intoSet COMMANDS
-    factory { ServiceThree() } intoMap (SERVICES to ServiceThree::class)
 }
 
+@Single
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

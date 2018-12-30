@@ -16,6 +16,11 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.annotations.Factory
+import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Param
+import com.ivianuu.injekt.annotations.Single
+
 const val COMMANDS = "commands"
 const val SERVICES = "services"
 const val MIXED = "mixed"
@@ -24,18 +29,21 @@ interface Service {
     fun start()
 }
 
+@Factory
 class ServiceOne : Service {
     override fun start() {
 
     }
 }
 
+@Factory
 class ServiceTwo : Service {
     override fun start() {
 
     }
 }
 
+@Factory
 class ServiceThree : Service {
     override fun start() {
 
@@ -46,18 +54,28 @@ interface Command {
     fun execute()
 }
 
+@Single(createOnStart = true)
 class CommandOne : Command {
     override fun execute() {
     }
 }
 
-class CommandTwo : Command {
+@Factory(override = true)
+class CommandTwo(
+    @Param private val id: String,
+    private val appDependency: AppDependency,
+    @Param private val password: String
+) : Command {
     override fun execute() {
 
     }
 }
 
-class CommandThree : Command {
+@Factory(secondaryTypes = [Command::class, Any::class, String::class])
+class CommandThree(
+    @Name("app") private val appDependency: AppDependency,
+    private val mainActivityDependency: MainActivityDependency
+) : Command {
     override fun execute() {
 
     }

@@ -20,6 +20,7 @@ import android.app.Application
 import android.util.Log
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
+import com.ivianuu.injekt.annotations.Single
 import kotlin.reflect.KClass
 
 /**
@@ -28,7 +29,7 @@ import kotlin.reflect.KClass
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component { modules(appModule()) }
+        component { modules(appModule(), autoModule()) }
     }
 
     private val commands by inject<MultiBindingSet<Command>>(COMMANDS)
@@ -48,17 +49,16 @@ class App : Application(), ComponentHolder {
 
 fun App.appModule() = module {
     factory { this@appModule }
-    single(createOnStart = true) { AppDependency(get()) }
-    single(name = "named", createOnStart = true) { AppDependency(get()) }
 
     multiBindingSet(COMMANDS)
     multiBindingMap(SERVICES)
 
-    factory { CommandOne() } intoSet COMMANDS
-    factory { CommandTwo() } intoSet COMMANDS
+    // factory { CommandOne() } intoSet COMMANDS
+    // factory { CommandTwo() } intoSet COMMANDS
 
-    factory { ServiceOne() } intoMap (SERVICES to ServiceOne::class)
-    factory { ServiceTwo() } intoMap (SERVICES to ServiceTwo::class)
+    // factory { ServiceOne() } intoMap (SERVICES to ServiceOne::class)
+    // factory { ServiceTwo() } intoMap (SERVICES to ServiceTwo::class)
 }
 
+@Single(createOnStart = true)
 class AppDependency(val app: App)

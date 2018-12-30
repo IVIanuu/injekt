@@ -17,6 +17,7 @@ object Versions {
     const val junit = "4.12"
     const val kotlin = "1.3.11"
     const val mavenGradle = "2.1"
+    const val processingX = "9543c5ad6a"
 }
 
 object Deps {
@@ -31,4 +32,6 @@ object Deps {
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
+
+    const val processingX = "com.github.IVIanuu:processingx:${Versions.processingX}"
 }
