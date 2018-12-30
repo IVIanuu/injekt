@@ -34,7 +34,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     ProcessingEnvHolder {
 
     override fun annotations() = setOf(
-        AutoModuleConfig::class.java,
+        ModuleConfig::class.java,
         Factory::class.java,
         Name::class.java,
         Param::class.java,
@@ -42,37 +42,40 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
     )
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        val configurations = elementsByAnnotation[AutoModuleConfig::class.java]
+        val configurations = elementsByAnnotation[ModuleConfig::class.java]
 
         when {
             configurations.size > 1 -> {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Only one class should be annotated with AutoModuleConfig"
+                    "Only one class should be annotated with ModuleConfig"
                 )
                 return emptySet()
             }
             configurations.size == 0 -> {
-                messager.printMessage(Diagnostic.Kind.ERROR, "Missing AutoModuleConfig annotation")
+                messager.printMessage(Diagnostic.Kind.ERROR, "Missing ModuleConfig annotation")
                 return emptySet()
             }
         }
 
         val config = configurations.first()
+        val configMirror = config.getAnnotationMirror<ModuleConfig>()
 
-        var packageName = config
-            .getAnnotationMirror<AutoModuleConfig>()["packageName"].value as String
+        var packageName = configMirror["packageName"].value as String
 
         if (packageName.isEmpty()) {
             packageName = config.getPackage().qualifiedName.toString()
         }
 
-        var moduleName = config
-            .getAnnotationMirror<AutoModuleConfig>()["moduleName"].value as String
+        var moduleName = configMirror["moduleName"].value as String
 
         if (moduleName.isEmpty()) {
             moduleName = "autoModule"
         }
+
+        val override = configMirror["override"].value as Boolean
+        val createOnStart = configMirror["createOnStart"].value as Boolean
+
 
         elementsByAnnotation[Name::class.java]
             .filter {
@@ -115,11 +118,11 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
 
         val types =
             (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
-            .filterIsInstance<TypeElement>()
-            .mapNotNull { createDescriptor(it) }
+                .filterIsInstance<TypeElement>()
+                .mapNotNull { createDescriptor(it) }
                 .toSet()
 
-        val module = ModuleDescriptor(packageName, moduleName, types)
+        val module = ModuleDescriptor(packageName, moduleName, override, createOnStart, types)
         val generator = AutoInjektGenerator(module)
 
         generator.generate()

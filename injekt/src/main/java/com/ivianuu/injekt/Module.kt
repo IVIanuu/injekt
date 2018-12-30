@@ -39,9 +39,9 @@ class Module internal constructor(
  * Defines a [Module]
  */
 fun module(
-    createOnStart: Boolean = false,
-    override: Boolean = false,
     name: String? = null,
+    override: Boolean = false,
+    createOnStart: Boolean = false,
     definition: ModuleDefinition
 ) = Module(createOnStart, override, name).apply(definition)
 

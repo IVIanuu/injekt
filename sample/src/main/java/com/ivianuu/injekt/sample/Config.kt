@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.annotations.AutoModuleConfig
+import com.ivianuu.injekt.annotations.ModuleConfig
 
-@AutoModuleConfig(moduleName = "sampleAutoModule")
+@ModuleConfig(moduleName = "sampleAutoModule")
 class Config

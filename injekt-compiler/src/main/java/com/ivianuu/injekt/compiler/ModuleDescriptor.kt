@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler
 
 data class ModuleDescriptor(
     val packageName: String,
-    val fileName: String,
+    val moduleName: String,
+    val override: Boolean,
+    val createOnStart: Boolean,
     val declarations: Set<DeclarationDescriptor>
 )
