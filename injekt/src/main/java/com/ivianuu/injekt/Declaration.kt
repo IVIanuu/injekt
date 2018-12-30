@@ -10,6 +10,7 @@ data class Declaration<T : Any> private constructor(
     val name: String?
 ) {
 
+    var attributes = Attributes()
     var options = Options()
     var secondaryTypes: List<KClass<*>> = emptyList()
     var setBindings: Set<String> = emptySet()
