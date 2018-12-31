@@ -32,11 +32,11 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
             module.declarations
-                .map { it.copyIdentity() }
+                .mapValues { it.value.copyIdentity() }
                 .forEach {
-                    saveDeclaration(it)
-                    if (it.createOnStart) {
-                        createOnStartDeclarations.add(it)
+                    saveDeclaration(it.key, it.value)
+                    if (it.value.createOnStart) {
+                        createOnStartDeclarations.add(it.value)
                     }
                 }
         }
@@ -47,8 +47,8 @@ class DeclarationRegistry internal constructor(val component: Component) {
      */
     fun loadComponents(vararg components: Component) {
         components.forEach { component ->
-            component.declarationRegistry.getAllDeclarations().forEach {
-                saveDeclaration(it)
+            component.declarationRegistry.declarations.forEach {
+                saveDeclaration(it.key, it.value)
             }
         }
     }
@@ -71,14 +71,14 @@ class DeclarationRegistry internal constructor(val component: Component) {
     /**
      * Saves the [declaration]
      */
-    fun saveDeclaration(declaration: Declaration<*>) {
-        val oldDeclaration = declarations[declaration.key]
+    fun saveDeclaration(key: Key, declaration: Declaration<*>) {
+        val oldDeclaration = declarations[key]
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
             throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration")
         }
 
-        declarations[declaration.key] = declaration
+        declarations[key] = declaration
 
         declaration.instance.component = component
 

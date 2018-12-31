@@ -11,7 +11,7 @@ class Module internal constructor(
     val override: Boolean
 ) {
 
-    internal val declarations = arrayListOf<Declaration<*>>()
+    internal val declarations = hashMapOf<Key, Declaration<*>>()
 
     /**
      * Adds the [declaration]
@@ -27,7 +27,13 @@ class Module internal constructor(
         declaration.createOnStart = createOnStart
         declaration.override = override
 
-        declarations.add(declaration)
+        val oldDeclaration = declarations[declaration.key]
+        val isOverride = oldDeclaration != null
+        if (isOverride && !declaration.override) {
+            throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration")
+        }
+
+        declarations.put(declaration.key, declaration)
 
         return declaration
     }
@@ -134,7 +140,7 @@ fun <T : Any> Module.declare(
  * Adds all declarations of [module]
  */
 fun Module.module(module: Module) {
-    module.declarations.forEach { declare(it.copyIdentity()) }
+    module.declarations.forEach { declare(it.value.copyIdentity()) }
 }
 
 /**
