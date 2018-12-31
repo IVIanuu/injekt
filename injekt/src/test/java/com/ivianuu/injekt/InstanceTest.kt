@@ -69,4 +69,25 @@ class InstanceTest {
         assertNotEquals(value1, value2)
     }
 
+    @Test
+    fun testInstanceCreationFailed() {
+        val component = component {
+            modules(
+                module {
+                    factory<TestDep1> { throw error("error") }
+                }
+            )
+        }
+
+        val declaration = component.getDeclaration<TestDep1>()
+
+        val throwed = try {
+            declaration.instance.get()
+            false
+        } catch (e: InstanceCreationException) {
+            true
+        }
+
+        assertTrue(throwed)
+    }
 }

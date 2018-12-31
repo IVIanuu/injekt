@@ -44,6 +44,20 @@ class ComponentTest {
     }
 
     @Test
+    fun testGetUnknownDeclarationThrows() {
+        val component = component {}
+
+        val throwed = try {
+            component.get(TestDep1::class)
+            false
+        } catch (e: InjectionException) {
+            true
+        }
+
+        assertTrue(throwed)
+    }
+
+    @Test
     fun testLazy() {
         var called = false
 
@@ -65,4 +79,5 @@ class ComponentTest {
         depLazy.value
         assertTrue(called)
     }
+
 }
