@@ -30,7 +30,7 @@ import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
-class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment) : ProcessingStep,
+class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment) : ProcessingStep,
     ProcessingEnvHolder {
 
     override fun annotations() = setOf(
@@ -126,7 +126,7 @@ class AutoInjektProcessingStep(override val processingEnv: ProcessingEnvironment
             packageName, moduleName,
             internal, override, createOnStart, types
         )
-        val generator = AutoInjektGenerator(module)
+        val generator = ModuleGenerator(module)
 
         generator.generate()
             .write(processingEnv)

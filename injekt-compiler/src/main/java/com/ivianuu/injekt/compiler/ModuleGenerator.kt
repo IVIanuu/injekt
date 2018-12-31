@@ -25,7 +25,7 @@ import com.squareup.kotlinpoet.PropertySpec
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class AutoInjektGenerator(private val module: ModuleDescriptor) {
+class ModuleGenerator(private val module: ModuleDescriptor) {
 
     fun generate(): FileSpec {
         val file = FileSpec.builder(module.packageName, module.moduleName)

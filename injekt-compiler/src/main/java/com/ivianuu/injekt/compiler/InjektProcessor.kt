@@ -23,6 +23,6 @@ import javax.annotation.processing.Processor
 @AutoService(Processor::class)
 class InjektProcessor : StepProcessor() {
 
-    override fun initSteps() = setOf(AutoInjektProcessingStep(processingEnv))
+    override fun initSteps() = setOf(AutoModuleProcessingStep(processingEnv))
 
 }
