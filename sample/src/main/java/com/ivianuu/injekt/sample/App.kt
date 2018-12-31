@@ -25,8 +25,8 @@ import com.ivianuu.injekt.codegen.Param
 import com.ivianuu.injekt.codegen.Single
 import com.ivianuu.injekt.sample.multibinding.MultiBindingMap
 import com.ivianuu.injekt.sample.multibinding.MultiBindingSet
-import com.ivianuu.injekt.sample.multibinding.intoMap
-import com.ivianuu.injekt.sample.multibinding.intoSet
+import com.ivianuu.injekt.sample.multibinding.bindIntoMap
+import com.ivianuu.injekt.sample.multibinding.bindIntoSet
 import kotlin.reflect.KClass
 
 /**
@@ -48,6 +48,15 @@ class App : Application(), ComponentHolder {
         }
 
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
+
+        component.declarationRegistry.getAllDeclarations()
+            .filter { it.type == MyServiceOne::class }
+            .forEach {
+                Log.d(
+                    "testt",
+                    "module for $it is ${it.module}, services module $servicesModule"
+                )
+            }
     }
 
 }
@@ -57,11 +66,18 @@ const val SERVICES_MAP = "servicesMap"
 
 fun App.appModule() = module {
     factory { this@appModule }
-    factory { MyServiceOne() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceOne::class)
-    factory { MyServiceTwo() } intoSet SERVICES_SET intoMap (SERVICES_MAP to MyServiceTwo::class)
+    module(servicesModule)
 }
 
-@Single(createOnStart = true)
+private val servicesModule = module {
+    bindIntoSet<Service, MyServiceOne>(SERVICES_SET)
+    bindIntoMap<KClass<out Service>, Service, MyServiceOne>(SERVICES_MAP, MyServiceOne::class)
+
+    bindIntoSet<Service, MyServiceTwo>(SERVICES_SET)
+    bindIntoMap<KClass<out Service>, Service, MyServiceTwo>(SERVICES_MAP, MyServiceTwo::class)
+}
+
+@Single
 class AppDependency(
     val app: App,
     @Param val appLazy: Lazy<App>,

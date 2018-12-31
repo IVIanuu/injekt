@@ -134,7 +134,18 @@ fun <T : Any> Module.declare(
  * Adds all declarations of [module]
  */
 fun Module.module(module: Module) {
-    module.declarations.forEach { declare(it) }
+    module.declarations.forEach { declare(it.copyIdentity()) }
+}
+
+/**
+ * Adds all declarations of module
+ */
+fun Module.module(
+    override: Boolean = false,
+    createOnStart: Boolean = false,
+    definition: ModuleDefinition
+) {
+    module(com.ivianuu.injekt.module(override, createOnStart, definition))
 }
 
 /**

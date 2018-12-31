@@ -22,16 +22,11 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
         }
     }
 
-    //private val appDependency by inject<AppDependency>()
-    //private val mainActivityDependency by inject<MainActivityDependency>()
-
     private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
     private val servicesSet by inject<MultiBindingSet<Service>>(SERVICES_SET)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //     appDependency
-        //     mainActivityDependency
 
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }

@@ -7,14 +7,15 @@ import kotlin.reflect.KClass
  */
 data class Declaration<T : Any> private constructor(
     val type: KClass<T>,
-    val name: String?,
-    val kind: Kind,
-    var override: Boolean = false,
-    var createOnStart: Boolean = false,
-    val attributes: Attributes,
-    val definition: Definition<T>
+    val name: String?
 ) {
 
+    var override: Boolean = false
+    var createOnStart: Boolean = false
+    var attributes = Attributes()
+
+    lateinit var kind: Kind
+    lateinit var definition: Definition<T>
     lateinit var instance: Instance<T>
     lateinit var module: Module
 
@@ -42,23 +43,13 @@ data class Declaration<T : Any> private constructor(
             kind: Kind,
             definition: Definition<T>
         ): Declaration<T> {
-            val declaration = Declaration(type, name, kind, false, false, Attributes(), definition)
+            val declaration = Declaration(type, name)
+            declaration.kind = kind
+            declaration.definition = definition
             declaration.instance = when (kind) {
                 Kind.FACTORY -> FactoryInstance(declaration)
                 Kind.SINGLE -> SingleInstance(declaration)
             }
-            return declaration
-        }
-
-        fun <T : Any> create(
-            type: KClass<T>,
-            name: String? = null,
-            kind: Kind,
-            instance: Instance<T>,
-            definition: Definition<T>
-        ): Declaration<T> {
-            val declaration = Declaration(type, name, kind, false, false, Attributes(), definition)
-            declaration.instance = instance
             return declaration
         }
 
@@ -75,10 +66,15 @@ infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
     module.declare(newDeclaration)
 }
 
-internal fun <T : Any> Declaration<T>.copyIdentity() = copy().apply {
-    module = this@copyIdentity.module
-    instance = when (kind) {
+internal fun <T : Any> Declaration<T>.copyIdentity() = copy().also {
+    it.kind = kind
+    it.override = override
+    it.createOnStart = createOnStart
+    it.attributes = attributes
+    it.definition = definition
+    it.instance = when (kind) {
         Declaration.Kind.FACTORY -> FactoryInstance(this)
         Declaration.Kind.SINGLE -> SingleInstance(this)
     }
+    it.module = module
 }
