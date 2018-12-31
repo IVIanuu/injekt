@@ -18,46 +18,36 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
 import com.ivianuu.injekt.util.getDeclaration
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
-class CreateOnStartTest {
+class InstanceTest {
 
     @Test
-    fun testEagerSingleIsCreatedAtStart() {
+    fun testSingleCreatesOnce() {
         val component = component {
             modules(
                 module {
-                    single(createOnStart = true) { TestDep1() }
+                    single { TestDep1() }
                 }
             )
         }
 
         val declaration = component.getDeclaration<TestDep1>()
 
-        assertTrue(declaration.createOnStart)
-        assertTrue(declaration.instance.isCreated)
-    }
-
-    @Test
-    fun testNonEagerSingleIsNotCreatedAtStart() {
-        val component = component {
-            modules(
-                module {
-                    single(createOnStart = false) { TestDep1() }
-                }
-            )
-        }
-
-        val declaration = component.getDeclaration<TestDep1>()
-
-        assertFalse(declaration.createOnStart)
+        assertTrue(declaration.instance is SingleInstance)
         assertFalse(declaration.instance.isCreated)
+
+        val value1 = declaration.instance.get()
+        assertTrue(declaration.instance.isCreated)
+        val value2 = declaration.instance.get()
+        assertTrue(declaration.instance.isCreated)
+
+        assertEquals(value1, value2)
     }
 
     @Test
-    fun testFactoryIsNotCreatedAtStart() {
+    fun testFactoryCreatesNew() {
         val component = component {
             modules(
                 module {
@@ -68,27 +58,15 @@ class CreateOnStartTest {
 
         val declaration = component.getDeclaration<TestDep1>()
 
-        assertFalse(declaration.createOnStart)
-        assertFalse(declaration.instance.isCreated)
-    }
-
-    @Test
-    fun testDeferEagerInstances() {
-        val component = component(createEagerInstances = false) {
-            modules(
-                module {
-                    single(createOnStart = true) { TestDep1() }
-                }
-            )
-        }
-
-        val declaration = component.getDeclaration<TestDep1>()
-
+        assertTrue(declaration.instance is FactoryInstance)
         assertFalse(declaration.instance.isCreated)
 
-        component.createEagerInstances()
+        val value1 = declaration.instance.get()
+        assertFalse(declaration.instance.isCreated)
+        val value2 = declaration.instance.get()
+        assertFalse(declaration.instance.isCreated)
 
-        assertTrue(declaration.instance.isCreated)
+        assertNotEquals(value1, value2)
     }
 
 }
