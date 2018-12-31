@@ -56,4 +56,34 @@ class ModuleTest {
         assertTrue(declaration.createOnStart)
     }
 
+    @Test
+    fun testAllowsValidOverride() {
+        val throwed = try {
+            module {
+                single { TestDep1() }
+                single(override = true) { TestDep1() }
+            }
+            false
+        } catch (e: OverrideException) {
+            true
+        }
+
+        assertFalse(throwed)
+    }
+
+    @Test
+    fun testThrowsOnInvalidOverride() {
+        val throwed = try {
+            module {
+                single { TestDep1() }
+                single { TestDep1() }
+            }
+            false
+        } catch (e: OverrideException) {
+            true
+        }
+
+        assertTrue(throwed)
+    }
+
 }

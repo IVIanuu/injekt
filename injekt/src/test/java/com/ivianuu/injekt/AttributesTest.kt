@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
+import junit.framework.Assert.*
 import org.junit.Test
 
 class AttributesTest {
@@ -26,7 +25,11 @@ class AttributesTest {
     fun testGetAndSet() {
         val attrs = Attributes()
 
+        assertFalse(attrs.contains("key"))
+
         attrs["key"] = "test"
+
+        assertTrue(attrs.contains("key"))
 
         val value = attrs.get<String>("key")
         assertEquals("test", value)
@@ -35,6 +38,7 @@ class AttributesTest {
     @Test
     fun testGetIfNotSet() {
         val attrs = Attributes()
+        assertFalse(attrs.contains("key"))
         assertTrue(attrs.get<String>("key") == null)
     }
 
