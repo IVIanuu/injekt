@@ -21,17 +21,29 @@ package com.ivianuu.injekt
  */
 data class Attributes(private val data: MutableMap<String, Any> = hashMapOf()) {
 
+    /**
+     * Whether or not contains a value for [key]
+     */
     fun contains(key: String) = data.contains(key)
 
+    /**
+     * Sets the value for [key] to [value]
+     */
     operator fun <T> set(key: String, value: T) {
         data[key] = value as Any
     }
 
+    /**
+     * Returns the value for [key]
+     */
     @Suppress("UNCHECKED_CAST")
     operator fun <T> get(key: String) = data[key] as? T
 
 }
 
+/**
+ * Returns the value for [key] if present or sets [defaultValue]
+ */
 inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
     val value = get<T>(key)
 
