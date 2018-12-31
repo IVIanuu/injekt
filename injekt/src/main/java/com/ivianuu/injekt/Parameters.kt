@@ -21,6 +21,21 @@ class Parameters(vararg values: Any?) {
     operator fun <T> component5(): T = elementAt(4)
 
     /**
+     * Number of contained elements
+     */
+    val size get() = values.size
+
+    /**
+     * Tells if it has no parameter
+     */
+    fun isEmpty() = size == 0
+
+    /**
+     * Tells if it has parameters
+     */
+    fun isNotEmpty() = !isEmpty()
+
+    /**
      * Returns the element [i]
      */
     operator fun <T> get(i: Int) = values[i] as T
