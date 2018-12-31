@@ -39,7 +39,6 @@ fun MainActivity.mainActivityModule() = module {
     bind<FragmentActivity, MainActivity>()
     bind<Activity, FragmentActivity>()
 
-    factory { MyServiceThree() }
     bindIntoSet<Service, MyServiceThree>(SERVICES_SET)
     bindIntoMap<KClass<out Service>, Service, MyServiceThree>(SERVICES_MAP, MyServiceThree::class)
 }

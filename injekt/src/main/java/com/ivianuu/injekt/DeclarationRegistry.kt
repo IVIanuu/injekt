@@ -78,8 +78,6 @@ class DeclarationRegistry internal constructor(val component: Component) {
      * Saves the [declaration]
      */
     fun saveDeclaration(declaration: Declaration<*>) {
-        declarations.add(declaration)
-
         val isOverride = if (declaration.name != null) {
             declarationsByName.put(declaration.name, declaration) != null
         } else {
@@ -89,6 +87,8 @@ class DeclarationRegistry internal constructor(val component: Component) {
         if (isOverride && !declaration.override) {
             throw OverrideException("Try to override declaration $declaration")
         }
+
+        declarations.add(declaration)
 
         declaration.instance.component = component
 

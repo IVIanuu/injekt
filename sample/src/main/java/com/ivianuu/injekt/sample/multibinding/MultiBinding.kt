@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.sample.multibinding
 
 import com.ivianuu.injekt.*
+import java.util.*
 import kotlin.collections.set
 
 const val KEY_MAP_BINDINGS = "mapBindings"
@@ -35,7 +36,7 @@ infix fun <K : Any, T : Any, S : T> Declaration<S>.intoMap(pair: Pair<String, K>
 
         attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] = mapKey
 
-        module.factory(name = mapName, override = true) { params ->
+        module.factory(name = mapName, override = true) {
             component.declarationRegistry
                 .getAllDeclarations()
                 .mapNotNull { declaration ->
@@ -53,16 +54,23 @@ fun <T : Any> Module.setBinding(setName: String) {
     factory(name = setName, override = true) { emptySet<T>() }
 }
 
-inline fun <reified T : Any, reified S : T> Module.bindIntoSet(setName: String) =
-    bind<T, S>() intoSet setName
+inline fun <reified T : Any, reified S : T> Module.bindIntoSet(
+    setName: String,
+    declarationName: String? = null
+) =
+    factory<T>(UUID.randomUUID().toString()) { get<S>(declarationName) } intoSet setName
 
-inline fun <K : Any, reified T : Any, reified S : T> Module.bindIntoMap(mapName: String, key: K) =
-    bind<T, S>() intoMap (mapName to key)
+inline fun <K : Any, reified T : Any, reified S : T> Module.bindIntoMap(
+    mapName: String,
+    key: K,
+    declarationName: String? = null
+) =
+    factory<T>(UUID.randomUUID().toString()) { get<S>(declarationName) } intoMap (mapName to key)
 
 infix fun <T : Any, S : T> Declaration<S>.intoSet(setName: String) = apply {
     attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
-    module.factory(name = setName, override = true) { params ->
+    module.factory(name = setName, override = true) {
         component.declarationRegistry
             .getAllDeclarations()
             .filter { it.attributes.get<Set<String>>(KEY_SET_BINDINGS)?.contains(setName) == true }
