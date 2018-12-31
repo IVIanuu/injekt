@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.codegen
 
+import com.ivianuu.injekt.Component
+
 /**
- * @author Manuel Wrage (IVIanuu)
+ * Will use the [name] when retrieving an instance from [Component.get]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.SOURCE)

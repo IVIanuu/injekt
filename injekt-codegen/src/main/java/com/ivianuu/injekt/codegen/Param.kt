@@ -16,6 +16,12 @@
 
 package com.ivianuu.injekt.codegen
 
+import com.ivianuu.injekt.Parameters
+
+/**
+ * Will use the provided [Parameters] to resolve the requested dependency
+ * Note that the parameters must be passed in the exact same order as in the constructor
+ */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.SOURCE)
 annotation class Param

@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.codegen
 
 /**
- * @author Manuel Wrage (IVIanuu)
+ * Declares the configuration for the auto module
  */
 @Retention(AnnotationRetention.SOURCE)
 annotation class AutoModule(
