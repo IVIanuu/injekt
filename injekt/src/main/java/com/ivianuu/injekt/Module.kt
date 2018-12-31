@@ -33,7 +33,7 @@ class Module internal constructor(
             throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration")
         }
 
-        declarations.put(declaration.key, declaration)
+        declarations[declaration.key] = declaration
 
         return declaration
     }
