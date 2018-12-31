@@ -23,9 +23,7 @@ import kotlin.reflect.KClass
  */
 class DeclarationRegistry internal constructor(val component: Component) {
 
-    private val declarations = hashSetOf<Declaration<*>>()
-    private val declarationsByName: MutableMap<String, Declaration<*>> = hashMapOf()
-    private val declarationsByType: MutableMap<KClass<*>, Declaration<*>> = hashMapOf()
+    private val declarations = hashMapOf<Key, Declaration<*>>()
     private val createOnStartDeclarations = hashSetOf<Declaration<*>>()
 
     /**
@@ -58,7 +56,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
     /**
      * Returns all [Declaration]s
      */
-    fun getAllDeclarations(): Set<Declaration<*>> = declarations
+    fun getAllDeclarations(): Set<Declaration<*>> = declarations.values.toSet()
 
     /**
      * Returns the [Declaration] for [type] and [name] or null
@@ -66,11 +64,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun findDeclaration(
         type: KClass<*>,
         name: String? = null
-    ): Declaration<*>? = if (name != null) {
-        declarationsByName[name]
-    } else {
-        declarationsByType[type]
-    }
+    ): Declaration<*>? = declarations[Key(type, name)]
 
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
@@ -78,17 +72,13 @@ class DeclarationRegistry internal constructor(val component: Component) {
      * Saves the [declaration]
      */
     fun saveDeclaration(declaration: Declaration<*>) {
-        val isOverride = if (declaration.name != null) {
-            declarationsByName.put(declaration.name, declaration) != null
-        } else {
-            declarationsByType.put(declaration.type, declaration) != null
-        }
-
+        val oldDeclaration = declarations[declaration.key]
+        val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
-            throw OverrideException("Try to override declaration $declaration")
+            throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration")
         }
 
-        declarations.add(declaration)
+        declarations[declaration.key] = declaration
 
         declaration.instance.component = component
 

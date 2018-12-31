@@ -6,6 +6,7 @@ import kotlin.reflect.KClass
  * Represents a dependency declaration.
  */
 data class Declaration<T : Any> private constructor(
+    val key: Key,
     val type: KClass<T>,
     val name: String?
 ) {
@@ -43,7 +44,7 @@ data class Declaration<T : Any> private constructor(
             kind: Kind,
             definition: Definition<T>
         ): Declaration<T> {
-            val declaration = Declaration(type, name)
+            val declaration = Declaration(Key(type, name), type, name)
             declaration.kind = kind
             declaration.definition = definition
             declaration.instance = when (kind) {
@@ -60,7 +61,7 @@ data class Declaration<T : Any> private constructor(
  * Binds this [Declaration] to [type]
  */
 infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
-    val newDeclaration = copy(type = type as KClass<S>, name = null)
+    val newDeclaration = copy(key = Key(type, null), type = type as KClass<S>, name = null)
     newDeclaration.kind = kind
     newDeclaration.override = override
     newDeclaration.createOnStart = createOnStart
