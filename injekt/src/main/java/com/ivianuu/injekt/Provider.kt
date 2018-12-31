@@ -23,7 +23,7 @@ interface Provider<T> {
     fun get(params: ParamsDefinition? = null): T
 }
 
-fun <T> Provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
+fun <T> provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
     SamProvider(provider)
 
 private class SamProvider<T>(private val func: (ParamsDefinition?) -> T) : Provider<T> {

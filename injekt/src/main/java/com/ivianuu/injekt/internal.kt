@@ -12,12 +12,6 @@ private fun KClass<*>.saveFullName(): String {
     return name
 }
 
-internal fun Component.nameString() = if (name != null) {
-    "$name "
-} else {
-    ""
-}
-
 fun measureDurationOnly(code: () -> Unit): Double {
     val start = System.nanoTime()
     code()

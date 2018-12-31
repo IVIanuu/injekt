@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * The actual dependency container which provides declarations
  */
-class Component internal constructor(val name: String?) {
+class Component internal constructor() {
 
     val context = ComponentContext(this)
     val declarationRegistry = DeclarationRegistry(this)
@@ -18,10 +18,10 @@ class Component internal constructor(val name: String?) {
     }
 
     /**
-     * Adds all [Declaration]s of [dependencies] to this component
+     * Adds all [Declaration]s of [components] to this component
      */
-    fun dependencies(vararg dependencies: Component) {
-        declarationRegistry.loadComponents(*dependencies)
+    fun dependencies(vararg components: Component) {
+        declarationRegistry.loadComponents(*components)
     }
 
     /**
@@ -45,7 +45,7 @@ class Component internal constructor(val name: String?) {
             @Suppress("UNCHECKED_CAST")
             declaration.resolveInstance(params) as T
         } else {
-            throw InjectionException("${nameString()}Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
+            throw InjectionException("Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 
@@ -55,10 +55,9 @@ class Component internal constructor(val name: String?) {
  * Returns a new [Component] and applies the [definition]
  */
 fun component(
-    name: String? = null,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition
-) = Component(name)
+) = Component()
     .apply(definition)
     .apply {
         if (createEagerInstances) {
@@ -74,10 +73,10 @@ fun Component.modules(modules: Collection<Module>) {
 }
 
 /**
- * Adds all [Declaration]s of [dependencies] to this component
+ * Adds all [Declaration]s of [components] to this component
  */
-fun Component.dependencies(dependencies: Collection<Component>) {
-    declarationRegistry.loadComponents(*dependencies.toTypedArray())
+fun Component.dependencies(components: Collection<Component>) {
+    declarationRegistry.loadComponents(*components.toTypedArray())
 }
 
 /**
@@ -122,7 +121,7 @@ fun <T : Any> Component.provider(
     type: KClass<T>,
     name: String? = null,
     defaultParams: ParamsDefinition? = null
-) = Provider { get(type, name, it ?: defaultParams) }
+) = provider { params: ParamsDefinition? -> get(type, name, params ?: defaultParams) }
 
 /**
  * Returns a [Provider] for [T] and [name]
@@ -141,4 +140,4 @@ fun <T : Any> Component.injectProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParams: ParamsDefinition? = null
-) = lazy { Provider { get(type, name, it ?: defaultParams) } }
+) = lazy { provider { params: ParamsDefinition? -> get(type, name, params ?: defaultParams) } }

@@ -75,18 +75,14 @@ class AutoInjektGenerator(private val module: ModuleDescriptor) {
             CodeBlock.builder()
                 .apply {
                     val args = mapOf(
-                        "name" to module.moduleName,
                         "override" to module.override,
                         "createOnStart" to module.createOnStart
                     )
 
-                    addNamed("module(%name:S, %override:L, %createOnStart:L)", args)
+                    addNamed("module(%override:L, %createOnStart:L)", args)
                 }
                 .beginControlFlow(" {")
-                .apply {
-                    module.declarations.forEach { add(declaration(it)) }
-                    module.declarations.forEach { add(declaration(it)) }
-                }
+                .apply { module.declarations.forEach { add(declaration(it)) } }
                 .endControlFlow()
                 .build()
         )

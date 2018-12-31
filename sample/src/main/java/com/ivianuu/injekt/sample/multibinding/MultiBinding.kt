@@ -87,7 +87,7 @@ fun <T : Any> MultiBindingSet<T>.toSet(params: ParamsDefinition? = null): Set<T>
  * Returns a [Set] of [Provider]s of [T]
  */
 fun <T : Any> MultiBindingSet<T>.toProviderSet(defaultParams: ParamsDefinition? = null): Set<Provider<T>> =
-    set.map { dec -> Provider { dec.resolveInstance() } }.toSet()
+    set.map { dec -> provider { dec.resolveInstance(it ?: defaultParams) } }.toSet()
 
 /**
  * Returns a [Set] of [Lazy]s of [T]
@@ -110,7 +110,7 @@ fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(params: ParamsDefinition? = n
  * Returns a [Map] of [K] and [Provider]s of [T]
  */
 fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParams: ParamsDefinition? = null) =
-    map.mapValues { dec -> Provider { dec.value.resolveInstance() } }
+    map.mapValues { dec -> provider { dec.value.resolveInstance(it ?: defaultParams) } }
 
 /**
  * Returns a [Map] of [K] and [Lazy]s of [T]

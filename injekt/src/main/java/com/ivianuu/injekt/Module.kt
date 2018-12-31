@@ -8,8 +8,7 @@ import kotlin.reflect.KClass
  */
 class Module internal constructor(
     val createOnStart: Boolean,
-    val override: Boolean,
-    val name: String?
+    val override: Boolean
 ) {
 
     internal val declarations = arrayListOf<Declaration<*>>()
@@ -39,11 +38,10 @@ class Module internal constructor(
  * Defines a [Module]
  */
 fun module(
-    name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: ModuleDefinition
-) = Module(createOnStart, override, name).apply(definition)
+) = Module(createOnStart, override).apply(definition)
 
 /**
  * Provides a dependency

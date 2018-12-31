@@ -81,14 +81,14 @@ class DeclarationRegistry internal constructor(val component: Component) {
         val isOverride = declarations.remove(declaration)
 
         if (isOverride && !declaration.override) {
-            throw OverrideException("${component.nameString()}Try to override declaration $declaration")
+            throw OverrideException("Try to override declaration $declaration")
         }
 
         declaration.instance.component = component
 
         InjektPlugins.logger?.let { logger ->
             val kw = if (isOverride) "Override" else "Declare"
-            logger.debug("${component.nameString()}$kw $declaration")
+            logger.debug("$kw $declaration")
         }
 
         declarations.add(declaration)
