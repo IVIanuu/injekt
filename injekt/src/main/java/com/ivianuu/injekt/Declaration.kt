@@ -61,8 +61,13 @@ data class Declaration<T : Any> private constructor(
  */
 infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
     val newDeclaration = copy(type = type as KClass<S>, name = null)
-    newDeclaration.module = module
+    newDeclaration.kind = kind
+    newDeclaration.override = override
+    newDeclaration.createOnStart = createOnStart
+    newDeclaration.attributes = attributes
+    newDeclaration.definition = definition
     newDeclaration.instance = instance
+    // omit newDeclaration.module = module because the module sets it
     module.declare(newDeclaration)
 }
 
