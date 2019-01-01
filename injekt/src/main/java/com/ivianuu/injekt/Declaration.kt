@@ -79,7 +79,7 @@ internal fun <T : Any> Declaration<T>.copyIdentity() = copy().also {
     it.attributes = attributes
     it.definition = definition
     it.instance = when (kind) {
-        Declaration.Kind.FACTORY -> FactoryInstance(this)
+        Declaration.Kind.FACTORY -> instance // no need to create a new instance
         Declaration.Kind.SINGLE -> SingleInstance(this)
     }
     it.module = module
