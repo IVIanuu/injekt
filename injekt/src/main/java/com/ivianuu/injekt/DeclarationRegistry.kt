@@ -64,7 +64,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun findDeclaration(
         type: KClass<*>,
         name: String? = null
-    ): Declaration<*>? = declarations[Key(type, name)]
+    ): Declaration<*>? = declarations[Key.of(type, name)]
 
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 

@@ -80,4 +80,21 @@ class ComponentTest {
         assertTrue(called)
     }
 
+    @Test
+    fun testInstanceResolving() {
+        val typed = TestDep1()
+        val named = TestDep1()
+
+        val component = component {
+            modules(
+                module {
+                    factory { typed }
+                    factory("named") { named }
+                }
+            )
+        }
+
+        assertEquals(typed, component.get(TestDep1::class, null))
+        assertEquals(named, component.get(TestDep1::class, "named"))
+    }
 }

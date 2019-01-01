@@ -19,6 +19,19 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * @author Manuel Wrage (IVIanuu)
+ * Key for declarations
  */
-data class Key(val type: KClass<*>, val name: String?)
+sealed class Key {
+    data class ClassKey(val type: KClass<*>) : Key()
+    data class NameKey(val name: String) : Key()
+
+    companion object {
+
+        fun of(type: KClass<*>, name: String?) = if (name != null) {
+            NameKey(name)
+        } else {
+            ClassKey(type)
+        }
+
+    }
+}
