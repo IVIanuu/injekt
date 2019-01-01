@@ -26,6 +26,5 @@ import kotlin.reflect.KClass
 annotation class Factory(
     val name: String = "",
     val override: Boolean = false,
-    val createOnStart: Boolean = false,
     val secondaryTypes: Array<KClass<*>> = []
 )

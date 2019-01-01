@@ -35,7 +35,7 @@ import kotlin.reflect.KClass
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component { modules(appModule(), sampleAutoModule) }
+        component { modules(autoAppModule, appModule()) }
     }
 
     private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
@@ -70,6 +70,7 @@ fun App.appModule() = module {
 }
 
 private val servicesModule = module {
+    module(autoServicesModule)
     bindIntoSet<Service, MyServiceOne>(SERVICES_SET)
     bindIntoMap<KClass<out Service>, Service, MyServiceOne>(SERVICES_MAP, MyServiceOne::class)
 
@@ -78,6 +79,7 @@ private val servicesModule = module {
 }
 
 @Single
+@AutoAppModule
 class AppDependency(
     val app: App,
     @Param val appLazy: Lazy<App>,

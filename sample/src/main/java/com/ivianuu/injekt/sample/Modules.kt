@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.codegen
+package com.ivianuu.injekt.sample
 
-/**
- * Declares the configuration for the auto module
- */
-@Retention(AnnotationRetention.SOURCE)
-annotation class AutoModule(
-    val moduleName: String = "",
-    val packageName: String = "",
-    val internal: Boolean = false,
-    val override: Boolean = false,
-    val createOnStart: Boolean = false
-)
+import com.ivianuu.injekt.codegen.Module
+
+@Module
+annotation class AutoAppModule
+
+@Module
+annotation class AutoMainActivityModule
+
+@Module
+annotation class AutoServicesModule

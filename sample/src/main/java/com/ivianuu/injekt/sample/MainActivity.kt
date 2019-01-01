@@ -44,6 +44,7 @@ fun MainActivity.mainActivityModule() = module {
 }
 
 @Single
+@AutoMainActivityModule
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

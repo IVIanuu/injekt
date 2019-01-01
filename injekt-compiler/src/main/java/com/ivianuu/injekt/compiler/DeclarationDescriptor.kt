@@ -21,10 +21,11 @@ import com.squareup.kotlinpoet.TypeName
 
 data class DeclarationDescriptor(
     val target: ClassName,
+    val module: ClassName,
     val kind: Kind,
     val name: String?,
     val override: Boolean,
-    val createOnStart: Boolean,
+    val createOnStart: Boolean?,
     val secondaryTypes: Set<TypeName>,
     val constructorParams: List<ParamDescriptor>
 ) {

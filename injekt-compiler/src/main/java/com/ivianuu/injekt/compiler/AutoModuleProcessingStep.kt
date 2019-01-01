@@ -34,7 +34,6 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
     ProcessingEnvHolder {
 
     override fun annotations() = setOf(
-        AutoModule::class.java,
         Factory::class.java,
         Name::class.java,
         Param::class.java,
@@ -42,99 +41,57 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
     )
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        val configurations = elementsByAnnotation[AutoModule::class.java]
+        validateNameUsages(elementsByAnnotation[Name::class.java])
+        validateParamUsages(elementsByAnnotation[Param::class.java])
 
-        when {
-            configurations.size > 1 -> {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Only one class should be annotated with AutoModule"
-                )
-                return emptySet()
-            }
-            configurations.size == 0 -> {
-                messager.printMessage(Diagnostic.Kind.ERROR, "Missing AutoModule annotation")
-                return emptySet()
-            }
-        }
+        val declarationElements = (elementsByAnnotation[Factory::class.java]
+                + elementsByAnnotation[Single::class.java])
 
-        val config = configurations.first()
-        val configMirror = config.getAnnotationMirror<AutoModule>()
+        validateOnlyOneKindAnnotation(declarationElements)
+        validateModuleAnnotations(declarationElements)
 
-        var packageName = configMirror["packageName"].value as String
-
-        if (packageName.isEmpty()) {
-            packageName = config.getPackage().qualifiedName.toString()
-        }
-
-        var moduleName = configMirror["moduleName"].value as String
-
-        if (moduleName.isEmpty()) {
-            moduleName = "autoModule"
-        }
-
-        val override = configMirror["override"].value as Boolean
-        val createOnStart = configMirror["createOnStart"].value as Boolean
-        val internal = configMirror["internal"].value as Boolean
-
-        elementsByAnnotation[Name::class.java]
-            .filter {
-                val type = it.enclosingElement.enclosingElement
-                messager.printMessage(Diagnostic.Kind.WARNING, "type $type")
-                !type.hasAnnotation<Factory>()
-                        && !type.hasAnnotation<Single>()
-            }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "@Name annotation should only be used inside a class which is annotated with @Single or @Factory",
-                    it
-                )
-            }
-
-        elementsByAnnotation[Param::class.java]
-            .filter {
-                val type = it.enclosingElement.enclosingElement
-                messager.printMessage(Diagnostic.Kind.WARNING, "type $type")
-                !type.hasAnnotation<Factory>()
-                        && !type.hasAnnotation<Single>()
-            }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "@Param annotation should only be used inside a class which is annotated with @Single or @Factory",
-                    it
-                )
-            }
-
-        (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
-            .filter { it.hasAnnotation<Factory>() && it.hasAnnotation<Single>() }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "It's not possible to annotate classes with @Factory AND @Single", it
-                )
-            }
-
-        val types =
+        val declarations =
             (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
                 .filterIsInstance<TypeElement>()
-                .mapNotNull { createDescriptor(it) }
+                .mapNotNull { createDeclarationDescriptor(it) }
                 .toSet()
 
-        val module = ModuleDescriptor(
-            packageName, moduleName,
-            internal, override, createOnStart, types
-        )
-        val generator = ModuleGenerator(module)
+        val modules = declarations
+            .groupBy { it.module }
+            .map { (moduleType, declarations) ->
+                val module = elementUtils.getTypeElement(moduleType.toString())
+                val annotation = module.getAnnotationMirror<Module>()
+                var packageName = annotation["packageName"].value as String
 
-        generator.generate()
-            .write(processingEnv)
+                if (packageName.isEmpty()) {
+                    packageName = module.getPackage().qualifiedName.toString()
+                }
+
+                var moduleName = annotation["moduleName"].value as String
+
+                if (moduleName.isEmpty()) {
+                    moduleName = module.simpleName.toString().decapitalize()
+                }
+
+                val internal = annotation["internal"].value as Boolean
+                val override = annotation["override"].value as Boolean
+                val createOnStart = annotation.getOrNull("name")?.value as? Boolean ?: false
+
+                ModuleDescriptor(
+                    packageName, moduleName, internal,
+                    override, createOnStart, declarations.toSet()
+                )
+            }
+
+        modules
+            .map { ModuleGenerator(it) }
+            .map { it.generate() }
+            .forEach { it.write(processingEnv) }
 
         return emptySet()
     }
 
-    private fun createDescriptor(element: TypeElement): DeclarationDescriptor? {
+    private fun createDeclarationDescriptor(element: TypeElement): DeclarationDescriptor? {
         val kind = if (element.hasAnnotation<Single>()) {
             DeclarationDescriptor.Kind.SINGLE
         } else {
@@ -152,7 +109,9 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         }
 
         val override = annotation["override"].value as Boolean
-        val createOnStart = annotation["createOnStart"].value as Boolean
+        val createOnStart = annotation.getOrNull("createOnStart")?.value as? Boolean
+
+        val module = element.getAnnotatedAnnotations<Module>().firstOrNull() ?: return null
 
         val secondaryTypes = annotation.getAsTypeList("secondaryTypes")
             .map { it.asTypeName().javaToKotlinType() }.toSet()
@@ -160,6 +119,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         var paramsIndex = -1
         return DeclarationDescriptor(
             element.asClassName().javaToKotlinType() as ClassName,
+            (module.annotationType.asElement() as TypeElement).asClassName(),
             kind,
             name,
             override,
@@ -191,7 +151,8 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                     if (paramIndex != -1 && getName != null) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Only one of @Name and @Param can be annotated per parameter"
+                            "Only one of @Name and @Param can be annotated per parameter",
+                            it
                         )
                         return null
                     }
@@ -214,5 +175,65 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                     )
                 }
         )
+    }
+
+    private fun validateNameUsages(elements: Set<Element>) {
+        elements
+            .filter {
+                val type = it.enclosingElement.enclosingElement
+                !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Single>()
+            }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "@Name annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    it
+                )
+            }
+    }
+
+    private fun validateParamUsages(elements: Set<Element>) {
+        elements
+            .filter {
+                val type = it.enclosingElement.enclosingElement
+                !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Single>()
+            }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "@Param annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    it
+                )
+            }
+    }
+
+    private fun validateOnlyOneKindAnnotation(elements: Set<Element>) {
+        elements
+            .filter { it.hasAnnotation<Factory>() && it.hasAnnotation<Single>() }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "It's not possible to annotate classes with @Factory AND @Single", it
+                )
+            }
+    }
+
+    private fun validateModuleAnnotations(elements: Set<Element>) {
+        elements.forEach { element ->
+            val moduleAnnotations = element.getAnnotatedAnnotations<Module>()
+
+            when {
+                moduleAnnotations.isEmpty() -> messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Missing @Module annotated class annotation", element
+                )
+                moduleAnnotations.size > 1 -> messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Only one @Module annotated class annotation allowed", element
+                )
+            }
+        }
     }
 }
