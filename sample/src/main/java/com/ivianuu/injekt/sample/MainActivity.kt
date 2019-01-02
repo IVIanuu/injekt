@@ -16,7 +16,7 @@ import kotlin.reflect.KClass
 class MainActivity : AppCompatActivity(), ComponentHolder {
 
     override val component by lazy {
-        component {
+        component("MainActivityComponent") {
             dependencies((application as ComponentHolder).component)
             modules(mainActivityModule())
         }
@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
 
 }
 
-fun MainActivity.mainActivityModule() = module {
+fun MainActivity.mainActivityModule() = module("mainActivityModule") {
     single { this@mainActivityModule }
 
     bind<FragmentActivity, MainActivity>()

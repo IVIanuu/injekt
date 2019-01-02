@@ -39,9 +39,11 @@ class ComponentRegistry internal constructor(val component: Component) {
     fun addComponents(vararg components: Component) {
         components.forEach {
             if (!dependencies.add(it)) {
-                error("component already added $it")
+                error("component already added ${it.name} to ${component.name}")
             }
         }
+
+        component.declarationRegistry.loadComponents(*components)
     }
 
 }

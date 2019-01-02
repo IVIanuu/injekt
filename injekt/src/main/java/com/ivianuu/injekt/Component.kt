@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * The actual dependency container which provides declarations
  */
-class Component internal constructor() {
+class Component internal constructor(val name: String? = null) {
 
     val context = ComponentContext(this)
     val componentRegistry = ComponentRegistry(this)
@@ -23,7 +23,6 @@ class Component internal constructor() {
      */
     fun dependencies(vararg components: Component) {
         componentRegistry.addComponents(*components)
-        declarationRegistry.loadComponents(*components)
     }
 
     /**
@@ -47,7 +46,7 @@ class Component internal constructor() {
             @Suppress("UNCHECKED_CAST")
             declaration.resolveInstance(params) as T
         } else {
-            throw InjectionException("Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
+            throw InjectionException("Could not find declaration for ${type.java.name + " " + name.orEmpty()} in $name")
         }
     }
 
@@ -57,9 +56,10 @@ class Component internal constructor() {
  * Returns a new [Component] and applies the [definition]
  */
 fun component(
+    name: String? = null,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition
-) = Component()
+) = Component(name)
     .apply(definition)
     .apply {
         if (createEagerInstances) {

@@ -75,11 +75,12 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
             CodeBlock.builder()
                 .apply {
                     val args = mapOf(
+                        "name" to module.moduleName,
                         "override" to module.override,
                         "createOnStart" to module.createOnStart
                     )
 
-                    addNamed("module(%override:L, %createOnStart:L)", args)
+                    addNamed("module(%name:S, %override:L, %createOnStart:L)", args)
                 }
                 .beginControlFlow(" {")
                 .apply { module.declarations.forEach { add(declaration(it)) } }

@@ -7,6 +7,7 @@ import kotlin.reflect.KClass
  * A module provides the actual dependencies
  */
 class Module internal constructor(
+    val name: String? = null,
     val createOnStart: Boolean,
     val override: Boolean
 ) {
@@ -44,10 +45,11 @@ class Module internal constructor(
  * Defines a [Module]
  */
 fun module(
+    name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: ModuleDefinition
-) = Module(createOnStart, override).apply(definition)
+) = Module(name, createOnStart, override).apply(definition)
 
 /**
  * Provides a dependency
@@ -147,11 +149,12 @@ fun Module.module(module: Module) {
  * Adds all declarations of module
  */
 fun Module.module(
+    name: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: ModuleDefinition
 ) {
-    module(com.ivianuu.injekt.module(override, createOnStart, definition))
+    module(com.ivianuu.injekt.module(name, override, createOnStart, definition))
 }
 
 /**
