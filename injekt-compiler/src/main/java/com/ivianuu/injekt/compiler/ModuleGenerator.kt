@@ -55,7 +55,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
         }
 
         if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.LAZY }) {
-            imports.add("lazy")
+            imports.add("inject")
         }
 
         if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
@@ -138,8 +138,8 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                         }
                         ParamDescriptor.Kind.LAZY -> {
                             when {
-                                it.name != null -> "lazy(\"${it.name}\")"
-                                else -> "lazy()"
+                                it.name != null -> "inject(\"${it.name}\")"
+                                else -> "inject()"
                             }
                         }
                         ParamDescriptor.Kind.PROVIDER -> {

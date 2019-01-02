@@ -24,7 +24,7 @@ import com.ivianuu.injekt.codegen.Single
 @Single
 class Dummy(
     val app: App,
-    @Param val appLazy: Lazy<App>,
+    val appLazy: Lazy<App>,
     @Name("namedd") val appProvider: Provider<App>,
     @Param val paramete: String,
     @Param val parametew: String,

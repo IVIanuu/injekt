@@ -16,61 +16,7 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Environment for [Definition]s
  */
-class ComponentContext(val component: Component)
-
-/** Calls trough [Component.get] */
-inline fun <reified T : Any> ComponentContext.get(
-    name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = get(T::class, name, params)
-
-/** Calls trough [Component.get] */
-fun <T : Any> ComponentContext.get(
-    type: KClass<T>,
-    name: String? = null,
-    params: ParamsDefinition? = null
-) = component.get(type, name, params)
-
-/** Calls trough [Component.inject] */
-inline fun <reified T : Any> ComponentContext.lazy(
-    name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = lazy(T::class, name, params)
-
-/** Calls trough [Component.inject] */
-fun <T : Any> ComponentContext.lazy(
-    type: KClass<T>,
-    name: String? = null,
-    params: ParamsDefinition? = null
-): Lazy<T> = kotlin.lazy { get(type, name, params) }
-
-/** Calls trough [Component.provider] */
-inline fun <reified T : Any> ComponentContext.provider(
-    name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = provider(T::class, name, defaultParams)
-
-/** Calls trough [Component.provider] */
-fun <T : Any> ComponentContext.provider(
-    type: KClass<T>,
-    name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = component.provider(type, name, defaultParams)
-
-/** Calls trough [Component.injectProvider] */
-inline fun <reified T : Any> ComponentContext.lazyProvider(
-    name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = lazyProvider(T::class, name, defaultParams)
-
-/** Calls trough [Component.injectProvider] */
-fun <T : Any> ComponentContext.lazyProvider(
-    type: KClass<T>,
-    name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = component.injectProvider(type, name, defaultParams)
+class ComponentContext(override val component: Component) : ComponentHolder

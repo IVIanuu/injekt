@@ -18,6 +18,13 @@ inline fun <reified T : Any> ComponentHolder.get(
     noinline params: ParamsDefinition? = null
 ) = component.get(T::class, name, params)
 
+/** Calls trough [Component.get] */
+fun <T : Any> ComponentHolder.get(
+    type: KClass<T>,
+    name: String? = null,
+    params: ParamsDefinition? = null
+) = component.get(type, name, params)
+
 /** Calls trough [Component.inject] */
 inline fun <reified T : Any> ComponentHolder.inject(
     name: String? = null,
