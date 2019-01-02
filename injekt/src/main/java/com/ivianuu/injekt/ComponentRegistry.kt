@@ -39,7 +39,7 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
-        val allComponents = dependencies.flatMap { it.componentRegistry.dependencies }
+        val allComponents = dependencies.flatMap { listOf(it) + it.componentRegistry.dependencies }
 
         components.forEach {
             if (allComponents.contains(it)) {

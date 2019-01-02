@@ -30,7 +30,7 @@ class ChildFragment : Fragment(), InjektTrait {
 
     override val component by lazy {
         fragmentComponent(this) {
-            //       dependencies((activity?.applicationContext as InjektTrait).component)
+            dependencies((activity?.applicationContext as InjektTrait).component)
         }
     }
 
