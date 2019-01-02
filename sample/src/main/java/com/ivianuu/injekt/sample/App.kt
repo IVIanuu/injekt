@@ -78,8 +78,8 @@ private val servicesModule = module {
     bindIntoMap<KClass<out Service>, Service, MyServiceTwo>(SERVICES_MAP, MyServiceTwo::class)
 }
 
-@Single
 @AutoAppModule
+@Single
 class AppDependency(
     val app: App,
     @Param val appLazy: Lazy<App>,

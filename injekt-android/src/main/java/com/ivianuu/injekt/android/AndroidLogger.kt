@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.util.Log
+import com.ivianuu.injekt.INJEKT_TAG
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Logger
 
@@ -26,24 +27,21 @@ import com.ivianuu.injekt.Logger
 class AndroidLogger : Logger {
 
     override fun debug(msg: String) {
-        Log.d(TAG, msg)
+        Log.d(INJEKT_TAG, msg)
     }
 
     override fun info(msg: String) {
-        Log.i(TAG, msg)
+        Log.i(INJEKT_TAG, msg)
     }
 
     override fun warn(msg: String) {
-        Log.w(TAG, msg)
+        Log.w(INJEKT_TAG, msg)
     }
 
-    override fun error(msg: String, throwable: Throwable?) {
-        Log.e(TAG, msg, throwable)
+    override fun error(msg: String) {
+        Log.e(INJEKT_TAG, msg)
     }
 
-    private companion object {
-        private const val TAG = "Injekt"
-    }
 }
 
 /**

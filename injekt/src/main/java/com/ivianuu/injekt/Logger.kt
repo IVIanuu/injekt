@@ -23,5 +23,26 @@ interface Logger {
 
     fun warn(msg: String)
 
-    fun error(msg: String, throwable: Throwable? = null)
+    fun error(msg: String)
+}
+
+const val INJEKT_TAG = "[INJEKT]"
+
+class PrintLogger : Logger {
+
+    override fun debug(msg: String) {
+        println("[DEBUG] $INJEKT_TAG $msg")
+    }
+
+    override fun info(msg: String) {
+        println("[INFO] $INJEKT_TAG $msg")
+    }
+
+    override fun warn(msg: String) {
+        println("[WARN] $INJEKT_TAG $msg")
+    }
+
+    override fun error(msg: String) {
+        println("[ERROR] $INJEKT_TAG $msg")
+    }
 }
