@@ -63,7 +63,7 @@ class DeclarationRegistryTest {
         val declaration =
             Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
         assertEquals(null, registry.findDeclaration(TestDep1::class))
-        registry.saveDeclaration(declaration.key, declaration)
+        registry.saveDeclaration(declaration)
         assertEquals(declaration, registry.findDeclaration(TestDep1::class))
     }
 
@@ -77,8 +77,8 @@ class DeclarationRegistryTest {
                 .apply { override = true }
 
         val throwed = try {
-            registry.saveDeclaration(declaration1.key, declaration1)
-            registry.saveDeclaration(declaration2.key, declaration2)
+            registry.saveDeclaration(declaration1)
+            registry.saveDeclaration(declaration2)
             false
         } catch (e: OverrideException) {
             true
@@ -96,8 +96,8 @@ class DeclarationRegistryTest {
             Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
 
         val throwed = try {
-            registry.saveDeclaration(declaration1.key, declaration1)
-            registry.saveDeclaration(declaration2.key, declaration2)
+            registry.saveDeclaration(declaration1)
+            registry.saveDeclaration(declaration2)
             false
         } catch (e: OverrideException) {
             true

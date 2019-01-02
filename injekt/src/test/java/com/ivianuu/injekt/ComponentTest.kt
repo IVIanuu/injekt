@@ -50,7 +50,7 @@ class ComponentTest {
         val throwed = try {
             component.get(TestDep1::class)
             false
-        } catch (e: InjectionException) {
+        } catch (e: NoDeclarationFoundException) {
             true
         }
 
