@@ -4,5 +4,6 @@ include(
     ":injekt-codegen",
     ":injekt-compiler",
     ":injekt-reflect",
+    ":injekt-test",
     ":sample"
 )

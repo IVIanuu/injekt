@@ -49,4 +49,5 @@ dependencies {
     implementation(project(":injekt-codegen"))
     implementation(project(":injekt-reflect"))
     kapt(project(":injekt-compiler"))
+    testImplementation(project(":injekt-test"))
 }

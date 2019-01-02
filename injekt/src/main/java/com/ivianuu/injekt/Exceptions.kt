@@ -8,3 +8,5 @@ class InjectionException(message: String) : InjektException(message)
 class OverrideException(message: String) : InjektException(message)
 
 class InstanceCreationException(message: String, cause: Throwable) : InjektException(message, cause)
+
+class NoDeclarationFoundException(message: String) : InjektException(message)

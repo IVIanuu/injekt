@@ -27,7 +27,7 @@ data class Declaration<T : Any> private constructor(
         params: ParamsDefinition? = null
     ) = instance.get(params)
 
-    internal fun createInstanceHolder() {
+    fun createInstanceHolder() {
         instance = when (kind) {
             Declaration.Kind.FACTORY -> FactoryInstance(this)
             Declaration.Kind.SINGLE -> SingleInstance(this)

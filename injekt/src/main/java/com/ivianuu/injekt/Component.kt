@@ -64,7 +64,7 @@ class Component internal constructor(val name: String? = null) {
             }
             declaration.resolveInstance(params) as T
         } else {
-            throw InjectionException("$name Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
+            throw NoDeclarationFoundException("$name Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 

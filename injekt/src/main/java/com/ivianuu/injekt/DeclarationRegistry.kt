@@ -36,7 +36,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
             module.declarations
                 .mapValues { it.value.copyIdentity() }
                 .forEach {
-                    saveDeclaration(it.key, it.value)
+                    saveDeclaration(it.value)
                     if (it.value.createOnStart) {
                         createOnStartDeclarations.add(it.value)
                     }
@@ -77,7 +77,8 @@ class DeclarationRegistry internal constructor(val component: Component) {
     /**
      * Saves the [declaration]
      */
-    fun saveDeclaration(key: Key, declaration: Declaration<*>) {
+    fun saveDeclaration(declaration: Declaration<*>) {
+        val key = declaration.key
         val oldDeclaration = declarations[key]
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
