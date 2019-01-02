@@ -20,6 +20,12 @@ class Module internal constructor(
     fun <T : Any> declare(
         declaration: Declaration<T>
     ): Declaration<T> {
+        val oldDeclaration = declarations[declaration.key]
+        val isOverride = oldDeclaration != null
+        if (isOverride && !declaration.override) {
+            throw OverrideException("$name Try to override declaration $declaration but was already saved $oldDeclaration")
+        }
+
         declaration.module = this
 
         val createOnStart = if (createOnStart) createOnStart else declaration.createOnStart
@@ -27,12 +33,6 @@ class Module internal constructor(
 
         declaration.createOnStart = createOnStart
         declaration.override = override
-
-        val oldDeclaration = declarations[declaration.key]
-        val isOverride = oldDeclaration != null
-        if (isOverride && !declaration.override) {
-            throw OverrideException("$name Try to override declaration $declaration but was already saved $oldDeclaration")
-        }
 
         declarations[declaration.key] = declaration
 
@@ -109,25 +109,20 @@ fun <T : Any> Module.single(
  * Adds a [Declaration] for the provided params
  */
 inline fun <reified T : Any> Module.declare(
-    kind: Kind,
     name: String? = null,
+    kind: Kind,
     override: Boolean = false,
     createOnStart: Boolean = false,
     noinline definition: Definition<T>
-) = declare(
-    Declaration.create(T::class, name, kind, definition).also {
-        it.createOnStart = createOnStart
-        it.override = override
-    }
-)
+) = declare(T::class, name, kind, override, createOnStart, definition)
 
 /**
  * Adds a [Declaration] for the provided params
  */
 fun <T : Any> Module.declare(
     type: KClass<T>,
-    kind: Kind,
     name: String? = null,
+    kind: Kind,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: Definition<T>
