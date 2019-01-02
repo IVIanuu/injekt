@@ -30,12 +30,20 @@ fun <T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
+    applicationDependencies(instance)
+        .filterNot { componentRegistry.dependsOn(it) }
+        .forEach { dependencies(it) }
     modules(instanceModule(instance), applicationModule(instance))
     definition?.invoke(this)
 }
 
 const val APPLICATION = "application"
 const val APPLICATION_CONTEXT = "application_context"
+
+/**
+ * Returns dependencies for [instance]
+ */
+fun applicationDependencies(instance: Application) = emptySet<Component>()
 
 /**
  * Returns a [Module] with convenient declarations

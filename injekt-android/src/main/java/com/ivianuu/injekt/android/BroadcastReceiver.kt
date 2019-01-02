@@ -32,13 +32,22 @@ fun <T : BroadcastReceiver> receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    (context as? ComponentHolder)?.component?.let {
-        if (!componentRegistry.dependsOn(it)) dependencies(it)
-    }
+    receiverDependencies(instance, context)
+        .filterNot { componentRegistry.dependsOn(it) }
+        .forEach { dependencies(it) }
 
-    instanceModule(instance)
+    modules(instanceModule(instance), receiverModule(instance, context))
 
     definition?.invoke(this)
+}
+
+/**
+ * Returns dependencies for [instance]
+ */
+fun receiverDependencies(instance: BroadcastReceiver, context: Context): Set<Component> {
+    val dependencies = mutableSetOf<Component>()
+    (context.applicationContext as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    return dependencies
 }
 
 const val RECEIVER = "receiver"

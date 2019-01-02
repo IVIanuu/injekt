@@ -29,13 +29,26 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    (instance.context as? ComponentHolder)?.component?.let {
-        if (!componentRegistry.dependsOn(it)) dependencies(it)
-    }
+    contentProviderDependencies(instance)
+        .filterNot { componentRegistry.dependsOn(it) }
+        .forEach { dependencies(it) }
 
     modules(instanceModule(instance), contentProviderModule(instance))
 
     definition?.invoke(this)
+}
+
+/**
+ * Returns dependencies for [instance]
+ */
+fun contentProviderDependencies(instance: ContentProvider): Set<Component> {
+    val dependencies = mutableSetOf<Component>()
+    (instance.context!!.applicationContext as? ComponentHolder)?.component?.let {
+        dependencies.add(
+            it
+        )
+    }
+    return dependencies
 }
 
 const val CONTENT_PROVIDER = "content_provider"

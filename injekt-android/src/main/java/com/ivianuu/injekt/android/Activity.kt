@@ -31,15 +31,20 @@ fun <T : Activity> activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    // add application component
-    (instance.application as? ComponentHolder)?.component?.let {
-        if (!componentRegistry.dependsOn(it)) dependencies(it)
-    }
-
-    // modules
+    activityDependencies(instance)
+        .filterNot { componentRegistry.dependsOn(it) }
+        .forEach { dependencies(it) }
     modules(instanceModule(instance), activityModule(instance))
-
     definition?.invoke(this)
+}
+
+/**
+ * Returns dependencies for [instance]
+ */
+fun activityDependencies(instance: Activity): Set<Component> {
+    val dependencies = mutableSetOf<Component>()
+    (instance.application as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    return dependencies
 }
 
 const val ACTIVITY = "activity"

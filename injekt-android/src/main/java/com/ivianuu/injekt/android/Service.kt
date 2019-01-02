@@ -30,13 +30,22 @@ fun <T : Service> serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    (instance.application as? ComponentHolder)?.component?.let {
-        if (!componentRegistry.dependsOn(it)) dependencies(it)
-    }
+    serviceDependencies(instance)
+        .filterNot { componentRegistry.dependsOn(it) }
+        .forEach { dependencies(it) }
 
     modules(instanceModule(instance), serviceModule(instance))
 
     definition?.invoke(this)
+}
+
+/**
+ * Returns dependencies for [instance]
+ */
+fun serviceDependencies(instance: Service): Set<Component> {
+    val dependencies = mutableSetOf<Component>()
+    (instance.application as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    return dependencies
 }
 
 const val SERVICE = "service"
