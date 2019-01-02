@@ -49,12 +49,7 @@ class Component internal constructor(val name: String? = null) {
         params: ParamsDefinition? = null
     ) = synchronized(this) {
         val key = Key.of(type, name)
-        val declaration = declarationRegistry.findDeclaration(key)
-            ?: componentRegistry.getDependencies().firstNotNull {
-                it.declarationRegistry.findDeclaration(
-                    key
-                )
-            }
+        val declaration = findDeclaration(key)
 
         if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
@@ -72,6 +67,10 @@ class Component internal constructor(val name: String? = null) {
             throw InjectionException("$name Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
+
+    private fun findDeclaration(key: Key): Declaration<*>? =
+        declarationRegistry.findDeclaration(key)
+            ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key) }
 
     private inline fun <T, R> Iterable<T>.firstNotNull(predicate: (T) -> R): R? {
         for (element in this) {
