@@ -14,28 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.module
+import kotlin.reflect.KClass
 
-interface Service {
-    fun execute()
-}
-
-@Single
-class MyServiceOne : Service {
-    override fun execute() {
-    }
-}
-
-@Single
-class MyServiceTwo : Service {
-    override fun execute() {
-    }
-}
-
-@Single
-class MyServiceThree : Service {
-    override fun execute() {
-    }
+/**
+ * Returns a [Module] which binds the [instance]
+ */
+fun <T : Any> instanceModule(
+    instance: T,
+    name: String? = instance.javaClass.name + "InstanceModule"
+) = module(name) {
+    factory(instance::class as KClass<T>) { instance }
 }

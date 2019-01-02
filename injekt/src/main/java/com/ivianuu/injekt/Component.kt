@@ -12,10 +12,6 @@ class Component internal constructor(val name: String? = null) {
     val componentRegistry = ComponentRegistry(this)
     val declarationRegistry = DeclarationRegistry(this)
 
-    init {
-        logger?.info("$name created")
-    }
-
     /**
      * Adds all [Declaration]s of the [module]
      */

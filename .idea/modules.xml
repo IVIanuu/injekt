@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/injekt/injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-codegen/injekt-codegen.iml" filepath="$PROJECT_DIR$/injekt-codegen/injekt-codegen.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-common/injekt-common.iml" filepath="$PROJECT_DIR$/injekt-common/injekt-common.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-compiler/injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-compiler/injekt-compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-reflect/injekt-reflect.iml" filepath="$PROJECT_DIR$/injekt-reflect/injekt-reflect.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-test/injekt-test.iml" filepath="$PROJECT_DIR$/injekt-test/injekt-test.iml" />

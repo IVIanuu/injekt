@@ -160,5 +160,5 @@ fun Module.module(
 /**
  * Adds a binding for [T] for a existing declaration of [S]
  */
-inline fun <reified T : Any, reified S : T> Module.bind() =
-    factory<T> { get<S>() }
+inline fun <reified T : Any, reified S : T> Module.bind(name: String? = null) =
+    factory<T>(name) { get<S>() }

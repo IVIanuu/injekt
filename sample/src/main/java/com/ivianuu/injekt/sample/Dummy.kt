@@ -16,28 +16,18 @@
 
 package com.ivianuu.injekt.sample
 
-import android.app.Application
-import com.ivianuu.injekt.ComponentHolder
-import com.ivianuu.injekt.GlobalDeclarationRegistry
-import com.ivianuu.injekt.android.androidLogger
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.configureInjekt
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.codegen.Name
+import com.ivianuu.injekt.codegen.Param
+import com.ivianuu.injekt.codegen.Single
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
-class App : Application(), ComponentHolder {
-
-    override val component by lazy { applicationComponent(this) }
-
-    override fun onCreate() {
-        super.onCreate()
-
-        GlobalDeclarationRegistry.loadModules(autoModule)
-
-        configureInjekt {
-            androidLogger()
-        }
-    }
-
-}
+@Single
+class Dummy(
+    val app: App,
+    @Param val appLazy: Lazy<App>,
+    @Name("namedd") val appProvider: Provider<App>,
+    @Param val paramete: String,
+    @Param val parametew: String,
+    @Name("named") val named: String,
+    @Param val parf: String
+)
