@@ -43,9 +43,12 @@ class ComponentRegistry internal constructor(val component: Component) {
             logger?.info(
                 "${component.name} adding component ${it.name}"
             )
+
             if (!dependencies.add(it)) {
                 error("${component.name} component already added ${it.name}")
             }
+
+            component.declarationRegistry.checkOverrides(it)
         }
     }
 
