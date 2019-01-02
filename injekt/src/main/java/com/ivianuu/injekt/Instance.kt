@@ -1,7 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.InjektPlugins.logger
-
 /**
  * The [Instance] of an [Declaration]
  */
@@ -11,19 +9,14 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
     abstract val isCreated: Boolean
 
-    fun get(params: ParamsDefinition? = null): T {
-        logger?.let { logger ->
-            val msg = when {
-                isCreated -> "${component.name} Return existing instance for $declaration"
-                declaration.createOnStart -> "${component.name} Create instance on start up $declaration"
-                else -> "${component.name} Create instance $declaration"
-            }
+    abstract fun get(params: ParamsDefinition? = null): T
 
-            logger.info(msg)
-        }
-
+    protected open fun create(params: ParamsDefinition?): T {
         return try {
-            getOrCreate(params)
+            declaration.definition.invoke(
+                component.context,
+                params?.invoke() ?: emptyParameters()
+            )
         } catch (e: Exception) {
             throw InstanceCreationException(
                 "${component.name} Couldn't instantiate $declaration",
@@ -31,8 +24,6 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
             )
         }
     }
-
-    protected abstract fun getOrCreate(params: ParamsDefinition?): T
 
 }
 
@@ -43,8 +34,7 @@ internal class FactoryInstance<T : Any>(
     override val isCreated: Boolean
         get() = false
 
-    override fun getOrCreate(params: ParamsDefinition?) =
-        declaration.definition.invoke(component.context, params?.invoke() ?: emptyParameters())
+    override fun get(params: ParamsDefinition?) = create(params)
 
 }
 
@@ -57,16 +47,13 @@ internal class SingleInstance<T : Any>(
     override val isCreated: Boolean
         get() = _value != null
 
-    override fun getOrCreate(params: ParamsDefinition?): T {
+    override fun get(params: ParamsDefinition?): T {
         val value = _value
 
         return if (value != null) {
             return value
         } else {
-            val typedValue = declaration.definition
-                .invoke(component.context, params?.invoke() ?: emptyParameters())
-            _value = typedValue
-            typedValue
+            create(params).also { _value = it }
         }
     }
 

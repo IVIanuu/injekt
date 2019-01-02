@@ -39,19 +39,14 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
-        logger?.info(
-            "${component.name} load dependencies ${components.map { it.name }.joinToString(
-                ", "
-            )}"
-        )
-
         components.forEach {
+            logger?.info(
+                "${component.name} adding component ${it.name}"
+            )
             if (!dependencies.add(it)) {
                 error("${component.name} component already added ${it.name}")
             }
         }
-
-        component.declarationRegistry.loadComponents(*components)
     }
 
 }

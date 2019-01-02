@@ -12,6 +12,10 @@ class Component internal constructor(val name: String? = null) {
     val componentRegistry = ComponentRegistry(this)
     val declarationRegistry = DeclarationRegistry(this)
 
+    init {
+        logger?.info("$name created")
+    }
+
     /**
      * Adds all [Declaration]s of the [module]
      */
@@ -30,8 +34,10 @@ class Component internal constructor(val name: String? = null) {
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
-        logger?.info("$name create eager instances")
-        declarationRegistry.getEagerInstances().forEach { it.resolveInstance() }
+        declarationRegistry.getEagerInstances().forEach {
+            logger?.info("$name Create instance on start up $it")
+            it.resolveInstance()
+        }
     }
 
     /**
@@ -42,16 +48,38 @@ class Component internal constructor(val name: String? = null) {
         name: String? = null,
         params: ParamsDefinition? = null
     ) = synchronized(this) {
-        val declaration = declarationRegistry.findDeclaration(type, name)
+        val key = Key.of(type, name)
+        val declaration = declarationRegistry.findDeclaration(key)
+            ?: componentRegistry.getDependencies().firstNotNull {
+                it.declarationRegistry.findDeclaration(
+                    key
+                )
+            }
 
         if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
+            logger?.let { logger ->
+                logger.info(
+                    if (declaration.instance.isCreated) {
+                        "$name Return existing instance $declaration"
+                    } else {
+                        "$name Create instance $declaration"
+                    }
+                )
+            }
             declaration.resolveInstance(params) as T
         } else {
             throw InjectionException("$name Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 
+    private inline fun <T, R> Iterable<T>.firstNotNull(predicate: (T) -> R): R? {
+        for (element in this) {
+            val result = predicate(element)
+            if (result != null) return result
+        }
+        return null
+    }
 }
 
 /**
@@ -80,7 +108,7 @@ fun Component.modules(modules: Collection<Module>) {
  * Adds all [Declaration]s of [components] to this component
  */
 fun Component.dependencies(components: Collection<Component>) {
-    declarationRegistry.loadComponents(*components.toTypedArray())
+    dependencies(*components.toTypedArray())
 }
 
 /**

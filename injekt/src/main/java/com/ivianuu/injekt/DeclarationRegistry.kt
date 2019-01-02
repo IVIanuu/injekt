@@ -31,8 +31,8 @@ class DeclarationRegistry internal constructor(val component: Component) {
      * Adds all [Declaration]s of the [modules]
      */
     fun loadModules(vararg modules: Module) {
-        logger?.info("${component.name} load modules ${modules.map { it.name }.joinToString(", ")}")
         modules.forEach { module ->
+            logger?.info("${component.name} load module ${module.name}, ${module.declarations.size}")
             module.declarations
                 .mapValues { it.value.copyIdentity() }
                 .forEach {
@@ -41,17 +41,6 @@ class DeclarationRegistry internal constructor(val component: Component) {
                         createOnStartDeclarations.add(it.value)
                     }
                 }
-        }
-    }
-
-    /**
-     * Adds all [Declaration]s of [components] to this component
-     */
-    fun loadComponents(vararg components: Component) {
-        components.forEach { component ->
-            component.declarationRegistry.declarations.forEach {
-                saveDeclaration(it.key, it.value)
-            }
         }
     }
 
@@ -67,6 +56,11 @@ class DeclarationRegistry internal constructor(val component: Component) {
         type: KClass<*>,
         name: String? = null
     ): Declaration<*>? = declarations[Key.of(type, name)]
+
+    /**
+     * Returns the [Declaration] for [type] and [name] or null
+     */
+    fun findDeclaration(key: Key): Declaration<*>? = declarations[key]
 
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
