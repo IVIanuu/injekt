@@ -26,25 +26,28 @@ import com.ivianuu.injekt.inject
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class MyFragment : Fragment(), InjektTrait {
+class ChildFragment : Fragment(), InjektTrait {
 
     override val component by lazy { fragmentComponent(this) }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
-    private val myFragmentDependency by inject<MyFragmentDependency>()
+    private val parentFragmentDependency by inject<ParentFragmentDependency>()
+    private val childFragmentDependency by inject<ChildFragmentDependency>()
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
         appDependency
         mainActivityDependency
-        myFragmentDependency
+        parentFragmentDependency
+        childFragmentDependency
     }
 }
 
 @Single
-class MyFragmentDependency(
+class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
-    val myFragment: MyFragment
+    val parentFragment: ParentFragment,
+    val childFragment: ChildFragment
 )

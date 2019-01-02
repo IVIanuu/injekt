@@ -29,12 +29,8 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    contentProviderDependencies(instance)
-        .filterNot { componentRegistry.dependsOn(it) }
-        .forEach { dependencies(it) }
-
+    dependencies(contentProviderDependencies(instance))
     modules(instanceModule(instance), contentProviderModule(instance))
-
     definition?.invoke(this)
 }
 

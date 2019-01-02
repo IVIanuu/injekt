@@ -29,9 +29,7 @@ fun <T : Fragment> fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    fragmentDependencies(instance)
-        .filterNot { componentRegistry.dependsOn(it) }
-        .forEach { dependencies(it) }
+    dependencies(fragmentDependencies(instance))
     modules(instanceModule(instance), fragmentModule(instance))
     definition?.invoke(this)
 }
@@ -43,15 +41,29 @@ fun fragmentDependencies(instance: Fragment): Set<Component> {
     val dependencies = mutableSetOf<Component>()
 
     var parentFragment = instance.parentFragment
+
+    var parentComponent: Component? = null
     while (parentFragment != null) {
-        (parentFragment as? InjektTrait)?.component?.let { dependencies.add(it) }
+        if (parentFragment is InjektTrait) {
+            parentComponent = parentFragment.component
+            break
+        }
+
         parentFragment = parentFragment.parentFragment
     }
 
-    (instance.activity as? InjektTrait)?.component?.let { dependencies.add(it) }
-
-    (instance.activity?.applicationContext as? InjektTrait)?.component?.let {
-        dependencies.add(it)
+    if (parentComponent != null) {
+        dependencies.add(parentComponent)
+    } else {
+        val activityComponent = (instance.activity as? InjektTrait)?.component
+        if (activityComponent != null) {
+            dependencies.add(activityComponent)
+        } else {
+            val appComponent = (instance.activity?.applicationContext as? InjektTrait)?.component
+            if (appComponent != null) {
+                dependencies.add(appComponent)
+            }
+        }
     }
 
     return dependencies

@@ -30,12 +30,8 @@ fun <T : Service> serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    serviceDependencies(instance)
-        .filterNot { componentRegistry.dependsOn(it) }
-        .forEach { dependencies(it) }
-
+    dependencies(serviceDependencies(instance))
     modules(instanceModule(instance), serviceModule(instance))
-
     definition?.invoke(this)
 }
 

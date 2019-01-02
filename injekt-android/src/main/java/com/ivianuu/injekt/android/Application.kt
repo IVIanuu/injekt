@@ -30,9 +30,7 @@ fun <T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    applicationDependencies(instance)
-        .filterNot { componentRegistry.dependsOn(it) }
-        .forEach { dependencies(it) }
+    dependencies(applicationDependencies(instance))
     modules(instanceModule(instance), applicationModule(instance))
     definition?.invoke(this)
 }

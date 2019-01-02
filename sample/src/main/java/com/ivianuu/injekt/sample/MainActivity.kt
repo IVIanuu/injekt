@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .add(MyFragment(), "my_fragment")
+                .add(ParentFragment(), "my_fragment")
                 .commit()
         }
     }
