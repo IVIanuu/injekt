@@ -47,11 +47,11 @@ class Component internal constructor(val name: String? = null) {
         type: KClass<T>,
         name: String? = null,
         params: ParamsDefinition? = null
-    ) = synchronized(this) {
+    ): T {
         val key = Key.of(type, name)
         val declaration = findDeclaration(key, true)
 
-        if (declaration != null) {
+        return if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
             logger?.let { logger ->
                 logger.info(

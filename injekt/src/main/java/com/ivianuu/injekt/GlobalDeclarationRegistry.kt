@@ -28,7 +28,7 @@ object GlobalDeclarationRegistry {
 
     private val dummyComponent = component {}
 
-    private val declarationRegistry = DeclarationRegistry(dummyComponent)
+    val declarationRegistry = DeclarationRegistry(dummyComponent)
 
     fun loadModules(vararg modules: Module) {
         declarationRegistry.loadModules(*modules)

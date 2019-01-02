@@ -7,8 +7,14 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
     lateinit var component: Component
 
+    /**
+     * Whether or not this instance is created
+     */
     abstract val isCreated: Boolean
 
+    /**
+     * Returns a instance of [T]
+     */
     abstract fun get(params: ParamsDefinition? = null): T
 
     protected open fun create(params: ParamsDefinition?): T {
