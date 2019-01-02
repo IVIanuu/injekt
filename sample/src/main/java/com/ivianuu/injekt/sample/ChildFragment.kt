@@ -27,9 +27,7 @@ import com.ivianuu.injekt.android.fragment.fragmentComponent
 class ChildFragment : Fragment(), InjektTrait {
 
     override val component by lazy {
-        fragmentComponent(this) {
-            modules(childFragmentModule)
-        }
+        fragmentComponent(this) { modules(childFragmentModule) }
     }
 
     private val appDependency by inject<AppDependency>()

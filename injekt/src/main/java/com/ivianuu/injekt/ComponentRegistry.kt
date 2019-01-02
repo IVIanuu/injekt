@@ -39,9 +39,10 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
-        val allComponents = dependencies.flatMap { listOf(it) + it.componentRegistry.dependencies }
-
         components.forEach {
+            val allComponents = hashSetOf<Component>()
+            collectAllComponents(component, allComponents)
+
             if (allComponents.contains(it)) {
                 error("${component.name} component already added ${it.name}")
             }
@@ -51,6 +52,15 @@ class ComponentRegistry internal constructor(val component: Component) {
             logger?.info("${component.name} adding component ${it.name}")
             dependencies.add(it)
         }
+    }
+
+    private fun collectAllComponents(
+        component: Component,
+        components: MutableSet<Component>
+    ) {
+        components.add(component)
+        component.componentRegistry.getDependencies()
+            .forEach { collectAllComponents(it, components) }
     }
 
 }

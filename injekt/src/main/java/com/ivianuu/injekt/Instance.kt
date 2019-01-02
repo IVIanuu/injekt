@@ -5,7 +5,7 @@ package com.ivianuu.injekt
  */
 abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
-    lateinit var component: Component
+    lateinit var context: ComponentContext
 
     /**
      * Whether or not this instance is created
@@ -20,12 +20,12 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
     protected open fun create(params: ParamsDefinition?): T {
         return try {
             declaration.definition.invoke(
-                component.context,
+                context,
                 params?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
             throw InstanceCreationException(
-                "${component.name} Couldn't instantiate $declaration",
+                "${context.component.name} Couldn't instantiate $declaration",
                 e
             )
         }

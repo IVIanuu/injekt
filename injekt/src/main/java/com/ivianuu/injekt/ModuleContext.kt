@@ -152,9 +152,7 @@ fun <T : Any> ModuleContext.declare(
  * Adds all declarations of [module]
  */
 fun ModuleContext.module(module: Module) {
-    val context = ModuleContext(module, componentContext)
-    module.definition.invoke(context)
-    context.declarations.forEach { declare(it.value) }
+    module.getDeclarations(componentContext).forEach { declare(it.value) }
 }
 
 /**
