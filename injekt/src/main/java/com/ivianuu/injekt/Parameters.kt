@@ -52,7 +52,9 @@ class Parameters(vararg values: Any?) {
  */
 fun parametersOf(vararg values: Any?) = Parameters(*values)
 
+private val emptyParameters = parametersOf()
+
 /**
  * Returns empty [Parameters]
  */
-fun emptyParameters() = parametersOf()
+fun emptyParameters() = emptyParameters
