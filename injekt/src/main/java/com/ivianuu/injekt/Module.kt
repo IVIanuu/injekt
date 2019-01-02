@@ -31,7 +31,7 @@ class Module internal constructor(
         val oldDeclaration = declarations[declaration.key]
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
-            throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration")
+            throw OverrideException("$name Try to override declaration $declaration but was already saved $oldDeclaration")
         }
 
         declarations[declaration.key] = declaration

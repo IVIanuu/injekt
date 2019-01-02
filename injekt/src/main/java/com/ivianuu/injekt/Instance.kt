@@ -14,9 +14,9 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
     fun get(params: ParamsDefinition? = null): T {
         logger?.let { logger ->
             val msg = when {
-                isCreated -> "Return existing instance for $declaration"
-                declaration.createOnStart -> "Create instance on start up $declaration"
-                else -> "Create instance $declaration"
+                isCreated -> "${component.name} Return existing instance for $declaration"
+                declaration.createOnStart -> "${component.name} Create instance on start up $declaration"
+                else -> "${component.name} Create instance $declaration"
             }
 
             logger.info(msg)
@@ -25,7 +25,10 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
         return try {
             getOrCreate(params)
         } catch (e: Exception) {
-            throw InstanceCreationException("Couldn't instantiate $declaration", e)
+            throw InstanceCreationException(
+                "${component.name} Couldn't instantiate $declaration",
+                e
+            )
         }
     }
 

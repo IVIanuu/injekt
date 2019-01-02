@@ -31,7 +31,8 @@ data class Declaration<T : Any> private constructor(
         val kindString = kind.toString()
         val nameString = name?.let { "name:'$name', " } ?: ""
         val typeString = "type:'${type.java.name}'"
-        return "$kindString[$nameString$typeString $attributes]"
+        val optionsString = "override:$override, createOnStart:$createOnStart"
+        return "$kindString[$nameString$typeString $attributes$optionsString$attributes]"
     }
 
     enum class Kind { FACTORY, SINGLE }

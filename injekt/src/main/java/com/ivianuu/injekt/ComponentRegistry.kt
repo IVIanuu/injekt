@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.InjektPlugins.logger
+
 /**
  * Manages all dependencies of a [Component]
  */
@@ -37,9 +39,15 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
+        logger?.info(
+            "${component.name} load dependencies ${components.map { it.name }.joinToString(
+                ", "
+            )}"
+        )
+
         components.forEach {
             if (!dependencies.add(it)) {
-                error("component already added ${it.name} to ${component.name}")
+                error("${component.name} component already added ${it.name}")
             }
         }
 

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -30,6 +31,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
      * Adds all [Declaration]s of the [modules]
      */
     fun loadModules(vararg modules: Module) {
+        logger?.info("${component.name} load modules ${modules.map { it.name }.joinToString(", ")}")
         modules.forEach { module ->
             module.declarations
                 .mapValues { it.value.copyIdentity() }
@@ -84,7 +86,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
 
         InjektPlugins.logger?.let { logger ->
             val kw = if (isOverride) "Override" else "Declare"
-            logger.debug("$kw $declaration in ${component.name}")
+            logger.debug("${component.name} $kw $declaration")
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -29,6 +30,7 @@ class Component internal constructor(val name: String? = null) {
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
+        logger?.info("$name create eager instances")
         declarationRegistry.getEagerInstances().forEach { it.resolveInstance() }
     }
 
@@ -46,7 +48,7 @@ class Component internal constructor(val name: String? = null) {
             @Suppress("UNCHECKED_CAST")
             declaration.resolveInstance(params) as T
         } else {
-            throw InjectionException("Could not find declaration for ${type.java.name + " " + name.orEmpty()} in $name")
+            throw InjectionException("$name Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 
