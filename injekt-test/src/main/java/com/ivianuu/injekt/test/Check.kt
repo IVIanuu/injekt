@@ -44,5 +44,5 @@ fun <T : Any> Declaration<T>.cloneForSandbox() = copy().also {
     it.attributes = attributes
     it.definition = definition
     it.instance = SandboxInstance(it)
-    it.module = module
+    it.moduleContext = moduleContext
 }
