@@ -53,3 +53,6 @@ fun <T : Service> serviceModule(
     factory(SERVICE) { instance as Service }
     bind<Context, Service>(SERVICE_CONTEXT)
 }
+
+fun ComponentContext.service() = get<Service>(SERVICE)
+fun ComponentContext.serviceContext() = get<Context>(SERVICE_CONTEXT)

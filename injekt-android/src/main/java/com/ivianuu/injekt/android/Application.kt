@@ -48,3 +48,7 @@ fun <T : Application> applicationModule(
     factory(APPLICATION) { instance as Application }
     bind<Context, Application>(APPLICATION_CONTEXT)
 }
+
+fun ComponentContext.application() = get<Application>(APPLICATION)
+
+fun ComponentContext.applicationContext() = get<Context>(APPLICATION_CONTEXT)

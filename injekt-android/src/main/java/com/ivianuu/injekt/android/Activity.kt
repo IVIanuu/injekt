@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
@@ -55,3 +56,7 @@ fun <T : Activity> activityModule(
     factory(ACTIVITY) { instance as Activity }
     bind<Context, Activity>(ACTIVITY_CONTEXT)
 }
+
+fun ComponentContext.activity() = get<Application>(ACTIVITY)
+
+fun ComponentContext.activityContext() = get<Context>(ACTIVITY_CONTEXT)

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
@@ -55,3 +56,7 @@ fun <T : BroadcastReceiver> receiverModule(
     factory(RECEIVER) { instance as BroadcastReceiver }
     factory(RECEIVER_CONTEXT) { context }
 }
+
+fun ComponentContext.receiver() = get<Application>(RECEIVER)
+
+fun ComponentContext.receiverContext() = get<Context>(RECEIVER_CONTEXT)
