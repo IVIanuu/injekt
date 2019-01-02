@@ -27,7 +27,10 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
 }
 
-internal class FactoryInstance<T : Any>(
+/**
+ * A [Instance] which creates a new value on every [get] call
+ */
+class FactoryInstance<T : Any>(
     declaration: Declaration<T>
 ) : Instance<T>(declaration) {
 
@@ -38,7 +41,10 @@ internal class FactoryInstance<T : Any>(
 
 }
 
-internal class SingleInstance<T : Any>(
+/**
+ * A [Instance] which creates the value 1 time and caches the result
+ */
+class SingleInstance<T : Any>(
     declaration: Declaration<T>
 ) : Instance<T>(declaration) {
 
