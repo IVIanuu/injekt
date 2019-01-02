@@ -44,7 +44,7 @@ class Component internal constructor(val name: String? = null) {
         params: ParamsDefinition? = null
     ): T {
         val key = Key.of(type, name)
-        val declaration = findDeclaration(key)
+        val declaration = declarationRegistry.findDeclaration(key)
 
         return if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
@@ -62,9 +62,6 @@ class Component internal constructor(val name: String? = null) {
             throw NoDeclarationFoundException("${this.name} Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
-
-    private fun findDeclaration(key: Key): Declaration<*>? =
-        declarationRegistry.findDeclaration(key)
 
 }
 
