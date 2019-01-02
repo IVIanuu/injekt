@@ -69,6 +69,9 @@ class Component internal constructor(val name: String? = null) {
     }
 
     private fun findDeclaration(key: Key, includeGlobalRegistry: Boolean): Declaration<*>? {
+        // 1. search in our own declarations
+        // 2. search in every dependency
+        // 3. check the global pool and if found add it to our component implicitly
         return declarationRegistry.findDeclaration(key)
             ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key, false) }
             ?: if (includeGlobalRegistry) {

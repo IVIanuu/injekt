@@ -19,7 +19,7 @@ package com.ivianuu.injekt.codegen
 import kotlin.reflect.KClass
 
 /**
- * Contributes a factory binding into the declared [AutoModule]
+ * Contributes a factory binding into the declared [Module]
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)

@@ -23,6 +23,7 @@ import kotlin.reflect.KClass
  * This used for generated modules
  * [Component]s will search here as a last resort if no internal declarations or dependencies
  * Fulfill a request
+ * If found a component will add the declaration to it's own graph
  */
 object GlobalDeclarationRegistry {
 
