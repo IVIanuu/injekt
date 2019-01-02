@@ -28,7 +28,10 @@ class ComponentRegistry internal constructor(val component: Component) {
     /**
      * Whether or not the [component] is a dependency
      */
-    fun dependsOn(component: Component) = dependencies.contains(component)
+    fun dependsOn(component: Component): Boolean {
+        return dependencies.flatMap { listOf(it) + it.componentRegistry.dependencies }
+            .contains(component)
+    }
 
     /**
      * All dependencies
