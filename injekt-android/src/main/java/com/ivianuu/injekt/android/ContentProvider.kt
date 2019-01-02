@@ -43,7 +43,7 @@ fun <T : ContentProvider> contentProviderComponent(
  */
 fun contentProviderDependencies(instance: ContentProvider): Set<Component> {
     val dependencies = mutableSetOf<Component>()
-    (instance.context!!.applicationContext as? ComponentHolder)?.component?.let {
+    (instance.context!!.applicationContext as? InjektTrait)?.component?.let {
         dependencies.add(
             it
         )

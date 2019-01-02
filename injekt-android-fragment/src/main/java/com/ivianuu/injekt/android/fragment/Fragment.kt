@@ -44,16 +44,14 @@ fun fragmentDependencies(instance: Fragment): Set<Component> {
 
     var parentFragment = instance.parentFragment
     while (parentFragment != null) {
-        (parentFragment as? ComponentHolder)?.component?.let { dependencies.add(it) }
+        (parentFragment as? InjektTrait)?.component?.let { dependencies.add(it) }
         parentFragment = parentFragment.parentFragment
     }
 
-    (instance.activity as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    (instance.activity as? InjektTrait)?.component?.let { dependencies.add(it) }
 
-    (instance.activity?.applicationContext as? ComponentHolder)?.component?.let {
-        dependencies.add(
-            it
-        )
+    (instance.activity?.applicationContext as? InjektTrait)?.component?.let {
+        dependencies.add(it)
     }
 
     return dependencies

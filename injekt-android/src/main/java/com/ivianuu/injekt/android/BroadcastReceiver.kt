@@ -46,7 +46,7 @@ fun <T : BroadcastReceiver> receiverComponent(
  */
 fun receiverDependencies(instance: BroadcastReceiver, context: Context): Set<Component> {
     val dependencies = mutableSetOf<Component>()
-    (context.applicationContext as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    (context.applicationContext as? InjektTrait)?.component?.let { dependencies.add(it) }
     return dependencies
 }
 

@@ -43,7 +43,7 @@ fun <T : Activity> activityComponent(
  */
 fun activityDependencies(instance: Activity): Set<Component> {
     val dependencies = mutableSetOf<Component>()
-    (instance.application as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    (instance.application as? InjektTrait)?.component?.let { dependencies.add(it) }
     return dependencies
 }
 

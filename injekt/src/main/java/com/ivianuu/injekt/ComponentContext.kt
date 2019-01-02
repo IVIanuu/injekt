@@ -19,4 +19,4 @@ package com.ivianuu.injekt
 /**
  * Environment for [Definition]s
  */
-class ComponentContext(override val component: Component) : ComponentHolder
+class ComponentContext(override val component: Component) : InjektTrait

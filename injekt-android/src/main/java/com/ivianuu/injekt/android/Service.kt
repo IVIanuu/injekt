@@ -44,7 +44,7 @@ fun <T : Service> serviceComponent(
  */
 fun serviceDependencies(instance: Service): Set<Component> {
     val dependencies = mutableSetOf<Component>()
-    (instance.application as? ComponentHolder)?.component?.let { dependencies.add(it) }
+    (instance.application as? InjektTrait)?.component?.let { dependencies.add(it) }
     return dependencies
 }
 

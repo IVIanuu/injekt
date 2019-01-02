@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.ComponentHolder
 import com.ivianuu.injekt.GlobalDeclarationRegistry
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.codegen.Module
@@ -32,7 +32,7 @@ private object AutoModule
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class App : Application(), ComponentHolder {
+class App : Application(), InjektTrait {
 
     override val component by lazy { applicationComponent(this) }
 

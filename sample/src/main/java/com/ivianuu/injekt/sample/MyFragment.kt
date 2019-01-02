@@ -18,7 +18,7 @@ package com.ivianuu.injekt.sample
 
 import android.content.Context
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.ComponentHolder
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.fragment.fragmentComponent
 import com.ivianuu.injekt.codegen.Single
 import com.ivianuu.injekt.inject
@@ -26,7 +26,7 @@ import com.ivianuu.injekt.inject
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class MyFragment : Fragment(), ComponentHolder {
+class MyFragment : Fragment(), InjektTrait {
 
     override val component by lazy { fragmentComponent(this) }
 
