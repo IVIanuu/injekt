@@ -17,27 +17,17 @@
 package com.ivianuu.injekt
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ParametersTest {
 
     @Test
-    fun testSizeAndIsEmpty() {
+    fun testSize() {
         val myString = "empty"
         val myInt = 42
         val params = parametersOf(myString, myInt)
 
         assertEquals(2, params.size)
-        assertTrue(params.isNotEmpty())
-    }
-
-    @Test
-    fun testEmpty() {
-        val params = parametersOf()
-
-        assertEquals(0, params.size)
-        assertTrue(params.isEmpty())
     }
 
     @Test
