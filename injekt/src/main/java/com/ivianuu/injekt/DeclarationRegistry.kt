@@ -65,13 +65,15 @@ class DeclarationRegistry internal constructor(val component: Component) {
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
     internal fun checkOverrides(component: Component) {
-        component.declarationRegistry.declarations.forEach { (key, declaration) ->
-            val oldDeclaration = declarations[key]
-            val isOverride = oldDeclaration != null
-            if (isOverride && !declaration.override) {
-                throw OverrideException("${component.name} overrides $declaration in ${component.name}")
+        (listOf(component) + component.componentRegistry.getDependencies())
+            .flatMap { it.declarationRegistry.declarations.entries }
+            .forEach { (key, declaration) ->
+                val oldDeclaration = declarations[key]
+                val isOverride = oldDeclaration != null
+                if (isOverride && !declaration.override) {
+                    throw OverrideException("${component.name} overrides $declaration in ${component.name}")
+                }
             }
-        }
     }
 
     /**

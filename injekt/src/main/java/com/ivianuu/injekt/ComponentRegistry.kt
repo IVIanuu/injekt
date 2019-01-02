@@ -39,16 +39,17 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
-        components.forEach {
-            logger?.info(
-                "${component.name} adding component ${it.name}"
-            )
+        val allComponents = dependencies.flatMap { it.componentRegistry.dependencies }
 
-            if (!dependencies.add(it)) {
+        components.forEach {
+            if (allComponents.contains(it)) {
                 error("${component.name} component already added ${it.name}")
             }
 
             component.declarationRegistry.checkOverrides(it)
+
+            logger?.info("${component.name} adding component ${it.name}")
+            dependencies.add(it)
         }
     }
 

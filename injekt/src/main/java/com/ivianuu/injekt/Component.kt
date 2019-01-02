@@ -45,7 +45,7 @@ class Component internal constructor(val name: String? = null) {
         params: ParamsDefinition? = null
     ): T {
         val key = Key.of(type, name)
-        val declaration = findDeclaration(key, true)
+        val declaration = findDeclaration(key)
 
         return if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
@@ -64,23 +64,25 @@ class Component internal constructor(val name: String? = null) {
         }
     }
 
-    private fun findDeclaration(key: Key, includeGlobalRegistry: Boolean): Declaration<*>? {
+    private fun findDeclaration(key: Key): Declaration<*>? {
         // 1. search in our own declarations
         // 2. search in every dependency
         // 3. check the global pool and if found add it to our component implicitly
         return declarationRegistry.findDeclaration(key)
-            ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key, false) }
-            ?: if (includeGlobalRegistry) {
-                GlobalDeclarationRegistry.findDeclaration(key)
-                    ?.let { globalDeclaration ->
-                        logger?.info("Add global declaration $globalDeclaration")
+            ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key) }
+            ?: GlobalDeclarationRegistry.findDeclaration(key)
+                ?.let { globalDeclaration ->
+                    try {
                         val declaration = globalDeclaration.clone()
+                        declaration.instance.component = this
+                        declaration.resolveInstance()
+                        logger?.info("${name} Add global declaration $globalDeclaration")
                         declarationRegistry.saveDeclaration(declaration)
                         declaration
+                    } catch (e: InstanceCreationException) {
+                        null
                     }
-            } else {
-                null
-            }
+                }
     }
 
     private inline fun <T, R> Iterable<T>.firstNotNull(predicate: (T) -> R): R? {
