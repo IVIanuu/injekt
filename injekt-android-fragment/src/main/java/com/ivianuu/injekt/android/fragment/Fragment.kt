@@ -29,7 +29,7 @@ fun <T : Fragment> fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(fragmentDependencies(instance))
+    dependencies(fragmentDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), fragmentModule(instance))
     definition?.invoke(this)
 }
@@ -42,29 +42,16 @@ fun fragmentDependencies(instance: Fragment): Set<Component> {
 
     var parentFragment = instance.parentFragment
 
-    var parentComponent: Component? = null
     while (parentFragment != null) {
         if (parentFragment is InjektTrait) {
-            parentComponent = parentFragment.component
-            break
+            dependencies.add(parentFragment.component)
         }
 
         parentFragment = parentFragment.parentFragment
     }
 
-    if (parentComponent != null) {
-        dependencies.add(parentComponent)
-    } else {
-        val activityComponent = (instance.activity as? InjektTrait)?.component
-        if (activityComponent != null) {
-            dependencies.add(activityComponent)
-        } else {
-            val appComponent = (instance.activity?.applicationContext as? InjektTrait)?.component
-            if (appComponent != null) {
-                dependencies.add(appComponent)
-            }
-        }
-    }
+    (instance.activity as? InjektTrait)?.component?.let { dependencies.add(it) }
+    (instance.activity?.applicationContext as? InjektTrait)?.component?.let { dependencies.add(it) }
 
     return dependencies
 }

@@ -29,7 +29,7 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(contentProviderDependencies(instance))
+    dependencies(contentProviderDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), contentProviderModule(instance))
     definition?.invoke(this)
 }

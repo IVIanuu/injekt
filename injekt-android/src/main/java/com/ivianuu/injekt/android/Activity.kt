@@ -31,7 +31,7 @@ fun <T : Activity> activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(activityDependencies(instance))
+    dependencies(activityDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), activityModule(instance))
     definition?.invoke(this)
 }

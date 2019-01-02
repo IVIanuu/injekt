@@ -30,7 +30,7 @@ fun <T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(applicationDependencies(instance))
+    dependencies(applicationDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), applicationModule(instance))
     definition?.invoke(this)
 }

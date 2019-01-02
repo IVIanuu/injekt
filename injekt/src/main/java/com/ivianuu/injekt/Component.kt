@@ -9,21 +9,20 @@ import kotlin.reflect.KClass
 class Component internal constructor(val name: String? = null) {
 
     val context = ComponentContext(this)
-    val componentRegistry = ComponentRegistry(this)
     val declarationRegistry = DeclarationRegistry(this)
 
     /**
      * Adds all [Declaration]s of the [module]
      */
-    fun modules(vararg modules: Module) {
-        declarationRegistry.loadModules(*modules)
+    fun modules(vararg modules: Module, dropOverrides: Boolean = false) {
+        declarationRegistry.loadModules(*modules, dropOverrides = dropOverrides)
     }
 
     /**
      * Adds all [Declaration]s of [components] to this component
      */
-    fun dependencies(vararg components: Component) {
-        componentRegistry.addComponents(*components)
+    fun dependencies(vararg components: Component, dropOverrides: Boolean = false) {
+        declarationRegistry.loadComponents(*components, dropOverrides = dropOverrides)
     }
 
     /**
@@ -66,15 +65,7 @@ class Component internal constructor(val name: String? = null) {
 
     private fun findDeclaration(key: Key): Declaration<*>? =
         declarationRegistry.findDeclaration(key)
-            ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key) }
 
-    private inline fun <T, R> Iterable<T>.firstNotNull(predicate: (T) -> R): R? {
-        for (element in this) {
-            val result = predicate(element)
-            if (result != null) return result
-        }
-        return null
-    }
 }
 
 /**
@@ -95,15 +86,15 @@ fun component(
 /**
  * Adds all [Declaration]s of the [module]
  */
-fun Component.modules(modules: Collection<Module>) {
-    modules(*modules.toTypedArray())
+fun Component.modules(modules: Collection<Module>, dropOverrides: Boolean = false) {
+    modules(*modules.toTypedArray(), dropOverrides = dropOverrides)
 }
 
 /**
  * Adds all [Declaration]s of [components] to this component
  */
-fun Component.dependencies(components: Collection<Component>) {
-    dependencies(*components.toTypedArray())
+fun Component.dependencies(components: Collection<Component>, dropOverrides: Boolean = false) {
+    dependencies(*components.toTypedArray(), dropOverrides = dropOverrides)
 }
 
 /**

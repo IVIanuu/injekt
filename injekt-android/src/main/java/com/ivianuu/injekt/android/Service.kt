@@ -30,7 +30,7 @@ fun <T : Service> serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(serviceDependencies(instance))
+    dependencies(serviceDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), serviceModule(instance))
     definition?.invoke(this)
 }

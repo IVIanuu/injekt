@@ -40,7 +40,7 @@ class SandboxInstance<T : Any>(declaration: Declaration<T>) : Instance<T>(declar
 
     override fun create(params: ParamsDefinition?): T {
         try {
-            declaration.definition.invoke(component.context, params?.invoke() ?: emptyParameters())
+            declaration.definition.invoke(context, params?.invoke() ?: emptyParameters())
         } catch (e: Exception) {
             when (e) {
                 is NoDeclarationFoundException, is InstanceCreationException, is OverrideException -> {

@@ -32,7 +32,7 @@ fun <T : BroadcastReceiver> receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(receiverDependencies(instance, context))
+    dependencies(receiverDependencies(instance, context), dropOverrides = true)
     modules(instanceModule(instance), receiverModule(instance, context))
     definition?.invoke(this)
 }

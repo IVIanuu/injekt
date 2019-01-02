@@ -30,17 +30,32 @@ class DeclarationRegistry internal constructor(val component: Component) {
     /**
      * Adds all [Declaration]s of the [modules]
      */
-    fun loadModules(vararg modules: Module) {
+    fun loadModules(vararg modules: Module, dropOverrides: Boolean = false) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}")
 
             module.getDeclarations(component.context)
                 .forEach {
-                    saveDeclaration(it.value)
+                    saveDeclaration(it.value, dropOverrides)
+
+                    it.value.instance.context = component.context
+
                     if (it.value.createOnStart) {
                         createOnStartDeclarations.add(it.value)
                     }
                 }
+        }
+    }
+
+    /**
+     * Adds all [Declaration]s of the [components]
+     */
+    fun loadComponents(vararg components: Component, dropOverrides: Boolean = false) {
+        components.forEach { component ->
+            logger?.info("${component.name} load component ${component.name}")
+
+            component.declarationRegistry.declarations
+                .forEach { saveDeclaration(it.value, dropOverrides) }
         }
     }
 
@@ -64,51 +79,25 @@ class DeclarationRegistry internal constructor(val component: Component) {
 
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
-    internal fun checkOverrides(component: Component) {
-        val existingDeclarations = hashMapOf<Key, Declaration<*>>()
-        collectAllDeclarations(this.component, existingDeclarations)
-
-        logger?.info("Existing declarations for ${this.component.name} -> $existingDeclarations")
-
-        val newDeclarations = hashMapOf<Key, Declaration<*>>()
-        collectAllDeclarations(component, newDeclarations)
-
-        logger?.info("New declarations for ${component.name} -> $newDeclarations")
-
-        newDeclarations.forEach { (key, newDeclaration) ->
-            val isOverride = existingDeclarations[key] != null
-            if (isOverride && !newDeclaration.override) {
-                throw OverrideException("${component.name} overrides $newDeclaration in ${this.component.name}")
-            }
-        }
-    }
-
-    private fun collectAllDeclarations(
-        component: Component,
-        declarations: MutableMap<Key, Declaration<*>>
-    ) {
-        component.declarationRegistry.declarations.forEach { declarations[it.key] = it.value }
-        component.componentRegistry.getDependencies()
-            .forEach { collectAllDeclarations(it, declarations) }
-    }
-
     /**
      * Saves the [declaration]
      */
-    fun saveDeclaration(declaration: Declaration<*>) {
-        val allDeclarations = mutableMapOf<Key, Declaration<*>>()
-        collectAllDeclarations(component, allDeclarations)
-
+    fun saveDeclaration(
+        declaration: Declaration<*>,
+        dropOverrides: Boolean = false
+    ) {
         val key = declaration.key
-        val oldDeclaration = allDeclarations[key]
+        val oldDeclaration = declarations[key]
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
-            throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration to ${component.name}")
+            if (dropOverrides) {
+                return
+            } else {
+                throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration to ${component.name}")
+            }
         }
 
         declarations[key] = declaration
-
-        declaration.instance.context = component.context
 
         InjektPlugins.logger?.let { logger ->
             val kw = if (isOverride) "Override" else "Declare"
