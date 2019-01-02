@@ -30,7 +30,7 @@ data class Declaration<T : Any> private constructor(
     override fun toString(): String {
         val kindString = kind.toString()
         val nameString = name?.let { "name:'$name', " } ?: ""
-        val typeString = "type:'${type.getFullName()}'"
+        val typeString = "type:'${type.java.name}'"
         return "$kindString[$nameString$typeString $attributes]"
     }
 
