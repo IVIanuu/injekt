@@ -68,7 +68,22 @@ infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
     newDeclaration.attributes = attributes
     newDeclaration.definition = definition
     newDeclaration.instance = instance
-    // omit newDeclaration.module = module because the module sets it
+    newDeclaration.module = module
+    module.declare(newDeclaration)
+}
+
+/**
+ * Binds this [Declaration] to [name]
+ */
+infix fun <T : Any, S : T> Declaration<S>.bind(name: String) = apply {
+    val newDeclaration = copy(key = Key.of(type, name), type = type, name = name)
+    newDeclaration.kind = kind
+    newDeclaration.override = override
+    newDeclaration.createOnStart = createOnStart
+    newDeclaration.attributes = attributes
+    newDeclaration.definition = definition
+    newDeclaration.instance = instance
+    newDeclaration.module = module
     module.declare(newDeclaration)
 }
 

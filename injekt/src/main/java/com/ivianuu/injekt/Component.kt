@@ -8,6 +8,7 @@ import kotlin.reflect.KClass
 class Component internal constructor() {
 
     val context = ComponentContext(this)
+    val componentRegistry = ComponentRegistry(this)
     val declarationRegistry = DeclarationRegistry(this)
 
     /**
@@ -21,6 +22,7 @@ class Component internal constructor() {
      * Adds all [Declaration]s of [components] to this component
      */
     fun dependencies(vararg components: Component) {
+        componentRegistry.addComponents(*components)
         declarationRegistry.loadComponents(*components)
     }
 
