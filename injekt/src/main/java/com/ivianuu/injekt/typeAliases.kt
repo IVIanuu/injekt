@@ -6,6 +6,6 @@ typealias ComponentDefinition = Component.() -> Unit
 
 typealias InjektDefinition = InjektPlugins.() -> Unit
 
-typealias ModuleDefinition = Module.() -> Unit
+typealias ModuleDefinition = ModuleContext.() -> Unit
 
 typealias ParamsDefinition = () -> Parameters

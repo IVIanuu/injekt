@@ -59,9 +59,13 @@ class ModuleTest {
     @Test
     fun testAllowsValidOverride() {
         val throwed = try {
-            module {
-                single { TestDep1() }
-                single(override = true) { TestDep1() }
+            component {
+                modules(
+                    module {
+                        single { TestDep1() }
+                        single(override = true) { TestDep1() }
+                    }
+                )
             }
             false
         } catch (e: OverrideException) {
@@ -74,9 +78,13 @@ class ModuleTest {
     @Test
     fun testThrowsOnInvalidOverride() {
         val throwed = try {
-            module {
-                single { TestDep1() }
-                single { TestDep1() }
+            component {
+                modules(
+                    module {
+                        single { TestDep1() }
+                        single { TestDep1() }
+                    }
+                )
             }
             false
         } catch (e: OverrideException) {

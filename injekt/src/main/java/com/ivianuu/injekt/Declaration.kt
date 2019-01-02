@@ -19,7 +19,7 @@ data class Declaration<T : Any> private constructor(
     lateinit var definition: Definition<T>
     lateinit var instance: Instance<T>
 
-    lateinit var module: Module
+    lateinit var moduleContext: ModuleContext
 
     /**
      * Resolves the instance
@@ -74,8 +74,8 @@ infix fun <T : Any, S : T> Declaration<S>.bind(type: KClass<T>) = apply {
     newDeclaration.attributes = attributes
     newDeclaration.definition = definition
     newDeclaration.instance = instance
-    newDeclaration.module = module
-    module.declare(newDeclaration)
+    newDeclaration.moduleContext = moduleContext
+    moduleContext.declare(newDeclaration)
 }
 
 /**
@@ -89,16 +89,6 @@ infix fun <T : Any, S : T> Declaration<S>.bind(name: String) = apply {
     newDeclaration.attributes = attributes
     newDeclaration.definition = definition
     newDeclaration.instance = instance
-    newDeclaration.module = module
-    module.declare(newDeclaration)
-}
-
-internal fun <T : Any> Declaration<T>.clone() = copy().also {
-    it.kind = kind
-    it.override = override
-    it.createOnStart = createOnStart
-    it.attributes = attributes
-    it.definition = definition
-    it.createInstanceHolder()
-    it.module = module
+    newDeclaration.moduleContext = moduleContext
+    moduleContext.declare(newDeclaration)
 }

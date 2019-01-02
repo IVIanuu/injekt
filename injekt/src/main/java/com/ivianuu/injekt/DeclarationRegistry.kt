@@ -32,9 +32,12 @@ class DeclarationRegistry internal constructor(val component: Component) {
      */
     fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
-            logger?.info("${component.name} load module ${module.name}, ${module.declarations.size}")
-            module.declarations
-                .mapValues { it.value.clone() }
+            logger?.info("${component.name} load module ${module.name}")
+
+            val context = ModuleContext(module, component.context)
+            module.definition.invoke(context)
+
+            context.declarations
                 .forEach {
                     saveDeclaration(it.value)
                     if (it.value.createOnStart) {

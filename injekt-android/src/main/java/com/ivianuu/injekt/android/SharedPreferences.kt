@@ -18,13 +18,13 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.ModuleContext
 import com.ivianuu.injekt.single
 
 /**
  * Declare [SharedPreferences]
  */
-fun Module.sharedPreferences(
+fun ModuleContext.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
     name: String? = null,
