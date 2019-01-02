@@ -4,7 +4,7 @@ typealias Definition<T> = ComponentContext.(params: Parameters) -> T
 
 typealias ComponentDefinition = Component.() -> Unit
 
-typealias InjektConfiguration = InjektPlugins.() -> Unit
+typealias InjektDefinition = InjektPlugins.() -> Unit
 
 typealias ModuleDefinition = Module.() -> Unit
 

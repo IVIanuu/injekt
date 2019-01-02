@@ -35,7 +35,7 @@ import kotlin.reflect.KClass
 class App : Application(), ComponentHolder {
 
     override val component by lazy {
-        component("AppComponent") { modules(autoAppModule, appModule()) }
+        component("AppComponent") { modules(appModule()) }
     }
 
     private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
@@ -43,6 +43,9 @@ class App : Application(), ComponentHolder {
 
     override fun onCreate() {
         super.onCreate()
+
+        GlobalDeclarationRegistry.loadModules(autoModule)
+
         configureInjekt {
             androidLogger()
         }
@@ -70,7 +73,6 @@ fun App.appModule() = module("appModule") {
 }
 
 private val servicesModule = module("servicesModule") {
-    module(autoServicesModule)
     bindIntoSet<Service, MyServiceOne>(SERVICES_SET)
     bindIntoMap<KClass<out Service>, Service, MyServiceOne>(SERVICES_MAP, MyServiceOne::class)
 
@@ -78,7 +80,6 @@ private val servicesModule = module("servicesModule") {
     bindIntoMap<KClass<out Service>, Service, MyServiceTwo>(SERVICES_MAP, MyServiceTwo::class)
 }
 
-@AutoAppModule
 @Single
 class AppDependency(
     val app: App,

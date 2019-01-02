@@ -18,6 +18,7 @@ data class Declaration<T : Any> private constructor(
     lateinit var kind: Kind
     lateinit var definition: Definition<T>
     lateinit var instance: Instance<T>
+
     lateinit var module: Module
 
     /**
@@ -92,7 +93,7 @@ infix fun <T : Any, S : T> Declaration<S>.bind(name: String) = apply {
     module.declare(newDeclaration)
 }
 
-internal fun <T : Any> Declaration<T>.copyIdentity() = copy().also {
+internal fun <T : Any> Declaration<T>.clone() = copy().also {
     it.kind = kind
     it.override = override
     it.createOnStart = createOnStart

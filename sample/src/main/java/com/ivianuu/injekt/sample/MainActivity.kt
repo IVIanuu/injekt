@@ -25,8 +25,11 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
     private val servicesMap by inject<MultiBindingMap<KClass<out Service>, Service>>(SERVICES_MAP)
     private val servicesSet by inject<MultiBindingSet<Service>>(SERVICES_SET)
 
+    private val mainActivityDependency by inject<MainActivityDependency>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mainActivityDependency
 
         Log.d("App", "services set $servicesSet \n\n services map $servicesMap")
     }
@@ -44,7 +47,6 @@ fun MainActivity.mainActivityModule() = module("mainActivityModule") {
 }
 
 @Single
-@AutoMainActivityModule
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

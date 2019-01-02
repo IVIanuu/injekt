@@ -23,21 +23,18 @@ interface Service {
 }
 
 @Single
-@AutoServicesModule
 class MyServiceOne : Service {
     override fun execute() {
     }
 }
 
 @Single
-@AutoServicesModule
 class MyServiceTwo : Service {
     override fun execute() {
     }
 }
 
 @Single
-@AutoServicesModule
 class MyServiceThree : Service {
     override fun execute() {
     }

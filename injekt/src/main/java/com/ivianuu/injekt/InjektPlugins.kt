@@ -15,5 +15,5 @@ object InjektPlugins {
 /**
  * Configure injekt
  */
-fun configureInjekt(configuration: InjektConfiguration) =
-    InjektPlugins.apply(configuration)
+fun configureInjekt(definition: InjektDefinition) =
+    InjektPlugins.apply(definition)

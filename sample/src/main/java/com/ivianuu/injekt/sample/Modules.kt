@@ -19,10 +19,4 @@ package com.ivianuu.injekt.sample
 import com.ivianuu.injekt.codegen.Module
 
 @Module
-annotation class AutoAppModule
-
-@Module
-annotation class AutoMainActivityModule
-
-@Module
-annotation class AutoServicesModule
+private object AutoModule

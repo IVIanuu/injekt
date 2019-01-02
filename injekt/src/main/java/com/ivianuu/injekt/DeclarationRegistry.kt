@@ -34,7 +34,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}, ${module.declarations.size}")
             module.declarations
-                .mapValues { it.value.copyIdentity() }
+                .mapValues { it.value.clone() }
                 .forEach {
                     saveDeclaration(it.value)
                     if (it.value.createOnStart) {

@@ -142,7 +142,7 @@ fun <T : Any> Module.declare(
  * Adds all declarations of [module]
  */
 fun Module.module(module: Module) {
-    module.declarations.forEach { declare(it.value.copyIdentity()) }
+    module.declarations.forEach { declare(it.value.clone()) }
 }
 
 /**

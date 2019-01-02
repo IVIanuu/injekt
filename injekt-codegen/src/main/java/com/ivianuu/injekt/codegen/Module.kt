@@ -3,7 +3,6 @@ package com.ivianuu.injekt.codegen
 /**
  * Module declaration
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Module(
     val packageName: String = "",
     val moduleName: String = "",

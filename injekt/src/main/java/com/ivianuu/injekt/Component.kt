@@ -49,28 +49,40 @@ class Component internal constructor(val name: String? = null) {
         params: ParamsDefinition? = null
     ) = synchronized(this) {
         val key = Key.of(type, name)
-        val declaration = findDeclaration(key)
+        val declaration = findDeclaration(key, true)
 
         if (declaration != null) {
             @Suppress("UNCHECKED_CAST")
             logger?.let { logger ->
                 logger.info(
                     if (declaration.instance.isCreated) {
-                        "$name Return existing instance $declaration"
+                        "${this.name} Return existing instance $declaration"
                     } else {
-                        "$name Create instance $declaration"
+                        "${this.name} Create instance $declaration"
                     }
                 )
             }
             declaration.resolveInstance(params) as T
         } else {
-            throw NoDeclarationFoundException("$name Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
+            throw NoDeclarationFoundException("${this.name} Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 
-    private fun findDeclaration(key: Key): Declaration<*>? =
-        declarationRegistry.findDeclaration(key)
-            ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key) }
+    private fun findDeclaration(key: Key, includeGlobalRegistry: Boolean): Declaration<*>? {
+        return declarationRegistry.findDeclaration(key)
+            ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key, false) }
+            ?: if (includeGlobalRegistry) {
+                GlobalDeclarationRegistry.findDeclaration(key)
+                    ?.let { globalDeclaration ->
+                        logger?.info("Add global declaration $globalDeclaration")
+                        val declaration = globalDeclaration.clone()
+                        declarationRegistry.saveDeclaration(declaration)
+                        declaration
+                    }
+            } else {
+                null
+            }
+    }
 
     private inline fun <T, R> Iterable<T>.firstNotNull(predicate: (T) -> R): R? {
         for (element in this) {

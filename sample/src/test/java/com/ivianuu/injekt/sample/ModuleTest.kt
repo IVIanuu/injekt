@@ -29,7 +29,7 @@ class ModuleTest {
     @Test
     fun check() {
         val mockedApp = Mockito.mock(App::class.java)
-        component("AppComponent") { modules(autoAppModule, mockedApp.appModule()) }
+        component("AppComponent") { modules(mockedApp.appModule()) }
             .check()
     }
 

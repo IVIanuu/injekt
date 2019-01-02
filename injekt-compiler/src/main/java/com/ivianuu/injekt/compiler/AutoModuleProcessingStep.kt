@@ -35,6 +35,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
 
     override fun annotations() = setOf(
         Factory::class.java,
+        Module::class.java,
         Name::class.java,
         Param::class.java,
         Single::class.java
@@ -48,7 +49,6 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                 + elementsByAnnotation[Single::class.java])
 
         validateOnlyOneKindAnnotation(declarationElements)
-        validateModuleAnnotations(declarationElements)
 
         val declarations =
             (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
@@ -56,37 +56,41 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                 .mapNotNull { createDeclarationDescriptor(it) }
                 .toSet()
 
-        val modules = declarations
-            .groupBy { it.module }
-            .map { (moduleType, declarations) ->
-                val module = elementUtils.getTypeElement(moduleType.toString())
-                val annotation = module.getAnnotationMirror<Module>()
-                var packageName = annotation["packageName"].value as String
+        val modules = elementsByAnnotation[Module::class.java]
 
-                if (packageName.isEmpty()) {
-                    packageName = module.getPackage().qualifiedName.toString()
-                }
+        validateModules(modules)
 
-                var moduleName = annotation["moduleName"].value as String
+        val module = modules.firstOrNull() ?: return emptySet()
+        val moduleMirror = module.getAnnotationMirror<Module>()
 
-                if (moduleName.isEmpty()) {
-                    moduleName = module.simpleName.toString().decapitalize()
-                }
+        var packageName = moduleMirror["packageName"].value as String
 
-                val internal = annotation["internal"].value as Boolean
-                val override = annotation["override"].value as Boolean
-                val createOnStart = annotation.getOrNull("name")?.value as? Boolean ?: false
+        if (packageName.isEmpty()) {
+            packageName = module.getPackage().qualifiedName.toString()
+        }
 
-                ModuleDescriptor(
-                    packageName, moduleName, internal,
-                    override, createOnStart, declarations.toSet()
-                )
-            }
+        var moduleName = moduleMirror["moduleName"].value as String
 
-        modules
-            .map { ModuleGenerator(it) }
-            .map { it.generate() }
-            .forEach { it.write(processingEnv) }
+        if (moduleName.isEmpty()) {
+            moduleName = module.simpleName.toString().decapitalize()
+        }
+
+        val override = moduleMirror["override"].value as Boolean
+        val createOnStart = moduleMirror["createOnStart"].value as Boolean
+        val internal = moduleMirror["internal"].value as Boolean
+
+        val moduleDescriptor = ModuleDescriptor(
+            packageName,
+            moduleName,
+            internal,
+            override,
+            createOnStart,
+            declarations
+        )
+
+        val generator = ModuleGenerator(moduleDescriptor)
+
+        generator.generate().write(processingEnv)
 
         return emptySet()
     }
@@ -111,15 +115,12 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         val override = annotation["override"].value as Boolean
         val createOnStart = annotation.getOrNull("createOnStart")?.value as? Boolean
 
-        val module = element.getAnnotatedAnnotations<Module>().firstOrNull() ?: return null
-
         val secondaryTypes = annotation.getAsTypeList("secondaryTypes")
             .map { it.asTypeName().javaToKotlinType() }.toSet()
 
         var paramsIndex = -1
         return DeclarationDescriptor(
             element.asClassName().javaToKotlinType() as ClassName,
-            (module.annotationType.asElement() as TypeElement).asClassName(),
             kind,
             name,
             override,
@@ -220,19 +221,16 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
             }
     }
 
-    private fun validateModuleAnnotations(elements: Set<Element>) {
-        elements.forEach { element ->
-            val moduleAnnotations = element.getAnnotatedAnnotations<Module>()
-
-            when {
-                moduleAnnotations.isEmpty() -> messager.printMessage(
+    private fun validateModules(elements: Set<Element>) {
+        when {
+            elements.size > 1 -> {
+                messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Missing @Module annotated class annotation", element
+                    "Only one class should be annotated with Module"
                 )
-                moduleAnnotations.size > 1 -> messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Only one @Module annotated class annotation allowed", element
-                )
+            }
+            elements.isEmpty() -> {
+                messager.printMessage(Diagnostic.Kind.ERROR, "Missing AutoModule annotation")
             }
         }
     }
