@@ -27,6 +27,13 @@ data class Declaration<T : Any> private constructor(
         params: ParamsDefinition? = null
     ) = instance.get(params)
 
+    internal fun createInstanceHolder() {
+        instance = when (kind) {
+            Declaration.Kind.FACTORY -> FactoryInstance(this)
+            Declaration.Kind.SINGLE -> SingleInstance(this)
+        }
+    }
+
     override fun toString(): String {
         val kindString = kind.toString()
         val nameString = name?.let { "name:'$name', " } ?: ""
@@ -48,10 +55,7 @@ data class Declaration<T : Any> private constructor(
             val declaration = Declaration(Key.of(type, name), type, name)
             declaration.kind = kind
             declaration.definition = definition
-            declaration.instance = when (kind) {
-                Kind.FACTORY -> FactoryInstance(declaration)
-                Kind.SINGLE -> SingleInstance(declaration)
-            }
+            declaration.createInstanceHolder()
             return declaration
         }
 
@@ -94,9 +98,6 @@ internal fun <T : Any> Declaration<T>.copyIdentity() = copy().also {
     it.createOnStart = createOnStart
     it.attributes = attributes
     it.definition = definition
-    it.instance = when (kind) {
-        Declaration.Kind.FACTORY -> instance // no need to create a new instance
-        Declaration.Kind.SINGLE -> SingleInstance(this)
-    }
+    it.createInstanceHolder()
     it.module = module
 }
