@@ -16,41 +16,35 @@
 
 package com.ivianuu.injekt.sample
 
-import android.app.Application
+import android.content.Context
+import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.ComponentHolder
-import com.ivianuu.injekt.GlobalDeclarationRegistry
-import com.ivianuu.injekt.android.androidLogger
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.codegen.Module
+import com.ivianuu.injekt.android.fragment.fragmentComponent
 import com.ivianuu.injekt.codegen.Single
-import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject
-
-@Module
-private object AutoModule
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class App : Application(), ComponentHolder {
+class MyFragment : Fragment(), ComponentHolder {
 
-    override val component by lazy { applicationComponent(this) }
+    override val component by lazy { fragmentComponent(this) }
 
     private val appDependency by inject<AppDependency>()
+    private val mainActivityDependency by inject<MainActivityDependency>()
+    private val myFragmentDependency by inject<MyFragmentDependency>()
 
-    override fun onCreate() {
-        super.onCreate()
-
-        GlobalDeclarationRegistry.loadModules(autoModule)
-
-        configureInjekt {
-            androidLogger()
-        }
-
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
         appDependency
+        mainActivityDependency
+        myFragmentDependency
     }
-
 }
 
 @Single
-class AppDependency(val app: App)
+class MyFragmentDependency(
+    val app: App,
+    val mainActivity: MainActivity,
+    val myFragment: MyFragment
+)

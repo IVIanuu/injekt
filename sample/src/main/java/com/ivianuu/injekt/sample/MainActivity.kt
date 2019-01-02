@@ -11,11 +11,19 @@ class MainActivity : AppCompatActivity(), ComponentHolder {
 
     override val component by lazy { activityComponent(this) }
 
+    private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        appDependency
         mainActivityDependency
+
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .add(MyFragment(), "my_fragment")
+                .commit()
+        }
     }
 
 }

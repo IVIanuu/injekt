@@ -42,7 +42,7 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
-        components.forEach {
+        components.flatMap { listOf(it) + it.componentRegistry.dependencies }.forEach {
             logger?.info(
                 "${component.name} adding component ${it.name}"
             )
