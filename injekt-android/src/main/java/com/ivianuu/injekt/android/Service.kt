@@ -52,7 +52,7 @@ const val SERVICE_CONTEXT = "service_context"
  */
 fun <T : Service> serviceModule(
     instance: T,
-    name: String? = instance.javaClass.simpleName + "Module"
+    name: String? = "ServiceModule"
 ) = module(name) {
     // service
     factory(SERVICE) { instance as Service }

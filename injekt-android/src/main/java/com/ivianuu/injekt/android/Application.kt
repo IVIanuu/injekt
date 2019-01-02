@@ -48,7 +48,7 @@ fun applicationDependencies(instance: Application) = emptySet<Component>()
  */
 fun <T : Application> applicationModule(
     instance: T,
-    name: String? = instance.javaClass.simpleName + "Module"
+    name: String? = "ApplicationModule"
 ) = module(name) {
     // service
     factory(APPLICATION) { instance as Application }

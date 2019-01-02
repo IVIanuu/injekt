@@ -53,7 +53,7 @@ const val ACTIVITY_CONTEXT = "activity_context"
  */
 fun <T : Activity> activityModule(
     instance: T,
-    name: String? = instance.javaClass.simpleName + "Module"
+    name: String? = "ActivityModule"
 ) = module(name) {
     // activity
     factory(ACTIVITY) { instance as Activity }

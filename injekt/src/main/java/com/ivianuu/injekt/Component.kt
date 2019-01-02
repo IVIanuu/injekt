@@ -64,26 +64,9 @@ class Component internal constructor(val name: String? = null) {
         }
     }
 
-    private fun findDeclaration(key: Key): Declaration<*>? {
-        // 1. search in our own declarations
-        // 2. search in every dependency
-        // 3. check the global pool and if found add it to our component implicitly
-        return declarationRegistry.findDeclaration(key)
+    private fun findDeclaration(key: Key): Declaration<*>? =
+        declarationRegistry.findDeclaration(key)
             ?: componentRegistry.getDependencies().firstNotNull { it.findDeclaration(key) }
-            ?: GlobalDeclarationRegistry.findDeclaration(key)
-                ?.let { globalDeclaration ->
-                    try {
-                        val declaration = globalDeclaration.clone()
-                        declaration.instance.component = this
-                        declaration.resolveInstance()
-                        logger?.info("${name} Add global declaration $globalDeclaration")
-                        declarationRegistry.saveDeclaration(declaration)
-                        declaration
-                    } catch (e: InstanceCreationException) {
-                        null
-                    }
-                }
-    }
 
     private inline fun <T, R> Iterable<T>.firstNotNull(predicate: (T) -> R): R? {
         for (element in this) {

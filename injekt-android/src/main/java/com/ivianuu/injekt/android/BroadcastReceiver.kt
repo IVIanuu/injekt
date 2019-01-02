@@ -55,7 +55,7 @@ const val RECEIVER_CONTEXT = "receiver_context"
 fun <T : BroadcastReceiver> receiverModule(
     instance: T,
     context: Context,
-    name: String? = instance.javaClass.simpleName + "Module"
+    name: String? = "ReceiverModule"
 ) = module(name) {
     // service
     factory(RECEIVER) { instance as BroadcastReceiver }

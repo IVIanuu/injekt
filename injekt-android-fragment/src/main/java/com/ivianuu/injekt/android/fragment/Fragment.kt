@@ -74,7 +74,7 @@ fun fragmentDependencies(instance: Fragment): Set<Component> {
  */
 fun <T : Fragment> fragmentModule(
     instance: T,
-    name: String? = instance.javaClass.simpleName + "Module"
+    name: String? = "FragmentModule"
 ) = module(name) {
 
 }

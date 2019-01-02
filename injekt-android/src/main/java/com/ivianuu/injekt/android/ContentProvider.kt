@@ -55,7 +55,7 @@ const val CONTENT_PROVIDER_CONTEXT = "content_provider_context"
  */
 fun <T : ContentProvider> contentProviderModule(
     instance: T,
-    name: String? = instance.javaClass.simpleName + "Module"
+    name: String? = "ContentProviderModule"
 ) = module(name) {
     // service
     factory(CONTENT_PROVIDER) { instance as ContentProvider }

@@ -17,31 +17,25 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.GlobalDeclarationRegistry
-import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.codegen.Module
-import com.ivianuu.injekt.codegen.Single
-import com.ivianuu.injekt.configureInjekt
-import com.ivianuu.injekt.inject
-
-@Module
-private object AutoModule
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy { applicationComponent(this) }
+    override val component by lazy {
+        applicationComponent(this) {
+            modules(appModule)
+        }
+    }
 
     private val appDependency by inject<AppDependency>()
 
     override fun onCreate() {
         super.onCreate()
-
-        GlobalDeclarationRegistry.loadModules(autoModule)
 
         configureInjekt {
             androidLogger()
@@ -52,5 +46,8 @@ class App : Application(), InjektTrait {
 
 }
 
-@Single
+val appModule = module("appModule") {
+    single { AppDependency(get()) }
+}
+
 class AppDependency(val app: App)

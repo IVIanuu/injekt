@@ -2,14 +2,16 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.codegen.Single
-import com.ivianuu.injekt.inject
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
-    override val component by lazy { activityComponent(this) }
+    override val component by lazy {
+        activityComponent(this) {
+            modules(mainActivityModule)
+        }
+    }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -28,7 +30,10 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Single
+val mainActivityModule = module {
+    single { MainActivityDependency(get(), get()) }
+}
+
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity
