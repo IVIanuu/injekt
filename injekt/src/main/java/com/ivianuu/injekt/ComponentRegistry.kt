@@ -28,10 +28,7 @@ class ComponentRegistry internal constructor(val component: Component) {
     /**
      * Whether or not the [component] is a dependency
      */
-    fun dependsOn(component: Component): Boolean {
-        return dependencies.flatMap { listOf(it) + it.componentRegistry.dependencies }
-            .contains(component)
-    }
+    fun dependsOn(component: Component) = dependencies.contains(component)
 
     /**
      * All dependencies
@@ -42,7 +39,7 @@ class ComponentRegistry internal constructor(val component: Component) {
      * Adds all of [components] as a dependency
      */
     fun addComponents(vararg components: Component) {
-        components.flatMap { listOf(it) + it.componentRegistry.dependencies }.forEach {
+        components.forEach {
             logger?.info(
                 "${component.name} adding component ${it.name}"
             )
