@@ -67,3 +67,7 @@ class PrintLogger : Logger {
         println("[ERROR] $INJEKT_TAG $msg")
     }
 }
+
+fun InjektPlugins.printLogger() {
+    logger = PrintLogger()
+}
