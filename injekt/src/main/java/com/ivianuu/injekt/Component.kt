@@ -66,6 +66,11 @@ class Component internal constructor(val name: String? = null) {
 }
 
 /**
+ * Defines a component
+ */
+typealias ComponentDefinition = Component.() -> Unit
+
+/**
  * Returns a new [Component] and applies the [definition]
  */
 fun component(

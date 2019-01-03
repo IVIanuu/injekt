@@ -5,6 +5,9 @@ package com.ivianuu.injekt
  */
 abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
+    /**
+     * The component this instance lives in
+     */
     lateinit var component: Component
 
     /**

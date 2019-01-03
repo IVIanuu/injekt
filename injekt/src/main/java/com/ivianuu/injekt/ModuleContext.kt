@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * The context while defining declarations
+ * The context for defining [Declaration]s
  */
 data class ModuleContext(val module: Module) {
 
@@ -58,7 +58,7 @@ fun module(
 ) = Module(name, createOnStart, override, definition)
 
 /**
- * Provides a dependency
+ * Provides a unscoped dependency which will be recreated on each request
  */
 inline fun <reified T : Any> ModuleContext.factory(
     name: String? = null,
@@ -67,7 +67,7 @@ inline fun <reified T : Any> ModuleContext.factory(
 ) = factory(T::class, name, override, definition)
 
 /**
- * Provides a dependency
+ * Provides a unscoped dependency which will be recreated on each request
  */
 fun <T : Any> ModuleContext.factory(
     type: KClass<T>,
@@ -84,7 +84,7 @@ fun <T : Any> ModuleContext.factory(
 )
 
 /**
- * Provides a singleton dependency
+ * Provides scoped dependency which will be created once for each component
  */
 inline fun <reified T : Any> ModuleContext.single(
     name: String? = null,
@@ -94,7 +94,7 @@ inline fun <reified T : Any> ModuleContext.single(
 ) = single(T::class, name, override, createOnStart, definition)
 
 /**
- * Provides a singleton dependency
+ * Provides scoped dependency which will be created once for each component
  */
 fun <T : Any> ModuleContext.single(
     type: KClass<T>,

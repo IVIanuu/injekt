@@ -38,6 +38,11 @@ class Parameters(vararg values: Any?) {
 }
 
 /**
+ * Defines [Parameters]
+ */
+typealias ParamsDefinition = () -> Parameters
+
+/**
  * Returns new [Parameters] which contains all [values]
  */
 fun parametersOf(vararg values: Any?) = Parameters(*values)

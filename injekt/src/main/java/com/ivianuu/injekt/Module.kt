@@ -17,3 +17,5 @@ class Module internal constructor(
     }
 
 }
+
+typealias ModuleDefinition = ModuleContext.() -> Unit

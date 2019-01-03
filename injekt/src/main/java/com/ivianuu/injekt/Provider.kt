@@ -20,9 +20,15 @@ package com.ivianuu.injekt
  * Provides dependencies of kind [T]
  */
 interface Provider<T> {
+    /**
+     * Returns a potentially new value of [T] using [params]
+     */
     fun get(params: ParamsDefinition? = null): T
 }
 
+/**
+ * Returns a [Provider] which invokes the [provider] on [Provider.get]
+ */
 fun <T> provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
     SamProvider(provider)
 

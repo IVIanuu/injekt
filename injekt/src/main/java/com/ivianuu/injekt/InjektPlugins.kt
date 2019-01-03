@@ -13,6 +13,11 @@ object InjektPlugins {
 }
 
 /**
+ * Defines inject configuration
+ */
+typealias InjektDefinition = InjektPlugins.() -> Unit
+
+/**
  * Configure injekt
  */
 fun configureInjekt(definition: InjektDefinition) =

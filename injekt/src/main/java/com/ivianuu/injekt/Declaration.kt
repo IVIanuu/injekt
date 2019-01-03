@@ -10,14 +10,39 @@ data class Declaration<T : Any> private constructor(
     val name: String?
 ) {
 
+    /**
+     * Whether or not this declarations can override existing declarations
+     */
     var override: Boolean = false
+
+    /**
+     * Whether or not this declaration should be created on start
+     */
     var createOnStart: Boolean = false
+
+    /**
+     * Extras
+     */
     var attributes = Attributes()
 
+    /**
+     * The kind of this declaration
+     */
     lateinit var kind: Kind
+
+    /**
+     * The definition of this declaration
+     */
     lateinit var definition: Definition<T>
+
+    /**
+     * The instance of this declaration
+     */
     lateinit var instance: Instance<T>
 
+    /**
+     * The module context this declaration lives in
+     */
     lateinit var moduleContext: ModuleContext
 
     /**
@@ -27,6 +52,9 @@ data class Declaration<T : Any> private constructor(
         params: ParamsDefinition? = null
     ) = instance.get(params)
 
+    /**
+     * Creates the instance holder
+     */
     fun createInstanceHolder() {
         instance = when (kind) {
             Declaration.Kind.FACTORY -> FactoryInstance(this)
@@ -61,6 +89,11 @@ data class Declaration<T : Any> private constructor(
 
     }
 }
+
+/**
+ * Defines a declaration
+ */
+typealias Definition<T> = DefinitionContext.(params: Parameters) -> T
 
 /**
  * Binds this [Declaration] to [type]
