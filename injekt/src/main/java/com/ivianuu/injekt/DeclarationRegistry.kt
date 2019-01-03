@@ -94,6 +94,18 @@ class DeclarationRegistry internal constructor(val component: Component) {
         saveDeclarationInternal(declaration, dropOverrides, true)
     }
 
+    fun removeDeclaration(type: KClass<*>, name: String? = null) {
+        findDeclaration(type, name)?.let { removeDeclaration(it) }
+    }
+
+    fun removeDeclaration(declaration: Declaration<*>) {
+        if (declaration.name != null) {
+            declarationNames.remove(declaration.name)
+        } else {
+            declarationTypes.remove(declaration.type)
+        }
+    }
+
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
     private fun saveDeclarationInternal(
