@@ -35,7 +35,6 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun loadModules(vararg modules: Module, dropOverrides: Boolean = false) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}")
-
             module.getDeclarations()
                 .forEach { saveDeclarationInternal(it, dropOverrides, false) }
         }
@@ -47,7 +46,6 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun linkComponents(vararg components: Component, dropOverrides: Boolean = false) {
         components.forEach { component ->
             logger?.info("${component.name} link component ${component.name}")
-
             component.declarationRegistry.declarations
                 .forEach { saveDeclarationInternal(it, dropOverrides, true) }
         }
@@ -87,13 +85,14 @@ class DeclarationRegistry internal constructor(val component: Component) {
         dropOverrides: Boolean,
         fromComponent: Boolean
     ) {
-
         val oldDeclaration = if (declaration.name != null) {
             declarationNames[declaration.name]
         } else {
             declarationTypes[declaration.type]
         }
+
         val isOverride = oldDeclaration != null
+
         if (isOverride && !declaration.override) {
             if (dropOverrides) {
                 logger?.info("${component.name} Drop override $declaration")
@@ -108,6 +107,8 @@ class DeclarationRegistry internal constructor(val component: Component) {
         } else {
             declarationTypes[declaration.type] = declaration
         }
+
+        declarations.add(declaration)
 
         if (!fromComponent) {
             declaration.instance.component = component
