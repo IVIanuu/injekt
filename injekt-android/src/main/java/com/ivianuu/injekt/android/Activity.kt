@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
@@ -60,6 +59,6 @@ fun <T : Activity> activityModule(
     bind<Context, Activity>(ACTIVITY_CONTEXT)
 }
 
-fun DefinitionContext.activity() = get<Application>(ACTIVITY)
+fun DefinitionContext.activity() = get<Activity>(ACTIVITY)
 
 fun DefinitionContext.activityContext() = get<Context>(ACTIVITY_CONTEXT)

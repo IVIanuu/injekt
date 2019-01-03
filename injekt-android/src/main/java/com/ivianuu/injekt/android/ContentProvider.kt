@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
+import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
 
@@ -61,3 +62,7 @@ fun <T : ContentProvider> contentProviderModule(
     factory(CONTENT_PROVIDER) { instance as ContentProvider }
     factory(CONTENT_PROVIDER_CONTEXT) { instance.context!! }
 }
+
+fun DefinitionContext.contentProvider() = get<ContentProvider>(CONTENT_PROVIDER)
+
+fun DefinitionContext.contentProviderContext() = get<Context>(CONTENT_PROVIDER_CONTEXT)
