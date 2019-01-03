@@ -21,16 +21,14 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 
+lateinit var appComponent: Component
+
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy {
-        applicationComponent(this) {
-            modules(appModule)
-        }
-    }
+    override val component get() = appComponent
 
     private val appDependency by inject<AppDependency>()
 
@@ -40,6 +38,8 @@ class App : Application(), InjektTrait {
         configureInjekt {
             androidLogger()
         }
+
+        appComponent = applicationComponent(this)
 
         appDependency
     }

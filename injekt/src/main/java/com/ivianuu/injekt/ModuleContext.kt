@@ -34,20 +34,20 @@ data class ModuleContext(
     fun <T : Any> declare(
         declaration: Declaration<T>
     ): Declaration<T> {
+        declaration.moduleContext = this
+
+        val override = if (module.override) module.override else declaration.override
+        val createOnStart =
+            if (module.createOnStart) module.createOnStart else declaration.createOnStart
+
+        declaration.createOnStart = createOnStart
+        declaration.override = override
+
         val oldDeclaration = declarations[declaration.key]
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
             throw OverrideException("${module.name} Try to override declaration $declaration but was already saved $oldDeclaration")
         }
-
-        declaration.moduleContext = this
-
-        val createOnStart =
-            if (module.createOnStart) module.createOnStart else declaration.createOnStart
-        val override = if (module.override) module.override else declaration.override
-
-        declaration.createOnStart = createOnStart
-        declaration.override = override
 
         declarations[declaration.key] = declaration
 

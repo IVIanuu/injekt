@@ -19,7 +19,9 @@ class Component internal constructor(val name: String? = null) {
     }
 
     /**
-     * Adds all [Declaration]s of [components] to this component
+     * Adds all current [Declaration]s of [components] to this component
+     * The context of the added [Declaration]s will stay the same
+     * So make sure that [this] component does not live longer than the added ones
      */
     fun dependencies(vararg components: Component, dropOverrides: Boolean = false) {
         declarationRegistry.loadComponents(*components, dropOverrides = dropOverrides)
