@@ -45,8 +45,7 @@ class Component internal constructor(val name: String? = null) {
         name: String? = null,
         params: ParamsDefinition? = null
     ): T {
-        val key = Key.of(type, name)
-        val declaration = declarationRegistry.findDeclaration(key)
+        val declaration = declarationRegistry.findDeclaration(type, name)
 
         return if (declaration != null) {
             @Suppress("UNCHECKED_CAST")

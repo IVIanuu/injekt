@@ -24,7 +24,9 @@ import kotlin.reflect.KClass
  */
 class DeclarationRegistry internal constructor(val component: Component) {
 
-    private val declarations = hashMapOf<Key, Declaration<*>>()
+    private val declarations = hashSetOf<Declaration<*>>()
+    private val declarationNames = hashMapOf<String, Declaration<*>>()
+    private val declarationTypes = hashMapOf<KClass<*>, Declaration<*>>()
     private val createOnStartDeclarations = hashSetOf<Declaration<*>>()
 
     /**
@@ -35,26 +37,26 @@ class DeclarationRegistry internal constructor(val component: Component) {
             logger?.info("${component.name} load module ${module.name}")
 
             module.getDeclarations(component.context)
-                .forEach { saveDeclarationInternal(it.value, dropOverrides, false) }
+                .forEach { saveDeclarationInternal(it, dropOverrides, false) }
         }
     }
 
     /**
-     * Adds all [Declaration]s of the [components]
+     * Adds all current [Declaration]s of the [components]
      */
     fun linkComponents(vararg components: Component, dropOverrides: Boolean = false) {
         components.forEach { component ->
-            logger?.info("${component.name} load component ${component.name}")
+            logger?.info("${component.name} link component ${component.name}")
 
             component.declarationRegistry.declarations
-                .forEach { saveDeclarationInternal(it.value, dropOverrides, true) }
+                .forEach { saveDeclarationInternal(it, dropOverrides, true) }
         }
     }
 
     /**
      * Returns all [Declaration]s
      */
-    fun getAllDeclarations(): Set<Declaration<*>> = declarations.values.toSet()
+    fun getAllDeclarations(): Set<Declaration<*>> = declarations
 
     /**
      * Returns the [Declaration] for [type] and [name] or null
@@ -62,12 +64,11 @@ class DeclarationRegistry internal constructor(val component: Component) {
     fun findDeclaration(
         type: KClass<*>,
         name: String? = null
-    ): Declaration<*>? = declarations[Key.of(type, name)]
-
-    /**
-     * Returns the [Declaration] for [type] and [name] or null
-     */
-    fun findDeclaration(key: Key): Declaration<*>? = declarations[key]
+    ): Declaration<*>? = if (name != null) {
+        declarationNames[name]
+    } else {
+        declarationTypes[type]
+    }
 
     internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
@@ -86,8 +87,12 @@ class DeclarationRegistry internal constructor(val component: Component) {
         dropOverrides: Boolean,
         fromComponent: Boolean
     ) {
-        val key = declaration.key
-        val oldDeclaration = declarations[key]
+
+        val oldDeclaration = if (declaration.name != null) {
+            declarationNames[declaration.name]
+        } else {
+            declarationTypes[declaration.type]
+        }
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
             if (dropOverrides) {
@@ -98,7 +103,11 @@ class DeclarationRegistry internal constructor(val component: Component) {
             }
         }
 
-        declarations[key] = declaration
+        if (declaration.name != null) {
+            declarationNames[declaration.name] = declaration
+        } else {
+            declarationTypes[declaration.type] = declaration
+        }
 
         if (!fromComponent) {
             declaration.instance.context = component.context

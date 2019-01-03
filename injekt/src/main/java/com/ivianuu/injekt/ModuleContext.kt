@@ -26,7 +26,7 @@ data class ModuleContext(
     val componentContext: ComponentContext
 ) {
 
-    internal val declarations = hashMapOf<Key, Declaration<*>>()
+    internal val declarations = mutableListOf<Declaration<*>>()
 
     /**
      * Adds the [declaration]
@@ -43,13 +43,7 @@ data class ModuleContext(
         declaration.createOnStart = createOnStart
         declaration.override = override
 
-        val oldDeclaration = declarations[declaration.key]
-        val isOverride = oldDeclaration != null
-        if (isOverride && !declaration.override) {
-            throw OverrideException("${module.name} Try to override declaration $declaration but was already saved $oldDeclaration")
-        }
-
-        declarations[declaration.key] = declaration
+        declarations.add(declaration)
 
         return declaration
     }
@@ -152,7 +146,7 @@ fun <T : Any> ModuleContext.declare(
  * Adds all declarations of [module]
  */
 fun ModuleContext.module(module: Module) {
-    module.getDeclarations(componentContext).forEach { declare(it.value) }
+    module.getDeclarations(componentContext).forEach { declare(it) }
 }
 
 /**
