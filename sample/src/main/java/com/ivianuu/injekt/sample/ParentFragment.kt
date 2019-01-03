@@ -28,11 +28,9 @@ import com.ivianuu.injekt.inject
  * @author Manuel Wrage (IVIanuu)
  */
 class ParentFragment : Fragment(), InjektTrait {
-
+    
     override val component by lazy {
-        fragmentComponent(this) {
-            modules(parentFragmentModule)
-        }
+        fragmentComponent(this) { modules(parentFragmentModule) }
     }
 
     private val appDependency by inject<AppDependency>()

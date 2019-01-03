@@ -30,7 +30,7 @@ fun <T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(applicationDependencies(instance), dropOverrides = true)
+    components(applicationDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), applicationModule(instance))
     definition?.invoke(this)
 }
@@ -39,7 +39,7 @@ const val APPLICATION = "application"
 const val APPLICATION_CONTEXT = "application_context"
 
 /**
- * Returns dependencies for [instance]
+ * Returns components for [instance]
  */
 fun applicationDependencies(instance: Application) = emptySet<Component>()
 

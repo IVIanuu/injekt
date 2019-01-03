@@ -29,13 +29,13 @@ fun <T : Fragment> fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(fragmentDependencies(instance), dropOverrides = true)
+    components(fragmentDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), fragmentModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns dependencies for [instance]
+ * Returns components for [instance]
  */
 fun fragmentDependencies(instance: Fragment): Set<Component> {
     val dependencies = mutableSetOf<Component>()

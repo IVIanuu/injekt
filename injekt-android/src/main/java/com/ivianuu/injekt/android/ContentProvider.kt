@@ -29,13 +29,13 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(contentProviderDependencies(instance), dropOverrides = true)
+    components(contentProviderDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), contentProviderModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns dependencies for [instance]
+ * Returns components for [instance]
  */
 fun contentProviderDependencies(instance: ContentProvider): Set<Component> {
     val dependencies = mutableSetOf<Component>()

@@ -30,13 +30,13 @@ fun <T : Service> serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(serviceDependencies(instance), dropOverrides = true)
+    components(serviceDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), serviceModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns dependencies for [instance]
+ * Returns components for [instance]
  */
 fun serviceDependencies(instance: Service): Set<Component> {
     val dependencies = mutableSetOf<Component>()

@@ -32,13 +32,13 @@ fun <T : BroadcastReceiver> receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(receiverDependencies(instance, context), dropOverrides = true)
+    components(receiverDependencies(instance, context), dropOverrides = true)
     modules(instanceModule(instance), receiverModule(instance, context))
     definition?.invoke(this)
 }
 
 /**
- * Returns dependencies for [instance]
+ * Returns components for [instance]
  */
 fun receiverDependencies(instance: BroadcastReceiver, context: Context): Set<Component> {
     val dependencies = mutableSetOf<Component>()

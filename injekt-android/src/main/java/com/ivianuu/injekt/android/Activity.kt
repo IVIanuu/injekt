@@ -31,13 +31,13 @@ fun <T : Activity> activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    dependencies(activityDependencies(instance), dropOverrides = true)
+    components(activityDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), activityModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns dependencies for [instance]
+ * Returns components for [instance]
  */
 fun activityDependencies(instance: Activity): Set<Component> {
     val dependencies = mutableSetOf<Component>()

@@ -22,7 +22,7 @@ class Component internal constructor(val name: String? = null) {
      * The context of the added [Declaration]s will stay the same
      * So make sure that [this] component does not live longer than the added ones
      */
-    fun dependencies(vararg components: Component, dropOverrides: Boolean = false) {
+    fun components(vararg components: Component, dropOverrides: Boolean = false) {
         declarationRegistry.linkComponents(*components, dropOverrides = dropOverrides)
     }
 
@@ -95,8 +95,8 @@ fun Component.modules(modules: Collection<Module>, dropOverrides: Boolean = fals
 /**
  * Adds all [Declaration]s of [components] to this component
  */
-fun Component.dependencies(components: Collection<Component>, dropOverrides: Boolean = false) {
-    dependencies(*components.toTypedArray(), dropOverrides = dropOverrides)
+fun Component.components(components: Collection<Component>, dropOverrides: Boolean = false) {
+    components(*components.toTypedArray(), dropOverrides = dropOverrides)
 }
 
 /**
