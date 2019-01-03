@@ -17,30 +17,22 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import androidx.lifecycle.GenericLifecycleObserver
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Module
 import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.injekt.common.instanceModule
 import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject
-
-lateinit var appComponent: Component
-
-interface AppComponentTrait : InjektTrait {
-    override val component: Component
-        get() = appComponent
-}
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class App : Application(), AppComponentTrait {
+class App : Application(), InjektTrait {
+
+    override val component by lazy {
+        applicationComponent(this) { modules(appModule) }
+    }
 
     private val appDependency by inject<AppDependency>()
 
@@ -51,33 +43,9 @@ class App : Application(), AppComponentTrait {
             androidLogger()
         }
 
-        appComponent = applicationComponent(this) { modules(appModule, instanceModule(this)) }
-
         appDependency
     }
 
-}
-
-fun Component.scopedModules(key: String, vararg modules: com.ivianuu.injekt.Module, dropOverrides: Boolean = false) {
-    modules
-        .flatMap { it.getDefinitions() }
-        .onEach { it.attributes["SCOPE"] = key }
-        .forEach { beanRegistry.saveDefinition(it, dropOverrides) }
-}
-
-fun Component.scopedModules(owner: LifecycleOwner, key: String, vararg modules: com.ivianuu.injekt.Module, dropOverrides: Boolean = false) {
-    scopedModules(key, *modules, dropOverrides = dropOverrides)
-    owner.lifecycle.addObserver(GenericLifecycleObserver { source, event ->
-        if (event == Lifecycle.Event.ON_DESTROY) {
-            removeScope(key)
-        }
-    })
-}
-
-fun Component.removeScope(key: String) {
-    beanRegistry.getAllDefinitions()
-        .filter { it.attributes.get<String>("SCOPE") == key }
-        .forEach { beanRegistry.removeDefinition(it) }
 }
 
 @Module private annotation class AppModule

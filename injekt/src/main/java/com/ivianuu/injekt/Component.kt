@@ -30,10 +30,8 @@ class Component internal constructor(val name: String? = null) {
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
-        beanRegistry.getEagerInstances().forEach {
-            logger?.info("$name Create instance on start up $it")
-            it.resolveInstance()
-        }
+        logger?.info("$name Create start up instances")
+        beanRegistry.getEagerInstances().forEach { it.resolveInstance() }
     }
 
     /**
@@ -48,15 +46,6 @@ class Component internal constructor(val name: String? = null) {
 
         return if (definition != null) {
             @Suppress("UNCHECKED_CAST")
-            logger?.let { logger ->
-                logger.info(
-                    if (definition.instance.isCreated) {
-                        "${this.name} Return existing instance $definition"
-                    } else {
-                        "${this.name} Create instance $definition"
-                    }
-                )
-            }
             definition.resolveInstance(params) as T
         } else {
             throw NoBeanDefinitionFoundException("${this.name} Could not find definition for ${type.java.name + " " + name.orEmpty()}")

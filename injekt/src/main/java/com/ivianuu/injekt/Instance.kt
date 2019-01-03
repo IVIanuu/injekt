@@ -1,5 +1,7 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.InjektPlugins.logger
+
 /**
  * The [Instance] of an [BeanDefinition]
  */
@@ -46,7 +48,10 @@ class FactoryInstance<T : Any>(
     override val isCreated: Boolean
         get() = false
 
-    override fun get(params: ParamsDefinition?) = create(params)
+    override fun get(params: ParamsDefinition?): T {
+        logger?.info("${component.name} Create instance $beanDefinition")
+        return create(params)
+    }
 
 }
 
@@ -66,8 +71,10 @@ class SingleInstance<T : Any>(
         val value = _value
 
         return if (value != null) {
+            logger?.info("${component.name} Return existing instance $beanDefinition")
             return value
         } else {
+            logger?.info("${component.name} Create instance $beanDefinition")
             create(params).also { _value = it }
         }
     }

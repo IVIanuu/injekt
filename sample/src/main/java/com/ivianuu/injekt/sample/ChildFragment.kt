@@ -18,15 +18,20 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.android.fragment.fragmentComponent
 import com.ivianuu.injekt.annotations.Module
 import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.injekt.common.instanceModule
 import com.ivianuu.injekt.inject
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class ChildFragment : Fragment(), AppComponentTrait {
+class ChildFragment : Fragment(), InjektTrait {
+
+    override val component by lazy {
+        fragmentComponent(this) { modules(childFragmentModule) }
+    }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -34,9 +39,6 @@ class ChildFragment : Fragment(), AppComponentTrait {
     private val childFragmentDependency by inject<ChildFragmentDependency>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        component.scopedModules(this, "CHILD_FRAGMENT",
-            childFragmentModule, instanceModule(this))
-
         super.onCreate(savedInstanceState)
 
         appDependency
