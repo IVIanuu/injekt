@@ -75,7 +75,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         findDeclaration(type, name) != null
 
     /**
-     * Saves the [declaration]
+     * Saves the [declaration] which was not added to [Component] yet
      */
     fun saveDeclaration(
         declaration: Declaration<*>,
