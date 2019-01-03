@@ -3,7 +3,7 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * Represents a dependency beanDefinition.
+ * Represents a dependency definition.
  */
 data class BeanDefinition<T : Any> private constructor(
     val type: KClass<T>,
@@ -16,7 +16,7 @@ data class BeanDefinition<T : Any> private constructor(
     var override: Boolean = false
 
     /**
-     * Whether or not this beanDefinition should be created on start
+     * Whether or not this definition should be created on start
      */
     var createOnStart: Boolean = false
 
@@ -26,22 +26,22 @@ data class BeanDefinition<T : Any> private constructor(
     var attributes = Attributes()
 
     /**
-     * The kind of this beanDefinition
+     * The kind of this definition
      */
     lateinit var kind: Kind
 
     /**
-     * The definition of this beanDefinition
+     * The definition of this definition
      */
     lateinit var definition: Definition<T>
 
     /**
-     * The instance of this beanDefinition
+     * The instance of this definition
      */
     lateinit var instance: Instance<T>
 
     /**
-     * The module context this beanDefinition lives in
+     * The module context this definition lives in
      */
     lateinit var moduleContext: ModuleContext
 
@@ -91,7 +91,7 @@ data class BeanDefinition<T : Any> private constructor(
 }
 
 /**
- * Defines a beanDefinition
+ * Defines a [BeanDefinition]
  */
 typealias Definition<T> = DefinitionContext.(params: Parameters) -> T
 

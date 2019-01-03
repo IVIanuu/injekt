@@ -56,11 +56,11 @@ class BeanRegistryTest {
     @Test
     fun testSaveDefinition() {
         val registry = component { }.beanRegistry
-        val beanDefinition =
+        val definition =
             BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
         assertEquals(null, registry.findDefinition(TestDep1::class))
-        registry.saveDefinition(beanDefinition)
-        assertEquals(beanDefinition, registry.findDefinition(TestDep1::class))
+        registry.saveDefinition(definition)
+        assertEquals(definition, registry.findDefinition(TestDep1::class))
     }
 
     @Test

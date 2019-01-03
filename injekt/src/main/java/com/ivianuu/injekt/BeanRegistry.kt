@@ -75,85 +75,85 @@ class BeanRegistry internal constructor(val component: Component) {
         findDefinition(type, name) != null
 
     /**
-     * Saves the [beanDefinition] which was not added to [Component] yet
+     * Saves the [definition] which was not added to [Component] yet
      */
     fun saveDefinition(
-        beanDefinition: BeanDefinition<*>,
+        definition: BeanDefinition<*>,
         dropOverrides: Boolean = false
     ) {
-        addDefinition(beanDefinition, dropOverrides, false)
+        addDefinition(definition, dropOverrides, false)
     }
 
     /**
-     * Saves a [beanDefinition] from another component
+     * Saves a [definition] from another component
      */
     fun linkDefinition(
-        beanDefinition: BeanDefinition<*>,
+        definition: BeanDefinition<*>,
         dropOverrides: Boolean = false
     ) {
-        addDefinition(beanDefinition, dropOverrides, true)
+        addDefinition(definition, dropOverrides, true)
     }
 
     fun removeDefinition(type: KClass<*>, name: String? = null) {
         findDefinition(type, name)?.let { removeDefinition(it) }
     }
 
-    fun removeDefinition(beanDefinition: BeanDefinition<*>) {
-        if (beanDefinition.name != null) {
-            definitionNames.remove(beanDefinition.name)
+    fun removeDefinition(definition: BeanDefinition<*>) {
+        if (definition.name != null) {
+            definitionNames.remove(definition.name)
         } else {
-            definitionTypes.remove(beanDefinition.type)
+            definitionTypes.remove(definition.type)
         }
     }
 
     internal fun getEagerInstances(): Set<BeanDefinition<*>> = createOnStartDefinitions
 
     private fun addDefinition(
-        beanDefinition: BeanDefinition<*>,
+        definition: BeanDefinition<*>,
         dropOverrides: Boolean,
         fromComponent: Boolean
     ) {
-        val oldDefinition = if (beanDefinition.name != null) {
-            definitionNames[beanDefinition.name]
+        val oldDefinition = if (definition.name != null) {
+            definitionNames[definition.name]
         } else {
-            definitionTypes[beanDefinition.type]
+            definitionTypes[definition.type]
         }
 
         val isOverride = oldDefinition != null
 
-        if (isOverride && !beanDefinition.override) {
+        if (isOverride && !definition.override) {
             if (dropOverrides) {
-                logger?.info("${component.name} Drop override $beanDefinition")
+                logger?.info("${component.name} Drop override $definition")
                 return
             } else {
-                throw OverrideException("Try to override beanDefinition $beanDefinition but was already saved $oldDefinition to ${component.name}")
+                throw OverrideException("Try to override definition $definition but was already saved $oldDefinition to ${component.name}")
             }
         }
 
-        if (beanDefinition.name != null) {
-            definitionNames[beanDefinition.name] = beanDefinition
+        if (definition.name != null) {
+            definitionNames[definition.name] = definition
         } else {
-            definitionTypes[beanDefinition.type] = beanDefinition
+            definitionTypes[definition.type] = definition
         }
 
-        definitions.add(beanDefinition)
+        definitions.add(definition)
 
         if (!fromComponent) {
-            beanDefinition.instance.component = component
+            definition.instance.component = component
 
-            if (beanDefinition.createOnStart) {
-                createOnStartDefinitions.add(beanDefinition)
+            if (definition.createOnStart) {
+                createOnStartDefinitions.add(definition)
             }
         }
 
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
-                "${component.name} Override $beanDefinition"
+                "${component.name} Override $definition"
             } else {
                 if (fromComponent) {
-                    "${component.name} Link $beanDefinition from ${beanDefinition.instance.component.name}"
+                    "${component.name} Link $definition from ${definition.instance.component.name}"
                 } else {
-                    "${component.name} Declare $beanDefinition"
+                    "${component.name} Declare $definition"
                 }
             }
             logger.debug(msg)

@@ -26,23 +26,23 @@ data class ModuleContext(val module: Module) {
     internal val definitions = mutableListOf<BeanDefinition<*>>()
 
     /**
-     * Adds the [beanDefinition]
+     * Adds the [definition]
      */
     fun <T : Any> declare(
-        beanDefinition: BeanDefinition<T>
+        definition: BeanDefinition<T>
     ): BeanDefinition<T> {
-        beanDefinition.moduleContext = this
+        definition.moduleContext = this
 
-        val override = if (module.override) module.override else beanDefinition.override
+        val override = if (module.override) module.override else definition.override
         val createOnStart =
-            if (module.createOnStart) module.createOnStart else beanDefinition.createOnStart
+            if (module.createOnStart) module.createOnStart else definition.createOnStart
 
-        beanDefinition.createOnStart = createOnStart
-        beanDefinition.override = override
+        definition.createOnStart = createOnStart
+        definition.override = override
 
-        definitions.add(beanDefinition)
+        definitions.add(definition)
 
-        return beanDefinition
+        return definition
     }
 
 }
@@ -159,7 +159,7 @@ fun ModuleContext.module(
 }
 
 /**
- * Adds a binding for [T] for a existing beanDefinition of [S]
+ * Adds a binding for [T] for a existing definition of [S]
  */
 inline fun <reified T : Any, reified S : T> ModuleContext.bind(name: String? = null) =
     factory<T>(name) { get<S>() }
