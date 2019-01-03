@@ -50,9 +50,7 @@ class App : Application(), InjektTrait {
 
 }
 
-@Module
-private annotation class AppModule
+@Module private annotation class AppModule
 
-@Single
-@AppModule
+@Single @AppModule
 class AppDependency(val app: App)

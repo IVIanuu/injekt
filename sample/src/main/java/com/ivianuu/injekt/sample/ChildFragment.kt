@@ -47,11 +47,9 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-@Module
-private annotation class ChildFragmentModule
+@Module private annotation class ChildFragmentModule
 
-@Single
-@ChildFragmentModule
+@Single @ChildFragmentModule
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
