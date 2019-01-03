@@ -2,8 +2,8 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.codegen.Module
-import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.annotations.Module
+import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.common.instanceModule
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject

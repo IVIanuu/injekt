@@ -2,7 +2,7 @@ include(
     ":injekt",
     ":injekt-android",
     ":injekt-android-fragment",
-    ":injekt-codegen",
+    ":injekt-annotations",
     ":injekt-common",
     ":injekt-compiler",
     ":injekt-test",

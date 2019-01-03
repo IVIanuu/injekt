@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.codegen.*
+import com.ivianuu.injekt.annotations.*
 import com.ivianuu.processingx.*
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.codegen
+package com.ivianuu.injekt.annotations
 
-import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Component
 
 /**
- * Will use the provided [Parameters] to resolve the requested dependency
- * Note that the parameters must be passed in the exact same order as in the constructor
+ * Will use the [name] when retrieving an instance from [Component.get]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Param
+annotation class Name(val name: String)

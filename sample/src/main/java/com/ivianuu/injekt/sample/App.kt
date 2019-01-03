@@ -24,8 +24,8 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.codegen.Module
-import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.annotations.Module
+import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.common.instanceModule
 import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject

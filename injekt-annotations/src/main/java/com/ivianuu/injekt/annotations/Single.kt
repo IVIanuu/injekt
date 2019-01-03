@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.codegen
+package com.ivianuu.injekt.annotations
 
 import kotlin.reflect.KClass
 

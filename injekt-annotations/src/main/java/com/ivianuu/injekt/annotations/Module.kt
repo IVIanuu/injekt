@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.codegen
+package com.ivianuu.injekt.annotations
 
 /**
  * Module definition
