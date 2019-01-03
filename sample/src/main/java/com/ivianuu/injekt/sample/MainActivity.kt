@@ -2,8 +2,11 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.codegen.Module
+import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.inject
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
@@ -30,10 +33,11 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-val mainActivityModule = module {
-    single { MainActivityDependency(get(), get()) }
-}
+@Module
+private annotation class MainActivityModule
 
+@Single
+@MainActivityModule
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

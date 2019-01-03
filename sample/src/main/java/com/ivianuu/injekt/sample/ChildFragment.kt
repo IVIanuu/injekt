@@ -18,8 +18,11 @@ package com.ivianuu.injekt.sample
 
 import android.content.Context
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.fragment.fragmentComponent
+import com.ivianuu.injekt.codegen.Module
+import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.inject
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -44,10 +47,11 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-val childFragmentModule = module("childFragmentModule") {
-    single { ChildFragmentDependency(get(), get(), get(), get()) }
-}
+@Module
+private annotation class ChildFragmentModule
 
+@Single
+@ChildFragmentModule
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

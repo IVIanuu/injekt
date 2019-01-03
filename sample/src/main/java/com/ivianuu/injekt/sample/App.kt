@@ -17,9 +17,13 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.codegen.Module
+import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.configureInjekt
+import com.ivianuu.injekt.inject
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -46,8 +50,9 @@ class App : Application(), InjektTrait {
 
 }
 
-val appModule = module("appModule") {
-    single { AppDependency(get()) }
-}
+@Module
+private annotation class AppModule
 
+@Single
+@AppModule
 class AppDependency(val app: App)

@@ -35,15 +35,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
             logger?.info("${component.name} load module ${module.name}")
 
             module.getDeclarations(component.context)
-                .forEach {
-                    saveDeclaration(it.value, dropOverrides)
-
-                    it.value.instance.context = component.context
-
-                    if (it.value.createOnStart) {
-                        createOnStartDeclarations.add(it.value)
-                    }
-                }
+                .forEach { saveDeclarationInternal(it.value, dropOverrides, false) }
         }
     }
 
@@ -55,7 +47,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
             logger?.info("${component.name} load component ${component.name}")
 
             component.declarationRegistry.declarations
-                .forEach { saveDeclaration(it.value, dropOverrides) }
+                .forEach { saveDeclarationInternal(it.value, dropOverrides, true) }
         }
     }
 
@@ -86,11 +78,20 @@ class DeclarationRegistry internal constructor(val component: Component) {
         declaration: Declaration<*>,
         dropOverrides: Boolean = false
     ) {
+        saveDeclarationInternal(declaration, dropOverrides, false)
+    }
+
+    private fun saveDeclarationInternal(
+        declaration: Declaration<*>,
+        dropOverrides: Boolean,
+        fromComponent: Boolean
+    ) {
         val key = declaration.key
         val oldDeclaration = declarations[key]
         val isOverride = oldDeclaration != null
         if (isOverride && !declaration.override) {
             if (dropOverrides) {
+                logger?.info("${component.name} Drop override $declaration")
                 return
             } else {
                 throw OverrideException("Try to override declaration $declaration but was already saved $oldDeclaration to ${component.name}")
@@ -99,9 +100,25 @@ class DeclarationRegistry internal constructor(val component: Component) {
 
         declarations[key] = declaration
 
+        if (!fromComponent) {
+            declaration.instance.context = component.context
+
+            if (declaration.createOnStart) {
+                createOnStartDeclarations.add(declaration)
+            }
+        }
+
         InjektPlugins.logger?.let { logger ->
-            val kw = if (isOverride) "Override" else "Declare"
-            logger.debug("${component.name} $kw $declaration")
+            val msg = if (isOverride) {
+                "${component.name} Override $declaration"
+            } else {
+                if (fromComponent) {
+                    "${component.name} Link $declaration from ${declaration.instance.context.component.name}"
+                } else {
+                    "${component.name} Declare $declaration"
+                }
+            }
+            logger.debug(msg)
         }
     }
 }
