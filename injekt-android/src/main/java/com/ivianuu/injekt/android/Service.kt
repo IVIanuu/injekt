@@ -59,5 +59,5 @@ fun <T : Service> serviceModule(
     bind<Context, Service>(SERVICE_CONTEXT)
 }
 
-fun ComponentContext.service() = get<Service>(SERVICE)
-fun ComponentContext.serviceContext() = get<Context>(SERVICE_CONTEXT)
+fun DefinitionContext.service() = get<Service>(SERVICE)
+fun DefinitionContext.serviceContext() = get<Context>(SERVICE_CONTEXT)

@@ -55,6 +55,6 @@ fun <T : Application> applicationModule(
     bind<Context, Application>(APPLICATION_CONTEXT)
 }
 
-fun ComponentContext.application() = get<Application>(APPLICATION)
+fun DefinitionContext.application() = get<Application>(APPLICATION)
 
-fun ComponentContext.applicationContext() = get<Context>(APPLICATION_CONTEXT)
+fun DefinitionContext.applicationContext() = get<Context>(APPLICATION_CONTEXT)

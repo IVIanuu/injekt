@@ -1,6 +1,6 @@
 package com.ivianuu.injekt
 
-typealias Definition<T> = ComponentContext.(params: Parameters) -> T
+typealias Definition<T> = DefinitionContext.(params: Parameters) -> T
 
 typealias ComponentDefinition = Component.() -> Unit
 

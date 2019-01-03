@@ -110,7 +110,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         }
 
         if (!fromComponent) {
-            declaration.instance.context = component.context
+            declaration.instance.component = component
 
             if (declaration.createOnStart) {
                 createOnStartDeclarations.add(declaration)
@@ -122,7 +122,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
                 "${component.name} Override $declaration"
             } else {
                 if (fromComponent) {
-                    "${component.name} Link $declaration from ${declaration.instance.context.component.name}"
+                    "${component.name} Link $declaration from ${declaration.instance.component.name}"
                 } else {
                     "${component.name} Declare $declaration"
                 }

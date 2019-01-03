@@ -60,6 +60,6 @@ fun <T : Activity> activityModule(
     bind<Context, Activity>(ACTIVITY_CONTEXT)
 }
 
-fun ComponentContext.activity() = get<Application>(ACTIVITY)
+fun DefinitionContext.activity() = get<Application>(ACTIVITY)
 
-fun ComponentContext.activityContext() = get<Context>(ACTIVITY_CONTEXT)
+fun DefinitionContext.activityContext() = get<Context>(ACTIVITY_CONTEXT)

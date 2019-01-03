@@ -8,7 +8,6 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(val name: String? = null) {
 
-    val context = ComponentContext(this)
     val declarationRegistry = DeclarationRegistry(this)
 
     /**

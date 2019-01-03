@@ -21,55 +21,55 @@ import kotlin.reflect.KClass
 /**
  * Environment for [Definition]s
  */
-class ComponentContext(val component: Component)
+class DefinitionContext(val component: Component)
 
 /** Calls trough [Component.get] */
-inline fun <reified T : Any> ComponentContext.get(
+inline fun <reified T : Any> DefinitionContext.get(
     name: String? = null,
     noinline params: ParamsDefinition? = null
 ) = get(T::class, name, params)
 
 /** Calls trough [Component.get] */
-fun <T : Any> ComponentContext.get(
+fun <T : Any> DefinitionContext.get(
     type: KClass<T>,
     name: String? = null,
     params: ParamsDefinition? = null
 ) = component.get(type, name, params)
 
 /** Calls trough [Component.inject] */
-inline fun <reified T : Any> ComponentContext.inject(
+inline fun <reified T : Any> DefinitionContext.inject(
     name: String? = null,
     noinline params: ParamsDefinition? = null
 ) = inject(T::class, name, params)
 
 /** Calls trough [Component.inject] */
-fun <T : Any> ComponentContext.inject(
+fun <T : Any> DefinitionContext.inject(
     type: KClass<T>,
     name: String? = null,
     params: ParamsDefinition? = null
 ): Lazy<T> = kotlin.lazy { get(type, name, params) }
 
 /** Calls trough [Component.provider] */
-inline fun <reified T : Any> ComponentContext.provider(
+inline fun <reified T : Any> DefinitionContext.provider(
     name: String? = null,
     noinline defaultParams: ParamsDefinition? = null
 ) = provider(T::class, name, defaultParams)
 
 /** Calls trough [Component.provider] */
-fun <T : Any> ComponentContext.provider(
+fun <T : Any> DefinitionContext.provider(
     type: KClass<T>,
     name: String? = null,
     defaultParams: ParamsDefinition? = null
 ) = component.provider(type, name, defaultParams)
 
 /** Calls trough [Component.injectProvider] */
-inline fun <reified T : Any> ComponentContext.lazyProvider(
+inline fun <reified T : Any> DefinitionContext.lazyProvider(
     name: String? = null,
     noinline defaultParams: ParamsDefinition? = null
 ) = lazyProvider(T::class, name, defaultParams)
 
 /** Calls trough [Component.injectProvider] */
-fun <T : Any> ComponentContext.lazyProvider(
+fun <T : Any> DefinitionContext.lazyProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParams: ParamsDefinition? = null

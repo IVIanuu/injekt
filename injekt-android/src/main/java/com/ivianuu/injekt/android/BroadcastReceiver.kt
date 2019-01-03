@@ -62,6 +62,6 @@ fun <T : BroadcastReceiver> receiverModule(
     factory(RECEIVER_CONTEXT) { context }
 }
 
-fun ComponentContext.receiver() = get<Application>(RECEIVER)
+fun DefinitionContext.receiver() = get<Application>(RECEIVER)
 
-fun ComponentContext.receiverContext() = get<Context>(RECEIVER_CONTEXT)
+fun DefinitionContext.receiverContext() = get<Context>(RECEIVER_CONTEXT)
