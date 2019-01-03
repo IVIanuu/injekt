@@ -51,7 +51,7 @@ class FactoryInstance<T : Any>(
 }
 
 /**
- * A [Instance] which creates the value 1 time and caches the result
+ * A [Instance] which creates the value 1 time per [Component] and caches the result
  */
 class SingleInstance<T : Any>(
     beanDefinition: BeanDefinition<T>

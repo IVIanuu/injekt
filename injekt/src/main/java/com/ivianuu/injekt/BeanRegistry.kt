@@ -45,7 +45,7 @@ class BeanRegistry internal constructor(val component: Component) {
      */
     fun linkComponents(vararg components: Component, dropOverrides: Boolean = false) {
         components.forEach { component ->
-            logger?.info("${component.name} link component ${component.name}")
+            logger?.info("${this.component.name} link component ${component.name}")
             component.beanRegistry.definitions
                 .forEach { linkDefinition(it, dropOverrides) }
         }
