@@ -76,8 +76,8 @@ fun <T : Any> ModuleContext.factory(
     definition: Definition<T>
 ) = declare(
     type = type,
-    kind = BeanDefinition.Kind.FACTORY,
     name = name,
+    kind = BeanDefinition.Kind.FACTORY,
     createOnStart = false,
     override = override,
     definition = definition
@@ -104,8 +104,8 @@ fun <T : Any> ModuleContext.single(
     definition: Definition<T>
 ) = declare(
     type = type,
-    kind = BeanDefinition.Kind.SINGLE,
     name = name,
+    kind = BeanDefinition.Kind.SINGLE,
     override = override,
     createOnStart = createOnStart,
     definition = definition
