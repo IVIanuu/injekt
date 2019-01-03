@@ -51,11 +51,9 @@ class ParentFragment : Fragment(), InjektTrait {
     }
 }
 
-@Module
-private annotation class ParentFragmentModule
+@Module private annotation class ParentFragmentModule
 
-@Single
-@ParentFragmentModule
+@Single @ParentFragmentModule
 class ParentFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

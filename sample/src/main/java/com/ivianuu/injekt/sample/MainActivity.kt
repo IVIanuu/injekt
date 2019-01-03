@@ -33,11 +33,9 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Module
-private annotation class MainActivityModule
+@Module private annotation class MainActivityModule
 
-@Single
-@MainActivityModule
+@Single @MainActivityModule
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

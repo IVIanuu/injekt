@@ -42,7 +42,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
     /**
      * Adds all [Declaration]s of the [components]
      */
-    fun loadComponents(vararg components: Component, dropOverrides: Boolean = false) {
+    fun linkComponents(vararg components: Component, dropOverrides: Boolean = false) {
         components.forEach { component ->
             logger?.info("${component.name} load component ${component.name}")
 

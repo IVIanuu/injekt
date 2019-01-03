@@ -45,7 +45,7 @@ class DeclarationRegistryTest {
             )
         }
 
-        registry.loadComponents(component)
+        registry.linkComponents(component)
 
         assertEquals(
             registry.getAllDeclarations(),

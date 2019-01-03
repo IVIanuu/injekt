@@ -24,7 +24,7 @@ class Component internal constructor(val name: String? = null) {
      * So make sure that [this] component does not live longer than the added ones
      */
     fun dependencies(vararg components: Component, dropOverrides: Boolean = false) {
-        declarationRegistry.loadComponents(*components, dropOverrides = dropOverrides)
+        declarationRegistry.linkComponents(*components, dropOverrides = dropOverrides)
     }
 
     /**
