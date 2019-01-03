@@ -1,9 +1,9 @@
 package com.ivianuu.injekt
 
 /**
- * The [Instance] of an [Declaration]
+ * The [Instance] of an [BeanDefinition]
  */
-abstract class Instance<T : Any>(val declaration: Declaration<T>) {
+abstract class Instance<T : Any>(val beanDefinition: BeanDefinition<T>) {
 
     /**
      * The component this instance lives in
@@ -22,13 +22,13 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
 
     protected open fun create(params: ParamsDefinition?): T {
         return try {
-            declaration.definition.invoke(
+            beanDefinition.definition.invoke(
                 DefinitionContext(component),
                 params?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
             throw InstanceCreationException(
-                "${component.name} Couldn't instantiate $declaration",
+                "${component.name} Couldn't instantiate $beanDefinition",
                 e
             )
         }
@@ -40,8 +40,8 @@ abstract class Instance<T : Any>(val declaration: Declaration<T>) {
  * A [Instance] which creates a new value on every [get] call
  */
 class FactoryInstance<T : Any>(
-    declaration: Declaration<T>
-) : Instance<T>(declaration) {
+    beanDefinition: BeanDefinition<T>
+) : Instance<T>(beanDefinition) {
 
     override val isCreated: Boolean
         get() = false
@@ -54,8 +54,8 @@ class FactoryInstance<T : Any>(
  * A [Instance] which creates the value 1 time and caches the result
  */
 class SingleInstance<T : Any>(
-    declaration: Declaration<T>
-) : Instance<T>(declaration) {
+    beanDefinition: BeanDefinition<T>
+) : Instance<T>(beanDefinition) {
 
     private var _value: T? = null
 

@@ -49,7 +49,7 @@ const val RECEIVER = "receiver"
 const val RECEIVER_CONTEXT = "receiver_context"
 
 /**
- * Returns a [Module] with convenient declarations
+ * Returns a [Module] with convenient definitions
  */
 fun <T : BroadcastReceiver> receiverModule(
     instance: T,

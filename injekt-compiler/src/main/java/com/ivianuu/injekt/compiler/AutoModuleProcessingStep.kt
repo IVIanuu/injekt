@@ -44,21 +44,21 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         validateNameUsages(elementsByAnnotation[Name::class.java])
         validateParamUsages(elementsByAnnotation[Param::class.java])
 
-        val declarationElements = (elementsByAnnotation[Factory::class.java]
+        val definitionElements = (elementsByAnnotation[Factory::class.java]
                 + elementsByAnnotation[Single::class.java])
 
-        validateOnlyOneKindAnnotation(declarationElements)
-        validateModuleAnnotations(declarationElements)
+        validateOnlyOneKindAnnotation(definitionElements)
+        validateModuleAnnotations(definitionElements)
 
-        val declarations =
+        val definitions =
             (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
                 .filterIsInstance<TypeElement>()
-                .mapNotNull { createDeclarationDescriptor(it) }
+                .mapNotNull { createDefinitionDescriptor(it) }
                 .toSet()
 
-        val modules = declarations
+        val modules = definitions
             .groupBy { it.module }
-            .map { (moduleType, declarations) ->
+            .map { (moduleType, definitions) ->
                 val module = elementUtils.getTypeElement(moduleType.toString())
                 val annotation = module.getAnnotationMirror<Module>()
                 var packageName = annotation["packageName"].value as String
@@ -79,7 +79,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
 
                 ModuleDescriptor(
                     packageName, moduleName, internal,
-                    override, createOnStart, declarations.toSet()
+                    override, createOnStart, definitions.toSet()
                 )
             }
 
@@ -91,16 +91,16 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         return emptySet()
     }
 
-    private fun createDeclarationDescriptor(element: TypeElement): DeclarationDescriptor? {
+    private fun createDefinitionDescriptor(element: TypeElement): DefinitionDescriptor? {
         val kind = if (element.hasAnnotation<Single>()) {
-            DeclarationDescriptor.Kind.SINGLE
+            DefinitionDescriptor.Kind.SINGLE
         } else {
-            DeclarationDescriptor.Kind.FACTORY
+            DefinitionDescriptor.Kind.FACTORY
         }
 
         val annotation = when (kind) {
-            DeclarationDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            DeclarationDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
+            DefinitionDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
+            DefinitionDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
         var name: String? = annotation["name"].value as String
@@ -117,7 +117,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
             .map { it.asTypeName().javaToKotlinType() }.toSet()
 
         var paramsIndex = -1
-        return DeclarationDescriptor(
+        return DefinitionDescriptor(
             element.asClassName().javaToKotlinType() as ClassName,
             (module.annotationType.asElement() as TypeElement).asClassName(),
             kind,

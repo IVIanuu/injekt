@@ -48,7 +48,7 @@ const val ACTIVITY = "activity"
 const val ACTIVITY_CONTEXT = "activity_context"
 
 /**
- * Returns a [Module] with convenient declarations
+ * Returns a [Module] with convenient definitions
  */
 fun <T : Activity> activityModule(
     instance: T,

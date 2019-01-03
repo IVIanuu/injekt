@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.codegen
 
 /**
- * Module declaration
+ * Module definition
  */
 @Retention(AnnotationRetention.SOURCE)
 annotation class Module(

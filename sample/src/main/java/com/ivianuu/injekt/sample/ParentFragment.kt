@@ -16,37 +16,39 @@
 
 package com.ivianuu.injekt.sample
 
-import android.content.Context
+import android.os.Bundle
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.fragment.fragmentComponent
 import com.ivianuu.injekt.codegen.Module
 import com.ivianuu.injekt.codegen.Single
+import com.ivianuu.injekt.common.instanceModule
 import com.ivianuu.injekt.inject
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class ParentFragment : Fragment(), InjektTrait {
-    
-    override val component by lazy {
-        fragmentComponent(this) { modules(parentFragmentModule) }
-    }
+class ParentFragment : Fragment(), AppComponentTrait {
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
     private val parentFragmentDependency by inject<ParentFragmentDependency>()
 
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        component.scopedModules(this, "PARENT_FRAGMENT",
+            parentFragmentModule, instanceModule(this))
+
         appDependency
         mainActivityDependency
         parentFragmentDependency
 
-        childFragmentManager.beginTransaction()
-            .add(ChildFragment(), "child_fragment")
-            .commit()
+        super.onCreate(savedInstanceState)
+
+        if (savedInstanceState == null) {
+            childFragmentManager.beginTransaction()
+                .add(ChildFragment(), "child_fragment")
+                .commit()
+        }
     }
+
 }
 
 @Module private annotation class ParentFragmentModule

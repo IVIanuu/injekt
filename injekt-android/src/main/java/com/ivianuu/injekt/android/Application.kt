@@ -44,7 +44,7 @@ const val APPLICATION_CONTEXT = "application_context"
 fun applicationDependencies(instance: Application) = emptySet<Component>()
 
 /**
- * Returns a [Module] with convenient declarations
+ * Returns a [Module] with convenient definitions
  */
 fun <T : Application> applicationModule(
     instance: T,

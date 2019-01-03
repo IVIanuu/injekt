@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.getDeclaration
+import com.ivianuu.injekt.util.getDefinition
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -33,15 +33,15 @@ class InstanceTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
-        assertTrue(declaration.instance is SingleInstance)
-        assertFalse(declaration.instance.isCreated)
+        assertTrue(definition.instance is SingleInstance)
+        assertFalse(definition.instance.isCreated)
 
-        val value1 = declaration.instance.get()
-        assertTrue(declaration.instance.isCreated)
-        val value2 = declaration.instance.get()
-        assertTrue(declaration.instance.isCreated)
+        val value1 = definition.instance.get()
+        assertTrue(definition.instance.isCreated)
+        val value2 = definition.instance.get()
+        assertTrue(definition.instance.isCreated)
 
         assertEquals(value1, value2)
     }
@@ -56,15 +56,15 @@ class InstanceTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
-        assertTrue(declaration.instance is FactoryInstance)
-        assertFalse(declaration.instance.isCreated)
+        assertTrue(definition.instance is FactoryInstance)
+        assertFalse(definition.instance.isCreated)
 
-        val value1 = declaration.instance.get()
-        assertFalse(declaration.instance.isCreated)
-        val value2 = declaration.instance.get()
-        assertFalse(declaration.instance.isCreated)
+        val value1 = definition.instance.get()
+        assertFalse(definition.instance.isCreated)
+        val value2 = definition.instance.get()
+        assertFalse(definition.instance.isCreated)
 
         assertNotEquals(value1, value2)
     }
@@ -79,10 +79,10 @@ class InstanceTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
         val throwed = try {
-            declaration.instance.get()
+            definition.instance.get()
             false
         } catch (e: InstanceCreationException) {
             true

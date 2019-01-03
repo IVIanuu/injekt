@@ -48,7 +48,7 @@ const val SERVICE = "service"
 const val SERVICE_CONTEXT = "service_context"
 
 /**
- * Returns a [Module] with convenient declarations
+ * Returns a [Module] with convenient definitions
  */
 fun <T : Service> serviceModule(
     instance: T,

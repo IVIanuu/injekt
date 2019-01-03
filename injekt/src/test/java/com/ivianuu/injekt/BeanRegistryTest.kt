@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt
 
-class DeclarationRegistryTest {
+class BeanRegistryTest {
 
     /*
     @Test
     fun testLoadModules() {
-        val registry = component { }.declarationRegistry
+        val registry = component { }.beanRegistry
         val module = module {
             factory { TestDep1() }
             factory { TestDep2(get()) }
@@ -29,12 +29,12 @@ class DeclarationRegistryTest {
 
         registry.loadModules(module)
 
-        assertEquals(registry.getAllDeclarations(), module.declarations.values.toSet())
+        assertEquals(registry.getAllDefinitions(), module.definitions.values.toSet())
     }
 
     /*@Test // todo
     fun testLoadComponents() {
-        val registry = component { }.declarationRegistry
+        val registry = component { }.beanRegistry
 
         val component = component {
             modules(
@@ -48,33 +48,33 @@ class DeclarationRegistryTest {
         registry.linkComponents(component)
 
         assertEquals(
-            registry.getAllDeclarations(),
-            component.declarationRegistry.getAllDeclarations()
+            registry.getAllDefinitions(),
+            component.beanRegistry.getAllDefinitions()
         )
     }*/
 
     @Test
-    fun testSaveDeclaration() {
-        val registry = component { }.declarationRegistry
-        val declaration =
-            Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
-        assertEquals(null, registry.findDeclaration(TestDep1::class))
-        registry.saveDeclaration(declaration)
-        assertEquals(declaration, registry.findDeclaration(TestDep1::class))
+    fun testSaveDefinition() {
+        val registry = component { }.beanRegistry
+        val beanDefinition =
+            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+        assertEquals(null, registry.findDefinition(TestDep1::class))
+        registry.saveDefinition(beanDefinition)
+        assertEquals(beanDefinition, registry.findDefinition(TestDep1::class))
     }
 
     @Test
     fun testAllowsValidOverride() {
-        val registry = component { }.declarationRegistry
-        val declaration1 =
-            Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
-        val declaration2 =
-            Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
+        val registry = component { }.beanRegistry
+        val definition1 =
+            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+        val definition2 =
+            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
                 .apply { override = true }
 
         val throwed = try {
-            registry.saveDeclaration(declaration1)
-            registry.saveDeclaration(declaration2)
+            registry.saveDefinition(definition1)
+            registry.saveDefinition(definition2)
             false
         } catch (e: OverrideException) {
             true
@@ -85,15 +85,15 @@ class DeclarationRegistryTest {
 
     @Test
     fun testThrowsOnInvalidOverride() {
-        val registry = component { }.declarationRegistry
-        val declaration1 =
-            Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
-        val declaration2 =
-            Declaration.create(TestDep1::class, null, Declaration.Kind.FACTORY) { TestDep1() }
+        val registry = component { }.beanRegistry
+        val definition1 =
+            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+        val definition2 =
+            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
 
         val throwed = try {
-            registry.saveDeclaration(declaration1)
-            registry.saveDeclaration(declaration2)
+            registry.saveDefinition(definition1)
+            registry.saveDefinition(definition2)
             false
         } catch (e: OverrideException) {
             true
@@ -109,11 +109,11 @@ class DeclarationRegistryTest {
             single(createOnStart = true) { TestDep2(TestDep1()) }
         }
 
-        val eagerInstances = module.declarations.values.filter { it.createOnStart }.toSet()
+        val eagerInstances = module.definitions.values.filter { it.createOnStart }.toSet()
 
         val registry = component {
             modules(module)
-        }.declarationRegistry
+        }.beanRegistry
 
         assertEquals(eagerInstances, registry.getEagerInstances())
     }

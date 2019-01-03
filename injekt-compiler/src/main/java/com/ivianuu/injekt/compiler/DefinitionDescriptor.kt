@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 
-data class DeclarationDescriptor(
+data class DefinitionDescriptor(
     val target: ClassName,
     val module: ClassName,
     val kind: Kind,

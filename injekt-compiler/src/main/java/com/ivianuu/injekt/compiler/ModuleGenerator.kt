@@ -42,23 +42,23 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
 
         imports.add("module")
 
-        if (module.declarations.any { it.kind == DeclarationDescriptor.Kind.FACTORY }) {
+        if (module.definitions.any { it.kind == DefinitionDescriptor.Kind.FACTORY }) {
             imports.add("factory")
         }
 
-        if (module.declarations.any { it.kind == DeclarationDescriptor.Kind.SINGLE }) {
+        if (module.definitions.any { it.kind == DefinitionDescriptor.Kind.SINGLE }) {
             imports.add("single")
         }
 
-        if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.VALUE }) {
+        if (module.definitions.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
         }
 
-        if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.LAZY }) {
+        if (module.definitions.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.LAZY }) {
             imports.add("inject")
         }
 
-        if (module.declarations.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
+        if (module.definitions.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
             imports.add("provider")
         }
 
@@ -83,51 +83,51 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                     addNamed("module(%name:S, %override:L, %createOnStart:L)", args)
                 }
                 .beginControlFlow(" {")
-                .apply { module.declarations.forEach { add(declaration(it)) } }
+                .apply { module.definitions.forEach { add(definition(it)) } }
                 .endControlFlow()
                 .build()
         )
         .build()
 
-    private fun declaration(declaration: DeclarationDescriptor) = CodeBlock.builder()
+    private fun definition(definition: DefinitionDescriptor) = CodeBlock.builder()
         .apply {
             add(
-                when (declaration.kind) {
-                    DeclarationDescriptor.Kind.FACTORY -> "factory"
-                    DeclarationDescriptor.Kind.SINGLE -> "single"
+                when (definition.kind) {
+                    DefinitionDescriptor.Kind.FACTORY -> "factory"
+                    DefinitionDescriptor.Kind.SINGLE -> "single"
                 }
             )
 
             add("(")
 
-            val declarationArgs = mutableMapOf(
-                "name" to declaration.name,
-                "override" to declaration.override
+            val definitionArgs = mutableMapOf(
+                "name" to definition.name,
+                "override" to definition.override
             )
 
-            val isSingle = declaration.kind == DeclarationDescriptor.Kind.SINGLE
+            val isSingle = definition.kind == DefinitionDescriptor.Kind.SINGLE
 
             if (isSingle) {
-                declarationArgs["createOnStart"] = declaration.createOnStart
+                definitionArgs["createOnStart"] = definition.createOnStart
             }
 
-            val declarationStatement = "%name:S, %override:L" + if (isSingle) {
+            val definitionStatement = "%name:S, %override:L" + if (isSingle) {
                 ", %createOnStart:L"
             } else {
                 ""
             }
 
-            addNamed(declarationStatement, declarationArgs)
+            addNamed(definitionStatement, definitionArgs)
 
             add(")")
 
-            if (declaration.constructorParams.any { it.paramIndex != -1 }) {
+            if (definition.constructorParams.any { it.paramIndex != -1 }) {
                 beginControlFlow(" { params ->")
             } else {
                 beginControlFlow(" {")
             }
 
-            val constructorStatement = "%T(${declaration.constructorParams.joinToString(", ") {
+            val constructorStatement = "%T(${definition.constructorParams.joinToString(", ") {
                 if (it.paramIndex == -1) {
                     when (it.kind) {
                         ParamDescriptor.Kind.VALUE -> {
@@ -154,15 +154,15 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                 }
             }})"
 
-            add(constructorStatement, declaration.target)
+            add(constructorStatement, definition.target)
             add("\n")
             endControlFlow()
             add("\n")
 
-            if (declaration.secondaryTypes.isNotEmpty()) {
+            if (definition.secondaryTypes.isNotEmpty()) {
                 add(
-                    " bind " + declaration.secondaryTypes.joinToString(" bind ") { "%T::class" },
-                    *declaration.secondaryTypes.toTypedArray()
+                    " bind " + definition.secondaryTypes.joinToString(" bind ") { "%T::class" },
+                    *definition.secondaryTypes.toTypedArray()
                 )
             }
         }

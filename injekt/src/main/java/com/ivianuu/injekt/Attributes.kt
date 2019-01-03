@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Attributes for [Declaration]s
+ * Attributes for [BeanDefinition]s
  */
 data class Attributes(private val data: MutableMap<String, Any> = hashMapOf()) {
 

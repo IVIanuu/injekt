@@ -17,15 +17,15 @@
 package com.ivianuu.injekt.util
 
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Declaration
+import com.ivianuu.injekt.BeanDefinition
 import kotlin.reflect.KClass
 
-inline fun <reified T : Any> Component.getDeclaration(
+inline fun <reified T : Any> Component.getDefinition(
     name: String? = null
-) = getDeclaration(T::class, name)
+) = getDefinition(T::class, name)
 
-fun <T : Any> Component.getDeclaration(
+fun <T : Any> Component.getDefinition(
     type: KClass<T>,
     name: String? = null
-) = declarationRegistry.findDeclaration(type, name) as? Declaration<T>
-    ?: error("declaration not found")
+) = beanRegistry.findDefinition(type, name) as? BeanDefinition<T>
+    ?: error("beanDefinition not found")

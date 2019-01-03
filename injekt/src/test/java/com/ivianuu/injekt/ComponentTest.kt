@@ -44,13 +44,13 @@ class ComponentTest {
     }
 
     @Test
-    fun testGetUnknownDeclarationThrows() {
+    fun testGetUnknownDefinitionThrows() {
         val component = component {}
 
         val throwed = try {
             component.get(TestDep1::class)
             false
-        } catch (e: NoDeclarationFoundException) {
+        } catch (e: NoBeanDefinitionFoundException) {
             true
         }
 

@@ -22,5 +22,5 @@ data class ModuleDescriptor(
     val internal: Boolean,
     val override: Boolean,
     val createOnStart: Boolean,
-    val declarations: Set<DeclarationDescriptor>
+    val definitions: Set<DefinitionDescriptor>
 )

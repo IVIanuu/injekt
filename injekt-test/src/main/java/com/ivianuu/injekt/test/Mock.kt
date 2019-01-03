@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Declaration
+import com.ivianuu.injekt.BeanDefinition
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 
@@ -34,10 +34,10 @@ fun <T : Any> Component.declareMock(
     name: String? = null,
     stubbing: (T.() -> Unit)? = null
 ): T {
-    val foundDefinition = declarationRegistry.findDeclaration(type, name) as Declaration<T>
+    val foundDefinition = beanRegistry.findDefinition(type, name) as BeanDefinition<T>
 
     val definition = foundDefinition.cloneForMock(type)
-    declarationRegistry.saveDeclaration(definition)
+    beanRegistry.saveDefinition(definition)
 
     return applyStub(type, stubbing)
 }
@@ -51,7 +51,7 @@ fun <T : Any> Component.applyStub(
     return instance
 }
 
-fun <T : Any> Declaration<T>.cloneForMock(type: KClass<T>) = copy().also {
+fun <T : Any> BeanDefinition<T>.cloneForMock(type: KClass<T>) = copy().also {
     it.kind = kind
     it.override = override
     it.createOnStart = createOnStart

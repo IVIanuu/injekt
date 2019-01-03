@@ -19,30 +19,30 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * The context for defining [Declaration]s
+ * The context for defining [BeanDefinition]s
  */
 data class ModuleContext(val module: Module) {
 
-    internal val declarations = mutableListOf<Declaration<*>>()
+    internal val definitions = mutableListOf<BeanDefinition<*>>()
 
     /**
-     * Adds the [declaration]
+     * Adds the [beanDefinition]
      */
     fun <T : Any> declare(
-        declaration: Declaration<T>
-    ): Declaration<T> {
-        declaration.moduleContext = this
+        beanDefinition: BeanDefinition<T>
+    ): BeanDefinition<T> {
+        beanDefinition.moduleContext = this
 
-        val override = if (module.override) module.override else declaration.override
+        val override = if (module.override) module.override else beanDefinition.override
         val createOnStart =
-            if (module.createOnStart) module.createOnStart else declaration.createOnStart
+            if (module.createOnStart) module.createOnStart else beanDefinition.createOnStart
 
-        declaration.createOnStart = createOnStart
-        declaration.override = override
+        beanDefinition.createOnStart = createOnStart
+        beanDefinition.override = override
 
-        declarations.add(declaration)
+        definitions.add(beanDefinition)
 
-        return declaration
+        return beanDefinition
     }
 
 }
@@ -76,7 +76,7 @@ fun <T : Any> ModuleContext.factory(
     definition: Definition<T>
 ) = declare(
     type = type,
-    kind = Declaration.Kind.FACTORY,
+    kind = BeanDefinition.Kind.FACTORY,
     name = name,
     createOnStart = false,
     override = override,
@@ -104,7 +104,7 @@ fun <T : Any> ModuleContext.single(
     definition: Definition<T>
 ) = declare(
     type = type,
-    kind = Declaration.Kind.SINGLE,
+    kind = BeanDefinition.Kind.SINGLE,
     name = name,
     override = override,
     createOnStart = createOnStart,
@@ -112,42 +112,42 @@ fun <T : Any> ModuleContext.single(
 )
 
 /**
- * Adds a [Declaration] for the provided params
+ * Adds a [BeanDefinition] for the provided params
  */
 inline fun <reified T : Any> ModuleContext.declare(
     name: String? = null,
-    kind: Declaration.Kind,
+    kind: BeanDefinition.Kind,
     override: Boolean = false,
     createOnStart: Boolean = false,
     noinline definition: Definition<T>
 ) = declare(T::class, name, kind, override, createOnStart, definition)
 
 /**
- * Adds a [Declaration] for the provided params
+ * Adds a [BeanDefinition] for the provided params
  */
 fun <T : Any> ModuleContext.declare(
     type: KClass<T>,
     name: String? = null,
-    kind: Declaration.Kind,
+    kind: BeanDefinition.Kind,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: Definition<T>
 ) = declare(
-    Declaration.create(type, name, kind, definition).also {
+    BeanDefinition.create(type, name, kind, definition).also {
         it.createOnStart = createOnStart
         it.override = override
     }
 )
 
 /**
- * Adds all declarations of [module]
+ * Adds all definitions of [module]
  */
 fun ModuleContext.module(module: Module) {
-    module.getDeclarations().forEach { declare(it) }
+    module.getDefinitions().forEach { declare(it) }
 }
 
 /**
- * Adds all declarations of module
+ * Adds all definitions of module
  */
 fun ModuleContext.module(
     name: String? = null,
@@ -159,7 +159,7 @@ fun ModuleContext.module(
 }
 
 /**
- * Adds a binding for [T] for a existing declaration of [S]
+ * Adds a binding for [T] for a existing beanDefinition of [S]
  */
 inline fun <reified T : Any, reified S : T> ModuleContext.bind(name: String? = null) =
     factory<T>(name) { get<S>() }

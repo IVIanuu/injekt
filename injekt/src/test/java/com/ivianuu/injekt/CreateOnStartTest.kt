@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.getDeclaration
+import com.ivianuu.injekt.util.getDefinition
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -34,10 +34,10 @@ class CreateOnStartTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
-        assertTrue(declaration.createOnStart)
-        assertTrue(declaration.instance.isCreated)
+        assertTrue(definition.createOnStart)
+        assertTrue(definition.instance.isCreated)
     }
 
     @Test
@@ -50,10 +50,10 @@ class CreateOnStartTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
-        assertFalse(declaration.createOnStart)
-        assertFalse(declaration.instance.isCreated)
+        assertFalse(definition.createOnStart)
+        assertFalse(definition.instance.isCreated)
     }
 
     @Test
@@ -66,10 +66,10 @@ class CreateOnStartTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
-        assertFalse(declaration.createOnStart)
-        assertFalse(declaration.instance.isCreated)
+        assertFalse(definition.createOnStart)
+        assertFalse(definition.instance.isCreated)
     }
 
     @Test
@@ -82,13 +82,13 @@ class CreateOnStartTest {
             )
         }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
 
-        assertFalse(declaration.instance.isCreated)
+        assertFalse(definition.instance.isCreated)
 
         component.createEagerInstances()
 
-        assertTrue(declaration.instance.isCreated)
+        assertTrue(definition.instance.isCreated)
     }
 
 }

@@ -17,27 +17,27 @@
 package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Declaration
+import com.ivianuu.injekt.BeanDefinition
 
 /**
- * Checks if all [Declaration]s can be resolved
+ * Checks if all [BeanDefinition]s can be resolved
  */
 fun Component.check() {
-    declarationRegistry.getAllDeclarations()
+    beanRegistry.getAllDefinitions()
         .map {
             println("clone for sandbox $it")
             it.cloneForSandbox()
         }
         .onEach {
             println("save $it")
-            declarationRegistry.saveDeclaration(it)
+            beanRegistry.saveDefinition(it)
         }
         .forEach {
             get(it.type, it.name).also { println("got $it") }
         }
 }
 
-fun <T : Any> Declaration<T>.cloneForSandbox() = copy().also {
+fun <T : Any> BeanDefinition<T>.cloneForSandbox() = copy().also {
     it.kind = kind
     it.override = true
     it.createOnStart = createOnStart

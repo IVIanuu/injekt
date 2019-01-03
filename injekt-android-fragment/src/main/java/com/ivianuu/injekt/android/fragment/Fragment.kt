@@ -57,7 +57,7 @@ fun fragmentDependencies(instance: Fragment): Set<Component> {
 }
 
 /**
- * Returns a [Module] with convenient declarations
+ * Returns a [Module] with convenient definitions
  */
 fun <T : Fragment> fragmentModule(
     instance: T,

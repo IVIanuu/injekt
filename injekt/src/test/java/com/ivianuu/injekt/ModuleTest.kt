@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.getDeclaration
+import com.ivianuu.injekt.util.getDefinition
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -25,35 +25,35 @@ import org.junit.Test
 class ModuleTest {
 
     @Test
-    fun testModuleConfigOverridesDeclarations() {
+    fun testModuleConfigOverridesDefinition() {
         val module = module(createOnStart = true, override = true) {
             single(override = false, createOnStart = false) { TestDep1() }
         }
 
         val component = component { modules(module) }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
         assertTrue(module.override)
-        assertTrue(declaration.override)
+        assertTrue(definition.override)
 
         assertTrue(module.createOnStart)
-        assertTrue(declaration.createOnStart)
+        assertTrue(definition.createOnStart)
     }
 
     @Test
-    fun testModuleConfigNotOverridesDeclarations() {
+    fun testModuleConfigNotOverridesDefinitions() {
         val module = module(createOnStart = false, override = false) {
             single(override = true, createOnStart = true) { TestDep1() }
         }
 
         val component = component { modules(module) }
 
-        val declaration = component.getDeclaration<TestDep1>()
+        val definition = component.getDefinition<TestDep1>()
         assertFalse(module.override)
-        assertTrue(declaration.override)
+        assertTrue(definition.override)
 
         assertFalse(module.createOnStart)
-        assertTrue(declaration.createOnStart)
+        assertTrue(definition.createOnStart)
     }
 
     @Test

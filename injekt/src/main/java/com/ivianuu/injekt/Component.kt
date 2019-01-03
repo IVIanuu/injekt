@@ -4,33 +4,33 @@ import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
- * The actual dependency container which provides declarations
+ * The actual dependency container which provides definitions
  */
 class Component internal constructor(val name: String? = null) {
 
-    val declarationRegistry = DeclarationRegistry(this)
+    val beanRegistry = BeanRegistry(this)
 
     /**
-     * Adds all [Declaration]s of the [module]
+     * Adds all [BeanDefinition]s of the [module]
      */
     fun modules(vararg modules: Module, dropOverrides: Boolean = false) {
-        declarationRegistry.loadModules(*modules, dropOverrides = dropOverrides)
+        beanRegistry.loadModules(*modules, dropOverrides = dropOverrides)
     }
 
     /**
-     * Adds all current [Declaration]s of [components] to this component
-     * The context of the added [Declaration]s will stay the same
+     * Adds all current [BeanDefinition]s of [components] to this component
+     * The context of the added [BeanDefinition]s will stay the same
      * So make sure that [this] component does not live longer than the added ones
      */
     fun components(vararg components: Component, dropOverrides: Boolean = false) {
-        declarationRegistry.linkComponents(*components, dropOverrides = dropOverrides)
+        beanRegistry.linkComponents(*components, dropOverrides = dropOverrides)
     }
 
     /**
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
-        declarationRegistry.getEagerInstances().forEach {
+        beanRegistry.getEagerInstances().forEach {
             logger?.info("$name Create instance on start up $it")
             it.resolveInstance()
         }
@@ -44,22 +44,22 @@ class Component internal constructor(val name: String? = null) {
         name: String? = null,
         params: ParamsDefinition? = null
     ): T {
-        val declaration = declarationRegistry.findDeclaration(type, name)
+        val definition = beanRegistry.findDefinition(type, name)
 
-        return if (declaration != null) {
+        return if (definition != null) {
             @Suppress("UNCHECKED_CAST")
             logger?.let { logger ->
                 logger.info(
-                    if (declaration.instance.isCreated) {
-                        "${this.name} Return existing instance $declaration"
+                    if (definition.instance.isCreated) {
+                        "${this.name} Return existing instance $definition"
                     } else {
-                        "${this.name} Create instance $declaration"
+                        "${this.name} Create instance $definition"
                     }
                 )
             }
-            declaration.resolveInstance(params) as T
+            definition.resolveInstance(params) as T
         } else {
-            throw NoDeclarationFoundException("${this.name} Could not find declaration for ${type.java.name + " " + name.orEmpty()}")
+            throw NoBeanDefinitionFoundException("${this.name} Could not find definition for ${type.java.name + " " + name.orEmpty()}")
         }
     }
 
@@ -86,14 +86,14 @@ fun component(
     }
 
 /**
- * Adds all [Declaration]s of the [module]
+ * Adds all [BeanDefinition]s of the [module]
  */
 fun Component.modules(modules: Collection<Module>, dropOverrides: Boolean = false) {
     modules(*modules.toTypedArray(), dropOverrides = dropOverrides)
 }
 
 /**
- * Adds all [Declaration]s of [components] to this component
+ * Adds all [BeanDefinition]s of [components] to this component
  */
 fun Component.components(components: Collection<Component>, dropOverrides: Boolean = false) {
     components(*components.toTypedArray(), dropOverrides = dropOverrides)

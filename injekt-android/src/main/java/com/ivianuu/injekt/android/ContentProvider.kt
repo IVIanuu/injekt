@@ -52,7 +52,7 @@ const val CONTENT_PROVIDER = "content_provider"
 const val CONTENT_PROVIDER_CONTEXT = "content_provider_context"
 
 /**
- * Returns a [Module] with convenient declarations
+ * Returns a [Module] with convenient definitions
  */
 fun <T : ContentProvider> contentProviderModule(
     instance: T,
