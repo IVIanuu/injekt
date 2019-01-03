@@ -36,7 +36,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}")
             module.getDeclarations()
-                .forEach { saveDeclarationInternal(it, dropOverrides, false) }
+                .forEach { saveDeclaration(it, dropOverrides) }
         }
     }
 
@@ -47,7 +47,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         components.forEach { component ->
             logger?.info("${component.name} link component ${component.name}")
             component.declarationRegistry.declarations
-                .forEach { saveDeclarationInternal(it, dropOverrides, true) }
+                .forEach { linkDeclaration(it, dropOverrides) }
         }
     }
 
@@ -68,7 +68,11 @@ class DeclarationRegistry internal constructor(val component: Component) {
         declarationTypes[type]
     }
 
-    internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
+    /**
+     * Whether or not contains [type] and [name]
+     */
+    fun containsDeclaration(type: KClass<*>, name: String? = null) =
+        findDeclaration(type, name) != null
 
     /**
      * Saves the [declaration]
@@ -79,6 +83,18 @@ class DeclarationRegistry internal constructor(val component: Component) {
     ) {
         saveDeclarationInternal(declaration, dropOverrides, false)
     }
+
+    /**
+     * Saves a [declaration] from another component
+     */
+    fun linkDeclaration(
+        declaration: Declaration<*>,
+        dropOverrides: Boolean = false
+    ) {
+        saveDeclarationInternal(declaration, dropOverrides, true)
+    }
+
+    internal fun getEagerInstances(): Set<Declaration<*>> = createOnStartDeclarations
 
     private fun saveDeclarationInternal(
         declaration: Declaration<*>,
