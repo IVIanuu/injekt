@@ -94,15 +94,23 @@ class BeanRegistry internal constructor(val component: Component) {
         addDefinition(definition, dropOverrides, true)
     }
 
+    /**
+     * Removes the definition for [type] and [name] if found
+     */
     fun removeDefinition(type: KClass<*>, name: String? = null) {
         findDefinition(type, name)?.let { removeDefinition(it) }
     }
 
+    /**
+     * Removes the given [definition]
+     */
     fun removeDefinition(definition: BeanDefinition<*>) {
-        if (definition.name != null) {
-            definitionNames.remove(definition.name)
-        } else {
-            definitionTypes.remove(definition.type)
+        if (definitions.remove(definition)) {
+            if (definition.name != null) {
+                definitionNames.remove(definition.name)
+            } else {
+                definitionTypes.remove(definition.type)
+            }
         }
     }
 
