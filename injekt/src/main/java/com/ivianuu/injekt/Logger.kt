@@ -68,6 +68,9 @@ class PrintLogger : Logger {
     }
 }
 
+/**
+ * Sets the [InjektPlugins.logger] to [PrintLogger]
+ */
 fun InjektPlugins.printLogger() {
     logger = PrintLogger()
 }
