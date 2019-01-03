@@ -21,10 +21,7 @@ import kotlin.reflect.KClass
 /**
  * The context while defining declarations
  */
-data class ModuleContext(
-    val module: Module,
-    val componentContext: ComponentContext
-) {
+data class ModuleContext(val module: Module) {
 
     internal val declarations = mutableListOf<Declaration<*>>()
 
@@ -146,7 +143,7 @@ fun <T : Any> ModuleContext.declare(
  * Adds all declarations of [module]
  */
 fun ModuleContext.module(module: Module) {
-    module.getDeclarations(componentContext).forEach { declare(it) }
+    module.getDeclarations().forEach { declare(it) }
 }
 
 /**

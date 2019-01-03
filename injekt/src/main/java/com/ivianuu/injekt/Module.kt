@@ -10,8 +10,8 @@ class Module internal constructor(
     val definition: ModuleDefinition
 ) {
 
-    internal fun getDeclarations(componentContext: ComponentContext): List<Declaration<*>> {
-        val moduleContext = ModuleContext(this, componentContext)
+    internal fun getDeclarations(): List<Declaration<*>> {
+        val moduleContext = ModuleContext(this)
         definition.invoke(moduleContext)
         return moduleContext.declarations
     }

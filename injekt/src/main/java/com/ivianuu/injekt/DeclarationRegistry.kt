@@ -36,7 +36,7 @@ class DeclarationRegistry internal constructor(val component: Component) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}")
 
-            module.getDeclarations(component.context)
+            module.getDeclarations()
                 .forEach { saveDeclarationInternal(it, dropOverrides, false) }
         }
     }
