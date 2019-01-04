@@ -161,5 +161,7 @@ fun ModuleContext.module(
 /**
  * Adds a binding for [T] for a existing definition of [S]
  */
-inline fun <reified T : Any, reified S : T> ModuleContext.bind(name: String? = null) =
-    factory<T>(name) { get<S>() }
+inline fun <reified T : Any, reified S : T> ModuleContext.bind(
+    bindingName: String? = null,
+    existingName: String? = null
+) = factory<T>(bindingName) { get<S>(existingName) }

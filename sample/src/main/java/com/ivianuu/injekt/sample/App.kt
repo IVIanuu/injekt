@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import android.content.Context
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.APPLICATION_CONTEXT
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 
@@ -34,6 +36,8 @@ class App : Application(), InjektTrait {
 
     private val appDependency by inject<AppDependency>()
 
+    private val application by inject<Context>(APPLICATION_CONTEXT)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -42,6 +46,7 @@ class App : Application(), InjektTrait {
         }
 
         appDependency
+        application
     }
 }
 

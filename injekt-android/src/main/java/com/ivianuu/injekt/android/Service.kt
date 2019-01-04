@@ -57,7 +57,7 @@ fun <T : Service> serviceModule(
 ) = module(name) {
     // service
     factory(SERVICE) { instance as Service }
-    bind<Context, Service>(SERVICE_CONTEXT)
+    bind<Context, Service>(bindingName = SERVICE_CONTEXT, existingName = SERVICE)
 }
 
 fun DefinitionContext.service() = get<Service>(SERVICE)

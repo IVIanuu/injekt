@@ -46,7 +46,7 @@ fun <T : Application> applicationModule(
 ) = module(name) {
     // service
     factory(APPLICATION) { instance as Application }
-    bind<Context, Application>(APPLICATION_CONTEXT)
+    bind<Context, Application>(bindingName = APPLICATION_CONTEXT, existingName = APPLICATION)
 }
 
 fun DefinitionContext.application() = get<Application>(APPLICATION)

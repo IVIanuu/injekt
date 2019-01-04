@@ -57,7 +57,7 @@ fun <T : Activity> activityModule(
 ) = module(name) {
     // activity
     factory(ACTIVITY) { instance as Activity }
-    bind<Context, Activity>(ACTIVITY_CONTEXT)
+    bind<Context, Activity>(bindingName = ACTIVITY_CONTEXT, existingName = ACTIVITY)
 }
 
 fun DefinitionContext.activity() = get<Activity>(ACTIVITY)
