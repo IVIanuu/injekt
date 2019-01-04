@@ -33,15 +33,20 @@ fun <T : Activity> activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    instance.parentComponent()?.let { components(it) }
+    instance.parentComponentOrNull()?.let { components(it) }
     modules(instanceModule(instance), activityModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns the parent [Component] if available or null
+ * Returns the parent [Component] or null
  */
-fun Activity.parentComponent() = (application as? InjektTrait)?.component
+fun Activity.parentComponentOrNull() = (application as? InjektTrait)?.component
+
+/**
+ * Returns the parent [Component] or throws
+ */
+fun Activity.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
 
 const val ACTIVITY = "activity"
 const val ACTIVITY_CONTEXT = "activity_context"

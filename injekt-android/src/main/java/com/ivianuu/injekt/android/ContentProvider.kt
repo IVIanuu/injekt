@@ -33,7 +33,7 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    instance.parentComponent()?.let { components(it) }
+    instance.parentComponentOrNull()?.let { components(it) }
     modules(instanceModule(instance), contentProviderModule(instance))
     definition?.invoke(this)
 }
@@ -41,7 +41,14 @@ fun <T : ContentProvider> contentProviderComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun ContentProvider.parentComponent() = (context!!.applicationContext as? InjektTrait)?.component
+fun ContentProvider.parentComponentOrNull() =
+    (context!!.applicationContext as? InjektTrait)?.component
+
+/**
+ * Returns the parent [Component] or throws
+ */
+fun ContentProvider.parentComponent() =
+    parentComponentOrNull() ?: error("No parent found for $this")
 
 const val CONTENT_PROVIDER = "content_provider"
 const val CONTENT_PROVIDER_CONTEXT = "content_provider_context"

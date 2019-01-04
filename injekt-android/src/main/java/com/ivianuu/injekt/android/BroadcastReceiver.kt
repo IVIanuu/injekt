@@ -34,7 +34,7 @@ fun <T : BroadcastReceiver> receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    instance.parentComponent(context)?.let { components(it) }
+    instance.parentComponentOrNull(context)?.let { components(it) }
     modules(instanceModule(instance), receiverModule(instance, context))
     definition?.invoke(this)
 }
@@ -42,8 +42,14 @@ fun <T : BroadcastReceiver> receiverComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun BroadcastReceiver.parentComponent(context: Context) =
+fun BroadcastReceiver.parentComponentOrNull(context: Context) =
     (context.applicationContext as? InjektTrait)?.component
+
+/**
+ * Returns the parent [Component] or throws
+ */
+fun BroadcastReceiver.parentComponent(context: Context) =
+    parentComponentOrNull(context) ?: error("No parent found for $this")
 
 const val RECEIVER = "receiver"
 const val RECEIVER_CONTEXT = "receiver_context"

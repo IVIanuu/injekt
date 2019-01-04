@@ -32,7 +32,7 @@ fun <T : Fragment> fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    instance.parentComponent()?.let { components(it) }
+    instance.parentComponentOrNull()?.let { components(it) }
     modules(instanceModule(instance), fragmentModule(instance))
     definition?.invoke(this)
 }
@@ -40,7 +40,7 @@ fun <T : Fragment> fragmentComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun Fragment.parentComponent(): Component? {
+fun Fragment.parentComponentOrNull(): Component? {
     var parentFragment = parentFragment
 
     while (parentFragment != null) {
@@ -55,6 +55,11 @@ fun Fragment.parentComponent(): Component? {
 
     return null
 }
+
+/**
+ * Returns the parent [Component] or throws
+ */
+fun Fragment.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
 
 /**
  * Returns a [Module] with convenient definitions
