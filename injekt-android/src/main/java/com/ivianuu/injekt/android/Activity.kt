@@ -17,9 +17,11 @@
 package com.ivianuu.injekt.android
 
 import android.app.Activity
-import android.content.Context
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.common.instanceModule
+import com.ivianuu.injekt.component
 
 /**
  * Returns a [Component] with convenient configurations
@@ -31,7 +33,7 @@ fun <T : Activity> activityComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
-    modules(instanceModule(instance), activityModule(instance))
+    modules(instanceModule(instance))
     definition?.invoke(this)
 }
 
@@ -44,22 +46,3 @@ fun Activity.parentComponentOrNull() = (application as? InjektTrait)?.component
  * Returns the parent [Component] or throws
  */
 fun Activity.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
-
-const val ACTIVITY = "activity"
-const val ACTIVITY_CONTEXT = "activity_context"
-
-/**
- * Returns a [Module] with convenient definitions
- */
-fun <T : Activity> activityModule(
-    instance: T,
-    name: String? = "ActivityModule"
-) = module(name) {
-    // activity
-    factory(ACTIVITY) { instance as Activity }
-    bind<Context, Activity>(bindingName = ACTIVITY_CONTEXT, existingName = ACTIVITY)
-}
-
-fun DefinitionContext.activity() = get<Activity>(ACTIVITY)
-
-fun DefinitionContext.activityContext() = get<Context>(ACTIVITY_CONTEXT)

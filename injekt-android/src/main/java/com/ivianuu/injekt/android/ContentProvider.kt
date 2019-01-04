@@ -17,9 +17,11 @@
 package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
-import android.content.Context
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.common.instanceModule
+import com.ivianuu.injekt.component
 
 /**
  * Returns a [Component] with convenient configurations
@@ -31,7 +33,7 @@ fun <T : ContentProvider> contentProviderComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
-    modules(instanceModule(instance), contentProviderModule(instance))
+    modules(instanceModule(instance))
     definition?.invoke(this)
 }
 
@@ -46,22 +48,3 @@ fun ContentProvider.parentComponentOrNull() =
  */
 fun ContentProvider.parentComponent() =
     parentComponentOrNull() ?: error("No parent found for $this")
-
-const val CONTENT_PROVIDER = "content_provider"
-const val CONTENT_PROVIDER_CONTEXT = "content_provider_context"
-
-/**
- * Returns a [Module] with convenient definitions
- */
-fun <T : ContentProvider> contentProviderModule(
-    instance: T,
-    name: String? = "ContentProviderModule"
-) = module(name) {
-    // service
-    factory(CONTENT_PROVIDER) { instance as ContentProvider }
-    factory(CONTENT_PROVIDER_CONTEXT) { instance.context!! }
-}
-
-fun DefinitionContext.contentProvider() = get<ContentProvider>(CONTENT_PROVIDER)
-
-fun DefinitionContext.contentProviderContext() = get<Context>(CONTENT_PROVIDER_CONTEXT)

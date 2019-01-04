@@ -34,9 +34,6 @@ fun <T : Application> T.applicationComponent(
     definition?.invoke(this)
 }
 
-const val APPLICATION = "application"
-const val APPLICATION_CONTEXT = "application_context"
-
 /**
  * Returns a [Module] with convenient definitions
  */
@@ -44,11 +41,9 @@ fun <T : Application> applicationModule(
     instance: T,
     name: String? = "ApplicationModule"
 ) = module(name) {
-    // service
-    factory(APPLICATION) { instance as Application }
-    bind<Context, Application>(bindingName = APPLICATION_CONTEXT, existingName = APPLICATION)
+    factory { instance as Application } bind Context::class
 }
 
-fun DefinitionContext.application() = get<Application>(APPLICATION)
+fun DefinitionContext.application() = get<Application>()
 
-fun DefinitionContext.applicationContext() = get<Context>(APPLICATION_CONTEXT)
+fun DefinitionContext.context() = get<Context>()

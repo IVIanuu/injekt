@@ -17,9 +17,11 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
-import android.content.Context
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.common.instanceModule
+import com.ivianuu.injekt.component
 
 /**
  * Returns a [Component] with convenient configurations
@@ -31,7 +33,7 @@ fun <T : Service> serviceComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
-    modules(instanceModule(instance), serviceModule(instance))
+    modules(instanceModule(instance))
     definition?.invoke(this)
 }
 
@@ -44,21 +46,3 @@ fun Service.parentComponentOrNull() = (application as? InjektTrait)?.component
  * Returns the parent [Component] or throws
  */
 fun Service.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
-
-const val SERVICE = "service"
-const val SERVICE_CONTEXT = "service_context"
-
-/**
- * Returns a [Module] with convenient definitions
- */
-fun <T : Service> serviceModule(
-    instance: T,
-    name: String? = "ServiceModule"
-) = module(name) {
-    // service
-    factory(SERVICE) { instance as Service }
-    bind<Context, Service>(bindingName = SERVICE_CONTEXT, existingName = SERVICE)
-}
-
-fun DefinitionContext.service() = get<Service>(SERVICE)
-fun DefinitionContext.serviceContext() = get<Context>(SERVICE_CONTEXT)

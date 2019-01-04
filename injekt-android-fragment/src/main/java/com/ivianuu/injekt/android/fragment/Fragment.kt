@@ -17,8 +17,11 @@
 package com.ivianuu.injekt.android.fragment
 
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.common.instanceModule
+import com.ivianuu.injekt.component
 
 /**
  * Returns a [Component] with convenient configurations
@@ -30,7 +33,7 @@ fun <T : Fragment> fragmentComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
-    modules(instanceModule(instance), fragmentModule(instance))
+    modules(instanceModule(instance))
     definition?.invoke(this)
 }
 
@@ -51,19 +54,4 @@ fun Fragment.parentComponentOrNull(): Component? {
     (activity?.applicationContext as? InjektTrait)?.component?.let { return it }
 
     return null
-}
-
-/**
- * Returns the parent [Component] or throws
- */
-fun Fragment.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
-
-/**
- * Returns a [Module] with convenient definitions
- */
-fun <T : Fragment> fragmentModule(
-    instance: T,
-    name: String? = "FragmentModule"
-) = module(name) {
-
 }

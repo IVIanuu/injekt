@@ -32,7 +32,7 @@ fun <T : BroadcastReceiver> receiverComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull(context)?.let { components(it) }
-    modules(instanceModule(instance), receiverModule(instance, context))
+    modules(instanceModule(instance), receiverModule(instance))
     definition?.invoke(this)
 }
 
@@ -48,22 +48,12 @@ fun BroadcastReceiver.parentComponentOrNull(context: Context) =
 fun BroadcastReceiver.parentComponent(context: Context) =
     parentComponentOrNull(context) ?: error("No parent found for $this")
 
-const val RECEIVER = "receiver"
-const val RECEIVER_CONTEXT = "receiver_context"
-
 /**
  * Returns a [Module] with convenient definitions
  */
 fun <T : BroadcastReceiver> receiverModule(
     instance: T,
-    context: Context,
     name: String? = "ReceiverModule"
 ) = module(name) {
-    // service
-    factory(RECEIVER) { instance as BroadcastReceiver }
-    factory(RECEIVER_CONTEXT) { context }
+    factory { instance as BroadcastReceiver }
 }
-
-fun DefinitionContext.receiver() = get<BroadcastReceiver>(RECEIVER)
-
-fun DefinitionContext.receiverContext() = get<Context>(RECEIVER_CONTEXT)
