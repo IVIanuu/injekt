@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.preference.PreferenceManager
 import com.ivianuu.injekt.ModuleContext
 import com.ivianuu.injekt.single
 
@@ -32,4 +33,15 @@ fun ModuleContext.sharedPreferences(
     createOnStart: Boolean = false
 ) = single(name, override, createOnStart) {
     applicationContext().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
+}
+
+/**
+ * Declare default [SharedPreferences]
+ */
+fun ModuleContext.defaultSharedPreferences(
+    name: String? = null,
+    override: Boolean = false,
+    createOnStart: Boolean = false
+) = single(name, override, createOnStart) {
+    PreferenceManager.getDefaultSharedPreferences(applicationContext())
 }
