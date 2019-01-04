@@ -102,6 +102,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
 
             val definitionArgs = mutableMapOf(
                 "name" to definition.name,
+                "scope" to definition.scope,
                 "override" to definition.override
             )
 
@@ -111,7 +112,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                 definitionArgs["createOnStart"] = definition.createOnStart
             }
 
-            val definitionStatement = "%name:S, %override:L" + if (isSingle) {
+            val definitionStatement = "%name:S, %scope:S, %override:L" + if (isSingle) {
                 ", %createOnStart:L"
             } else {
                 ""

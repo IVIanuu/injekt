@@ -20,15 +20,18 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
 
+const val FRAGMENT_SCOPE = "fragment_scope"
+
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> fragmentComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
+    scope: String? = FRAGMENT_SCOPE,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(name, scope, createEagerInstances) {
     components(fragmentDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), fragmentModule(instance))
     definition?.invoke(this)

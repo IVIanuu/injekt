@@ -11,6 +11,11 @@ data class BeanDefinition<T : Any> private constructor(
 ) {
 
     /**
+     * The target scope of this definition
+     */
+    var scope: String? = null
+
+    /**
      * Whether or not this definitions can override existing definitions
      */
     var override: Boolean = false
@@ -66,7 +71,7 @@ data class BeanDefinition<T : Any> private constructor(
         val kindString = kind.toString()
         val nameString = name?.let { "name:'$name', " } ?: ""
         val typeString = "type:'${type.java.name}'"
-        val optionsString = "override:$override, createOnStart:$createOnStart"
+        val optionsString = "scope:$scope, override:$override, createOnStart:$createOnStart"
         return "$kindString[$nameString$typeString $attributes$optionsString$attributes]"
     }
 

@@ -6,9 +6,20 @@ import kotlin.reflect.KClass
 /**
  * The actual dependency container which provides definitions
  */
-class Component internal constructor(val name: String? = null) {
+class Component internal constructor(
+    val name: String? = null,
+    val scope: String? = null,
+    includeImplicitModules: Boolean = true
+) {
 
     val beanRegistry = BeanRegistry(this)
+
+    init {
+        if (includeImplicitModules) {
+            GlobalModuleRegistry.findAllMatching(this)
+                .forEach { beanRegistry.saveDefinition(it) }
+        }
+    }
 
     /**
      * Adds all [BeanDefinition]s of the [module]
@@ -64,9 +75,10 @@ typealias ComponentDefinition = Component.() -> Unit
  */
 fun component(
     name: String? = null,
+    scope: String? = null,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition
-) = Component(name)
+) = Component(name, scope)
     .apply(definition)
     .apply {
         if (createEagerInstances) {

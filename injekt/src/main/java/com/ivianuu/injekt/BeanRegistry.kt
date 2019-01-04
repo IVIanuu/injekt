@@ -138,6 +138,14 @@ class BeanRegistry internal constructor(val component: Component) {
             }
         }
 
+        if (!fromComponent) {
+            val matchesScope = definition.scope == null || definition.scope == component.scope
+
+            if (!matchesScope) {
+                error("Definition scope $definition does not match component scope ${component.scope}")
+            }
+        }
+
         if (definition.name != null) {
             definitionNames[definition.name] = definition
         } else {

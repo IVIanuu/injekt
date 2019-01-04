@@ -21,15 +21,18 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
 
+const val SERVICE_SCOPE = "service_scope"
+
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Service> serviceComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
+    scope: String? = SERVICE_SCOPE,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(name, scope, createEagerInstances) {
     components(serviceDependencies(instance), dropOverrides = true)
     modules(instanceModule(instance), serviceModule(instance))
     definition?.invoke(this)

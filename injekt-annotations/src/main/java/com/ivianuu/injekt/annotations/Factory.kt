@@ -25,6 +25,7 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.SOURCE)
 annotation class Factory(
     val name: String = "",
+    val scope: String = "",
     val override: Boolean = false,
     val secondaryTypes: Array<KClass<*>> = []
 )

@@ -62,9 +62,10 @@ fun module(
  */
 inline fun <reified T : Any> ModuleContext.factory(
     name: String? = null,
+    scope: String? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = factory(T::class, name, override, definition)
+) = factory(T::class, name, scope, override, definition)
 
 /**
  * Provides a unscoped dependency which will be recreated on each request
@@ -72,12 +73,14 @@ inline fun <reified T : Any> ModuleContext.factory(
 fun <T : Any> ModuleContext.factory(
     type: KClass<T>,
     name: String? = null,
+    scope: String? = null,
     override: Boolean = false,
     definition: Definition<T>
 ) = declare(
     type = type,
     name = name,
     kind = BeanDefinition.Kind.FACTORY,
+    scope = scope,
     createOnStart = false,
     override = override,
     definition = definition
@@ -88,10 +91,11 @@ fun <T : Any> ModuleContext.factory(
  */
 inline fun <reified T : Any> ModuleContext.single(
     name: String? = null,
+    scope: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     noinline definition: Definition<T>
-) = single(T::class, name, override, createOnStart, definition)
+) = single(T::class, name, scope, override, createOnStart, definition)
 
 /**
  * Provides scoped dependency which will be created once for each component
@@ -99,6 +103,7 @@ inline fun <reified T : Any> ModuleContext.single(
 fun <T : Any> ModuleContext.single(
     type: KClass<T>,
     name: String? = null,
+    scope: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: Definition<T>
@@ -106,6 +111,7 @@ fun <T : Any> ModuleContext.single(
     type = type,
     name = name,
     kind = BeanDefinition.Kind.SINGLE,
+    scope = scope,
     override = override,
     createOnStart = createOnStart,
     definition = definition
@@ -117,10 +123,11 @@ fun <T : Any> ModuleContext.single(
 inline fun <reified T : Any> ModuleContext.declare(
     name: String? = null,
     kind: BeanDefinition.Kind,
+    scope: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     noinline definition: Definition<T>
-) = declare(T::class, name, kind, override, createOnStart, definition)
+) = declare(T::class, name, kind, scope, override, createOnStart, definition)
 
 /**
  * Adds a [BeanDefinition] for the provided params
@@ -129,11 +136,13 @@ fun <T : Any> ModuleContext.declare(
     type: KClass<T>,
     name: String? = null,
     kind: BeanDefinition.Kind,
+    scope: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: Definition<T>
 ) = declare(
     BeanDefinition.create(type, name, kind, definition).also {
+        it.scope = scope
         it.createOnStart = createOnStart
         it.override = override
     }

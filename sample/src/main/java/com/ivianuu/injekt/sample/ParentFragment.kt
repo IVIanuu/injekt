@@ -19,8 +19,8 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.android.fragment.FRAGMENT_SCOPE
 import com.ivianuu.injekt.android.fragment.fragmentComponent
-import com.ivianuu.injekt.annotations.Module
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.inject
 
@@ -29,11 +29,7 @@ import com.ivianuu.injekt.inject
  */
 class ParentFragment : Fragment(), InjektTrait {
 
-    override val component by lazy {
-        fragmentComponent(this) {
-            modules(parentFragmentModule)
-        }
-    }
+    override val component by lazy { fragmentComponent(this) }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -55,9 +51,7 @@ class ParentFragment : Fragment(), InjektTrait {
 
 }
 
-@Module private annotation class ParentFragmentModule
-
-@Single @ParentFragmentModule
+@Single(scope = FRAGMENT_SCOPE)
 class ParentFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
