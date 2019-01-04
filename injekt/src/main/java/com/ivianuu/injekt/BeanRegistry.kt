@@ -42,6 +42,7 @@ class BeanRegistry internal constructor(val component: Component) {
 
     /**
      * Adds all current [BeanDefinition]s of the [components]
+     * The instances of the definitions will still live in the owning component
      */
     fun linkComponents(vararg components: Component) {
         components.forEach { component ->

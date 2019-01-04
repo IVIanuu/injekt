@@ -30,8 +30,7 @@ class Component internal constructor(
 
     /**
      * Adds all current [BeanDefinition]s of [components] to this component
-     * The context of the added [BeanDefinition]s will stay the same
-     * So make sure that [this] component does not live longer than any of [components]
+     * The instances of the definitions will still live in the owning component
      */
     fun components(vararg components: Component) {
         beanRegistry.linkComponents(*components)
