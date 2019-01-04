@@ -3,6 +3,7 @@ include(
     ":injekt-android",
     ":injekt-android-fragment",
     ":injekt-common",
+    ":injekt-multibinding",
     ":injekt-test",
     ":sample"
 )
