@@ -18,9 +18,10 @@ class Test {
                 module {
                     factory { Mockito.mock(App::class.java) }
                     factory { Mockito.mock(MainActivity::class.java) }
+                    factory { Mockito.mock(ParentFragment::class.java) }
                     factory { Mockito.mock(ChildFragment::class.java) }
                 },
-                appModule, mainActivityModule, childFragmentModule
+                appModule, mainActivityModule, parentFragmentModule, childFragmentModule
             )
         }
 

@@ -21,18 +21,15 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
 
-const val ACTIVITY_SCOPE = "activity_scope"
-
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Activity> activityComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
-    scope: String? = ACTIVITY_SCOPE,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, scope, createEagerInstances) {
+) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     modules(instanceModule(instance), activityModule(instance))
     definition?.invoke(this)

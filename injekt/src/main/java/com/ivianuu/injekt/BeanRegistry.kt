@@ -127,14 +127,6 @@ class BeanRegistry internal constructor(val component: Component) {
             throw OverrideException("Try to override definition $definition but was already saved $oldDefinition to ${component.name}")
         }
 
-        if (!fromComponent) {
-            val matchesScope = definition.scope == null || definition.scope == component.scope
-
-            if (!matchesScope) {
-                error("Definition scope $definition does not match component scope ${component.scope}")
-            }
-        }
-
         if (definition.name != null) {
             definitionNames[definition.name] = definition
         } else {

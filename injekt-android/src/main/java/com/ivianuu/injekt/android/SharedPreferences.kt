@@ -28,9 +28,8 @@ fun ModuleContext.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
     name: String? = null,
-    scope: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false
-) = single(name, scope, override, createOnStart) {
+) = single(name, override, createOnStart) {
     applicationContext().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
 }

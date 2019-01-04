@@ -21,18 +21,15 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
 
-const val CONTENT_PROVIDER_SCOPE = "content_provider_scope"
-
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : ContentProvider> contentProviderComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
-    scope: String? = CONTENT_PROVIDER_SCOPE,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, scope, createEagerInstances) {
+) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     modules(instanceModule(instance), contentProviderModule(instance))
     definition?.invoke(this)

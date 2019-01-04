@@ -16,9 +16,13 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.util.TestDep1
+import com.ivianuu.injekt.util.TestDep2
+import junit.framework.Assert.*
+import org.junit.Test
+
 class BeanRegistryTest {
 
-    /*
     @Test
     fun testLoadModules() {
         val registry = component { }.beanRegistry
@@ -29,10 +33,10 @@ class BeanRegistryTest {
 
         registry.loadModules(module)
 
-        assertEquals(registry.getAllDefinitions(), module.definitions.values.toSet())
+        assertEquals(registry.getAllDefinitions(), module.getDefinitions().toSet())
     }
 
-    /*@Test // todo
+    @Test
     fun testLoadComponents() {
         val registry = component { }.beanRegistry
 
@@ -51,7 +55,7 @@ class BeanRegistryTest {
             registry.getAllDefinitions(),
             component.beanRegistry.getAllDefinitions()
         )
-    }*/
+    }
 
     @Test
     fun testSaveDefinition() {
@@ -109,7 +113,7 @@ class BeanRegistryTest {
             single(createOnStart = true) { TestDep2(TestDep1()) }
         }
 
-        val eagerInstances = module.definitions.values.filter { it.createOnStart }.toSet()
+        val eagerInstances = module.getDefinitions().filter { it.createOnStart }.toSet()
 
         val registry = component {
             modules(module)
@@ -117,5 +121,5 @@ class BeanRegistryTest {
 
         assertEquals(eagerInstances, registry.getEagerInstances())
     }
-*/
+
 }
