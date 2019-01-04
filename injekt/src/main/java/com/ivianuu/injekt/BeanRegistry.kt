@@ -32,22 +32,22 @@ class BeanRegistry internal constructor(val component: Component) {
     /**
      * Adds all [BeanDefinition]s of the [modules]
      */
-    fun loadModules(vararg modules: Module, dropOverrides: Boolean = false) {
+    fun loadModules(vararg modules: Module) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}")
             module.getDefinitions()
-                .forEach { saveDefinition(it, dropOverrides) }
+                .forEach { saveDefinition(it) }
         }
     }
 
     /**
      * Adds all current [BeanDefinition]s of the [components]
      */
-    fun linkComponents(vararg components: Component, dropOverrides: Boolean = false) {
+    fun linkComponents(vararg components: Component) {
         components.forEach { component ->
             logger?.info("${this.component.name} link component ${component.name}")
             component.beanRegistry.definitions
-                .forEach { linkDefinition(it, dropOverrides) }
+                .forEach { linkDefinition(it) }
         }
     }
 
@@ -77,21 +77,15 @@ class BeanRegistry internal constructor(val component: Component) {
     /**
      * Saves the [definition] which was not added to [Component] yet
      */
-    fun saveDefinition(
-        definition: BeanDefinition<*>,
-        dropOverrides: Boolean = false
-    ) {
-        addDefinition(definition, dropOverrides, false)
+    fun saveDefinition(definition: BeanDefinition<*>) {
+        addDefinition(definition, false)
     }
 
     /**
      * Saves a [definition] from another component
      */
-    fun linkDefinition(
-        definition: BeanDefinition<*>,
-        dropOverrides: Boolean = false
-    ) {
-        addDefinition(definition, dropOverrides, true)
+    fun linkDefinition(definition: BeanDefinition<*>) {
+        addDefinition(definition, true)
     }
 
     /**
@@ -118,7 +112,6 @@ class BeanRegistry internal constructor(val component: Component) {
 
     private fun addDefinition(
         definition: BeanDefinition<*>,
-        dropOverrides: Boolean,
         fromComponent: Boolean
     ) {
         val oldDefinition = if (definition.name != null) {
@@ -130,12 +123,7 @@ class BeanRegistry internal constructor(val component: Component) {
         val isOverride = oldDefinition != null
 
         if (isOverride && !definition.override) {
-            if (dropOverrides) {
-                logger?.info("${component.name} Drop override $definition")
-                return
-            } else {
-                throw OverrideException("Try to override definition $definition but was already saved $oldDefinition to ${component.name}")
-            }
+            throw OverrideException("Try to override definition $definition but was already saved $oldDefinition to ${component.name}")
         }
 
         if (!fromComponent) {

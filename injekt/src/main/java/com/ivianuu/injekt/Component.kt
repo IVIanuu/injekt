@@ -24,17 +24,17 @@ class Component internal constructor(
     /**
      * Adds all [BeanDefinition]s of the [module]
      */
-    fun modules(vararg modules: Module, dropOverrides: Boolean = false) {
-        beanRegistry.loadModules(*modules, dropOverrides = dropOverrides)
+    fun modules(vararg modules: Module) {
+        beanRegistry.loadModules(*modules)
     }
 
     /**
      * Adds all current [BeanDefinition]s of [components] to this component
      * The context of the added [BeanDefinition]s will stay the same
-     * So make sure that [this] component does not live longer than the added ones
+     * So make sure that [this] component does not live longer than any of [components]
      */
-    fun components(vararg components: Component, dropOverrides: Boolean = false) {
-        beanRegistry.linkComponents(*components, dropOverrides = dropOverrides)
+    fun components(vararg components: Component) {
+        beanRegistry.linkComponents(*components)
     }
 
     /**
@@ -89,15 +89,15 @@ fun component(
 /**
  * Adds all [BeanDefinition]s of the [module]
  */
-fun Component.modules(modules: Collection<Module>, dropOverrides: Boolean = false) {
-    modules(*modules.toTypedArray(), dropOverrides = dropOverrides)
+fun Component.modules(modules: Collection<Module>) {
+    modules(*modules.toTypedArray())
 }
 
 /**
  * Adds all [BeanDefinition]s of [components] to this component
  */
-fun Component.components(components: Collection<Component>, dropOverrides: Boolean = false) {
-    components(*components.toTypedArray(), dropOverrides = dropOverrides)
+fun Component.components(components: Collection<Component>) {
+    components(*components.toTypedArray())
 }
 
 /**

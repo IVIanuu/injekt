@@ -33,23 +33,15 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    components(contentProviderDependencies(instance), dropOverrides = true)
+    instance.parentComponent()?.let { components(it) }
     modules(instanceModule(instance), contentProviderModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns components for [instance]
+ * Returns the parent [Component] if available or null
  */
-fun contentProviderDependencies(instance: ContentProvider): Set<Component> {
-    val dependencies = mutableSetOf<Component>()
-    (instance.context!!.applicationContext as? InjektTrait)?.component?.let {
-        dependencies.add(
-            it
-        )
-    }
-    return dependencies
-}
+fun ContentProvider.parentComponent() = (context!!.applicationContext as? InjektTrait)?.component
 
 const val CONTENT_PROVIDER = "content_provider"
 const val CONTENT_PROVIDER_CONTEXT = "content_provider_context"

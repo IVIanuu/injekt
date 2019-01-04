@@ -34,19 +34,16 @@ fun <T : BroadcastReceiver> receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    components(receiverDependencies(instance, context), dropOverrides = true)
+    instance.parentComponent(context)?.let { components(it) }
     modules(instanceModule(instance), receiverModule(instance, context))
     definition?.invoke(this)
 }
 
 /**
- * Returns components for [instance]
+ * Returns the parent [Component] if available or null
  */
-fun receiverDependencies(instance: BroadcastReceiver, context: Context): Set<Component> {
-    val dependencies = mutableSetOf<Component>()
-    (context.applicationContext as? InjektTrait)?.component?.let { dependencies.add(it) }
-    return dependencies
-}
+fun BroadcastReceiver.parentComponent(context: Context) =
+    (context.applicationContext as? InjektTrait)?.component
 
 const val RECEIVER = "receiver"
 const val RECEIVER_CONTEXT = "receiver_context"

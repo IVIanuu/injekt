@@ -33,19 +33,15 @@ fun <T : Activity> activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    components(activityDependencies(instance), dropOverrides = true)
+    instance.parentComponent()?.let { components(it) }
     modules(instanceModule(instance), activityModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns components for [instance]
+ * Returns the parent [Component] if available or null
  */
-fun activityDependencies(instance: Activity): Set<Component> {
-    val dependencies = mutableSetOf<Component>()
-    (instance.application as? InjektTrait)?.component?.let { dependencies.add(it) }
-    return dependencies
-}
+fun Activity.parentComponent() = (application as? InjektTrait)?.component
 
 const val ACTIVITY = "activity"
 const val ACTIVITY_CONTEXT = "activity_context"

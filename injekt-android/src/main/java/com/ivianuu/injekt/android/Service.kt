@@ -33,19 +33,15 @@ fun <T : Service> serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, scope, createEagerInstances) {
-    components(serviceDependencies(instance), dropOverrides = true)
+    instance.parentComponent()?.let { components(it) }
     modules(instanceModule(instance), serviceModule(instance))
     definition?.invoke(this)
 }
 
 /**
- * Returns components for [instance]
+ * Returns the parent [Component] if available or null
  */
-fun serviceDependencies(instance: Service): Set<Component> {
-    val dependencies = mutableSetOf<Component>()
-    (instance.application as? InjektTrait)?.component?.let { dependencies.add(it) }
-    return dependencies
-}
+fun Service.parentComponent() = (application as? InjektTrait)?.component
 
 const val SERVICE = "service"
 const val SERVICE_CONTEXT = "service_context"
