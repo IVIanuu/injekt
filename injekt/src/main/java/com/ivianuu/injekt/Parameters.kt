@@ -47,6 +47,11 @@ typealias ParamsDefinition = () -> Parameters
  */
 fun parametersOf(vararg values: Any?) = Parameters(*values)
 
+/**
+ * Returns new [Parameters] which contains all [values]
+ */
+fun parametersOf(values: Collection<Any?>) = Parameters(*values.toTypedArray())
+
 private val emptyParameters = parametersOf()
 
 /**
