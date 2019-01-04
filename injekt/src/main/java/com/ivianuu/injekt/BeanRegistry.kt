@@ -115,25 +115,19 @@ class BeanRegistry internal constructor(val component: Component) {
         definition: BeanDefinition<*>,
         fromComponent: Boolean
     ) {
-        val oldDefinition = if (definition.name != null) {
-            definitionNames[definition.name]
-        } else {
-            definitionTypes[definition.type]
-        }
-
-        val isOverride = oldDefinition != null
+        val isOverride = definitions.remove(definition)
 
         if (isOverride && !definition.override) {
-            throw OverrideException("Try to override definition $definition but was already saved $oldDefinition to ${component.name}")
+            throw OverrideException("Try to override definition $definition but was already in ${component.name}")
         }
+
+        definitions.add(definition)
 
         if (definition.name != null) {
             definitionNames[definition.name] = definition
         } else {
             definitionTypes[definition.type] = definition
         }
-
-        definitions.add(definition)
 
         if (!fromComponent) {
             definition.instance.component = component
