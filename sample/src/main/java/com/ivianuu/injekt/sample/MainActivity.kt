@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.multibinding.injectMap
+import com.ivianuu.injekt.multibinding.intoMap
+import kotlin.reflect.KClass
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
@@ -16,11 +19,14 @@ class MainActivity : AppCompatActivity(), InjektTrait {
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
 
+    private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        appDependency
-        mainActivityDependency
+        d { "Injected app dependency $appDependency" }
+        d { "Injected main activity dependency $mainActivityDependency" }
+        d { "All dependencies $dependencies" }
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -34,8 +40,8 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity
-)
+) : Dependency
 
 val mainActivityModule = module {
-    single { MainActivityDependency(get(), get()) }
+    single { MainActivityDependency(get(), get()) } intoMap (DEPS to MainActivityDependency::class)
 }

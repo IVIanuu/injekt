@@ -21,12 +21,6 @@ import com.ivianuu.injekt.BeanDefinition
 import com.ivianuu.injekt.ParamsDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.provider
-import kotlin.reflect.KClass
-
-typealias ClassMultiBindingMap<T> = MultiBindingMap<KClass<out T>, T>
-typealias IntMultiBindingMap<T> = MultiBindingMap<Int, T>
-typealias LongMultiBindingMap<T> = MultiBindingMap<Long, T>
-typealias StringMultiBindingMap<T> = MultiBindingMap<String, T>
 
 /**
  * Wraps a [Map] of [BeanDefinition]s

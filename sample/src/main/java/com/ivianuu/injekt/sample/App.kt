@@ -20,6 +20,9 @@ import android.app.Application
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.multibinding.injectMap
+import com.ivianuu.injekt.multibinding.intoMap
+import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -34,19 +37,24 @@ class App : Application(), InjektTrait {
 
     private val appDependency by inject<AppDependency>()
 
-    override fun onCreate() {
-        super.onCreate()
+    private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
 
+    override fun onCreate() {
         configureInjekt {
             androidLogger()
         }
 
-        appDependency
+        d { "Injected app dependency $appDependency" }
+        d { "All dependencies $dependencies" }
+
+        super.onCreate()
     }
 }
 
-class AppDependency(val app: App)
+const val DEPS = "deps"
+
+class AppDependency(val app: App) : Dependency
 
 val appModule = module {
-    single { AppDependency(get()) }
+    single { AppDependency(get()) } intoMap (DEPS to AppDependency::class)
 }

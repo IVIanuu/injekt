@@ -20,6 +20,9 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.fragment.fragmentComponent
+import com.ivianuu.injekt.multibinding.injectMap
+import com.ivianuu.injekt.multibinding.intoMap
+import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -37,6 +40,8 @@ class ChildFragment : Fragment(), InjektTrait {
     private val parentFragmentDependency by inject<ParentFragmentDependency>()
     private val childFragmentDependency by inject<ChildFragmentDependency>()
 
+    private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -44,6 +49,12 @@ class ChildFragment : Fragment(), InjektTrait {
         mainActivityDependency
         parentFragmentDependency
         childFragmentDependency
+
+        d { "Injected app dependency $appDependency" }
+        d { "Injected main activity dependency $mainActivityDependency" }
+        d { "Injected parent fragment dependency $parentFragmentDependency" }
+        d { "Injected child fragment dependency $childFragmentDependency" }
+        d { "All dependencies $dependencies" }
     }
 
 }
@@ -53,8 +64,15 @@ class ChildFragmentDependency(
     val mainActivity: MainActivity,
     val parentFragment: ParentFragment,
     val childFragment: ChildFragment
-)
+) : Dependency
 
 val childFragmentModule = module {
-    single { ChildFragmentDependency(get(), get(), get(), get()) }
+    single {
+        ChildFragmentDependency(
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    } intoMap (DEPS to ChildFragmentDependency::class)
 }
