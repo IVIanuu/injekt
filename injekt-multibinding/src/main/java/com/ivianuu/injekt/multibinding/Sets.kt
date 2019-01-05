@@ -55,21 +55,20 @@ infix fun <T : Any> BeanDefinition<T>.bindIntoSet(setName: String) = apply {
 /**
  * Binds a already existing [BeanDefinition] into a [Set] named [setName]
  */
-inline fun <reified T : Any, reified S : T> ModuleContext.bindIntoSet(
+inline fun <reified T : Any> ModuleContext.bindIntoSet(
     setName: String,
-    declarationName: String? = null
-) = bindIntoSet(T::class, S::class, setName, declarationName)
+    implementationName: String? = null
+) = bindIntoSet(T::class, setName, implementationName)
 
 /**
  * Binds a already existing [BeanDefinition] into a [Set] named [setName]
  */
-fun <T : Any, S : T> ModuleContext.bindIntoSet(
-    setType: KClass<T>,
-    implementationType: KClass<S>,
+fun <T : Any> ModuleContext.bindIntoSet(
+    implementationType: KClass<T>,
     setName: String,
     implementationName: String? = null
 ) =
-    factory(setType, UUID.randomUUID().toString()) {
+    factory(implementationType, UUID.randomUUID().toString()) {
         get(implementationType, implementationName)
     } bindIntoSet setName
 

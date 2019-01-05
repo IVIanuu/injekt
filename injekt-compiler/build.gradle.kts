@@ -34,8 +34,6 @@ dependencies {
     implementation(project(":injekt"))
     implementation(project(":injekt-annotations"))
 
-    implementation(Deps.kotlinStdLib)
-
     implementation(Deps.processingX)
     kapt(Deps.processingX)
 }

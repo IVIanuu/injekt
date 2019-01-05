@@ -51,7 +51,7 @@ infix fun <T : Any> BeanDefinition<T>.bindIntoMap(pair: Pair<String, Any>) =
                         ?.get(mapName)?.let { it to definition }
                 }
                 .toMap()
-                .mapValues { it as BeanDefinition<Any> }
+                .mapValues { it.value as BeanDefinition<Any> }
                 .let { MultiBindingMap(it) }
         }
     }
@@ -62,8 +62,8 @@ infix fun <T : Any> BeanDefinition<T>.bindIntoMap(pair: Pair<String, Any>) =
 inline fun <reified T : Any> ModuleContext.bindIntoMap(
     mapName: String,
     key: Any,
-    declarationName: String? = null
-) = bindIntoMap(T::class, mapName, key, declarationName)
+    implementationName: String? = null
+) = bindIntoMap(T::class, mapName, key, implementationName)
 
 /**
  * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]

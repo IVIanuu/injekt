@@ -20,8 +20,8 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.fragment.fragmentComponent
+import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
-import com.ivianuu.injekt.multibinding.intoMap
 import kotlin.reflect.KClass
 
 /**
@@ -71,5 +71,5 @@ val parentFragmentModule = module {
             get(),
             get()
         )
-    } intoMap (DEPS to ParentFragmentDependency::class)
+    } bindIntoMap (DEPS to ParentFragmentDependency::class)
 }

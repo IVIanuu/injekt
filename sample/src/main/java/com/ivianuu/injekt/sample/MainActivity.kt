@@ -4,8 +4,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
-import com.ivianuu.injekt.multibinding.intoMap
 import kotlin.reflect.KClass
 
 class MainActivity : AppCompatActivity(), InjektTrait {
@@ -43,5 +43,10 @@ class MainActivityDependency(
 ) : Dependency
 
 val mainActivityModule = module {
-    single { MainActivityDependency(get(), get()) } intoMap (DEPS to MainActivityDependency::class)
+    single {
+        MainActivityDependency(
+            get(),
+            get()
+        )
+    } bindIntoMap (DEPS to MainActivityDependency::class)
 }

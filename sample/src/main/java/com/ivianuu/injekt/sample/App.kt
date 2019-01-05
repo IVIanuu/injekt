@@ -17,11 +17,12 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
-import com.ivianuu.injekt.multibinding.intoMap
 import kotlin.reflect.KClass
 
 /**
@@ -53,8 +54,10 @@ class App : Application(), InjektTrait {
 
 const val DEPS = "deps"
 
-class AppDependency(val app: App) : Dependency
+class AppDependency(val app: App, val context: Context) : Dependency
 
 val appModule = module {
-    single { AppDependency(get()) } intoMap (DEPS to AppDependency::class)
+    single { AppDependency(get(), get()) } bindIntoMap (DEPS to AppDependency::class) bind setOf(
+        Context::class
+    )
 }

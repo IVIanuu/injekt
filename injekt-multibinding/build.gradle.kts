@@ -31,7 +31,7 @@ java {
 
 dependencies {
     api(project(":injekt"))
-    api(Deps.kotlinStdLib)
+    testImplementation(Deps.junit)
 }
 
 val sourcesJar = task("sourcesJar", Jar::class) {
