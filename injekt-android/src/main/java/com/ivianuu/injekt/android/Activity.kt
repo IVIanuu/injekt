@@ -17,11 +17,8 @@
 package com.ivianuu.injekt.android
 
 import android.app.Activity
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDefinition
-import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.instanceModule
-import com.ivianuu.injekt.component
 
 /**
  * Returns a [Component] with convenient configurations
