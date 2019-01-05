@@ -99,8 +99,8 @@ typealias Definition<T> = DefinitionContext.(params: Parameters) -> T
 /**
  * Binds this [BeanDefinition] to [type]
  */
-infix fun <T : Any, S : T> BeanDefinition<S>.bind(type: KClass<T>) = apply {
-    val copy = copy(type = type as KClass<S>, name = null)
+infix fun <T : Any> BeanDefinition<T>.bind(type: KClass<*>) = apply {
+    val copy = (this as BeanDefinition<Any>).copy(type = type as KClass<Any>, name = null)
     copy.kind = kind
     copy.override = override
     copy.createOnStart = createOnStart
@@ -112,10 +112,24 @@ infix fun <T : Any, S : T> BeanDefinition<S>.bind(type: KClass<T>) = apply {
 }
 
 /**
+ * Binds this [BeanDefinition] to [types]
+ */
+infix fun <T : Any> BeanDefinition<T>.bind(types: Array<KClass<*>>) = apply {
+    types.forEach { bind(it) }
+}
+
+/**
+ * Binds this [BeanDefinition] to [types]
+ */
+infix fun <T : Any> BeanDefinition<T>.bind(types: Iterable<KClass<*>>) = apply {
+    types.forEach { bind(it) }
+}
+
+/**
  * Binds this [BeanDefinition] to [name]
  */
-infix fun <T : Any, S : T> BeanDefinition<S>.bind(name: String) = apply {
-    val copy = copy(type = type, name = name)
+infix fun <T : Any> BeanDefinition<T>.bind(name: String) = apply {
+    val copy = (this as BeanDefinition<Any>).copy(name = name)
     copy.kind = kind
     copy.override = override
     copy.createOnStart = createOnStart
@@ -124,4 +138,19 @@ infix fun <T : Any, S : T> BeanDefinition<S>.bind(name: String) = apply {
     copy.instance = instance
     copy.moduleContext = moduleContext
     moduleContext.declare(copy)
+}
+
+/**
+ * Binds this [BeanDefinition] to [names]
+ */
+infix fun <T : Any> BeanDefinition<T>.bind(types: Array<String>) = apply {
+    types.forEach { bind(it) }
+}
+
+/**
+ * Binds this [BeanDefinition] to [names]
+ */
+@JvmName("bindNames")
+infix fun <T : Any> BeanDefinition<T>.bind(types: Iterable<String>) = apply {
+    types.forEach { bind(it) }
 }

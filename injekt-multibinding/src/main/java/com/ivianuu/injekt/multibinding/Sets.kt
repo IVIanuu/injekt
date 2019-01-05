@@ -30,18 +30,16 @@ const val KEY_SET_BINDINGS = "setBindings"
  * Declares a empty set binding with the name [setName]
  * This is useful for retrieving a [MultiBindingSet] even if no [BeanDefinition] was bound into it
  */
-fun <T : Any> ModuleContext.setBinding(setName: String) {
+fun ModuleContext.setBinding(setName: String) {
     factory(name = setName, override = true) {
-        MultiBindingSet<T>(
-            emptySet()
-        )
+        MultiBindingSet<Any>(emptySet())
     }
 }
 
 /**
  * Binds this [BeanDefinition] into a [Set] named [setName]
  */
-infix fun <T : Any, S : T> BeanDefinition<S>.intoSet(setName: String) = apply {
+infix fun <T : Any> BeanDefinition<T>.bindIntoSet(setName: String) = apply {
     attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     moduleContext.factory(name = setName, override = true) {
@@ -73,7 +71,7 @@ fun <T : Any, S : T> ModuleContext.bindIntoSet(
 ) =
     factory(setType, UUID.randomUUID().toString()) {
         get(implementationType, implementationName)
-    } intoSet setName
+    } bindIntoSet setName
 
 /**
  * Returns a multi bound [Set] for [T] [name] and passes [params] to any of the entries

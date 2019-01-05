@@ -30,16 +30,14 @@ const val KEY_MAP_BINDINGS = "mapBindings"
  * Declares a empty set binding with the name [mapName]
  * This is useful for retrieving a [MultiBindingMap] even if no [BeanDefinition] was bound into it
  */
-fun <K : Any, T : Any> ModuleContext.mapBinding(mapName: String) {
-    factory(name = mapName, override = true) {
-        MultiBindingMap<K, T>(emptyMap())
-    }
+fun ModuleContext.mapBinding(mapName: String) {
+    factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(emptyMap()) }
 }
 
 /**
  * Binds this [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-infix fun <K : Any, T : Any, S : T> BeanDefinition<S>.intoMap(pair: Pair<String, K>) =
+infix fun <T : Any> BeanDefinition<T>.bindIntoMap(pair: Pair<String, Any>) =
     apply {
         val (mapName, mapKey) = pair
 
@@ -53,8 +51,7 @@ infix fun <K : Any, T : Any, S : T> BeanDefinition<S>.intoMap(pair: Pair<String,
                         ?.get(mapName)?.let { it to definition }
                 }
                 .toMap()
-                .mapKeys { it.key as K }
-                .mapValues { it.value as BeanDefinition<T> }
+                .mapValues { it as BeanDefinition<Any> }
                 .let { MultiBindingMap(it) }
         }
     }
@@ -62,25 +59,24 @@ infix fun <K : Any, T : Any, S : T> BeanDefinition<S>.intoMap(pair: Pair<String,
 /**
  * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-inline fun <K : Any, reified T : Any, reified S : T> ModuleContext.bindIntoMap(
+inline fun <reified T : Any> ModuleContext.bindIntoMap(
     mapName: String,
-    key: K,
+    key: Any,
     declarationName: String? = null
-) = bindIntoMap(T::class, S::class, mapName, key, declarationName)
+) = bindIntoMap(T::class, mapName, key, declarationName)
 
 /**
  * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-fun <K : Any, T : Any, S : T> ModuleContext.bindIntoMap(
-    mapType: KClass<T>,
-    implementationType: KClass<S>,
+fun <T : Any> ModuleContext.bindIntoMap(
+    implementationType: KClass<T>,
     mapName: String,
-    key: K,
+    key: Any,
     implementationName: String? = null
 ) =
-    factory(mapType, UUID.randomUUID().toString()) {
+    factory(implementationType, UUID.randomUUID().toString()) {
         get(implementationType, implementationName)
-    } intoMap (mapName to key)
+    } bindIntoMap (mapName to key)
 
 /**
  * Returns a multi bound [Map] for [K], [T] [name] and passes [params] to any of the entries
