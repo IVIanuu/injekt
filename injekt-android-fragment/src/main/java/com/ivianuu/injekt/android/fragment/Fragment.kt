@@ -52,3 +52,8 @@ fun Fragment.parentComponentOrNull(): Component? {
 
     return null
 }
+
+/**
+ * Returns the parent [Component] or throws
+ */
+fun Fragment.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
