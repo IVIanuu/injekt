@@ -11,18 +11,18 @@ class Component internal constructor(val name: String? = null) {
     val beanRegistry = BeanRegistry(this)
 
     /**
-     * Adds all [BeanDefinition]s of the [module]
+     * Adds all [BeanDefinition]s of the [modules]
      */
-    fun modules(vararg modules: Module) {
-        beanRegistry.loadModules(*modules)
+    fun modules(modules: Iterable<Module>) {
+        beanRegistry.loadModules(modules)
     }
 
     /**
      * Adds all current [BeanDefinition]s of [components] to this component
      * The instances of the definitions will still live in the owning component
      */
-    fun components(vararg components: Component) {
-        beanRegistry.linkComponents(*components)
+    fun components(components: Iterable<Component>) {
+        beanRegistry.linkComponents(components)
     }
 
     /**
@@ -73,18 +73,14 @@ fun component(
         }
     }
 
-/**
- * Adds all [BeanDefinition]s of the [module]
- */
-fun Component.modules(modules: Collection<Module>) {
-    modules(*modules.toTypedArray())
+/** Calls trough [Component.modules] */
+fun Component.modules(vararg modules: Module) {
+    modules(modules.asIterable())
 }
 
-/**
- * Adds all [BeanDefinition]s of [components] to this component
- */
-fun Component.components(components: Collection<Component>) {
-    components(*components.toTypedArray())
+/** Calls trough [Component.components] */
+fun Component.components(vararg components: Component) {
+    components(components.asIterable())
 }
 
 /**

@@ -32,7 +32,7 @@ class BeanRegistry internal constructor(val component: Component) {
     /**
      * Adds all [BeanDefinition]s of the [modules]
      */
-    fun loadModules(vararg modules: Module) {
+    fun loadModules(modules: Iterable<Module>) {
         modules.forEach { module ->
             logger?.info("${component.name} load module ${module.name}")
             module.getDefinitions()
@@ -44,7 +44,7 @@ class BeanRegistry internal constructor(val component: Component) {
      * Adds all current [BeanDefinition]s of the [components]
      * The instances of the definitions will still live in the owning component
      */
-    fun linkComponents(vararg components: Component) {
+    fun linkComponents(components: Iterable<Component>) {
         components.forEach { component ->
             logger?.info("${this.component.name} link component ${component.name}")
             component.beanRegistry.definitions

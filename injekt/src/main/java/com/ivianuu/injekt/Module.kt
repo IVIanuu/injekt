@@ -18,4 +18,11 @@ class Module internal constructor(
 
 }
 
+operator fun Module.plus(module: Module) = listOf(this, module)
+operator fun Module.plus(modules: Iterable<Module>) = listOf(this) + modules
+operator fun Module.plus(modules: Array<Module>) = listOf(this) + modules
+
+/**
+ * Defines module entries
+ */
 typealias ModuleDefinition = ModuleContext.() -> Unit
