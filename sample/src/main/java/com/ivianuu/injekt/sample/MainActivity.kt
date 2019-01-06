@@ -18,8 +18,6 @@ class MainActivity : AppCompatActivity(), InjektTrait {
         }
     }
 
-    private val aDep by inject<ADep>()
-
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
 

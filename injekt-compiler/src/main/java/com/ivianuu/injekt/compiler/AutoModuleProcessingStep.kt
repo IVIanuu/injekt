@@ -48,6 +48,10 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         val definitionElements = (elementsByAnnotation[Factory::class.java]
                 + elementsByAnnotation[Single::class.java])
 
+        if (definitionElements.isNotEmpty()) {
+            validateOnlyOneModule(definitionElements)
+        }
+
         validateOnlyOneKindAnnotation(definitionElements)
 
         val definitions =
@@ -57,6 +61,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                 .toSet()
 
         val moduleElement = elementsByAnnotation[Module::class.java].first()
+
         val annotation = moduleElement.getAnnotationMirror<Module>()
         var packageName = annotation["packageName"].value as String
 
@@ -176,6 +181,19 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                     )
                 }
         )
+    }
+
+    private fun validateOnlyOneModule(elements: Set<Element>) {
+        when {
+            elements.isEmpty() -> messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Missing @Module annotation"
+            )
+            elements.size > 1 -> messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "There can be only one @Module"
+            )
+        }
     }
 
     private fun validateNameUsages(elements: Set<Element>) {
