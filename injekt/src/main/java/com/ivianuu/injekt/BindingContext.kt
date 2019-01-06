@@ -13,7 +13,7 @@ data class BindingContext<T : Any>(
 /**
  * Binds this [BeanDefinition] to [type]
  */
-infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>) = apply {
+infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> = apply {
     val copy = (definition as BeanDefinition<Any>).copy(type = type as KClass<Any>, name = null)
     copy.kind = definition.kind
     copy.override = definition.override
@@ -27,21 +27,21 @@ infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>) = apply {
 /**
  * Binds this [BeanDefinition] to [types]
  */
-infix fun <T : Any> BindingContext<T>.bind(types: Array<KClass<*>>) = apply {
+infix fun <T : Any> BindingContext<T>.bind(types: Array<KClass<*>>): BindingContext<T> = apply {
     types.forEach { bind(it) }
 }
 
 /**
  * Binds this [BeanDefinition] to [types]
  */
-infix fun <T : Any> BindingContext<T>.bind(types: Iterable<KClass<*>>) = apply {
+infix fun <T : Any> BindingContext<T>.bind(types: Iterable<KClass<*>>): BindingContext<T> = apply {
     types.forEach { bind(it) }
 }
 
 /**
  * Binds this [BeanDefinition] to [name]
  */
-infix fun <T : Any> BindingContext<T>.bind(name: String) = apply {
+infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> = apply {
     val copy = (definition as BeanDefinition<Any>).copy(name = name)
     copy.kind = definition.kind
     copy.override = definition.override
@@ -55,7 +55,7 @@ infix fun <T : Any> BindingContext<T>.bind(name: String) = apply {
 /**
  * Binds this [BeanDefinition] to [types]
  */
-infix fun <T : Any> BindingContext<T>.bind(types: Array<String>) = apply {
+infix fun <T : Any> BindingContext<T>.bind(types: Array<String>): BindingContext<T> = apply {
     types.forEach { bind(it) }
 }
 
@@ -63,6 +63,6 @@ infix fun <T : Any> BindingContext<T>.bind(types: Array<String>) = apply {
  * Binds this [BeanDefinition] to [names]
  */
 @JvmName("bindNames")
-infix fun <T : Any> BindingContext<T>.bind(names: Iterable<String>) = apply {
+infix fun <T : Any> BindingContext<T>.bind(names: Iterable<String>): BindingContext<T> = apply {
     names.forEach { bind(it) }
 }

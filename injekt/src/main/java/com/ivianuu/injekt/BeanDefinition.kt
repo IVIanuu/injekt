@@ -50,7 +50,7 @@ data class BeanDefinition<T : Any> private constructor(
      */
     fun resolveInstance(
         parameters: ParametersDefinition? = null
-    ) = instance.get(parameters)
+    ): T = instance.get(parameters)
 
     /**
      * Creates the instance holder
@@ -79,13 +79,13 @@ data class BeanDefinition<T : Any> private constructor(
             type: KClass<T>,
             name: String? = null,
             definition: Definition<T>
-        ) = create(type, name, Kind.FACTORY, definition)
+        ): BeanDefinition<T> = create(type, name, Kind.FACTORY, definition)
 
         fun <T : Any> createSingle(
             type: KClass<T>,
             name: String? = null,
             definition: Definition<T>
-        ) = create(type, name, Kind.SINGLE, definition)
+        ): BeanDefinition<T> = create(type, name, Kind.SINGLE, definition)
 
         fun <T : Any> create(
             type: KClass<T>,
@@ -108,7 +108,7 @@ data class BeanDefinition<T : Any> private constructor(
  */
 typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
 
-fun <T : Any> BeanDefinition<T>.clone() = copy().also {
+fun <T : Any> BeanDefinition<T>.clone(): BeanDefinition<T> = copy().also {
     it.kind = kind
     it.definition = definition
     it.scopeId = scopeId

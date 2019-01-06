@@ -20,5 +20,6 @@ typealias InjektDefinition = InjektPlugins.() -> Unit
 /**
  * Configure injekt
  */
-fun configureInjekt(definition: InjektDefinition) =
+fun configureInjekt(definition: InjektDefinition) {
     InjektPlugins.apply(definition)
+}

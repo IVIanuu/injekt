@@ -29,7 +29,5 @@ data class DefinitionDescriptor(
     val secondaryTypes: Set<TypeName>,
     val constructorParams: List<ParamDescriptor>
 ) {
-    enum class Kind {
-        FACTORY, SINGLE
-    }
+    enum class Kind { FACTORY, SINGLE }
 }

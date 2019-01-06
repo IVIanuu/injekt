@@ -33,5 +33,5 @@ fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T
     LambdaProvider(provider)
 
 private class LambdaProvider<T>(private val func: (ParametersDefinition?) -> T) : Provider<T> {
-    override fun get(parameters: ParametersDefinition?) = func(parameters)
+    override fun get(parameters: ParametersDefinition?): T = func(parameters)
 }

@@ -56,7 +56,7 @@ fun module(
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: ModuleDefinition
-) = Module(name, scopeId, createOnStart, override, definition)
+): Module = Module(name, scopeId, createOnStart, override, definition)
 
 /**
  * Provides a unscoped dependency which will be recreated on each request
@@ -66,7 +66,7 @@ inline fun <reified T : Any> ModuleContext.factory(
     scopeId: String? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = factory(T::class, name, scopeId, override, definition)
+): BindingContext<T> = factory(T::class, name, scopeId, override, definition)
 
 /**
  * Provides a unscoped dependency which will be recreated on each request
@@ -77,7 +77,7 @@ fun <T : Any> ModuleContext.factory(
     scopeId: String? = null,
     override: Boolean = false,
     definition: Definition<T>
-) = declare(
+): BindingContext<T> = declare(
     type = type,
     name = name,
     kind = BeanDefinition.Kind.FACTORY,
@@ -96,7 +96,7 @@ inline fun <reified T : Any> ModuleContext.single(
     override: Boolean = false,
     createOnStart: Boolean = false,
     noinline definition: Definition<T>
-) = single(T::class, name, scopeId, override, createOnStart, definition)
+): BindingContext<T> = single(T::class, name, scopeId, override, createOnStart, definition)
 
 /**
  * Provides scoped dependency which will be created once for each component
@@ -108,7 +108,7 @@ fun <T : Any> ModuleContext.single(
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: Definition<T>
-) = declare(
+): BindingContext<T> = declare(
     type = type,
     name = name,
     kind = BeanDefinition.Kind.SINGLE,
@@ -128,7 +128,7 @@ inline fun <reified T : Any> ModuleContext.declare(
     override: Boolean = false,
     createOnStart: Boolean = false,
     noinline definition: Definition<T>
-) = declare(T::class, name, kind, scopeId, override, createOnStart, definition)
+): BindingContext<T> = declare(T::class, name, kind, scopeId, override, createOnStart, definition)
 
 /**
  * Adds a [BeanDefinition] for the provided parameters
@@ -141,7 +141,7 @@ fun <T : Any> ModuleContext.declare(
     override: Boolean = false,
     createOnStart: Boolean = false,
     definition: Definition<T>
-) = declare(
+): BindingContext<T> = declare(
     BeanDefinition.create(type, name, kind, definition).also {
         it.scopeId = scopeId
         it.createOnStart = createOnStart
@@ -175,4 +175,4 @@ fun ModuleContext.module(
 inline fun <reified T : Any, reified S : T> ModuleContext.bind(
     bindingName: String? = null,
     existingName: String? = null
-) = factory<T>(bindingName) { get<S>(existingName) }
+): BindingContext<T> = factory(bindingName) { get<S>(existingName) }

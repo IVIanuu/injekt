@@ -69,7 +69,7 @@ fun component(
     name: String? = null,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition
-) = Component(scopeId, name)
+): Component = Component(scopeId, name)
     .apply(definition)
     .apply {
         if (createEagerInstances) {
@@ -105,7 +105,7 @@ fun <T : Any> Component.addInstance(instance: T) {
 inline fun <reified T : Any> Component.get(
     name: String? = null,
     noinline parameters: ParametersDefinition? = null
-) = get(T::class, name, parameters)
+): T = get(T::class, name, parameters)
 
 /**
  * Lazily returns a instance of [T] matching the [name] and [parameters]
@@ -113,7 +113,7 @@ inline fun <reified T : Any> Component.get(
 inline fun <reified T : Any> Component.inject(
     name: String? = null,
     noinline parameters: ParametersDefinition? = null
-) = inject(T::class, name, parameters)
+): Lazy<T> = inject(T::class, name, parameters)
 
 /**
  * Lazily returns a instance of [T] matching the [name] and [parameters]
@@ -122,7 +122,7 @@ fun <T : Any> Component.inject(
     type: KClass<T>,
     name: String? = null,
     parameters: ParametersDefinition? = null
-) = lazy { get(type, name, parameters) }
+): Lazy<T> = lazy { get(type, name, parameters) }
 
 /**
  * Returns a [Provider] for [T] and [name]
@@ -131,7 +131,7 @@ fun <T : Any> Component.inject(
 inline fun <reified T : Any> Component.provider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-) = provider(T::class, name, defaultParameters)
+): Provider<T> = provider(T::class, name, defaultParameters)
 
 /**
  * Returns a [Provider] for [type] and [name]
@@ -141,7 +141,7 @@ fun <T : Any> Component.provider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-) = provider { parameters: ParametersDefinition? ->
+): Provider<T> = provider { parameters: ParametersDefinition? ->
     get(
         type,
         name,
@@ -156,7 +156,7 @@ fun <T : Any> Component.provider(
 inline fun <reified T : Any> Component.injectProvider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-) = injectProvider(T::class, name, defaultParameters)
+): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
 
 /**
  * Returns a [Provider] for [type] and [name]
@@ -166,7 +166,7 @@ fun <T : Any> Component.injectProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-) = lazy {
+): Lazy<Provider<T>> = lazy {
     provider { parameters: ParametersDefinition? ->
         get(
             type,

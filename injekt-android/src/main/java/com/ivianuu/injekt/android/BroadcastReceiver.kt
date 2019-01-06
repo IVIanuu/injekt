@@ -18,7 +18,12 @@ package com.ivianuu.injekt.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.addInstance
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.components
 
 const val RECEIVER_SCOPE = "receiver_scope"
 
@@ -32,7 +37,7 @@ fun <T : BroadcastReceiver> receiverComponent(
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull(context)?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
@@ -41,11 +46,11 @@ fun <T : BroadcastReceiver> receiverComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun BroadcastReceiver.parentComponentOrNull(context: Context) =
+fun BroadcastReceiver.parentComponentOrNull(context: Context): Component? =
     (context.applicationContext as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
  */
-fun BroadcastReceiver.parentComponent(context: Context) =
+fun BroadcastReceiver.parentComponent(context: Context): Component =
     parentComponentOrNull(context) ?: error("No parent found for $this")

@@ -18,8 +18,24 @@ package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.annotations.*
-import com.ivianuu.processingx.*
+import com.ivianuu.injekt.annotations.Factory
+import com.ivianuu.injekt.annotations.Module
+import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Param
+import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.processingx.ProcessingEnvHolder
+import com.ivianuu.processingx.ProcessingStep
+import com.ivianuu.processingx.elementUtils
+import com.ivianuu.processingx.get
+import com.ivianuu.processingx.getAnnotationMirror
+import com.ivianuu.processingx.getAnnotationMirrorOrNull
+import com.ivianuu.processingx.getAsTypeList
+import com.ivianuu.processingx.getOrNull
+import com.ivianuu.processingx.getPackage
+import com.ivianuu.processingx.hasAnnotation
+import com.ivianuu.processingx.messager
+import com.ivianuu.processingx.typeUtils
+import com.ivianuu.processingx.write
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
@@ -33,7 +49,7 @@ import javax.tools.Diagnostic
 class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment) : ProcessingStep,
     ProcessingEnvHolder {
 
-    override fun annotations() = setOf(
+    override fun annotations(): Set<Class<out Annotation>> = setOf(
         Factory::class.java,
         Name::class.java,
         Module::class.java,

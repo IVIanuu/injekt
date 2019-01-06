@@ -17,12 +17,13 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.processingx.ProcessingStep
 import com.ivianuu.processingx.StepProcessor
 import javax.annotation.processing.Processor
 
 @AutoService(Processor::class)
 class InjektProcessor : StepProcessor() {
 
-    override fun initSteps() = setOf(AutoModuleProcessingStep(processingEnv))
+    override fun initSteps(): Set<ProcessingStep> = setOf(AutoModuleProcessingStep(processingEnv))
 
 }

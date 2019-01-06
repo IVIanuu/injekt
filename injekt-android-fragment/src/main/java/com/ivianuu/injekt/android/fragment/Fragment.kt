@@ -17,7 +17,12 @@
 package com.ivianuu.injekt.android.fragment
 
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.addInstance
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.components
 
 const val FRAGMENT_SCOPE = "fragment_scope"
 const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
@@ -31,7 +36,7 @@ fun <T : Fragment> fragmentComponent(
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
@@ -59,4 +64,5 @@ fun Fragment.parentComponentOrNull(): Component? {
 /**
  * Returns the parent [Component] or throws
  */
-fun Fragment.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
+fun Fragment.parentComponent(): Component =
+    parentComponentOrNull() ?: error("No parent found for $this")

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.ModuleContext
 import com.ivianuu.injekt.single
 
@@ -31,6 +32,6 @@ fun ModuleContext.sharedPreferences(
     scopeId: String? = null,
     override: Boolean = false,
     createOnStart: Boolean = false
-) = single(name, scopeId, override, createOnStart) {
+): BindingContext<SharedPreferences> = single(name, scopeId, override, createOnStart) {
     context().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
 }

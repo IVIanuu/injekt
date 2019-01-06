@@ -21,7 +21,5 @@ class ParamDescriptor(
     val name: String?,
     val paramIndex: Int
 ) {
-    enum class Kind {
-        VALUE, LAZY, PROVIDER
-    }
+    enum class Kind { VALUE, LAZY, PROVIDER }
 }

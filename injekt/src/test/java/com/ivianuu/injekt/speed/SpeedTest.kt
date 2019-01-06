@@ -37,10 +37,10 @@ class SpeedTest {
         println("Speed test completed -> startup: $startup, injection time: ${testDurations.median().format()}")
     }
 
-    private fun List<Double>.median() = sorted()
+    private fun List<Double>.median(): Double = sorted()
         .let { (it[it.size / 2] + it[(it.size - 1) / 2]) / 2 }
 
-    private fun Double?.format() = String.format("%.2f ms", this)
+    private fun Double?.format(): String = String.format("%.2f ms", this)
 
     private companion object {
         private const val ROUNDS = 100

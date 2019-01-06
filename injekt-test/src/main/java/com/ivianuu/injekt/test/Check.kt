@@ -37,7 +37,7 @@ fun Component.check() {
         }
 }
 
-fun <T : Any> BeanDefinition<T>.cloneForSandbox() = copy().also {
+fun <T : Any> BeanDefinition<T>.cloneForSandbox(): BeanDefinition<T> = copy().also {
     it.kind = kind
     it.override = true
     it.createOnStart = createOnStart

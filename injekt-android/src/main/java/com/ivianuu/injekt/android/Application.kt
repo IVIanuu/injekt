@@ -18,7 +18,17 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.addInstance
+import com.ivianuu.injekt.bind
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
+import com.ivianuu.injekt.single
 
 const val APPLICATION_SCOPE = "application_scope"
 
@@ -31,7 +41,7 @@ fun <T : Application> T.applicationComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name, createEagerInstances) {
     addInstance(instance)
     modules(applicationModule(instance))
     definition?.invoke(this)
@@ -43,10 +53,10 @@ fun <T : Application> T.applicationComponent(
 fun <T : Application> applicationModule(
     instance: T,
     name: String? = "ApplicationModule"
-) = module(name) {
+): Module = module(name) {
     single { instance as Application } bind Context::class
 }
 
-fun DefinitionContext.application() = get<Application>()
+fun DefinitionContext.application(): Application = get<Application>()
 
-fun DefinitionContext.context() = get<Context>()
+fun DefinitionContext.context(): Context = get<Context>()

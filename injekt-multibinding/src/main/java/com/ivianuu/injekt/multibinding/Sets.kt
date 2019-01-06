@@ -17,7 +17,16 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ModuleContext
+import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.getOrSet
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -39,7 +48,7 @@ fun ModuleContext.setBinding(setName: String) {
 /**
  * Binds this [BeanDefinition] into a [Set] named [setName]
  */
-infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String) = apply {
+infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> = apply {
     definition.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     moduleContext.factory(name = setName, override = true) {
@@ -58,7 +67,7 @@ infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String) = apply {
 inline fun <reified T : Any> ModuleContext.bindIntoSet(
     setName: String,
     implementationName: String? = null
-) = bindIntoSet(T::class, setName, implementationName)
+): BindingContext<T> = bindIntoSet(T::class, setName, implementationName)
 
 /**
  * Binds a already existing [BeanDefinition] into a [Set] named [setName]
@@ -67,7 +76,7 @@ fun <T : Any> ModuleContext.bindIntoSet(
     implementationType: KClass<T>,
     setName: String,
     implementationName: String? = null
-) =
+): BindingContext<T> =
     factory(implementationType, UUID.randomUUID().toString()) {
         get(implementationType, implementationName)
     } bindIntoSet setName
@@ -75,13 +84,16 @@ fun <T : Any> ModuleContext.bindIntoSet(
 /**
  * Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.getSet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> Component.getSet(name: String, parameters: ParametersDefinition? = null): Set<T> =
     get<MultiBindingSet<T>>(name).toSet(parameters)
 
 /**
  * Returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.getLazySet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> Component.getLazySet(
+    name: String,
+    parameters: ParametersDefinition? = null
+): Set<Lazy<T>> =
     get<MultiBindingSet<T>>(name).toLazySet(parameters)
 
 /**
@@ -90,19 +102,25 @@ fun <T : Any> Component.getLazySet(name: String, parameters: ParametersDefinitio
 fun <T : Any> Component.getProviderSet(
     name: String,
     defaultParameters: ParametersDefinition? = null
-) =
+): Set<Provider<T>> =
     get<MultiBindingSet<T>>(name).toProviderSet(defaultParameters)
 
 /**
  * Lazily Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.injectSet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> Component.injectSet(
+    name: String,
+    parameters: ParametersDefinition? = null
+): Lazy<Set<T>> =
     lazy { getSet<T>(name, parameters) }
 
 /**
  * LazilyReturns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.injectLazySet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> Component.injectLazySet(
+    name: String,
+    parameters: ParametersDefinition? = null
+): Lazy<Set<Lazy<T>>> =
     lazy { getLazySet<T>(name, parameters) }
 
 /**
@@ -111,35 +129,44 @@ fun <T : Any> Component.injectLazySet(name: String, parameters: ParametersDefini
 fun <T : Any> Component.injectProviderSet(
     name: String,
     defaultParameters: ParametersDefinition? = null
-) =
+): Lazy<Set<Provider<T>>> =
     lazy { getProviderSet<T>(name, defaultParameters) }
 
 /** Calls trough [Component.getSet] */
-fun <T : Any> InjektTrait.getSet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> InjektTrait.getSet(name: String, parameters: ParametersDefinition? = null): Set<T> =
     component.getSet<T>(name, parameters)
 
 /** Calls trough [Component.getLazySet] */
-fun <T : Any> InjektTrait.getLazySet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> InjektTrait.getLazySet(
+    name: String,
+    parameters: ParametersDefinition? = null
+): Set<Lazy<T>> =
     component.getLazySet<T>(name, parameters)
 
 /** Calls trough [Component.getProviderSet] */
 fun <T : Any> InjektTrait.getProviderSet(
     name: String,
     defaultParameters: ParametersDefinition? = null
-) =
+): Set<Provider<T>> =
     component.getProviderSet<T>(name, defaultParameters)
 
 /** Calls trough [Component.injectSet] */
-fun <T : Any> InjektTrait.injectSet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> InjektTrait.injectSet(
+    name: String,
+    parameters: ParametersDefinition? = null
+): Lazy<Set<T>> =
     lazy { component.getSet<T>(name, parameters) }
 
 /** Calls trough [Component.injectLazySet] */
-fun <T : Any> InjektTrait.injectLazySet(name: String, parameters: ParametersDefinition? = null) =
+fun <T : Any> InjektTrait.injectLazySet(
+    name: String,
+    parameters: ParametersDefinition? = null
+): Lazy<Set<Lazy<T>>> =
     lazy { component.getLazySet<T>(name, parameters) }
 
 /** Calls trough [Component.injectProviderSet] */
 fun <T : Any> InjektTrait.injectProviderSet(
     name: String,
     defaultParameters: ParametersDefinition? = null
-) =
-    lazy { component.getLazySet<T>(name, defaultParameters) }
+): Lazy<Set<Provider<T>>> =
+    lazy { component.getProviderSet<T>(name, defaultParameters) }

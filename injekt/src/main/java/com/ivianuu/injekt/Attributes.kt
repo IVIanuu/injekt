@@ -24,7 +24,7 @@ data class Attributes(private val data: MutableMap<String, Any> = hashMapOf()) {
     /**
      * Whether or not contains a value for [key]
      */
-    fun contains(key: String) = data.contains(key)
+    fun contains(key: String): Boolean = data.contains(key)
 
     /**
      * Sets the value for [key] to [value]
@@ -37,7 +37,7 @@ data class Attributes(private val data: MutableMap<String, Any> = hashMapOf()) {
      * Returns the value for [key]
      */
     @Suppress("UNCHECKED_CAST")
-    operator fun <T> get(key: String) = data[key] as? T
+    operator fun <T> get(key: String): T? = data[key] as? T
 
 }
 

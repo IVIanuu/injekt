@@ -17,7 +17,12 @@
 package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.addInstance
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.components
 
 const val CONTENT_PROVIDER_SCOPE = "content_provider_scope"
 
@@ -30,7 +35,7 @@ fun <T : ContentProvider> contentProviderComponent(
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
@@ -39,11 +44,11 @@ fun <T : ContentProvider> contentProviderComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun ContentProvider.parentComponentOrNull() =
+fun ContentProvider.parentComponentOrNull(): Component? =
     (context!!.applicationContext as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
  */
-fun ContentProvider.parentComponent() =
+fun ContentProvider.parentComponent(): Component =
     parentComponentOrNull() ?: error("No parent found for $this")

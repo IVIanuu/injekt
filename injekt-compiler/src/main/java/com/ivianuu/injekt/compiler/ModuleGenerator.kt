@@ -65,7 +65,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
         return imports
     }
 
-    private fun module() = PropertySpec.builder(module.moduleName, Module::class)
+    private fun module(): PropertySpec = PropertySpec.builder(module.moduleName, Module::class)
         .apply {
             if (module.internal) {
                 addModifiers(KModifier.INTERNAL)

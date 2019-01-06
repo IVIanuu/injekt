@@ -23,17 +23,17 @@ class Parameters(vararg values: Any?) {
     /**
      * Number of contained elements
      */
-    val size get() = values.size
+    val size: Int get() = values.size
 
     /**
      * Returns the element [i]
      */
-    operator fun <T> get(i: Int) = values[i] as T
+    operator fun <T> get(i: Int): T = values[i] as T
 
     /**
      * Returns the first element of [T]
      */
-    inline fun <reified T> get() = values.first { it is T }
+    inline fun <reified T> get(): T = values.first { it is T } as T
 
 }
 
@@ -45,12 +45,12 @@ typealias ParametersDefinition = () -> Parameters
 /**
  * Returns new [Parameters] which contains all [values]
  */
-fun parametersOf(vararg values: Any?) = Parameters(*values)
+fun parametersOf(vararg values: Any?): Parameters = Parameters(*values)
 
 /**
  * Returns new [Parameters] which contains all [values]
  */
-fun parametersOf(values: Iterable<Any?>) =
+fun parametersOf(values: Iterable<Any?>): Parameters =
     Parameters(*values.toList().toTypedArray())
 
 private val emptyParameters = parametersOf()
@@ -58,4 +58,4 @@ private val emptyParameters = parametersOf()
 /**
  * Returns empty [Parameters]
  */
-fun emptyParameters() = emptyParameters
+fun emptyParameters(): Parameters = emptyParameters

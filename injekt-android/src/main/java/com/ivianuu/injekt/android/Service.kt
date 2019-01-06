@@ -17,7 +17,12 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDefinition
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.addInstance
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.components
 
 const val SERVICE_SCOPE = "service_scope"
 
@@ -30,7 +35,7 @@ fun <T : Service> serviceComponent(
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
@@ -39,9 +44,10 @@ fun <T : Service> serviceComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun Service.parentComponentOrNull() = (application as? InjektTrait)?.component
+fun Service.parentComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
  */
-fun Service.parentComponent() = parentComponentOrNull() ?: error("No parent found for $this")
+fun Service.parentComponent(): Component =
+    parentComponentOrNull() ?: error("No parent found for $this")

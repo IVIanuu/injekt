@@ -30,17 +30,17 @@ data class MultiBindingMap<K : Any, T : Any>(val map: Map<K, BeanDefinition<T>>)
 /**
  * Returns a [Map] of [K] and [T]s
  */
-fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(parameters: ParametersDefinition? = null) =
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(parameters: ParametersDefinition? = null): Map<K, T> =
     map.mapValues { it.value.resolveInstance(parameters) }
 
 /**
  * Returns a [Map] of [K] and [Lazy]s of [T]
  */
-fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDefinition? = null) =
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDefinition? = null): Map<K, Lazy<T>> =
     map.mapValues { lazy { it.value.resolveInstance(parameters = parameters) } }
 
 /**
  * Returns a [Map] of [K] and [Provider]s of [T]
  */
-fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParameters: ParametersDefinition? = null) =
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParameters: ParametersDefinition? = null): Map<K, Provider<T>> =
     map.mapValues { dec -> provider { dec.value.resolveInstance(it ?: defaultParameters) } }

@@ -72,7 +72,7 @@ class BeanRegistry internal constructor(val component: Component) {
     /**
      * Whether or not contains [type] and [name]
      */
-    fun containsDefinition(type: KClass<*>, name: String? = null) =
+    fun containsDefinition(type: KClass<*>, name: String? = null): Boolean =
         findDefinition(type, name) != null
 
     /**

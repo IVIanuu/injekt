@@ -27,20 +27,20 @@ class DefinitionContext(val component: Component)
 inline fun <reified T : Any> DefinitionContext.get(
     name: String? = null,
     noinline parameters: ParametersDefinition? = null
-) = get(T::class, name, parameters)
+): T = get(T::class, name, parameters)
 
 /** Calls trough [Component.get] */
 fun <T : Any> DefinitionContext.get(
     type: KClass<T>,
     name: String? = null,
     parameters: ParametersDefinition? = null
-) = component.get(type, name, parameters)
+): T = component.get(type, name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T : Any> DefinitionContext.inject(
     name: String? = null,
     noinline parameters: ParametersDefinition? = null
-) = inject(T::class, name, parameters)
+): Lazy<T> = inject(T::class, name, parameters)
 
 /** Calls trough [Component.inject] */
 fun <T : Any> DefinitionContext.inject(
@@ -53,24 +53,24 @@ fun <T : Any> DefinitionContext.inject(
 inline fun <reified T : Any> DefinitionContext.provider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-) = provider(T::class, name, defaultParameters)
+): Provider<T> = provider(T::class, name, defaultParameters)
 
 /** Calls trough [Component.provider] */
 fun <T : Any> DefinitionContext.provider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-) = component.provider(type, name, defaultParameters)
+): Provider<T> = component.provider(type, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T : Any> DefinitionContext.lazyProvider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-) = lazyProvider(T::class, name, defaultParameters)
+): Lazy<Provider<T>> = lazyProvider(T::class, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 fun <T : Any> DefinitionContext.lazyProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-) = component.injectProvider(type, name, defaultParameters)
+): Lazy<Provider<T>> = component.injectProvider(type, name, defaultParameters)
