@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.instanceModule
+
 
 /**
  * Returns a [Component] with convenient configurations
@@ -32,7 +32,7 @@ fun <T : BroadcastReceiver> receiverComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull(context)?.let { components(it) }
-    modules(instanceModule(instance), receiverModule(instance))
+    addInstance(instance)
     definition?.invoke(this)
 }
 
@@ -47,13 +47,3 @@ fun BroadcastReceiver.parentComponentOrNull(context: Context) =
  */
 fun BroadcastReceiver.parentComponent(context: Context) =
     parentComponentOrNull(context) ?: error("No parent found for $this")
-
-/**
- * Returns a [Module] with convenient definitions
- */
-fun <T : BroadcastReceiver> receiverModule(
-    instance: T,
-    name: String? = "ReceiverModule"
-) = module(name) {
-    factory { instance as BroadcastReceiver }
-}

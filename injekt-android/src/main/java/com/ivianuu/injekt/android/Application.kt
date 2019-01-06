@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.instanceModule
+
 
 /**
  * Returns a [Component] with convenient configurations
@@ -30,7 +30,8 @@ fun <T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
-    modules(instanceModule(instance), applicationModule(instance))
+    addInstance(instance)
+    modules(applicationModule(instance))
     definition?.invoke(this)
 }
 
@@ -41,7 +42,7 @@ fun <T : Application> applicationModule(
     instance: T,
     name: String? = "ApplicationModule"
 ) = module(name) {
-    factory { instance as Application } bind Context::class
+    single { instance as Application } bind Context::class
 }
 
 fun DefinitionContext.application() = get<Application>()

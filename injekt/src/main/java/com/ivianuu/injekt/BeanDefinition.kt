@@ -75,6 +75,18 @@ data class BeanDefinition<T : Any> private constructor(
 
     companion object {
 
+        fun <T : Any> createFactory(
+            type: KClass<T>,
+            name: String? = null,
+            definition: Definition<T>
+        ) = create(type, name, Kind.FACTORY, definition)
+
+        fun <T : Any> createSingle(
+            type: KClass<T>,
+            name: String? = null,
+            definition: Definition<T>
+        ) = create(type, name, Kind.SINGLE, definition)
+
         fun <T : Any> create(
             type: KClass<T>,
             name: String? = null,

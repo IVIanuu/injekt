@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android
 
 import android.app.Activity
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.instanceModule
 
 /**
  * Returns a [Component] with convenient configurations
@@ -29,8 +28,8 @@ fun <T : Activity> activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
+    addInstance(instance)
     instance.parentComponentOrNull()?.let { components(it) }
-    modules(instanceModule(instance))
     definition?.invoke(this)
 }
 

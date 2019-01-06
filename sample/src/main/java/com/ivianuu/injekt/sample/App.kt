@@ -57,7 +57,5 @@ const val DEPS = "deps"
 class AppDependency(val app: App, val context: Context) : Dependency
 
 val appModule = module {
-    single { AppDependency(get(), get()) } bindIntoMap (DEPS to AppDependency::class) bind setOf(
-        Context::class
-    )
+    single { AppDependency(get(), get()) } bindIntoMap (DEPS to AppDependency::class)
 }

@@ -18,7 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Service
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.instanceModule
+
 
 /**
  * Returns a [Component] with convenient configurations
@@ -30,7 +30,7 @@ fun <T : Service> serviceComponent(
     definition: ComponentDefinition? = null
 ) = component(name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
-    modules(instanceModule(instance))
+    addInstance(instance)
     definition?.invoke(this)
 }
 

@@ -84,6 +84,18 @@ fun Component.components(vararg components: Component) {
 }
 
 /**
+ * Adds a [BeanDefinition] for the [instance]
+ */
+fun <T : Any> Component.addInstance(instance: T) {
+    beanRegistry.saveDefinition(
+        BeanDefinition.createSingle(
+            instance::class as KClass<T>,
+            null
+        ) { instance }
+    )
+}
+
+/**
  * Returns a instance of [T] matching the [name] and [params]
  */
 inline fun <reified T : Any> Component.get(
