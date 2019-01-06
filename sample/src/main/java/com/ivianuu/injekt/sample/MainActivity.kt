@@ -2,12 +2,13 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.GenericLifecycleObserver
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
 import kotlin.reflect.KClass
+
+const val ACTIVITY_SCOPE = "activity_scope"
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
@@ -17,21 +18,19 @@ class MainActivity : AppCompatActivity(), InjektTrait {
         }
     }
 
+    private val aDep by inject<ADep>()
+
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
 
     private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        lifecycle.addObserver(GenericLifecycleObserver { owner, event ->
-            d { "on event $event owner to string $owner" }
-        })
-
         d { "Injected app dependency $appDependency" }
         d { "Injected main activity dependency $mainActivityDependency" }
         d { "All dependencies $dependencies" }
+
+        super.onCreate(savedInstanceState)
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()

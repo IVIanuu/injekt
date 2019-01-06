@@ -20,6 +20,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
 
+const val RECEIVER_SCOPE = "receiver_scope"
 
 /**
  * Returns a [Component] with convenient configurations
@@ -27,10 +28,11 @@ import com.ivianuu.injekt.*
 fun <T : BroadcastReceiver> receiverComponent(
     instance: T,
     context: Context,
+    scopeId: String = RECEIVER_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull(context)?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)

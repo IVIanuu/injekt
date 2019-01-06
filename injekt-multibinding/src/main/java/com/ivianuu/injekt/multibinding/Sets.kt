@@ -27,7 +27,7 @@ import kotlin.reflect.KClass
 const val KEY_SET_BINDINGS = "setBindings"
 
 /**
- * Declares a empty set binding with the name [setName]
+ * Declares a empty set binding with the scopeId [setName]
  * This is useful for retrieving a [MultiBindingSet] even if no [BeanDefinition] was bound into it
  */
 fun ModuleContext.setBinding(setName: String) {

@@ -19,16 +19,18 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import com.ivianuu.injekt.*
 
+const val SERVICE_SCOPE = "service_scope"
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Service> serviceComponent(
     instance: T,
+    scopeId: String = SERVICE_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)

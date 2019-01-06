@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Component
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 
@@ -58,5 +58,4 @@ fun <T : Any> BeanDefinition<T>.cloneForMock(type: KClass<T>) = copy().also {
     it.attributes = attributes
     it.definition = { mock(type.java) }
     it.createInstanceHolder()
-    it.moduleContext = moduleContext
 }

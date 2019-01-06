@@ -23,6 +23,10 @@ abstract class Instance<T : Any>(val beanDefinition: BeanDefinition<T>) {
     abstract fun get(params: ParamsDefinition? = null): T
 
     protected open fun create(params: ParamsDefinition?): T {
+        if (beanDefinition.scopeId != null && beanDefinition.scopeId != component.scopeId) {
+            error("Component scope ${component.name} does not match definition scope ${beanDefinition.scopeId}")
+        }
+
         return try {
             beanDefinition.definition.invoke(
                 DefinitionContext(component),

@@ -11,6 +11,11 @@ data class BeanDefinition<T : Any> private constructor(
 ) {
 
     /**
+     * The target scope id
+     */
+    var scopeId: String? = null
+
+    /**
      * Whether or not this definitions can override existing definitions
      */
     var override: Boolean = false
@@ -62,7 +67,7 @@ data class BeanDefinition<T : Any> private constructor(
         val nameString = name?.let { "name:'$name', " } ?: ""
         val typeString = "type:'${type.java.name}'"
         val attributesString = "attributes: '$attributes'"
-        val optionsString = "override:$override,createOnStart:$createOnStart"
+        val optionsString = "scopeId:$scopeId,override:$override,createOnStart:$createOnStart"
         return "$kindString[$nameString$typeString$attributesString$optionsString]"
     }
 
@@ -102,3 +107,13 @@ data class BeanDefinition<T : Any> private constructor(
  * Defines a [BeanDefinition]
  */
 typealias Definition<T> = DefinitionContext.(params: Parameters) -> T
+
+fun <T : Any> BeanDefinition<T>.clone() = copy().also {
+    it.kind = kind
+    it.definition = definition
+    it.scopeId = scopeId
+    it.override = override
+    it.createOnStart = createOnStart
+    it.attributes = attributes
+    it.createInstanceHolder()
+}

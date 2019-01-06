@@ -19,15 +19,18 @@ package com.ivianuu.injekt.android
 import android.app.Activity
 import com.ivianuu.injekt.*
 
+const val ACTIVITY_SCOPE = "activity_scope"
+
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Activity> activityComponent(
     instance: T,
+    scopeId: String = ACTIVITY_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(scopeId, name, createEagerInstances) {
     addInstance(instance)
     instance.parentComponentOrNull()?.let { components(it) }
     definition?.invoke(this)

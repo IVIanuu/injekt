@@ -19,16 +19,19 @@ package com.ivianuu.injekt.android.fragment
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 
+const val FRAGMENT_SCOPE = "fragment_scope"
+const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> fragmentComponent(
     instance: T,
+    scopeId: String = FRAGMENT_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(scopeId, name, createEagerInstances) {
     instance.parentComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)

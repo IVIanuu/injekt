@@ -6,7 +6,10 @@ import kotlin.reflect.KClass
 /**
  * The actual dependency container which provides definitions
  */
-class Component internal constructor(val name: String? = null) {
+class Component internal constructor(
+    val scopeId: String,
+    val name: String?
+) {
 
     val beanRegistry = BeanRegistry(this)
 
@@ -29,7 +32,7 @@ class Component internal constructor(val name: String? = null) {
      * Instantiates all eager instances
      */
     fun createEagerInstances() {
-        logger?.info("$name Create start up instances")
+        logger?.info("$scopeId Create start up instances")
         beanRegistry.getEagerInstances().forEach { it.resolveInstance() }
     }
 
@@ -62,10 +65,11 @@ typealias ComponentDefinition = Component.() -> Unit
  * Returns a new [Component] and applies the [definition]
  */
 fun component(
+    scopeId: String,
     name: String? = null,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition
-) = Component(name)
+) = Component(scopeId, name)
     .apply(definition)
     .apply {
         if (createEagerInstances) {

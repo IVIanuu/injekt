@@ -47,7 +47,9 @@ dependencies {
     implementation(project(":injekt"))
     implementation(project(":injekt-android"))
     implementation(project(":injekt-android-fragment"))
+    implementation(project(":injekt-annotations"))
     implementation(project(":injekt-common"))
+    kapt(project(":injekt-compiler"))
     implementation(project(":injekt-multibinding"))
     testImplementation(project(":injekt-test"))
 }

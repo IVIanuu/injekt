@@ -21,9 +21,13 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.annotations.Module
+import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
 import kotlin.reflect.KClass
+
+@Module private object AutoModule
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -32,7 +36,7 @@ class App : Application(), InjektTrait {
 
     override val component by lazy {
         applicationComponent(this) {
-            modules(appModule)
+            modules(appModule, autoModule)
         }
     }
 
@@ -53,6 +57,9 @@ class App : Application(), InjektTrait {
 }
 
 const val DEPS = "deps"
+
+@Single(scopeId = ACTIVITY_SCOPE)
+class ADep
 
 class AppDependency(val app: App, val context: Context) : Dependency
 

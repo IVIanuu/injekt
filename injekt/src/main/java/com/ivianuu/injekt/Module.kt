@@ -4,7 +4,8 @@ package com.ivianuu.injekt
  * A module is the container for definitions
  */
 class Module internal constructor(
-    val name: String? = null,
+    val name: String?,
+    val scopeId: String?,
     val createOnStart: Boolean,
     val override: Boolean,
     val definition: ModuleDefinition

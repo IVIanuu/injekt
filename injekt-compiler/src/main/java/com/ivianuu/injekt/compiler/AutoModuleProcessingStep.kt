@@ -71,12 +71,17 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         }
 
         val internal = annotation["internal"].value as Boolean
+        var scopeId: String? = annotation["scopeId"].value as String
+        if (scopeId!!.isEmpty()) {
+            scopeId = null
+        }
+
         val override = annotation["override"].value as Boolean
-        val createOnStart = annotation.getOrNull("name")?.value as? Boolean ?: false
+        val createOnStart = annotation.getOrNull("scopeId")?.value as? Boolean ?: false
 
         val module = ModuleDescriptor(
             packageName, moduleName, internal,
-            override, createOnStart, definitions
+            scopeId, override, createOnStart, definitions
         )
 
         ModuleGenerator(module).generate().write(processingEnv)
@@ -101,7 +106,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
             name = null
         }
 
-        var scope: String? = annotation["scope"].value as String
+        var scope: String? = annotation["scopeId"].value as String
         if (scope!!.isEmpty()) {
             scope = null
         }
@@ -134,7 +139,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                     }
 
                     val getName =
-                        it.getAnnotationMirrorOrNull<Name>()?.get("name")?.value as? String
+                        it.getAnnotationMirrorOrNull<Name>()?.get("scopeId")?.value as? String
 
                     if (getName != null && getName.isEmpty()) {
                         messager.printMessage(

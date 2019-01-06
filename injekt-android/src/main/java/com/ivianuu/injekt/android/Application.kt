@@ -20,16 +20,18 @@ import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
 
+const val APPLICATION_SCOPE = "application_scope"
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Application> T.applicationComponent(
     instance: T,
+    scopeId: String = APPLICATION_SCOPE,
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-) = component(name, createEagerInstances) {
+) = component(scopeId, name, createEagerInstances) {
     addInstance(instance)
     modules(applicationModule(instance))
     definition?.invoke(this)

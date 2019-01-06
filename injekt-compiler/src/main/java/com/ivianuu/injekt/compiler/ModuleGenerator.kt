@@ -76,11 +76,12 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                 .apply {
                     val args = mapOf(
                         "name" to module.moduleName,
+                        "scopeId" to module.scopeId,
                         "override" to module.override,
                         "createOnStart" to module.createOnStart
                     )
 
-                    addNamed("module(%name:S, %override:L, %createOnStart:L)", args)
+                    addNamed("module(%name:S, %scopeId:S, %override:L, %createOnStart:L)", args)
                 }
                 .beginControlFlow(" {")
                 .apply { module.definitions.forEach { add(definition(it)) } }
@@ -102,7 +103,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
 
             val definitionArgs = mutableMapOf(
                 "name" to definition.name,
-                "scope" to definition.scope,
+                "scopeId" to definition.scope,
                 "override" to definition.override
             )
 
@@ -112,7 +113,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                 definitionArgs["createOnStart"] = definition.createOnStart
             }
 
-            val definitionStatement = "%name:S, %scope:S, %override:L" + if (isSingle) {
+            val definitionStatement = "%name:S, %scopeId:S, %override:L" + if (isSingle) {
                 ", %createOnStart:L"
             } else {
                 ""

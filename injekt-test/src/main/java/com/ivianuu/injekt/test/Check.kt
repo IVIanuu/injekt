@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Component
 
 /**
  * Checks if all [BeanDefinition]s can be resolved
@@ -44,5 +44,4 @@ fun <T : Any> BeanDefinition<T>.cloneForSandbox() = copy().also {
     it.attributes = attributes
     it.definition = definition
     it.instance = SandboxInstance(it)
-    it.moduleContext = moduleContext
 }

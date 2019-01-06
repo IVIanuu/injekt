@@ -115,21 +115,30 @@ class BeanRegistry internal constructor(val component: Component) {
         definition: BeanDefinition<*>,
         fromComponent: Boolean
     ) {
+        var definition = definition
+
         val isOverride = definitions.remove(definition)
 
         if (isOverride && !definition.override) {
             throw OverrideException("Try to override definition $definition but was already in ${component.name}")
         }
 
+        var cloned = false
+        if (fromComponent && definition.scopeId != null && definition.scopeId == component.scopeId) {
+            definition = definition.clone()
+            cloned = true
+            logger?.info("Clone $definition due to scope match")
+        }
+
         definitions.add(definition)
 
         if (definition.name != null) {
-            definitionNames[definition.name] = definition
+            definitionNames[definition.name!!] = definition
         } else {
             definitionTypes[definition.type] = definition
         }
 
-        if (!fromComponent) {
+        if (!fromComponent || cloned) {
             definition.instance.component = component
 
             if (definition.createOnStart) {

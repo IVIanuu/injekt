@@ -25,7 +25,7 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.SOURCE)
 annotation class Single(
     val name: String = "",
-    val scope: String = "",
+    val scopeId: String = "",
     val override: Boolean = false,
     val createOnStart: Boolean = false,
     val secondaryTypes: Array<KClass<*>> = []
