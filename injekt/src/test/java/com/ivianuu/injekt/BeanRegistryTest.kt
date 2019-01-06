@@ -31,7 +31,7 @@ class BeanRegistryTest {
             factory { TestDep2(get()) }
         }
 
-        registry.loadModules(module)
+        registry.loadModules(listOf(module))
 
         assertEquals(registry.getAllDefinitions(), module.getDefinitions().toSet())
     }
@@ -49,7 +49,7 @@ class BeanRegistryTest {
             )
         }
 
-        registry.linkComponents(component)
+        registry.linkComponents(listOf(component))
 
         assertEquals(
             registry.getAllDefinitions(),

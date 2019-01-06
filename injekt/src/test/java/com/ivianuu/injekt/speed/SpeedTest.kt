@@ -18,6 +18,7 @@ package com.ivianuu.injekt.speed
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.util.measureDurationOnly
 import org.junit.Test
 

@@ -42,7 +42,7 @@ data class Attributes(private val data: MutableMap<String, Any> = hashMapOf()) {
 }
 
 /**
- * Returns the value for [key] if present or sets [defaultValue]
+ * Returns the value for [key] if present or returns and sets [defaultValue]
  */
 inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
     val value = get<T>(key)
@@ -54,4 +54,11 @@ inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
     }
 
     return value
+}
+
+/**
+ * Returns the value for [key] if present or the [defaultValue]
+ */
+inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T {
+    return get<T>(key) ?: return defaultValue()
 }
