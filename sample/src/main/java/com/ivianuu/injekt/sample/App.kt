@@ -19,6 +19,7 @@ package com.ivianuu.injekt.sample
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Module
@@ -58,9 +59,7 @@ class App : Application(), InjektTrait {
 
 const val DEPS = "deps"
 
-@Single(scopeId = ACTIVITY_SCOPE)
-class ADep
-
+@Single(scopeId = APPLICATION_SCOPE)
 class AppDependency(val app: App, val context: Context) : Dependency
 
 val appModule = module {

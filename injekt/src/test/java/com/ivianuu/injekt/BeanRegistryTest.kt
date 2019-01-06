@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
@@ -23,103 +24,103 @@ import org.junit.Test
 
 class BeanRegistryTest {
 
-    @Test
-    fun testLoadModules() {
-        val registry = component { }.beanRegistry
-        val module = module {
-            factory { TestDep1() }
-            factory { TestDep2(get()) }
-        }
-
-        registry.loadModules(listOf(module))
-
-        assertEquals(registry.getAllDefinitions(), module.getDefinitions().toSet())
-    }
-
-    @Test
-    fun testLoadComponents() {
-        val registry = component { }.beanRegistry
-
-        val component = component {
-            modules(
-                module {
-                    factory { TestDep1() }
-                    factory { TestDep2(get()) }
-                }
-            )
-        }
-
-        registry.linkComponents(listOf(component))
-
-        assertEquals(
-            registry.getAllDefinitions(),
-            component.beanRegistry.getAllDefinitions()
-        )
-    }
-
-    @Test
-    fun testSaveDefinition() {
-        val registry = component { }.beanRegistry
-        val definition =
-            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
-        assertEquals(null, registry.findDefinition(TestDep1::class))
-        registry.saveDefinition(definition)
-        assertEquals(definition, registry.findDefinition(TestDep1::class))
-    }
-
-    @Test
-    fun testAllowsValidOverride() {
-        val registry = component { }.beanRegistry
-        val definition1 =
-            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
-        val definition2 =
-            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
-                .apply { override = true }
-
-        val throwed = try {
-            registry.saveDefinition(definition1)
-            registry.saveDefinition(definition2)
-            false
-        } catch (e: OverrideException) {
-            true
-        }
-
-        assertFalse(throwed)
-    }
-
-    @Test
-    fun testThrowsOnInvalidOverride() {
-        val registry = component { }.beanRegistry
-        val definition1 =
-            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
-        val definition2 =
-            BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
-
-        val throwed = try {
-            registry.saveDefinition(definition1)
-            registry.saveDefinition(definition2)
-            false
-        } catch (e: OverrideException) {
-            true
-        }
-
-        assertTrue(throwed)
-    }
-
-    @Test
-    fun testGetEagerInstance() {
-        val module = module {
-            factory { TestDep1() }
-            single(createOnStart = true) { TestDep2(TestDep1()) }
-        }
-
-        val eagerInstances = module.getDefinitions().filter { it.createOnStart }.toSet()
-
-        val registry = component {
-            modules(module)
-        }.beanRegistry
-
-        assertEquals(eagerInstances, registry.getEagerInstances())
-    }
-
+@Test
+fun testLoadModules() {
+val registry = component { }.beanRegistry
+val module = module {
+factory { TestDep1() }
+factory { TestDep2(get()) }
 }
+
+registry.loadModules(listOf(module))
+
+assertEquals(registry.getAllDefinitions(), module.getDefinitions().toSet())
+}
+
+@Test
+fun testLoadComponents() {
+val registry = component { }.beanRegistry
+
+val component = component {
+modules(
+module {
+factory { TestDep1() }
+factory { TestDep2(get()) }
+}
+)
+}
+
+registry.linkComponents(listOf(component))
+
+assertEquals(
+registry.getAllDefinitions(),
+component.beanRegistry.getAllDefinitions()
+)
+}
+
+@Test
+fun testSaveDefinition() {
+val registry = component { }.beanRegistry
+val definition =
+BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+assertEquals(null, registry.findDefinition(TestDep1::class))
+registry.saveDefinition(definition)
+assertEquals(definition, registry.findDefinition(TestDep1::class))
+}
+
+@Test
+fun testAllowsValidOverride() {
+val registry = component { }.beanRegistry
+val definition1 =
+BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+val definition2 =
+BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+.apply { override = true }
+
+val throwed = try {
+registry.saveDefinition(definition1)
+registry.saveDefinition(definition2)
+false
+} catch (e: OverrideException) {
+true
+}
+
+assertFalse(throwed)
+}
+
+@Test
+fun testThrowsOnInvalidOverride() {
+val registry = component { }.beanRegistry
+val definition1 =
+BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+val definition2 =
+BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+
+val throwed = try {
+registry.saveDefinition(definition1)
+registry.saveDefinition(definition2)
+false
+} catch (e: OverrideException) {
+true
+}
+
+assertTrue(throwed)
+}
+
+@Test
+fun testGetEagerInstance() {
+val module = module {
+factory { TestDep1() }
+single(createOnStart = true) { TestDep2(TestDep1()) }
+}
+
+val eagerInstances = module.getDefinitions().filter { it.createOnStart }.toSet()
+
+val registry = component {
+modules(module)
+}.beanRegistry
+
+assertEquals(eagerInstances, registry.getEagerInstances())
+}
+
+}*/

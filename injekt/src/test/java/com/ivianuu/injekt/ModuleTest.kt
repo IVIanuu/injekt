@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
@@ -24,74 +25,74 @@ import org.junit.Test
 
 class ModuleTest {
 
-    @Test
-    fun testModuleConfigOverridesDefinition() {
-        val module = module(createOnStart = true, override = true) {
-            single(override = false, createOnStart = false) { TestDep1() }
-        }
-
-        val component = component { modules(module) }
-
-        val definition = component.getDefinition<TestDep1>()
-        assertTrue(module.override)
-        assertTrue(definition.override)
-
-        assertTrue(module.createOnStart)
-        assertTrue(definition.createOnStart)
-    }
-
-    @Test
-    fun testModuleConfigNotOverridesDefinitions() {
-        val module = module(createOnStart = false, override = false) {
-            single(override = true, createOnStart = true) { TestDep1() }
-        }
-
-        val component = component { modules(module) }
-
-        val definition = component.getDefinition<TestDep1>()
-        assertFalse(module.override)
-        assertTrue(definition.override)
-
-        assertFalse(module.createOnStart)
-        assertTrue(definition.createOnStart)
-    }
-
-    @Test
-    fun testAllowsValidOverride() {
-        val throwed = try {
-            component {
-                modules(
-                    module {
-                        single { TestDep1() }
-                        single(override = true) { TestDep1() }
-                    }
-                )
-            }
-            false
-        } catch (e: OverrideException) {
-            true
-        }
-
-        assertFalse(throwed)
-    }
-
-    @Test
-    fun testThrowsOnInvalidOverride() {
-        val throwed = try {
-            component {
-                modules(
-                    module {
-                        single { TestDep1() }
-                        single { TestDep1() }
-                    }
-                )
-            }
-            false
-        } catch (e: OverrideException) {
-            true
-        }
-
-        assertTrue(throwed)
-    }
-
+@Test
+fun testModuleConfigOverridesDefinition() {
+val module = module(createOnStart = true, override = true) {
+single(override = false, createOnStart = false) { TestDep1() }
 }
+
+val component = component { modules(module) }
+
+val definition = component.getDefinition<TestDep1>()
+assertTrue(module.override)
+assertTrue(definition.override)
+
+assertTrue(module.createOnStart)
+assertTrue(definition.createOnStart)
+}
+
+@Test
+fun testModuleConfigNotOverridesDefinitions() {
+val module = module(createOnStart = false, override = false) {
+single(override = true, createOnStart = true) { TestDep1() }
+}
+
+val component = component { modules(module) }
+
+val definition = component.getDefinition<TestDep1>()
+assertFalse(module.override)
+assertTrue(definition.override)
+
+assertFalse(module.createOnStart)
+assertTrue(definition.createOnStart)
+}
+
+@Test
+fun testAllowsValidOverride() {
+val throwed = try {
+component {
+modules(
+module {
+single { TestDep1() }
+single(override = true) { TestDep1() }
+}
+)
+}
+false
+} catch (e: OverrideException) {
+true
+}
+
+assertFalse(throwed)
+}
+
+@Test
+fun testThrowsOnInvalidOverride() {
+val throwed = try {
+component {
+modules(
+module {
+single { TestDep1() }
+single { TestDep1() }
+}
+)
+}
+false
+} catch (e: OverrideException) {
+true
+}
+
+assertTrue(throwed)
+}
+
+}*/

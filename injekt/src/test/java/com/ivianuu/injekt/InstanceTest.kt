@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
@@ -23,71 +24,71 @@ import org.junit.Test
 
 class InstanceTest {
 
-    @Test
-    fun testSingleCreatesOnce() {
-        val component = component {
-            modules(
-                module {
-                    single { TestDep1() }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        assertTrue(definition.instance is SingleInstance)
-        assertFalse(definition.instance.isCreated)
-
-        val value1 = definition.instance.get()
-        assertTrue(definition.instance.isCreated)
-        val value2 = definition.instance.get()
-        assertTrue(definition.instance.isCreated)
-
-        assertEquals(value1, value2)
-    }
-
-    @Test
-    fun testFactoryCreatesNew() {
-        val component = component {
-            modules(
-                module {
-                    factory { TestDep1() }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        assertTrue(definition.instance is FactoryInstance)
-        assertFalse(definition.instance.isCreated)
-
-        val value1 = definition.instance.get()
-        assertFalse(definition.instance.isCreated)
-        val value2 = definition.instance.get()
-        assertFalse(definition.instance.isCreated)
-
-        assertNotEquals(value1, value2)
-    }
-
-    @Test
-    fun testInstanceCreationFailed() {
-        val component = component {
-            modules(
-                module {
-                    factory<TestDep1> { throw error("error") }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        val throwed = try {
-            definition.instance.get()
-            false
-        } catch (e: InstanceCreationException) {
-            true
-        }
-
-        assertTrue(throwed)
-    }
+@Test
+fun testSingleCreatesOnce() {
+val component = component {
+modules(
+module {
+single { TestDep1() }
 }
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+assertTrue(definition.instance is SingleInstance)
+assertFalse(definition.instance.isCreated)
+
+val value1 = definition.instance.get()
+assertTrue(definition.instance.isCreated)
+val value2 = definition.instance.get()
+assertTrue(definition.instance.isCreated)
+
+assertEquals(value1, value2)
+}
+
+@Test
+fun testFactoryCreatesNew() {
+val component = component {
+modules(
+module {
+factory { TestDep1() }
+}
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+assertTrue(definition.instance is FactoryInstance)
+assertFalse(definition.instance.isCreated)
+
+val value1 = definition.instance.get()
+assertFalse(definition.instance.isCreated)
+val value2 = definition.instance.get()
+assertFalse(definition.instance.isCreated)
+
+assertNotEquals(value1, value2)
+}
+
+@Test
+fun testInstanceCreationFailed() {
+val component = component {
+modules(
+module {
+factory<TestDep1> { throw error("error") }
+}
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+val throwed = try {
+definition.instance.get()
+false
+} catch (e: InstanceCreationException) {
+true
+}
+
+assertTrue(throwed)
+}
+}*/

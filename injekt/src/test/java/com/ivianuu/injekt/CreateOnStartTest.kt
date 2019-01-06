@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
@@ -24,71 +25,71 @@ import org.junit.Test
 
 class CreateOnStartTest {
 
-    @Test
-    fun testEagerSingleIsCreatedAtStart() {
-        val component = component {
-            modules(
-                module {
-                    single(createOnStart = true) { TestDep1() }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        assertTrue(definition.createOnStart)
-        assertTrue(definition.instance.isCreated)
-    }
-
-    @Test
-    fun testNonEagerSingleIsNotCreatedAtStart() {
-        val component = component {
-            modules(
-                module {
-                    single(createOnStart = false) { TestDep1() }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        assertFalse(definition.createOnStart)
-        assertFalse(definition.instance.isCreated)
-    }
-
-    @Test
-    fun testFactoryIsNotCreatedAtStart() {
-        val component = component {
-            modules(
-                module {
-                    factory { TestDep1() }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        assertFalse(definition.createOnStart)
-        assertFalse(definition.instance.isCreated)
-    }
-
-    @Test
-    fun testDeferEagerInstances() {
-        val component = component(createEagerInstances = false) {
-            modules(
-                module {
-                    single(createOnStart = true) { TestDep1() }
-                }
-            )
-        }
-
-        val definition = component.getDefinition<TestDep1>()
-
-        assertFalse(definition.instance.isCreated)
-
-        component.createEagerInstances()
-
-        assertTrue(definition.instance.isCreated)
-    }
-
+@Test
+fun testEagerSingleIsCreatedAtStart() {
+val component = component {
+modules(
+module {
+single(createOnStart = true) { TestDep1() }
 }
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+assertTrue(definition.createOnStart)
+assertTrue(definition.instance.isCreated)
+}
+
+@Test
+fun testNonEagerSingleIsNotCreatedAtStart() {
+val component = component {
+modules(
+module {
+single(createOnStart = false) { TestDep1() }
+}
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+assertFalse(definition.createOnStart)
+assertFalse(definition.instance.isCreated)
+}
+
+@Test
+fun testFactoryIsNotCreatedAtStart() {
+val component = component {
+modules(
+module {
+factory { TestDep1() }
+}
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+assertFalse(definition.createOnStart)
+assertFalse(definition.instance.isCreated)
+}
+
+@Test
+fun testDeferEagerInstances() {
+val component = component(createEagerInstances = false) {
+modules(
+module {
+single(createOnStart = true) { TestDep1() }
+}
+)
+}
+
+val definition = component.getDefinition<TestDep1>()
+
+assertFalse(definition.instance.isCreated)
+
+component.createEagerInstances()
+
+assertTrue(definition.instance.isCreated)
+}
+
+}*/
