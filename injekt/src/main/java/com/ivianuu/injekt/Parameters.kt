@@ -50,7 +50,8 @@ fun parametersOf(vararg values: Any?) = Parameters(*values)
 /**
  * Returns new [Parameters] which contains all [values]
  */
-fun parametersOf(values: Collection<Any?>) = Parameters(*values.toTypedArray())
+fun parametersOf(values: Iterable<Any?>) =
+    Parameters(*values.toList().toTypedArray())
 
 private val emptyParameters = parametersOf()
 
