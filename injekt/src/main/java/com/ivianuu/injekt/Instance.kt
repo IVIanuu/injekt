@@ -20,9 +20,9 @@ abstract class Instance<T : Any>(val beanDefinition: BeanDefinition<T>) {
     /**
      * Returns a instance of [T]
      */
-    abstract fun get(params: ParamsDefinition? = null): T
+    abstract fun get(parameters: ParametersDefinition? = null): T
 
-    protected open fun create(params: ParamsDefinition?): T {
+    protected open fun create(parameters: ParametersDefinition?): T {
         if (beanDefinition.scopeId != null && beanDefinition.scopeId != component.scopeId) {
             error("Component scope ${component.name} does not match definition scope ${beanDefinition.scopeId}")
         }
@@ -30,7 +30,7 @@ abstract class Instance<T : Any>(val beanDefinition: BeanDefinition<T>) {
         return try {
             beanDefinition.definition.invoke(
                 DefinitionContext(component),
-                params?.invoke() ?: emptyParameters()
+                parameters?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
             throw InstanceCreationException(
@@ -52,9 +52,9 @@ class FactoryInstance<T : Any>(
     override val isCreated: Boolean
         get() = false
 
-    override fun get(params: ParamsDefinition?): T {
+    override fun get(parameters: ParametersDefinition?): T {
         logger?.info("${component.name} Create instance $beanDefinition")
-        return create(params)
+        return create(parameters)
     }
 
 }
@@ -71,7 +71,7 @@ class SingleInstance<T : Any>(
     override val isCreated: Boolean
         get() = _value != null
 
-    override fun get(params: ParamsDefinition?): T {
+    override fun get(parameters: ParametersDefinition?): T {
         val value = _value
 
         return if (value != null) {
@@ -79,7 +79,7 @@ class SingleInstance<T : Any>(
             return value
         } else {
             logger?.info("${component.name} Create instance $beanDefinition")
-            create(params).also { _value = it }
+            create(parameters).also { _value = it }
         }
     }
 

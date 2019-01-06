@@ -15,51 +15,51 @@ interface InjektTrait {
 /** Calls trough [Component.get] */
 inline fun <reified T : Any> InjektTrait.get(
     name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = component.get(T::class, name, params)
+    noinline parameters: ParametersDefinition? = null
+) = component.get(T::class, name, parameters)
 
 /** Calls trough [Component.get] */
 fun <T : Any> InjektTrait.get(
     type: KClass<T>,
     name: String? = null,
-    params: ParamsDefinition? = null
-) = component.get(type, name, params)
+    parameters: ParametersDefinition? = null
+) = component.get(type, name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T : Any> InjektTrait.inject(
     name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = inject(T::class, name, params)
+    noinline parameters: ParametersDefinition? = null
+) = inject(T::class, name, parameters)
 
 /** Calls trough [Component.inject] */
 fun <T : Any> InjektTrait.inject(
     type: KClass<T>,
     name: String? = null,
-    params: ParamsDefinition? = null
-) = lazy { component.get(type, name, params) }
+    parameters: ParametersDefinition? = null
+) = lazy { component.get(type, name, parameters) }
 
 /** Calls trough [Component.provider] */
 inline fun <reified T : Any> InjektTrait.provider(
     name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = provider(T::class, name, defaultParams)
+    noinline defaultParameters: ParametersDefinition? = null
+) = provider(T::class, name, defaultParameters)
 
 /** Calls trough [Component.provider] */
 fun <T : Any> InjektTrait.provider(
     type: KClass<T>,
     name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = component.provider(type, name, defaultParams)
+    defaultParameters: ParametersDefinition? = null
+) = component.provider(type, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T : Any> InjektTrait.injectProvider(
     name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = injectProvider(T::class, name, defaultParams)
+    noinline defaultParameters: ParametersDefinition? = null
+) = injectProvider(T::class, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 fun <T : Any> InjektTrait.injectProvider(
     type: KClass<T>,
     name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = lazy { component.provider(type, name, defaultParams) }
+    defaultParameters: ParametersDefinition? = null
+) = lazy { component.provider(type, name, defaultParameters) }

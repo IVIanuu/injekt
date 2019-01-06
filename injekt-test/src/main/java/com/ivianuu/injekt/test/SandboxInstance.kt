@@ -31,16 +31,19 @@ class SandboxInstance<T : Any>(beanDefinition: BeanDefinition<T>) : Instance<T>(
     override val isCreated: Boolean
         get() = _value != null
 
-    override fun get(params: ParamsDefinition?): T {
+    override fun get(parameters: ParametersDefinition?): T {
         if (_value == null) {
-            _value = create(params)
+            _value = create(parameters)
         }
         return _value ?: error("SandboxInstance should return a value for $beanDefinition")
     }
 
-    override fun create(params: ParamsDefinition?): T {
+    override fun create(parameters: ParametersDefinition?): T {
         try {
-            beanDefinition.definition.invoke(DefinitionContext(component), params?.invoke() ?: emptyParameters())
+            beanDefinition.definition.invoke(
+                DefinitionContext(component),
+                parameters?.invoke() ?: emptyParameters()
+            )
         } catch (e: Exception) {
             when (e) {
                 is NoBeanDefinitionFoundException, is InstanceCreationException, is OverrideException -> {

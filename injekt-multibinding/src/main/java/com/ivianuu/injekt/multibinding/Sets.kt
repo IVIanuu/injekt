@@ -73,61 +73,73 @@ fun <T : Any> ModuleContext.bindIntoSet(
     } bindIntoSet setName
 
 /**
- * Returns a multi bound [Set] for [T] [name] and passes [params] to any of the entries
+ * Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.getSet(name: String, params: ParamsDefinition? = null) =
-    get<MultiBindingSet<T>>(name).toSet(params)
+fun <T : Any> Component.getSet(name: String, parameters: ParametersDefinition? = null) =
+    get<MultiBindingSet<T>>(name).toSet(parameters)
 
 /**
- * Returns multi bound [Set] of [Lazy]s for [T] [name] and passes [params] to any of the entries
+ * Returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.getLazySet(name: String, params: ParamsDefinition? = null) =
-    get<MultiBindingSet<T>>(name).toLazySet(params)
+fun <T : Any> Component.getLazySet(name: String, parameters: ParametersDefinition? = null) =
+    get<MultiBindingSet<T>>(name).toLazySet(parameters)
 
 /**
- * Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParams] to each [Provider]
+ * Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
  */
-fun <T : Any> Component.getProviderSet(name: String, defaultParams: ParamsDefinition? = null) =
-    get<MultiBindingSet<T>>(name).toProviderSet(defaultParams)
+fun <T : Any> Component.getProviderSet(
+    name: String,
+    defaultParameters: ParametersDefinition? = null
+) =
+    get<MultiBindingSet<T>>(name).toProviderSet(defaultParameters)
 
 /**
- * Lazily Returns a multi bound [Set] for [T] [name] and passes [params] to any of the entries
+ * Lazily Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.injectSet(name: String, params: ParamsDefinition? = null) =
-    lazy { getSet<T>(name, params) }
+fun <T : Any> Component.injectSet(name: String, parameters: ParametersDefinition? = null) =
+    lazy { getSet<T>(name, parameters) }
 
 /**
- * LazilyReturns multi bound [Set] of [Lazy]s for [T] [name] and passes [params] to any of the entries
+ * LazilyReturns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
  */
-fun <T : Any> Component.injectLazySet(name: String, params: ParamsDefinition? = null) =
-    lazy { getLazySet<T>(name, params) }
+fun <T : Any> Component.injectLazySet(name: String, parameters: ParametersDefinition? = null) =
+    lazy { getLazySet<T>(name, parameters) }
 
 /**
- * Lazily Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParams] to each [Provider]
+ * Lazily Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
  */
-fun <T : Any> Component.injectProviderSet(name: String, defaultParams: ParamsDefinition? = null) =
-    lazy { getProviderSet<T>(name, defaultParams) }
+fun <T : Any> Component.injectProviderSet(
+    name: String,
+    defaultParameters: ParametersDefinition? = null
+) =
+    lazy { getProviderSet<T>(name, defaultParameters) }
 
 /** Calls trough [Component.getSet] */
-fun <T : Any> InjektTrait.getSet(name: String, params: ParamsDefinition? = null) =
-    component.getSet<T>(name, params)
+fun <T : Any> InjektTrait.getSet(name: String, parameters: ParametersDefinition? = null) =
+    component.getSet<T>(name, parameters)
 
 /** Calls trough [Component.getLazySet] */
-fun <T : Any> InjektTrait.getLazySet(name: String, params: ParamsDefinition? = null) =
-    component.getLazySet<T>(name, params)
+fun <T : Any> InjektTrait.getLazySet(name: String, parameters: ParametersDefinition? = null) =
+    component.getLazySet<T>(name, parameters)
 
 /** Calls trough [Component.getProviderSet] */
-fun <T : Any> InjektTrait.getProviderSet(name: String, defaultParams: ParamsDefinition? = null) =
-    component.getProviderSet<T>(name, defaultParams)
+fun <T : Any> InjektTrait.getProviderSet(
+    name: String,
+    defaultParameters: ParametersDefinition? = null
+) =
+    component.getProviderSet<T>(name, defaultParameters)
 
 /** Calls trough [Component.injectSet] */
-fun <T : Any> InjektTrait.injectSet(name: String, params: ParamsDefinition? = null) =
-    lazy { component.getSet<T>(name, params) }
+fun <T : Any> InjektTrait.injectSet(name: String, parameters: ParametersDefinition? = null) =
+    lazy { component.getSet<T>(name, parameters) }
 
 /** Calls trough [Component.injectLazySet] */
-fun <T : Any> InjektTrait.injectLazySet(name: String, params: ParamsDefinition? = null) =
-    lazy { component.getLazySet<T>(name, params) }
+fun <T : Any> InjektTrait.injectLazySet(name: String, parameters: ParametersDefinition? = null) =
+    lazy { component.getLazySet<T>(name, parameters) }
 
 /** Calls trough [Component.injectProviderSet] */
-fun <T : Any> InjektTrait.injectProviderSet(name: String, defaultParams: ParamsDefinition? = null) =
-    lazy { component.getLazySet<T>(name, defaultParams) }
+fun <T : Any> InjektTrait.injectProviderSet(
+    name: String,
+    defaultParameters: ParametersDefinition? = null
+) =
+    lazy { component.getLazySet<T>(name, defaultParameters) }

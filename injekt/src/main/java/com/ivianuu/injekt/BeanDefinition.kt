@@ -49,8 +49,8 @@ data class BeanDefinition<T : Any> private constructor(
      * Resolves the instance
      */
     fun resolveInstance(
-        params: ParamsDefinition? = null
-    ) = instance.get(params)
+        parameters: ParametersDefinition? = null
+    ) = instance.get(parameters)
 
     /**
      * Creates the instance holder
@@ -106,7 +106,7 @@ data class BeanDefinition<T : Any> private constructor(
 /**
  * Defines a [BeanDefinition]
  */
-typealias Definition<T> = DefinitionContext.(params: Parameters) -> T
+typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
 
 fun <T : Any> BeanDefinition<T>.clone() = copy().also {
     it.kind = kind

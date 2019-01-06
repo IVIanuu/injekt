@@ -18,7 +18,7 @@
 package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.BeanDefinition
-import com.ivianuu.injekt.ParamsDefinition
+import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.provider
 
@@ -30,17 +30,17 @@ data class MultiBindingMap<K : Any, T : Any>(val map: Map<K, BeanDefinition<T>>)
 /**
  * Returns a [Map] of [K] and [T]s
  */
-fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(params: ParamsDefinition? = null) =
-    map.mapValues { it.value.resolveInstance(params) }
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(parameters: ParametersDefinition? = null) =
+    map.mapValues { it.value.resolveInstance(parameters) }
 
 /**
  * Returns a [Map] of [K] and [Lazy]s of [T]
  */
-fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(params: ParamsDefinition? = null) =
-    map.mapValues { lazy { it.value.resolveInstance(params = params) } }
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDefinition? = null) =
+    map.mapValues { lazy { it.value.resolveInstance(parameters = parameters) } }
 
 /**
  * Returns a [Map] of [K] and [Provider]s of [T]
  */
-fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParams: ParamsDefinition? = null) =
-    map.mapValues { dec -> provider { dec.value.resolveInstance(it ?: defaultParams) } }
+fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParameters: ParametersDefinition? = null) =
+    map.mapValues { dec -> provider { dec.value.resolveInstance(it ?: defaultParameters) } }

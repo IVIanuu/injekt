@@ -21,17 +21,17 @@ package com.ivianuu.injekt
  */
 interface Provider<T> {
     /**
-     * Returns a potentially new value of [T] using [params]
+     * Returns a potentially new value of [T] using [parameters]
      */
-    fun get(params: ParamsDefinition? = null): T
+    fun get(parameters: ParametersDefinition? = null): T
 }
 
 /**
  * Returns a [Provider] which invokes the [provider] on [Provider.get]
  */
-fun <T> provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
+fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
     LambdaProvider(provider)
 
-private class LambdaProvider<T>(private val func: (ParamsDefinition?) -> T) : Provider<T> {
-    override fun get(params: ParamsDefinition?) = func(params)
+private class LambdaProvider<T>(private val func: (ParametersDefinition?) -> T) : Provider<T> {
+    override fun get(parameters: ParametersDefinition?) = func(parameters)
 }

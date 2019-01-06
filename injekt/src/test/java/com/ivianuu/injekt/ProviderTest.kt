@@ -78,13 +78,13 @@ TestDep1()
 )
 }
 
-val params = parametersOf("one", "two")
+val parameters = parametersOf("one", "two")
 
 val provider = component.provider<TestDep1>()
 
-provider.get { params }
+provider.get { parameters }
 
-assertEquals(params, usedParams)
+assertEquals(parameters, usedParams)
 }
 
 @Test

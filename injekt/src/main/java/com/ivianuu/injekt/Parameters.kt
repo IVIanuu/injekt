@@ -40,7 +40,7 @@ class Parameters(vararg values: Any?) {
 /**
  * Defines [Parameters]
  */
-typealias ParamsDefinition = () -> Parameters
+typealias ParametersDefinition = () -> Parameters
 
 /**
  * Returns new [Parameters] which contains all [values]

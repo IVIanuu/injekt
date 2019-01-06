@@ -25,18 +25,18 @@ class ParametersTest {
     fun testSize() {
         val myString = "empty"
         val myInt = 42
-        val params = parametersOf(myString, myInt)
+        val parameters = parametersOf(myString, myInt)
 
-        assertEquals(2, params.size)
+        assertEquals(2, parameters.size)
     }
 
     @Test
     fun testGetParams() {
         val myString = "empty"
         val myInt = 42
-        val params = parametersOf(myString, myInt)
+        val parameters = parametersOf(myString, myInt)
 
-        val (s: String, i: Int) = params
+        val (s: String, i: Int) = parameters
         assertEquals(myString, s)
         assertEquals(myInt, i)
     }

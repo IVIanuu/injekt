@@ -37,18 +37,18 @@ class Component internal constructor(
     }
 
     /**
-     * Returns a instance of [T] matching the [type], [name] and [params]
+     * Returns a instance of [T] matching the [type], [name] and [parameters]
      */
     fun <T : Any> get(
         type: KClass<T>,
         name: String? = null,
-        params: ParamsDefinition? = null
+        parameters: ParametersDefinition? = null
     ): T {
         val definition = beanRegistry.findDefinition(type, name)
 
         return if (definition != null) {
             @Suppress("UNCHECKED_CAST")
-            definition.resolveInstance(params) as T
+            definition.resolveInstance(parameters) as T
         } else {
             throw NoBeanDefinitionFoundException("${this.name} Could not find definition for ${type.java.name + " " + name.orEmpty()}")
         }
@@ -100,29 +100,29 @@ fun <T : Any> Component.addInstance(instance: T) {
 }
 
 /**
- * Returns a instance of [T] matching the [name] and [params]
+ * Returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T : Any> Component.get(
     name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = get(T::class, name, params)
+    noinline parameters: ParametersDefinition? = null
+) = get(T::class, name, parameters)
 
 /**
- * Lazily returns a instance of [T] matching the [name] and [params]
+ * Lazily returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T : Any> Component.inject(
     name: String? = null,
-    noinline params: ParamsDefinition? = null
-) = inject(T::class, name, params)
+    noinline parameters: ParametersDefinition? = null
+) = inject(T::class, name, parameters)
 
 /**
- * Lazily returns a instance of [T] matching the [name] and [params]
+ * Lazily returns a instance of [T] matching the [name] and [parameters]
  */
 fun <T : Any> Component.inject(
     type: KClass<T>,
     name: String? = null,
-    params: ParamsDefinition? = null
-) = lazy { get(type, name, params) }
+    parameters: ParametersDefinition? = null
+) = lazy { get(type, name, parameters) }
 
 /**
  * Returns a [Provider] for [T] and [name]
@@ -130,8 +130,8 @@ fun <T : Any> Component.inject(
  */
 inline fun <reified T : Any> Component.provider(
     name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = provider(T::class, name, defaultParams)
+    noinline defaultParameters: ParametersDefinition? = null
+) = provider(T::class, name, defaultParameters)
 
 /**
  * Returns a [Provider] for [type] and [name]
@@ -140,8 +140,14 @@ inline fun <reified T : Any> Component.provider(
 fun <T : Any> Component.provider(
     type: KClass<T>,
     name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = provider { params: ParamsDefinition? -> get(type, name, params ?: defaultParams) }
+    defaultParameters: ParametersDefinition? = null
+) = provider { parameters: ParametersDefinition? ->
+    get(
+        type,
+        name,
+        parameters ?: defaultParameters
+    )
+}
 
 /**
  * Returns a [Provider] for [T] and [name]
@@ -149,8 +155,8 @@ fun <T : Any> Component.provider(
  */
 inline fun <reified T : Any> Component.injectProvider(
     name: String? = null,
-    noinline defaultParams: ParamsDefinition? = null
-) = injectProvider(T::class, name, defaultParams)
+    noinline defaultParameters: ParametersDefinition? = null
+) = injectProvider(T::class, name, defaultParameters)
 
 /**
  * Returns a [Provider] for [type] and [name]
@@ -159,5 +165,13 @@ inline fun <reified T : Any> Component.injectProvider(
 fun <T : Any> Component.injectProvider(
     type: KClass<T>,
     name: String? = null,
-    defaultParams: ParamsDefinition? = null
-) = lazy { provider { params: ParamsDefinition? -> get(type, name, params ?: defaultParams) } }
+    defaultParameters: ParametersDefinition? = null
+) = lazy {
+    provider { parameters: ParametersDefinition? ->
+        get(
+            type,
+            name,
+            parameters ?: defaultParameters
+        )
+    }
+}

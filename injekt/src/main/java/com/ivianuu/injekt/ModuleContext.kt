@@ -119,7 +119,7 @@ fun <T : Any> ModuleContext.single(
 )
 
 /**
- * Adds a [BeanDefinition] for the provided params
+ * Adds a [BeanDefinition] for the provided parameters
  */
 inline fun <reified T : Any> ModuleContext.declare(
     name: String? = null,
@@ -131,7 +131,7 @@ inline fun <reified T : Any> ModuleContext.declare(
 ) = declare(T::class, name, kind, scopeId, override, createOnStart, definition)
 
 /**
- * Adds a [BeanDefinition] for the provided params
+ * Adds a [BeanDefinition] for the provided parameters
  */
 fun <T : Any> ModuleContext.declare(
     type: KClass<T>,
