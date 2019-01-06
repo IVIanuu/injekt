@@ -30,8 +30,8 @@ interface Provider<T> {
  * Returns a [Provider] which invokes the [provider] on [Provider.get]
  */
 fun <T> provider(provider: (params: ParamsDefinition?) -> T): Provider<T> =
-    SamProvider(provider)
+    LambdaProvider(provider)
 
-private class SamProvider<T>(private val func: (ParamsDefinition?) -> T) : Provider<T> {
+private class LambdaProvider<T>(private val func: (ParamsDefinition?) -> T) : Provider<T> {
     override fun get(params: ParamsDefinition?) = func(params)
 }
