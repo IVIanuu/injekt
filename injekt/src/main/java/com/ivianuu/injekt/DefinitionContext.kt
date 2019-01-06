@@ -47,7 +47,7 @@ fun <T : Any> DefinitionContext.inject(
     type: KClass<T>,
     name: String? = null,
     params: ParamsDefinition? = null
-): Lazy<T> = kotlin.lazy { get(type, name, params) }
+): Lazy<T> = lazy { get(type, name, params) }
 
 /** Calls trough [Component.provider] */
 inline fun <reified T : Any> DefinitionContext.provider(
