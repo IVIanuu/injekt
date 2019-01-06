@@ -63,6 +63,6 @@ infix fun <T : Any> BindingContext<T>.bind(types: Array<String>) = apply {
  * Binds this [BeanDefinition] to [names]
  */
 @JvmName("bindNames")
-infix fun <T : Any> BindingContext<T>.bind(types: Iterable<String>) = apply {
-    types.forEach { bind(it) }
+infix fun <T : Any> BindingContext<T>.bind(names: Iterable<String>) = apply {
+    names.forEach { bind(it) }
 }
