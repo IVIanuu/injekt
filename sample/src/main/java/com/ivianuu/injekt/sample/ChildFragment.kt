@@ -59,6 +59,7 @@ class ChildFragment : Fragment(), InjektTrait {
 
 }
 
+
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

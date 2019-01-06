@@ -8,8 +8,6 @@ import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
 import kotlin.reflect.KClass
 
-const val ACTIVITY_SCOPE = "activity_scope"
-
 class MainActivity : AppCompatActivity(), InjektTrait {
 
     override val component by lazy {
