@@ -37,11 +37,12 @@ fun ModuleContext.mapBinding(mapName: String) {
 /**
  * Binds this [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-infix fun <T : Any> BeanDefinition<T>.bindIntoMap(pair: Pair<String, Any>) =
+infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>) =
     apply {
         val (mapName, mapKey) = pair
 
-        attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] = mapKey
+        definition.attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] =
+                mapKey
 
         moduleContext.factory(name = mapName, override = true) {
             component.beanRegistry

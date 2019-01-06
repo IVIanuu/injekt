@@ -39,8 +39,8 @@ fun ModuleContext.setBinding(setName: String) {
 /**
  * Binds this [BeanDefinition] into a [Set] named [setName]
  */
-infix fun <T : Any> BeanDefinition<T>.bindIntoSet(setName: String) = apply {
-    attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
+infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String) = apply {
+    definition.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     moduleContext.factory(name = setName, override = true) {
         component.beanRegistry

@@ -30,9 +30,7 @@ data class ModuleContext(val module: Module) {
      */
     fun <T : Any> declare(
         definition: BeanDefinition<T>
-    ): BeanDefinition<T> {
-        definition.moduleContext = this
-
+    ): BindingContext<T> {
         val override = if (module.override) module.override else definition.override
         val createOnStart =
             if (module.createOnStart) module.createOnStart else definition.createOnStart
@@ -42,7 +40,7 @@ data class ModuleContext(val module: Module) {
 
         definitions.add(definition)
 
-        return definition
+        return BindingContext(definition, this)
     }
 
 }

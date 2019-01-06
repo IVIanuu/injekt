@@ -2,6 +2,7 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.GenericLifecycleObserver
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.multibinding.bindIntoMap
@@ -23,6 +24,10 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lifecycle.addObserver(GenericLifecycleObserver { owner, event ->
+            d { "on event $event owner to string $owner" }
+        })
 
         d { "Injected app dependency $appDependency" }
         d { "Injected main activity dependency $mainActivityDependency" }
