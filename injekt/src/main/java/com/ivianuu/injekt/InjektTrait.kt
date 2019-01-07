@@ -38,18 +38,18 @@ fun <T : Any> InjektTrait.inject(
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy { component.get(type, name, parameters) }
 
-/** Calls trough [Component.provider] */
-inline fun <reified T : Any> InjektTrait.provider(
+/** Calls trough [Component.getProvider] */
+inline fun <reified T : Any> InjektTrait.getProvider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = provider(T::class, name, defaultParameters)
+): Provider<T> = getProvider(T::class, name, defaultParameters)
 
-/** Calls trough [Component.provider] */
-fun <T : Any> InjektTrait.provider(
+/** Calls trough [Component.getProvider] */
+fun <T : Any> InjektTrait.getProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-): Provider<T> = component.provider(type, name, defaultParameters)
+): Provider<T> = component.getProvider(type, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T : Any> InjektTrait.injectProvider(
@@ -62,4 +62,4 @@ fun <T : Any> InjektTrait.injectProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = lazy { component.provider(type, name, defaultParameters) }
+): Lazy<Provider<T>> = lazy { component.getProvider(type, name, defaultParameters) }

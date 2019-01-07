@@ -18,10 +18,15 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.fragment.fragmentComponent
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
+import com.ivianuu.injekt.single
 import kotlin.reflect.KClass
 
 /**
@@ -58,7 +63,6 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 
 }
-
 
 class ChildFragmentDependency(
     val app: App,

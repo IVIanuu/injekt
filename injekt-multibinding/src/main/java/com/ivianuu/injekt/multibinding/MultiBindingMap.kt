@@ -20,7 +20,7 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.BeanDefinition
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.provider
+import com.ivianuu.injekt.getProvider
 
 /**
  * Wraps a [Map] of [BeanDefinition]s
@@ -43,4 +43,4 @@ fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDef
  * Returns a [Map] of [K] and [Provider]s of [T]
  */
 fun <K : Any, T : Any> MultiBindingMap<K, T>.toProviderMap(defaultParameters: ParametersDefinition? = null): Map<K, Provider<T>> =
-    map.mapValues { dec -> provider { dec.value.resolveInstance(it ?: defaultParameters) } }
+    map.mapValues { dec -> getProvider { dec.value.resolveInstance(it ?: defaultParameters) } }

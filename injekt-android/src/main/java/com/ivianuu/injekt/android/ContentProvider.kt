@@ -36,7 +36,7 @@ fun <T : ContentProvider> contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name, createEagerInstances) {
-    instance.parentComponentOrNull()?.let { components(it) }
+    instance.getApplicationComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
 }
@@ -44,11 +44,11 @@ fun <T : ContentProvider> contentProviderComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun ContentProvider.parentComponentOrNull(): Component? =
+fun ContentProvider.getApplicationComponentOrNull(): Component? =
     (context!!.applicationContext as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
  */
-fun ContentProvider.parentComponent(): Component =
-    parentComponentOrNull() ?: error("No parent found for $this")
+fun ContentProvider.getApplicationComponent(): Component =
+    getApplicationComponentOrNull() ?: error("No application found for $this")

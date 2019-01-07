@@ -49,18 +49,18 @@ fun <T : Any> DefinitionContext.inject(
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy { get(type, name, parameters) }
 
-/** Calls trough [Component.provider] */
-inline fun <reified T : Any> DefinitionContext.provider(
+/** Calls trough [Component.getProvider] */
+inline fun <reified T : Any> DefinitionContext.getProvider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = provider(T::class, name, defaultParameters)
+): Provider<T> = getProvider(T::class, name, defaultParameters)
 
-/** Calls trough [Component.provider] */
-fun <T : Any> DefinitionContext.provider(
+/** Calls trough [Component.getProvider] */
+fun <T : Any> DefinitionContext.getProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-): Provider<T> = component.provider(type, name, defaultParameters)
+): Provider<T> = component.getProvider(type, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T : Any> DefinitionContext.lazyProvider(

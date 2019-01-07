@@ -59,7 +59,7 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
         }
 
         if (module.definitions.flatMap { it.constructorParams }.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
-            imports.add("provider")
+            imports.add("getProvider")
         }
 
         return imports
@@ -146,8 +146,8 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                         }
                         ParamDescriptor.Kind.PROVIDER -> {
                             when {
-                                it.name != null -> "provider(\"${it.name}\")"
-                                else -> "provider()"
+                                it.name != null -> "getProvider(\"${it.name}\")"
+                                else -> "getProvider()"
                             }
                         }
                     }

@@ -36,7 +36,7 @@ fun <T : Service> serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name, createEagerInstances) {
-    instance.parentComponentOrNull()?.let { components(it) }
+    instance.getApplicationComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
 }
@@ -44,10 +44,10 @@ fun <T : Service> serviceComponent(
 /**
  * Returns the parent [Component] if available or null
  */
-fun Service.parentComponentOrNull(): Component? = (application as? InjektTrait)?.component
+fun Service.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
  */
-fun Service.parentComponent(): Component =
-    parentComponentOrNull() ?: error("No parent found for $this")
+fun Service.getApplicationComponent(): Component =
+    getApplicationComponentOrNull() ?: error("No application found for $this")

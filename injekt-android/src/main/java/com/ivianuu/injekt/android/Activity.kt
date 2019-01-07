@@ -37,17 +37,17 @@ fun <T : Activity> activityComponent(
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name, createEagerInstances) {
     addInstance(instance)
-    instance.parentComponentOrNull()?.let { components(it) }
+    instance.getApplicationComponentOrNull()?.let { components(it) }
     definition?.invoke(this)
 }
 
 /**
- * Returns the parent [Component] or null
+ * Returns the application [Component] or null
  */
-fun Activity.parentComponentOrNull(): Component? = (application as? InjektTrait)?.component
+fun Activity.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
  */
-fun Activity.parentComponent(): Component =
-    parentComponentOrNull() ?: error("No parent found for $this")
+fun Activity.getApplicationComponent(): Component =
+    getApplicationComponentOrNull() ?: error("No application found for $this")

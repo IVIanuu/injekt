@@ -33,9 +33,9 @@ factory { TestDep1() }
 }
 )
 }
-val provider = component.provider<TestDep1>()
-val value1 = provider.get()
-val value2 = provider.get()
+val getProvider = component.getProvider<TestDep1>()
+val value1 = getProvider.get()
+val value2 = getProvider.get()
 assertNotEquals(value1, value2)
 }
 
@@ -56,9 +56,9 @@ TestDep1()
 
 val defaultParams = parametersOf("one", "two")
 
-val provider = component.provider<TestDep1> { defaultParams }
+val getProvider = component.getProvider<TestDep1> { defaultParams }
 
-provider.get()
+getProvider.get()
 
 assertEquals(defaultParams, usedParams)
 }
@@ -80,9 +80,9 @@ TestDep1()
 
 val parameters = parametersOf("one", "two")
 
-val provider = component.provider<TestDep1>()
+val getProvider = component.getProvider<TestDep1>()
 
-provider.get { parameters }
+getProvider.get { parameters }
 
 assertEquals(parameters, usedParams)
 }
@@ -105,9 +105,9 @@ TestDep1()
 val defaultParams = parametersOf("default")
 val explicitParams = parametersOf("explicit")
 
-val provider = component.provider<TestDep1> { defaultParams }
+val getProvider = component.getProvider<TestDep1> { defaultParams }
 
-provider.get { explicitParams }
+getProvider.get { explicitParams }
 
 assertEquals(explicitParams, usedParams)
 }

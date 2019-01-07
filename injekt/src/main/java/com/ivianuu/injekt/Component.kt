@@ -128,20 +128,20 @@ fun <T : Any> Component.inject(
  * Returns a [Provider] for [T] and [name]
  * Each [Provider.get] call results in a potentially new value
  */
-inline fun <reified T : Any> Component.provider(
+inline fun <reified T : Any> Component.getProvider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = provider(T::class, name, defaultParameters)
+): Provider<T> = getProvider(T::class, name, defaultParameters)
 
 /**
  * Returns a [Provider] for [type] and [name]
  * Each [Provider.get] results in a potentially new value
  */
-fun <T : Any> Component.provider(
+fun <T : Any> Component.getProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-): Provider<T> = provider { parameters: ParametersDefinition? ->
+): Provider<T> = getProvider { parameters: ParametersDefinition? ->
     get(
         type,
         name,
@@ -167,7 +167,7 @@ fun <T : Any> Component.injectProvider(
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy {
-    provider { parameters: ParametersDefinition? ->
+    getProvider { parameters: ParametersDefinition? ->
         get(
             type,
             name,

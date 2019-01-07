@@ -37,32 +37,45 @@ fun <T : Fragment> fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name, createEagerInstances) {
-    instance.parentComponentOrNull()?.let { components(it) }
+    (instance.getParentFragmentComponentOrNull()
+        ?: instance.getActivityComponentOrNull()
+        ?: instance.getApplicationComponentOrNull())?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)
 }
 
 /**
- * Returns the parent [Component] if available or null
+ * Returns the [Component] of the parent fragment or null
  */
-fun Fragment.parentComponentOrNull(): Component? {
-    var parentFragment = parentFragment
-
-    while (parentFragment != null) {
-        if (parentFragment is InjektTrait) {
-            return parentFragment.component
-        }
-        parentFragment = parentFragment.parentFragment
-    }
-
-    (activity as? InjektTrait)?.component?.let { return it }
-    (activity?.applicationContext as? InjektTrait)?.component?.let { return it }
-
-    return null
-}
+fun Fragment.getParentFragmentComponentOrNull(): Component? =
+    (parentFragment as? InjektTrait)?.component
 
 /**
- * Returns the parent [Component] or throws
+ * Returns the [Component] of the parent fragment or throws
  */
-fun Fragment.parentComponent(): Component =
-    parentComponentOrNull() ?: error("No parent found for $this")
+fun Fragment.getParentFragmentComponent(): Component =
+    getParentFragmentComponentOrNull() ?: error("No parent fragment component found for $this")
+
+/**
+ * Returns the [Component] of the activity or null
+ */
+fun Fragment.getActivityComponentOrNull(): Component? =
+    (activity as? InjektTrait)?.component
+
+/**
+ * Returns the [Component] of the activity or throws
+ */
+fun Fragment.getActivityComponent(): Component =
+    getActivityComponentOrNull() ?: error("No activity component found for $this")
+
+/**
+ * Returns the [Component] of the activity or null
+ */
+fun Fragment.getApplicationComponentOrNull(): Component? =
+    (activity?.application as? InjektTrait)?.component
+
+/**
+ * Returns the [Component] of the activity or throws
+ */
+fun Fragment.getApplicationComponent(): Component =
+    getApplicationComponentOrNull() ?: error("No application component found for $this")
