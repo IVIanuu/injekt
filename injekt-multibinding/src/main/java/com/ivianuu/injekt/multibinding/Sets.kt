@@ -78,10 +78,12 @@ fun <T : Any> ModuleContext.bindIntoSet(
     implementationType: KClass<T>,
     setName: String,
     implementationName: String? = null
-): BindingContext<T> =
-    factory(implementationType, UUID.randomUUID().toString()) {
+): BindingContext<T> {
+    // we use a unique id here to make sure that the binding does not collide with any user config
+    return factory(implementationType, UUID.randomUUID().toString()) {
         get(implementationType, implementationName)
     } bindIntoSet setName
+}
 
 /**
  * Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
@@ -104,8 +106,7 @@ fun <T : Any> Component.getLazySet(
 fun <T : Any> Component.getProviderSet(
     name: String,
     defaultParameters: ParametersDefinition? = null
-): Set<Provider<T>> =
-    get<MultiBindingSet<T>>(name).toProviderSet(defaultParameters)
+): Set<Provider<T>> = get<MultiBindingSet<T>>(name).toProviderSet(defaultParameters)
 
 /**
  * Lazily Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
@@ -113,8 +114,7 @@ fun <T : Any> Component.getProviderSet(
 fun <T : Any> Component.injectSet(
     name: String,
     parameters: ParametersDefinition? = null
-): Lazy<Set<T>> =
-    lazy { getSet<T>(name, parameters) }
+): Lazy<Set<T>> = lazy { getSet<T>(name, parameters) }
 
 /**
  * LazilyReturns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries

@@ -49,8 +49,9 @@ fun ModuleContext.mapBinding(mapName: String) {
 infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> {
     val (mapName, mapKey) = pair
 
-    definition.attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] =
-            mapKey
+    definition.attributes.getOrSet(KEY_MAP_BINDINGS) {
+        mutableMapOf<String, Any>()
+    }[mapName] = mapKey
 
     moduleContext.factory(name = mapName, override = true) {
         component.beanRegistry
@@ -84,10 +85,12 @@ fun <T : Any> ModuleContext.bindIntoMap(
     mapName: String,
     key: Any,
     implementationName: String? = null
-): BindingContext<T> =
-    factory(implementationType, UUID.randomUUID().toString()) {
+): BindingContext<T> {
+    // we use a unique id here to make sure that the binding does not collide with any user config
+    return factory(implementationType, UUID.randomUUID().toString()) {
         get(implementationType, implementationName)
     } bindIntoMap (mapName to key)
+}
 
 /**
  * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
