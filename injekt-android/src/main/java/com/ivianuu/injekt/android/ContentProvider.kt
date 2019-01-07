@@ -45,7 +45,7 @@ fun <T : ContentProvider> contentProviderComponent(
  * Returns the parent [Component] if available or null
  */
 fun ContentProvider.getApplicationComponentOrNull(): Component? =
-    (context!!.applicationContext as? InjektTrait)?.component
+    (context?.applicationContext as? InjektTrait)?.component
 
 /**
  * Returns the parent [Component] or throws
