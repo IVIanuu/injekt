@@ -13,7 +13,7 @@ data class BindingContext<T : Any>(
 /**
  * Binds this [BeanDefinition] to [type]
  */
-infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> = apply {
+infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
     val copy = (definition as BeanDefinition<Any>).copy(type = type as KClass<Any>, name = null)
     copy.kind = definition.kind
     copy.override = definition.override
@@ -22,6 +22,7 @@ infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> =
     copy.definition = definition.definition
     copy.instance = definition.instance
     moduleContext.declare(copy)
+    return this
 }
 
 /**
@@ -41,7 +42,7 @@ infix fun <T : Any> BindingContext<T>.bind(types: Iterable<KClass<*>>): BindingC
 /**
  * Binds this [BeanDefinition] to [name]
  */
-infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> = apply {
+infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> {
     val copy = (definition as BeanDefinition<Any>).copy(name = name)
     copy.kind = definition.kind
     copy.override = definition.override
@@ -50,6 +51,7 @@ infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> = ap
     copy.definition = definition.definition
     copy.instance = definition.instance
     moduleContext.declare(copy)
+    return this
 }
 
 /**

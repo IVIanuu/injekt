@@ -37,7 +37,7 @@ fun <K : Any, T : Any> MultiBindingMap<K, T>.toMap(parameters: ParametersDefinit
  * Returns a [Map] of [K] and [Lazy]s of [T]
  */
 fun <K : Any, T : Any> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDefinition? = null): Map<K, Lazy<T>> =
-    map.mapValues { lazy { it.value.resolveInstance(parameters = parameters) } }
+    map.mapValues { lazy { it.value.resolveInstance(parameters) } }
 
 /**
  * Returns a [Map] of [K] and [Provider]s of [T]

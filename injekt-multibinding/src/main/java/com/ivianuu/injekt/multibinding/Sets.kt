@@ -48,7 +48,7 @@ fun ModuleContext.setBinding(setName: String) {
 /**
  * Binds this [BeanDefinition] into a [Set] named [setName]
  */
-infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> = apply {
+infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> {
     definition.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     moduleContext.factory(name = setName, override = true) {
@@ -59,6 +59,8 @@ infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingConte
             .toSet()
             .let { MultiBindingSet(it) }
     }
+
+    return this
 }
 
 /**

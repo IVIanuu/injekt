@@ -46,25 +46,26 @@ fun ModuleContext.mapBinding(mapName: String) {
 /**
  * Binds this [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> =
-    apply {
-        val (mapName, mapKey) = pair
+infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> {
+    val (mapName, mapKey) = pair
 
-        definition.attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] =
-                mapKey
+    definition.attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<String, Any>() }[mapName] =
+            mapKey
 
-        moduleContext.factory(name = mapName, override = true) {
-            component.beanRegistry
-                .getAllDefinitions()
-                .mapNotNull { definition ->
-                    definition.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
-                        ?.get(mapName)?.let { it to definition }
-                }
-                .toMap()
-                .mapValues { it.value as BeanDefinition<Any> }
-                .let { MultiBindingMap(it) }
-        }
+    moduleContext.factory(name = mapName, override = true) {
+        component.beanRegistry
+            .getAllDefinitions()
+            .mapNotNull { definition ->
+                definition.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
+                    ?.get(mapName)?.let { it to definition }
+            }
+            .toMap()
+            .mapValues { it.value as BeanDefinition<Any> }
+            .let { MultiBindingMap(it) }
     }
+
+    return this
+}
 
 /**
  * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
