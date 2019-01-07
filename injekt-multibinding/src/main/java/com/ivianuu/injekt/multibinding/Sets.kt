@@ -136,21 +136,21 @@ fun <T : Any> Component.injectProviderSet(
 
 /** Calls trough [Component.getSet] */
 fun <T : Any> InjektTrait.getSet(name: String, parameters: ParametersDefinition? = null): Set<T> =
-    component.getSet<T>(name, parameters)
+    component.getSet(name, parameters)
 
 /** Calls trough [Component.getLazySet] */
 fun <T : Any> InjektTrait.getLazySet(
     name: String,
     parameters: ParametersDefinition? = null
 ): Set<Lazy<T>> =
-    component.getLazySet<T>(name, parameters)
+    component.getLazySet(name, parameters)
 
 /** Calls trough [Component.getProviderSet] */
 fun <T : Any> InjektTrait.getProviderSet(
     name: String,
     defaultParameters: ParametersDefinition? = null
 ): Set<Provider<T>> =
-    component.getProviderSet<T>(name, defaultParameters)
+    component.getProviderSet(name, defaultParameters)
 
 /** Calls trough [Component.injectSet] */
 fun <T : Any> InjektTrait.injectSet(

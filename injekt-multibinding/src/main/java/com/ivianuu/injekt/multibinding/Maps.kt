@@ -151,21 +151,21 @@ fun <K : Any, T : Any> InjektTrait.getMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Map<K, T> =
-    component.getMap<K, T>(name, parameters)
+    component.getMap(name, parameters)
 
 /** Calls trough [Component.getLazyMap] */
 fun <K : Any, T : Any> InjektTrait.getLazyMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> =
-    component.getLazyMap<K, T>(name, parameters)
+    component.getLazyMap(name, parameters)
 
 /** Calls trough [Component.getProviderMap] */
 fun <K : Any, T : Any> InjektTrait.getProviderMap(
     name: String,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> =
-    component.getProviderMap<K, T>(name, defaultParameters)
+    component.getProviderMap(name, defaultParameters)
 
 /** Calls trough [Component.injectMap] */
 fun <K : Any, T : Any> InjektTrait.injectMap(

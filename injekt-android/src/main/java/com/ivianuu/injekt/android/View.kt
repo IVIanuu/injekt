@@ -60,7 +60,7 @@ fun View.getContextComponentOrNull(): Component? {
  * Returns the [Component] of the context or throws
  */
 fun View.getContextComponent(): Component =
-    getContextComponent() ?: kotlin.error("No activity component found for $this")
+    getContextComponentOrNull() ?: kotlin.error("No context component found for $this")
 
 /**
  * Returns the [Component] of the activity or null

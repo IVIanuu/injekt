@@ -57,6 +57,6 @@ fun <T : Application> applicationModule(
     single { instance as Application } bind Context::class
 }
 
-fun DefinitionContext.application(): Application = get<Application>()
+fun DefinitionContext.application(): Application = get()
 
-fun DefinitionContext.context(): Context = get<Context>()
+fun DefinitionContext.context(): Context = get()
