@@ -17,11 +17,19 @@
 package com.ivianuu.injekt.sample
 
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.fragment.fragmentComponent
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
+import com.ivianuu.injekt.single
 import kotlin.reflect.KClass
 
 /**
@@ -51,11 +59,18 @@ class ParentFragment : Fragment(), InjektTrait {
 
         if (savedInstanceState == null) {
             childFragmentManager.beginTransaction()
-                .add(ChildFragment(), "child_fragment")
+                .replace(R.id.child_container, ChildFragment())
                 .commit()
         }
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_parent, container, false)
+    }
 }
 
 class ParentFragmentDependency(

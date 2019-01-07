@@ -2,10 +2,15 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.multibinding.bindIntoMap
 import com.ivianuu.injekt.multibinding.injectMap
+import com.ivianuu.injekt.single
 import kotlin.reflect.KClass
 
 class MainActivity : AppCompatActivity(), InjektTrait {
@@ -30,7 +35,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .add(ParentFragment(), "my_fragment")
+                .replace(android.R.id.content, ParentFragment())
                 .commit()
         }
     }

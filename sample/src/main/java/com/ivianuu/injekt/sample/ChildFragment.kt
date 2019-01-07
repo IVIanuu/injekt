@@ -17,6 +17,9 @@
 package com.ivianuu.injekt.sample
 
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.fragment.fragmentComponent
@@ -62,6 +65,16 @@ class ChildFragment : Fragment(), InjektTrait {
         d { "All dependencies $dependencies" }
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val injektInflater = inflater.cloneInContext(
+            InjektTraitContextWrapper(requireContext(), this)
+        )
+        return injektInflater.inflate(R.layout.fragment_child, container, false)
+    }
 }
 
 class ChildFragmentDependency(
