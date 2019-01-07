@@ -59,6 +59,5 @@ inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
 /**
  * Returns the value for [key] if present or the [defaultValue]
  */
-inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T {
-    return get<T>(key) ?: return defaultValue()
-}
+inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T =
+    get<T>(key) ?: defaultValue()
