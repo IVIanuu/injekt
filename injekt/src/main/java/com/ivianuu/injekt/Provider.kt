@@ -29,7 +29,7 @@ interface Provider<T> {
 /**
  * Returns a [Provider] which invokes the [provider] on [Provider.get]
  */
-fun <T> getProvider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
+fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
     LambdaProvider(provider)
 
 private class LambdaProvider<T>(private val func: (ParametersDefinition?) -> T) : Provider<T> {

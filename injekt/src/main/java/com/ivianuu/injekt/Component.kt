@@ -141,7 +141,7 @@ fun <T : Any> Component.getProvider(
     type: KClass<T>,
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
-): Provider<T> = getProvider { parameters: ParametersDefinition? ->
+): Provider<T> = provider { parameters: ParametersDefinition? ->
     get(
         type,
         name,
@@ -167,7 +167,7 @@ fun <T : Any> Component.injectProvider(
     name: String? = null,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy {
-    getProvider { parameters: ParametersDefinition? ->
+    provider { parameters: ParametersDefinition? ->
         get(
             type,
             name,
