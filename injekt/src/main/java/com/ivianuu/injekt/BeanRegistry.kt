@@ -127,7 +127,6 @@ class BeanRegistry internal constructor(val component: Component) {
         if (fromComponent && definition.scopeId != null && definition.scopeId == component.scopeId) {
             definition = definition.clone()
             cloned = true
-            logger?.info("Clone $definition due to scope match")
         }
 
         definitions.add(definition)
@@ -151,7 +150,11 @@ class BeanRegistry internal constructor(val component: Component) {
                 "${component.name} Override $definition"
             } else {
                 if (fromComponent) {
-                    "${component.name} Link $definition from ${definition.instance.component.name}"
+                    if (cloned) {
+                        "${component.name} Clone $definition from ${definition.instance.component.name}"
+                    } else {
+                        "${component.name} Link $definition from ${definition.instance.component.name}"
+                    }
                 } else {
                     "${component.name} Declare $definition"
                 }
