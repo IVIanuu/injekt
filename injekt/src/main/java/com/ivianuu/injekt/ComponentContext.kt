@@ -22,16 +22,16 @@ class ComponentContext(private val component: Component) {
     }
 
     /**
-     * Returns all direct dependencies of this component
-     */
-    fun getDependencies(): Set<Component> = dependencies
-
-    /**
      * Adds all of [dependencies] as dependencies
      */
     fun addDependencies(dependencies: Iterable<Component>) {
         dependencies.forEach { addDependency(it) }
     }
+
+    /**
+     * Returns all direct dependencies of this component
+     */
+    fun getDependencies(): Set<Component> = dependencies
 
     /**
      * Adds the [dependency] as a dependency
@@ -41,7 +41,7 @@ class ComponentContext(private val component: Component) {
             throw error("Already added ${dependency.name} to ${component.name}")
         }
 
-        logger?.info("${component.name} added dependency ${dependency.name}")
+        logger?.info("${component.name} Add dependency ${dependency.name}")
     }
 
     /**
@@ -61,7 +61,7 @@ class ComponentContext(private val component: Component) {
         key: Key,
         parameters: ParametersDefinition? = null
     ): T {
-        return getInstanceOrNull(key, parameters)
+        return getByKey(key, parameters)
             ?: throw NoBeanDefinitionFoundException("${component.name} Could not find definition for $key")
     }
 
@@ -94,7 +94,7 @@ class ComponentContext(private val component: Component) {
         // create eager instances
         if (definition.eager) {
             InjektPlugins.logger?.info("${component.name} Create eager instance for $definition")
-            getInstanceOrNull<Any>(definition.key, null)
+            getByKey<Any>(definition.key, null)
         }
     }
 
@@ -113,42 +113,45 @@ class ComponentContext(private val component: Component) {
         definitions.containsKey(definition.key)
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> getInstanceOrNull(key: Key, parameters: ParametersDefinition?): T? {
-        // fast look up
-        val existingInstance = instances[key]
-        if (existingInstance != null) return existingInstance as T
+    private fun <T : Any> getByKey(key: Key, parameters: ParametersDefinition?): T? =
+        thisGetByKey(key, parameters) ?: getFromDependencyByKey(key, parameters)
 
-        val definition = definitions[key]
+    private fun <T : Any> thisGetByKey(key: Key, parameters: ParametersDefinition?): T? {
+        val definition = definitions[key] ?: return null
 
-        if (definition != null) {
-            try {
-                return when (definition.kind) {
-                    BeanDefinition.Kind.FACTORY -> {
-                        definition.definition.invoke(
-                            DefinitionContext(component),
-                            parameters?.invoke() ?: emptyParameters()
-                        ) as T
-                    }
-                    BeanDefinition.Kind.SINGLE -> {
-                        definition.definition.invoke(
-                            DefinitionContext(component),
-                            parameters?.invoke() ?: emptyParameters()
-                        ).also { instances[key] = it } as T
-                    }
+        @Suppress("UNCHECKED_CAST")
+        return try {
+            val instance = when (definition.kind) {
+                BeanDefinition.Kind.FACTORY -> {
+                    definition.definition.invoke(
+                        DefinitionContext(component),
+                        parameters?.invoke() ?: emptyParameters()
+                    )
                 }
-            } catch (e: Exception) {
-                throw InstanceCreationException(
-                    "${component.context} Couldn't instantiate $definition",
-                    e
-                )
+                BeanDefinition.Kind.SINGLE -> {
+                    instances[key] ?: definition.definition.invoke(
+                        DefinitionContext(component),
+                        parameters?.invoke() ?: emptyParameters()
+                    ).also { instances[key] = it }
+                }
             }
-        } else {
-            for (dependency in dependencies) {
-                val instance = dependency.context.getInstanceOrNull<T>(key, parameters)
-                if (instance != null) return instance
-            }
+
+            instance as T
+        } catch (e: Exception) {
+            throw InstanceCreationException(
+                "${component.context} Couldn't instantiate $definition",
+                e
+            )
+        }
+    }
+
+    private fun <T : Any> getFromDependencyByKey(key: Key, parameters: ParametersDefinition?): T? {
+        for (dependency in dependencies) {
+            val instance = dependency.context.getByKey<T>(key, parameters)
+            if (instance != null) return instance
         }
 
         return null
     }
+
 }
