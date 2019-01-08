@@ -28,6 +28,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.modules
+import com.ivianuu.injekt.scopeNames
 import com.ivianuu.injekt.single
 
 const val APPLICATION_SCOPE = "application_scope"
@@ -37,10 +38,10 @@ const val APPLICATION_SCOPE = "application_scope"
  */
 fun <T : Application> applicationComponent(
     instance: T,
-    scopeId: String = APPLICATION_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name) {
+): Component = component(name) {
+    scopeNames(APPLICATION_SCOPE)
     addInstance(instance)
     modules(applicationModule(instance))
     definition?.invoke(this)

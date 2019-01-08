@@ -52,8 +52,8 @@ infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingConte
     definition.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     module.factory(name = setName, override = true) {
-        val allDefinitions = component.context.getDefinitions() + (
-                component.context.getDependencies().flatMap { it.context.getDefinitions() })
+        val allDefinitions = component.getDefinitions() + (
+                component.getDependencies().flatMap { it.getDefinitions() })
 
         allDefinitions
             .filter { it.attributes.get<Set<String>>(KEY_SET_BINDINGS)?.contains(setName) == true }

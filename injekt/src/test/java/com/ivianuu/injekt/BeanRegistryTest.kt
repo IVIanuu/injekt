@@ -32,7 +32,7 @@ factory { TestDep1() }
 factory { TestDep2(get()) }
 }
 
-registry.loadModules(listOf(module))
+registry.modules(listOf(module))
 
 assertEquals(registry.getAllDefinitions(), module.getDefinitions().toSet())
 }
@@ -64,7 +64,7 @@ val registry = component { }.beanRegistry
 val definition =
 BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
 assertEquals(null, registry.findDefinition(TestDep1::class))
-registry.saveDefinition(definition)
+registry.addDefinition(definition)
 assertEquals(definition, registry.findDefinition(TestDep1::class))
 }
 
@@ -78,8 +78,8 @@ BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { Test
 .apply { override = true }
 
 val throwed = try {
-registry.saveDefinition(definition1)
-registry.saveDefinition(definition2)
+registry.addDefinition(definition1)
+registry.addDefinition(definition2)
 false
 } catch (e: OverrideException) {
 true
@@ -97,8 +97,8 @@ val definition2 =
 BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
 
 val throwed = try {
-registry.saveDefinition(definition1)
-registry.saveDefinition(definition2)
+registry.addDefinition(definition1)
+registry.addDefinition(definition2)
 false
 } catch (e: OverrideException) {
 true

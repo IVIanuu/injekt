@@ -54,8 +54,8 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
     }[mapName] = mapKey
 
     module.factory(name = mapName, override = true) {
-        val allDefinitions = component.context.getDefinitions() + (
-                component.context.getDependencies().flatMap { it.context.getDefinitions() })
+        val allDefinitions = component.getDefinitions() + (
+                component.getDependencies().flatMap { it.getDefinitions() })
 
         allDefinitions
             .mapNotNull { definition ->

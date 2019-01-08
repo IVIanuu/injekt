@@ -1,30 +1,19 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
  * The actual dependency container which provides definitions
  */
-class Component internal constructor(
-    val scopeId: String,
-    val name: String?
-) {
+class Component internal constructor(val name: String?) {
 
-    val context = ComponentContext(this)
+    private val dependencies = hashSetOf<Component>()
 
-    /**
-     * Adds all [BeanDefinition]s of the [modules]
-     */
-    fun modules(modules: Iterable<Module>) {
-        context.loadModules(modules)
-    }
+    private val scopeNames = hashSetOf<String>()
 
-    /**
-     * Adds all of [dependencies] as dependencies
-     */
-    fun dependencies(dependencies: Iterable<Component>) {
-        context.addDependencies(dependencies)
-    }
+    private val instances = hashMapOf<Key, Any>()
+    private val definitions = hashMapOf<Key, BeanDefinition<*>>()
 
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
@@ -35,121 +24,188 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        return context.get(key, parameters)
+        return getByKey(key, parameters)
+            ?: throw NoBeanDefinitionFoundException("$name Could not find definition for $key")
     }
 
-}
-
-/**
- * Defines a component
- */
-typealias ComponentDefinition = Component.() -> Unit
-
-/**
- * Returns a new [Component] and applies the [definition]
- */
-fun component(
-    scopeId: String,
-    name: String? = null,
-    definition: ComponentDefinition? = null
-): Component = Component(scopeId, name)
-    .apply { definition?.invoke(this) }
-
-/** Calls trough [Component.modules] */
-fun Component.modules(vararg modules: Module) {
-    modules(modules.asIterable())
-}
-
-/** Calls trough [Component.dependencies] */
-fun Component.dependencies(vararg components: Component) {
-    dependencies(components.asIterable())
-}
-
-/**
- * Adds a [BeanDefinition] for the [instance]
- */
-fun <T : Any> Component.addInstance(instance: T) {
-    context.saveDefinition(
-        BeanDefinition.createSingle(
-            instance::class as KClass<T>,
-            null
-        ) { instance }
-    )
-}
-
-/**
- * Returns a instance of [T] matching the [name] and [parameters]
- */
-inline fun <reified T : Any> Component.get(
-    name: String? = null,
-    noinline parameters: ParametersDefinition? = null
-): T = get(T::class, name, parameters)
-
-/**
- * Lazily returns a instance of [T] matching the [name] and [parameters]
- */
-inline fun <reified T : Any> Component.inject(
-    name: String? = null,
-    noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(T::class, name, parameters)
-
-/**
- * Lazily returns a instance of [T] matching the [name] and [parameters]
- */
-fun <T : Any> Component.inject(
-    type: KClass<T>,
-    name: String? = null,
-    parameters: ParametersDefinition? = null
-): Lazy<T> = lazy { get(type, name, parameters) }
-
-/**
- * Returns a [Provider] for [T] and [name]
- * Each [Provider.get] call results in a potentially new value
- */
-inline fun <reified T : Any> Component.getProvider(
-    name: String? = null,
-    noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = getProvider(T::class, name, defaultParameters)
-
-/**
- * Returns a [Provider] for [type] and [name]
- * Each [Provider.get] results in a potentially new value
- */
-fun <T : Any> Component.getProvider(
-    type: KClass<T>,
-    name: String? = null,
-    defaultParameters: ParametersDefinition? = null
-): Provider<T> = provider { parameters: ParametersDefinition? ->
-    get(
-        type,
-        name,
-        parameters ?: defaultParameters
-    )
-}
-
-/**
- * Returns a [Provider] for [T] and [name]
- * Each [Provider.get] call results in a potentially new value
- */
-inline fun <reified T : Any> Component.injectProvider(
-    name: String? = null,
-    noinline defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
-
-/**
- * Returns a [Provider] for [type] and [name]
- * Each [Provider.get] results in a potentially new value
- */
-fun <T : Any> Component.injectProvider(
-    type: KClass<T>,
-    name: String? = null,
-    defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = lazy {
-    provider { parameters: ParametersDefinition? ->
-        get(
-            type,
-            name,
-            parameters ?: defaultParameters
-        )
+    /**
+     * Adds all [BeanDefinition]s of the [modules]
+     */
+    fun modules(modules: Iterable<Module>) {
+        modules.forEach { module ->
+            InjektPlugins.logger?.info("$name load module ${module.name}")
+            module.definitions.forEach { addDefinition(it.value) }
+        }
     }
+
+    /**
+     * Adds all of [dependencies] as dependencies
+     */
+    fun dependencies(dependencies: Iterable<Component>) {
+        dependencies.forEach { addDependency(it) }
+    }
+
+    /**
+     * Returns all direct dependencies of this component
+     */
+    fun getDependencies(): Set<Component> = dependencies
+
+    /**
+     * Adds the [dependency] as a dependency
+     */
+    fun addDependency(dependency: Component) {
+        if (!this.dependencies.add(dependency)) {
+            throw error("Already added $dependency to $name")
+        }
+
+        InjektPlugins.logger?.info("$name Add dependency $dependency")
+    }
+
+    /**
+     * Whether or not contains the [dependency]
+     */
+    fun containsDependency(dependency: Component): Boolean =
+        dependencies.contains(dependency)
+
+    /**
+     * Removes the given dependency
+     */
+    fun removeDependency(dependency: Component) {
+        dependencies.remove(dependency)
+    }
+
+    /**
+     * Adds all of [scopeNames] to this component
+     */
+    fun scopeNames(scopeNames: Iterable<String>) {
+        scopeNames.forEach {
+            if (!this.scopeNames.add(it)) {
+                error("Scope name $it was already added to $scopeNames")
+            }
+        }
+    }
+
+    /**
+     * Returns all scope names of this component
+     */
+    fun getScopeNames(): Set<String> = scopeNames
+
+    fun removeScopeName(scopeName: String) {
+        scopeNames.remove(scopeName)
+
+    }
+
+    /**
+     * Whether or not contains [scopeName]
+     */
+    fun containsScopeName(scopeName: String): Boolean = scopeNames.contains(scopeName)
+
+    /**
+     * Returns all [BeanDefinition]s added to this component
+     */
+    fun getDefinitions(): Set<BeanDefinition<*>> = definitions.values.toSet()
+
+    /**
+     * Saves the [definition]
+     */
+    fun addDefinition(definition: BeanDefinition<*>) {
+        val isOverride = definitions.remove(definition.key) != null
+
+        if (isOverride && !definition.override) {
+            throw OverrideException("Try to override definition $definition but was already in $name")
+        }
+
+        definitions[definition.key] = definition
+
+        InjektPlugins.logger?.let { logger ->
+            val msg = if (isOverride) {
+                "$name Override $definition"
+            } else {
+                "$name Declare $definition"
+            }
+            logger.debug(msg)
+        }
+
+        // create eager instances
+        if (definition.eager) {
+            InjektPlugins.logger?.info("$name Create eager instance for $definition")
+            getByKey<Any>(definition.key, null)
+        }
+    }
+
+    /**
+     * Removes the given [definition] and any instance associated with it
+     */
+    fun removeDefinition(definition: BeanDefinition<*>) {
+        definitions.remove(definition.key)
+        instances.remove(definition.key)
+    }
+
+    /**
+     * Whether or not contains the [definition]
+     */
+    fun containsDefinition(definition: BeanDefinition<*>): Boolean =
+        definitions.containsKey(definition.key)
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Any> getByKey(key: Key, parameters: ParametersDefinition?): T? {
+        return thisGetByKey(key, parameters)
+            ?: getFromDependencyByKey(key, parameters)
+    }
+
+    private fun <T : Any> thisGetByKey(key: Key, parameters: ParametersDefinition?): T? {
+        val definition = definitions[key] ?: return null
+
+        if (definition.scopeId != null && !scopeNames.contains(definition.scopeId)) {
+            val parentWithScope =
+                dependencies.firstOrNull { it.scopeNames.contains(definition.scopeId) }
+            if (parentWithScope != null) {
+                logger?.info("Add $definition to scoped ${parentWithScope.name}")
+                parentWithScope.addDefinition(definition)
+                return null
+            } else {
+                error("Component scope $name does not match definition scope ${definition.scopeId}")
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        return try {
+            val instance = when (definition.kind) {
+                BeanDefinition.Kind.FACTORY -> {
+                    InjektPlugins.logger?.info("$name Create instance $definition")
+                    definition.definition.invoke(
+                        DefinitionContext(this),
+                        parameters?.invoke() ?: emptyParameters()
+                    )
+                }
+                BeanDefinition.Kind.SINGLE -> {
+                    InjektPlugins.logger?.info("$name Return existing instance $definition")
+                    instances[key] ?: (
+                            definition.definition.invoke(
+                                DefinitionContext(this),
+                                parameters?.invoke() ?: emptyParameters()
+                            ).also { instances[key] = it }).also {
+                        InjektPlugins.logger?.info("$name Create instance $definition")
+                    }
+                }
+            }
+
+            instance as T
+        } catch (e: Exception) {
+            throw InstanceCreationException(
+                "$name Couldn't instantiate $definition",
+                e
+            )
+        }
+    }
+
+    private fun <T : Any> getFromDependencyByKey(key: Key, parameters: ParametersDefinition?): T? {
+        for (dependency in dependencies) {
+            val instance = dependency.getByKey<T>(key, parameters)
+            if (instance != null) return instance
+        }
+
+        return null
+    }
+
 }

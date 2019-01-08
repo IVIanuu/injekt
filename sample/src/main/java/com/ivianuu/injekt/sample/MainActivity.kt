@@ -3,7 +3,9 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.module
@@ -38,6 +40,8 @@ class MainActivity : AppCompatActivity(), InjektTrait {
                 .replace(android.R.id.content, ParentFragment())
                 .commit()
         }
+
+        get<String>("some_string")
     }
 
 }
@@ -54,4 +58,6 @@ val mainActivityModule = module {
             get()
         )
     } bindIntoMap (DEPS to MainActivityDependency::class)
+
+    factory("some_string", APPLICATION_SCOPE) { "some_string" }
 }

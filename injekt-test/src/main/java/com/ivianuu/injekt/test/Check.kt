@@ -28,7 +28,7 @@ fun Component.check() {
         }
         .onEach {
             println("save $it")
-            beanRegistry.saveDefinition(it)
+beanRegistry.addDefinition(it)
         }
         .forEach {
             get(it.type, it.name).also { println("got $it") }

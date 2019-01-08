@@ -39,7 +39,7 @@ stubbing: (T.() -> Unit)? = null
 val foundDefinition = beanRegistry.findDefinition(type, name) as BeanDefinition<T>
 
 val definition = foundDefinition.cloneForMock(type)
-beanRegistry.saveDefinition(definition)
+beanRegistry.addDefinition(definition)
 
 return applyStub(type, stubbing)
 }

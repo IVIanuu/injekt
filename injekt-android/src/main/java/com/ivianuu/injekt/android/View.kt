@@ -8,6 +8,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
+import com.ivianuu.injekt.scopeNames
 
 const val VIEW_SCOPE = "view_scope"
 const val CHILD_VIEW_SCOPE = "child_view_scope"
@@ -17,10 +18,26 @@ const val CHILD_VIEW_SCOPE = "child_view_scope"
  */
 fun <T : View> viewComponent(
     instance: T,
-    scopeId: String = VIEW_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name) {
+): Component = component(name) {
+    scopeNames(VIEW_SCOPE)
+    (instance.getParentViewComponentOrNull()
+        ?: instance.getContextComponentOrNull()
+        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
+    addInstance(instance)
+    definition?.invoke(this)
+}
+
+/**
+ * Returns a [Component] with convenient configurations
+ */
+fun <T : View> childViewComponent(
+    instance: T,
+    name: String? = instance.javaClass.simpleName + "Component",
+    definition: ComponentDefinition? = null
+): Component = component(name) {
+    scopeNames(CHILD_VIEW_SCOPE)
     (instance.getParentViewComponentOrNull()
         ?: instance.getContextComponentOrNull()
         ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }

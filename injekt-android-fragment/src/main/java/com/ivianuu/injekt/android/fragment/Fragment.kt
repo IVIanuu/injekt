@@ -23,6 +23,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
+import com.ivianuu.injekt.scopeNames
 
 const val FRAGMENT_SCOPE = "fragment_scope"
 const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
@@ -32,10 +33,26 @@ const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
  */
 fun <T : Fragment> fragmentComponent(
     instance: T,
-    scopeId: String = FRAGMENT_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name) {
+): Component = component(name) {
+    scopeNames(FRAGMENT_SCOPE)
+    (instance.getParentFragmentComponentOrNull()
+        ?: instance.getActivityComponentOrNull()
+        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
+    addInstance(instance)
+    definition?.invoke(this)
+}
+
+/**
+ * Returns a [Component] with convenient configurations
+ */
+fun <T : Fragment> childFragmentComponent(
+    instance: T,
+    name: String? = instance.javaClass.simpleName + "Component",
+    definition: ComponentDefinition? = null
+): Component = component(name) {
+    scopeNames(CHILD_FRAGMENT_SCOPE)
     (instance.getParentFragmentComponentOrNull()
         ?: instance.getActivityComponentOrNull()
         ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
