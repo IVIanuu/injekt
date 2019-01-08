@@ -123,7 +123,7 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
                     }
 
                     val getName =
-                        it.getAnnotationMirrorOrNull<Name>()?.get("scopeName")?.value as? String
+                        it.getAnnotationMirrorOrNull<Name>()?.get("name")?.value as? String
 
                     if (getName != null && getName.isEmpty()) {
                         messager.printMessage(
