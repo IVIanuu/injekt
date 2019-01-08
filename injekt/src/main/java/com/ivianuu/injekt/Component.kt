@@ -185,7 +185,7 @@ class Component internal constructor(val name: String?) {
                 addDefinition(definition)
 
                 // if we reach here we got our definition
-                // so search again.. there's probably a better way you yah it wurks
+                // search again for now
                 return findInstance(key, false)
             } catch (e: ClassNotFoundException) {
                 // ignore
