@@ -49,10 +49,10 @@ infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> {
 }
 
 /**
- * Binds this [BeanDefinition] to [types]
+ * Binds this [BeanDefinition] to [names]
  */
-infix fun <T : Any> BindingContext<T>.bind(types: Array<String>): BindingContext<T> = apply {
-    types.forEach { bind(it) }
+infix fun <T : Any> BindingContext<T>.bind(names: Array<String>): BindingContext<T> = apply {
+    names.forEach { bind(it) }
 }
 
 /**
