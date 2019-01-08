@@ -35,10 +35,10 @@ const val APPLICATION_SCOPE = "application_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : Application> T.applicationComponent(
+fun <T : Application> applicationComponent(
     instance: T,
     scopeId: String = APPLICATION_SCOPE,
-    name: String? = javaClass.simpleName + "Component",
+    name: String? = instance.javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name, createEagerInstances) {
