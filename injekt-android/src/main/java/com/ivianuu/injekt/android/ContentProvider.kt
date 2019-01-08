@@ -33,8 +33,9 @@ const val CONTENT_PROVIDER_SCOPE = "content_provider_scope"
 fun <T : ContentProvider> contentProviderComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
+    deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
-): Component = component(name) {
+): Component = component(name, deferCreateEagerInstances) {
     scopeNames(CONTENT_PROVIDER_SCOPE)
     instance.getApplicationComponentOrNull()?.let { dependencies(it) }
     addInstance(instance)

@@ -33,8 +33,9 @@ const val SERVICE_SCOPE = "service_scope"
 fun <T : Service> serviceComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
+    deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
-): Component = component(name) {
+): Component = component(name, deferCreateEagerInstances) {
     scopeNames(SERVICE_SCOPE)
     instance.getApplicationComponentOrNull()?.let { dependencies(it) }
     addInstance(instance)

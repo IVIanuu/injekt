@@ -19,8 +19,9 @@ const val CHILD_VIEW_SCOPE = "child_view_scope"
 fun <T : View> viewComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
+    deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
-): Component = component(name) {
+): Component = component(name, deferCreateEagerInstances) {
     scopeNames(VIEW_SCOPE)
     (instance.getParentViewComponentOrNull()
         ?: instance.getContextComponentOrNull()

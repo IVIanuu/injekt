@@ -12,9 +12,15 @@ typealias ComponentDefinition = Component.() -> Unit
  */
 fun component(
     name: String? = null,
+    deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
 ): Component = Component(name)
-    .apply { definition?.invoke(this) }
+    .apply {
+        definition?.invoke(this)
+        if (!deferCreateEagerInstances) {
+            createEagerInstances()
+        }
+    }
 
 /** Calls trough [Component.modules] */
 fun Component.modules(vararg modules: Module) {

@@ -34,8 +34,9 @@ const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
 fun <T : Fragment> fragmentComponent(
     instance: T,
     name: String? = instance.javaClass.simpleName + "Component",
+    deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
-): Component = component(name) {
+): Component = component(name, deferCreateEagerInstances) {
     scopeNames(FRAGMENT_SCOPE)
     (instance.getParentFragmentComponentOrNull()
         ?: instance.getActivityComponentOrNull()

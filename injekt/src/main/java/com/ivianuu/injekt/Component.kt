@@ -142,12 +142,6 @@ class Component internal constructor(val name: String?) {
             }
             logger.debug(msg)
         }
-
-        // create eager instances
-        if (definition.eager) {
-            InjektPlugins.logger?.info("$name Create eager instance for $definition")
-            instance.get()
-        }
     }
 
     /**
@@ -163,6 +157,18 @@ class Component internal constructor(val name: String?) {
      */
     fun containsDefinition(definition: BeanDefinition<*>): Boolean =
         definitions.containsKey(definition.key)
+
+    /**
+     * Creates all eager instances of this component
+     */
+    fun createEagerInstances() {
+        instances
+            .filter { it.value.definition.eager && !it.value.isCreated }
+            .forEach {
+                InjektPlugins.logger?.info("$name Create eager instance for ${it.value.definition}")
+                it.value.get()
+            }
+    }
 
     private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? {
         val instance = instances[key]
