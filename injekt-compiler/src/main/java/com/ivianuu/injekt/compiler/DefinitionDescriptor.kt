@@ -16,18 +16,16 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.BeanDefinition
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.TypeName
 
 data class DefinitionDescriptor(
     val target: ClassName,
-    val kind: Kind,
+    val factoryName: ClassName,
+    val kind: BeanDefinition.Kind,
     val name: String?,
-    val scope: String?,
+    val scopeName: String?,
     val override: Boolean,
     val eager: Boolean?,
-    val secondaryTypes: Set<TypeName>,
     val constructorParams: List<ParamDescriptor>
-) {
-    enum class Kind { FACTORY, SINGLE }
-}
+)

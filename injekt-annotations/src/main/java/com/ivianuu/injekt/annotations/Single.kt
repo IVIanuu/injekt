@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.annotations
 
-import kotlin.reflect.KClass
-
 /**
  * Contributes a factory binding into the declared [Module]
  */
@@ -25,8 +23,7 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.SOURCE)
 annotation class Single(
     val name: String = "",
-    val scopeId: String = "",
+    val scopeName: String = "",
     val override: Boolean = false,
-    val eager: Boolean = false,
-    val secondaryTypes: Array<KClass<*>> = []
+    val eager: Boolean = false
 )

@@ -17,9 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
+import com.ivianuu.injekt.BeanDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.annotations.Factory
-import com.ivianuu.injekt.annotations.Module
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Single
@@ -29,16 +29,13 @@ import com.ivianuu.processingx.elementUtils
 import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
-import com.ivianuu.processingx.getAsTypeList
 import com.ivianuu.processingx.getOrNull
-import com.ivianuu.processingx.getPackage
 import com.ivianuu.processingx.hasAnnotation
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.typeUtils
 import com.ivianuu.processingx.write
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.asTypeName
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -46,13 +43,13 @@ import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
-class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment) : ProcessingStep,
+class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvironment) :
+    ProcessingStep,
     ProcessingEnvHolder {
 
     override fun annotations(): Set<Class<out Annotation>> = setOf(
         Factory::class.java,
         Name::class.java,
-        Module::class.java,
         Param::class.java,
         Single::class.java
     )
@@ -64,62 +61,28 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         val definitionElements = (elementsByAnnotation[Factory::class.java]
                 + elementsByAnnotation[Single::class.java])
 
-        if (definitionElements.isNotEmpty()) {
-            validateOnlyOneModule(definitionElements)
-        }
-
         validateOnlyOneKindAnnotation(definitionElements)
 
-        val definitions =
-            (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
-                .filterIsInstance<TypeElement>()
-                .mapNotNull { createDefinitionDescriptor(it) }
-                .toSet()
-
-        val moduleElement = elementsByAnnotation[Module::class.java].first()
-
-        val annotation = moduleElement.getAnnotationMirror<Module>()
-        var packageName = annotation["packageName"].value as String
-
-        if (packageName.isEmpty()) {
-            packageName = moduleElement.getPackage().qualifiedName.toString()
-        }
-
-        var moduleName = annotation["moduleName"].value as String
-
-        if (moduleName.isEmpty()) {
-            moduleName = moduleElement.simpleName.toString().decapitalize()
-        }
-
-        val internal = annotation["internal"].value as Boolean
-        var scopeId: String? = annotation["scopeId"].value as String
-        if (scopeId!!.isEmpty()) {
-            scopeId = null
-        }
-
-        val override = annotation["override"].value as Boolean
-        val eager = annotation.getOrNull("scopeId")?.value as? Boolean ?: false
-
-        val module = ModuleDescriptor(
-            packageName, moduleName, internal,
-            scopeId, override, eager, definitions
-        )
-
-        ModuleGenerator(module).generate().write(processingEnv)
+        (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
+            .filterIsInstance<TypeElement>()
+            .mapNotNull { createDefinitionDescriptor(it) }
+            .map { FactoryGenerator(it) }
+            .map { it.generate() }
+            .forEach { it.write(processingEnv) }
 
         return emptySet()
     }
 
     private fun createDefinitionDescriptor(element: TypeElement): DefinitionDescriptor? {
         val kind = if (element.hasAnnotation<Single>()) {
-            DefinitionDescriptor.Kind.SINGLE
+            BeanDefinition.Kind.SINGLE
         } else {
-            DefinitionDescriptor.Kind.FACTORY
+            BeanDefinition.Kind.FACTORY
         }
 
         val annotation = when (kind) {
-            DefinitionDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            DefinitionDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
+            BeanDefinition.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
+            BeanDefinition.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
         var name: String? = annotation["name"].value as String
@@ -127,7 +90,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
             name = null
         }
 
-        var scope: String? = annotation["scopeId"].value as String
+        var scope: String? = annotation["scopeName"].value as String
         if (scope!!.isEmpty()) {
             scope = null
         }
@@ -135,18 +98,18 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         val override = annotation["override"].value as Boolean
         val eager = annotation.getOrNull("eager")?.value as? Boolean
 
-        val secondaryTypes = annotation.getAsTypeList("secondaryTypes")
-            .map { it.asTypeName().javaToKotlinType() }.toSet()
-
         var paramsIndex = -1
+
+        val targetName = element.asClassName().javaToKotlinType() as ClassName
+        val factoryName = ClassName.bestGuess(targetName.toString() + "__Factory")
         return DefinitionDescriptor(
-            element.asClassName().javaToKotlinType() as ClassName,
+            targetName,
+            factoryName,
             kind,
             name,
             scope,
             override,
             eager,
-            secondaryTypes,
             element.enclosedElements
                 .filterIsInstance<ExecutableElement>()
                 .first { it.kind == ElementKind.CONSTRUCTOR }
@@ -160,7 +123,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                     }
 
                     val getName =
-                        it.getAnnotationMirrorOrNull<Name>()?.get("scopeId")?.value as? String
+                        it.getAnnotationMirrorOrNull<Name>()?.get("scopeName")?.value as? String
 
                     if (getName != null && getName.isEmpty()) {
                         messager.printMessage(
@@ -197,19 +160,6 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
                     )
                 }
         )
-    }
-
-    private fun validateOnlyOneModule(elements: Set<Element>) {
-        when {
-            elements.isEmpty() -> messager.printMessage(
-                Diagnostic.Kind.ERROR,
-                "Missing @Module annotation"
-            )
-            elements.size > 1 -> messager.printMessage(
-                Diagnostic.Kind.ERROR,
-                "There can be only one @Module"
-            )
-        }
     }
 
     private fun validateNameUsages(elements: Set<Element>) {

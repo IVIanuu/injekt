@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -10,6 +11,7 @@ class Component internal constructor(val name: String?) {
     private val dependencies = hashSetOf<Component>()
     private val scopeNames = hashSetOf<String>()
     private val definitions = hashMapOf<Key, BeanDefinition<*>>()
+
     private val instances = hashMapOf<Key, Instance<*>>()
 
     /**
@@ -21,7 +23,7 @@ class Component internal constructor(val name: String?) {
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        return findInstance<T>(key)?.get(parameters)
+        return findInstance<T>(key, true)?.get(parameters)
             ?: throw NoBeanDefinitionFoundException("$name Could not find definition for $key")
     }
 
@@ -91,7 +93,6 @@ class Component internal constructor(val name: String?) {
 
     fun removeScopeName(scopeName: String) {
         scopeNames.remove(scopeName)
-
     }
 
     /**
@@ -108,19 +109,6 @@ class Component internal constructor(val name: String?) {
      * Saves the [definition]
      */
     fun addDefinition(definition: BeanDefinition<*>) {
-        if (definition.scopeId != null && !scopeNames.contains(definition.scopeId)) {
-            val parentWithScope =
-                dependencies.firstOrNull { it.scopeNames.contains(definition.scopeId) }
-
-            // add the definition to the parent
-            if (parentWithScope != null) {
-                parentWithScope.addDefinition(definition)
-                return
-            } else {
-                error("Component scope $name does not match definition scope ${definition.scopeId}")
-            }
-        }
-
         val isOverride = definitions.remove(definition.key) != null
 
         if (isOverride && !definition.override) {
@@ -129,10 +117,22 @@ class Component internal constructor(val name: String?) {
 
         definitions[definition.key] = definition
 
-        instances[definition.key] = when (definition.kind) {
-            BeanDefinition.Kind.FACTORY -> FactoryInstance(definition, this)
-            BeanDefinition.Kind.SINGLE -> SingleInstance(definition, this)
+        if (definition.scopeName != null && !scopeNames.contains(definition.scopeName)) {
+            val parentWithScope =
+                dependencies.firstOrNull { it.scopeNames.contains(definition.scopeName) }
+
+            // add the definition to the parent
+            if (parentWithScope != null) {
+                parentWithScope.addDefinition(definition)
+                return
+            } else {
+                error("Component scope $name does not match definition scope ${definition.scopeName}")
+            }
         }
+
+        val instance = definition.createInstance()
+
+        instances[definition.key] = instance
 
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
@@ -146,7 +146,7 @@ class Component internal constructor(val name: String?) {
         // create eager instances
         if (definition.eager) {
             InjektPlugins.logger?.info("$name Create eager instance for $definition")
-            findInstance<Any>(definition.key)
+            instance.get()
         }
     }
 
@@ -164,16 +164,39 @@ class Component internal constructor(val name: String?) {
     fun containsDefinition(definition: BeanDefinition<*>): Boolean =
         definitions.containsKey(definition.key)
 
-    private fun <T : Any> findInstance(key: Key): Instance<T>? {
+    private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? {
         val instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
         for (dependency in dependencies) {
-            val instance = dependency.findInstance<T>(key)
+            val instance = dependency.findInstance<T>(key, false)
             if (instance != null) return instance
+        }
+
+        // we search for generated factories as a last resort
+        if (includeFactories) {
+            try {
+                val factoryType = Class.forName(key.type.java.name + "__Factory")
+                val factory = factoryType.newInstance() as DefinitionFactory<T>
+
+                logger?.info("Found definition factory for $key")
+
+                val definition = factory.create()
+                addDefinition(definition)
+
+                // if we reach here we got our definition
+                // so search again.. there's probably a better way you yah it wurks
+                return findInstance(key, false)
+            } catch (e: ClassNotFoundException) {
+                // ignore
+            }
         }
 
         return null
     }
 
+    private fun <T : Any> BeanDefinition<T>.createInstance() = when (kind) {
+        BeanDefinition.Kind.FACTORY -> FactoryInstance(this, this@Component)
+        BeanDefinition.Kind.SINGLE -> SingleInstance(this, this@Component)
+    }
 }

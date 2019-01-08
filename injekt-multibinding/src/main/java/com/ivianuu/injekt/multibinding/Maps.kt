@@ -36,7 +36,7 @@ import kotlin.reflect.KClass
 const val KEY_MAP_BINDINGS = "mapBindings"
 
 /**
- * Declares a empty set binding with the scopeId [mapName]
+ * Declares a empty set binding with the [mapName]
  * This is useful for retrieving a [MultiBindingMap] even if no [BeanDefinition] was bound into it
  */
 fun Module.mapBinding(mapName: String) {
