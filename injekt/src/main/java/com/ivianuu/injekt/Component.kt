@@ -1,6 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -63,19 +62,6 @@ class Component internal constructor(val name: String?) {
     }
 
     /**
-     * Whether or not contains the [dependency]
-     */
-    fun containsDependency(dependency: Component): Boolean =
-        dependencies.contains(dependency)
-
-    /**
-     * Removes the given dependency
-     */
-    fun removeDependency(dependency: Component) {
-        dependencies.remove(dependency)
-    }
-
-    /**
      * Adds all of [scopeNames] to this component
      */
     fun scopeNames(scopeNames: Iterable<String>) {
@@ -91,15 +77,6 @@ class Component internal constructor(val name: String?) {
      */
     fun getScopeNames(): Set<String> = scopeNames
 
-    fun removeScopeName(scopeName: String) {
-        scopeNames.remove(scopeName)
-    }
-
-    /**
-     * Whether or not contains [scopeName]
-     */
-    fun containsScopeName(scopeName: String): Boolean = scopeNames.contains(scopeName)
-
     /**
      * Returns all [BeanDefinition]s added to this component
      */
@@ -109,6 +86,49 @@ class Component internal constructor(val name: String?) {
      * Saves the [definition]
      */
     fun addDefinition(definition: BeanDefinition<*>) {
+        addDefinitionInternal(definition)
+    }
+
+    /**
+     * Creates all eager instances of this component
+     */
+    fun createEagerInstances() {
+        instances
+            .filter { it.value.definition.eager && !it.value.isCreated }
+            .forEach {
+                InjektPlugins.logger?.info("$name Create eager instance for ${it.value.definition}")
+                it.value.get()
+            }
+    }
+
+    private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? {
+        var instance = instances[key]
+        if (instance != null) return instance as Instance<T>
+
+        for (dependency in dependencies) {
+            instance = dependency.findInstance<T>(key, false)
+            if (instance != null) {
+                instances[key] = instance
+                return instance
+            }
+        }
+
+        // we search for generated factories as a last resort
+        if (includeFactories) {
+            try {
+                val factory = FactoryFinder.find(key.type) ?: return null
+
+                val definition = factory.create()
+                return addDefinitionInternal(definition) as Instance<T>
+            } catch (e: ClassNotFoundException) {
+                // ignore
+            }
+        }
+
+        return null
+    }
+
+    private fun addDefinitionInternal(definition: BeanDefinition<*>): Instance<*> {
         val isOverride = definitions.remove(definition.key) != null
 
         if (isOverride && !definition.override) {
@@ -118,13 +138,13 @@ class Component internal constructor(val name: String?) {
         definitions[definition.key] = definition
 
         if (definition.scopeName != null && !scopeNames.contains(definition.scopeName)) {
-            val parentWithScope =
-                dependencies.firstOrNull { it.scopeNames.contains(definition.scopeName) }
+            val parentWithScope = findComponentForScope(definition.scopeName)
 
             // add the definition to the parent
             if (parentWithScope != null) {
-                parentWithScope.addDefinition(definition)
-                return
+                val instance = parentWithScope.addDefinitionInternal(definition)
+                instances[definition.key] = instance
+                return instance
             } else {
                 error("Component scope $name does not match definition scope ${definition.scopeName}")
             }
@@ -142,68 +162,22 @@ class Component internal constructor(val name: String?) {
             }
             logger.debug(msg)
         }
-    }
 
-    /**
-     * Removes the given [definition] and any instance associated with it
-     */
-    fun removeDefinition(definition: BeanDefinition<*>) {
-        definitions.remove(definition.key)
-        instances.remove(definition.key)
-    }
-
-    /**
-     * Whether or not contains the [definition]
-     */
-    fun containsDefinition(definition: BeanDefinition<*>): Boolean =
-        definitions.containsKey(definition.key)
-
-    /**
-     * Creates all eager instances of this component
-     */
-    fun createEagerInstances() {
-        instances
-            .filter { it.value.definition.eager && !it.value.isCreated }
-            .forEach {
-                InjektPlugins.logger?.info("$name Create eager instance for ${it.value.definition}")
-                it.value.get()
-            }
-    }
-
-    private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? {
-        val instance = instances[key]
-        if (instance != null) return instance as Instance<T>
-
-        for (dependency in dependencies) {
-            val instance = dependency.findInstance<T>(key, false)
-            if (instance != null) return instance
-        }
-
-        // we search for generated factories as a last resort
-        if (includeFactories) {
-            try {
-                val factoryName = key.type.java.name.replace("\$", "_") + "__Factory"
-                val factoryType = Class.forName(factoryName)
-                val factory = factoryType.newInstance() as DefinitionFactory<T>
-
-                logger?.info("Found definition factory for $key")
-
-                val definition = factory.create()
-                addDefinition(definition)
-
-                // if we reach here we got our definition
-                // search again for now
-                return findInstance(key, false)
-            } catch (e: ClassNotFoundException) {
-                // ignore
-            }
-        }
-
-        return null
+        return instance
     }
 
     private fun <T : Any> BeanDefinition<T>.createInstance() = when (kind) {
         BeanDefinition.Kind.FACTORY -> FactoryInstance(this, this@Component)
         BeanDefinition.Kind.SINGLE -> SingleInstance(this, this@Component)
+    }
+
+    private fun findComponentForScope(scopeName: String): Component? {
+        if (scopeNames.contains(scopeName)) return this
+        for (dependency in dependencies) {
+            val result = dependency.findComponentForScope(scopeName)
+            if (result != null) return result
+        }
+
+        return null
     }
 }

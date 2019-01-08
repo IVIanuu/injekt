@@ -4,10 +4,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.util.Log
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
-import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Single
 
 
@@ -23,18 +22,14 @@ class InjektTraitContextWrapper(
     injektTrait: InjektTrait
 ) : ContextWrapper(base), InjektTrait by injektTrait
 
-@Single("name", "scope", true, true)
-class DummyDep(
-    @Name("named") dummyDep: DummyDep,
-    @Param parameterized: Boolean,
-    lazyDep: Lazy<DummyDep>,
-    providerDep: Provider<DummyDep>,
-    normal: DummyDep,
-    @Param parameterized2: Int
-)
+@Single("name", APPLICATION_SCOPE, true, true)
+class DummyDep
 
 @Factory
 class DummyDep2 {
     @Single
-    class DummyDep3
+    class DummyDep3(
+        @Name("name") val dummyDep: DummyDep,
+        val dummyDep2: DummyDep2
+    )
 }
