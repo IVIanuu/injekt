@@ -35,7 +35,11 @@ class FactoryGenerator(private val descriptor: DefinitionDescriptor) {
         val file =
             FileSpec.builder(descriptor.factoryName.packageName, descriptor.factoryName.simpleName)
 
-        file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
+        val imports = imports()
+        if (imports.isNotEmpty()) {
+            file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
+        }
+
         file.addType(factory())
 
         return file.build()
