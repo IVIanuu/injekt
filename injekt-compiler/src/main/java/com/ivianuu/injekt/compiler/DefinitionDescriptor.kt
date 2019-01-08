@@ -26,6 +26,6 @@ data class DefinitionDescriptor(
     val name: String?,
     val scopeName: String?,
     val override: Boolean,
-    val eager: Boolean?,
+    val eager: Boolean,
     val constructorParams: List<ParamDescriptor>
 )

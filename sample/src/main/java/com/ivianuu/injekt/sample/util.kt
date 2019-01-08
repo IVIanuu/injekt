@@ -5,6 +5,7 @@ import android.content.ContextWrapper
 import android.util.Log
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Single
@@ -31,3 +32,6 @@ class DummyDep(
     normal: DummyDep,
     @Param parameterized2: Int
 )
+
+@Factory
+class DummyDep2

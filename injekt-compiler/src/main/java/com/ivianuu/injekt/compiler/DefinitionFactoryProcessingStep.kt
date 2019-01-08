@@ -96,7 +96,7 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
         }
 
         val override = annotation["override"].value as Boolean
-        val eager = annotation.getOrNull("eager")?.value as? Boolean
+        val eager = annotation.getOrNull("eager")?.value as? Boolean ?: false
 
         var paramsIndex = -1
 
