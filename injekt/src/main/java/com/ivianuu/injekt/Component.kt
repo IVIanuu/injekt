@@ -1,6 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -109,6 +108,19 @@ class Component internal constructor(val name: String?) {
      * Saves the [definition]
      */
     fun addDefinition(definition: BeanDefinition<*>) {
+        if (definition.scopeId != null && !scopeNames.contains(definition.scopeId)) {
+            val parentWithScope =
+                dependencies.firstOrNull { it.scopeNames.contains(definition.scopeId) }
+
+            // add the definition to the parent
+            if (parentWithScope != null) {
+                parentWithScope.addDefinition(definition)
+                return
+            } else {
+                error("Component scope $name does not match definition scope ${definition.scopeId}")
+            }
+        }
+
         val isOverride = definitions.remove(definition.key) != null
 
         if (isOverride && !definition.override) {
@@ -155,20 +167,6 @@ class Component internal constructor(val name: String?) {
 
     private fun <T : Any> thisGetByKey(key: Key, parameters: ParametersDefinition?): T? {
         val definition = definitions[key] ?: return null
-
-        if (definition.scopeId != null && !scopeNames.contains(definition.scopeId)) {
-            val parentWithScope =
-                dependencies.firstOrNull { it.scopeNames.contains(definition.scopeId) }
-            if (parentWithScope != null) {
-                if (!parentWithScope.definitions.containsKey(key)) {
-                    logger?.info("Add $definition to scoped ${parentWithScope.name}")
-                    parentWithScope.addDefinition(definition)
-                }
-                return null
-            } else {
-                error("Component scope $name does not match definition scope ${definition.scopeId}")
-            }
-        }
 
         @Suppress("UNCHECKED_CAST")
         return try {
