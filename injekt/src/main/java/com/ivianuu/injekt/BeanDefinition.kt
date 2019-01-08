@@ -68,4 +68,4 @@ data class BeanDefinition<T : Any> private constructor(
 /**
  * Defines a [BeanDefinition]
  */
-typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
+typealias Definition<T> = Component.(parameters: Parameters) -> T

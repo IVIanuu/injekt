@@ -8,7 +8,9 @@ import com.ivianuu.injekt.InjektPlugins.logger
 class ComponentContext(private val component: Component) {
 
     private val dependencies = hashSetOf<Component>()
+
     private val definitions = hashMapOf<Key, BeanDefinition<*>>()
+
     private val instances = hashMapOf<Key, Any>()
 
     /**
@@ -119,20 +121,29 @@ class ComponentContext(private val component: Component) {
     private fun <T : Any> thisGetByKey(key: Key, parameters: ParametersDefinition?): T? {
         val definition = definitions[key] ?: return null
 
+        if (definition.scopeId != null && definition.scopeId != component.scopeId) {
+            error("Component scope ${component.name} does not match definition scope ${definition.scopeId}")
+        }
+
         @Suppress("UNCHECKED_CAST")
         return try {
             val instance = when (definition.kind) {
                 BeanDefinition.Kind.FACTORY -> {
+                    logger?.info("${component.name} Create instance $definition")
                     definition.definition.invoke(
-                        DefinitionContext(component),
+                        component,
                         parameters?.invoke() ?: emptyParameters()
                     )
                 }
                 BeanDefinition.Kind.SINGLE -> {
-                    instances[key] ?: definition.definition.invoke(
-                        DefinitionContext(component),
-                        parameters?.invoke() ?: emptyParameters()
-                    ).also { instances[key] = it }
+                    logger?.info("${component.name} Return existing instance $definition")
+                    instances[key] ?: (
+                            definition.definition.invoke(
+                                component,
+                                parameters?.invoke() ?: emptyParameters()
+                            ).also { instances[key] = it }).also {
+                        logger?.info("${component.name} Create instance $definition")
+                    }
                 }
             }
 
