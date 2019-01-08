@@ -40,7 +40,7 @@ const val KEY_MAP_BINDINGS = "mapBindings"
  * This is useful for retrieving a [MultiBindingMap] even if no [BeanDefinition] was bound into it
  */
 fun Module.mapBinding(mapName: String) {
-    factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(this, emptyMap()) }
+    factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(component, emptyMap()) }
 }
 
 /**
@@ -54,8 +54,8 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
     }[mapName] = mapKey
 
     module.factory(name = mapName, override = true) {
-        val allDefinitions = context.getDefinitions() + (
-                context.getDependencies().flatMap { it.context.getDefinitions() })
+        val allDefinitions = component.context.getDefinitions() + (
+                component.context.getDependencies().flatMap { it.context.getDefinitions() })
 
         allDefinitions
             .mapNotNull { definition ->
@@ -64,7 +64,7 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
             }
             .toMap()
             .mapValues { it.value as BeanDefinition<Any> }
-            .let { MultiBindingMap(this, it) }
+            .let { MultiBindingMap(component, it) }
     }
 
     return this

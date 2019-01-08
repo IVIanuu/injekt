@@ -131,7 +131,7 @@ class ComponentContext(private val component: Component) {
                 BeanDefinition.Kind.FACTORY -> {
                     logger?.info("${component.name} Create instance $definition")
                     definition.definition.invoke(
-                        component,
+                        DefinitionContext(component),
                         parameters?.invoke() ?: emptyParameters()
                     )
                 }
@@ -139,7 +139,7 @@ class ComponentContext(private val component: Component) {
                     logger?.info("${component.name} Return existing instance $definition")
                     instances[key] ?: (
                             definition.definition.invoke(
-                                component,
+                                DefinitionContext(component),
                                 parameters?.invoke() ?: emptyParameters()
                             ).also { instances[key] = it }).also {
                         logger?.info("${component.name} Create instance $definition")
