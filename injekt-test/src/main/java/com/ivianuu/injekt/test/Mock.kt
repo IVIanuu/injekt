@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/**
+
 package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.BeanDefinition
@@ -22,40 +24,40 @@ import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 
 inline fun <reified T : Any> Component.declareMock(
-    name: String? = null,
-    noinline stubbing: (T.() -> Unit)? = null
+name: String? = null,
+noinline stubbing: (T.() -> Unit)? = null
 ) = declareMock(T::class, name, stubbing)
 
 /**
  * Declares a mocked version of [type] and [name]
- */
+*/
 fun <T : Any> Component.declareMock(
-    type: KClass<T>,
-    name: String? = null,
-    stubbing: (T.() -> Unit)? = null
+type: KClass<T>,
+name: String? = null,
+stubbing: (T.() -> Unit)? = null
 ): T {
-    val foundDefinition = beanRegistry.findDefinition(type, name) as BeanDefinition<T>
+val foundDefinition = beanRegistry.findDefinition(type, name) as BeanDefinition<T>
 
-    val definition = foundDefinition.cloneForMock(type)
-    beanRegistry.saveDefinition(definition)
+val definition = foundDefinition.cloneForMock(type)
+beanRegistry.saveDefinition(definition)
 
-    return applyStub(type, stubbing)
+return applyStub(type, stubbing)
 }
 
 fun <T : Any> Component.applyStub(
-    type: KClass<T>,
-    stubbing: (T.() -> Unit)?
+type: KClass<T>,
+stubbing: (T.() -> Unit)?
 ): T {
-    val instance: T = get(type)
-    stubbing?.let { instance.apply(stubbing) }
-    return instance
+val instance: T = get(type)
+stubbing?.let { instance.apply(stubbing) }
+return instance
 }
 
 fun <T : Any> BeanDefinition<T>.cloneForMock(type: KClass<T>) = copy().also {
-    it.kind = kind
-    it.override = override
-    it.eager = eager
-    it.attributes = attributes
-    it.definition = { mock(type.java) }
-    it.createInstanceHolder()
-}
+it.kind = kind
+it.override = override
+it.eager = eager
+it.attributes = attributes
+it.definition = { mock(type.java) }
+it.createInstanceHolder()
+}*/

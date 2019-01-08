@@ -41,7 +41,7 @@ const val KEY_SET_BINDINGS = "setBindings"
  */
 fun Module.setBinding(setName: String) {
     factory(name = setName, override = true) {
-        MultiBindingSet<Any>(component, emptySet())
+        MultiBindingSet<Any>(this, emptySet())
     }
 }
 
@@ -52,14 +52,14 @@ infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingConte
     definition.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
     module.factory(name = setName, override = true) {
-        val allDefinitions = component.context.getDefinitions() + (
-                component.context.getDependencies().flatMap { it.context.getDefinitions() })
+        val allDefinitions = context.getDefinitions() + (
+                context.getDependencies().flatMap { it.context.getDefinitions() })
 
         allDefinitions
             .filter { it.attributes.get<Set<String>>(KEY_SET_BINDINGS)?.contains(setName) == true }
             .map { it as BeanDefinition<T> }
             .toSet()
-            .let { MultiBindingSet(component, it) }
+            .let { MultiBindingSet(this, it) }
     }
 
     return this
