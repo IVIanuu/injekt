@@ -160,8 +160,10 @@ class Component internal constructor(val name: String?) {
             val parentWithScope =
                 dependencies.firstOrNull { it.scopeNames.contains(definition.scopeId) }
             if (parentWithScope != null) {
-                logger?.info("Add $definition to scoped ${parentWithScope.name}")
-                parentWithScope.addDefinition(definition)
+                if (!parentWithScope.definitions.containsKey(key)) {
+                    logger?.info("Add $definition to scoped ${parentWithScope.name}")
+                    parentWithScope.addDefinition(definition)
+                }
                 return null
             } else {
                 error("Component scope $name does not match definition scope ${definition.scopeId}")
