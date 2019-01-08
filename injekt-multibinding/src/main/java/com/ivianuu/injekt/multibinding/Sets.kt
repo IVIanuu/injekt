@@ -21,7 +21,7 @@ import com.ivianuu.injekt.BeanDefinition
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.ModuleContext
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
@@ -39,9 +39,9 @@ const val KEY_SET_BINDINGS = "setBindings"
  * Declares a empty set binding with the scopeId [setName]
  * This is useful for retrieving a [MultiBindingSet] even if no [BeanDefinition] was bound into it
  */
-fun ModuleContext.setBinding(setName: String) {
+fun Module.setBinding(setName: String) {
     factory(name = setName, override = true) {
-        MultiBindingSet<Any>(emptySet())
+        MultiBindingSet<Any>(component, emptySet())
     }
 }
 
@@ -51,13 +51,15 @@ fun ModuleContext.setBinding(setName: String) {
 infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> {
     definition.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
 
-    moduleContext.factory(name = setName, override = true) {
-        component.beanRegistry
-            .getAllDefinitions()
+    module.factory(name = setName, override = true) {
+        val allDefinitions = component.context.getDefinitions() + (
+                component.context.getDependencies().flatMap { it.context.getDefinitions() })
+
+        allDefinitions
             .filter { it.attributes.get<Set<String>>(KEY_SET_BINDINGS)?.contains(setName) == true }
             .map { it as BeanDefinition<T> }
             .toSet()
-            .let { MultiBindingSet(it) }
+            .let { MultiBindingSet(component, it) }
     }
 
     return this
@@ -66,7 +68,7 @@ infix fun <T : Any> BindingContext<T>.bindIntoSet(setName: String): BindingConte
 /**
  * Binds a already existing [BeanDefinition] into a [Set] named [setName]
  */
-inline fun <reified T : Any> ModuleContext.bindIntoSet(
+inline fun <reified T : Any> Module.bindIntoSet(
     setName: String,
     implementationName: String? = null
 ): BindingContext<T> = bindIntoSet(T::class, setName, implementationName)
@@ -74,7 +76,7 @@ inline fun <reified T : Any> ModuleContext.bindIntoSet(
 /**
  * Binds a already existing [BeanDefinition] into a [Set] named [setName]
  */
-fun <T : Any> ModuleContext.bindIntoSet(
+fun <T : Any> Module.bindIntoSet(
     implementationType: KClass<T>,
     setName: String,
     implementationName: String? = null

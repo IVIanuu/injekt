@@ -7,21 +7,18 @@ import kotlin.reflect.KClass
  */
 data class BindingContext<T : Any>(
     val definition: BeanDefinition<T>,
-    val moduleContext: ModuleContext
+    val module: Module
 )
 
 /**
  * Binds this [BeanDefinition] to [type]
  */
 infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
-    val copy = (definition as BeanDefinition<Any>).copy(type = type as KClass<Any>, name = null)
-    copy.kind = definition.kind
-    copy.override = definition.override
-    copy.eager = definition.eager
-    copy.attributes = definition.attributes
-    copy.definition = definition.definition
-    copy.instance = definition.instance
-    moduleContext.declare(copy)
+    val copy = (definition as BeanDefinition<Any>).copy(
+        key = Key(type, name = null),
+        type = type as KClass<Any>, name = null
+    )
+    module.declare(copy)
     return this
 }
 
@@ -43,14 +40,11 @@ infix fun <T : Any> BindingContext<T>.bind(types: Iterable<KClass<*>>): BindingC
  * Binds this [BeanDefinition] to [name]
  */
 infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> {
-    val copy = (definition as BeanDefinition<Any>).copy(name = name)
-    copy.kind = definition.kind
-    copy.override = definition.override
-    copy.eager = definition.eager
-    copy.attributes = definition.attributes
-    copy.definition = definition.definition
-    copy.instance = definition.instance
-    moduleContext.declare(copy)
+    val copy = (definition as BeanDefinition<Any>).copy(
+        key = Key(definition.key.type, name),
+        name = name
+    )
+    module.declare(copy)
     return this
 }
 

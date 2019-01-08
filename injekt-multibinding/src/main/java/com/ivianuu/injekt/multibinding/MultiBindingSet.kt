@@ -18,6 +18,7 @@
 package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.provider
@@ -25,22 +26,35 @@ import com.ivianuu.injekt.provider
 /**
  * Wraps a [Set] of [BeanDefinition]s
  */
-data class MultiBindingSet<T : Any>(val set: Set<BeanDefinition<T>>)
+data class MultiBindingSet<T : Any>(
+    val component: Component,
+    val set: Set<BeanDefinition<T>>
+)
 
 /**
  * Returns a [Set] of [T]s
  */
 fun <T : Any> MultiBindingSet<T>.toSet(parameters: ParametersDefinition? = null): Set<T> =
-    set.map { it.resolveInstance(parameters = parameters) }.toSet()
+    set.map {
+        component.get(it.type, it.name, parameters = parameters)
+    }.toSet()
 
 /**
  * Returns a [Set] of [Lazy]s of [T]
  */
 fun <T : Any> MultiBindingSet<T>.toLazySet(parameters: ParametersDefinition? = null): Set<Lazy<T>> =
-    set.map { lazy { it.resolveInstance(parameters = parameters) } }.toSet()
+    set.map { lazy { component.get(it.type, it.name, parameters = parameters) } }.toSet()
 
 /**
  * Returns a [Set] of [Provider]s of [T]
  */
 fun <T : Any> MultiBindingSet<T>.toProviderSet(defaultParameters: ParametersDefinition? = null): Set<Provider<T>> =
-    set.map { dec -> provider { dec.resolveInstance(it ?: defaultParameters) } }.toSet()
+    set.map { dec ->
+        provider {
+            component.get(
+                dec.type,
+                dec.name,
+                it ?: defaultParameters
+            )
+        }
+    }.toSet()

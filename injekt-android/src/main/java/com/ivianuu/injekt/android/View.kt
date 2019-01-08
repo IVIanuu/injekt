@@ -7,7 +7,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.components
+import com.ivianuu.injekt.dependencies
 
 const val VIEW_SCOPE = "view_scope"
 const val CHILD_VIEW_SCOPE = "child_view_scope"
@@ -23,7 +23,7 @@ fun <T : View> viewComponent(
 ): Component = component(scopeId, name) {
     (instance.getParentViewComponentOrNull()
         ?: instance.getContextComponentOrNull()
-        ?: instance.getApplicationComponentOrNull())?.let { components(it) }
+        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
     addInstance(instance)
     definition?.invoke(this)
 }

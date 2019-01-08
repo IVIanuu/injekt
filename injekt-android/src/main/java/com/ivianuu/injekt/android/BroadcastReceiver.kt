@@ -23,7 +23,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.components
+import com.ivianuu.injekt.dependencies
 
 const val RECEIVER_SCOPE = "receiver_scope"
 
@@ -37,7 +37,7 @@ fun <T : BroadcastReceiver> receiverComponent(
     name: String? = instance.javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name) {
-    instance.getApplicationComponentOrNull(context)?.let { components(it) }
+    instance.getApplicationComponentOrNull(context)?.let { dependencies(it) }
     addInstance(instance)
     definition?.invoke(this)
 }

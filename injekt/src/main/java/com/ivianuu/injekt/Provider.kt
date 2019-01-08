@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Provides components of kind [T]
+ * Provides dependencies of kind [T]
  */
 interface Provider<T> {
     /**

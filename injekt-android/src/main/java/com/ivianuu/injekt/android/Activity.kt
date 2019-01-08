@@ -22,7 +22,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.components
+import com.ivianuu.injekt.dependencies
 
 const val ACTIVITY_SCOPE = "activity_scope"
 
@@ -36,7 +36,7 @@ fun <T : Activity> activityComponent(
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name) {
     addInstance(instance)
-    instance.getApplicationComponentOrNull()?.let { components(it) }
+    instance.getApplicationComponentOrNull()?.let { dependencies(it) }
     definition?.invoke(this)
 }
 

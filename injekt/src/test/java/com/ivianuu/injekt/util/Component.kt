@@ -16,16 +16,17 @@
 
 package com.ivianuu.injekt.util
 
+/**
 import com.ivianuu.injekt.BeanDefinition
 import com.ivianuu.injekt.Component
 import kotlin.reflect.KClass
 
 inline fun <reified T : Any> Component.getDefinition(
-    name: String? = null
+name: String? = null
 ) = getDefinition(T::class, name)
 
 fun <T : Any> Component.getDefinition(
-    type: KClass<T>,
-    name: String? = null
+type: KClass<T>,
+name: String? = null
 ) = beanRegistry.findDefinition(type, name) as? BeanDefinition<T>
-    ?: error("definition not found")
+?: error("definition not found")*/

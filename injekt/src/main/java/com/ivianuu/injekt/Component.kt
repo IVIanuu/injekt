@@ -10,21 +10,20 @@ class Component internal constructor(
     val name: String?
 ) {
 
-    val beanRegistry = BeanRegistry(this)
+    val context = ComponentContext(this)
 
     /**
      * Adds all [BeanDefinition]s of the [modules]
      */
     fun modules(modules: Iterable<Module>) {
-        beanRegistry.loadModules(modules)
+        context.loadModules(modules)
     }
 
     /**
-     * Adds all current [BeanDefinition]s of [components] to this component
-     * The instances of the definitions will still live in the owning component
+     * Adds all of [dependencies] as dependencies
      */
-    fun components(components: Iterable<Component>) {
-        beanRegistry.linkComponents(components)
+    fun dependencies(dependencies: Iterable<Component>) {
+        context.addDependencies(dependencies)
     }
 
     /**
@@ -35,14 +34,8 @@ class Component internal constructor(
         name: String? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        val definition = beanRegistry.findDefinition(type, name)
-
-        return if (definition != null) {
-            @Suppress("UNCHECKED_CAST")
-            definition.resolveInstance(parameters) as T
-        } else {
-            throw NoBeanDefinitionFoundException("${this.name} Could not find definition for ${type.java.name + " " + name.orEmpty()}")
-        }
+        val key = Key(type, name)
+        return context.get(key, parameters)
     }
 
 }
@@ -67,16 +60,16 @@ fun Component.modules(vararg modules: Module) {
     modules(modules.asIterable())
 }
 
-/** Calls trough [Component.components] */
-fun Component.components(vararg components: Component) {
-    components(components.asIterable())
+/** Calls trough [Component.dependencies] */
+fun Component.dependencies(vararg components: Component) {
+    dependencies(components.asIterable())
 }
 
 /**
  * Adds a [BeanDefinition] for the [instance]
  */
 fun <T : Any> Component.addInstance(instance: T) {
-    beanRegistry.saveDefinition(
+    context.saveDefinition(
         BeanDefinition.createSingle(
             instance::class as KClass<T>,
             null

@@ -22,7 +22,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.components
+import com.ivianuu.injekt.dependencies
 
 const val FRAGMENT_SCOPE = "fragment_scope"
 const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
@@ -38,7 +38,7 @@ fun <T : Fragment> fragmentComponent(
 ): Component = component(scopeId, name) {
     (instance.getParentFragmentComponentOrNull()
         ?: instance.getActivityComponentOrNull()
-        ?: instance.getApplicationComponentOrNull())?.let { components(it) }
+        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
     addInstance(instance)
     definition?.invoke(this)
 }

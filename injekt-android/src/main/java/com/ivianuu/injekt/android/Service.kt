@@ -22,7 +22,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.addInstance
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.components
+import com.ivianuu.injekt.dependencies
 
 const val SERVICE_SCOPE = "service_scope"
 
@@ -35,7 +35,7 @@ fun <T : Service> serviceComponent(
     name: String? = instance.javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
 ): Component = component(scopeId, name) {
-    instance.getApplicationComponentOrNull()?.let { components(it) }
+    instance.getApplicationComponentOrNull()?.let { dependencies(it) }
     addInstance(instance)
     definition?.invoke(this)
 }

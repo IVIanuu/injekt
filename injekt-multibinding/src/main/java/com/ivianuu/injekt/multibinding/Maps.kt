@@ -21,7 +21,7 @@ import com.ivianuu.injekt.BeanDefinition
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.ModuleContext
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
@@ -39,8 +39,8 @@ const val KEY_MAP_BINDINGS = "mapBindings"
  * Declares a empty set binding with the scopeId [mapName]
  * This is useful for retrieving a [MultiBindingMap] even if no [BeanDefinition] was bound into it
  */
-fun ModuleContext.mapBinding(mapName: String) {
-    factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(emptyMap()) }
+fun Module.mapBinding(mapName: String) {
+    factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(component, emptyMap()) }
 }
 
 /**
@@ -53,16 +53,18 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
         mutableMapOf<String, Any>()
     }[mapName] = mapKey
 
-    moduleContext.factory(name = mapName, override = true) {
-        component.beanRegistry
-            .getAllDefinitions()
+    module.factory(name = mapName, override = true) {
+        val allDefinitions = component.context.getDefinitions() + (
+                component.context.getDependencies().flatMap { it.context.getDefinitions() })
+
+        allDefinitions
             .mapNotNull { definition ->
                 definition.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
                     ?.get(mapName)?.let { it to definition }
             }
             .toMap()
             .mapValues { it.value as BeanDefinition<Any> }
-            .let { MultiBindingMap(it) }
+            .let { MultiBindingMap(component, it) }
     }
 
     return this
@@ -71,7 +73,7 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
 /**
  * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-inline fun <reified T : Any> ModuleContext.bindIntoMap(
+inline fun <reified T : Any> Module.bindIntoMap(
     mapName: String,
     key: Any,
     implementationName: String? = null
@@ -80,7 +82,7 @@ inline fun <reified T : Any> ModuleContext.bindIntoMap(
 /**
  * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-fun <T : Any> ModuleContext.bindIntoMap(
+fun <T : Any> Module.bindIntoMap(
     implementationType: KClass<T>,
     mapName: String,
     key: Any,

@@ -6,61 +6,16 @@ import kotlin.reflect.KClass
  * Represents a dependency definition.
  */
 data class BeanDefinition<T : Any> private constructor(
+    val key: Key,
     val type: KClass<T>,
-    val name: String?
+    val name: String?,
+    val kind: Kind,
+    val definition: Definition<T>,
+    val attributes: Attributes,
+    val scopeId: String?,
+    val override: Boolean,
+    val eager: Boolean
 ) {
-
-    /**
-     * The target scope id
-     */
-    var scopeId: String? = null
-
-    /**
-     * Whether or not this definitions can override existing definitions
-     */
-    var override: Boolean = false
-
-    /**
-     * Whether or not this definition should be created on start
-     */
-    var eager: Boolean = false
-
-    /**
-     * Extras
-     */
-    var attributes = Attributes()
-
-    /**
-     * The kind of this definition
-     */
-    lateinit var kind: Kind
-
-    /**
-     * The definition of this definition
-     */
-    lateinit var definition: Definition<T>
-
-    /**
-     * The instance of this definition
-     */
-    lateinit var instance: Instance<T>
-
-    /**
-     * Resolves the instance
-     */
-    fun resolveInstance(
-        parameters: ParametersDefinition? = null
-    ): T = instance.get(parameters)
-
-    /**
-     * Creates the instance holder
-     */
-    fun createInstanceHolder() {
-        instance = when (kind) {
-            BeanDefinition.Kind.FACTORY -> FactoryInstance(this)
-            BeanDefinition.Kind.SINGLE -> SingleInstance(this)
-        }
-    }
 
     override fun toString(): String {
         val kindString = kind.toString()
@@ -78,27 +33,34 @@ data class BeanDefinition<T : Any> private constructor(
         fun <T : Any> createFactory(
             type: KClass<T>,
             name: String? = null,
+            scopeId: String? = null,
+            override: Boolean = false,
+            eager: Boolean = false,
             definition: Definition<T>
-        ): BeanDefinition<T> = create(type, name, Kind.FACTORY, definition)
+        ): BeanDefinition<T> =
+            create(type, name, Kind.FACTORY, scopeId, override, eager, definition)
 
         fun <T : Any> createSingle(
             type: KClass<T>,
             name: String? = null,
+            scopeId: String? = null,
+            override: Boolean = false,
+            eager: Boolean = false,
             definition: Definition<T>
-        ): BeanDefinition<T> = create(type, name, Kind.SINGLE, definition)
+        ): BeanDefinition<T> = create(type, name, Kind.SINGLE, scopeId, override, eager, definition)
 
         fun <T : Any> create(
             type: KClass<T>,
             name: String? = null,
             kind: Kind,
+            scopeId: String? = null,
+            override: Boolean = false,
+            eager: Boolean = false,
             definition: Definition<T>
-        ): BeanDefinition<T> {
-            val beanDefinition = BeanDefinition(type, name)
-            beanDefinition.kind = kind
-            beanDefinition.definition = definition
-            beanDefinition.createInstanceHolder()
-            return beanDefinition
-        }
+        ): BeanDefinition<T> = BeanDefinition(
+            Key(type, name), type, name, kind,
+            definition, Attributes(), scopeId, override, eager
+        )
 
     }
 }
@@ -107,13 +69,3 @@ data class BeanDefinition<T : Any> private constructor(
  * Defines a [BeanDefinition]
  */
 typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
-
-fun <T : Any> BeanDefinition<T>.clone(): BeanDefinition<T> = copy().also {
-    it.kind = kind
-    it.definition = definition
-    it.scopeId = scopeId
-    it.override = override
-    it.eager = eager
-    it.attributes = attributes
-    it.createInstanceHolder()
-}

@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import android.content.Context
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
@@ -63,8 +62,8 @@ class App : Application(), InjektTrait {
 
 const val DEPS = "deps"
 
-class AppDependency(val app: App, val context: Context) : Dependency
+class AppDependency(val app: App) : Dependency
 
 val appModule = module {
-    single { AppDependency(get(), get()) } bindIntoMap (DEPS to AppDependency::class)
+    single { AppDependency(get()) } bindIntoMap (DEPS to AppDependency::class)
 }
