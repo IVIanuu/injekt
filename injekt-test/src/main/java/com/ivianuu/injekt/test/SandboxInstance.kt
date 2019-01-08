@@ -25,7 +25,7 @@ import org.mockito.Mockito.mock
  * Sandbox Instance Holder - let execute the definition but return a mock of it
 */
 @Suppress("UNCHECKED_CAST")
-class SandboxInstance<T : Any>(beanDefinition: BeanDefinition<T>) : Instance<T>(beanDefinition) {
+class SandboxInstance<T : Any>(definition: BeanDefinition<T>) : Instance<T>(definition) {
 
 private var _value: T? = null
 
@@ -36,24 +36,24 @@ override fun get(parameters: ParametersDefinition?): T {
 if (_value == null) {
 _value = create(parameters)
 }
-return _value ?: error("SandboxInstance should return a value for $beanDefinition")
+return _value ?: error("SandboxInstance should return a value for $definition")
 }
 
 override fun create(parameters: ParametersDefinition?): T {
 try {
-beanDefinition.definition.invoke(
+definition.definition.invoke(
 DefinitionContext(component),
 parameters?.invoke() ?: emptyParameters()
 )
 } catch (e: Exception) {
 when (e) {
 is NoBeanDefinitionFoundException, is InstanceCreationException, is OverrideException -> {
-throw BrokenDefinitionException("Definition $beanDefinition is broken due to error : $e")
+throw BrokenDefinitionException("Definition $definition is broken due to error : $e")
 }
 else -> logger?.debug("sandbox resolution continue on caught error: $e")
 }
 }
-return mock(beanDefinition.type.java) as T
+return mock(definition.type.java) as T
 }
 
 }

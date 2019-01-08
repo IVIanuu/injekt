@@ -8,11 +8,9 @@ import kotlin.reflect.KClass
 class Component internal constructor(val name: String?) {
 
     private val dependencies = hashSetOf<Component>()
-
     private val scopeNames = hashSetOf<String>()
-
-    private val instances = hashMapOf<Key, Any>()
     private val definitions = hashMapOf<Key, BeanDefinition<*>>()
+    private val instances = hashMapOf<Key, Instance<*>>()
 
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
@@ -23,7 +21,7 @@ class Component internal constructor(val name: String?) {
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        return getByKey(key, parameters)
+        return findInstance<T>(key)?.get(parameters)
             ?: throw NoBeanDefinitionFoundException("$name Could not find definition for $key")
     }
 
@@ -56,6 +54,8 @@ class Component internal constructor(val name: String?) {
         if (!this.dependencies.add(dependency)) {
             throw error("Already added $dependency to $name")
         }
+
+        instances.putAll(dependency.instances)
 
         InjektPlugins.logger?.info("$name Add dependency $dependency")
     }
@@ -129,6 +129,11 @@ class Component internal constructor(val name: String?) {
 
         definitions[definition.key] = definition
 
+        instances[definition.key] = when (definition.kind) {
+            BeanDefinition.Kind.FACTORY -> FactoryInstance(definition, this)
+            BeanDefinition.Kind.SINGLE -> SingleInstance(definition, this)
+        }
+
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
                 "$name Override $definition"
@@ -141,7 +146,7 @@ class Component internal constructor(val name: String?) {
         // create eager instances
         if (definition.eager) {
             InjektPlugins.logger?.info("$name Create eager instance for $definition")
-            getByKey<Any>(definition.key, null)
+            findInstance<Any>(definition.key)
         }
     }
 
@@ -159,49 +164,12 @@ class Component internal constructor(val name: String?) {
     fun containsDefinition(definition: BeanDefinition<*>): Boolean =
         definitions.containsKey(definition.key)
 
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> getByKey(key: Key, parameters: ParametersDefinition?): T? {
-        return thisGetByKey(key, parameters)
-            ?: getFromDependencyByKey(key, parameters)
-    }
+    private fun <T : Any> findInstance(key: Key): Instance<T>? {
+        val instance = instances[key]
+        if (instance != null) return instance as Instance<T>
 
-    private fun <T : Any> thisGetByKey(key: Key, parameters: ParametersDefinition?): T? {
-        val definition = definitions[key] ?: return null
-
-        @Suppress("UNCHECKED_CAST")
-        return try {
-            val instance = when (definition.kind) {
-                BeanDefinition.Kind.FACTORY -> {
-                    InjektPlugins.logger?.info("$name Create instance $definition")
-                    definition.definition.invoke(
-                        DefinitionContext(this),
-                        parameters?.invoke() ?: emptyParameters()
-                    )
-                }
-                BeanDefinition.Kind.SINGLE -> {
-                    InjektPlugins.logger?.info("$name Return existing instance $definition")
-                    instances[key] ?: (
-                            definition.definition.invoke(
-                                DefinitionContext(this),
-                                parameters?.invoke() ?: emptyParameters()
-                            ).also { instances[key] = it }).also {
-                        InjektPlugins.logger?.info("$name Create instance $definition")
-                    }
-                }
-            }
-
-            instance as T
-        } catch (e: Exception) {
-            throw InstanceCreationException(
-                "$name Couldn't instantiate $definition",
-                e
-            )
-        }
-    }
-
-    private fun <T : Any> getFromDependencyByKey(key: Key, parameters: ParametersDefinition?): T? {
         for (dependency in dependencies) {
-            val instance = dependency.getByKey<T>(key, parameters)
+            val instance = dependency.findInstance<T>(key)
             if (instance != null) return instance
         }
 
