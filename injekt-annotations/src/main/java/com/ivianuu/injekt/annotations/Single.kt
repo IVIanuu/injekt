@@ -27,6 +27,6 @@ annotation class Single(
     val name: String = "",
     val scopeId: String = "",
     val override: Boolean = false,
-    val createOnStart: Boolean = false,
+    val eager: Boolean = false,
     val secondaryTypes: Array<KClass<*>> = []
 )

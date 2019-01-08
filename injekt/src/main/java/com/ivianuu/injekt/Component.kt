@@ -1,6 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.InjektPlugins.logger
 import kotlin.reflect.KClass
 
 /**
@@ -26,14 +25,6 @@ class Component internal constructor(
      */
     fun components(components: Iterable<Component>) {
         beanRegistry.linkComponents(components)
-    }
-
-    /**
-     * Instantiates all eager instances
-     */
-    fun createEagerInstances() {
-        logger?.info("$scopeId Create start up instances")
-        beanRegistry.getEagerInstances().forEach { it.resolveInstance() }
     }
 
     /**
@@ -67,15 +58,9 @@ typealias ComponentDefinition = Component.() -> Unit
 fun component(
     scopeId: String,
     name: String? = null,
-    createEagerInstances: Boolean = true,
-    definition: ComponentDefinition
+    definition: ComponentDefinition? = null
 ): Component = Component(scopeId, name)
-    .apply(definition)
-    .apply {
-        if (createEagerInstances) {
-            createEagerInstances()
-        }
-    }
+    .apply { definition?.invoke(this) }
 
 /** Calls trough [Component.modules] */
 fun Component.modules(vararg modules: Module) {

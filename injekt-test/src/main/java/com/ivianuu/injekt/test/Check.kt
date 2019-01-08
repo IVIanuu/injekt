@@ -40,7 +40,7 @@ fun Component.check() {
 fun <T : Any> BeanDefinition<T>.cloneForSandbox(): BeanDefinition<T> = copy().also {
     it.kind = kind
     it.override = true
-    it.createOnStart = createOnStart
+    it.eager = eager
     it.attributes = attributes
     it.definition = definition
     it.instance = SandboxInstance(it)

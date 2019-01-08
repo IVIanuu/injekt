@@ -35,9 +35,8 @@ fun <T : BroadcastReceiver> receiverComponent(
     context: Context,
     scopeId: String = RECEIVER_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
-    createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name) {
     instance.getApplicationComponentOrNull(context)?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)

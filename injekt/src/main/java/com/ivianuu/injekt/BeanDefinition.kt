@@ -23,7 +23,7 @@ data class BeanDefinition<T : Any> private constructor(
     /**
      * Whether or not this definition should be created on start
      */
-    var createOnStart: Boolean = false
+    var eager: Boolean = false
 
     /**
      * Extras
@@ -67,7 +67,7 @@ data class BeanDefinition<T : Any> private constructor(
         val nameString = name?.let { "name:'$name', " } ?: ""
         val typeString = "type:'${type.java.name}'"
         val attributesString = "attributes: '$attributes'"
-        val optionsString = "scopeId:$scopeId,override:$override,createOnStart:$createOnStart"
+        val optionsString = "scopeId:$scopeId,override:$override,eager:$eager"
         return "$kindString[$nameString$typeString$attributesString$optionsString]"
     }
 
@@ -113,7 +113,7 @@ fun <T : Any> BeanDefinition<T>.clone(): BeanDefinition<T> = copy().also {
     it.definition = definition
     it.scopeId = scopeId
     it.override = override
-    it.createOnStart = createOnStart
+    it.eager = eager
     it.attributes = attributes
     it.createInstanceHolder()
 }

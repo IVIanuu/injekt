@@ -23,21 +23,21 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class CreateOnStartTest {
+class eagerTest {
 
 @Test
 fun testEagerSingleIsCreatedAtStart() {
 val component = component {
 modules(
 module {
-single(createOnStart = true) { TestDep1() }
+single(eager = true) { TestDep1() }
 }
 )
 }
 
 val definition = component.getDefinition<TestDep1>()
 
-assertTrue(definition.createOnStart)
+assertTrue(definition.eager)
 assertTrue(definition.instance.isCreated)
 }
 
@@ -46,14 +46,14 @@ fun testNonEagerSingleIsNotCreatedAtStart() {
 val component = component {
 modules(
 module {
-single(createOnStart = false) { TestDep1() }
+single(eager = false) { TestDep1() }
 }
 )
 }
 
 val definition = component.getDefinition<TestDep1>()
 
-assertFalse(definition.createOnStart)
+assertFalse(definition.eager)
 assertFalse(definition.instance.isCreated)
 }
 
@@ -69,7 +69,7 @@ factory { TestDep1() }
 
 val definition = component.getDefinition<TestDep1>()
 
-assertFalse(definition.createOnStart)
+assertFalse(definition.eager)
 assertFalse(definition.instance.isCreated)
 }
 
@@ -78,7 +78,7 @@ fun testDeferEagerInstances() {
 val component = component(createEagerInstances = false) {
 modules(
 module {
-single(createOnStart = true) { TestDep1() }
+single(eager = true) { TestDep1() }
 }
 )
 }

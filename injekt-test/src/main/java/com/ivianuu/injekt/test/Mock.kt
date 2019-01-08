@@ -54,7 +54,7 @@ fun <T : Any> Component.applyStub(
 fun <T : Any> BeanDefinition<T>.cloneForMock(type: KClass<T>) = copy().also {
     it.kind = kind
     it.override = override
-    it.createOnStart = createOnStart
+    it.eager = eager
     it.attributes = attributes
     it.definition = { mock(type.java) }
     it.createInstanceHolder()

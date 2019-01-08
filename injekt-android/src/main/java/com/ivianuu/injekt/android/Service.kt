@@ -33,9 +33,8 @@ fun <T : Service> serviceComponent(
     instance: T,
     scopeId: String = SERVICE_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
-    createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name) {
     instance.getApplicationComponentOrNull()?.let { components(it) }
     addInstance(instance)
     definition?.invoke(this)

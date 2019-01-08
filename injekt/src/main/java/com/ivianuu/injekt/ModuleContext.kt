@@ -33,11 +33,11 @@ data class ModuleContext(val module: Module) {
     ): BindingContext<T> {
         val scopeId = module.scopeId ?: definition.scopeId
         val override = if (module.override) module.override else definition.override
-        val createOnStart =
-            if (module.createOnStart) module.createOnStart else definition.createOnStart
+        val eager =
+            if (module.eager) module.eager else definition.eager
 
         definition.scopeId = scopeId
-        definition.createOnStart = createOnStart
+        definition.eager = eager
         definition.override = override
 
         definitions.add(definition)
@@ -54,9 +54,9 @@ fun module(
     name: String? = null,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false,
+    eager: Boolean = false,
     definition: ModuleDefinition
-): Module = Module(name, scopeId, createOnStart, override, definition)
+): Module = Module(name, scopeId, eager, override, definition)
 
 /**
  * Provides a unscoped dependency which will be recreated on each request
@@ -82,7 +82,7 @@ fun <T : Any> ModuleContext.factory(
     name = name,
     kind = BeanDefinition.Kind.FACTORY,
     scopeId = scopeId,
-    createOnStart = false,
+    eager = false,
     override = override,
     definition = definition
 )
@@ -94,9 +94,9 @@ inline fun <reified T : Any> ModuleContext.single(
     name: String? = null,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false,
+    eager: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = single(T::class, name, scopeId, override, createOnStart, definition)
+): BindingContext<T> = single(T::class, name, scopeId, override, eager, definition)
 
 /**
  * Provides scoped dependency which will be created once for each component
@@ -106,7 +106,7 @@ fun <T : Any> ModuleContext.single(
     name: String? = null,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false,
+    eager: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = declare(
     type = type,
@@ -114,7 +114,7 @@ fun <T : Any> ModuleContext.single(
     kind = BeanDefinition.Kind.SINGLE,
     scopeId = scopeId,
     override = override,
-    createOnStart = createOnStart,
+    eager = eager,
     definition = definition
 )
 
@@ -126,9 +126,9 @@ inline fun <reified T : Any> ModuleContext.declare(
     kind: BeanDefinition.Kind,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false,
+    eager: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = declare(T::class, name, kind, scopeId, override, createOnStart, definition)
+): BindingContext<T> = declare(T::class, name, kind, scopeId, override, eager, definition)
 
 /**
  * Adds a [BeanDefinition] for the provided parameters
@@ -139,12 +139,12 @@ fun <T : Any> ModuleContext.declare(
     kind: BeanDefinition.Kind,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false,
+    eager: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = declare(
     BeanDefinition.create(type, name, kind, definition).also {
         it.scopeId = scopeId
-        it.createOnStart = createOnStart
+        it.eager = eager
         it.override = override
     }
 )
@@ -163,10 +163,10 @@ fun ModuleContext.module(
     name: String? = null,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false,
+    eager: Boolean = false,
     definition: ModuleDefinition
 ) {
-    module(com.ivianuu.injekt.module(name, scopeId, override, createOnStart, definition))
+    module(com.ivianuu.injekt.module(name, scopeId, override, eager, definition))
 }
 
 /**

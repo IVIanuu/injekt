@@ -78,10 +78,10 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
                         "name" to module.moduleName,
                         "scopeId" to module.scopeId,
                         "override" to module.override,
-                        "createOnStart" to module.createOnStart
+                        "eager" to module.eager
                     )
 
-                    addNamed("module(%name:S, %scopeId:S, %override:L, %createOnStart:L)", args)
+                    addNamed("module(%name:S, %scopeId:S, %override:L, %eager:L)", args)
                 }
                 .beginControlFlow(" {")
                 .apply { module.definitions.forEach { add(definition(it)) } }
@@ -110,11 +110,11 @@ class ModuleGenerator(private val module: ModuleDescriptor) {
             val isSingle = definition.kind == DefinitionDescriptor.Kind.SINGLE
 
             if (isSingle) {
-                definitionArgs["createOnStart"] = definition.createOnStart
+                definitionArgs["eager"] = definition.eager
             }
 
             val definitionStatement = "%name:S, %scopeId:S, %override:L" + if (isSingle) {
-                ", %createOnStart:L"
+                ", %eager:L"
             } else {
                 ""
             }

@@ -10,5 +10,5 @@ annotation class Module(
     val internal: Boolean = false,
     val scopeId: String = "",
     val override: Boolean = false,
-    val createOnStart: Boolean = false
+    val eager: Boolean = false
 )

@@ -6,7 +6,7 @@ package com.ivianuu.injekt
 class Module internal constructor(
     val name: String?,
     val scopeId: String?,
-    val createOnStart: Boolean,
+    val eager: Boolean,
     val override: Boolean,
     val definition: ModuleDefinition
 ) {

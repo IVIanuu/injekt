@@ -19,9 +19,8 @@ fun <T : View> viewComponent(
     instance: T,
     scopeId: String = VIEW_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
-    createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name) {
     (instance.getParentViewComponentOrNull()
         ?: instance.getContextComponentOrNull()
         ?: instance.getApplicationComponentOrNull())?.let { components(it) }

@@ -98,11 +98,11 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         }
 
         val override = annotation["override"].value as Boolean
-        val createOnStart = annotation.getOrNull("scopeId")?.value as? Boolean ?: false
+        val eager = annotation.getOrNull("scopeId")?.value as? Boolean ?: false
 
         val module = ModuleDescriptor(
             packageName, moduleName, internal,
-            scopeId, override, createOnStart, definitions
+            scopeId, override, eager, definitions
         )
 
         ModuleGenerator(module).generate().write(processingEnv)
@@ -133,7 +133,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
         }
 
         val override = annotation["override"].value as Boolean
-        val createOnStart = annotation.getOrNull("createOnStart")?.value as? Boolean
+        val eager = annotation.getOrNull("eager")?.value as? Boolean
 
         val secondaryTypes = annotation.getAsTypeList("secondaryTypes")
             .map { it.asTypeName().javaToKotlinType() }.toSet()
@@ -145,7 +145,7 @@ class AutoModuleProcessingStep(override val processingEnv: ProcessingEnvironment
             name,
             scope,
             override,
-            createOnStart,
+            eager,
             secondaryTypes,
             element.enclosedElements
                 .filterIsInstance<ExecutableElement>()

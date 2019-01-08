@@ -111,10 +111,10 @@ assertTrue(throwed)
 fun testGetEagerInstance() {
 val module = module {
 factory { TestDep1() }
-single(createOnStart = true) { TestDep2(TestDep1()) }
+single(eager = true) { TestDep2(TestDep1()) }
 }
 
-val eagerInstances = module.getDefinitions().filter { it.createOnStart }.toSet()
+val eagerInstances = module.getDefinitions().filter { it.eager }.toSet()
 
 val registry = component {
 modules(module)

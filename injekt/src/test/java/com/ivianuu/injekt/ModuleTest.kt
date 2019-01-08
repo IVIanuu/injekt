@@ -27,8 +27,8 @@ class ModuleTest {
 
 @Test
 fun testModuleConfigOverridesDefinition() {
-val module = module(createOnStart = true, override = true) {
-single(override = false, createOnStart = false) { TestDep1() }
+val module = module(eager = true, override = true) {
+single(override = false, eager = false) { TestDep1() }
 }
 
 val component = component { modules(module) }
@@ -37,14 +37,14 @@ val definition = component.getDefinition<TestDep1>()
 assertTrue(module.override)
 assertTrue(definition.override)
 
-assertTrue(module.createOnStart)
-assertTrue(definition.createOnStart)
+assertTrue(module.eager)
+assertTrue(definition.eager)
 }
 
 @Test
 fun testModuleConfigNotOverridesDefinitions() {
-val module = module(createOnStart = false, override = false) {
-single(override = true, createOnStart = true) { TestDep1() }
+val module = module(eager = false, override = false) {
+single(override = true, eager = true) { TestDep1() }
 }
 
 val component = component { modules(module) }
@@ -53,8 +53,8 @@ val definition = component.getDefinition<TestDep1>()
 assertFalse(module.override)
 assertTrue(definition.override)
 
-assertFalse(module.createOnStart)
-assertTrue(definition.createOnStart)
+assertFalse(module.eager)
+assertTrue(definition.eager)
 }
 
 @Test

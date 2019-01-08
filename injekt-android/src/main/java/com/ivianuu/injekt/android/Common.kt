@@ -31,7 +31,7 @@ fun ModuleContext.sharedPreferences(
     name: String? = null,
     scopeId: String? = null,
     override: Boolean = false,
-    createOnStart: Boolean = false
-): BindingContext<SharedPreferences> = single(name, scopeId, override, createOnStart) {
+    eager: Boolean = false
+): BindingContext<SharedPreferences> = single(name, scopeId, override, eager) {
     context().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
 }

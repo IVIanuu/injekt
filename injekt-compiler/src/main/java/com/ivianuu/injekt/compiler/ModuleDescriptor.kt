@@ -22,6 +22,6 @@ data class ModuleDescriptor(
     val internal: Boolean,
     val scopeId: String?,
     val override: Boolean,
-    val createOnStart: Boolean,
+    val eager: Boolean,
     val definitions: Set<DefinitionDescriptor>
 )

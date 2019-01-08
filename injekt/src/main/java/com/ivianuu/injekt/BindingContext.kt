@@ -17,7 +17,7 @@ infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
     val copy = (definition as BeanDefinition<Any>).copy(type = type as KClass<Any>, name = null)
     copy.kind = definition.kind
     copy.override = definition.override
-    copy.createOnStart = definition.createOnStart
+    copy.eager = definition.eager
     copy.attributes = definition.attributes
     copy.definition = definition.definition
     copy.instance = definition.instance
@@ -46,7 +46,7 @@ infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> {
     val copy = (definition as BeanDefinition<Any>).copy(name = name)
     copy.kind = definition.kind
     copy.override = definition.override
-    copy.createOnStart = definition.createOnStart
+    copy.eager = definition.eager
     copy.attributes = definition.attributes
     copy.definition = definition.definition
     copy.instance = definition.instance

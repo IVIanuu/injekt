@@ -27,7 +27,6 @@ class BeanRegistry internal constructor(val component: Component) {
     private val definitions = hashSetOf<BeanDefinition<*>>()
     private val definitionNames = hashMapOf<String, BeanDefinition<*>>()
     private val definitionTypes = hashMapOf<KClass<*>, BeanDefinition<*>>()
-    private val createOnStartDefinitions = hashSetOf<BeanDefinition<*>>()
 
     /**
      * Adds all [BeanDefinition]s of the [modules]
@@ -109,8 +108,6 @@ class BeanRegistry internal constructor(val component: Component) {
         }
     }
 
-    internal fun getEagerInstances(): Set<BeanDefinition<*>> = createOnStartDefinitions
-
     private fun addDefinition(
         definition: BeanDefinition<*>,
         fromComponent: Boolean
@@ -137,14 +134,6 @@ class BeanRegistry internal constructor(val component: Component) {
             definitionTypes[definition.type] = definition
         }
 
-        if (!fromComponent || cloned) {
-            definition.instance.component = component
-
-            if (definition.createOnStart) {
-                createOnStartDefinitions.add(definition)
-            }
-        }
-
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
                 "${component.name} Override $definition"
@@ -160,6 +149,17 @@ class BeanRegistry internal constructor(val component: Component) {
                 }
             }
             logger.debug(msg)
+        }
+
+        if (!fromComponent || cloned) {
+            definition.instance.component = component
+
+            // create eager instances
+            if (definition.eager) {
+                logger?.info("${component.name} Create eager instance for $definition")
+
+                definition.instance.get()
+            }
         }
     }
 }

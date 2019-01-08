@@ -39,9 +39,8 @@ fun <T : Application> applicationComponent(
     instance: T,
     scopeId: String = APPLICATION_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
-    createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name) {
     addInstance(instance)
     modules(applicationModule(instance))
     definition?.invoke(this)

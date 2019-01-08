@@ -33,9 +33,8 @@ fun <T : Activity> activityComponent(
     instance: T,
     scopeId: String = ACTIVITY_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
-    createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name) {
     addInstance(instance)
     instance.getApplicationComponentOrNull()?.let { components(it) }
     definition?.invoke(this)

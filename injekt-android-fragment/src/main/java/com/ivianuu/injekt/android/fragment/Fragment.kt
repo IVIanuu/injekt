@@ -34,9 +34,8 @@ fun <T : Fragment> fragmentComponent(
     instance: T,
     scopeId: String = FRAGMENT_SCOPE,
     name: String? = instance.javaClass.simpleName + "Component",
-    createEagerInstances: Boolean = true,
     definition: ComponentDefinition? = null
-): Component = component(scopeId, name, createEagerInstances) {
+): Component = component(scopeId, name) {
     (instance.getParentFragmentComponentOrNull()
         ?: instance.getActivityComponentOrNull()
         ?: instance.getApplicationComponentOrNull())?.let { components(it) }
