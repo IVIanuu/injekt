@@ -18,35 +18,21 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.annotations.Module
+import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.configureInjekt
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.multibinding.bindIntoMap
-import com.ivianuu.injekt.multibinding.injectMap
-import com.ivianuu.injekt.single
-import kotlin.reflect.KClass
-
-@Module private object AutoModule
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy {
-        applicationComponent(this) {
-            modules(appModule, autoModule)
-        }
-    }
+    override val component by lazy { applicationComponent(this) }
 
     private val appDependency by inject<AppDependency>()
-
-    private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
 
     override fun onCreate() {
         configureInjekt {
@@ -54,16 +40,10 @@ class App : Application(), InjektTrait {
         }
 
         d { "Injected app dependency $appDependency" }
-        d { "All dependencies $dependencies" }
 
         super.onCreate()
     }
 }
 
-const val DEPS = "deps"
-
-class AppDependency(val app: App) : Dependency
-
-val appModule = module {
-    single { AppDependency(get()) } bindIntoMap (DEPS to AppDependency::class)
-}
+@Single(scopeName = APPLICATION_SCOPE)
+class AppDependency(val app: App)

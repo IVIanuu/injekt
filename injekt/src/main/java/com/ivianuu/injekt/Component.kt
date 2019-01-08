@@ -24,7 +24,7 @@ class Component internal constructor(val name: String?) {
     ): T {
         val key = Key(type, name)
         return findInstance<T>(key, true)?.get(parameters)
-            ?: throw NoBeanDefinitionFoundException("$name Could not find definition for $key")
+            ?: throw NoBeanDefinitionFoundException("${this.name} Could not find definition for $key")
     }
 
     /**

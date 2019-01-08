@@ -100,9 +100,9 @@ class FactoryGenerator(private val descriptor: DefinitionDescriptor) {
                         addCode(
                             "return BeanDefinition.create(" +
                                     "%T::class, " +
-                                    "\"${descriptor.name}\", " +
+                                    "${if (descriptor.name != null) "\"${descriptor.name}\"" else "null"}, " +
                                     "BeanDefinition.Kind.${descriptor.kind.name}, " +
-                                    "\"${descriptor.scopeName}\", " +
+                                    "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +
                                     "${descriptor.override}, " +
                                     "${descriptor.eager}, " +
                                     "{ params -> $constructorStatement }" +

@@ -22,33 +22,22 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.fragment.fragmentComponent
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.android.fragment.CHILD_FRAGMENT_SCOPE
+import com.ivianuu.injekt.android.fragment.childFragmentComponent
+import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.multibinding.bindIntoMap
-import com.ivianuu.injekt.multibinding.injectMap
-import com.ivianuu.injekt.single
-import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class ChildFragment : Fragment(), InjektTrait {
 
-    override val component by lazy {
-        fragmentComponent(this) {
-            modules(childFragmentModule)
-        }
-    }
+    override val component by lazy { childFragmentComponent(this) }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
     private val parentFragmentDependency by inject<ParentFragmentDependency>()
     private val childFragmentDependency by inject<ChildFragmentDependency>()
-
-    private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +51,6 @@ class ChildFragment : Fragment(), InjektTrait {
         d { "Injected main activity dependency $mainActivityDependency" }
         d { "Injected parent fragment dependency $parentFragmentDependency" }
         d { "Injected child fragment dependency $childFragmentDependency" }
-        d { "All dependencies $dependencies" }
     }
 
     override fun onCreateView(
@@ -77,20 +65,10 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
+@Single(scopeName = CHILD_FRAGMENT_SCOPE)
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
     val parentFragment: ParentFragment,
     val childFragment: ChildFragment
-) : Dependency
-
-val childFragmentModule = module {
-    single {
-        ChildFragmentDependency(
-            get(),
-            get(),
-            get(),
-            get()
-        )
-    } bindIntoMap (DEPS to ChildFragmentDependency::class)
-}
+)

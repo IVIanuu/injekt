@@ -5,15 +5,9 @@ import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.CHILD_VIEW_SCOPE
-import com.ivianuu.injekt.android.viewComponent
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.android.childViewComponent
+import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.multibinding.bindIntoMap
-import com.ivianuu.injekt.multibinding.injectMap
-import com.ivianuu.injekt.single
-import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -23,11 +17,7 @@ class ChildView @JvmOverloads constructor(
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
-    override val component by lazy {
-        viewComponent(this, CHILD_VIEW_SCOPE) {
-            modules(childViewModule)
-        }
-    }
+    override val component by lazy { childViewComponent(this) }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -35,8 +25,6 @@ class ChildView @JvmOverloads constructor(
     private val childFragmentDependency by inject<ChildFragmentDependency>()
     private val parentViewDependency by inject<ParentViewDependency>()
     private val childViewDependency by inject<ChildViewDependency>()
-
-    private val dependencies by injectMap<KClass<out Dependency>, Dependency>(DEPS)
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -47,10 +35,10 @@ class ChildView @JvmOverloads constructor(
         d { "Injected child fragment dependency $childFragmentDependency" }
         d { "Injected parent view dependency $parentViewDependency" }
         d { "Injected child view dependency $childViewDependency" }
-        d { "All dependencies $dependencies" }
     }
 }
 
+@Single(scopeName = CHILD_VIEW_SCOPE)
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,
@@ -58,17 +46,4 @@ class ChildViewDependency(
     val childFragment: ChildFragment,
     val parentView: ParentView,
     val childView: ChildView
-) : Dependency
-
-val childViewModule = module {
-    single {
-        ChildViewDependency(
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get()
-        )
-    } bindIntoMap (DEPS to ChildViewDependency::class)
-}
+)
