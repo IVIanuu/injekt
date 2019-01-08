@@ -30,6 +30,7 @@ import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
 import com.ivianuu.processingx.getOrNull
+import com.ivianuu.processingx.getPackage
 import com.ivianuu.processingx.hasAnnotation
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.typeUtils
@@ -101,7 +102,14 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
         var paramsIndex = -1
 
         val targetName = element.asClassName().javaToKotlinType() as ClassName
-        val factoryName = ClassName.bestGuess(targetName.toString() + "__Factory")
+
+        val factoryName = ClassName(
+            targetName.packageName,
+            element.qualifiedName.toString().substring(
+                element.enclosingElement.getPackage().qualifiedName.toString().length + 1
+            ).replace('.', '_') + "__Factory"
+        )
+
         return DefinitionDescriptor(
             targetName,
             factoryName,

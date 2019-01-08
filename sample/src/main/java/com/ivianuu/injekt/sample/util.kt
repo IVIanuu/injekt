@@ -34,4 +34,7 @@ class DummyDep(
 )
 
 @Factory
-class DummyDep2
+class DummyDep2 {
+    @Single
+    class DummyDep3
+}

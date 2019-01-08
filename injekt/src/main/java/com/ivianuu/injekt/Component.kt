@@ -182,7 +182,8 @@ class Component internal constructor(val name: String?) {
         // we search for generated factories as a last resort
         if (includeFactories) {
             try {
-                val factoryType = Class.forName(key.type.java.name + "__Factory")
+                val factoryName = key.type.java.name.replace("\$", "_") + "__Factory"
+                val factoryType = Class.forName(factoryName)
                 val factory = factoryType.newInstance() as DefinitionFactory<T>
 
                 logger?.info("Found definition factory for $key")
