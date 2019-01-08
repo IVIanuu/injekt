@@ -1,7 +1,7 @@
 package com.ivianuu.injekt
 
 /**
- * @author Manuel Wrage (IVIanuu)
+ * Used for code generation
  */
 interface DefinitionFactory<T : Any> {
     fun create(): BeanDefinition<T>
