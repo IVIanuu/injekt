@@ -181,7 +181,7 @@ fun Module.module(
 inline fun <reified T : Any, reified S : T> Module.bind(
     bindingName: String? = null,
     existingName: String? = null
-): BindingContext<T> = factory(bindingName) { get<S>(existingName) }
+): BindingContext<T> = factory(bindingName) { get<S>(existingName) { it } }
 
 
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)

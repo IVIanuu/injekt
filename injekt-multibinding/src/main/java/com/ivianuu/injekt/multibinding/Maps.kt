@@ -90,7 +90,7 @@ fun <T : Any> Module.bindIntoMap(
 ): BindingContext<T> {
     // we use a unique id here to make sure that the binding does not collide with any user config
     return factory(implementationType, UUID.randomUUID().toString()) {
-        get(implementationType, implementationName)
+        get(implementationType, implementationName) { it }
     } bindIntoMap (mapName to key)
 }
 
