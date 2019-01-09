@@ -10,8 +10,7 @@ class Component internal constructor(val name: String?) {
     private val dependencies = hashSetOf<Component>()
     private val scopeNames = hashSetOf<String>()
     private val definitions = hashMapOf<Key, BeanDefinition<*>>()
-
-    private val instances = hashMapOf<Key, Instance<*>>()
+    internal val instances = hashMapOf<Key, Instance<*>>()
 
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
@@ -52,22 +51,26 @@ class Component internal constructor(val name: String?) {
      * Adds the [dependency] as a dependency
      */
     fun addDependency(dependency: Component) {
-        if (!this.dependencies.add(dependency)) {
-            throw error("Already added $dependency to $name")
+        synchronized(this) {
+            if (!this.dependencies.add(dependency)) {
+                throw error("Already added $dependency to $name")
+            }
+
+            instances.putAll(dependency.instances)
+
+            InjektPlugins.logger?.info("$name Add dependency $dependency")
         }
-
-        instances.putAll(dependency.instances)
-
-        InjektPlugins.logger?.info("$name Add dependency $dependency")
     }
 
     /**
      * Adds all of [scopeNames] to this component
      */
     fun scopeNames(scopeNames: Iterable<String>) {
-        scopeNames.forEach {
-            if (!this.scopeNames.add(it)) {
-                error("Scope name $it was already added to $scopeNames")
+        synchronized(this) {
+            scopeNames.forEach {
+                if (!this.scopeNames.add(it)) {
+                    error("Scope name $it was already added to $scopeNames")
+                }
             }
         }
     }
@@ -101,15 +104,16 @@ class Component internal constructor(val name: String?) {
             }
     }
 
-    private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? {
+    private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? =
+        synchronized(this) {
         var instance = instances[key]
-        if (instance != null) return instance as Instance<T>
+            if (instance != null) return@synchronized instance as Instance<T>
 
         for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key, false)
             if (instance != null) {
                 instances[key] = instance
-                return instance
+                return@synchronized instance
             }
         }
 
@@ -119,16 +123,17 @@ class Component internal constructor(val name: String?) {
                 val factory = FactoryFinder.find(key.type) ?: return null
 
                 val definition = factory.create()
-                return addDefinitionInternal(definition) as Instance<T>
+                return@synchronized addDefinitionInternal(definition) as Instance<T>
             } catch (e: ClassNotFoundException) {
                 // ignore
             }
         }
 
-        return null
+            return@synchronized null
     }
 
-    private fun addDefinitionInternal(definition: BeanDefinition<*>): Instance<*> {
+    private fun addDefinitionInternal(definition: BeanDefinition<*>): Instance<*> =
+        synchronized(this) {
         val isOverride = definitions.remove(definition.key) != null
 
         if (isOverride && !definition.override) {
@@ -144,7 +149,7 @@ class Component internal constructor(val name: String?) {
             if (parentWithScope != null) {
                 val instance = parentWithScope.addDefinitionInternal(definition)
                 instances[definition.key] = instance
-                return instance
+                return@synchronized instance
             } else {
                 error("Component scope $name does not match definition scope ${definition.scopeName}")
             }
@@ -163,7 +168,7 @@ class Component internal constructor(val name: String?) {
             logger.debug(msg)
         }
 
-        return instance
+            return@synchronized instance
     }
 
     private fun <T : Any> BeanDefinition<T>.createInstance() = when (kind) {
