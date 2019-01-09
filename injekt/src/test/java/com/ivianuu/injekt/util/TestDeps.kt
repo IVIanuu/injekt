@@ -16,16 +16,6 @@
 
 package com.ivianuu.injekt.util
 
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.module
-
 class TestDep1
 class TestDep2(val dep1: TestDep1)
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
-
-val testModule = module {
-    factory { TestDep1() }
-    factory { TestDep2(get()) }
-    factory { TestDep3(get(), get()) }
-}

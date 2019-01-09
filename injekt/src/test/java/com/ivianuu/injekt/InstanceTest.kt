@@ -14,81 +14,81 @@
  * limitations under the License.
  */
 
-/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.getDefinition
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstanceTest {
 
-@Test
-fun testSingleCreatesOnce() {
-val component = component {
-modules(
-module {
-single { TestDep1() }
+    @Test
+    fun testSingleCreatesOnce() {
+        val component = component()
+        component.addDefinition(
+            BeanDefinition.createSingle(
+                type = TestDep1::class,
+                definition = { TestDep1() }
+            )
+        )
+
+        val instance = component.instances.values.first()
+
+        assertFalse(instance.isCreated)
+
+        val value1 = instance.get()
+        assertTrue(instance.isCreated)
+        val value2 = instance.get()
+        assertTrue(instance.isCreated)
+
+        assertEquals(value1, value2)
+    }
+
+    @Test
+    fun testFactoryCreatesNew() {
+        val component = component()
+        component.addDefinition(
+            BeanDefinition.createFactory(
+                type = TestDep1::class,
+                definition = { TestDep1() }
+            )
+        )
+
+        val instance = component.instances.values.first()
+
+        assertTrue(instance is FactoryInstance)
+        assertFalse(instance.isCreated)
+
+        val value1 = instance.get()
+        assertFalse(instance.isCreated)
+        val value2 = instance.get()
+        assertFalse(instance.isCreated)
+
+        assertNotEquals(value1, value2)
+    }
+
+    @Test
+    fun testInstanceCreationFailed() {
+        val component = component()
+        component.addDefinition(
+            BeanDefinition.createSingle(
+                type = TestDep1::class,
+                definition = { error("error") }
+            )
+        )
+
+        val instance = component.instances.values.first()
+
+        val throwed = try {
+            instance.get()
+            false
+        } catch (e: InstanceCreationException) {
+            true
+        }
+
+        assertTrue(throwed)
+    }
 }
-)
-}
-
-val definition = component.getDefinition<TestDep1>()
-
-assertTrue(definition.instance is SingleInstance)
-assertFalse(definition.instance.isCreated)
-
-val value1 = definition.instance.get()
-assertTrue(definition.instance.isCreated)
-val value2 = definition.instance.get()
-assertTrue(definition.instance.isCreated)
-
-assertEquals(value1, value2)
-}
-
-@Test
-fun testFactoryCreatesNew() {
-val component = component {
-modules(
-module {
-factory { TestDep1() }
-}
-)
-}
-
-val definition = component.getDefinition<TestDep1>()
-
-assertTrue(definition.instance is FactoryInstance)
-assertFalse(definition.instance.isCreated)
-
-val value1 = definition.instance.get()
-assertFalse(definition.instance.isCreated)
-val value2 = definition.instance.get()
-assertFalse(definition.instance.isCreated)
-
-assertNotEquals(value1, value2)
-}
-
-@Test
-fun testInstanceCreationFailed() {
-val component = component {
-modules(
-module {
-factory<TestDep1> { throw error("error") }
-}
-)
-}
-
-val definition = component.getDefinition<TestDep1>()
-
-val throwed = try {
-definition.instance.get()
-false
-} catch (e: InstanceCreationException) {
-true
-}
-
-assertTrue(throwed)
-}
-}*/

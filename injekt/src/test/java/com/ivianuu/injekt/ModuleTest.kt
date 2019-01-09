@@ -14,85 +14,84 @@
  * limitations under the License.
  */
 
-/**
+
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.getDefinition
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ModuleTest {
 
-@Test
-fun testModuleConfigOverridesDefinition() {
-val module = module(eager = true, override = true) {
-single(override = false, eager = false) { TestDep1() }
-}
+    @Test
+    fun testModuleConfigOverridesDefinition() {
+        val module = module(eager = true, override = true) {
+            single(override = false, eager = false) { TestDep1() }
+        }
 
-val component = component { modules(module) }
+        val component = component { modules(module) }
 
-val definition = component.getDefinition<TestDep1>()
-assertTrue(module.override)
-assertTrue(definition.override)
+        val definition = component.getDefinitions().first()
+        assertTrue(module.override)
+        assertTrue(definition.override)
 
-assertTrue(module.eager)
-assertTrue(definition.eager)
-}
+        assertTrue(module.eager)
+        assertTrue(definition.eager)
+    }
 
-@Test
-fun testModuleConfigNotOverridesDefinitions() {
-val module = module(eager = false, override = false) {
-single(override = true, eager = true) { TestDep1() }
-}
+    @Test
+    fun testModuleConfigNotOverridesDefinitions() {
+        val module = module(eager = false, override = false) {
+            single(override = true, eager = true) { TestDep1() }
+        }
 
-val component = component { modules(module) }
+        val component = component { modules(module) }
 
-val definition = component.getDefinition<TestDep1>()
-assertFalse(module.override)
-assertTrue(definition.override)
+        val definition = component.getDefinitions().first()
+        assertFalse(module.override)
+        assertTrue(definition.override)
 
-assertFalse(module.eager)
-assertTrue(definition.eager)
-}
+        assertFalse(module.eager)
+        assertTrue(definition.eager)
+    }
 
-@Test
-fun testAllowsValidOverride() {
-val throwed = try {
-component {
-modules(
-module {
-single { TestDep1() }
-single(override = true) { TestDep1() }
-}
-)
-}
-false
-} catch (e: OverrideException) {
-true
-}
+    @Test
+    fun testAllowsValidOverride() {
+        val throwed = try {
+            component {
+                modules(
+                    module {
+                        single { TestDep1() }
+                        single(override = true) { TestDep1() }
+                    }
+                )
+            }
+            false
+        } catch (e: OverrideException) {
+            true
+        }
 
-assertFalse(throwed)
-}
+        assertFalse(throwed)
+    }
 
-@Test
-fun testThrowsOnInvalidOverride() {
-val throwed = try {
-component {
-modules(
-module {
-single { TestDep1() }
-single { TestDep1() }
-}
-)
-}
-false
-} catch (e: OverrideException) {
-true
-}
+    @Test
+    fun testThrowsOnInvalidOverride() {
+        val throwed = try {
+            component {
+                modules(
+                    module {
+                        single { TestDep1() }
+                        single { TestDep1() }
+                    }
+                )
+            }
+            false
+        } catch (e: OverrideException) {
+            true
+        }
 
-assertTrue(throwed)
-}
+        assertTrue(throwed)
+    }
 
-}*/
+}

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
@@ -24,92 +23,92 @@ import org.junit.Test
 
 class ProviderTest {
 
-@Test
-fun testProviderNotReturnsSameValue() {
-val component = component {
-modules(
-module {
-factory { TestDep1() }
+    @Test
+    fun testProviderNotReturnsSameValue() {
+        val component = component {
+            modules(
+                module {
+                    factory { TestDep1() }
+                }
+            )
+        }
+        val getProvider = component.getProvider<TestDep1>()
+        val value1 = getProvider.get()
+        val value2 = getProvider.get()
+        assertNotEquals(value1, value2)
+    }
+
+    @Test
+    fun testProviderUsesDefaultParams() {
+        lateinit var usedParams: Parameters
+
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        val defaultParams = parametersOf("one", "two")
+
+        val getProvider = component.getProvider<TestDep1> { defaultParams }
+
+        getProvider.get()
+
+        assertEquals(defaultParams, usedParams)
+    }
+
+    @Test
+    fun testProviderUsesExplicitParams() {
+        lateinit var usedParams: Parameters
+
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        val parameters = parametersOf("one", "two")
+
+        val getProvider = component.getProvider<TestDep1>()
+
+        getProvider.get { parameters }
+
+        assertEquals(parameters, usedParams)
+    }
+
+    @Test
+    fun testProviderPrefersExplicitParams() {
+        lateinit var usedParams: Parameters
+
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        val defaultParams = parametersOf("default")
+        val explicitParams = parametersOf("explicit")
+
+        val getProvider = component.getProvider<TestDep1> { defaultParams }
+
+        getProvider.get { explicitParams }
+
+        assertEquals(explicitParams, usedParams)
+    }
+
 }
-)
-}
-val getProvider = component.getProvider<TestDep1>()
-val value1 = getProvider.get()
-val value2 = getProvider.get()
-assertNotEquals(value1, value2)
-}
-
-@Test
-fun testProviderUsesDefaultParams() {
-lateinit var usedParams: Parameters
-
-val component = component {
-modules(
-module {
-factory {
-usedParams = it
-TestDep1()
-}
-}
-)
-}
-
-val defaultParams = parametersOf("one", "two")
-
-val getProvider = component.getProvider<TestDep1> { defaultParams }
-
-getProvider.get()
-
-assertEquals(defaultParams, usedParams)
-}
-
-@Test
-fun testProviderUsesExplicitParams() {
-lateinit var usedParams: Parameters
-
-val component = component {
-modules(
-module {
-factory {
-usedParams = it
-TestDep1()
-}
-}
-)
-}
-
-val parameters = parametersOf("one", "two")
-
-val getProvider = component.getProvider<TestDep1>()
-
-getProvider.get { parameters }
-
-assertEquals(parameters, usedParams)
-}
-
-@Test
-fun testProviderPrefersExplicitParams() {
-lateinit var usedParams: Parameters
-
-val component = component {
-modules(
-module {
-factory {
-usedParams = it
-TestDep1()
-}
-}
-)
-}
-
-val defaultParams = parametersOf("default")
-val explicitParams = parametersOf("explicit")
-
-val getProvider = component.getProvider<TestDep1> { defaultParams }
-
-getProvider.get { explicitParams }
-
-assertEquals(explicitParams, usedParams)
-}
-
-}*/
