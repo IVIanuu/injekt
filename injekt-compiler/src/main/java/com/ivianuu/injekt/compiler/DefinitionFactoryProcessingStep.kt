@@ -107,7 +107,7 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
             targetName.packageName,
             element.qualifiedName.toString().substring(
                 element.enclosingElement.getPackage().qualifiedName.toString().length + 1
-            ).replace('.', '_') + "__Factory"
+            ).replace('.', '_') + "_Factory"
         )
 
         return DefinitionDescriptor(

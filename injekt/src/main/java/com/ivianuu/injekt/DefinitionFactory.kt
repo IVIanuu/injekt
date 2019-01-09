@@ -17,7 +17,7 @@ internal object FactoryFinder {
     fun <T : Any> find(type: KClass<T>): DefinitionFactory<T>? {
         if (failedTypes.contains(type)) return null
         return try {
-            val factoryName = type.java.name.replace("\$", "_") + "__Factory"
+            val factoryName = type.java.name.replace("\$", "_") + "_Factory"
             val factoryType = Class.forName(factoryName)
             val factory = factoryType.newInstance() as DefinitionFactory<T>
             factories[type] = factory
