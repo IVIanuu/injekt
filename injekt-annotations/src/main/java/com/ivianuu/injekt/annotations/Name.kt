@@ -22,5 +22,5 @@ import com.ivianuu.injekt.Component
  * Will use the [name] when retrieving an instance from [Component.get]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.RUNTIME)
 annotation class Name(val name: String)

@@ -20,7 +20,7 @@ package com.ivianuu.injekt.annotations
  * Contributes a factory binding into the declared [Module]
  */
 @Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.RUNTIME)
 annotation class Factory(
     val name: String = "",
     val scopeName: String = "",
