@@ -7,7 +7,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.CHILD_VIEW_SCOPE
 import com.ivianuu.injekt.android.childViewComponent
 import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
 
 /**
@@ -29,8 +28,6 @@ class ChildView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-
-        get<DummyDep2.DummyDep3>()
 
         d { "Injected app dependency $appDependency" }
         d { "Injected main activity dependency $mainActivityDependency" }

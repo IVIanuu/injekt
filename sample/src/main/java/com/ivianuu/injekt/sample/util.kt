@@ -26,10 +26,10 @@ class InjektTraitContextWrapper(
 class DummyDep
 
 @Factory
-class DummyDep2 {
-    @Single
-    class DummyDep3(
-        @Name("name") val dummyDep: DummyDep,
-        val dummyDep2: DummyDep2
-    )
-}
+class DummyDep2
+
+@Single
+class DummyDep3(
+    @Name("name") val dummyDep: DummyDep,
+    val dummyDep2: DummyDep2
+)

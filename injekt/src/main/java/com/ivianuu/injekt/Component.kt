@@ -21,7 +21,7 @@ class Component internal constructor(val name: String?) {
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        return findInstance<T>(key, true)?.get(parameters)
+        return findInstance<T>(key, true)?.get(this, parameters)
             ?: throw NoBeanDefinitionFoundException("${this.name} Could not find definition for $key")
     }
 
@@ -100,7 +100,7 @@ class Component internal constructor(val name: String?) {
             .filter { it.value.definition.eager && !it.value.isCreated }
             .forEach {
                 InjektPlugins.logger?.info("$name Create eager instance for ${it.value.definition}")
-                it.value.get()
+                it.value.get(this, null)
             }
     }
 
@@ -155,7 +155,7 @@ class Component internal constructor(val name: String?) {
             }
         }
 
-        val instance = definition.createInstance()
+            val instance = createInstance(definition)
 
         instances[definition.key] = instance
 
@@ -171,9 +171,18 @@ class Component internal constructor(val name: String?) {
             return@synchronized instance
     }
 
-    private fun <T : Any> BeanDefinition<T>.createInstance() = when (kind) {
-        BeanDefinition.Kind.FACTORY -> FactoryInstance(this, this@Component)
-        BeanDefinition.Kind.SINGLE -> SingleInstance(this, this@Component)
+    private fun <T : Any> createInstance(definition: BeanDefinition<T>): Instance<T> {
+        val component = if (definition.scopeName != null) {
+            findComponentForScope(definition.scopeName)
+                ?: error("Cannot create instance for $definition unknown scope ${definition.scopeName}")
+        } else {
+            null
+        }
+
+        return when (definition.kind) {
+            BeanDefinition.Kind.FACTORY -> FactoryInstance(definition, component)
+            BeanDefinition.Kind.SINGLE -> SingleInstance(definition, component)
+        }
     }
 
     private fun findComponentForScope(scopeName: String): Component? {

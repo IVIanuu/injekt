@@ -6,8 +6,7 @@ import com.ivianuu.injekt.InjektPlugins.logger
  * The [Instance] of an [BeanDefinition]
  */
 abstract class Instance<T : Any>(
-    val definition: BeanDefinition<T>,
-    val component: Component
+    val definition: BeanDefinition<T>
 ) {
 
     /**
@@ -18,9 +17,15 @@ abstract class Instance<T : Any>(
     /**
      * Returns a instance of [T]
      */
-    abstract fun get(parameters: ParametersDefinition? = null): T
+    abstract fun get(
+        component: Component,
+        parameters: ParametersDefinition?
+    ): T
 
-    protected open fun create(parameters: ParametersDefinition?): T {
+    protected open fun create(
+        component: Component,
+        parameters: ParametersDefinition?
+    ): T {
         return try {
             definition.definition.invoke(
                 DefinitionContext(component),
@@ -41,15 +46,19 @@ abstract class Instance<T : Any>(
  */
 class FactoryInstance<T : Any>(
     definition: BeanDefinition<T>,
-    component: Component
-) : Instance<T>(definition, component) {
+    val component: Component?
+) : Instance<T>(definition) {
 
     override val isCreated: Boolean
         get() = false
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(
+        component: Component,
+        parameters: ParametersDefinition?
+    ): T {
+        val component = this.component ?: component
         logger?.info("${component.name} Create instance $definition")
-        return create(parameters)
+        return create(component, parameters)
     }
 
 }
@@ -59,15 +68,19 @@ class FactoryInstance<T : Any>(
  */
 class SingleInstance<T : Any>(
     definition: BeanDefinition<T>,
-    component: Component
-) : Instance<T>(definition, component) {
+    val component: Component?
+) : Instance<T>(definition) {
 
     private var _value: T? = null
 
     override val isCreated: Boolean
         get() = _value != null
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(
+        component: Component,
+        parameters: ParametersDefinition?
+    ): T {
+        val component = this.component ?: component
         val value = _value
 
         return if (value != null) {
@@ -75,7 +88,7 @@ class SingleInstance<T : Any>(
             return value
         } else {
             logger?.info("${component.name} Create instance $definition")
-            create(parameters).also { _value = it }
+            create(component, parameters).also { _value = it }
         }
     }
 
