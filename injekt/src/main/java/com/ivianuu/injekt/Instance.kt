@@ -3,10 +3,10 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.InjektPlugins.logger
 
 /**
- * The [Instance] of an [BeanDefinition]
+ * The [Instance] of an [Binding]
  */
 abstract class Instance<T : Any>(
-    val definition: BeanDefinition<T>
+    val binding: Binding<T>
 ) {
 
     /**
@@ -27,13 +27,13 @@ abstract class Instance<T : Any>(
         parameters: ParametersDefinition?
     ): T {
         return try {
-            definition.definition.invoke(
+            binding.definition.invoke(
                 DefinitionContext(component),
                 parameters?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
             throw InstanceCreationException(
-                "${component.name} Couldn't instantiate $definition",
+                "${component.name} Couldn't instantiate $binding",
                 e
             )
         }
@@ -45,9 +45,9 @@ abstract class Instance<T : Any>(
  * A [Instance] which creates a new value on every [get] call
  */
 class FactoryInstance<T : Any>(
-    definition: BeanDefinition<T>,
+    binding: Binding<T>,
     val component: Component?
-) : Instance<T>(definition) {
+) : Instance<T>(binding) {
 
     override val isCreated: Boolean
         get() = false
@@ -57,7 +57,7 @@ class FactoryInstance<T : Any>(
         parameters: ParametersDefinition?
     ): T {
         val component = this.component ?: component
-        logger?.info("${component.name} Create instance $definition")
+        logger?.info("${component.name} Create instance $binding")
         return create(component, parameters)
     }
 
@@ -67,9 +67,9 @@ class FactoryInstance<T : Any>(
  * A [Instance] which creates the value 1 time per [Component] and caches the result
  */
 class SingleInstance<T : Any>(
-    definition: BeanDefinition<T>,
+    binding: Binding<T>,
     val component: Component?
-) : Instance<T>(definition) {
+) : Instance<T>(binding) {
 
     private var _value: T? = null
 
@@ -84,10 +84,10 @@ class SingleInstance<T : Any>(
         val value = _value
 
         return if (value != null) {
-            logger?.info("${component.name} Return existing instance $definition")
+            logger?.info("${component.name} Return existing instance $binding")
             return value
         } else {
-            logger?.info("${component.name} Create instance $definition")
+            logger?.info("${component.name} Create instance $binding")
             create(component, parameters).also { _value = it }
         }
     }

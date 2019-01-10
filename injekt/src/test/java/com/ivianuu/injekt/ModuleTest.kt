@@ -25,35 +25,35 @@ import org.junit.Test
 class ModuleTest {
 
     @Test
-    fun testModuleConfigOverridesDefinition() {
+    fun testModuleConfigOverridesBinding() {
         val module = module(eager = true, override = true) {
             single(override = false, eager = false) { TestDep1() }
         }
 
         val component = component { modules(module) }
 
-        val definition = component.getDefinitions().first()
+        val binding = component.getBindings().first()
         assertTrue(module.override)
-        assertTrue(definition.override)
+        assertTrue(binding.override)
 
         assertTrue(module.eager)
-        assertTrue(definition.eager)
+        assertTrue(binding.eager)
     }
 
     @Test
-    fun testModuleConfigNotOverridesDefinitions() {
+    fun testModuleConfigNotOverridesBindings() {
         val module = module(eager = false, override = false) {
             single(override = true, eager = true) { TestDep1() }
         }
 
         val component = component { modules(module) }
 
-        val definition = component.getDefinitions().first()
+        val binding = component.getBindings().first()
         assertFalse(module.override)
-        assertTrue(definition.override)
+        assertTrue(binding.override)
 
         assertFalse(module.eager)
-        assertTrue(definition.eager)
+        assertTrue(binding.eager)
     }
 
     @Test

@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.BeanDefinition
-import com.ivianuu.injekt.DefinitionFactory
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingFactory
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -29,7 +29,7 @@ import com.squareup.kotlinpoet.asClassName
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class FactoryGenerator(private val descriptor: DefinitionDescriptor) {
+class FactoryGenerator(private val descriptor: BindingDescriptor) {
 
     fun generate(): FileSpec {
         val file =
@@ -66,12 +66,12 @@ class FactoryGenerator(private val descriptor: DefinitionDescriptor) {
     private fun factory(): TypeSpec {
         return TypeSpec.classBuilder(descriptor.factoryName)
             .addSuperinterface(
-                DefinitionFactory::class.asClassName().plusParameter(descriptor.target)
+                BindingFactory::class.asClassName().plusParameter(descriptor.target)
             )
             .addFunction(
                 FunSpec.builder("create")
                     .addModifiers(KModifier.OVERRIDE)
-                    .returns(BeanDefinition::class.asClassName().plusParameter(descriptor.target))
+                    .returns(Binding::class.asClassName().plusParameter(descriptor.target))
                     .apply {
                         val constructorStatement =
                             "%T(${descriptor.constructorParams.joinToString(", ") {
@@ -102,10 +102,10 @@ class FactoryGenerator(private val descriptor: DefinitionDescriptor) {
                             }})"
 
                         addCode(
-                            "return BeanDefinition.create(" +
+                            "return Binding.create(" +
                                     "%T::class, " +
                                     "${if (descriptor.name != null) "\"${descriptor.name}\"" else "null"}, " +
-                                    "BeanDefinition.Kind.${descriptor.kind.name}, " +
+                                    "Binding.Kind.${descriptor.kind.name}, " +
                                     "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +
                                     "${descriptor.override}, " +
                                     "${descriptor.eager}, " +

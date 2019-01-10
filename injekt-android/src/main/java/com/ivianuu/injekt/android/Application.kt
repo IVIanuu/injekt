@@ -49,7 +49,7 @@ fun <T : Application> applicationComponent(
 }
 
 /**
- * Returns a [Module] with convenient definitions
+ * Returns a [Module] with convenient bindings
  */
 fun <T : Application> applicationModule(
     instance: T,

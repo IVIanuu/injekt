@@ -3,13 +3,13 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * The actual dependency container which provides definitions
+ * The actual dependency container which provides bindings
  */
 class Component internal constructor(val name: String?) {
 
     private val dependencies = hashSetOf<Component>()
     private val scopeNames = hashSetOf<String>()
-    private val definitions = hashMapOf<Key, BeanDefinition<*>>()
+    private val bindings = hashMapOf<Key, Binding<*>>()
     internal val instances = hashMapOf<Key, Instance<*>>()
 
     /**
@@ -22,16 +22,16 @@ class Component internal constructor(val name: String?) {
     ): T {
         val key = Key(type, name)
         return findInstance<T>(key, true)?.get(this, parameters)
-            ?: throw NoBeanDefinitionFoundException("${this.name} Could not find definition for $key")
+            ?: throw NoBeanDefinitionFoundException("${this.name} Could not find binding for $key")
     }
 
     /**
-     * Adds all [BeanDefinition]s of the [modules]
+     * Adds all [Binding]s of the [modules]
      */
     fun modules(modules: Iterable<Module>) {
         modules.forEach { module ->
             InjektPlugins.logger?.info("$name load module ${module.name}")
-            module.definitions.forEach { addDefinition(it.value) }
+            module.bindings.forEach { addBinding(it.value) }
         }
     }
 
@@ -81,15 +81,15 @@ class Component internal constructor(val name: String?) {
     fun getScopeNames(): Set<String> = scopeNames
 
     /**
-     * Returns all [BeanDefinition]s added to this component
+     * Returns all [Binding]s added to this component
      */
-    fun getDefinitions(): Set<BeanDefinition<*>> = definitions.values.toSet()
+    fun getBindings(): Set<Binding<*>> = bindings.values.toSet()
 
     /**
-     * Saves the [definition]
+     * Saves the [binding]
      */
-    fun addDefinition(definition: BeanDefinition<*>) {
-        addDefinitionInternal(definition)
+    fun addBinding(binding: Binding<*>) {
+        addBindingInternal(binding)
     }
 
     /**
@@ -97,9 +97,9 @@ class Component internal constructor(val name: String?) {
      */
     fun createEagerInstances() {
         instances
-            .filter { it.value.definition.eager && !it.value.isCreated }
+            .filter { it.value.binding.eager && !it.value.isCreated }
             .forEach {
-                InjektPlugins.logger?.info("$name Create eager instance for ${it.value.definition}")
+                InjektPlugins.logger?.info("$name Create eager instance for ${it.value.binding}")
                 it.value.get(this, null)
             }
     }
@@ -121,9 +121,8 @@ class Component internal constructor(val name: String?) {
         if (includeFactories) {
             try {
                 val factory = FactoryFinder.find(key.type) ?: return null
-
-                val definition = factory.create()
-                return@synchronized addDefinitionInternal(definition) as Instance<T>
+                val binding = factory.create()
+                return@synchronized addBindingInternal(binding) as Instance<T>
             } catch (e: ClassNotFoundException) {
                 // ignore
             }
@@ -132,38 +131,38 @@ class Component internal constructor(val name: String?) {
             return@synchronized null
     }
 
-    private fun addDefinitionInternal(definition: BeanDefinition<*>): Instance<*> =
+    private fun addBindingInternal(binding: Binding<*>): Instance<*> =
         synchronized(this) {
-        val isOverride = definitions.remove(definition.key) != null
+            val isOverride = bindings.remove(binding.key) != null
 
-        if (isOverride && !definition.override) {
-            throw OverrideException("Try to override definition $definition but was already in $name")
+            if (isOverride && !binding.override) {
+                throw OverrideException("Try to override binding $binding but was already in $name")
         }
 
-        definitions[definition.key] = definition
+            bindings[binding.key] = binding
 
-        if (definition.scopeName != null && !scopeNames.contains(definition.scopeName)) {
-            val parentWithScope = findComponentForScope(definition.scopeName)
+            if (binding.scopeName != null && !scopeNames.contains(binding.scopeName)) {
+                val parentWithScope = findComponentForScope(binding.scopeName)
 
-            // add the definition to the parent
+                // add the binding to the parent
             if (parentWithScope != null) {
-                val instance = parentWithScope.addDefinitionInternal(definition)
-                instances[definition.key] = instance
+                val instance = parentWithScope.addBindingInternal(binding)
+                instances[binding.key] = instance
                 return@synchronized instance
             } else {
-                error("Component scope $name does not match definition scope ${definition.scopeName}")
+                error("Component scope $name does not match binding scope ${binding.scopeName}")
             }
         }
 
-            val instance = createInstance(definition)
+            val instance = createInstance(binding)
 
-        instances[definition.key] = instance
+            instances[binding.key] = instance
 
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
-                "$name Override $definition"
+                "$name Override $binding"
             } else {
-                "$name Declare $definition"
+                "$name Declare $binding"
             }
             logger.debug(msg)
         }
@@ -171,17 +170,17 @@ class Component internal constructor(val name: String?) {
             return@synchronized instance
     }
 
-    private fun <T : Any> createInstance(definition: BeanDefinition<T>): Instance<T> {
-        val component = if (definition.scopeName != null) {
-            findComponentForScope(definition.scopeName)
-                ?: error("Cannot create instance for $definition unknown scope ${definition.scopeName}")
+    private fun <T : Any> createInstance(binding: Binding<T>): Instance<T> {
+        val component = if (binding.scopeName != null) {
+            findComponentForScope(binding.scopeName)
+                ?: error("Cannot create instance for $binding unknown scope ${binding.scopeName}")
         } else {
             null
         }
 
-        return when (definition.kind) {
-            BeanDefinition.Kind.FACTORY -> FactoryInstance(definition, component)
-            BeanDefinition.Kind.SINGLE -> SingleInstance(definition, component)
+        return when (binding.kind) {
+            Binding.Kind.FACTORY -> FactoryInstance(binding, component)
+            Binding.Kind.SINGLE -> SingleInstance(binding, component)
         }
     }
 

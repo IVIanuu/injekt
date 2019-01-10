@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
@@ -44,7 +44,7 @@ import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
-class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvironment) :
+class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnvironment) :
     ProcessingStep,
     ProcessingEnvHolder {
 
@@ -59,14 +59,14 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
         validateNameUsages(elementsByAnnotation[Name::class.java])
         validateParamUsages(elementsByAnnotation[Param::class.java])
 
-        val definitionElements = (elementsByAnnotation[Factory::class.java]
+        val bindingElements = (elementsByAnnotation[Factory::class.java]
                 + elementsByAnnotation[Single::class.java])
 
-        validateOnlyOneKindAnnotation(definitionElements)
+        validateOnlyOneKindAnnotation(bindingElements)
 
         (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
             .filterIsInstance<TypeElement>()
-            .mapNotNull { createDefinitionDescriptor(it) }
+            .mapNotNull { createBindingDescriptor(it) }
             .map { FactoryGenerator(it) }
             .map { it.generate() }
             .forEach { it.write(processingEnv) }
@@ -74,16 +74,16 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
         return emptySet()
     }
 
-    private fun createDefinitionDescriptor(element: TypeElement): DefinitionDescriptor? {
+    private fun createBindingDescriptor(element: TypeElement): BindingDescriptor? {
         val kind = if (element.hasAnnotation<Single>()) {
-            BeanDefinition.Kind.SINGLE
+            Binding.Kind.SINGLE
         } else {
-            BeanDefinition.Kind.FACTORY
+            Binding.Kind.FACTORY
         }
 
         val annotation = when (kind) {
-            BeanDefinition.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            BeanDefinition.Kind.SINGLE -> element.getAnnotationMirror<Single>()
+            Binding.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
+            Binding.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
         var name: String? = annotation["name"].value as String
@@ -110,7 +110,7 @@ class DefinitionFactoryProcessingStep(override val processingEnv: ProcessingEnvi
             ).replace('.', '_') + "_Factory"
         )
 
-        return DefinitionDescriptor(
+        return BindingDescriptor(
             targetName,
             factoryName,
             kind,

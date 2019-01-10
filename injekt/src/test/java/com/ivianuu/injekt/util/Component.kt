@@ -17,16 +17,16 @@
 package com.ivianuu.injekt.util
 
 /**
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import kotlin.reflect.KClass
 
-inline fun <reified T : Any> Component.getDefinition(
+inline fun <reified T : Any> Component.getBinding(
 name: String? = null
-) = getDefinition(T::class, name)
+) = getBinding(T::class, name)
 
-fun <T : Any> Component.getDefinition(
+fun <T : Any> Component.getBinding(
 type: KClass<T>,
 name: String? = null
-) = beanRegistry.findDefinition(type, name) as? BeanDefinition<T>
-?: error("definition not found")*/
+) = beanRegistry.findDefinition(type, name) as? Binding<T>
+?: error("binding not found")*/

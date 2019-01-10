@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.squareup.kotlinpoet.ClassName
 
-data class DefinitionDescriptor(
+data class BindingDescriptor(
     val target: ClassName,
     val factoryName: ClassName,
-    val kind: BeanDefinition.Kind,
+    val kind: Binding.Kind,
     val name: String?,
     val scopeName: String?,
     val override: Boolean,

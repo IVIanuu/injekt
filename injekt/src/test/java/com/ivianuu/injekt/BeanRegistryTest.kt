@@ -34,7 +34,7 @@ factory { TestDep2(get()) }
 
 registry.modules(listOf(module))
 
-assertEquals(registry.getAllDefinitions(), module.getDefinitions().toSet())
+assertEquals(registry.getAllDefinitions(), module.getBindings().toSet())
 }
 
 @Test
@@ -61,25 +61,25 @@ component.beanRegistry.getAllDefinitions()
 @Test
 fun testSaveDefinition() {
 val registry = component { }.beanRegistry
-val definition =
-BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+val binding =
+Binding.create(TestDep1::class, null, Binding.Kind.FACTORY) { TestDep1() }
 assertEquals(null, registry.findDefinition(TestDep1::class))
-registry.addDefinition(definition)
-assertEquals(definition, registry.findDefinition(TestDep1::class))
+registry.addBinding(binding)
+assertEquals(binding, registry.findDefinition(TestDep1::class))
 }
 
 @Test
 fun testAllowsValidOverride() {
 val registry = component { }.beanRegistry
 val definition1 =
-BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+Binding.create(TestDep1::class, null, Binding.Kind.FACTORY) { TestDep1() }
 val definition2 =
-BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+Binding.create(TestDep1::class, null, Binding.Kind.FACTORY) { TestDep1() }
 .apply { override = true }
 
 val throwed = try {
-registry.addDefinition(definition1)
-registry.addDefinition(definition2)
+registry.addBinding(definition1)
+registry.addBinding(definition2)
 false
 } catch (e: OverrideException) {
 true
@@ -92,13 +92,13 @@ assertFalse(throwed)
 fun testThrowsOnInvalidOverride() {
 val registry = component { }.beanRegistry
 val definition1 =
-BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+Binding.create(TestDep1::class, null, Binding.Kind.FACTORY) { TestDep1() }
 val definition2 =
-BeanDefinition.create(TestDep1::class, null, BeanDefinition.Kind.FACTORY) { TestDep1() }
+Binding.create(TestDep1::class, null, Binding.Kind.FACTORY) { TestDep1() }
 
 val throwed = try {
-registry.addDefinition(definition1)
-registry.addDefinition(definition2)
+registry.addBinding(definition1)
+registry.addBinding(definition2)
 false
 } catch (e: OverrideException) {
 true
@@ -114,7 +114,7 @@ factory { TestDep1() }
 single(eager = true) { TestDep2(TestDep1()) }
 }
 
-val eagerInstances = module.getDefinitions().filter { it.eager }.toSet()
+val eagerInstances = module.getBindings().filter { it.eager }.toSet()
 
 val registry = component {
 modules(module)

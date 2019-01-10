@@ -18,7 +18,7 @@ package com.ivianuu.injekt.test
 
 /**
 /**
- * Checks if all [BeanDefinition]s can be resolved
+ * Checks if all [Binding]s can be resolved
  */
 fun Component.check() {
     beanRegistry.getAllDefinitions()
@@ -28,18 +28,18 @@ fun Component.check() {
         }
         .onEach {
             println("save $it")
-beanRegistry.addDefinition(it)
+beanRegistry.addBinding(it)
         }
         .forEach {
             get(it.type, it.name).also { println("got $it") }
         }
 }
 
-fun <T : Any> BeanDefinition<T>.cloneForSandbox(): BeanDefinition<T> = copy().also {
+fun <T : Any> Binding<T>.cloneForSandbox(): Binding<T> = copy().also {
     it.kind = kind
     it.override = true
     it.eager = eager
     it.attributes = attributes
-    it.definition = definition
+it.binding = binding
     it.instance = SandboxInstance(it)
 }*/

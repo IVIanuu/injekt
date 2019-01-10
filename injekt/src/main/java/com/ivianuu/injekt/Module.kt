@@ -3,7 +3,7 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * A module is the container for definitions
+ * A module is the container for bindings
  */
 class Module internal constructor(
     val name: String?,
@@ -12,42 +12,42 @@ class Module internal constructor(
     val override: Boolean
 ) {
 
-    internal val definitions = hashMapOf<Key, BeanDefinition<*>>()
+    internal val bindings = hashMapOf<Key, Binding<*>>()
 
     /**
-     * Returns all [BeanDefinition]s of this module
+     * Returns all [Binding]s of this module
      */
-    fun getDefinitions(): Set<BeanDefinition<*>> = definitions.values.toSet()
+    fun getBindings(): Set<Binding<*>> = bindings.values.toSet()
 
     /**
-     * Adds the [definition]
+     * Adds the [binding]
      */
     fun <T : Any> declare(
-        definition: BeanDefinition<T>
+        binding: Binding<T>
     ): BindingContext<T> {
-        var definition = definition
-        val scopeName = scopeName ?: definition.scopeName
-        val override = if (override) override else definition.override
-        val eager = if (eager) eager else definition.eager
+        var binding = binding
+        val scopeName = scopeName ?: binding.scopeName
+        val override = if (override) override else binding.override
+        val eager = if (eager) eager else binding.eager
 
-        if (definition.scopeName != scopeName
-            || definition.eager != eager
-            || definition.override != override
+        if (binding.scopeName != scopeName
+            || binding.eager != eager
+            || binding.override != override
         ) {
-            definition = definition.copy(
+            binding = binding.copy(
                 scopeName = scopeName,
                 eager = eager,
                 override = override
             )
         }
 
-        if (definitions.containsKey(definition.key) && !definition.override) {
-            throw OverrideException("Try to override definition $definition but was already declared in $name")
+        if (bindings.containsKey(binding.key) && !binding.override) {
+            throw OverrideException("Try to override binding $binding but was already declared in $name")
         }
 
-        definitions[definition.key] = definition
+        bindings[binding.key] = binding
 
-        return BindingContext(definition, this)
+        return BindingContext(binding, this)
     }
 
 }
@@ -90,7 +90,7 @@ fun <T : Any> Module.factory(
 ): BindingContext<T> = declare(
     type = type,
     name = name,
-    kind = BeanDefinition.Kind.FACTORY,
+    kind = Binding.Kind.FACTORY,
     scopeName = scopeName,
     eager = false,
     override = override,
@@ -121,7 +121,7 @@ fun <T : Any> Module.single(
 ): BindingContext<T> = declare(
     type = type,
     name = name,
-    kind = BeanDefinition.Kind.SINGLE,
+    kind = Binding.Kind.SINGLE,
     scopeName = scopeName,
     override = override,
     eager = eager,
@@ -129,11 +129,11 @@ fun <T : Any> Module.single(
 )
 
 /**
- * Adds a [BeanDefinition] for the provided parameters
+ * Adds a [Binding] for the provided parameters
  */
 inline fun <reified T : Any> Module.declare(
     name: String? = null,
-    kind: BeanDefinition.Kind,
+    kind: Binding.Kind,
     scopeName: String? = null,
     override: Boolean = false,
     eager: Boolean = false,
@@ -141,29 +141,29 @@ inline fun <reified T : Any> Module.declare(
 ): BindingContext<T> = declare(T::class, name, kind, scopeName, override, eager, definition)
 
 /**
- * Adds a [BeanDefinition] for the provided parameters
+ * Adds a [Binding] for the provided parameters
  */
 fun <T : Any> Module.declare(
     type: KClass<T>,
     name: String? = null,
-    kind: BeanDefinition.Kind,
+    kind: Binding.Kind,
     scopeName: String? = null,
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = declare(
-    BeanDefinition.create(type, name, kind, scopeName, override, eager, definition)
+    Binding.create(type, name, kind, scopeName, override, eager, definition)
 )
 
 /**
- * Adds all definitions of [module]
+ * Adds all bindings of [module]
  */
 fun Module.module(module: Module) {
-    module.definitions.forEach { declare(it.value) }
+    module.bindings.forEach { declare(it.value) }
 }
 
 /**
- * Adds all definitions of module
+ * Adds all bindings of module
  */
 fun Module.module(
     name: String? = null,
@@ -176,7 +176,7 @@ fun Module.module(
 }
 
 /**
- * Adds a binding for [T] for a existing definition of [S]
+ * Adds a binding for [T] for a existing binding of [S]
  */
 inline fun <reified T : Any, reified S : T> Module.bind(
     bindingName: String? = null,

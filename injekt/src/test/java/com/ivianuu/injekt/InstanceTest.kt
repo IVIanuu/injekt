@@ -28,8 +28,8 @@ class InstanceTest {
     @Test
     fun testSingleCreatesOnce() {
         val component = component()
-        component.addDefinition(
-            BeanDefinition.createSingle(
+        component.addBinding(
+            Binding.createSingle(
                 type = TestDep1::class,
                 definition = { TestDep1() }
             )
@@ -50,8 +50,8 @@ class InstanceTest {
     @Test
     fun testFactoryCreatesNew() {
         val component = component()
-        component.addDefinition(
-            BeanDefinition.createFactory(
+        component.addBinding(
+            Binding.createFactory(
                 type = TestDep1::class,
                 definition = { TestDep1() }
             )
@@ -73,8 +73,8 @@ class InstanceTest {
     @Test
     fun testInstanceCreationFailed() {
         val component = component()
-        component.addDefinition(
-            BeanDefinition.createSingle(
+        component.addBinding(
+            Binding.createSingle(
                 type = TestDep1::class,
                 definition = { error("error") }
             )

@@ -22,10 +22,10 @@ import com.ivianuu.injekt.InjektPlugins.logger
 import org.mockito.Mockito.mock
 
 /**
- * Sandbox Instance Holder - let execute the definition but return a mock of it
+ * Sandbox Instance Holder - let execute the binding but return a mock of it
 */
 @Suppress("UNCHECKED_CAST")
-class SandboxInstance<T : Any>(definition: BeanDefinition<T>) : Instance<T>(definition) {
+class SandboxInstance<T : Any>(binding: Binding<T>) : Instance<T>(binding) {
 
 private var _value: T? = null
 
@@ -36,24 +36,24 @@ override fun get(parameters: ParametersDefinition?): T {
 if (_value == null) {
 _value = create(parameters)
 }
-return _value ?: error("SandboxInstance should return a value for $definition")
+return _value ?: error("SandboxInstance should return a value for $binding")
 }
 
 override fun create(parameters: ParametersDefinition?): T {
 try {
-definition.definition.invoke(
+binding.binding.invoke(
 DefinitionContext(component),
 parameters?.invoke() ?: emptyParameters()
 )
 } catch (e: Exception) {
 when (e) {
 is NoBeanDefinitionFoundException, is InstanceCreationException, is OverrideException -> {
-throw BrokenDefinitionException("Definition $definition is broken due to error : $e")
+throw BrokenDefinitionException("Definition $binding is broken due to error : $e")
 }
 else -> logger?.debug("sandbox resolution continue on caught error: $e")
 }
 }
-return mock(definition.type.java) as T
+return mock(binding.type.java) as T
 }
 
 }

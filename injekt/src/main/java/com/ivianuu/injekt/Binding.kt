@@ -3,9 +3,9 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * Represents a dependency definition.
+ * Represents a dependency binding.
  */
-data class BeanDefinition<T : Any> private constructor(
+data class Binding<T : Any> private constructor(
     val key: Key,
     val type: KClass<T>,
     val name: String?,
@@ -37,7 +37,7 @@ data class BeanDefinition<T : Any> private constructor(
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
-        ): BeanDefinition<T> =
+        ): Binding<T> =
             create(type, name, Kind.FACTORY, scopeName, override, eager, definition)
 
         fun <T : Any> createSingle(
@@ -47,7 +47,7 @@ data class BeanDefinition<T : Any> private constructor(
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
-        ): BeanDefinition<T> =
+        ): Binding<T> =
             create(type, name, Kind.SINGLE, scopeName, override, eager, definition)
 
         fun <T : Any> create(
@@ -58,7 +58,7 @@ data class BeanDefinition<T : Any> private constructor(
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
-        ): BeanDefinition<T> = BeanDefinition(
+        ): Binding<T> = Binding(
             Key(type, name), type, name, kind,
             definition, Attributes(), scopeName, override, eager
         )
@@ -67,6 +67,6 @@ data class BeanDefinition<T : Any> private constructor(
 }
 
 /**
- * Defines a [BeanDefinition]
+ * Defines a [Binding]
  */
 typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T

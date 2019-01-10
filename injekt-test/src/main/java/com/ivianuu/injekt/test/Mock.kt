@@ -18,7 +18,7 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
@@ -36,10 +36,10 @@ type: KClass<T>,
 name: String? = null,
 stubbing: (T.() -> Unit)? = null
 ): T {
-val foundDefinition = beanRegistry.findDefinition(type, name) as BeanDefinition<T>
+val foundDefinition = beanRegistry.findDefinition(type, name) as Binding<T>
 
-val definition = foundDefinition.cloneForMock(type)
-beanRegistry.addDefinition(definition)
+val binding = foundDefinition.cloneForMock(type)
+beanRegistry.addBinding(binding)
 
 return applyStub(type, stubbing)
 }
@@ -53,11 +53,11 @@ stubbing?.let { instance.apply(stubbing) }
 return instance
 }
 
-fun <T : Any> BeanDefinition<T>.cloneForMock(type: KClass<T>) = copy().also {
+fun <T : Any> Binding<T>.cloneForMock(type: KClass<T>) = copy().also {
 it.kind = kind
 it.override = override
 it.eager = eager
 it.attributes = attributes
-it.definition = { mock(type.java) }
+it.binding = { mock(type.java) }
 it.createInstanceHolder()
 }*/

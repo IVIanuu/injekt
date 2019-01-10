@@ -25,6 +25,6 @@ import javax.annotation.processing.Processor
 class InjektProcessor : StepProcessor() {
 
     override fun initSteps(): Set<ProcessingStep> =
-        setOf(DefinitionFactoryProcessingStep(processingEnv))
+        setOf(BindingFactoryProcessingStep(processingEnv))
 
 }

@@ -17,18 +17,18 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.provider
 
 /**
- * Wraps a [Map] of [BeanDefinition]s
+ * Wraps a [Map] of [Binding]s
  */
 data class MultiBindingMap<K : Any, T : Any>(
     val component: Component,
-    val map: Map<K, BeanDefinition<T>>
+    val map: Map<K, Binding<T>>
 )
 
 /**

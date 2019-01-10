@@ -17,7 +17,7 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
@@ -31,38 +31,36 @@ import java.util.*
 import kotlin.reflect.KClass
 
 /**
- * Attribute key for [BeanDefinition] which contains any [Map] binding of the definition
+ * Attribute key for [Binding] which contains any [Map] binding of the binding
  */
 const val KEY_MAP_BINDINGS = "mapBindings"
 
 /**
  * Declares a empty set binding with the [mapName]
- * This is useful for retrieving a [MultiBindingMap] even if no [BeanDefinition] was bound into it
+ * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
 fun Module.mapBinding(mapName: String) {
     factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(component, emptyMap()) }
 }
 
 /**
- * Binds this [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
+ * Binds this [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
  */
 infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> {
     val (mapName, mapKey) = pair
 
-    definition.attributes.getOrSet(KEY_MAP_BINDINGS) {
+    binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
         mutableMapOf<String, Any>()
     }[mapName] = mapKey
 
     module.factory(name = mapName, override = true) {
-        val allDefinitions = component.getAllDefinitions()
-
-        allDefinitions
-            .mapNotNull { definition ->
-                definition.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
-                    ?.get(mapName)?.let { it to definition }
+        component.getAllBindings()
+            .mapNotNull { binding ->
+                binding.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
+                    ?.get(mapName)?.let { it to binding }
             }
             .toMap()
-            .mapValues { it.value as BeanDefinition<Any> }
+            .mapValues { it.value as Binding<Any> }
             .let { MultiBindingMap(component, it) }
     }
 
@@ -70,7 +68,7 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
 }
 
 /**
- * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
+ * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
  */
 inline fun <reified T : Any> Module.bindIntoMap(
     mapName: String,
@@ -79,7 +77,7 @@ inline fun <reified T : Any> Module.bindIntoMap(
 ): BindingContext<T> = bindIntoMap(T::class, mapName, key, implementationName)
 
 /**
- * Binds a already existing [BeanDefinition] into a [Map] named [Pair.first] with the key [Pair.second]
+ * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
  */
 fun <T : Any> Module.bindIntoMap(
     implementationType: KClass<T>,

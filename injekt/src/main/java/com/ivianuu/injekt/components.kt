@@ -38,11 +38,11 @@ fun Component.scopeNames(vararg scopeNames: String) {
 }
 
 /**
- * Adds a [BeanDefinition] for the [instance]
+ * Adds a [Binding] for the [instance]
  */
 fun <T : Any> Component.addInstance(instance: T) {
-    addDefinition(
-        BeanDefinition.createSingle(
+    addBinding(
+        Binding.createSingle(
             instance::class as KClass<T>,
             null
         ) { instance }

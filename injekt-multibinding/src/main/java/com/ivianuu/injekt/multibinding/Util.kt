@@ -1,14 +1,14 @@
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.BeanDefinition
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 
-internal fun Component.getAllDefinitions(): Set<BeanDefinition<*>> =
-    mutableSetOf<BeanDefinition<*>>().also { collectDefinitions(it) }
+internal fun Component.getAllBindings(): Set<Binding<*>> =
+    mutableSetOf<Binding<*>>().also { collectBindings(it) }
 
-internal fun Component.collectDefinitions(
-    definitions: MutableSet<BeanDefinition<*>>
+internal fun Component.collectBindings(
+    bindings: MutableSet<Binding<*>>
 ) {
-    definitions.addAll(getDefinitions())
-    getDependencies().forEach { it.collectDefinitions(definitions) }
+    bindings.addAll(getBindings())
+    getDependencies().forEach { it.collectBindings(bindings) }
 }

@@ -18,7 +18,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.getDefinition
+import com.ivianuu.injekt.util.getBinding
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -35,10 +35,10 @@ single(eager = true) { TestDep1() }
 )
 }
 
-val definition = component.getDefinition<TestDep1>()
+val binding = component.getBinding<TestDep1>()
 
-assertTrue(definition.eager)
-assertTrue(definition.instance.isCreated)
+assertTrue(binding.eager)
+assertTrue(binding.instance.isCreated)
 }
 
 @Test
@@ -51,10 +51,10 @@ single(eager = false) { TestDep1() }
 )
 }
 
-val definition = component.getDefinition<TestDep1>()
+val binding = component.getBinding<TestDep1>()
 
-assertFalse(definition.eager)
-assertFalse(definition.instance.isCreated)
+assertFalse(binding.eager)
+assertFalse(binding.instance.isCreated)
 }
 
 @Test
@@ -67,10 +67,10 @@ factory { TestDep1() }
 )
 }
 
-val definition = component.getDefinition<TestDep1>()
+val binding = component.getBinding<TestDep1>()
 
-assertFalse(definition.eager)
-assertFalse(definition.instance.isCreated)
+assertFalse(binding.eager)
+assertFalse(binding.instance.isCreated)
 }
 
 @Test
@@ -83,13 +83,13 @@ single(eager = true) { TestDep1() }
 )
 }
 
-val definition = component.getDefinition<TestDep1>()
+val binding = component.getBinding<TestDep1>()
 
-assertFalse(definition.instance.isCreated)
+assertFalse(binding.instance.isCreated)
 
 component.createEagerInstances()
 
-assertTrue(definition.instance.isCreated)
+assertTrue(binding.instance.isCreated)
 }
 
 }*/
