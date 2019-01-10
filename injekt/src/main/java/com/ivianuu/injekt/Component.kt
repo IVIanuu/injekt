@@ -56,8 +56,6 @@ class Component internal constructor(val name: String?) {
                 throw error("Already added $dependency to $name")
             }
 
-            instances.putAll(dependency.instances)
-
             InjektPlugins.logger?.info("$name Add dependency $dependency")
         }
     }
@@ -112,7 +110,6 @@ class Component internal constructor(val name: String?) {
         for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key, false)
             if (instance != null) {
-                instances[key] = instance
                 return@synchronized instance
             }
         }
@@ -131,13 +128,13 @@ class Component internal constructor(val name: String?) {
             return@synchronized null
     }
 
-    private fun addBindingInternal(binding: Binding<*>): Instance<*> =
-        synchronized(this) {
+    private fun addBindingInternal(binding: Binding<*>): Instance<*> {
+        return synchronized(this) {
             val isOverride = bindings.remove(binding.key) != null
 
             if (isOverride && !binding.override) {
                 throw OverrideException("Try to override binding $binding but was already in $name")
-        }
+            }
 
             bindings[binding.key] = binding
 
@@ -145,29 +142,28 @@ class Component internal constructor(val name: String?) {
                 val parentWithScope = findComponentForScope(binding.scopeName)
 
                 // add the binding to the parent
-            if (parentWithScope != null) {
-                val instance = parentWithScope.addBindingInternal(binding)
-                instances[binding.key] = instance
-                return@synchronized instance
-            } else {
-                error("Component scope $name does not match binding scope ${binding.scopeName}")
+                if (parentWithScope != null) {
+                    return@synchronized parentWithScope.addBindingInternal(binding)
+                } else {
+                    error("Component scope $name does not match binding scope ${binding.scopeName}")
+                }
             }
-        }
 
             val instance = createInstance(binding)
 
             instances[binding.key] = instance
 
-        InjektPlugins.logger?.let { logger ->
-            val msg = if (isOverride) {
-                "$name Override $binding"
-            } else {
-                "$name Declare $binding"
+            InjektPlugins.logger?.let { logger ->
+                val msg = if (isOverride) {
+                    "$name Override $binding"
+                } else {
+                    "$name Declare $binding"
+                }
+                logger.debug(msg)
             }
-            logger.debug(msg)
-        }
 
             return@synchronized instance
+        }
     }
 
     private fun <T : Any> createInstance(binding: Binding<T>): Instance<T> {
