@@ -94,6 +94,11 @@ class Component internal constructor(val name: String?) {
     }
 
     /**
+     * Whether or not contains the [binding]
+     */
+    fun containsBinding(binding: Binding<*>): Boolean = bindings.containsKey(binding.key)
+
+    /**
      * Returns all [Instance]s of this component
      */
     fun getInstances(): Set<Instance<*>> = instances.values.toSet()
