@@ -7,4 +7,4 @@ class OverrideException(message: String) : InjektException(message)
 
 class InstanceCreationException(message: String, cause: Throwable) : InjektException(message, cause)
 
-class NoBeanDefinitionFoundException(message: String) : InjektException(message)
+class BindingNotFoundException(message: String) : InjektException(message)

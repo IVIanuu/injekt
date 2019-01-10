@@ -51,7 +51,7 @@ val component = component {}
 val throwed = try {
 component.get(TestDep1::class)
 false
-} catch (e: NoBeanDefinitionFoundException) {
+} catch (e: BindingNotFoundException) {
 true
 }
 

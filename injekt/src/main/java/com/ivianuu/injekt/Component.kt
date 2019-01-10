@@ -22,7 +22,7 @@ class Component internal constructor(val name: String?) {
     ): T {
         val key = Key(type, name)
         return findInstance<T>(key, true)?.get(this, parameters)
-            ?: throw NoBeanDefinitionFoundException("${this.name} Could not find binding for $key")
+            ?: throw BindingNotFoundException("${this.name} Could not find binding for $key")
     }
 
     /**

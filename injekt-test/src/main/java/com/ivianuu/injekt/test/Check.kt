@@ -16,30 +16,47 @@
 
 package com.ivianuu.injekt.test
 
-/**
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Definition
+import com.ivianuu.injekt.InjektPlugins
+import com.ivianuu.injekt.InstanceCreationException
+import com.ivianuu.injekt.BindingNotFoundException
+import com.ivianuu.injekt.OverrideException
+import org.mockito.Mockito
+
 /**
  * Checks if all [Binding]s can be resolved
  */
 fun Component.check() {
-    beanRegistry.getAllDefinitions()
-        .map {
-            println("clone for sandbox $it")
-            it.cloneForSandbox()
-        }
-        .onEach {
-            println("save $it")
-beanRegistry.addBinding(it)
-        }
-        .forEach {
-            get(it.type, it.name).also { println("got $it") }
-        }
+    setSandboxBindings()
+    getBindings().forEach { get(it.type, it.name).also { println("got $it") } }
 }
 
-fun <T : Any> Binding<T>.cloneForSandbox(): Binding<T> = copy().also {
-    it.kind = kind
-    it.override = true
-    it.eager = eager
-    it.attributes = attributes
-it.binding = binding
-    it.instance = SandboxInstance(it)
-}*/
+fun Component.setSandboxBindings() {
+    getBindings().forEach {
+        println("clone and save for sandbox $it")
+        addBinding(it.cloneForSandbox())
+    }
+    getDependencies().forEach { it.setSandboxBindings() }
+}
+
+fun <T : Any> Binding<T>.cloneForSandbox(): Binding<T> {
+    val sandboxDefinition: Definition<T> = { parameters ->
+        try {
+            definition.invoke(this, parameters)
+        } catch (e: Exception) {
+            when (e) {
+                is BindingNotFoundException, is InstanceCreationException, is OverrideException -> {
+                    throw BrokenBindingException("Definition $this is broken due to error : $e")
+                }
+                else -> InjektPlugins.logger?.debug("sandbox resolution continue on caught error: $e")
+            }
+        }
+        Mockito.mock(type.java) as T
+    }
+
+    return copy(override = true, definition = sandboxDefinition)
+}
+
+class BrokenBindingException(msg: String) : Exception(msg)
