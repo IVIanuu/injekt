@@ -10,7 +10,7 @@ class Component internal constructor(val name: String?) {
     private val dependencies = hashSetOf<Component>()
     private val scopeNames = hashSetOf<String>()
     private val bindings = hashMapOf<Key, Binding<*>>()
-    internal val instances = hashMapOf<Key, Instance<*>>()
+    private val instances = hashMapOf<Key, Instance<*>>()
 
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
@@ -64,11 +64,9 @@ class Component internal constructor(val name: String?) {
      * Adds all of [scopeNames] to this component
      */
     fun scopeNames(scopeNames: Iterable<String>) {
-        synchronized(this) {
-            scopeNames.forEach {
-                if (!this.scopeNames.add(it)) {
-                    error("Scope name $it was already added to $scopeNames")
-                }
+        scopeNames.forEach {
+            if (!this.scopeNames.add(it)) {
+                error("Scope name $it was already added to $scopeNames")
             }
         }
     }
@@ -77,6 +75,11 @@ class Component internal constructor(val name: String?) {
      * Returns all scope names of this component
      */
     fun getScopeNames(): Set<String> = scopeNames
+
+    /**
+     * Whether or not this component contains the [scopeName]
+     */
+    fun containsScopeName(scopeName: String): Boolean = scopeNames.contains(scopeName)
 
     /**
      * Returns all [Binding]s added to this component
@@ -89,6 +92,11 @@ class Component internal constructor(val name: String?) {
     fun addBinding(binding: Binding<*>) {
         addBindingInternal(binding)
     }
+
+    /**
+     * Returns all [Instance]s of this component
+     */
+    fun getInstances(): Set<Instance<*>> = instances.values.toSet()
 
     /**
      * Creates all eager instances of this component

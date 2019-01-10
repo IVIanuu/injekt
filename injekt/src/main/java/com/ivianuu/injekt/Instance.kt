@@ -5,9 +5,7 @@ import com.ivianuu.injekt.InjektPlugins.logger
 /**
  * The [Instance] of an [Binding]
  */
-abstract class Instance<T : Any>(
-    val binding: Binding<T>
-) {
+abstract class Instance<T : Any>(val binding: Binding<T>) {
 
     /**
      * Whether or not this instance is created

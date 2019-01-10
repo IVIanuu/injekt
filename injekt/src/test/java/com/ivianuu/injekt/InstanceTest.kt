@@ -35,7 +35,7 @@ class InstanceTest {
             )
         )
 
-        val instance = component.instances.values.first()
+        val instance = component.getInstances().first()
 
         assertFalse(instance.isCreated)
 
@@ -57,7 +57,7 @@ class InstanceTest {
             )
         )
 
-        val instance = component.instances.values.first()
+        val instance = component.getInstances().first()
 
         assertTrue(instance is FactoryInstance)
         assertFalse(instance.isCreated)
@@ -80,7 +80,7 @@ class InstanceTest {
             )
         )
 
-        val instance = component.instances.values.first()
+        val instance = component.getInstances().first()
 
         val throwed = try {
             instance.get(component, null)
