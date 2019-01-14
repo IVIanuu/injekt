@@ -12,7 +12,7 @@ object Build {
 }
 
 object Versions {
-    const val androidGradlePlugin = "3.3.0-rc03"
+    const val androidGradlePlugin = "3.3.0"
     const val androidx = "1.0.0"
     const val androidxFragment = "1.0.0"
     const val junit = "4.12"
