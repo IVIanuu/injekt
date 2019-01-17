@@ -30,7 +30,7 @@ inline fun <reified T> Component.declareMock(
  * Declares a mocked version of [type] and [name]
  */
 fun <T> Component.declareMock(
-    type: KClass<T>,
+    type: KClass<*>,
     name: String? = null,
     stubbing: (T.() -> Unit)? = null
 ): T {
@@ -49,7 +49,7 @@ fun <T> Component.declareMock(
 }
 
 fun <T> Component.applyStub(
-    type: KClass<T>,
+    type: KClass<*>,
     stubbing: (T.() -> Unit)?
 ): T {
     val instance: T = get(type)
@@ -57,5 +57,5 @@ fun <T> Component.applyStub(
     return instance
 }
 
-fun <T> Binding<T>.cloneForMock(type: KClass<T>): Binding<T> =
-        copy(definition = { mock(type.java) })
+fun <T> Binding<T>.cloneForMock(type: KClass<*>): Binding<T> =
+    copy(definition = { mock<T>(type.java as Class<T>) })

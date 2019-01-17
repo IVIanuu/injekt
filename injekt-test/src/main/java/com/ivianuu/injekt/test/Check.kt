@@ -30,7 +30,7 @@ import org.mockito.Mockito
  */
 fun Component.check() {
     setSandboxBindings()
-    getBindings().forEach { get(it.type, it.name).also { println("got $it") } }
+    getBindings().forEach { get<Any?>(it.type, it.name).also { println("got $it") } }
 }
 
 fun Component.setSandboxBindings() {
