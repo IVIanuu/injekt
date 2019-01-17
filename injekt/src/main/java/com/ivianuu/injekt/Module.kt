@@ -22,7 +22,7 @@ class Module internal constructor(
     /**
      * Adds the [binding]
      */
-    fun <T : Any> declare(
+    fun <T> declare(
         binding: Binding<T>
     ): BindingContext<T> {
         var binding = binding
@@ -71,7 +71,7 @@ fun module(
 /**
  * Provides a unscoped dependency which will be recreated on each request
  */
-inline fun <reified T : Any> Module.factory(
+inline fun <reified T> Module.factory(
     name: String? = null,
     scopeName: String? = null,
     override: Boolean = false,
@@ -81,13 +81,13 @@ inline fun <reified T : Any> Module.factory(
 /**
  * Provides a unscoped dependency which will be recreated on each request
  */
-fun <T : Any> Module.factory(
-    type: KClass<T>,
+fun <T> Module.factory(
+    type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = declare(
+): BindingContext<T> = declare<T>(
     type = type,
     name = name,
     kind = Binding.Kind.FACTORY,
@@ -100,7 +100,7 @@ fun <T : Any> Module.factory(
 /**
  * Provides scoped dependency which will be created once for each component
  */
-inline fun <reified T : Any> Module.single(
+inline fun <reified T> Module.single(
     name: String? = null,
     scopeName: String? = null,
     override: Boolean = false,
@@ -111,14 +111,14 @@ inline fun <reified T : Any> Module.single(
 /**
  * Provides scoped dependency which will be created once for each component
  */
-fun <T : Any> Module.single(
-    type: KClass<T>,
+fun <T> Module.single(
+    type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = declare(
+): BindingContext<T> = declare<T>(
     type = type,
     name = name,
     kind = Binding.Kind.SINGLE,
@@ -131,7 +131,7 @@ fun <T : Any> Module.single(
 /**
  * Adds a [Binding] for the provided parameters
  */
-inline fun <reified T : Any> Module.declare(
+inline fun <reified T> Module.declare(
     name: String? = null,
     kind: Binding.Kind,
     scopeName: String? = null,
@@ -143,8 +143,8 @@ inline fun <reified T : Any> Module.declare(
 /**
  * Adds a [Binding] for the provided parameters
  */
-fun <T : Any> Module.declare(
-    type: KClass<T>,
+fun <T> Module.declare(
+    type: KClass<*>,
     name: String? = null,
     kind: Binding.Kind,
     scopeName: String? = null,
@@ -178,7 +178,7 @@ fun Module.module(
 /**
  * Adds a binding for [T] for a existing binding of [S]
  */
-inline fun <reified T : Any, reified S : T> Module.bind(
+inline fun <reified T, reified S : T> Module.bind(
     bindingName: String? = null,
     existingName: String? = null
 ): BindingContext<T> = factory(bindingName) { get<S>(existingName) { it } }

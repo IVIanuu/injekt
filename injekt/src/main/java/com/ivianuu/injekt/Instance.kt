@@ -5,7 +5,7 @@ import com.ivianuu.injekt.InjektPlugins.logger
 /**
  * The [Instance] of an [Binding]
  */
-abstract class Instance<T : Any>(val binding: Binding<T>) {
+abstract class Instance<T>(val binding: Binding<T>) {
 
     /**
      * Whether or not this instance is created
@@ -42,7 +42,7 @@ abstract class Instance<T : Any>(val binding: Binding<T>) {
 /**
  * A [Instance] which creates a new value on every [get] call
  */
-class FactoryInstance<T : Any>(
+class FactoryInstance<T>(
     binding: Binding<T>,
     val component: Component?
 ) : Instance<T>(binding) {
@@ -64,7 +64,7 @@ class FactoryInstance<T : Any>(
 /**
  * A [Instance] which creates the value 1 time per [Component] and caches the result
  */
-class SingleInstance<T : Any>(
+class SingleInstance<T>(
     binding: Binding<T>,
     val component: Component?
 ) : Instance<T>(binding) {

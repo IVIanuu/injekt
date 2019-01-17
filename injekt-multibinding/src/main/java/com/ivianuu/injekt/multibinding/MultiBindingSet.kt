@@ -26,7 +26,7 @@ import com.ivianuu.injekt.provider
 /**
  * Wraps a [Set] of [Binding]s
  */
-data class MultiBindingSet<T : Any>(
+data class MultiBindingSet<T>(
     val component: Component,
     val set: Set<Binding<T>>
 )
@@ -34,24 +34,24 @@ data class MultiBindingSet<T : Any>(
 /**
  * Returns a [Set] of [T]s
  */
-fun <T : Any> MultiBindingSet<T>.toSet(parameters: ParametersDefinition? = null): Set<T> =
+fun <T> MultiBindingSet<T>.toSet(parameters: ParametersDefinition? = null): Set<T> =
     set.map {
-        component.get(it.type, it.name, parameters = parameters)
+        component.get<T>(it.type, it.name, parameters = parameters)
     }.toSet()
 
 /**
  * Returns a [Set] of [Lazy]s of [T]
  */
-fun <T : Any> MultiBindingSet<T>.toLazySet(parameters: ParametersDefinition? = null): Set<Lazy<T>> =
-    set.map { lazy { component.get(it.type, it.name, parameters = parameters) } }.toSet()
+fun <T> MultiBindingSet<T>.toLazySet(parameters: ParametersDefinition? = null): Set<Lazy<T>> =
+    set.map { lazy { component.get<T>(it.type, it.name, parameters = parameters) } }.toSet()
 
 /**
  * Returns a [Set] of [Provider]s of [T]
  */
-fun <T : Any> MultiBindingSet<T>.toProviderSet(defaultParameters: ParametersDefinition? = null): Set<Provider<T>> =
+fun <T> MultiBindingSet<T>.toProviderSet(defaultParameters: ParametersDefinition? = null): Set<Provider<T>> =
     set.map { dec ->
         provider {
-            component.get(
+            component.get<T>(
                 dec.type,
                 dec.name,
                 it ?: defaultParameters

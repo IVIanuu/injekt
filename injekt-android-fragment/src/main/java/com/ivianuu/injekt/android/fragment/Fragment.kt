@@ -86,13 +86,13 @@ fun Fragment.getActivityComponent(): Component =
     getActivityComponentOrNull() ?: error("No activity component found for $this")
 
 /**
- * Returns the [Component] of the activity or null
+ * Returns the [Component] of the application or null
  */
 fun Fragment.getApplicationComponentOrNull(): Component? =
     (activity?.application as? InjektTrait)?.component
 
 /**
- * Returns the [Component] of the activity or throws
+ * Returns the [Component] of the application or throws
  */
 fun Fragment.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")

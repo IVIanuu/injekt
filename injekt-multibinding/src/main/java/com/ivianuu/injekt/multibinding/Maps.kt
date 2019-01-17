@@ -46,7 +46,7 @@ fun Module.mapBinding(mapName: String) {
 /**
  * Binds this [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> {
     val (mapName, mapKey) = pair
 
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
@@ -70,7 +70,7 @@ infix fun <T : Any> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): Bind
 /**
  * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-inline fun <reified T : Any> Module.bindIntoMap(
+inline fun <reified T> Module.bindIntoMap(
     mapName: String,
     key: Any,
     implementationName: String? = null
@@ -79,22 +79,22 @@ inline fun <reified T : Any> Module.bindIntoMap(
 /**
  * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
  */
-fun <T : Any> Module.bindIntoMap(
-    implementationType: KClass<T>,
+fun <T> Module.bindIntoMap(
+    implementationType: KClass<*>,
     mapName: String,
     key: Any,
     implementationName: String? = null
 ): BindingContext<T> {
     // we use a unique id here to make sure that the binding does not collide with any user config
     return factory(implementationType, UUID.randomUUID().toString()) {
-        get(implementationType, implementationName) { it }
+        get<T>(implementationType, implementationName) { it }
     } bindIntoMap (mapName to key)
 }
 
 /**
  * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
-fun <K : Any, T : Any> Component.getMap(
+fun <K, T> Component.getMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Map<K, T> =
@@ -103,7 +103,7 @@ fun <K : Any, T : Any> Component.getMap(
 /**
  * Returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
-fun <K : Any, T : Any> Component.getLazyMap(
+fun <K, T> Component.getLazyMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> =
@@ -112,7 +112,7 @@ fun <K : Any, T : Any> Component.getLazyMap(
 /**
  * Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
-fun <K : Any, T : Any> Component.getProviderMap(
+fun <K, T> Component.getProviderMap(
     name: String,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> =
@@ -121,7 +121,7 @@ fun <K : Any, T : Any> Component.getProviderMap(
 /**
  * Lazily Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
-fun <K : Any, T : Any> Component.injectMap(
+fun <K, T> Component.injectMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, T>> =
@@ -130,7 +130,7 @@ fun <K : Any, T : Any> Component.injectMap(
 /**
  * LazilyReturns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
-fun <K : Any, T : Any> Component.injectLazyMap(
+fun <K, T> Component.injectLazyMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, Lazy<T>>> =
@@ -139,49 +139,49 @@ fun <K : Any, T : Any> Component.injectLazyMap(
 /**
  * Lazily Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
-fun <K : Any, T : Any> Component.injectProviderMap(
+fun <K, T> Component.injectProviderMap(
     name: String,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Map<K, Provider<T>>> =
     lazy { getProviderMap<K, T>(name, defaultParameters) }
 
 /** Calls trough [Component.getMap] */
-fun <K : Any, T : Any> InjektTrait.getMap(
+fun <K, T> InjektTrait.getMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Map<K, T> =
     component.getMap(name, parameters)
 
 /** Calls trough [Component.getLazyMap] */
-fun <K : Any, T : Any> InjektTrait.getLazyMap(
+fun <K, T> InjektTrait.getLazyMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> =
     component.getLazyMap(name, parameters)
 
 /** Calls trough [Component.getProviderMap] */
-fun <K : Any, T : Any> InjektTrait.getProviderMap(
+fun <K, T> InjektTrait.getProviderMap(
     name: String,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> =
     component.getProviderMap(name, defaultParameters)
 
 /** Calls trough [Component.injectMap] */
-fun <K : Any, T : Any> InjektTrait.injectMap(
+fun <K, T> InjektTrait.injectMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, T>> =
     lazy { component.getMap<K, T>(name, parameters) }
 
 /** Calls trough [Component.injectLazyMap] */
-fun <K : Any, T : Any> InjektTrait.injectLazyMap(
+fun <K, T> InjektTrait.injectLazyMap(
     name: String,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, Lazy<T>>> =
     lazy { component.getLazyMap<K, T>(name, parameters) }
 
 /** Calls trough [Component.injectProviderMap] */
-fun <K : Any, T : Any> InjektTrait.injectProviderMap(
+fun <K, T> InjektTrait.injectProviderMap(
     name: String,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Map<K, Provider<T>>> =

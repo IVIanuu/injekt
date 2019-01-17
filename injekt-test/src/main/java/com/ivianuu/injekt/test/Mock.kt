@@ -21,7 +21,7 @@ import com.ivianuu.injekt.Component
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 
-inline fun <reified T : Any> Component.declareMock(
+inline fun <reified T> Component.declareMock(
     name: String? = null,
     noinline stubbing: (T.() -> Unit)? = null
 ) = declareMock(T::class, name, stubbing)
@@ -29,7 +29,7 @@ inline fun <reified T : Any> Component.declareMock(
 /**
  * Declares a mocked version of [type] and [name]
  */
-fun <T : Any> Component.declareMock(
+fun <T> Component.declareMock(
     type: KClass<T>,
     name: String? = null,
     stubbing: (T.() -> Unit)? = null
@@ -48,7 +48,7 @@ fun <T : Any> Component.declareMock(
     return applyStub(type, stubbing)
 }
 
-fun <T : Any> Component.applyStub(
+fun <T> Component.applyStub(
     type: KClass<T>,
     stubbing: (T.() -> Unit)?
 ): T {
@@ -57,5 +57,5 @@ fun <T : Any> Component.applyStub(
     return instance
 }
 
-fun <T : Any> Binding<T>.cloneForMock(type: KClass<T>): Binding<T> =
+fun <T> Binding<T>.cloneForMock(type: KClass<T>): Binding<T> =
         copy(definition = { mock(type.java) })

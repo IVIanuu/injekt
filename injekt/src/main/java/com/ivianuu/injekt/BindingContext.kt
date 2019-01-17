@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * Binding context
  */
-data class BindingContext<T : Any>(
+data class BindingContext<T>(
     val binding: Binding<T>,
     val module: Module
 )
@@ -13,10 +13,10 @@ data class BindingContext<T : Any>(
 /**
  * Binds this [Binding] to [type]
  */
-infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
-    val copy = (binding as Binding<Any>).copy(
+infix fun <T> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
+    val copy = binding.copy(
         key = Key(type, name = null),
-        type = type as KClass<Any>, name = null
+        type = type, name = null
     )
     module.declare(copy)
     return this
@@ -25,22 +25,22 @@ infix fun <T : Any> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
 /**
  * Binds this [Binding] to [types]
  */
-infix fun <T : Any> BindingContext<T>.bind(types: Array<KClass<*>>): BindingContext<T> = apply {
+infix fun <T> BindingContext<T>.bind(types: Array<KClass<*>>): BindingContext<T> = apply {
     types.forEach { bind(it) }
 }
 
 /**
  * Binds this [Binding] to [types]
  */
-infix fun <T : Any> BindingContext<T>.bind(types: Iterable<KClass<*>>): BindingContext<T> = apply {
+infix fun <T> BindingContext<T>.bind(types: Iterable<KClass<*>>): BindingContext<T> = apply {
     types.forEach { bind(it) }
 }
 
 /**
  * Binds this [Binding] to [name]
  */
-infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> {
-    val copy = (binding as Binding<Any>).copy(
+infix fun <T> BindingContext<T>.bind(name: String): BindingContext<T> {
+    val copy = binding.copy(
         key = Key(binding.key.type, name),
         name = name
     )
@@ -51,7 +51,7 @@ infix fun <T : Any> BindingContext<T>.bind(name: String): BindingContext<T> {
 /**
  * Binds this [Binding] to [names]
  */
-infix fun <T : Any> BindingContext<T>.bind(names: Array<String>): BindingContext<T> = apply {
+infix fun <T> BindingContext<T>.bind(names: Array<String>): BindingContext<T> = apply {
     names.forEach { bind(it) }
 }
 
@@ -59,6 +59,6 @@ infix fun <T : Any> BindingContext<T>.bind(names: Array<String>): BindingContext
  * Binds this [Binding] to [names]
  */
 @JvmName("bindNames")
-infix fun <T : Any> BindingContext<T>.bind(names: Iterable<String>): BindingContext<T> = apply {
+infix fun <T> BindingContext<T>.bind(names: Iterable<String>): BindingContext<T> = apply {
     names.forEach { bind(it) }
 }

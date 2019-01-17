@@ -5,9 +5,9 @@ import kotlin.reflect.KClass
 /**
  * Represents a dependency binding.
  */
-data class Binding<T : Any> private constructor(
+data class Binding<T> private constructor(
     val key: Key,
-    val type: KClass<T>,
+    val type: KClass<*>,
     val name: String?,
     val kind: Kind,
     val definition: Definition<T>,
@@ -30,8 +30,8 @@ data class Binding<T : Any> private constructor(
 
     companion object {
 
-        fun <T : Any> createFactory(
-            type: KClass<T>,
+        fun <T> createFactory(
+            type: KClass<*>,
             name: String? = null,
             scopeName: String? = null,
             override: Boolean = false,
@@ -40,8 +40,8 @@ data class Binding<T : Any> private constructor(
         ): Binding<T> =
             create(type, name, Kind.FACTORY, scopeName, override, eager, definition)
 
-        fun <T : Any> createSingle(
-            type: KClass<T>,
+        fun <T> createSingle(
+            type: KClass<*>,
             name: String? = null,
             scopeName: String? = null,
             override: Boolean = false,
@@ -50,8 +50,8 @@ data class Binding<T : Any> private constructor(
         ): Binding<T> =
             create(type, name, Kind.SINGLE, scopeName, override, eager, definition)
 
-        fun <T : Any> create(
-            type: KClass<T>,
+        fun <T> create(
+            type: KClass<*>,
             name: String? = null,
             kind: Kind,
             scopeName: String? = null,

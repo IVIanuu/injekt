@@ -21,11 +21,11 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import kotlin.reflect.KClass
 
-inline fun <reified T : Any> Component.getBinding(
+inline fun <reified T> Component.getBinding(
 name: String? = null
 ) = getBinding(T::class, name)
 
-fun <T : Any> Component.getBinding(
+fun <T> Component.getBinding(
 type: KClass<T>,
 name: String? = null
 ) = beanRegistry.findDefinition(type, name) as? Binding<T>
