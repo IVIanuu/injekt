@@ -15,14 +15,17 @@ class Component internal constructor(val name: String?) {
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
      */
-    fun <T : Any> get(
-        type: KClass<T>,
+    fun <T> get(
+        type: KClass<*>,
         name: String? = null,
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        return findInstance<T>(key, true)?.get(this, parameters)
+
+        val instance = findInstance<T>(key, true)
             ?: throw BindingNotFoundException("${this.name} Could not find binding for $key")
+
+        return instance.get(this, parameters)
     }
 
     /**
@@ -115,7 +118,7 @@ class Component internal constructor(val name: String?) {
             }
     }
 
-    private fun <T : Any> findInstance(key: Key, includeFactories: Boolean): Instance<T>? =
+    private fun <T> findInstance(key: Key, includeFactories: Boolean): Instance<T>? =
         synchronized(this) {
         var instance = instances[key]
             if (instance != null) return@synchronized instance as Instance<T>
@@ -130,7 +133,7 @@ class Component internal constructor(val name: String?) {
         // we search for generated factories as a last resort
         if (includeFactories) {
             try {
-                val factory = FactoryFinder.find(key.type) ?: return null
+                val factory = FactoryFinder.find<T>(key.type) ?: return null
                 val binding = factory.create()
                 return@synchronized addBindingInternal(binding) as Instance<T>
             } catch (e: ClassNotFoundException) {
@@ -179,7 +182,7 @@ class Component internal constructor(val name: String?) {
         }
     }
 
-    private fun <T : Any> createInstance(binding: Binding<T>): Instance<T> {
+    private fun <T> createInstance(binding: Binding<T>): Instance<T> {
         val component = if (binding.scopeName != null) {
             findComponentForScope(binding.scopeName)
                 ?: error("Cannot create instance for $binding unknown scope ${binding.scopeName}")
