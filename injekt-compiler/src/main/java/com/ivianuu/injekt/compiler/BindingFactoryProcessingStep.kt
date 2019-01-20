@@ -22,6 +22,7 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
+import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.processingx.ProcessingEnvHolder
 import com.ivianuu.processingx.ProcessingStep
@@ -58,6 +59,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
         validateNameUsages(elementsByAnnotation[Name::class.java])
         validateParamUsages(elementsByAnnotation[Param::class.java])
+        validateRawUsages(elementsByAnnotation[Raw::class.java])
 
         val bindingElements = (elementsByAnnotation[Factory::class.java]
                 + elementsByAnnotation[Single::class.java])
@@ -155,9 +157,17 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                     val providerType =
                         elementUtils.getTypeElement(Provider::class.java.name).asType()
 
+                    val isRaw = it.hasAnnotation<Raw>()
+
                     val paramKind = when {
-                        typeUtils.isAssignable(lazyType, type) -> ParamDescriptor.Kind.LAZY
-                        typeUtils.isAssignable(providerType, type) -> ParamDescriptor.Kind.PROVIDER
+                        !isRaw && typeUtils.isAssignable(
+                            lazyType,
+                            type
+                        ) -> ParamDescriptor.Kind.LAZY
+                        !isRaw && typeUtils.isAssignable(
+                            providerType,
+                            type
+                        ) -> ParamDescriptor.Kind.PROVIDER
                         else -> ParamDescriptor.Kind.VALUE
                     }
 
@@ -197,6 +207,22 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
                     "@Param annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    it
+                )
+            }
+    }
+
+    private fun validateRawUsages(elements: Set<Element>) {
+        elements
+            .filter {
+                val type = it.enclosingElement.enclosingElement
+                !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Single>()
+            }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "@Raw annotation should only be used inside a class which is annotated with @Single or @Factory",
                     it
                 )
             }
