@@ -11,7 +11,7 @@ interface BindingFactory<T> {
 
 internal object FactoryFinder {
 
-    private val factories = hashMapOf<KClass<*>, BindingFactory<*>>()
+    private val factories = mutableMapOf<KClass<*>, BindingFactory<*>>()
     private val failedTypes = hashSetOf<KClass<*>>()
 
     fun <T> find(type: KClass<*>): BindingFactory<T>? {

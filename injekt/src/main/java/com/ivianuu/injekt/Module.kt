@@ -12,7 +12,7 @@ class Module internal constructor(
     val override: Boolean
 ) {
 
-    internal val bindings = hashMapOf<Key, Binding<*>>()
+    internal val bindings = mutableMapOf<Key, Binding<*>>()
 
     /**
      * Returns all [Binding]s of this module
@@ -181,7 +181,9 @@ fun Module.module(
 inline fun <reified T, reified S : T> Module.bind(
     bindingName: String? = null,
     existingName: String? = null
-): BindingContext<T> = factory(bindingName) { get<S>(existingName) { it } }
+) {
+    factory(bindingName) { get<S>(existingName) { it } }
+}
 
 
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)

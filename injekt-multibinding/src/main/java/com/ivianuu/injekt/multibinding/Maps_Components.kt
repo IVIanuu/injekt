@@ -14,82 +14,13 @@
  * limitations under the License.
  */
 
-
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.getOrSet
-import java.util.*
-import kotlin.reflect.KClass
-
-/**
- * Attribute key for [Binding] which contains any [Map] binding of the binding
- */
-const val KEY_MAP_BINDINGS = "mapBindings"
-
-/**
- * Declares a empty set binding with the [mapName]
- * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
- */
-fun Module.mapBinding(mapName: String) {
-    factory(name = mapName, override = true) { MultiBindingMap<Any, Any>(component, emptyMap()) }
-}
-
-/**
- * Binds this [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
- */
-infix fun <T> BindingContext<T>.bindIntoMap(pair: Pair<String, Any>): BindingContext<T> {
-    val (mapName, mapKey) = pair
-
-    binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
-        mutableMapOf<String, Any>()
-    }[mapName] = mapKey
-
-    module.factory(name = mapName, override = true) {
-        component.getAllBindings()
-            .mapNotNull { binding ->
-                binding.attributes.get<Map<String, Any>>(KEY_MAP_BINDINGS)
-                    ?.get(mapName)?.let { it to binding }
-            }
-            .toMap()
-            .mapValues { it.value as Binding<Any> }
-            .let { MultiBindingMap(component, it) }
-    }
-
-    return this
-}
-
-/**
- * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
- */
-inline fun <reified T> Module.bindIntoMap(
-    mapName: String,
-    key: Any,
-    implementationName: String? = null
-): BindingContext<T> = bindIntoMap(T::class, mapName, key, implementationName)
-
-/**
- * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
- */
-fun <T> Module.bindIntoMap(
-    implementationType: KClass<*>,
-    mapName: String,
-    key: Any,
-    implementationName: String? = null
-): BindingContext<T> {
-    // we use a unique id here to make sure that the binding does not collide with any user config
-    return factory(implementationType, UUID.randomUUID().toString()) {
-        get<T>(implementationType, implementationName) { it }
-    } bindIntoMap (mapName to key)
-}
 
 /**
  * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
@@ -97,8 +28,7 @@ fun <T> Module.bindIntoMap(
 fun <K, T> Component.getMap(
     name: String,
     parameters: ParametersDefinition? = null
-): Map<K, T> =
-    get<MultiBindingMap<K, T>>(name).toMap(parameters)
+): Map<K, T> = get<MultiBindingMap<K, T>>(name).toMap(parameters)
 
 /**
  * Returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries

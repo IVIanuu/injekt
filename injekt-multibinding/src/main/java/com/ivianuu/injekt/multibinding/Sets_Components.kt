@@ -14,75 +14,13 @@
  * limitations under the License.
  */
 
-
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.getOrSet
-import java.util.*
-import kotlin.reflect.KClass
-
-/**
- * Attribute key for [Binding] which contains any [Set] binding of the binding
- */
-const val KEY_SET_BINDINGS = "setBindings"
-
-/**
- * Declares a empty set binding with the [setName]
- * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
- */
-fun Module.setBinding(setName: String) {
-    factory(name = setName, override = true) {
-        MultiBindingSet<Any>(component, emptySet())
-    }
-}
-
-/**
- * Binds this [Binding] into a [Set] named [setName]
- */
-infix fun <T> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> {
-    binding.attributes.getOrSet(KEY_SET_BINDINGS) { mutableSetOf<String>() }.add(setName)
-
-    module.factory(name = setName, override = true) {
-        component.getAllBindings()
-            .filter { it.attributes.get<Set<String>>(KEY_SET_BINDINGS)?.contains(setName) == true }
-            .map { it as Binding<T> }
-            .toSet()
-            .let { MultiBindingSet(component, it) }
-    }
-
-    return this
-}
-
-/**
- * Binds a already existing [Binding] into a [Set] named [setName]
- */
-inline fun <reified T> Module.bindIntoSet(
-    setName: String,
-    implementationName: String? = null
-): BindingContext<T> = bindIntoSet(T::class, setName, implementationName)
-
-/**
- * Binds a already existing [Binding] into a [Set] named [setName]
- */
-fun <T> Module.bindIntoSet(
-    implementationType: KClass<*>,
-    setName: String,
-    implementationName: String? = null
-): BindingContext<T> {
-    // we use a unique id here to make sure that the binding does not collide with any user config
-    return factory(implementationType, UUID.randomUUID().toString()) {
-        get<T>(implementationType, implementationName) { it }
-    } bindIntoSet setName
-}
 
 /**
  * Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries

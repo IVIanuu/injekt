@@ -7,10 +7,10 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(val name: String?) {
 
-    private val dependencies = hashSetOf<Component>()
-    private val scopeNames = hashSetOf<String>()
-    private val bindings = hashMapOf<Key, Binding<*>>()
-    private val instances = hashMapOf<Key, Instance<*>>()
+    private val dependencies = mutableSetOf<Component>()
+    private val scopeNames = mutableSetOf<String>()
+    private val bindings = mutableMapOf<Key, Binding<*>>()
+    private val instances = mutableMapOf<Key, Instance<*>>()
 
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
