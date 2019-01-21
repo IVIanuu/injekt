@@ -11,6 +11,6 @@ internal fun Component.getAllBindings(): Set<Binding<*>> =
 internal fun Component.collectBindings(
     bindings: MutableSet<Binding<*>>
 ) {
-    bindings.addAll(getBindings())
     getDependencies().forEach { it.collectBindings(bindings) }
+    bindings.addAll(getBindings())
 }
