@@ -20,16 +20,14 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.OverrideException
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.getOrDefault
 import com.ivianuu.injekt.getOrSet
 import java.util.*
 import kotlin.reflect.KClass
 
 /**
- * Declares a empty set binding with the [setName]
+ * Declares a empty set binding
  * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
  */
 fun Module.setBinding(setBinding: SetBinding) {
@@ -56,28 +54,7 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
         mutableMapOf<String, SetBinding>()
     }[setBinding.setName] = setBinding
 
-    module.factory(name = setBinding.setName, override = true) {
-        val allSetBindings = component.getAllBindings()
-            .mapNotNull { binding ->
-                binding.attributes.get<Map<String, SetBinding>>(KEY_SET_BINDINGS)
-                    ?.get(setBinding.setName)?.let { binding to it }
-            }
-
-        val existingKeys = mutableSetOf<Key>()
-
-        // check overrides
-        allSetBindings.forEach { (binding, setBinding) ->
-            val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
-            if (!existingKeys.add(key) && !setBinding.override) {
-                throw OverrideException("Try to override $key in set binding $setBinding")
-            }
-        }
-
-        allSetBindings
-            .map { it.first as Binding<Any> }
-            .toSet()
-            .let { MultiBindingSet(component, it) }
-    }
+    module.declareSetBinding(setBinding.setName)
 
     return this
 }
@@ -89,7 +66,7 @@ infix fun <T> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> 
     bindIntoSet(SetBinding(setName))
 
 /**
- * Binds a already existing [Binding] into a [Set] named [setName]
+ * Binds a already existing [Binding] into [setBinding]
  */
 inline fun <reified T> Module.bindIntoSet(
     setBinding: SetBinding,
@@ -110,7 +87,7 @@ inline fun <reified T> Module.bindIntoSet(
 }
 
 /**
- * Binds a already existing [Binding] into a [Set] named [setName]
+ * Binds a already existing [Binding] into [setBinding]
  */
 fun <T> Module.bindIntoSet(
     implementationType: KClass<*>,

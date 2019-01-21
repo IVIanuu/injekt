@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.OverrideException
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.getOrSet
@@ -35,41 +34,20 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
         mutableMapOf<String, MapBinding>()
     }[mapBinding.mapName] = mapBinding
 
-    module.factory(name = mapBinding.mapName, override = true) {
-        val allMapBindings = component.getAllBindings()
-            .mapNotNull { binding ->
-                binding.attributes.get<Map<String, MapBinding>>(KEY_MAP_BINDINGS)
-                    ?.get(mapBinding.mapName)?.let { binding to it }
-            }
-
-        val existingKeys = mutableSetOf<Any>()
-
-        // check overrides
-        allMapBindings.forEach { (binding, mapBinding) ->
-            if (!existingKeys.add(mapBinding.key) && !mapBinding.override) {
-                throw OverrideException("Try to override ${mapBinding.key} in map binding $mapBinding")
-            }
-        }
-
-        allMapBindings
-            .map { it.second.key to it.first }
-            .toMap()
-            .mapValues { it.value as Binding<Any> }
-            .let { MultiBindingMap(component, it) }
-    }
+    module.declareMapBinding(mapBinding.mapName)
 
     return this
 }
 
 /**
- * Binds this binding into a map
+ * Binds this binding into the name [Pair.first] with the key [Pair.second]
  */
 infix fun <T> BindingContext<T>.bindIntoMap(
     pair: Pair<String, Any>
 ): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
 
 /**
- * Declares a empty map binding]
+ * Declares a empty map binding
  * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
 fun Module.mapBinding(mapBinding: MapBinding) {
@@ -79,7 +57,7 @@ fun Module.mapBinding(mapBinding: MapBinding) {
 }
 
 /**
- * Declares a empty map binding]
+ * Declares a empty map binding
  * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
 fun Module.mapBinding(
@@ -91,7 +69,7 @@ fun Module.mapBinding(
 }
 
 /**
- * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
+ * Binds a already existing [Binding] into [mapBinding]
  */
 inline fun <reified T> Module.bindIntoMap(
     mapBinding: MapBinding,
@@ -101,7 +79,7 @@ inline fun <reified T> Module.bindIntoMap(
 }
 
 /**
- * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
+ * Binds a already existing [Binding] into [mapName] with [mapKey]
  */
 inline fun <reified T> Module.bindIntoMap(
     mapName: String,
@@ -113,7 +91,7 @@ inline fun <reified T> Module.bindIntoMap(
 }
 
 /**
- * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
+ * Binds a already existing [Binding] into [mapBinding]
  */
 fun <T> Module.bindIntoMap(
     mapBinding: MapBinding,
@@ -130,7 +108,7 @@ fun <T> Module.bindIntoMap(
 }
 
 /**
- * Binds a already existing [Binding] into a [Map]
+ * Binds a already existing [Binding] into [mapName] with [mapKey]
  */
 fun <T> Module.bindIntoMap(
     mapName: String,

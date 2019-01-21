@@ -87,7 +87,7 @@ fun <T> Module.factory(
     scopeName: String? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = declare<T>(
+): BindingContext<T> = declare(
     type = type,
     name = name,
     kind = Binding.Kind.FACTORY,
@@ -118,7 +118,7 @@ fun <T> Module.single(
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = declare<T>(
+): BindingContext<T> = declare(
     type = type,
     name = name,
     kind = Binding.Kind.SINGLE,

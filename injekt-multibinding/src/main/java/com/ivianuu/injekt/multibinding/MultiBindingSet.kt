@@ -49,11 +49,11 @@ fun <T> MultiBindingSet<T>.toLazySet(parameters: ParametersDefinition? = null): 
  * Returns a [Set] of [Provider]s of [T]
  */
 fun <T> MultiBindingSet<T>.toProviderSet(defaultParameters: ParametersDefinition? = null): Set<Provider<T>> =
-    set.map { dec ->
+    set.map { (_, type, name) ->
         provider {
             component.get<T>(
-                dec.type,
-                dec.name,
+                type,
+                name,
                 it ?: defaultParameters
             )
         }
