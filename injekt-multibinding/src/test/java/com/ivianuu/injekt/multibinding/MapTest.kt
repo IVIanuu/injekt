@@ -16,10 +16,10 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap MapBinding("values", "key_one")
-                    factory("name_two") { "value_two" } bindIntoMap MapBinding("values", "key_two")
+                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key_one")
+                    factory("name_two") { "value_two" } bindIntoMap ("values" to "key_two")
                     factory("name_three") { "value_three" }
-                    bindIntoMap<String>(MapBinding("values", "key_three"), "name_three")
+                    bindIntoMap<String>("values", "key_three", implementationName = "name_three")
                 }
             )
         }
@@ -37,7 +37,7 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap MapBinding("values", "key_one")
+                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key_one")
                     factory("name_two") { "value_two" } bindIntoMap MapBinding(
                         "values",
                         "key_one",
@@ -55,7 +55,7 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap MapBinding("values", "key")
+                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key")
                     factory("name_two") { "value_two" } bindIntoMap MapBinding(
                         "values",
                         "key",
@@ -81,8 +81,8 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap MapBinding("values", "key")
-                    factory("name_two") { "value_two" } bindIntoMap MapBinding("values", "key")
+                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key")
+                    factory("name_two") { "value_two" } bindIntoMap ("values" to "key")
                 }
             )
         }

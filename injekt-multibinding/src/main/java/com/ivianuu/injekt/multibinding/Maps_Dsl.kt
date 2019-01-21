@@ -62,13 +62,32 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
 }
 
 /**
+ * Binds this binding into a map
+ */
+infix fun <T> BindingContext<T>.bindIntoMap(
+    pair: Pair<String, Any>
+): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
+
+/**
  * Declares a empty map binding]
  * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
-fun <K, V> Module.mapBinding(mapBinding: MapBinding) {
+fun Module.mapBinding(mapBinding: MapBinding) {
     factory(name = mapBinding.mapName, override = true) {
-        MultiBindingMap<K, V>(component, emptyMap())
+        MultiBindingMap<Any, Any>(component, emptyMap())
     }
+}
+
+/**
+ * Declares a empty map binding]
+ * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
+ */
+fun Module.mapBinding(
+    mapName: String,
+    mapKey: Any,
+    override: Boolean = false
+) {
+    mapBinding(MapBinding(mapName, mapKey, override))
 }
 
 /**
@@ -79,6 +98,18 @@ inline fun <reified T> Module.bindIntoMap(
     implementationName: String? = null
 ) {
     bindIntoMap<T>(mapBinding, T::class, implementationName)
+}
+
+/**
+ * Binds a already existing [Binding] into a [Map] named [Pair.first] with the key [Pair.second]
+ */
+inline fun <reified T> Module.bindIntoMap(
+    mapName: String,
+    mapKey: Any,
+    override: Boolean = false,
+    implementationName: String? = null
+) {
+    bindIntoMap<T>(MapBinding(mapName, mapKey, override), implementationName)
 }
 
 /**
@@ -96,4 +127,17 @@ fun <T> Module.bindIntoMap(
 
     context.bindIntoMap(mapBinding)
     context.binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
+}
+
+/**
+ * Binds a already existing [Binding] into a [Map]
+ */
+fun <T> Module.bindIntoMap(
+    mapName: String,
+    mapKey: Any,
+    override: Boolean = false,
+    implementationType: KClass<*>,
+    implementationName: String? = null
+) {
+    bindIntoMap<T>(MapBinding(mapName, mapKey, override), implementationType, implementationName)
 }

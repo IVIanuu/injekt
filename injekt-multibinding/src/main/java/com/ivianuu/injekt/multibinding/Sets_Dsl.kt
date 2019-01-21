@@ -39,6 +39,16 @@ fun Module.setBinding(setBinding: SetBinding) {
 }
 
 /**
+ * Declares a empty set binding with the [setName]
+ * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
+ */
+fun Module.setBinding(setName: String) {
+    factory(name = setName, override = true) {
+        MultiBindingSet<Any>(component, emptySet())
+    }
+}
+
+/**
  * Binds this [Binding] into [setBinding]
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
@@ -73,6 +83,12 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
 }
 
 /**
+ * Binds this [Binding] into [setBinding]
+ */
+infix fun <T> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> =
+    bindIntoSet(SetBinding(setName))
+
+/**
  * Binds a already existing [Binding] into a [Set] named [setName]
  */
 inline fun <reified T> Module.bindIntoSet(
@@ -80,6 +96,17 @@ inline fun <reified T> Module.bindIntoSet(
     implementationName: String? = null
 ) {
     bindIntoSet<T>(T::class, setBinding, implementationName)
+}
+
+/**
+ * Binds a already existing [Binding] into a [Set] named [setName]
+ */
+inline fun <reified T> Module.bindIntoSet(
+    setName: String,
+    override: Boolean = false,
+    implementationName: String? = null
+) {
+    bindIntoSet<T>(SetBinding(setName, override), implementationName)
 }
 
 /**
@@ -96,4 +123,16 @@ fun <T> Module.bindIntoSet(
     } bindIntoSet setBinding
 
     context.binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
+}
+
+/**
+ * Binds a already existing [Binding] into a [Set] named [setName]
+ */
+fun <T> Module.bindIntoSet(
+    implementationType: KClass<*>,
+    setName: String,
+    override: Boolean = false,
+    implementationName: String? = null
+) {
+    bindIntoSet<T>(implementationType, SetBinding(setName, override), implementationName)
 }

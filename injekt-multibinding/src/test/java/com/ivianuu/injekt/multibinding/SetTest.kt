@@ -17,10 +17,10 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoSet SetBinding("values")
-                    factory("name_two") { "value_two" } bindIntoSet SetBinding("values")
+                    factory("name_one") { "value_one" } bindIntoSet "values"
+                    factory("name_two") { "value_two" } bindIntoSet "values"
                     factory("name_three") { "value_three" }
-                    bindIntoSet<String>(SetBinding("values"), "name_three")
+                    bindIntoSet<String>("values", implementationName = "name_three")
                 }
             )
         }
@@ -38,7 +38,7 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet SetBinding("values")
+                    factory { "my_value" } bindIntoSet "values"
                 }
             )
         }
@@ -60,7 +60,7 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet SetBinding("values")
+                    factory { "my_value" } bindIntoSet "values"
                 }
             )
         }
@@ -90,7 +90,7 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet SetBinding("values")
+                    factory { "my_value" } bindIntoSet "values"
                 }
             )
         }
@@ -99,7 +99,7 @@ class SetTest {
             dependencies(component1)
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet SetBinding("values")
+                    factory { "my_value" } bindIntoSet "values"
                 }
             )
         }
