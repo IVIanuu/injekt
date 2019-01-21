@@ -14,17 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.multibinding
+package com.ivianuu.injekt
 
-/**
- * Attribute key for [SetBinding]s
- */
-const val KEY_SET_BINDINGS = "set_bindings"
-
-/**
- * Set binding
- */
-data class SetBinding(
-    val setName: String,
-    val override: Boolean = false
-)
+const val APPLICATION_SCOPE = "application_scope"

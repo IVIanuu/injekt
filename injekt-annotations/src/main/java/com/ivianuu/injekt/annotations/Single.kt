@@ -22,8 +22,8 @@ package com.ivianuu.injekt.annotations
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Single(
+    val scopeName: String,
     val name: String = "",
-    val scopeName: String = "",
     val override: Boolean = false,
     val eager: Boolean = false
 )
