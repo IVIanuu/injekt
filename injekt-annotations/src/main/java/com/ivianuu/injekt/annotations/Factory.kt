@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.annotations
 
 /**
- * Contributes a factory binding
+ * Generates a factory for the annotated type
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)

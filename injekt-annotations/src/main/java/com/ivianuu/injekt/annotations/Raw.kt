@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt.annotations
 
+/**
+ * Annotated properties will be injected without trying to use [Component.getLazy] or [Component.getProvider]
+ */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Raw
