@@ -23,7 +23,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.addInstance
-import com.ivianuu.injekt.bind
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
@@ -55,7 +55,7 @@ fun <T : Application> applicationModule(
     instance: T,
     name: String? = "ApplicationModule"
 ): Module = module(name) {
-    factory { instance as Application } bind Context::class
+    factory { instance as Application } bindType Context::class
 }
 
 fun DefinitionContext.application(): Application = get()
