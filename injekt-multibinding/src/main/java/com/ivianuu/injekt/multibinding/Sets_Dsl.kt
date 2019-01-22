@@ -21,9 +21,12 @@ import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.getOrSet
-import java.util.*
+import com.ivianuu.injekt.withBinding
+import kotlin.collections.Set
+import kotlin.collections.emptySet
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
 import kotlin.reflect.KClass
 
 /**
@@ -50,7 +53,15 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
 }
 
 /**
- * Binds this [Binding] into [setBinding]
+ * Binds this binding into [setName]
+ */
+fun <T> BindingContext<T>.bindIntoSet(
+    setName: String,
+    override: Boolean = false
+): BindingContext<T> = bindIntoSet(SetBinding(setName, override))
+
+/**
+ * Binds this [Binding] into [setName]
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> =
     bindIntoSet(SetBinding(setName))
@@ -84,12 +95,10 @@ fun <T> Module.bindIntoSet(
     setBinding: SetBinding,
     implementationName: String? = null
 ) {
-    // we use a unique id here to make sure that the binding does not collide with any user config
-    val context = factory(implementationType, UUID.randomUUID().toString()) {
-        get<T>(implementationType, implementationName) { it }
-    } bindIntoSet setBinding
-
-    context.binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
+    withBinding<T>(implementationType, implementationName) {
+        bindIntoSet(setBinding)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
+    }
 }
 
 /**

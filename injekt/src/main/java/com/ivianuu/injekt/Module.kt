@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -149,16 +150,64 @@ fun Module.module(
     module(com.ivianuu.injekt.module(name, scopeName, override, eager, definition))
 }
 
-/**
- * Adds a binding for [T] for a existing binding of [S]
- */
-inline fun <reified T, reified S> Module.bind(
-    bindingName: String? = null,
-    implementationName: String? = null
+/** Calls trough [Module.withBinding] */
+inline fun <reified T> Module.withBinding(
+    name: String? = null,
+    body: BindingContext<T>.() -> Unit
 ) {
-    factory(bindingName) { get<S>(implementationName) { it } as T }
+    factory<T>(UUID.randomUUID().toString()) { get(name) } withContext body
 }
 
+/**
+ * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [name]
+ */
+inline fun <T> Module.withBinding(
+    type: KClass<*>,
+    name: String? = null,
+    body: BindingContext<T>.() -> Unit
+) {
+    // we create a additional binding because we have now reference to the original one
+    // we use a unique id here to make sure that the binding does not collide with any user config
+    // the new factory acts as bridge and just calls trough the original implementation
+    factory<T>(type, UUID.randomUUID().toString()) { get(type, name) } withContext body
+}
+
+/** Calls trough [Module.bindType] */
+inline fun <reified T, reified S> Module.bindType(
+    implementationName: String? = null
+) {
+    bindType<T, S>(T::class, S::class, implementationName)
+}
+
+/**
+ * Adds a binding for [bindingType] to a existing binding
+ */
+fun <T, S> Module.bindType(
+    bindingType: KClass<*>,
+    implementationType: KClass<*>,
+    implementationName: String? = null
+) {
+    withBinding<S>(implementationType, implementationName) { bindType(bindingType) }
+}
+
+/** Calls trough [Module.bindName] */
+inline fun <reified T> Module.bindName(
+    bindingName: String,
+    implementationName: String? = null
+) {
+    bindName<T>(bindingName, T::class, implementationName)
+}
+
+/**
+ * Adds a binding for [bindingName] to a existing binding
+ */
+fun <T> Module.bindName(
+    bindingName: String,
+    implementationType: KClass<*>,
+    implementationName: String? = null
+) {
+    withBinding<T>(implementationType, implementationName) { bindName(bindingName) }
+}
 
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)
 operator fun Module.plus(modules: Iterable<Module>): List<Module> = listOf(this) + modules

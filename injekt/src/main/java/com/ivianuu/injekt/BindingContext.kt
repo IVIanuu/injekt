@@ -11,6 +11,14 @@ data class BindingContext<T>(
 )
 
 /**
+ * Invokes the [body]
+ */
+inline infix fun <T> BindingContext<T>.withContext(body: BindingContext<T>.() -> Unit): BindingContext<T> {
+    body()
+    return this
+}
+
+/**
  * Binds this [Binding] to [type]
  */
 infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {

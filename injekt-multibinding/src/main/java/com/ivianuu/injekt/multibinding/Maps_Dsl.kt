@@ -21,9 +21,11 @@ import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.getOrSet
-import java.util.*
+import com.ivianuu.injekt.withBinding
+import kotlin.collections.emptyMap
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
 import kotlin.reflect.KClass
 
 /**
@@ -45,6 +47,15 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
 infix fun <T> BindingContext<T>.bindIntoMap(
     pair: Pair<String, Any>
 ): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
+
+/**
+ * Binds this binding into [mapName] with [mapKey]
+ */
+fun <T> BindingContext<T>.bindIntoMap(
+    mapName: String,
+    mapKey: Any,
+    override: Boolean = false
+): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
 
 /**
  * Declares a empty map binding
@@ -86,13 +97,10 @@ fun <T> Module.bindIntoMap(
     implementationType: KClass<*>,
     implementationName: String? = null
 ) {
-    // we use a unique id here to make sure that the binding does not collide with any user config
-    val context = factory(implementationType, UUID.randomUUID().toString()) {
-        get<T>(implementationType, implementationName) { it }
+    withBinding<T>(implementationType, implementationName) {
+        bindIntoMap(mapBinding)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
     }
-
-    context.bindIntoMap(mapBinding)
-    context.binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
 }
 
 /**
