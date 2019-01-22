@@ -6,6 +6,11 @@ package com.ivianuu.injekt
 object InjektPlugins {
 
     /**
+     * The factory finder
+     */
+    var factoryFinder: FactoryFinder = DefaultFactoryFinder()
+
+    /**
      * The logger to use
      */
     var logger: Logger? = null

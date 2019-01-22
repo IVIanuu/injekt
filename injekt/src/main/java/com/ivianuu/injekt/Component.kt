@@ -133,7 +133,7 @@ class Component internal constructor(val name: String?) {
         // we search for generated factories as a last resort
         if (includeFactories) {
             try {
-                val factory = FactoryFinder.find<T>(key.type) ?: return null
+                val factory = InjektPlugins.factoryFinder.find<T>(key.type) ?: return null
                 val binding = factory.create()
                 return@synchronized addBindingInternal(binding) as Instance<T>
             } catch (e: ClassNotFoundException) {
