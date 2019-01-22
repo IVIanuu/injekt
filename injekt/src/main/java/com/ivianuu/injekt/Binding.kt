@@ -61,10 +61,6 @@ data class Binding<T> private constructor(
             eager: Boolean = false,
             definition: Definition<T>
         ): Binding<T> {
-            if (kind == Binding.Kind.SINGLE && scopeName == null) {
-                error("scopeName must not be empty for singles")
-            }
-
             return Binding(
                 Key(type, name), type, name, kind,
                 definition, attributes, scopeName, override, eager

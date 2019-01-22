@@ -12,6 +12,16 @@ class Component internal constructor(val name: String?) {
     private val bindings = mutableMapOf<Key, Binding<*>>()
     private val instances = mutableMapOf<Key, Instance<*>>()
 
+    init {
+        // implicitly add a binding for this component
+        addBinding(
+            Binding.createSingle(
+                type = Component::class,
+                definition = { this }
+            )
+        )
+    }
+
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
      */
@@ -67,10 +77,19 @@ class Component internal constructor(val name: String?) {
      * Adds all of [scopeNames] to this component
      */
     fun scopeNames(scopeNames: Iterable<String>) {
-        scopeNames.forEach {
-            if (!this.scopeNames.add(it)) {
-                error("Scope name $it was already added to $scopeNames")
+        scopeNames.forEach { scopeName ->
+            if (!this.scopeNames.add(scopeName)) {
+                error("Scope name $scopeName was already added")
             }
+
+            // implicitely add a binding for this component with the scope
+            addBinding(
+                Binding.createSingle(
+                    type = Component::class,
+                    name = scopeName,
+                    definition = { this }
+                )
+            )
         }
     }
 
