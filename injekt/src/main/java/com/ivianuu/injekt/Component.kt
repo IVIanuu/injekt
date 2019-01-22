@@ -17,7 +17,7 @@ class Component internal constructor(val name: String?) {
         addBinding(
             Binding.createSingle(
                 type = Component::class,
-                definition = { this }
+                definition = { this@Component }
             )
         )
     }
@@ -82,12 +82,12 @@ class Component internal constructor(val name: String?) {
                 error("Scope name $scopeName was already added")
             }
 
-            // implicitely add a binding for this component with the scope
+            // implicitly add a binding for this component with the scope
             addBinding(
                 Binding.createSingle(
                     type = Component::class,
                     name = scopeName,
-                    definition = { this }
+                    definition = { this@Component }
                 )
             )
         }

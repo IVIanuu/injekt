@@ -21,12 +21,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.ACTIVITY_SCOPE
 import com.ivianuu.injekt.android.fragment.CHILD_FRAGMENT_SCOPE
 import com.ivianuu.injekt.android.fragment.childFragmentComponent
-import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.inject
 
@@ -73,12 +70,5 @@ class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
     val parentFragment: ParentFragment,
-    val childFragment: ChildFragment,
-    @Name(ACTIVITY_SCOPE) val activityComponent: Component
-) {
-
-    init {
-        d { "activity component -> $activityComponent, ${activityComponent.getScopeNames()}, ${activityComponent.getBindings()}" }
-    }
-
-}
+    val childFragment: ChildFragment
+)
