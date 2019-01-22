@@ -88,13 +88,13 @@ fun <T> Module.factory(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = declare(
-    type = type,
-    name = name,
-    kind = Binding.Kind.FACTORY,
-    scopeName = scopeName,
-    eager = false,
-    override = override,
-    definition = definition
+    Binding.createFactory(
+        type = type,
+        name = name,
+        scopeName = scopeName,
+        override = override,
+        definition = definition
+    )
 )
 
 /**
@@ -119,41 +119,15 @@ fun <T> Module.single(
     eager: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = declare(
-    type = type,
-    name = name,
-    kind = Binding.Kind.SINGLE,
-    scopeName = scopeName,
-    override = override,
-    eager = eager,
-    definition = definition
+    Binding.createSingle(
+        type = type,
+        name = name,
+        scopeName = scopeName,
+        override = override,
+        eager = eager,
+        definition = definition
+    )
 )
-
-/**
- * Adds a [Binding] for the provided parameters
- */
-inline fun <reified T> Module.declare(
-    name: String? = null,
-    kind: Binding.Kind,
-    scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    noinline definition: Definition<T>
-): BindingContext<T> = declare(T::class, name, kind, scopeName, override, eager, definition)
-
-/**
- * Adds a [Binding] for the provided parameters
- */
-fun <T> Module.declare(
-    type: KClass<*>,
-    name: String? = null,
-    kind: Binding.Kind,
-    scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    definition: Definition<T>
-): BindingContext<T> {
-    return declare(Binding.create(type, name, kind, scopeName, override, eager, definition))
-}
 
 /**
  * Adds all bindings of [module]
@@ -180,9 +154,9 @@ fun Module.module(
  */
 inline fun <reified T, reified S> Module.bind(
     bindingName: String? = null,
-    existingName: String? = null
+    implementationName: String? = null
 ) {
-    factory(bindingName) { get<S>(existingName) { it } as T }
+    factory(bindingName) { get<S>(implementationName) { it } as T }
 }
 
 

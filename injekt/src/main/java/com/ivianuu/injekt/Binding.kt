@@ -35,10 +35,9 @@ data class Binding<T> private constructor(
             name: String? = null,
             scopeName: String? = null,
             override: Boolean = false,
-            eager: Boolean = false,
             definition: Definition<T>
         ): Binding<T> =
-            create(type, name, Kind.FACTORY, scopeName, override, eager, definition)
+            create(type, name, Kind.FACTORY, scopeName, override, false, definition)
 
         fun <T> createSingle(
             type: KClass<*>,
