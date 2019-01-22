@@ -106,7 +106,7 @@ inline fun <reified T> Module.single(
     override: Boolean = false,
     eager: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = single(T::class, name, scopeName, override, eager, definition)
+): BindingContext<T> = single(T::class, scopeName, name, override, eager, definition)
 
 /**
  * Provides scoped dependency which will be created once for each component
@@ -151,9 +151,9 @@ fun <T> Module.declare(
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = declare(
-    Binding.create(type, name, kind, scopeName, override, eager, definition)
-)
+): BindingContext<T> {
+    return declare(Binding.create(type, name, kind, scopeName, override, eager, definition))
+}
 
 /**
  * Adds all bindings of [module]

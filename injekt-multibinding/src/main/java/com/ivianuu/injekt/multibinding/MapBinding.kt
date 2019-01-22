@@ -19,7 +19,7 @@ package com.ivianuu.injekt.multibinding
 /**
  * Attribute key for [MapBinding]s
  */
-const val KEY_MAP_BINDINGS = "mapBindings"
+const val KEY_MAP_BINDINGS = "map_bindings"
 
 /**
  * Map binding

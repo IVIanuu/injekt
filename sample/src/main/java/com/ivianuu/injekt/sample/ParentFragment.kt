@@ -59,7 +59,7 @@ class ParentFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single(FRAGMENT_SCOPE)
+@Single(scopeName = FRAGMENT_SCOPE)
 class ParentFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

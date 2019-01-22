@@ -19,7 +19,7 @@ package com.ivianuu.injekt.multibinding
 /**
  * Attribute key for [SetBinding]s
  */
-const val KEY_SET_BINDINGS = "setBindings"
+const val KEY_SET_BINDINGS = "set_bindings"
 
 /**
  * Set binding

@@ -42,10 +42,7 @@ fun Component.scopeNames(vararg scopeNames: String) {
  */
 fun <T : Any> Component.addInstance(instance: T) {
     addBinding(
-        Binding.createSingle(
-            instance::class,
-            null
-        ) { instance }
+        Binding.createFactory(instance::class) { instance }
     )
 }
 

@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.APPLICATION_SCOPE
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Single
@@ -45,5 +45,5 @@ class App : Application(), InjektTrait {
     }
 }
 
-@Single(APPLICATION_SCOPE)
+@Single(scopeName = APPLICATION_SCOPE)
 class AppDependency(val app: App)

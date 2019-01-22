@@ -47,8 +47,7 @@ data class Binding<T> private constructor(
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
-        ): Binding<T> =
-            create(type, name, Kind.SINGLE, scopeName, override, eager, definition)
+        ): Binding<T> = create(type, name, Kind.SINGLE, scopeName, override, eager, definition)
 
         fun <T> create(
             type: KClass<*>,
@@ -58,10 +57,16 @@ data class Binding<T> private constructor(
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
-        ): Binding<T> = Binding(
-            Key(type, name), type, name, kind,
-            definition, Attributes(), scopeName, override, eager
-        )
+        ): Binding<T> {
+            if (kind == Binding.Kind.SINGLE && scopeName == null) {
+                error("scopeName must not be empty for singles")
+            }
+
+            return Binding(
+                Key(type, name), type, name, kind,
+                definition, Attributes(), scopeName, override, eager
+            )
+        }
 
     }
 }

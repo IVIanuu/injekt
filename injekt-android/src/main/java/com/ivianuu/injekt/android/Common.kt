@@ -28,10 +28,10 @@ import com.ivianuu.injekt.single
 fun Module.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
-    name: String? = null,
     scopeName: String? = null,
+    name: String? = null,
     override: Boolean = false,
     eager: Boolean = false
-): BindingContext<SharedPreferences> = single(name, scopeName, override, eager) {
+): BindingContext<SharedPreferences> = single(scopeName, name, override, eager) {
     context().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
 }

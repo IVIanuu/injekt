@@ -37,7 +37,7 @@ class ParentView @JvmOverloads constructor(
 
 }
 
-@Single(VIEW_SCOPE)
+@Single(scopeName = VIEW_SCOPE)
 class ParentViewDependency(
     val app: App,
     val mainActivity: MainActivity,
