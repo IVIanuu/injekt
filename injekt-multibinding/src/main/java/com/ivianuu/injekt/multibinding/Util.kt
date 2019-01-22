@@ -8,7 +8,7 @@ import com.ivianuu.injekt.OverrideException
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrDefault
 
-const val KEY_ORIGINAL_KEY = "original_key"
+const val KEY_ORIGINAL_KEY = "originalKey"
 
 internal fun Module.declareMapBinding(mapName: String) {
     factory(name = mapName, override = true) {
