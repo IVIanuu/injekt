@@ -53,6 +53,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
         Factory::class.java,
         Name::class.java,
         Param::class.java,
+        Raw::class.java,
         Single::class.java
     )
 
