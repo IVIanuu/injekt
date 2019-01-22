@@ -13,7 +13,7 @@ data class BindingContext<T>(
 /**
  * Binds this [Binding] to [type]
  */
-infix fun <T> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {
     val copy = binding.copy(
         key = Key(type, name = null),
         type = type, name = null
@@ -25,21 +25,21 @@ infix fun <T> BindingContext<T>.bind(type: KClass<*>): BindingContext<T> {
 /**
  * Binds this [Binding] to [types]
  */
-infix fun <T> BindingContext<T>.bind(types: Array<KClass<*>>): BindingContext<T> = apply {
-    types.forEach { bind(it) }
+infix fun <T> BindingContext<T>.bindTypes(types: Array<KClass<*>>): BindingContext<T> = apply {
+    types.forEach { bindType(it) }
 }
 
 /**
  * Binds this [Binding] to [types]
  */
-infix fun <T> BindingContext<T>.bind(types: Iterable<KClass<*>>): BindingContext<T> = apply {
-    types.forEach { bind(it) }
+infix fun <T> BindingContext<T>.bindTypes(types: Iterable<KClass<*>>): BindingContext<T> = apply {
+    types.forEach { bindType(it) }
 }
 
 /**
  * Binds this [Binding] to [name]
  */
-infix fun <T> BindingContext<T>.bind(name: String): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindName(name: String): BindingContext<T> {
     val copy = binding.copy(
         key = Key(binding.key.type, name),
         name = name
@@ -51,14 +51,13 @@ infix fun <T> BindingContext<T>.bind(name: String): BindingContext<T> {
 /**
  * Binds this [Binding] to [names]
  */
-infix fun <T> BindingContext<T>.bind(names: Array<String>): BindingContext<T> = apply {
-    names.forEach { bind(it) }
+infix fun <T> BindingContext<T>.bindNames(names: Array<String>): BindingContext<T> = apply {
+    names.forEach { bindName(it) }
 }
 
 /**
  * Binds this [Binding] to [names]
  */
-@JvmName("bindNames")
-infix fun <T> BindingContext<T>.bind(names: Iterable<String>): BindingContext<T> = apply {
-    names.forEach { bind(it) }
+infix fun <T> BindingContext<T>.bindNames(names: Iterable<String>): BindingContext<T> = apply {
+    names.forEach { bindName(it) }
 }

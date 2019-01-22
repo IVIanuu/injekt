@@ -34,25 +34,29 @@ data class Binding<T> private constructor(
             type: KClass<*>,
             name: String? = null,
             scopeName: String? = null,
+            attributes: Attributes = Attributes(),
             override: Boolean = false,
             definition: Definition<T>
         ): Binding<T> =
-            create(type, name, Kind.FACTORY, scopeName, override, false, definition)
+            create(type, name, Kind.FACTORY, scopeName, attributes, override, false, definition)
 
         fun <T> createSingle(
             type: KClass<*>,
             name: String? = null,
             scopeName: String? = null,
+            attributes: Attributes = Attributes(),
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
-        ): Binding<T> = create(type, name, Kind.SINGLE, scopeName, override, eager, definition)
+        ): Binding<T> =
+            create(type, name, Kind.SINGLE, scopeName, attributes, override, eager, definition)
 
         fun <T> create(
             type: KClass<*>,
             name: String? = null,
             kind: Kind,
             scopeName: String? = null,
+            attributes: Attributes = Attributes(),
             override: Boolean = false,
             eager: Boolean = false,
             definition: Definition<T>
@@ -63,7 +67,7 @@ data class Binding<T> private constructor(
 
             return Binding(
                 Key(type, name), type, name, kind,
-                definition, Attributes(), scopeName, override, eager
+                definition, attributes, scopeName, override, eager
             )
         }
 
