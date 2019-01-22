@@ -178,11 +178,11 @@ fun Module.module(
 /**
  * Adds a binding for [T] for a existing binding of [S]
  */
-inline fun <reified T, reified S : T> Module.bind(
+inline fun <reified T, reified S> Module.bind(
     bindingName: String? = null,
     existingName: String? = null
 ) {
-    factory(bindingName) { get<S>(existingName) { it } }
+    factory(bindingName) { get<S>(existingName) { it } as T }
 }
 
 
