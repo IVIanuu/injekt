@@ -50,22 +50,10 @@ infix fun <T> BindingContext<T>.bindIntoMap(
  * Declares a empty map binding
  * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
-fun Module.mapBinding(mapBinding: MapBinding) {
-    factory(name = mapBinding.mapName, override = true) {
+fun Module.mapBinding(mapName: String) {
+    factory(name = mapName, override = true) {
         MultiBindingMap<Any, Any>(component, emptyMap())
     }
-}
-
-/**
- * Declares a empty map binding
- * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
- */
-fun Module.mapBinding(
-    mapName: String,
-    mapKey: Any,
-    override: Boolean = false
-) {
-    mapBinding(MapBinding(mapName, mapKey, override))
 }
 
 /**

@@ -27,16 +27,6 @@ import java.util.*
 import kotlin.reflect.KClass
 
 /**
- * Declares a empty set binding
- * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
- */
-fun Module.setBinding(setBinding: SetBinding) {
-    factory(name = setBinding.setName, override = true) {
-        MultiBindingSet<Any>(component, emptySet())
-    }
-}
-
-/**
  * Declares a empty set binding with the [setName]
  * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
  */
