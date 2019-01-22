@@ -149,7 +149,7 @@ class Component internal constructor(val name: String?) {
             val isOverride = bindings.remove(binding.key) != null
 
             if (isOverride && !binding.override) {
-                throw OverrideException("Try to override binding $binding but was already in $name")
+                throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
             }
 
             bindings[binding.key] = binding
