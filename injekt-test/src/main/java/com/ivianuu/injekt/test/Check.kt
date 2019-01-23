@@ -39,11 +39,11 @@ fun Component.check() {
 }
 
 fun Component.setSandboxBindings() {
+    getDependencies().forEach { it.setSandboxBindings() }
     getBindings().forEach {
         println("clone and save for sandbox $it")
         addBinding(it.cloneForSandbox())
     }
-    getDependencies().forEach { it.setSandboxBindings() }
 }
 
 fun <T> Binding<T>.cloneForSandbox(): Binding<T> {
