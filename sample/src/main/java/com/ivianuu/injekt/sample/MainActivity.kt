@@ -10,7 +10,7 @@ import com.ivianuu.injekt.inject
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
-    override val component by lazy { activityComponent(this) }
+    override val component by lazy { activityComponent() }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()

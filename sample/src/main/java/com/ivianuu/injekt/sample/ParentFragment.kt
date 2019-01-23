@@ -32,7 +32,7 @@ import com.ivianuu.injekt.inject
  */
 class ParentFragment : Fragment(), InjektTrait {
 
-    override val component by lazy { fragmentComponent(this) }
+    override val component by lazy { fragmentComponent() }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()

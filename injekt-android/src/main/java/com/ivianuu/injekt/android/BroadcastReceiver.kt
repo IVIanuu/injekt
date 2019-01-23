@@ -31,16 +31,15 @@ const val RECEIVER_SCOPE = "receiver_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : BroadcastReceiver> receiverComponent(
-    instance: T,
+fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
-    name: String? = instance.javaClass.simpleName + "Component",
+    name: String? = javaClass.simpleName + "Component",
     deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(RECEIVER_SCOPE)
-    instance.getApplicationComponentOrNull(context)?.let { dependencies(it) }
-    addInstance(instance)
+    getApplicationComponentOrNull(context)?.let { dependencies(it) }
+    addInstance(this@receiverComponent)
     definition?.invoke(this)
 }
 

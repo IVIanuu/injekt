@@ -30,7 +30,7 @@ import com.ivianuu.injekt.inject
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy { applicationComponent(this) }
+    override val component by lazy { applicationComponent() }
 
     private val appDependency by inject<AppDependency>()
 

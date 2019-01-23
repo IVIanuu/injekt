@@ -17,7 +17,7 @@ class ParentView @JvmOverloads constructor(
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
-    override val component by lazy { viewComponent(this) }
+    override val component by lazy { viewComponent() }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()

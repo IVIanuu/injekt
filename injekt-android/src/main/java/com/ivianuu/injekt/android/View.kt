@@ -16,33 +16,31 @@ const val CHILD_VIEW_SCOPE = "child_view_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : View> viewComponent(
-    instance: T,
-    name: String? = instance.javaClass.simpleName + "Component",
+fun <T : View> T.viewComponent(
+    name: String? = javaClass.simpleName + "Component",
     deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(VIEW_SCOPE)
-    (instance.getParentViewComponentOrNull()
-        ?: instance.getContextComponentOrNull()
-        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
-    addInstance(instance)
+    (getParentViewComponentOrNull()
+        ?: getContextComponentOrNull()
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+    addInstance(this@viewComponent)
     definition?.invoke(this)
 }
 
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : View> childViewComponent(
-    instance: T,
-    name: String? = instance.javaClass.simpleName + "Component",
+fun <T : View> T.childViewComponent(
+    name: String? = javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
 ): Component = component(name) {
     scopeNames(CHILD_VIEW_SCOPE)
-    (instance.getParentViewComponentOrNull()
-        ?: instance.getContextComponentOrNull()
-        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
-    addInstance(instance)
+    (getParentViewComponentOrNull()
+        ?: getContextComponentOrNull()
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+    addInstance(this@childViewComponent)
     definition?.invoke(this)
 }
 

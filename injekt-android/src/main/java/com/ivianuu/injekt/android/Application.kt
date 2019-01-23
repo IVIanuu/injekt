@@ -36,26 +36,24 @@ const val APPLICATION_SCOPE = "application_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : Application> applicationComponent(
-    instance: T,
-    name: String? = instance.javaClass.simpleName + "Component",
+fun <T : Application> T.applicationComponent(
+    name: String? = javaClass.simpleName + "Component",
     deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(APPLICATION_SCOPE)
-    addInstance(instance)
-    modules(applicationModule(instance))
+    addInstance(this@applicationComponent)
+    modules(applicationModule())
     definition?.invoke(this)
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
-fun <T : Application> applicationModule(
-    instance: T,
+fun <T : Application> T.applicationModule(
     name: String? = "ApplicationModule"
 ): Module = module(name) {
-    factory { instance as Application } bindType Context::class
+    factory { this@applicationModule as Application } bindType Context::class
 }
 
 fun DefinitionContext.application(): Application = get()

@@ -31,33 +31,31 @@ const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : Fragment> fragmentComponent(
-    instance: T,
-    name: String? = instance.javaClass.simpleName + "Component",
+fun <T : Fragment> T.fragmentComponent(
+    name: String? = javaClass.simpleName + "Component",
     deferCreateEagerInstances: Boolean = false,
     definition: ComponentDefinition? = null
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(FRAGMENT_SCOPE)
-    (instance.getParentFragmentComponentOrNull()
-        ?: instance.getActivityComponentOrNull()
-        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
-    addInstance(instance)
+    (getParentFragmentComponentOrNull()
+        ?: getActivityComponentOrNull()
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+    addInstance(this@fragmentComponent)
     definition?.invoke(this)
 }
 
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : Fragment> childFragmentComponent(
-    instance: T,
-    name: String? = instance.javaClass.simpleName + "Component",
+fun <T : Fragment> T.childFragmentComponent(
+    name: String? = javaClass.simpleName + "Component",
     definition: ComponentDefinition? = null
 ): Component = component(name) {
     scopeNames(CHILD_FRAGMENT_SCOPE)
-    (instance.getParentFragmentComponentOrNull()
-        ?: instance.getActivityComponentOrNull()
-        ?: instance.getApplicationComponentOrNull())?.let { dependencies(it) }
-    addInstance(instance)
+    (getParentFragmentComponentOrNull()
+        ?: getActivityComponentOrNull()
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+    addInstance(this@childFragmentComponent)
     definition?.invoke(this)
 }
 
