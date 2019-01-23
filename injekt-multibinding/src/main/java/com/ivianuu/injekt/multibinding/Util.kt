@@ -11,7 +11,7 @@ import com.ivianuu.injekt.getOrDefault
 const val KEY_ORIGINAL_KEY = "original_key"
 
 internal fun Module.declareMapBinding(mapName: String) {
-    factory(name = mapName, override = true) {
+    factory(name = mapName, override = true) { _ ->
         val allMapBindings = component.getAllBindings()
             .mapNotNull { binding ->
                 binding.attributes.get<Map<String, MapBinding>>(KEY_MAP_BINDINGS)
@@ -36,7 +36,7 @@ internal fun Module.declareMapBinding(mapName: String) {
 }
 
 internal fun Module.declareSetBinding(setName: String) {
-    factory(name = setName, override = true) {
+    factory(name = setName, override = true) { _ ->
         val allSetBindings = component.getAllBindings()
             .mapNotNull { binding ->
                 binding.attributes.get<Map<String, SetBinding>>(KEY_SET_BINDINGS)

@@ -139,29 +139,30 @@ class Component internal constructor(val name: String?) {
 
     private fun <T> findInstance(key: Key, includeFactories: Boolean): Instance<T>? =
         synchronized(this) {
-        var instance = instances[key]
+            var instance = instances[key]
+
             if (instance != null) return@synchronized instance as Instance<T>
 
-        for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key, false)
-            if (instance != null) {
-                return@synchronized instance
+            for (dependency in dependencies) {
+                instance = dependency.findInstance<T>(key, false)
+                if (instance != null) {
+                    return@synchronized instance
+                }
             }
-        }
 
-        // we search for generated factories as a last resort
-        if (includeFactories) {
-            try {
-                val factory = InjektPlugins.factoryFinder.find<T>(key.type) ?: return null
-                val binding = factory.create()
-                return@synchronized addBindingInternal(binding) as Instance<T>
-            } catch (e: ClassNotFoundException) {
-                // ignore
+            // we search for generated factories as a last resort
+            if (includeFactories) {
+                try {
+                    val factory = InjektPlugins.factoryFinder.find<T>(key.type) ?: return null
+                    val binding = factory.create()
+                    return@synchronized addBindingInternal(binding) as Instance<T>
+                } catch (e: ClassNotFoundException) {
+                    // ignore
+                }
             }
-        }
 
             return@synchronized null
-    }
+        }
 
     private fun addBindingInternal(binding: Binding<*>): Instance<*> {
         return synchronized(this) {
