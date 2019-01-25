@@ -19,37 +19,13 @@ import java.io.File
 plugins {
     id("java-library")
     id("kotlin")
-    id("com.github.dcendents.android-maven")
 }
 
-group = "com.github.ivianuu"
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/jitpack-publish.gradle")
 
 dependencies {
     api(project(":injekt"))
     api(Deps.junit)
     api(Deps.mockito)
-}
-
-val sourcesJar = task("sourcesJar", Jar::class) {
-    dependsOn("classes")
-    from(sourceSets["main"].allSource)
-    classifier = "sources"
-}
-
-val javadoc = tasks.getByName("javadoc") as Javadoc
-
-val javadocJar = task("javadocJar", Jar::class) {
-    dependsOn(javadoc)
-    classifier = "javadoc"
-    from(javadoc.destinationDir)
-}
-
-artifacts {
-    add("archives", sourcesJar)
-    add("archives", javadocJar)
 }

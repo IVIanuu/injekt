@@ -21,46 +21,12 @@ import java.io.File
 plugins {
     id("com.android.library")
     id("kotlin-android")
-    id("kotlin-android-extensions")
-    id("com.github.dcendents.android-maven")
 }
 
-group = "com.github.ivianuu"
-
-android {
-    compileSdkVersion(Build.compileSdk)
-
-    defaultConfig {
-        buildToolsVersion = Build.buildToolsVersion
-        minSdkVersion(Build.minSdk)
-        targetSdkVersion(Build.targetSdk)
-    }
-}
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/jitpack-publish.gradle")
 
 dependencies {
     api(project(":injekt"))
     api(project(":injekt-common"))
-}
-
-val sourcesJar = task("sourcesJar", Jar::class) {
-    from(android.sourceSets["main"].java.srcDirs)
-    classifier = "sources"
-}
-
-val javadoc = task("javadoc", Javadoc::class) {
-    isFailOnError = false
-    source = android.sourceSets["main"].java.sourceFiles
-    classpath += project.files(android.bootClasspath.joinToString(File.pathSeparator))
-    classpath += configurations.compile
-}
-
-val javadocJar = task("javadocJar", Jar::class) {
-    dependsOn(javadoc)
-    classifier = "javadoc"
-    from(javadoc.destinationDir)
-}
-
-artifacts {
-    add("archives", sourcesJar)
-    add("archives", javadocJar)
 }
