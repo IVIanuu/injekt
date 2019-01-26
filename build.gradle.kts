@@ -21,6 +21,7 @@ buildscript {
     }
     dependencies {
         classpath(Deps.androidGradlePlugin)
+        classpath(Deps.bintrayGradlePlugin)
         classpath(Deps.kotlinGradlePlugin)
         classpath(Deps.mavenGradlePlugin)
     }
@@ -30,7 +31,8 @@ allprojects {
     repositories {
         google()
         jcenter()
-        maven("https://jitpack.io")
+        mavenLocal()
+        maven("https://dl.bintray.com/ivianuu/maven")
     }
 }
 

@@ -11,15 +11,22 @@ object Build {
     const val versionName = "0.0.1"
 }
 
+object Publishing {
+    const val groupId = "com.ivianuu.injekt"
+    const val vcsUrl = "https://github.com/IVIanuu/injekt"
+    const val version = "git"
+}
+
 object Versions {
     const val androidGradlePlugin = "3.3.0"
     const val androidxAppCompat = "1.0.2"
     const val androidxFragment = "1.0.0"
+    const val bintray = "1.8.4"
     const val junit = "4.12"
     const val kotlin = "1.3.20"
     const val mavenGradle = "2.1"
     const val mockito = "2.23.4"
-    const val processingX = "9543c5ad6a"
+    const val processingX = "0341e08e73"
 }
 
 object Deps {
@@ -27,6 +34,9 @@ object Deps {
 
     const val androidxAppCompat = "androidx.appcompat:appcompat:${Versions.androidxAppCompat}"
     const val androidxFragment = "androidx.fragment:fragment:${Versions.androidxFragment}"
+
+    const val bintrayGradlePlugin =
+        "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.bintray}"
 
     const val junit = "junit:junit:${Versions.junit}"
 
@@ -38,5 +48,5 @@ object Deps {
 
     const val mockito = "org.mockito:mockito-inline:${Versions.mockito}"
 
-    const val processingX = "com.github.IVIanuu:processingx:${Versions.processingX}"
+    const val processingX = "com.ivianuu.processingx:processingx:${Versions.processingX}"
 }
