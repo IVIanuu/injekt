@@ -107,7 +107,7 @@ inline fun <reified T> Module.single(
     override: Boolean = false,
     eager: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = single(T::class, scopeName, name, override, eager, definition)
+): BindingContext<T> = single(T::class, name, scopeName, override, eager, definition)
 
 /**
  * Provides scoped dependency which will be created once for each component
