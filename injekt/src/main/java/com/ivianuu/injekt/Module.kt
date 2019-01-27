@@ -154,9 +154,7 @@ fun Module.module(
 inline fun <reified T> Module.withBinding(
     name: String? = null,
     body: BindingContext<T>.() -> Unit
-) {
-    factory<T>(UUID.randomUUID().toString()) { get(name) } withContext body
-}
+) = withBinding(T::class, name, body)
 
 /**
  * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [name]
@@ -169,7 +167,7 @@ inline fun <T> Module.withBinding(
     // we create a additional binding because we have now reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation
-    factory<T>(type, UUID.randomUUID().toString()) { get(type, name) } withContext body
+    factory<T>(type, UUID.randomUUID().toString()) { get(type, name) { it } } withContext body
 }
 
 /** Calls trough [Module.bindType] */
