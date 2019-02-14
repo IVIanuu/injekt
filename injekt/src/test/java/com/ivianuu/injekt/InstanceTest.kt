@@ -57,7 +57,7 @@ class InstanceTest {
             )
         )
 
-        val instance = component.getInstances().first()
+        val instance = component.getInstances().last()
 
         assertTrue(instance is FactoryInstance)
         assertFalse(instance.isCreated)
@@ -80,7 +80,7 @@ class InstanceTest {
             )
         )
 
-        val instance = component.getInstances().first()
+        val instance = component.getInstances().last()
 
         val throwed = try {
             instance.get(component, null)

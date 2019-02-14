@@ -9,8 +9,8 @@ import kotlin.reflect.KClass
 class Module internal constructor(
     val name: String?,
     val scopeName: String?,
-    val eager: Boolean,
-    val override: Boolean
+    val eager: Boolean?,
+    val override: Boolean?
 ) {
 
     internal val bindings = mutableMapOf<Key, Binding<*>>()
@@ -28,8 +28,8 @@ class Module internal constructor(
     ): BindingContext<T> {
         var binding = binding
         val scopeName = scopeName ?: binding.scopeName
-        val override = if (override) override else binding.override
-        val eager = if (eager) eager else binding.eager
+        val override = override ?: binding.override
+        val eager = eager ?: binding.eager
 
         if (binding.scopeName != scopeName
             || binding.eager != eager
@@ -64,8 +64,8 @@ typealias ModuleDefinition = Module.() -> Unit
 fun module(
     name: String? = null,
     scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
+    override: Boolean? = null,
+    eager: Boolean? = null,
     definition: ModuleDefinition
 ): Module = Module(name, scopeName, eager, override).apply(definition)
 
@@ -143,8 +143,8 @@ fun Module.module(module: Module) {
 fun Module.module(
     name: String? = null,
     scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
+    override: Boolean? = null,
+    eager: Boolean? = null,
     definition: ModuleDefinition
 ) {
     module(com.ivianuu.injekt.module(name, scopeName, override, eager, definition))

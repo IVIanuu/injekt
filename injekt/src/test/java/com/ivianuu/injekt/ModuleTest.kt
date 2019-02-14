@@ -46,9 +46,7 @@ class ModuleTest {
             single(override = true, eager = true) { TestDep1() }
         }
 
-        val component = component { modules(module) }
-
-        val binding = component.getBindings().first()
+        val binding = module.getBindings().first()
         assertFalse(module.override)
         assertTrue(binding.override)
 
