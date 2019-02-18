@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * The actual dependency container which provides bindings
  */
-class Component internal constructor(val name: String?) {
+class Component @PublishedApi internal constructor(val name: String?) {
 
     private val dependencies = mutableSetOf<Component>()
     private val scopeNames = mutableSetOf<String>()

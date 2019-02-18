@@ -31,32 +31,32 @@ const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : Fragment> T.fragmentComponent(
+inline fun <T : Fragment> T.fragmentComponent(
     name: String? = javaClass.simpleName + "Component",
     deferCreateEagerInstances: Boolean = false,
-    definition: ComponentDefinition? = null
+    definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addInstance(this@fragmentComponent)
-    definition?.invoke(this)
+    definition.invoke(this)
 }
 
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : Fragment> T.childFragmentComponent(
+inline fun <T : Fragment> T.childFragmentComponent(
     name: String? = javaClass.simpleName + "Component",
-    definition: ComponentDefinition? = null
+    definition: ComponentDefinition = {}
 ): Component = component(name) {
     scopeNames(CHILD_FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addInstance(this@childFragmentComponent)
-    definition?.invoke(this)
+    definition.invoke(this)
 }
 
 /**

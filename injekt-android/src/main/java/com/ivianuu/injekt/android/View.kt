@@ -16,32 +16,32 @@ const val CHILD_VIEW_SCOPE = "child_view_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : View> T.viewComponent(
+inline fun <T : View> T.viewComponent(
     name: String? = javaClass.simpleName + "Component",
     deferCreateEagerInstances: Boolean = false,
-    definition: ComponentDefinition? = null
+    definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addInstance(this@viewComponent)
-    definition?.invoke(this)
+    definition.invoke(this)
 }
 
 /**
  * Returns a [Component] with convenient configurations
  */
-fun <T : View> T.childViewComponent(
+inline fun <T : View> T.childViewComponent(
     name: String? = javaClass.simpleName + "Component",
-    definition: ComponentDefinition? = null
+    definition: ComponentDefinition = {}
 ): Component = component(name) {
     scopeNames(CHILD_VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addInstance(this@childViewComponent)
-    definition?.invoke(this)
+    definition.invoke(this)
 }
 
 /**

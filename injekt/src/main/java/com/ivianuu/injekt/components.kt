@@ -10,13 +10,13 @@ typealias ComponentDefinition = Component.() -> Unit
 /**
  * Returns a new [Component] and applies the [definition]
  */
-fun component(
+inline fun component(
     name: String? = null,
     deferCreateEagerInstances: Boolean = false,
-    definition: ComponentDefinition? = null
+    definition: ComponentDefinition = {}
 ): Component = Component(name)
     .apply {
-        definition?.invoke(this)
+        definition.invoke(this)
         if (!deferCreateEagerInstances) {
             createEagerInstances()
         }

@@ -6,7 +6,7 @@ import kotlin.reflect.KClass
 /**
  * A module is the container for bindings
  */
-class Module internal constructor(
+class Module @PublishedApi internal constructor(
     val name: String?,
     val scopeName: String?,
     val eager: Boolean?,
@@ -61,7 +61,7 @@ typealias ModuleDefinition = Module.() -> Unit
 /**
  * Defines a [Module]
  */
-fun module(
+inline fun module(
     name: String? = null,
     scopeName: String? = null,
     override: Boolean? = null,
@@ -140,7 +140,7 @@ fun Module.module(module: Module) {
 /**
  * Adds all bindings of module
  */
-fun Module.module(
+inline fun Module.module(
     name: String? = null,
     scopeName: String? = null,
     override: Boolean? = null,
