@@ -5,6 +5,8 @@ package com.ivianuu.injekt
  */
 object InjektPlugins {
 
+    private val componentExtensions = mutableSetOf<ComponentExtension>()
+
     /**
      * The factory finder
      */
@@ -14,6 +16,16 @@ object InjektPlugins {
      * The logger to use
      */
     var logger: Logger? = null
+
+    /**
+     * Adds the [extension]
+     */
+    fun addComponentExtension(extension: ComponentExtension) {
+        componentExtensions.add(extension)
+    }
+
+    internal fun getComponentExtensions(): Iterable<ComponentExtension> =
+        componentExtensions.toList()
 
 }
 

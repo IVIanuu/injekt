@@ -22,21 +22,34 @@ import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.injekt.common.componentBindingsExtension
 import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.modules
+import com.ivianuu.injekt.multibinding.getMap
+import com.ivianuu.injekt.multibinding.multiBindingExtension
+import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy { applicationComponent() }
+    override val component by lazy {
+        applicationComponent { modules(workerModule) }
+    }
 
     private val appDependency by inject<AppDependency>()
 
     override fun onCreate() {
         configureInjekt {
             androidLogger()
+            componentBindingsExtension()
+            multiBindingExtension()
+        }
+
+        component.getMap<KClass<out Worker>, Worker>("workers").forEach {
+            d { "got workers $it" }
         }
 
         d { "Injected app dependency $appDependency" }

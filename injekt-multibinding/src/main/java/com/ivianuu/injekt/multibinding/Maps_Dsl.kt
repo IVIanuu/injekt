@@ -23,8 +23,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrSet
 import com.ivianuu.injekt.withBinding
-import kotlin.collections.emptyMap
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
 import kotlin.reflect.KClass
 
@@ -35,9 +33,6 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
         mutableMapOf<String, MapBinding>()
     }[mapBinding.mapName] = mapBinding
-
-    module.declareMapBinding(mapBinding.mapName)
-
     return this
 }
 

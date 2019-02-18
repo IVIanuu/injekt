@@ -23,9 +23,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrSet
 import com.ivianuu.injekt.withBinding
-import kotlin.collections.Set
-import kotlin.collections.emptySet
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
 import kotlin.reflect.KClass
 
@@ -46,9 +43,6 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
         mutableMapOf<String, SetBinding>()
     }[setBinding.setName] = setBinding
-
-    module.declareSetBinding(setBinding.setName)
-
     return this
 }
 

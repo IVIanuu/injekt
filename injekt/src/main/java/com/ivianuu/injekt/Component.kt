@@ -13,13 +13,7 @@ class Component internal constructor(val name: String?) {
     private val instances = mutableMapOf<Key, Instance<*>>()
 
     init {
-        // implicitly add a binding for this component
-        addBinding(
-            Binding.createSingle(
-                type = Component::class,
-                definition = { this@Component }
-            )
-        )
+        notifyExtensions { it.onComponentInitialized(this) }
     }
 
     /**
@@ -42,10 +36,15 @@ class Component internal constructor(val name: String?) {
      * Adds all [Binding]s of the [modules]
      */
     fun modules(modules: Iterable<Module>) {
-        modules.forEach { module ->
-            InjektPlugins.logger?.info("$name load module ${module.name}")
-            module.bindings.forEach { addBinding(it.value) }
-        }
+        modules.forEach { addModule(it) }
+    }
+
+    /**
+     * Adds all binding of the [module]
+     */
+    fun addModule(module: Module) {
+        InjektPlugins.logger?.info("$name load module ${module.name}")
+        module.bindings.forEach { addBinding(it.value) }
     }
 
     /**
@@ -56,11 +55,6 @@ class Component internal constructor(val name: String?) {
     }
 
     /**
-     * Returns all direct dependencies of this component
-     */
-    fun getDependencies(): Set<Component> = dependencies
-
-    /**
      * Adds the [dependency] as a dependency
      */
     fun addDependency(dependency: Component) {
@@ -68,29 +62,35 @@ class Component internal constructor(val name: String?) {
             if (!this.dependencies.add(dependency)) {
                 throw error("Already added $dependency to $name")
             }
-
             InjektPlugins.logger?.info("$name Add dependency $dependency")
+
+            notifyExtensions { it.onDependencyAdded(this, dependency) }
         }
     }
+
+    /**
+     * Returns all direct dependencies of this component
+     */
+    fun getDependencies(): Set<Component> = dependencies
 
     /**
      * Adds all of [scopeNames] to this component
      */
     fun scopeNames(scopeNames: Iterable<String>) {
-        scopeNames.forEach { scopeName ->
-            if (!this.scopeNames.add(scopeName)) {
-                error("Scope name $scopeName was already added")
-            }
+        scopeNames.forEach { addScopeName(it) }
+    }
 
-            // implicitly add a binding for this component with the scope
-            addBinding(
-                Binding.createSingle(
-                    type = Component::class,
-                    name = scopeName,
-                    definition = { this@Component }
-                )
-            )
+    /**
+     * Adds the [scopeName]
+     */
+    fun addScopeName(scopeName: String) {
+        if (!this.scopeNames.add(scopeName)) {
+            error("Scope name $scopeName was already added")
         }
+
+        InjektPlugins.logger?.info("$name Add scope name $scopeName")
+
+        notifyExtensions { it.onScopeNameAdded(this, scopeName) }
     }
 
     /**
@@ -198,6 +198,8 @@ class Component internal constructor(val name: String?) {
                 logger.debug(msg)
             }
 
+            notifyExtensions { it.onBindingAdded(this, binding) }
+
             return@synchronized instance
         }
     }
@@ -226,4 +228,7 @@ class Component internal constructor(val name: String?) {
         return null
     }
 
+    private inline fun notifyExtensions(block: (ComponentExtension) -> Unit) {
+        InjektPlugins.getComponentExtensions().forEach(block)
+    }
 }
