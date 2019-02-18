@@ -52,6 +52,6 @@ class ComponentBindingExtension : ComponentExtension {
 /**
  * Adds the [ComponentBindingExtension]
  */
-fun InjektPlugins.componentBindingsExtension() {
+fun InjektPlugins.componentBindingExtension() {
     addComponentExtension(ComponentBindingExtension())
 }

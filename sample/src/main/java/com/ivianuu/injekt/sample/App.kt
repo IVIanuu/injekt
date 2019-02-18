@@ -22,7 +22,7 @@ import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.injekt.common.componentBindingsExtension
+import com.ivianuu.injekt.common.componentBindingExtension
 import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.modules
@@ -44,7 +44,7 @@ class App : Application(), InjektTrait {
     override fun onCreate() {
         configureInjekt {
             androidLogger()
-            componentBindingsExtension()
+            componentBindingExtension()
             multiBindingExtension()
         }
 
