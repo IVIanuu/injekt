@@ -12,10 +12,6 @@ class Component internal constructor(val name: String?) {
     private val bindings = mutableMapOf<Key, Binding<*>>()
     private val instances = mutableMapOf<Key, Instance<*>>()
 
-    init {
-        notifyExtensions { it.onComponentInitialized(this) }
-    }
-
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
      */
@@ -49,8 +45,6 @@ class Component internal constructor(val name: String?) {
                 throw error("Already added $dependency to $name")
             }
             InjektPlugins.logger?.info("$name Add dependency $dependency")
-
-            notifyExtensions { it.onDependencyAdded(this, dependency) }
         }
     }
 
@@ -68,8 +62,6 @@ class Component internal constructor(val name: String?) {
         }
 
         InjektPlugins.logger?.info("$name Add scope name $scopeName")
-
-        notifyExtensions { it.onScopeNameAdded(this, scopeName) }
     }
 
     /**
@@ -177,8 +169,6 @@ class Component internal constructor(val name: String?) {
                 logger.debug(msg)
             }
 
-            notifyExtensions { it.onBindingAdded(this, binding) }
-
             return@synchronized instance
         }
     }
@@ -207,7 +197,4 @@ class Component internal constructor(val name: String?) {
         return null
     }
 
-    private inline fun notifyExtensions(block: (ComponentExtension) -> Unit) {
-        InjektPlugins.getComponentExtensions().forEach(block)
-    }
 }

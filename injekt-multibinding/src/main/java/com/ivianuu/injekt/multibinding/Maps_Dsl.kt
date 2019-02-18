@@ -33,6 +33,9 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
         mutableMapOf<String, MapBinding>()
     }[mapBinding.mapName] = mapBinding
+
+    module.declareMapBinding(mapBinding.mapName)
+
     return this
 }
 

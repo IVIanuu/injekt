@@ -43,6 +43,9 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
         mutableMapOf<String, SetBinding>()
     }[setBinding.setName] = setBinding
+
+    module.declareSetBinding(setBinding.setName)
+
     return this
 }
 

@@ -37,16 +37,3 @@ var InjektPlugins.logger: Logger?
     set(value) {
         _logger = value
     }
-
-private val componentExtensions = mutableSetOf<ComponentExtension>()
-
-/**
- * Adds the [extension]
- */
-fun InjektPlugins.registerComponentExtension(extension: ComponentExtension) {
-    logger?.info("Registering extension: $extension")
-    componentExtensions.add(extension)
-}
-
-internal fun InjektPlugins.getComponentExtensions(): Iterable<ComponentExtension> =
-    componentExtensions.toList()
