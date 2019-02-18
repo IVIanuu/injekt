@@ -33,25 +33,11 @@ class Component internal constructor(val name: String?) {
     }
 
     /**
-     * Adds all [Binding]s of the [modules]
-     */
-    fun modules(modules: Iterable<Module>) {
-        modules.forEach { addModule(it) }
-    }
-
-    /**
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
         InjektPlugins.logger?.info("$name load module ${module.name}")
         module.bindings.forEach { addBinding(it.value) }
-    }
-
-    /**
-     * Adds all of [dependencies] as dependencies
-     */
-    fun dependencies(dependencies: Iterable<Component>) {
-        dependencies.forEach { addDependency(it) }
     }
 
     /**
@@ -72,13 +58,6 @@ class Component internal constructor(val name: String?) {
      * Returns all direct dependencies of this component
      */
     fun getDependencies(): Set<Component> = dependencies
-
-    /**
-     * Adds all of [scopeNames] to this component
-     */
-    fun scopeNames(scopeNames: Iterable<String>) {
-        scopeNames.forEach { addScopeName(it) }
-    }
 
     /**
      * Adds the [scopeName]

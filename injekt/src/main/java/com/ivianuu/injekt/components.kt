@@ -22,28 +22,54 @@ fun component(
         }
     }
 
-/** Calls trough [Component.modules] */
+
+/**
+ * Adds all [modules]
+ */
+fun Component.modules(modules: Iterable<Module>) {
+    modules.forEach { addModule(it) }
+}
+
+/**
+ * Adds all [modules]
+ */
 fun Component.modules(vararg modules: Module) {
-    modules(modules.asIterable())
+    modules.forEach { addModule(it) }
 }
 
-/** Calls trough [Component.dependencies] */
-fun Component.dependencies(vararg components: Component) {
-    dependencies(components.asIterable())
+/**
+ * Adds all [dependencies]
+ */
+fun Component.dependencies(dependencies: Iterable<Component>) {
+    dependencies.forEach { addDependency(it) }
 }
 
-/** Calls trough [Component.scopeNames] */
+/**
+ * Adds all [dependencies]
+ */
+fun Component.dependencies(vararg dependencies: Component) {
+    dependencies.forEach { addDependency(it) }
+}
+
+/**
+ * Adds all of [scopeNames]
+ */
+fun Component.scopeNames(scopeNames: Iterable<String>) {
+    scopeNames.forEach { addScopeName(it) }
+}
+
+/**
+ * Adds all [scopeNames]
+ */
 fun Component.scopeNames(vararg scopeNames: String) {
-    scopeNames(scopeNames.asIterable())
+    scopeNames.forEach { addScopeName(it) }
 }
 
 /**
  * Adds a [Binding] for the [instance]
  */
 fun <T : Any> Component.addInstance(instance: T) {
-    addBinding(
-        Binding.createFactory(instance::class) { instance }
-    )
+    addBinding(Binding.createFactory(instance::class) { instance })
 }
 
 /**
