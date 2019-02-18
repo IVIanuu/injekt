@@ -170,43 +170,6 @@ inline fun <T> Module.withBinding(
     factory<T>(type, UUID.randomUUID().toString()) { get(type, name) { it } } withContext body
 }
 
-/** Calls trough [Module.bindType] */
-inline fun <reified T, reified S> Module.bindType(
-    implementationName: String? = null
-) {
-    bindType<T, S>(T::class, S::class, implementationName)
-}
-
-/**
- * Adds a binding for [bindingType] to a existing binding
- */
-fun <T, S> Module.bindType(
-    bindingType: KClass<*>,
-    implementationType: KClass<*>,
-    implementationName: String? = null
-) {
-    withBinding<S>(implementationType, implementationName) { bindType(bindingType) }
-}
-
-/** Calls trough [Module.bindName] */
-inline fun <reified T> Module.bindName(
-    bindingName: String,
-    implementationName: String? = null
-) {
-    bindName<T>(bindingName, T::class, implementationName)
-}
-
-/**
- * Adds a binding for [bindingName] to a existing binding
- */
-fun <T> Module.bindName(
-    bindingName: String,
-    implementationType: KClass<*>,
-    implementationName: String? = null
-) {
-    withBinding<T>(implementationType, implementationName) { bindName(bindingName) }
-}
-
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)
 operator fun Module.plus(modules: Iterable<Module>): List<Module> = listOf(this) + modules
 operator fun Module.plus(modules: Array<Module>): List<Module> = listOf(this) + modules
