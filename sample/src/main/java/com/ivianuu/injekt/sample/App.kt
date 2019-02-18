@@ -25,19 +25,14 @@ import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.common.componentBindingExtension
 import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.multibinding.getMap
 import com.ivianuu.injekt.multibinding.multiBindingExtension
-import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy {
-        applicationComponent { modules(workerModule) }
-    }
+    override val component by lazy { applicationComponent() }
 
     private val appDependency by inject<AppDependency>()
 
@@ -46,10 +41,6 @@ class App : Application(), InjektTrait {
             androidLogger()
             componentBindingExtension()
             multiBindingExtension()
-        }
-
-        component.getMap<KClass<out Worker>, Worker>("workers").forEach {
-            d { "got workers $it" }
         }
 
         d { "Injected app dependency $appDependency" }

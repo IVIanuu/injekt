@@ -43,7 +43,8 @@ private val componentExtensions = mutableSetOf<ComponentExtension>()
 /**
  * Adds the [extension]
  */
-fun InjektPlugins.addComponentExtension(extension: ComponentExtension) {
+fun InjektPlugins.registerComponentExtension(extension: ComponentExtension) {
+    logger?.info("Registering extension: $extension")
     componentExtensions.add(extension)
 }
 
