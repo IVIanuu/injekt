@@ -23,6 +23,7 @@ import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InstanceCreationException
 import com.ivianuu.injekt.OverrideException
+import com.ivianuu.injekt.logger
 import org.mockito.Mockito
 
 /**
