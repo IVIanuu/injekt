@@ -22,6 +22,7 @@ import com.ivianuu.injekt.ComponentExtension
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.OverrideException
+import com.ivianuu.injekt.addComponentExtension
 import com.ivianuu.injekt.getOrDefault
 
 /**

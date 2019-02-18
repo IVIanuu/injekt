@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentExtension
 import com.ivianuu.injekt.InjektPlugins
+import com.ivianuu.injekt.addComponentExtension
 
 /**
  * A [ComponentExtension] which adds implicit bindings for each [Component] + scope names

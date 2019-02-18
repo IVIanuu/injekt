@@ -3,31 +3,7 @@ package com.ivianuu.injekt
 /**
  * Global configurations
  */
-object InjektPlugins {
-
-    private val componentExtensions = mutableSetOf<ComponentExtension>()
-
-    /**
-     * The factory finder
-     */
-    var factoryFinder: FactoryFinder = DefaultFactoryFinder()
-
-    /**
-     * The logger to use
-     */
-    var logger: Logger? = null
-
-    /**
-     * Adds the [extension]
-     */
-    fun addComponentExtension(extension: ComponentExtension) {
-        componentExtensions.add(extension)
-    }
-
-    internal fun getComponentExtensions(): Iterable<ComponentExtension> =
-        componentExtensions.toList()
-
-}
+object InjektPlugins
 
 /**
  * Defines inject configuration
@@ -40,3 +16,36 @@ typealias InjektDefinition = InjektPlugins.() -> Unit
 fun configureInjekt(definition: InjektDefinition) {
     InjektPlugins.apply(definition)
 }
+
+private var _factoryFinder: FactoryFinder = DefaultFactoryFinder()
+/**
+ * The factory finder
+ */
+var InjektPlugins.factoryFinder: FactoryFinder
+    get() = _factoryFinder
+    set(value) {
+        _factoryFinder = value
+    }
+
+private var _logger: Logger? = null
+
+/**
+ * The logger to use
+ */
+var InjektPlugins.logger: Logger?
+    get() = _logger
+    set(value) {
+        _logger = value
+    }
+
+private val componentExtensions = mutableSetOf<ComponentExtension>()
+
+/**
+ * Adds the [extension]
+ */
+fun InjektPlugins.addComponentExtension(extension: ComponentExtension) {
+    componentExtensions.add(extension)
+}
+
+internal fun InjektPlugins.getComponentExtensions(): Iterable<ComponentExtension> =
+    componentExtensions.toList()

@@ -175,11 +175,6 @@ val testModule = module {
     single2 { "my_string" }
 
     bind<String> {
-        override()
-        eager()
-    }
-
-    bind<String> {
         factory { "my_string" }
         override()
         attributes("key" to "value")

@@ -20,6 +20,7 @@ import android.util.Log
 import com.ivianuu.injekt.INJEKT_TAG
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Logger
+import com.ivianuu.injekt.logger
 
 /**
  * [Logger] for android

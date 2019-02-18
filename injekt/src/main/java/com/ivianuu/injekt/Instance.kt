@@ -1,7 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.InjektPlugins.logger
-
 /**
  * The [Instance] of an [Binding]
  */
@@ -55,7 +53,7 @@ class FactoryInstance<T>(
         parameters: ParametersDefinition?
     ): T {
         val component = this.component ?: component
-        logger?.info("${component.name} Create instance $binding")
+        InjektPlugins.logger?.info("${component.name} Create instance $binding")
         return create(component, parameters)
     }
 
@@ -82,10 +80,10 @@ class SingleInstance<T>(
         val value = _value
 
         return if (value != null) {
-            logger?.info("${component.name} Return existing instance $binding")
+            InjektPlugins.logger?.info("${component.name} Return existing instance $binding")
             return value
         } else {
-            logger?.info("${component.name} Create instance $binding")
+            InjektPlugins.logger?.info("${component.name} Create instance $binding")
             create(component, parameters).also { _value = it }
         }
     }

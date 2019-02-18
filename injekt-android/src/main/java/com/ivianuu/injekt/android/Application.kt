@@ -23,7 +23,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.addInstance
-import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.common.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
