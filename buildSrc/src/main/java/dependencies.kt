@@ -23,7 +23,7 @@ object Versions {
     const val androidxFragment = "1.0.0"
     const val bintray = "1.8.4"
     const val junit = "4.12"
-    const val kotlin = "1.3.20"
+    const val kotlin = "1.3.21"
     const val mavenGradle = "2.1"
     const val mockito = "2.23.4"
     const val processingX = "0.0.1-dev-1"
