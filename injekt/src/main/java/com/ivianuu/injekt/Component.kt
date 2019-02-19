@@ -57,11 +57,13 @@ class Component @PublishedApi internal constructor(val name: String?) {
      * Adds the [scopeName]
      */
     fun addScopeName(scopeName: String) {
-        if (!this.scopeNames.add(scopeName)) {
-            error("Scope name $scopeName was already added")
-        }
+        synchronized(this) {
+            if (!this.scopeNames.add(scopeName)) {
+                error("Scope name $scopeName was already added")
+            }
 
-        InjektPlugins.logger?.info("$name Add scope name $scopeName")
+            InjektPlugins.logger?.info("$name Add scope name $scopeName")
+        }
     }
 
     /**
@@ -116,9 +118,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
 
             for (dependency in dependencies) {
                 instance = dependency.findInstance<T>(key, false)
-                if (instance != null) {
-                    return@synchronized instance
-                }
+                if (instance != null) return@synchronized instance
             }
 
             // we search for generated factories as a last resort
