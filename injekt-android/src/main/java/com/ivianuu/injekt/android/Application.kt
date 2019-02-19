@@ -22,8 +22,9 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.addInstance
+
 import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.common.addInstance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
@@ -42,8 +43,8 @@ inline fun <T : Application> T.applicationComponent(
     definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(APPLICATION_SCOPE)
-    addInstance(this@applicationComponent)
     modules(applicationModule())
+    addInstance(this@applicationComponent)
     definition.invoke(this)
 }
 

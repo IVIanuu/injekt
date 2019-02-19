@@ -21,7 +21,8 @@ import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.addInstance
+import com.ivianuu.injekt.common.addInstance
+
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.scopeNames

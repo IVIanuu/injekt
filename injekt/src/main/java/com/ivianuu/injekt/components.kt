@@ -66,13 +66,6 @@ fun Component.scopeNames(vararg scopeNames: String) {
 }
 
 /**
- * Adds a [Binding] for the [instance]
- */
-fun <T : Any> Component.addInstance(instance: T) {
-    addBinding(Binding.createFactory(instance::class) { instance })
-}
-
-/**
  * Returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.get(
