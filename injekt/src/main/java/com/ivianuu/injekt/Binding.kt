@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * Represents a dependency binding.
  */
-data class Binding<T> private constructor(
+data class Binding<T>(
     val key: Key,
     val type: KClass<*>,
     val name: String?,
@@ -27,30 +27,28 @@ data class Binding<T> private constructor(
         return "$kindString[$nameString$typeString$attributesString$optionsString]"
     }
 
-    companion object {
-
-        fun <T> create(
-            type: KClass<*>,
-            name: String? = null,
-            kind: String?,
-            instanceFactory: InstanceFactory,
-            scopeName: String? = null,
-            attributes: Attributes = Attributes(),
-            override: Boolean = false,
-            eager: Boolean = false,
-            definition: Definition<T>
-        ): Binding<T> {
-            return Binding(
-                Key(type, name), type, name, kind, instanceFactory,
-                definition, attributes, scopeName, override, eager
-            )
-        }
-
-    }
+    companion object
 }
 
 const val FACTORY_KIND = "FACTORY"
 const val SINGLE_KIND = "SINGLE"
+
+fun <T> Binding.Companion.create(
+    type: KClass<*>,
+    name: String? = null,
+    kind: String?,
+    instanceFactory: InstanceFactory,
+    scopeName: String? = null,
+    attributes: Attributes = Attributes(),
+    override: Boolean = false,
+    eager: Boolean = false,
+    definition: Definition<T>
+): Binding<T> {
+    return Binding(
+        Key(type, name), type, name, kind, instanceFactory,
+        definition, attributes, scopeName, override, eager
+    )
+}
 
 fun <T> Binding.Companion.createFactory(
     type: KClass<*>,

@@ -51,6 +51,8 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
     private fun imports(): Set<String> {
         val imports = mutableSetOf<String>()
 
+        imports.add("create")
+
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
         }

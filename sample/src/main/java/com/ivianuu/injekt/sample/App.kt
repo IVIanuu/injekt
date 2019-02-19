@@ -25,8 +25,6 @@ import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.configureInjekt
 import com.ivianuu.injekt.inject
 
-class StringProvider
-
 /**
  * @author Manuel Wrage (IVIanuu)
  */

@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import kotlin.reflect.KClass
 
