@@ -21,12 +21,13 @@ import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Raw
+import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 
 @Single("name", APPLICATION_SCOPE, true, true)
 class DummyDep
 
-@Factory
+@Reusable
 class DummyDep2
 
 @Single

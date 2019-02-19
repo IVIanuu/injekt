@@ -18,7 +18,9 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.FactoryInstanceFactory
 import com.ivianuu.injekt.SingleInstanceFactory
+import com.ivianuu.injekt.common.ReusableInstanceFactory
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asClassName
 
 data class BindingDescriptor(
@@ -35,14 +37,29 @@ data class BindingDescriptor(
         FACTORY {
             override val instanceFactory = FactoryInstanceFactory::class.asClassName()
             override val kindConstantName = "FACTORY_KIND"
+            override fun addImport(file: FileSpec.Builder) {
+                file.addImport("com.ivianuu.injekt", kindConstantName)
+            }
+        },
+        REUSABLE {
+            override val instanceFactory = ReusableInstanceFactory::class.asClassName()
+            override val kindConstantName = "REUSABLE_KIND"
+            override fun addImport(file: FileSpec.Builder) {
+                file.addImport("com.ivianuu.injekt.common", kindConstantName)
+            }
         },
         SINGLE {
             override val instanceFactory = SingleInstanceFactory::class.asClassName()
             override val kindConstantName = "SINGLE_KIND"
+
+            override fun addImport(file: FileSpec.Builder) {
+                file.addImport("com.ivianuu.injekt", kindConstantName)
+            }
         };
 
         abstract val instanceFactory: ClassName
         abstract val kindConstantName: String
 
+        abstract fun addImport(file: FileSpec.Builder)
     }
 }

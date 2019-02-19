@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    id("java-library")
-    id("kotlin")
-    id("kotlin-kapt")
-}
+package com.ivianuu.injekt.annotations
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
-
-dependencies {
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-annotations"))
-
-    implementation(Deps.processingX)
-    kapt(Deps.processingX)
-}
+/**
+ * Generates a factory for the annotated type
+ */
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Reusable(
+    val name: String = "",
+    val scopeName: String = "",
+    val override: Boolean = false
+)

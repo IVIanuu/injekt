@@ -22,6 +22,7 @@ import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Raw
+import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.processingx.ProcessingEnvHolder
 import com.ivianuu.processingx.ProcessingStep
@@ -53,6 +54,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
         Name::class.java,
         Param::class.java,
         Raw::class.java,
+        Reusable::class.java,
         Single::class.java
     )
 
@@ -62,11 +64,14 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
         validateRawUsages(elementsByAnnotation[Raw::class.java])
 
         val bindingElements = (elementsByAnnotation[Factory::class.java]
+                + elementsByAnnotation[Reusable::class.java]
                 + elementsByAnnotation[Single::class.java])
 
         validateOnlyOneKindAnnotation(bindingElements)
 
-        (elementsByAnnotation[Factory::class.java] + elementsByAnnotation[Single::class.java])
+        (elementsByAnnotation[Factory::class.java] +
+                elementsByAnnotation[Reusable::class.java] +
+                elementsByAnnotation[Single::class.java])
             .filterIsInstance<TypeElement>()
             .mapNotNull { createBindingDescriptor(it) }
             .map { FactoryGenerator(it) }
@@ -79,12 +84,15 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
     private fun createBindingDescriptor(element: TypeElement): BindingDescriptor? {
         val kind = if (element.hasAnnotation<Single>()) {
             BindingDescriptor.Kind.SINGLE
+        } else if (element.hasAnnotation<Reusable>()) {
+            BindingDescriptor.Kind.REUSABLE
         } else {
             BindingDescriptor.Kind.FACTORY
         }
 
         val annotation = when (kind) {
             BindingDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
+            BindingDescriptor.Kind.REUSABLE -> element.getAnnotationMirror<Reusable>()
             BindingDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
@@ -185,12 +193,13 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             .filter {
                 val type = it.enclosingElement.enclosingElement
                 !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Reusable>()
                         && !type.hasAnnotation<Single>()
             }
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "@Name annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    "@Name annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
                     it
                 )
             }
@@ -201,12 +210,13 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             .filter {
                 val type = it.enclosingElement.enclosingElement
                 !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Reusable>()
                         && !type.hasAnnotation<Single>()
             }
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "@Param annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    "@Param annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
                     it
                 )
             }
@@ -217,12 +227,13 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             .filter {
                 val type = it.enclosingElement.enclosingElement
                 !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Reusable>()
                         && !type.hasAnnotation<Single>()
             }
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "@Raw annotation should only be used inside a class which is annotated with @Single or @Factory",
+                    "@Raw annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
                     it
                 )
             }
@@ -234,7 +245,8 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "It's not possible to annotate classes with @Factory AND @Single", it
+                    "Annotated class can only be annotated with one off @Factory, @Reusable or @Single",
+                    it
                 )
             }
     }

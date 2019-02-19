@@ -41,6 +41,8 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
             file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
         }
 
+        descriptor.kind.addImport(file)
+
         file.addType(factory())
 
         return file.build()
@@ -60,8 +62,6 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
             imports.add("getProvider")
         }
-
-        imports.add(descriptor.kind.kindConstantName)
 
         return imports
     }
