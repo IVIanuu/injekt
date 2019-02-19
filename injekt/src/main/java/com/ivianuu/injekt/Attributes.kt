@@ -19,25 +19,30 @@ package com.ivianuu.injekt
 /**
  * Attributes for [Binding]s
  */
-data class Attributes(private val data: MutableMap<String, Any> = mutableMapOf()) {
+data class Attributes(private val _entries: MutableMap<String, Any> = mutableMapOf()) {
+
+    /**
+     * All entries
+     */
+    val entries: Map<String, Any> get() = _entries
 
     /**
      * Whether or not contains a value for [key]
      */
-    fun contains(key: String): Boolean = data.contains(key)
+    fun contains(key: String): Boolean = _entries.contains(key)
 
     /**
      * Sets the value for [key] to [value]
      */
     operator fun <T> set(key: String, value: T) {
-        data[key] = value as Any
+        _entries[key] = value as Any
     }
 
     /**
      * Returns the value for [key]
      */
     @Suppress("UNCHECKED_CAST")
-    operator fun <T> get(key: String): T? = data[key] as? T
+    operator fun <T> get(key: String): T? = _entries[key] as? T
 
 }
 
