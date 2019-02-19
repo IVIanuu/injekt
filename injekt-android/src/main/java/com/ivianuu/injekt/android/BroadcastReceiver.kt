@@ -37,7 +37,7 @@ inline fun <T : BroadcastReceiver> T.receiverComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, deferCreateEagerInstances) {
+): Component = component(name, createEagerInstances) {
     scopeNames(RECEIVER_SCOPE)
     getApplicationComponentOrNull(context)?.let { dependencies(it) }
     addInstance(this@receiverComponent)

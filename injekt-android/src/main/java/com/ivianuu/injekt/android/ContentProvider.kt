@@ -35,7 +35,7 @@ inline fun <T : ContentProvider> T.contentProviderComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, deferCreateEagerInstances) {
+): Component = component(name, createEagerInstances) {
     scopeNames(CONTENT_PROVIDER_SCOPE)
     getApplicationComponentOrNull()?.let { dependencies(it) }
     addInstance(this@contentProviderComponent)

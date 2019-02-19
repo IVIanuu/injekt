@@ -35,7 +35,7 @@ inline fun <T : Activity> T.activityComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, deferCreateEagerInstances) {
+): Component = component(name, createEagerInstances) {
     scopeNames(ACTIVITY_SCOPE)
     getApplicationComponentOrNull()?.let { dependencies(it) }
     addInstance(this@activityComponent)

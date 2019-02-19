@@ -21,7 +21,7 @@ inline fun <T : View> T.viewComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, deferCreateEagerInstances) {
+): Component = component(name, createEagerInstances) {
     scopeNames(VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()

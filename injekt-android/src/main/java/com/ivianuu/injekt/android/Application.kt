@@ -41,7 +41,7 @@ inline fun <T : Application> T.applicationComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, deferCreateEagerInstances) {
+): Component = component(name, createEagerInstances) {
     scopeNames(APPLICATION_SCOPE)
     modules(applicationModule())
     addInstance(this@applicationComponent)

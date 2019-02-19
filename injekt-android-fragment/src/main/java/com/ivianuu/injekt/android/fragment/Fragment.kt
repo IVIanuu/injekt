@@ -36,7 +36,7 @@ inline fun <T : Fragment> T.fragmentComponent(
     name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, deferCreateEagerInstances) {
+): Component = component(name, createEagerInstances) {
     scopeNames(FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
