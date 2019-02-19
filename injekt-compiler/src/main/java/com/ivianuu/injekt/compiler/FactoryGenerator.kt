@@ -61,6 +61,8 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
             imports.add("getProvider")
         }
 
+        imports.add(descriptor.kind.kindConstantName)
+
         return imports
     }
 
@@ -106,7 +108,8 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                             "return %T.create(" +
                                     "%T::class, " +
                                     "${if (descriptor.name != null) "\"${descriptor.name}\"" else "null"}, " +
-                                    "Binding.Kind.${descriptor.kind.name}, " +
+                                    "${descriptor.kind.kindConstantName}, " +
+                                    "%T, " +
                                     "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +
                                     "%T(), " +
                                     "${descriptor.override}, " +
@@ -115,6 +118,7 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                                     ")",
                             Binding::class,
                             descriptor.target,
+                            descriptor.kind.instanceFactory,
                             Attributes::class,
                             descriptor.target
                         )

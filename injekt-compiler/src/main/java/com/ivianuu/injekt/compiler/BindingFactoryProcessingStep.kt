@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
@@ -79,14 +78,14 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
 
     private fun createBindingDescriptor(element: TypeElement): BindingDescriptor? {
         val kind = if (element.hasAnnotation<Single>()) {
-            Binding.Kind.SINGLE
+            BindingDescriptor.Kind.SINGLE
         } else {
-            Binding.Kind.FACTORY
+            BindingDescriptor.Kind.FACTORY
         }
 
         val annotation = when (kind) {
-            Binding.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            Binding.Kind.SINGLE -> element.getAnnotationMirror<Single>()
+            BindingDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
+            BindingDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
         var name: String? = annotation["name"].value as String

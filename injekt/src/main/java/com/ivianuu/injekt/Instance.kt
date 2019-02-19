@@ -3,22 +3,27 @@ package com.ivianuu.injekt
 /**
  * The [Instance] of an [Binding]
  */
-abstract class Instance<T>(val binding: Binding<T>) {
+interface Instance<T> {
+
+    /**
+     * The binding of this instance
+     */
+    val binding: Binding<T>
 
     /**
      * Whether or not this instance is created
      */
-    abstract val isCreated: Boolean
+    val isCreated: Boolean
 
     /**
      * Returns a instance of [T]
      */
-    abstract fun get(
+    fun get(
         component: Component,
         parameters: ParametersDefinition?
     ): T
 
-    protected open fun create(
+    fun create(
         component: Component,
         parameters: ParametersDefinition?
     ): T {
@@ -41,9 +46,9 @@ abstract class Instance<T>(val binding: Binding<T>) {
  * A [Instance] which creates a new value on every [get] call
  */
 class FactoryInstance<T>(
-    binding: Binding<T>,
+    override val binding: Binding<T>,
     val component: Component?
-) : Instance<T>(binding) {
+) : Instance<T> {
 
     override val isCreated: Boolean
         get() = false
@@ -60,12 +65,20 @@ class FactoryInstance<T>(
 }
 
 /**
+ * Factory for [FactoryInstance]s
+ */
+object FactoryInstanceFactory : InstanceFactory {
+    override fun <T> create(binding: Binding<T>, component: Component?): Instance<T> =
+        FactoryInstance(binding, component)
+}
+
+/**
  * A [Instance] which creates the value 1 time per [Component] and caches the result
  */
 class SingleInstance<T>(
-    binding: Binding<T>,
+    override val binding: Binding<T>,
     val component: Component?
-) : Instance<T>(binding) {
+) : Instance<T> {
 
     private var _value: T? = null
 
@@ -88,4 +101,12 @@ class SingleInstance<T>(
         }
     }
 
+}
+
+/**
+ * Factory for [SingleInstance]s
+ */
+object SingleInstanceFactory : InstanceFactory {
+    override fun <T> create(binding: Binding<T>, component: Component?): Instance<T> =
+        SingleInstance(binding, component)
 }

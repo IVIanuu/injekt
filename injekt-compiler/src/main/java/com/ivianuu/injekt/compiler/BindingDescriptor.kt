@@ -16,16 +16,33 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.FactoryInstanceFactory
+import com.ivianuu.injekt.SingleInstanceFactory
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.asClassName
 
 data class BindingDescriptor(
     val target: ClassName,
     val factoryName: ClassName,
-    val kind: Binding.Kind,
+    val kind: Kind,
     val name: String?,
     val scopeName: String?,
     val override: Boolean,
     val eager: Boolean,
     val constructorParams: List<ParamDescriptor>
-)
+) {
+    enum class Kind {
+        FACTORY {
+            override val instanceFactory = FactoryInstanceFactory::class.asClassName()
+            override val kindConstantName = "FACTORY_KIND"
+        },
+        SINGLE {
+            override val instanceFactory = SingleInstanceFactory::class.asClassName()
+            override val kindConstantName = "SINGLE_KIND"
+        };
+
+        abstract val instanceFactory: ClassName
+        abstract val kindConstantName: String
+
+    }
+}

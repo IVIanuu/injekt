@@ -9,7 +9,8 @@ data class Binding<T> private constructor(
     val key: Key,
     val type: KClass<*>,
     val name: String?,
-    val kind: Kind,
+    val kind: String?,
+    val instanceFactory: InstanceFactory,
     val definition: Definition<T>,
     val attributes: Attributes,
     val scopeName: String?,
@@ -18,7 +19,7 @@ data class Binding<T> private constructor(
 ) {
 
     override fun toString(): String {
-        val kindString = kind.toString()
+        val kindString = kind ?: "UNKNOWN_KIND"
         val nameString = name?.let { "name:'$name', " } ?: ""
         val typeString = "type:'${type.java.name}'"
         val attributesString = "attributes: '$attributes'"
@@ -26,35 +27,13 @@ data class Binding<T> private constructor(
         return "$kindString[$nameString$typeString$attributesString$optionsString]"
     }
 
-    enum class Kind { FACTORY, SINGLE }
-
     companion object {
-
-        fun <T> createFactory(
-            type: KClass<*>,
-            name: String? = null,
-            scopeName: String? = null,
-            attributes: Attributes = Attributes(),
-            override: Boolean = false,
-            definition: Definition<T>
-        ): Binding<T> =
-            create(type, name, Kind.FACTORY, scopeName, attributes, override, false, definition)
-
-        fun <T> createSingle(
-            type: KClass<*>,
-            name: String? = null,
-            scopeName: String? = null,
-            attributes: Attributes = Attributes(),
-            override: Boolean = false,
-            eager: Boolean = false,
-            definition: Definition<T>
-        ): Binding<T> =
-            create(type, name, Kind.SINGLE, scopeName, attributes, override, eager, definition)
 
         fun <T> create(
             type: KClass<*>,
             name: String? = null,
-            kind: Kind,
+            kind: String?,
+            instanceFactory: InstanceFactory,
             scopeName: String? = null,
             attributes: Attributes = Attributes(),
             override: Boolean = false,
@@ -62,13 +41,43 @@ data class Binding<T> private constructor(
             definition: Definition<T>
         ): Binding<T> {
             return Binding(
-                Key(type, name), type, name, kind,
+                Key(type, name), type, name, kind, instanceFactory,
                 definition, attributes, scopeName, override, eager
             )
         }
 
     }
 }
+
+const val FACTORY_KIND = "FACTORY"
+const val SINGLE_KIND = "SINGLE"
+
+fun <T> Binding.Companion.createFactory(
+    type: KClass<*>,
+    name: String? = null,
+    scopeName: String? = null,
+    attributes: Attributes = Attributes(),
+    override: Boolean = false,
+    definition: Definition<T>
+): Binding<T> =
+    Binding.create(
+        type, name, FACTORY_KIND, FactoryInstanceFactory,
+        scopeName, attributes, override, false, definition
+    )
+
+fun <T> Binding.Companion.createSingle(
+    type: KClass<*>,
+    name: String? = null,
+    scopeName: String? = null,
+    attributes: Attributes = Attributes(),
+    override: Boolean = false,
+    eager: Boolean = false,
+    definition: Definition<T>
+): Binding<T> =
+    Binding.create(
+        type, name, SINGLE_KIND, SingleInstanceFactory,
+        scopeName, attributes, override, eager, definition
+    )
 
 /**
  * Defines a [Binding]

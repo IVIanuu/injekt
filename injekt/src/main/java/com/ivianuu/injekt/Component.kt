@@ -181,10 +181,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
             null
         }
 
-        return when (binding.kind) {
-            Binding.Kind.FACTORY -> FactoryInstance(binding, component)
-            Binding.Kind.SINGLE -> SingleInstance(binding, component)
-        }
+        return binding.instanceFactory.create(binding, component)
     }
 
     private fun findComponentForScope(scopeName: String): Component? {

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.sample.test
 
+/**
 import com.ivianuu.injekt.Attributes
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
@@ -28,29 +29,29 @@ import com.ivianuu.injekt.sample.AppDependency
 import kotlin.reflect.KClass
 
 class BindingBuilder<T>(
-    val type: KClass<*>,
-    val name: String? = null
+val type: KClass<*>,
+val name: String? = null
 ) {
 
-    var kind: Binding.Kind? = null
-    var definition: Definition<T>? = null
-    val attributes = Attributes()
-    var scopeName: String? = null
-    var override = false
-    var eager = false
+var kind: Binding.Kind? = null
+var definition: Definition<T>? = null
+val attributes = Attributes()
+var scopeName: String? = null
+var override = false
+var eager = false
 
-    fun build(): Binding<T> {
-        return Binding.create(
-            type,
-            name,
-            kind ?: error("kind must be specified"),
-            scopeName,
-            attributes,
-            override,
-            eager,
-            definition ?: error("definition must be specified")
-        )
-    }
+fun build(): Binding<T> {
+return Binding.create(
+type,
+name,
+kind ?: error("kind must be specified"),
+scopeName,
+attributes,
+override,
+eager,
+definition ?: error("definition must be specified")
+)
+}
 
 }
 
@@ -139,32 +140,32 @@ fun BindingBuilder<*>.bindIntoSet(setName: String, override: Boolean = false) {
 }
 
 inline fun <reified T> Module.bind(name: String? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
-    return declare(BindingBuilder<T>(T::class, name).apply(body).build())
+return declare(BindingBuilder<T>(T::class, name).apply(body).build())
 }
 
 inline fun <reified T> Module.bindSingle(name: String? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
-    return bind(name) {
-        kind(Binding.Kind.SINGLE)
-        body()
-    }
+return bind(name) {
+kind(Binding.Kind.SINGLE)
+body()
+}
 }
 
 /**
  * Provides scoped dependency which will be created once for each component
- */
+*/
 inline fun <reified T> Module.single2(
-    name: String? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    noinline definition: Definition<T>
+name: String? = null,
+scopeName: String? = null,
+override: Boolean = false,
+eager: Boolean = false,
+noinline definition: Definition<T>
 ): BindingContext<T> {
-    return bind(name) {
-        single(definition)
-        scopeName(scopeName)
-        override(override)
-        eager(eager)
-    }
+return bind(name) {
+single(definition)
+scopeName(scopeName)
+override(override)
+eager(eager)
+}
 }
 
 //
@@ -172,29 +173,29 @@ inline fun <reified T> Module.single2(
 //
 
 val testModule = module {
-    single2 { "my_string" }
+single2 { "my_string" }
 
-    bind<String> {
-        factory { "my_string" }
-        override()
-        attributes("key" to "value")
-        bindName("alias")
-        bindIntoMap("map_name", Any::class)
-        bindType<CharSequence>()
-    }
-
-    bind<AppDependency>("my_name") {
-        single { AppDependency(get()) }
-        scopeName(APPLICATION_SCOPE)
-        override()
-        eager()
-        bindIntoSet("my_set")
-        bindTypes(Any::class)
-    }
-
-    bind<Int> {
-        single { 0 }
-        bindNames("name_one")
-        attribute("my_key", "my_value")
-    }
+bind<String> {
+factory { "my_string" }
+override()
+attributes("key" to "value")
+bindName("alias")
+bindIntoMap("map_name", Any::class)
+bindType<CharSequence>()
 }
+
+bind<AppDependency>("my_name") {
+single { AppDependency(get()) }
+scopeName(APPLICATION_SCOPE)
+override()
+eager()
+bindIntoSet("my_set")
+bindTypes(Any::class)
+}
+
+bind<Int> {
+single { 0 }
+bindNames("name_one")
+attribute("my_key", "my_value")
+}
+}*/
