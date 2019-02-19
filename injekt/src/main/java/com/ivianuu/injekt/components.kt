@@ -12,12 +12,12 @@ typealias ComponentDefinition = Component.() -> Unit
  */
 inline fun component(
     name: String? = null,
-    deferCreateEagerInstances: Boolean = false,
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = Component(name)
     .apply {
         definition.invoke(this)
-        if (!deferCreateEagerInstances) {
+        if (createEagerInstances) {
             createEagerInstances()
         }
     }

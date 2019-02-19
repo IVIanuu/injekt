@@ -33,7 +33,7 @@ const val CONTENT_PROVIDER_SCOPE = "content_provider_scope"
  */
 inline fun <T : ContentProvider> T.contentProviderComponent(
     name: String? = javaClass.simpleName + "Component",
-    deferCreateEagerInstances: Boolean = false,
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(CONTENT_PROVIDER_SCOPE)

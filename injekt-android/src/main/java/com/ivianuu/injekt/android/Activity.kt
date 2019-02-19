@@ -33,7 +33,7 @@ const val ACTIVITY_SCOPE = "activity_scope"
  */
 inline fun <T : Activity> T.activityComponent(
     name: String? = javaClass.simpleName + "Component",
-    deferCreateEagerInstances: Boolean = false,
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(ACTIVITY_SCOPE)

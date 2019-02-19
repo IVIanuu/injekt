@@ -39,7 +39,7 @@ const val APPLICATION_SCOPE = "application_scope"
  */
 inline fun <T : Application> T.applicationComponent(
     name: String? = javaClass.simpleName + "Component",
-    deferCreateEagerInstances: Boolean = false,
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(APPLICATION_SCOPE)

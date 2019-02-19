@@ -42,7 +42,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
     fun addDependency(dependency: Component) {
         synchronized(this) {
             if (!this.dependencies.add(dependency)) {
-                throw error("Already added $dependency to $name")
+                error("Already added $dependency to $name")
             }
             InjektPlugins.logger?.info("$name Add dependency $dependency")
         }

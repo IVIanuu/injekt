@@ -19,7 +19,7 @@ const val CHILD_VIEW_SCOPE = "child_view_scope"
  */
 inline fun <T : View> T.viewComponent(
     name: String? = javaClass.simpleName + "Component",
-    deferCreateEagerInstances: Boolean = false,
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(VIEW_SCOPE)

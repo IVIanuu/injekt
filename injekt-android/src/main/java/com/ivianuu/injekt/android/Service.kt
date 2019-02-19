@@ -33,7 +33,7 @@ const val SERVICE_SCOPE = "service_scope"
  */
 inline fun <T : Service> T.serviceComponent(
     name: String? = javaClass.simpleName + "Component",
-    deferCreateEagerInstances: Boolean = false,
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(name, deferCreateEagerInstances) {
     scopeNames(SERVICE_SCOPE)
