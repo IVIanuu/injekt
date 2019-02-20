@@ -42,8 +42,7 @@ class DefaultFactoryFinder : FactoryFinder {
         if (failedTypes.contains(type)) return null
 
         return try {
-            val factoryName = type.java.name.replace("\$", "_") + "_Factory"
-            val factoryType = Class.forName(factoryName)
+            val factoryType = Class.forName(type.java.name + "__Factory")
             val factory = factoryType.newInstance() as BindingFactory<T>
             factories[type] = factory
             InjektPlugins.logger?.info("Found binding factory for $type")

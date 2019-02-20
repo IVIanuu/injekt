@@ -31,7 +31,6 @@ import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
 import com.ivianuu.processingx.getOrNull
-import com.ivianuu.processingx.getPackage
 import com.ivianuu.processingx.hasAnnotation
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.typeUtils
@@ -115,9 +114,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
 
         val factoryName = ClassName(
             targetName.packageName,
-            element.qualifiedName.toString().substring(
-                element.enclosingElement.getPackage().qualifiedName.toString().length + 1
-            ).replace('.', '_') + "_Factory"
+            element.simpleName.toString() + "__Factory"
         )
 
         return BindingDescriptor(
