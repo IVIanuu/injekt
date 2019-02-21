@@ -44,8 +44,9 @@ class Component @PublishedApi internal constructor(val name: String?) {
             if (!this.dependencies.add(dependency)) {
                 error("Already added $dependency to $name")
             }
-            InjektPlugins.logger?.info("$name Add dependency $dependency")
         }
+
+        InjektPlugins.logger?.info("$name Add dependency $dependency")
     }
 
     /**
@@ -61,9 +62,8 @@ class Component @PublishedApi internal constructor(val name: String?) {
             if (!this.scopeNames.add(scopeName)) {
                 error("Scope name $scopeName was already added")
             }
-
-            InjektPlugins.logger?.info("$name Add scope name $scopeName")
         }
+        InjektPlugins.logger?.info("$name Add scope name $scopeName")
     }
 
     /**
