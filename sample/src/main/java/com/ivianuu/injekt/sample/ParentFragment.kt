@@ -36,10 +36,12 @@ class ParentFragment : Fragment(), InjektTrait {
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
+    private val parentFragmentDependency by inject<ParentFragmentDependency>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         d { "Injected app dependency $appDependency" }
         d { "Injected main activity dependency $mainActivityDependency" }
+        d { "Injected parent fragment dependency $parentFragmentDependency" }
 
         super.onCreate(savedInstanceState)
 
