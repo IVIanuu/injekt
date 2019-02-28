@@ -31,7 +31,7 @@ import kotlin.reflect.KClass
  */
 infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
-        mutableMapOf<String, MapBinding>()
+        hashMapOf<String, MapBinding>()
     }[mapBinding.mapName] = mapBinding
 
     module.declareMapBinding(mapBinding.mapName)

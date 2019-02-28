@@ -41,7 +41,7 @@ fun Module.setBinding(setName: String) {
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
-        mutableMapOf<String, SetBinding>()
+        hashMapOf<String, SetBinding>()
     }[setBinding.setName] = setBinding
 
     module.declareSetBinding(setBinding.setName)

@@ -18,7 +18,7 @@ internal fun Module.declareMapBinding(mapName: String) {
                     ?.get(mapName)?.let { binding to it }
             }
 
-        val existingKeys = mutableSetOf<Any>()
+        val existingKeys = linkedSetOf<Any>()
 
         // check overrides
         allMapBindings.forEach { (_, mapBinding) ->
@@ -43,7 +43,7 @@ internal fun Module.declareSetBinding(setName: String) {
                     ?.get(setName)?.let { binding to it }
             }
 
-        val existingKeys = mutableSetOf<Key>()
+        val existingKeys = linkedSetOf<Key>()
 
         // check overrides
         allSetBindings.forEach { (binding, setBinding) ->
@@ -62,7 +62,7 @@ internal fun Module.declareSetBinding(setName: String) {
 }
 
 internal fun Component.getAllBindings(): Set<Binding<*>> =
-    mutableSetOf<Binding<*>>().also { collectBindings(it) }
+    linkedSetOf<Binding<*>>().also { collectBindings(it) }
 
 internal fun Component.collectBindings(
     bindings: MutableSet<Binding<*>>
