@@ -14,82 +14,94 @@
  * limitations under the License.
  */
 
-/**
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
 import com.ivianuu.injekt.util.getBinding
+import com.ivianuu.injekt.util.getInstance
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class eagerTest {
 
-@Test
-fun testEagerSingleIsCreatedAtStart() {
-val component = component {
-modules(
-module {
-single(eager = true) { TestDep1() }
+    @Test
+    fun testEagerSingleIsCreatedAtStart() {
+        val component = component {
+            modules(
+                module {
+                    single(eager = true) { TestDep1() }
+                }
+            )
+        }
+
+        val binding = component.getBinding<TestDep1>()
+        val instance = component.getInstance<TestDep1>(
+            binding.type, binding.name
+        )
+
+        assertTrue(binding.eager)
+        assertTrue(instance.isCreated)
+    }
+
+    @Test
+    fun testNonEagerSingleIsNotCreatedAtStart() {
+        val component = component {
+            modules(
+                module {
+                    single(eager = false) { TestDep1() }
+                }
+            )
+        }
+
+        val binding = component.getBinding<TestDep1>()
+        val instance = component.getInstance<TestDep1>(
+            binding.type, binding.name
+        )
+
+        assertFalse(binding.eager)
+        assertFalse(instance.isCreated)
+    }
+
+    @Test
+    fun testFactoryIsNotCreatedAtStart() {
+        val component = component {
+            modules(
+                module {
+                    factory { TestDep1() }
+                }
+            )
+        }
+
+        val binding = component.getBinding<TestDep1>()
+        val instance = component.getInstance<TestDep1>(
+            binding.type, binding.name
+        )
+
+        assertFalse(binding.eager)
+        assertFalse(instance.isCreated)
+    }
+
+    @Test
+    fun testDeferEagerInstances() {
+        val component = component(createEagerInstances = false) {
+            modules(
+                module {
+                    single(eager = true) { TestDep1() }
+                }
+            )
+        }
+
+        val binding = component.getBinding<TestDep1>()
+        val instance = component.getInstance<TestDep1>(
+            binding.type, binding.name
+        )
+
+        assertFalse(instance.isCreated)
+
+        component.createEagerInstances()
+
+        assertTrue(instance.isCreated)
+    }
+
 }
-)
-}
-
-val binding = component.getBinding<TestDep1>()
-
-assertTrue(binding.eager)
-assertTrue(binding.instance.isCreated)
-}
-
-@Test
-fun testNonEagerSingleIsNotCreatedAtStart() {
-val component = component {
-modules(
-module {
-single(eager = false) { TestDep1() }
-}
-)
-}
-
-val binding = component.getBinding<TestDep1>()
-
-assertFalse(binding.eager)
-assertFalse(binding.instance.isCreated)
-}
-
-@Test
-fun testFactoryIsNotCreatedAtStart() {
-val component = component {
-modules(
-module {
-factory { TestDep1() }
-}
-)
-}
-
-val binding = component.getBinding<TestDep1>()
-
-assertFalse(binding.eager)
-assertFalse(binding.instance.isCreated)
-}
-
-@Test
-fun testDeferEagerInstances() {
-val component = component(createEagerInstances = false) {
-modules(
-module {
-single(eager = true) { TestDep1() }
-}
-)
-}
-
-val binding = component.getBinding<TestDep1>()
-
-assertFalse(binding.instance.isCreated)
-
-component.createEagerInstances()
-
-assertTrue(binding.instance.isCreated)
-}
-
-}*/
