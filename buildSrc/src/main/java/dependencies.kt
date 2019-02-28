@@ -26,7 +26,6 @@ object Versions {
     const val kotlin = "1.3.21"
     const val mavenGradle = "2.1"
     const val mockito = "2.23.4"
-    const val processingX = "0.0.1-dev-1"
 }
 
 object Deps {
@@ -47,6 +46,4 @@ object Deps {
         "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
 
     const val mockito = "org.mockito:mockito-inline:${Versions.mockito}"
-
-    const val processingX = "com.ivianuu.processingx:processingx:${Versions.processingX}"
 }

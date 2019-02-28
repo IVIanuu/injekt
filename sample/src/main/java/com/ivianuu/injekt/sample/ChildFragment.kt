@@ -24,15 +24,22 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.fragment.CHILD_FRAGMENT_SCOPE
 import com.ivianuu.injekt.android.fragment.childFragmentComponent
-import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
+import com.ivianuu.injekt.single
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class ChildFragment : Fragment(), InjektTrait {
 
-    override val component by lazy { childFragmentComponent() }
+    override val component by lazy {
+        childFragmentComponent {
+            modules(childFragmentModule)
+        }
+    }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -65,7 +72,12 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single(scopeName = CHILD_FRAGMENT_SCOPE)
+val childFragmentModule = module {
+    single(scopeName = CHILD_FRAGMENT_SCOPE) {
+        ChildFragmentDependency(get(), get(), get(), get())
+    }
+}
+
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
