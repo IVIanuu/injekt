@@ -32,7 +32,7 @@ import com.ivianuu.injekt.logger
 import java.lang.ref.WeakReference
 import kotlin.reflect.KClass
 
-const val REUSABLE_KIND = "REUSABLE"
+const val REUSABLE_KIND = "Reusable"
 
 /**
  * Creates a [Binding] for an reusable instance

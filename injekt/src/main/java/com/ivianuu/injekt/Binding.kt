@@ -43,22 +43,18 @@ data class Binding<T>(
     }
 
     override fun toString(): String {
-        return "${kind ?: "UNKNOWN"}(" +
+        return "${kind ?: "Unknown"}(" +
                 "type=${type.java.name}, " +
                 "name=$name, " +
                 "scopeName=$scopeName, " +
-                "attributes=$attributes, " +
-                "override=$override, " +
-                "eager=$eager, " +
-                "instanceFactory=${instanceFactory.javaClass.name}" +
                 ")"
     }
 
     companion object
 }
 
-const val FACTORY_KIND = "FACTORY"
-const val SINGLE_KIND = "SINGLE"
+const val FACTORY_KIND = "Factory"
+const val SINGLE_KIND = "Single"
 
 fun <T> Binding.Companion.create(
     type: KClass<*>,

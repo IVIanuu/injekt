@@ -31,7 +31,7 @@ import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import kotlin.reflect.KClass
 
-const val INSTANCE_KIND = "INSTANCE"
+const val INSTANCE_KIND = "Instance"
 
 private val noopDefinition: Definition<Any> = {}
 
