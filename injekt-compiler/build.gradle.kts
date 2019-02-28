@@ -15,22 +15,19 @@
  */
 
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
+    id("java-library")
+    id("kotlin")
     id("kotlin-kapt")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
 dependencies {
-    implementation(Deps.androidxAppCompat)
     implementation(project(":injekt"))
-    implementation(project(":injekt-android"))
-    implementation(project(":injekt-android-fragment"))
-    implementation(project(":injekt-annotations"))
     implementation(project(":injekt-common"))
-    kapt(project(":injekt-compiler"))
-    implementation(project(":injekt-multibinding"))
-    testImplementation(project(":injekt-test"))
+    implementation(project(":injekt-annotations"))
+
+    implementation(Deps.processingX)
+    kapt(Deps.processingX)
 }

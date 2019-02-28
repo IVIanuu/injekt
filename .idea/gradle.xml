@@ -12,7 +12,9 @@
             <option value="$PROJECT_DIR$/injekt" />
             <option value="$PROJECT_DIR$/injekt-android" />
             <option value="$PROJECT_DIR$/injekt-android-fragment" />
+            <option value="$PROJECT_DIR$/injekt-annotations" />
             <option value="$PROJECT_DIR$/injekt-common" />
+            <option value="$PROJECT_DIR$/injekt-compiler" />
             <option value="$PROJECT_DIR$/injekt-multibinding" />
             <option value="$PROJECT_DIR$/injekt-test" />
             <option value="$PROJECT_DIR$/sample" />
