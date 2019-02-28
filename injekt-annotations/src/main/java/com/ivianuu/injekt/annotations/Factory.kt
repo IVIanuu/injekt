@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.annotations
 
+import com.ivianuu.injekt.FactoryBindingCreator
+
 /**
  * Generates a factory for the annotated type
  */
 @Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
+@Creator(FactoryBindingCreator::class)
 annotation class Factory(
     val name: String = "",
     val scopeName: String = "",

@@ -125,8 +125,15 @@ class Component @PublishedApi internal constructor(val name: String?) {
             if (includeFactories) {
                 try {
                     val factory = InjektPlugins.factoryFinder.find<T>(key.type) ?: return null
-                    val binding = factory.create()
-                    return@synchronized addBindingInternal(binding) as Instance<T>
+                    val module = factory.create()
+
+                    val bindings = module.bindings
+
+                    val bindingForKey = bindings.remove(key) ?: error(
+                        "binding factory module must contain a binding for the type"
+                    )
+                    bindings.forEach { addBindingInternal(it.value) }
+                    return@synchronized addBindingInternal(bindingForKey) as Instance<T>
                 } catch (e: ClassNotFoundException) {
                     // ignore
                 }

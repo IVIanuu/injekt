@@ -16,17 +16,11 @@
 
 package com.ivianuu.injekt.annotations
 
-import com.ivianuu.injekt.SingleBindingCreator
+import com.ivianuu.injekt.BindingCreator
+import kotlin.reflect.KClass
 
 /**
- * Generates a factory for the annotated type
+ * Used for codegen see [Factory], [Reusable] [Single]
  */
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-@Creator(SingleBindingCreator::class)
-annotation class Single(
-    val name: String = "",
-    val scopeName: String = "",
-    val override: Boolean = false,
-    val eager: Boolean = false
-)
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class Creator(val value: KClass<out BindingCreator>)

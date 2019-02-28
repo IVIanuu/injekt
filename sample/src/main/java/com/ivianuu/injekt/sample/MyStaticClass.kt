@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.annotations
-
-import com.ivianuu.injekt.SingleBindingCreator
+package com.ivianuu.injekt.sample
 
 /**
- * Generates a factory for the annotated type
+ * @author Manuel Wrage (IVIanuu)
  */
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-@Creator(SingleBindingCreator::class)
-annotation class Single(
-    val name: String = "",
-    val scopeName: String = "",
-    val override: Boolean = false,
-    val eager: Boolean = false
-)
+class MyStaticClass {
+    companion object {
+        init {
+            println("lol loaded")
+        }
+    }
+}

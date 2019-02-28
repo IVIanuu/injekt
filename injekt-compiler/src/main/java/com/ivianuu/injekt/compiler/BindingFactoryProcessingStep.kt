@@ -16,8 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.google.auto.common.AnnotationMirrors.getAnnotationValuesWithDefaults
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.annotations.Creator
+import com.ivianuu.injekt.annotations.CreatorsRegistry
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
@@ -26,18 +29,26 @@ import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.processingx.ProcessingEnvHolder
 import com.ivianuu.processingx.ProcessingStep
+import com.ivianuu.processingx.asStringListValueOrNull
+import com.ivianuu.processingx.asTypeListValueOrNull
+import com.ivianuu.processingx.asTypeValueOrNull
 import com.ivianuu.processingx.elementUtils
 import com.ivianuu.processingx.get
+import com.ivianuu.processingx.getAnnotatedAnnotations
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
-import com.ivianuu.processingx.getOrNull
+import com.ivianuu.processingx.getAsType
+import com.ivianuu.processingx.getAsTypeList
 import com.ivianuu.processingx.hasAnnotation
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.typeUtils
 import com.ivianuu.processingx.write
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
 import javax.annotation.processing.ProcessingEnvironment
+import javax.annotation.processing.RoundEnvironment
+import javax.lang.model.element.AnnotationMirror
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -49,64 +60,92 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
     ProcessingEnvHolder {
 
     override fun annotations(): Set<Class<out Annotation>> = setOf(
-        Factory::class.java,
+        CreatorsRegistry::class.java,
         Name::class.java,
         Param::class.java,
-        Raw::class.java,
-        Reusable::class.java,
-        Single::class.java
+        Raw::class.java
     )
 
+    private val creators = mutableSetOf<String>(
+        Factory::class.java.name,
+        Reusable::class.java.name,
+        Single::class.java.name
+    )
+
+    var roundEnv: RoundEnvironment? = null
+
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        validateNameUsages(elementsByAnnotation[Name::class.java])
-        validateParamUsages(elementsByAnnotation[Param::class.java])
-        validateRawUsages(elementsByAnnotation[Raw::class.java])
+        /* validateNameUsages(elementsByAnnotation[Name::class.java])
+         validateParamUsages(elementsByAnnotation[Param::class.java])
+         validateRawUsages(elementsByAnnotation[Raw::class.java])
+         */
 
-        val bindingElements = (elementsByAnnotation[Factory::class.java]
-                + elementsByAnnotation[Reusable::class.java]
-                + elementsByAnnotation[Single::class.java])
+        // collect creators
+        elementsByAnnotation[CreatorsRegistry::class.java]
+            .map { it.getAnnotationMirror<CreatorsRegistry>() }
+            .flatMap { it.getAsTypeList("creators") }
+            .map { it.toString() }
+            .forEach { creators.add(it) }
 
-        validateOnlyOneKindAnnotation(bindingElements)
+        val elements = creators
+            .map { processingEnv.elementUtils.getTypeElement(it)!! }
+            .flatMap { roundEnv!!.getElementsAnnotatedWith(it) }
+            .toSet()
 
-        (elementsByAnnotation[Factory::class.java] +
-                elementsByAnnotation[Reusable::class.java] +
-                elementsByAnnotation[Single::class.java])
+        validateOnlyOneCreatorAnnotation(elements)
+
+        elements
+            .asSequence()
             .filterIsInstance<TypeElement>()
-            .mapNotNull { createBindingDescriptor(it) }
+            .map { it to it.getAnnotatedAnnotations<Creator>().firstOrNull() }
+            .mapNotNull { createBindingDescriptor(it.first, it.second) }
             .map { FactoryGenerator(it) }
             .map { it.generate() }
+            .toList()
             .forEach { it.write(processingEnv) }
 
         return emptySet()
     }
 
-    private fun createBindingDescriptor(element: TypeElement): BindingDescriptor? {
-        val kind = if (element.hasAnnotation<Single>()) {
-            BindingDescriptor.Kind.SINGLE
-        } else if (element.hasAnnotation<Reusable>()) {
-            BindingDescriptor.Kind.REUSABLE
-        } else {
-            BindingDescriptor.Kind.FACTORY
-        }
+    private fun createBindingDescriptor(
+        element: TypeElement,
+        creatorAnnotatedAnnotation: AnnotationMirror?
+    ): BindingDescriptor? {
+        if (creatorAnnotatedAnnotation == null) return null
 
-        val annotation = when (kind) {
-            BindingDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            BindingDescriptor.Kind.REUSABLE -> element.getAnnotationMirror<Reusable>()
-            BindingDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
-        }
+        val creatorAnnotatedAnnotationElement =
+            creatorAnnotatedAnnotation.annotationType.asElement()
 
-        var name: String? = annotation["name"].value as String
-        if (name!!.isEmpty()) {
-            name = null
-        }
+        val creatorAnnotation =
+            creatorAnnotatedAnnotationElement.getAnnotationMirror<Creator>()
 
-        var scope: String? = annotation["scopeName"].value as String
-        if (scope!!.isEmpty()) {
-            scope = null
-        }
+        val args = getAnnotationValuesWithDefaults(
+            creatorAnnotatedAnnotation
+        )
+            .map { (key, value) ->
+                val asType = value.asTypeValueOrNull()
+                val asTypeList = value.asTypeListValueOrNull()
+                val asStringList = value.asStringListValueOrNull()
 
-        val override = annotation["override"].value as Boolean
-        val eager = annotation.getOrNull("eager")?.value as? Boolean ?: false
+                val realValue: Any = when {
+                    asType != null -> asType.asTypeName().toString()
+                    asTypeList != null -> asTypeList.map { it.asTypeName() }.map { it.toString() }
+                    asStringList != null -> asStringList
+                    else -> value
+                }
+
+                ArgDescriptor(
+                    key.simpleName.toString(),
+                    isType = asType != null,
+                    isTypeArray = asTypeList != null,
+                    isStringArray = asStringList != null,
+                    value = realValue
+                )
+            }.toSet()
+
+        val creatorName = ClassName.bestGuess(
+            creatorAnnotation.getAsType("value").toString()
+        )
 
         var paramsIndex = -1
 
@@ -120,11 +159,8 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
         return BindingDescriptor(
             targetName,
             factoryName,
-            kind,
-            name,
-            scope,
-            override,
-            eager,
+            creatorName,
+            args,
             element.enclosedElements
                 .filterIsInstance<ExecutableElement>()
                 .first { it.kind == ElementKind.CONSTRUCTOR }
@@ -185,64 +221,49 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
         )
     }
 
-    private fun validateNameUsages(elements: Set<Element>) {
-        elements
-            .filter {
-                val type = it.enclosingElement.enclosingElement
-                !type.hasAnnotation<Factory>()
-                        && !type.hasAnnotation<Reusable>()
-                        && !type.hasAnnotation<Single>()
-            }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "@Name annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
-                    it
-                )
-            }
-    }
+    /* private fun validateNameUsages(elements: Set<Element>) {
+         elements
+             .filter { !it.hasAnnotation<Bind>() }
+             .forEach {
+                 messager.printMessage(
+                     Diagnostic.Kind.ERROR,
+                     "@Name annotation should only be used inside a class which is annotated with @Bind",
+                     it
+                 )
+             }
+     }
 
-    private fun validateParamUsages(elements: Set<Element>) {
-        elements
-            .filter {
-                val type = it.enclosingElement.enclosingElement
-                !type.hasAnnotation<Factory>()
-                        && !type.hasAnnotation<Reusable>()
-                        && !type.hasAnnotation<Single>()
-            }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "@Param annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
-                    it
-                )
-            }
-    }
+     private fun validateParamUsages(elements: Set<Element>) {
+         elements
+             .filter { !it.hasAnnotation<Bind>() }
+             .forEach {
+                 messager.printMessage(
+                     Diagnostic.Kind.ERROR,
+                     "@Param annotation should only be used inside a class which is annotated with @Bind",
+                     it
+                 )
+             }
+     }
 
-    private fun validateRawUsages(elements: Set<Element>) {
+     private fun validateRawUsages(elements: Set<Element>) {
+         elements
+             .filter { it.getAnnotatedAnnotations<Creator>().isEmpty() }
+             .forEach {
+                 messager.printMessage(
+                     Diagnostic.Kind.ERROR,
+                     "@Raw annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
+                     it
+                 )
+             }
+     }
+ */
+    private fun validateOnlyOneCreatorAnnotation(elements: Set<Element>) {
         elements
-            .filter {
-                val type = it.enclosingElement.enclosingElement
-                !type.hasAnnotation<Factory>()
-                        && !type.hasAnnotation<Reusable>()
-                        && !type.hasAnnotation<Single>()
-            }
+            .filter { it.getAnnotatedAnnotations<Creator>().isEmpty() }
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "@Raw annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
-                    it
-                )
-            }
-    }
-
-    private fun validateOnlyOneKindAnnotation(elements: Set<Element>) {
-        elements
-            .filter { it.hasAnnotation<Factory>() && it.hasAnnotation<Single>() }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Annotated class can only be annotated with one off @Factory, @Reusable or @Single",
+                    "Annotated class can only be annotated one annotation which itself is annotated with creator",
                     it
                 )
             }

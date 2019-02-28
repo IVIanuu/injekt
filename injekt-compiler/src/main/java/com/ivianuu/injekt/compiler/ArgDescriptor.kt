@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.annotations
+package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.SingleBindingCreator
-
-/**
- * Generates a factory for the annotated type
- */
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-@Creator(SingleBindingCreator::class)
-annotation class Single(
-    val name: String = "",
-    val scopeName: String = "",
-    val override: Boolean = false,
-    val eager: Boolean = false
+data class ArgDescriptor(
+    val key: String,
+    val isType: Boolean,
+    val isTypeArray: Boolean,
+    val isStringArray: Boolean,
+    val value: Any
 )

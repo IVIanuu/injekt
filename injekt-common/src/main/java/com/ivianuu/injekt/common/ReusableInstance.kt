@@ -19,6 +19,7 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Attributes
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.BindingCreator
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.InjektPlugins
@@ -28,6 +29,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
+import com.ivianuu.injekt.module
 import java.lang.ref.WeakReference
 import kotlin.reflect.KClass
 
@@ -86,6 +88,24 @@ class ReusableInstance<T>(
 object ReusableInstanceFactory : InstanceFactory {
     override fun <T> create(binding: Binding<T>, component: Component?): Instance<T> =
         ReusableInstance(binding, component)
+}
+
+/**
+ * Binding creator for reusables
+ */
+class ReusableBindingCreator : BindingCreator {
+    override fun <T> create(
+        type: KClass<*>,
+        definition: Definition<T>,
+        args: Map<String, Any>
+    ): Module {
+        return module {
+            reusable(
+                type, args.name.nullIfEmpty(), args.scopeName.nullIfEmpty(),
+                args.override, definition
+            )
+        }
+    }
 }
 
 /**

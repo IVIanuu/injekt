@@ -1,8 +1,8 @@
 package com.ivianuu.injekt
 
 /**
- * Used for code generation
+ * Used for code gen
  */
 interface BindingFactory<T> {
-    fun create(): Binding<T>
+    fun create(): Module
 }

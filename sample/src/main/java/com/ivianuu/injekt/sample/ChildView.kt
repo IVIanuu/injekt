@@ -7,7 +7,10 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.CHILD_VIEW_SCOPE
 import com.ivianuu.injekt.android.childViewComponent
 import com.ivianuu.injekt.annotations.Single
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.single
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -35,6 +38,12 @@ class ChildView @JvmOverloads constructor(
         d { "Injected child fragment dependency $childFragmentDependency" }
         d { "Injected parent view dependency $parentViewDependency" }
         d { "Injected child view dependency $childViewDependency" }
+    }
+}
+
+val childViewModule = module {
+    single(scopeName = CHILD_VIEW_SCOPE) {
+        ChildViewDependency(get(), get(), get(), get(), get(), get())
     }
 }
 

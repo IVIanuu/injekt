@@ -16,89 +16,54 @@
 
 package com.ivianuu.injekt.sample.test
 
-/**
-import android.content.Context
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingFactory
+import com.ivianuu.injekt.BindingCreator
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.annotations.Name
-import com.ivianuu.injekt.annotations.Param
-import com.ivianuu.injekt.createSingle
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.annotations.Creator
+import com.ivianuu.injekt.annotations.CreatorsRegistry
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.multibinding.bindIntoMap
+import com.ivianuu.injekt.single
+import com.ivianuu.injekt.withContext
 import kotlin.reflect.KClass
 
-/**
- * @author Manuel Wrage (IVIanuu)
-*/
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Creator(val value: KClass<out BindingCreator>)
-
-interface BindingCreator {
-fun <T> create(
-type: KClass<*>,
-definition: Definition<T>,
-args: Map<String, Any>
-): Binding<T>
-
-val Map<String, Any>.name: String? get() = get("name") as? String
-val Map<String, Any>.scopeName: String? get() = get("scopeName") as? String
-val Map<String, Any>.override: Boolean get() = get("override") as? Boolean ?: false
-val Map<String, Any>.eager: Boolean get() = get("eager") as? Boolean ?: false
-}
-
-//
-// USAGE
-//
+@CreatorsRegistry([AppService::class])
+private class Creators
 
 /**
  * Generates a factory for the annotated type
-*/
+ */
 @Target(AnnotationTarget.CLASS)
 @Creator(AppServiceBindingCreator::class)
 annotation class AppService(
-val name: String = "",
-val scopeName: String = "",
-val override: Boolean = false
+    val name: String = "",
+    val scopeName: String = "",
+    val override: Boolean = false,
+    val serviceImpl: KClass<out Any> = String::class,
+    val stringArray: Array<String> = ["one", "two"],
+    val typeArray: Array<KClass<*>> = [String::class, Int::class]
 )
 
-object AppServiceBindingCreator : BindingCreator {
-override fun <T> create(
-type: KClass<*>,
-definition: Definition<T>,
-args: Map<String, Any>
-): Binding<T> {
-val name = args.name
-val scopeName = args.scopeName
-val override = args.override
-val eager = args.eager
-return Binding.createSingle(type, name, scopeName,
-override = override, eager = eager, definition = definition)
-}
+class AppServiceBindingCreator : BindingCreator {
+    override fun <T> create(
+        type: KClass<*>,
+        definition: Definition<T>,
+        args: Map<String, Any>
+    ): Module {
+        return module {
+            single(
+                type,
+                args.name,
+                args.scopeName,
+                args.override,
+                args.eager,
+                definition
+            ) withContext {
+                bindIntoMap("app_services", type)
+            }
+        }
+    }
 }
 
 @AppService
-class MyAppService(
-@Param val something: Boolean,
-@Name("appContext") val appContext: Context
-)
-
-object MyAppService__Factory : BindingFactory<MyAppService> {
-
-private val creator = AppServiceBindingCreator
-
-private val definition: Definition<MyAppService> = { params ->
-MyAppService(params[0], get("appContext"))
-}
-
-private val args = mapOf(
-"name" to "",
-"scopeName" to "",
-"override" to false,
-"eager" to false
-)
-
-override fun create(): Binding<MyAppService> =
-creator.create(MyAppService::class, definition, args)
-
-}*/
+class MyAppService

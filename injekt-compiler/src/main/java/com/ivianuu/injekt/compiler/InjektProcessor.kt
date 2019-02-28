@@ -20,11 +20,23 @@ import com.google.auto.service.AutoService
 import com.ivianuu.processingx.ProcessingStep
 import com.ivianuu.processingx.StepProcessor
 import javax.annotation.processing.Processor
+import javax.annotation.processing.RoundEnvironment
+import javax.lang.model.element.TypeElement
 
 @AutoService(Processor::class)
 class InjektProcessor : StepProcessor() {
 
-    override fun initSteps(): Set<ProcessingStep> =
-        setOf(BindingFactoryProcessingStep(processingEnv))
+    private val step by lazy {
+        BindingFactoryProcessingStep(processingEnv)
+    }
+
+    override fun initSteps(): Set<ProcessingStep> = setOf(step)
+
+    override fun process(elements: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
+        step.roundEnv = roundEnv
+        val result = super.process(elements, roundEnv)
+        step.roundEnv = null
+        return result
+    }
 
 }

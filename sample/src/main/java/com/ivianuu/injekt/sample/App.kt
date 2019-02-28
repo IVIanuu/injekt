@@ -23,7 +23,10 @@ import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.configureInjekt
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.single
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -35,6 +38,8 @@ class App : Application(), InjektTrait {
     private val appDependency by inject<AppDependency>()
 
     override fun onCreate() {
+        MyStaticClass::class
+
         configureInjekt {
             androidLogger()
         }
@@ -43,6 +48,10 @@ class App : Application(), InjektTrait {
 
         super.onCreate()
     }
+}
+
+val appModule = module {
+    single(scopeName = APPLICATION_SCOPE) { AppDependency(get()) }
 }
 
 @Single(scopeName = APPLICATION_SCOPE)

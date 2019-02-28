@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.annotations
 
+import com.ivianuu.injekt.common.ReusableBindingCreator
+
 /**
  * Generates a factory for the annotated type
  */
 @Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
+@Creator(ReusableBindingCreator::class)
 annotation class Reusable(
     val name: String = "",
     val scopeName: String = "",
