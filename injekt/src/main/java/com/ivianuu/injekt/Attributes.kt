@@ -19,12 +19,12 @@ package com.ivianuu.injekt
 /**
  * Attributes for [Binding]s
  */
-inline class Attributes(private val _entries: MutableMap<String, Any> = hashMapOf()) {
+inline class Attributes(private val _entries: MutableMap<String, Any?> = hashMapOf()) {
 
     /**
      * All entries
      */
-    val entries: Map<String, Any> get() = _entries
+    val entries: Map<String, Any?> get() = _entries
 
     /**
      * Whether or not contains a value for [key]
