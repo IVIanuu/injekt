@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.util
 
-fun measureDurationOnly(code: () -> Unit): Double {
+inline fun measureDurationOnly(code: () -> Unit): Double {
     val start = System.nanoTime()
     code()
     return (System.nanoTime() - start) / 1000000.0
 }
 
-fun <T> measureDuration(code: () -> T): Pair<T, Double> {
+inline fun <T> measureDuration(code: () -> T): Pair<T, Double> {
     val start = System.nanoTime()
     val result = code()
     val duration = (System.nanoTime() - start) / 1000000.0

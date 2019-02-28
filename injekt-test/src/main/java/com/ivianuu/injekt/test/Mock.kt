@@ -23,16 +23,16 @@ import kotlin.reflect.KClass
 
 inline fun <reified T> Component.declareMock(
     name: String? = null,
-    noinline stubbing: (T.() -> Unit)? = null
+    stubbing: T.() -> Unit = {}
 ) = declareMock(T::class, name, stubbing)
 
 /**
  * Declares a mocked version of [type] and [name]
  */
-fun <T> Component.declareMock(
+inline fun <T> Component.declareMock(
     type: KClass<*>,
     name: String? = null,
-    stubbing: (T.() -> Unit)? = null
+    stubbing: T.() -> Unit = {}
 ): T {
     val foundBinding = getBindings().first {
         if (name != null) {
@@ -48,12 +48,12 @@ fun <T> Component.declareMock(
     return applyStub(type, stubbing)
 }
 
-fun <T> Component.applyStub(
+inline fun <T> Component.applyStub(
     type: KClass<*>,
-    stubbing: (T.() -> Unit)?
+    stubbing: T.() -> Unit = {}
 ): T {
     val instance: T = get(type)
-    stubbing?.let { instance.apply(stubbing) }
+    stubbing.let { instance.apply(stubbing) }
     return instance
 }
 
