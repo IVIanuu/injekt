@@ -18,6 +18,30 @@ data class Binding<T>(
     val eager: Boolean
 ) {
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Binding<*>) return false
+
+        if (key != other.key) return false
+        if (kind != other.kind) return false
+        if (attributes != other.attributes) return false
+        if (scopeName != other.scopeName) return false
+        if (override != other.override) return false
+        if (eager != other.eager) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = key.hashCode()
+        result = 31 * result + (kind?.hashCode() ?: 0)
+        result = 31 * result + attributes.hashCode()
+        result = 31 * result + (scopeName?.hashCode() ?: 0)
+        result = 31 * result + override.hashCode()
+        result = 31 * result + eager.hashCode()
+        return result
+    }
+
     override fun toString(): String {
         val kindString = kind ?: "UNKNOWN_KIND"
         val nameString = name?.let { "name:'$name', " } ?: ""
