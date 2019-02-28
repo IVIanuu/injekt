@@ -43,12 +43,15 @@ data class Binding<T>(
     }
 
     override fun toString(): String {
-        val kindString = kind ?: "UNKNOWN_KIND"
-        val nameString = name?.let { "name:'$name', " } ?: ""
-        val typeString = "type:'${type.java.name}'"
-        val attributesString = "attributes: '$attributes'"
-        val optionsString = "scopeName:$scopeName,override:$override,eager:$eager"
-        return "$kindString[$nameString$typeString$attributesString$optionsString]"
+        return "${kind ?: "UNKNOWN"}(" +
+                "type=${type.java.name}, " +
+                "name=$name, " +
+                "scopeName=$scopeName, " +
+                "attributes=$attributes, " +
+                "override=$override, " +
+                "eager=$eager, " +
+                "instanceFactory=${instanceFactory.javaClass.name}" +
+                ")"
     }
 
     companion object
