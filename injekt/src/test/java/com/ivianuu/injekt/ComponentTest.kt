@@ -14,88 +14,90 @@
  * limitations under the License.
  */
 
-/**
+
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ComponentTest {
 
-@Test
-fun testGet() {
-val typed = TestDep1()
-val named = TestDep1()
+    @Test
+    fun testGet() {
+        val typed = TestDep1()
+        val named = TestDep1()
 
-val component = component {
-modules(
-module {
-factory { typed }
-single(name = "named") { named }
+        val component = component {
+            modules(
+                module {
+                    factory { typed }
+                    single(name = "named") { named }
+                }
+            )
+        }
+
+        val typedGet = component.get<TestDep1>()
+        assertEquals(typed, typedGet)
+
+        val namedGet = component.get<TestDep1>(name = "named")
+        assertEquals(named, namedGet)
+    }
+
+    @Test
+    fun testGetUnknownDefinitionThrows() {
+        val component = component {}
+
+        val throwed = try {
+            component.get<TestDep1>()
+            false
+        } catch (e: BindingNotFoundException) {
+            true
+        }
+
+        assertTrue(throwed)
+    }
+
+    @Test
+    fun testLazy() {
+        var called = false
+
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        called = true
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        assertFalse(called)
+
+        val depLazy = component.inject<TestDep1>()
+        assertFalse(called)
+        depLazy.value
+        assertTrue(called)
+    }
+
+    @Test
+    fun testInstanceResolving() {
+        val typed = TestDep1()
+        val named = TestDep1()
+
+        val component = component {
+            modules(
+                module {
+                    factory { typed }
+                    factory("named") { named }
+                }
+            )
+        }
+
+        assertEquals(typed, component.get<TestDep1>())
+        assertEquals(named, component.get<TestDep1>("named"))
+    }
 }
-)
-}
-
-val typedGet = component.get(TestDep1::class)
-assertEquals(typed, typedGet)
-
-val namedGet = component.get(TestDep1::class, "named")
-assertEquals(named, namedGet)
-}
-
-@Test
-fun testGetUnknownDefinitionThrows() {
-val component = component {}
-
-val throwed = try {
-component.get(TestDep1::class)
-false
-} catch (e: BindingNotFoundException) {
-true
-}
-
-assertTrue(throwed)
-}
-
-@Test
-fun testLazy() {
-var called = false
-
-val component = component {
-modules(
-module {
-factory {
-called = true
-TestDep1()
-}
-}
-)
-}
-
-assertFalse(called)
-
-val depLazy = component.inject<TestDep1>()
-assertFalse(called)
-depLazy.value
-assertTrue(called)
-}
-
-@Test
-fun testInstanceResolving() {
-val typed = TestDep1()
-val named = TestDep1()
-
-val component = component {
-modules(
-module {
-factory { typed }
-factory("named") { named }
-}
-)
-}
-
-assertEquals(typed, component.get(TestDep1::class, null))
-assertEquals(named, component.get(TestDep1::class, "named"))
-}
-}*/

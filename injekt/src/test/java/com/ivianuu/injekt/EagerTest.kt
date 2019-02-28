@@ -23,7 +23,7 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class eagerTest {
+class EagerTest {
 
     @Test
     fun testEagerSingleIsCreatedAtStart() {
