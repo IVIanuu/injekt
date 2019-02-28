@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Attributes for [Binding]s
  */
-data class Attributes(private val _entries: MutableMap<String, Any> = hashMapOf()) {
+inline class Attributes(private val _entries: MutableMap<String, Any> = hashMapOf()) {
 
     /**
      * All entries

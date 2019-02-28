@@ -142,8 +142,8 @@ class Component @PublishedApi internal constructor(val name: String?) {
             }
     }
 
-    private fun <T> findInstance(key: Key): Instance<T>? =
-        synchronized(this) {
+    private fun <T> findInstance(key: Key): Instance<T>? {
+        return synchronized(this) {
             var instance = instances[key]
 
             if (instance != null) return@synchronized instance as Instance<T>
@@ -155,6 +155,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
 
             return@synchronized null
         }
+    }
 
     private fun <T> createInstance(binding: Binding<T>): Instance<T> {
         val component = if (binding.scopeName != null) {

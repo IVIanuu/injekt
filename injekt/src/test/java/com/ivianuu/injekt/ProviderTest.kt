@@ -40,7 +40,7 @@ class ProviderTest {
 
     @Test
     fun testProviderUsesDefaultParams() {
-        lateinit var usedParams: Parameters
+        var usedParams: Parameters? = null
 
         val component = component {
             modules(
@@ -64,7 +64,7 @@ class ProviderTest {
 
     @Test
     fun testProviderUsesExplicitParams() {
-        lateinit var usedParams: Parameters
+        var usedParams: Parameters? = null
 
         val component = component {
             modules(
@@ -88,7 +88,7 @@ class ProviderTest {
 
     @Test
     fun testProviderPrefersExplicitParams() {
-        lateinit var usedParams: Parameters
+        var usedParams: Parameters? = null
 
         val component = component {
             modules(
