@@ -9,7 +9,7 @@ inline class Parameters(private val _values: List<Any?>) {
     /**
      * All values of this params
      */
-    val values: List<Any?> get() = values
+    val values: List<Any?> get() = _values
 
     operator fun <T> component1(): T = elementAt(0)
     operator fun <T> component2(): T = elementAt(1)
