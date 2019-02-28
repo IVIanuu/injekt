@@ -4,7 +4,12 @@ package com.ivianuu.injekt
  * Parameters which will be used for assisted injection
  */
 @Suppress("UNCHECKED_CAST")
-inline class Parameters(val values: List<Any?>) {
+inline class Parameters(private val _values: List<Any?>) {
+
+    /**
+     * All values of this params
+     */
+    val values: List<Any?> get() = values
 
     operator fun <T> component1(): T = elementAt(0)
     operator fun <T> component2(): T = elementAt(1)
@@ -15,15 +20,15 @@ inline class Parameters(val values: List<Any?>) {
     /**
      * Number of contained elements
      */
-    val size: Int get() = values.size
+    val size: Int get() = _values.size
 
     /**
      * Returns the element [i]
      */
-    operator fun <T> get(i: Int): T = values[i] as T
+    operator fun <T> get(i: Int): T = _values[i] as T
 
     private fun <T> elementAt(i: Int): T =
-        if (values.size > i) values[i] as T else throw IllegalArgumentException("Can't get parameter value #$i from $this")
+        if (_values.size > i) _values[i] as T else throw IllegalArgumentException("Can't get parameter value #$i from $this")
 
 }
 
