@@ -38,12 +38,6 @@ typealias ParametersDefinition = () -> Parameters
 fun parametersOf(vararg values: Any?): Parameters = Parameters(listOf(*values))
 
 /**
- * Returns new [Parameters] which contains all [values]
- */
-fun parametersOf(values: Iterable<Any?>): Parameters =
-    Parameters(values.toList())
-
-/**
  * Returns new [Parameters] which contains the [value]
  */
 fun parametersOf(value: Any?): Parameters =

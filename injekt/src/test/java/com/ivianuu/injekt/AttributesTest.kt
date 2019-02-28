@@ -16,14 +16,16 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class AttributesTest {
 
     @Test
     fun testGetAndSet() {
-        val attrs = Attributes()
+        val attrs = attributesOf()
 
         assertFalse(attrs.contains("key"))
 
@@ -37,14 +39,14 @@ class AttributesTest {
 
     @Test
     fun testGetIfNotSet() {
-        val attrs = Attributes()
+        val attrs = attributesOf()
         assertFalse(attrs.contains("key"))
         assertTrue(attrs.get<String>("key") == null)
     }
 
     @Test
     fun testOverridesValues() {
-        val attrs = Attributes()
+        val attrs = attributesOf()
 
         attrs["key"] = "value1"
         attrs["key"] = "value2"

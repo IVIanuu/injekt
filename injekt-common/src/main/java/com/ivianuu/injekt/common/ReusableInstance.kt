@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.attributesOf
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import java.lang.ref.WeakReference
@@ -40,7 +41,7 @@ fun <T> Binding.Companion.createReusable(
     type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
-    attributes: Attributes = Attributes(),
+    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =

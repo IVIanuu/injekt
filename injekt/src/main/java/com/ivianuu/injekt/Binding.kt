@@ -63,7 +63,7 @@ fun <T> Binding.Companion.create(
     kind: String?,
     instanceFactory: InstanceFactory,
     scopeName: String? = null,
-    attributes: Attributes = Attributes(),
+    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
@@ -78,7 +78,7 @@ fun <T> Binding.Companion.createFactory(
     type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
-    attributes: Attributes = Attributes(),
+    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
@@ -91,7 +91,7 @@ fun <T> Binding.Companion.createSingle(
     type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
-    attributes: Attributes = Attributes(),
+    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>

@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Attributes for [Binding]s
  */
-inline class Attributes(private val _entries: MutableMap<String, Any?> = hashMapOf()) {
+inline class Attributes constructor(private val _entries: MutableMap<String, Any?> = hashMapOf()) {
 
     /**
      * All entries
@@ -66,3 +66,15 @@ inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
  */
 inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T =
     get<T>(key) ?: defaultValue()
+
+/**
+ * Returns new [Attributes] which contains all [pairs]
+ */
+fun attributesOf(vararg pairs: Pair<String, Any?>): Attributes = Attributes(
+    mutableMapOf(*pairs)
+)
+
+/**
+ * Returns new empty parameters
+ */
+fun attributesOf(): Attributes = Attributes(mutableMapOf())
