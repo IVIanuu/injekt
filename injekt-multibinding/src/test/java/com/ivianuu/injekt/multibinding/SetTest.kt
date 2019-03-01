@@ -85,7 +85,7 @@ class SetTest {
         assertFalse(throwed)
     }
 
-    @Test
+    /*@Test
     fun testDisallowInvalidOverride() {
         val component1 = component {
             modules(
@@ -113,6 +113,6 @@ class SetTest {
         }
 
         assertTrue(throwed)
-    }
+    }*/
 
 }
