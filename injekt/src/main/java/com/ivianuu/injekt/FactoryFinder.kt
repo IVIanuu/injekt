@@ -35,7 +35,7 @@ interface FactoryFinder {
  */
 class DefaultFactoryFinder : FactoryFinder {
 
-    private val factories = mutableMapOf<KClass<*>, BindingFactory<*>>()
+    private val factories = hashMapOf<KClass<*>, BindingFactory<*>>()
     private val failedTypes = hashSetOf<KClass<*>>()
 
     override fun <T> find(type: KClass<*>): BindingFactory<T>? {
