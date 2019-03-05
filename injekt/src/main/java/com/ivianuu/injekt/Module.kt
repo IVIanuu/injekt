@@ -12,7 +12,7 @@ class Module @PublishedApi internal constructor(
     val override: Boolean?
 ) {
 
-    internal val bindings = hashMapOf<Key, Binding<*>>()
+    internal val bindings = linkedMapOf<Key, Binding<*>>()
 
     /**
      * Returns all [Binding]s of this module

@@ -18,20 +18,20 @@ internal fun Module.declareMapBinding(mapName: String) {
                     ?.get(mapName)?.let { binding to it }
             }
 
-        val existingKeys = linkedSetOf<Any>()
+        val mapBindingsToUse = hashMapOf<Any, Binding<*>>()
 
         // check overrides
-        allMapBindings.forEach { (_, mapBinding) ->
-            if (!existingKeys.add(mapBinding.key) && !mapBinding.override) {
+        allMapBindings.forEach { (binding, mapBinding) ->
+            val isOverride = mapBindingsToUse.remove(mapBinding.key) != null
+
+            if (isOverride && !mapBinding.override) {
                 throw OverrideException("Try to override ${mapBinding.key} in map binding $mapBinding")
             }
+
+            mapBindingsToUse[mapBinding.key] = binding
         }
 
-        allMapBindings
-            .map { it.second.key to it.first }
-            .toMap()
-            .mapValues { it.value as Binding<Any> }
-            .let { MultiBindingMap(component, it) }
+        return@factory MultiBindingMap(component, mapBindingsToUse as Map<Any, Binding<Any>>)
     }
 }
 
@@ -43,26 +43,31 @@ internal fun Module.declareSetBinding(setName: String) {
                     ?.get(setName)?.let { binding to it }
             }
 
-        val existingKeys = linkedSetOf<Key>()
+        val setBindingsToUse = hashMapOf<Key, Binding<*>>()
 
         // check overrides
         allSetBindings.forEach { (binding, setBinding) ->
-            val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
-            if (!existingKeys.add(key) && !setBinding.override) {
+            val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY, binding::key)
+
+            val isOverride = setBindingsToUse.remove(binding.key) != null
+
+            if (isOverride && !setBinding.override) {
                 throw OverrideException("Try to override $key in set binding $setBinding")
             }
+
+            setBindingsToUse[binding.key] = binding
         }
 
-        allSetBindings
-            .map { it.first as Binding<Any> }
-            .toSet()
-            .let { MultiBindingSet(component, it) }
+        return@factory MultiBindingSet(
+            component,
+            setBindingsToUse.values.toSet() as Set<Binding<Any>>
+        )
     }
 
 }
 
 internal fun Component.getAllBindings(): Set<Binding<*>> =
-    linkedSetOf<Binding<*>>().also { collectBindings(it) }
+    linkedSetOf<Binding<*>>().also(this::collectBindings)
 
 internal fun Component.collectBindings(
     bindings: MutableSet<Binding<*>>
