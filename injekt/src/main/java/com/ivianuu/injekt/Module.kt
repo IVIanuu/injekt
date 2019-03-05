@@ -64,7 +64,7 @@ inline fun module(
     scopeName: String? = null,
     override: Boolean? = null,
     eager: Boolean? = null,
-    definition: ModuleDefinition
+    definition: ModuleDefinition = {}
 ): Module = Module(scopeName, eager, override).apply(definition)
 
 /**
@@ -142,7 +142,7 @@ inline fun Module.module(
     scopeName: String? = null,
     override: Boolean? = null,
     eager: Boolean? = null,
-    definition: ModuleDefinition
+    definition: ModuleDefinition = {}
 ) {
     module(com.ivianuu.injekt.module(scopeName, override, eager, definition))
 }
