@@ -29,10 +29,10 @@ class SpeedTest {
     fun testManualSpeed() {
         println("Run manual speed test..")
         val startup =
-            (1..ROUNDS).map { measureDurationOnly { component("test") { modules(fibonacciModule) } } }
+            (1..ROUNDS).map { measureDurationOnly { component { modules(fibonacciModule) } } }
                 .median().format()
 
-        val component = component("test") { modules(fibonacciModule) }
+        val component = component { modules(fibonacciModule) }
         val testDurations = (1..ROUNDS).map { measureDurationOnly { component.get<Fib8>() } }
 
         println("Manual Speed test completed -> startup: $startup, injection time: ${testDurations.median().format()}")
@@ -42,10 +42,10 @@ class SpeedTest {
     fun testGeneratedSpeed() {
         println("Run generated speed test..")
         val startup =
-            (1..ROUNDS).map { measureDurationOnly { component("test") } }
+            (1..ROUNDS).map { measureDurationOnly { component() } }
                 .median().format()
 
-        val component = component("test")
+        val component = component()
         val testDurations = (1..ROUNDS).map { measureDurationOnly { component.get<Fib8>() } }
 
         println("Generated Speed test completed -> startup: $startup, injection time: ${testDurations.median().format()}")
