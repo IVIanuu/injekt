@@ -18,10 +18,9 @@ const val CHILD_VIEW_SCOPE = "child_view_scope"
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : View> T.viewComponent(
-    name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, createEagerInstances) {
+): Component = component(createEagerInstances) {
     scopeNames(VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
@@ -34,9 +33,9 @@ inline fun <T : View> T.viewComponent(
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : View> T.childViewComponent(
-    name: String? = javaClass.simpleName + "Component",
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name) {
+): Component = component(createEagerInstances) {
     scopeNames(CHILD_VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()

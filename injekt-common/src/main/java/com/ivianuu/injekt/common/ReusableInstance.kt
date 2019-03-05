@@ -27,6 +27,7 @@ import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.attributesOf
+import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import java.lang.ref.WeakReference
@@ -71,10 +72,10 @@ class ReusableInstance<T>(
         val value = _value?.get()
 
         return if (value != null) {
-            InjektPlugins.logger?.info("${component.name} Return existing instance $binding")
+            InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
             return value
         } else {
-            InjektPlugins.logger?.info("${component.name} Create instance $binding")
+            InjektPlugins.logger?.info("${component.componentName()} Create instance $binding")
             create(component, parameters).also { _value = WeakReference(it) }
         }
     }

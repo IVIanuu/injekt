@@ -34,7 +34,7 @@ interface Instance<T> {
             )
         } catch (e: Exception) {
             throw InstanceCreationException(
-                "${component.name} Couldn't instantiate $binding",
+                "${component.componentName()} Couldn't instantiate $binding",
                 e
             )
         }
@@ -58,7 +58,7 @@ class FactoryInstance<T>(
         parameters: ParametersDefinition?
     ): T {
         val component = this.component ?: component
-        InjektPlugins.logger?.info("${component.name} Create instance $binding")
+        InjektPlugins.logger?.info("${component.componentName()} Create instance $binding")
         return create(component, parameters)
     }
 
@@ -93,10 +93,10 @@ class SingleInstance<T>(
         val value = _value
 
         return if (value != null) {
-            InjektPlugins.logger?.info("${component.name} Return existing instance $binding")
+            InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
             return value
         } else {
-            InjektPlugins.logger?.info("${component.name} Create instance $binding")
+            InjektPlugins.logger?.info("${component.componentName()} Create instance $binding")
             create(component, parameters).also { _value = it }
         }
     }

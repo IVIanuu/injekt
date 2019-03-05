@@ -7,7 +7,6 @@ import kotlin.reflect.KClass
  * A module is the container for bindings
  */
 class Module @PublishedApi internal constructor(
-    val name: String?,
     val scopeName: String?,
     val eager: Boolean?,
     val override: Boolean?
@@ -43,7 +42,7 @@ class Module @PublishedApi internal constructor(
         }
 
         if (bindings.containsKey(binding.key) && !binding.override) {
-            throw OverrideException("Try to override binding $binding but was already declared in $name")
+            throw OverrideException("Try to override binding $binding")
         }
 
         bindings[binding.key] = binding
@@ -62,12 +61,11 @@ typealias ModuleDefinition = Module.() -> Unit
  * Defines a [Module]
  */
 inline fun module(
-    name: String? = null,
     scopeName: String? = null,
     override: Boolean? = null,
     eager: Boolean? = null,
     definition: ModuleDefinition
-): Module = Module(name, scopeName, eager, override).apply(definition)
+): Module = Module(scopeName, eager, override).apply(definition)
 
 /**
  * Provides a unscoped dependency which will be recreated on each request
@@ -141,13 +139,12 @@ fun Module.module(module: Module) {
  * Adds all bindings of module
  */
 inline fun Module.module(
-    name: String? = null,
     scopeName: String? = null,
     override: Boolean? = null,
     eager: Boolean? = null,
     definition: ModuleDefinition
 ) {
-    module(com.ivianuu.injekt.module(name, scopeName, override, eager, definition))
+    module(com.ivianuu.injekt.module(scopeName, override, eager, definition))
 }
 
 /** Calls trough [Module.withBinding] */

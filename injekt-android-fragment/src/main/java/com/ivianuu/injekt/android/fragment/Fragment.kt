@@ -33,10 +33,9 @@ const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Fragment> T.fragmentComponent(
-    name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, createEagerInstances) {
+): Component = component(createEagerInstances) {
     scopeNames(FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
@@ -49,9 +48,9 @@ inline fun <T : Fragment> T.fragmentComponent(
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Fragment> T.childFragmentComponent(
-    name: String? = javaClass.simpleName + "Component",
+    createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name) {
+): Component = component(createEagerInstances) {
     scopeNames(CHILD_FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()

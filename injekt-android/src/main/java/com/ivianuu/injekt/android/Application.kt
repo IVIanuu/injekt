@@ -38,10 +38,9 @@ const val APPLICATION_SCOPE = "application_scope"
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Application> T.applicationComponent(
-    name: String? = javaClass.simpleName + "Component",
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = component(name, createEagerInstances) {
+): Component = component(createEagerInstances) {
     scopeNames(APPLICATION_SCOPE)
     modules(applicationModule())
     addInstance(this@applicationComponent)
@@ -51,9 +50,7 @@ inline fun <T : Application> T.applicationComponent(
 /**
  * Returns a [Module] with convenient bindings
  */
-fun <T : Application> T.applicationModule(
-    name: String? = "ApplicationModule"
-): Module = module(name) {
+fun <T : Application> T.applicationModule(): Module = module {
     factory { this@applicationModule as Application } bindType Context::class
 }
 

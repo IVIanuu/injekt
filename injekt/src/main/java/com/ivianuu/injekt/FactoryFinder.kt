@@ -45,7 +45,7 @@ class DefaultFactoryFinder : FactoryFinder {
             val factoryType = Class.forName(type.java.name + "__Factory")
             val factory = factoryType.newInstance() as BindingFactory<T>
             factories[type] = factory
-            InjektPlugins.logger?.info("Found binding factory for $type")
+            InjektPlugins.logger?.info("Found binding factory for ${type.java.name}")
             factory
         } catch (e: Exception) {
             failedTypes.add(type)

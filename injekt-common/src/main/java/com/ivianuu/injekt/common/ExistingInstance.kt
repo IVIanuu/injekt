@@ -27,6 +27,7 @@ import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.attributesOf
+import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import kotlin.reflect.KClass
@@ -63,7 +64,7 @@ class ExistingInstance<T>(
         get() = true
 
     override fun get(component: Component, parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("${component.name} Return instance $binding")
+        InjektPlugins.logger?.info("${component.componentName()} Return instance $binding")
         return instance
     }
 

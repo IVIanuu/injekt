@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
  */
 sealed class Key {
 
-    class TypeKey(val type: KClass<*>) : Key() {
+    data class TypeKey(val type: KClass<*>) : Key() {
         override fun toString(): String {
             return "TypeKey(type=${type.java.name})"
         }

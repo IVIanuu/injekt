@@ -11,30 +11,31 @@ typealias ComponentDefinition = Component.() -> Unit
  * Returns a new [Component] and applies the [definition]
  */
 inline fun component(
-    name: String? = null,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
-): Component = Component(name)
-    .apply {
-        definition.invoke(this)
-        if (createEagerInstances) {
-            createEagerInstances()
+): Component {
+    return Component()
+        .apply {
+            definition.invoke(this)
+            if (createEagerInstances) {
+                createEagerInstances()
+            }
         }
-    }
+}
 
 
 /**
  * Adds all [modules]
  */
 fun Component.modules(modules: Iterable<Module>) {
-    modules.forEach { addModule(it) }
+    modules.forEach(this::addModule)
 }
 
 /**
  * Adds all [modules]
  */
 fun Component.modules(vararg modules: Module) {
-    modules.forEach { addModule(it) }
+    modules.forEach(this::addModule)
 }
 
 /**
@@ -62,7 +63,7 @@ fun Component.scopeNames(scopeNames: Iterable<String>) {
  * Adds all [scopeNames]
  */
 fun Component.scopeNames(vararg scopeNames: String) {
-    scopeNames.forEach { addScopeName(it) }
+    scopeNames.forEach(this::addScopeName)
 }
 
 /**
@@ -139,5 +140,13 @@ fun <T> Component.injectProvider(
             name,
             parameters ?: defaultParameters
         )
+    }
+}
+
+fun Component.componentName(): String {
+    return if (getScopeNames().isNotEmpty()) {
+        "Component[${getScopeNames().joinToString(",")}]"
+    } else {
+        "Component[Unscoped]"
     }
 }

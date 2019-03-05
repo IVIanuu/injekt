@@ -1,11 +1,20 @@
 package com.ivianuu.injekt
 
+import kotlin.collections.Set
+import kotlin.collections.filter
+import kotlin.collections.forEach
+import kotlin.collections.hashMapOf
+import kotlin.collections.hashSetOf
+import kotlin.collections.linkedMapOf
+import kotlin.collections.linkedSetOf
+import kotlin.collections.set
+import kotlin.collections.toSet
 import kotlin.reflect.KClass
 
 /**
  * The actual dependency container which provides bindings
  */
-class Component @PublishedApi internal constructor(val name: String?) {
+class Component @PublishedApi internal constructor() {
 
     private val dependencies = linkedSetOf<Component>()
     private val scopeNames = hashSetOf<String>()
@@ -23,7 +32,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
         val key = Key.of(type, name)
 
         val instance = findInstance<T>(key, true)
-            ?: throw BindingNotFoundException("${this.name} Could not find binding for $key")
+            ?: throw BindingNotFoundException("${componentName()} Could not find binding for $key")
 
         return instance.get(this, parameters)
     }
@@ -32,7 +41,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
-        InjektPlugins.logger?.info("$name load module ${module.name}")
+        InjektPlugins.logger?.info("${componentName()} load module ${module.bindings.size}")
         module.bindings.forEach { addBinding(it.value) }
     }
 
@@ -42,11 +51,11 @@ class Component @PublishedApi internal constructor(val name: String?) {
     fun addDependency(dependency: Component) {
         synchronized(this) {
             if (!this.dependencies.add(dependency)) {
-                error("Already added $dependency to $name")
+                error("Already added ${dependency.componentName()} to ${componentName()}")
             }
         }
 
-        InjektPlugins.logger?.info("$name Add dependency $dependency")
+        InjektPlugins.logger?.info("${componentName()} Add dependency $dependency")
     }
 
     /**
@@ -63,7 +72,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
                 error("Scope name $scopeName was already added")
             }
         }
-        InjektPlugins.logger?.info("$name Add scope name $scopeName")
+        InjektPlugins.logger?.info("${componentName()} Add scope name $scopeName")
     }
 
     /**
@@ -105,7 +114,7 @@ class Component @PublishedApi internal constructor(val name: String?) {
         instances
             .filter { it.value.binding.eager && !it.value.isCreated }
             .forEach {
-                InjektPlugins.logger?.info("$name Create eager instance for ${it.value.binding}")
+                InjektPlugins.logger?.info("${componentName()} Create eager instance for ${it.value.binding}")
                 it.value.get(this, null)
             }
     }
@@ -163,9 +172,9 @@ class Component @PublishedApi internal constructor(val name: String?) {
 
                 // add the binding to the parent
                 if (parentWithScope != null) {
-                    return parentWithScope.addBindingInternal(binding)
+                    return@addBindingInternal parentWithScope.addBindingInternal(binding)
                 } else {
-                    error("Component scope $name does not match binding scope ${binding.scopeName}")
+                    error("Component scope ${componentName()} does not match binding scope ${binding.scopeName}")
                 }
             }
 
@@ -175,9 +184,9 @@ class Component @PublishedApi internal constructor(val name: String?) {
 
             InjektPlugins.logger?.let { logger ->
                 val msg = if (isOverride) {
-                    "$name Override $binding"
+                    "${componentName()} Override $binding"
                 } else {
-                    "$name Declare $binding"
+                    "${componentName()} Declare $binding"
                 }
                 logger.debug(msg)
             }
