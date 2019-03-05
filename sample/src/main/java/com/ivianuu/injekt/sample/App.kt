@@ -22,13 +22,8 @@ import com.ivianuu.injekt.android.APPLICATION_SCOPE
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.injekt.component
 import com.ivianuu.injekt.configureInjekt
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.sample.speed.Fib8
-import com.ivianuu.injekt.sample.speed.fibonacciModule
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -38,11 +33,6 @@ class App : Application(), InjektTrait {
     override val component by lazy { applicationComponent() }
 
     private val appDependency by inject<AppDependency>()
-
-    init {
-        val component = component { modules(fibonacciModule) }
-        val testDurations = (1..100).map { component.get<Fib8>() }
-    }
 
     override fun onCreate() {
         configureInjekt {

@@ -24,7 +24,8 @@ inline infix fun <T> BindingContext<T>.withContext(body: BindingContext<T>.() ->
 infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {
     val copy = binding.copy(
         key = Key.of(type),
-        type = type, name = null
+        type = type,
+        name = null
     )
     module.declare(copy)
     return this
