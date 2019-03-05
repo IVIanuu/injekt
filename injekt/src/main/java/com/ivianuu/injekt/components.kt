@@ -39,24 +39,38 @@ fun Component.modules(vararg modules: Module) {
 }
 
 /**
+ * Adds the module
+ */
+fun Component.modules(module: Module) {
+    addModule(module)
+}
+
+/**
  * Adds all [dependencies]
  */
 fun Component.dependencies(dependencies: Iterable<Component>) {
-    dependencies.forEach { addDependency(it) }
+    dependencies.forEach(this::addDependency)
 }
 
 /**
  * Adds all [dependencies]
  */
 fun Component.dependencies(vararg dependencies: Component) {
-    dependencies.forEach { addDependency(it) }
+    dependencies.forEach(this::addDependency)
+}
+
+/**
+ * Adds the [dependency]
+ */
+fun Component.dependencies(dependency: Component) {
+    addDependency(dependency)
 }
 
 /**
  * Adds all of [scopeNames]
  */
 fun Component.scopeNames(scopeNames: Iterable<String>) {
-    scopeNames.forEach { addScopeName(it) }
+    scopeNames.forEach(this::addScopeName)
 }
 
 /**
@@ -64,6 +78,13 @@ fun Component.scopeNames(scopeNames: Iterable<String>) {
  */
 fun Component.scopeNames(vararg scopeNames: String) {
     scopeNames.forEach(this::addScopeName)
+}
+
+/**
+ * Adds the [scopeName]
+ */
+fun Component.scopeNames(scopeName: String) {
+    addScopeName(scopeName)
 }
 
 /**

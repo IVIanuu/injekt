@@ -56,7 +56,6 @@ class SpeedTest {
 
     private fun Double?.format(): String = String.format("%.2f ms", this)
 
-
     inline fun measureDurationOnly(code: () -> Unit): Double {
         val start = System.nanoTime()
         code()
