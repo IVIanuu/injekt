@@ -24,7 +24,7 @@ import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 
-@Single("name", APPLICATION_SCOPE, true, true)
+@Single("name", APPLICATION_SCOPE)
 class DummyDep
 
 @Reusable

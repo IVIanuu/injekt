@@ -30,7 +30,6 @@ import com.ivianuu.processingx.elementUtils
 import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
-import com.ivianuu.processingx.getOrNull
 import com.ivianuu.processingx.hasAnnotation
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.typeUtils
@@ -105,9 +104,6 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             scope = null
         }
 
-        val override = annotation["override"].value as Boolean
-        val eager = annotation.getOrNull("eager")?.value as? Boolean ?: false
-
         var paramsIndex = -1
 
         val targetName = element.asClassName().javaToKotlinType() as ClassName
@@ -123,8 +119,6 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             kind,
             name,
             scope,
-            override,
-            eager,
             element.enclosedElements
                 .filterIsInstance<ExecutableElement>()
                 .first { it.kind == ElementKind.CONSTRUCTOR }

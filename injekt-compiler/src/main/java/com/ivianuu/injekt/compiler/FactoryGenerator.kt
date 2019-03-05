@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Attributes
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
 import com.squareup.kotlinpoet.FileSpec
@@ -52,6 +51,7 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
         val imports = mutableSetOf<String>()
 
         imports.add("create")
+        imports.add("attributesOf")
 
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
@@ -113,15 +113,14 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                                     "${descriptor.kind.kindConstantName}, " +
                                     "%T, " +
                                     "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +
-                                    "%T(), " +
-                                    "${descriptor.override}, " +
-                                    "${descriptor.eager}, " +
+                                    "attributesOf(), " +
+                                    "false, " +
+                                    "false, " +
                                     "{ params -> $constructorStatement }" +
                                     ")",
                             Binding::class,
                             descriptor.target,
                             descriptor.kind.instanceFactory,
-                            Attributes::class,
                             descriptor.target
                         )
                     }

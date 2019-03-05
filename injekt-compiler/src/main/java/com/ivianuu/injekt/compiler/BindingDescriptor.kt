@@ -29,8 +29,6 @@ data class BindingDescriptor(
     val kind: Kind,
     val name: String?,
     val scopeName: String?,
-    val override: Boolean,
-    val eager: Boolean,
     val constructorParams: List<ParamDescriptor>
 ) {
     enum class Kind {

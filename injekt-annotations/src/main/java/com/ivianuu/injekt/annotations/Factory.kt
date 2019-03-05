@@ -23,6 +23,5 @@ package com.ivianuu.injekt.annotations
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Factory(
     val name: String = "",
-    val scopeName: String = "",
-    val override: Boolean = false
+    val scopeName: String = ""
 )
