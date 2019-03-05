@@ -45,5 +45,5 @@ class App : Application(), InjektTrait {
     }
 }
 
-@Single(scopeName = APPLICATION_SCOPE)
+@Single(APPLICATION_SCOPE)
 class AppDependency(val app: App)

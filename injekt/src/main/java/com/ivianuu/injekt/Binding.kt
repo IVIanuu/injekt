@@ -68,7 +68,7 @@ fun <T> Binding.Companion.create(
     definition: Definition<T>
 ): Binding<T> {
     return Binding(
-        Key(type, name), type, name, kind, instanceFactory,
+        Key.of(type, name), type, name, kind, instanceFactory,
         definition, attributes, scopeName, override, eager
     )
 }

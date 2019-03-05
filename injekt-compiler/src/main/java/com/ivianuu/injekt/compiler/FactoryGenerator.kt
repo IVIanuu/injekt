@@ -109,7 +109,7 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                         addCode(
                             "return %T.create(" +
                                     "%T::class, " +
-                                    "${if (descriptor.name != null) "\"${descriptor.name}\"" else "null"}, " +
+                                    "null, " +
                                     "${descriptor.kind.kindConstantName}, " +
                                     "%T, " +
                                     "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +

@@ -21,7 +21,4 @@ package com.ivianuu.injekt.annotations
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Factory(
-    val name: String = "",
-    val scopeName: String = ""
-)
+annotation class Factory(val scopeName: String = "")

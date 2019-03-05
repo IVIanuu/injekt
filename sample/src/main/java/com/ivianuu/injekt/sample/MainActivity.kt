@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Single(scopeName = ACTIVITY_SCOPE)
+@Single(ACTIVITY_SCOPE)
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

@@ -94,7 +94,7 @@ fun <T> Module.bindIntoSet(
 ) {
     withBinding<T>(implementationType, implementationName) {
         bindIntoSet(setBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(implementationType, implementationName)
     }
 }
 

@@ -21,7 +21,4 @@ package com.ivianuu.injekt.annotations
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Reusable(
-    val name: String = "",
-    val scopeName: String = ""
-)
+annotation class Reusable(val scopeName: String = "")

@@ -21,7 +21,4 @@ package com.ivianuu.injekt.annotations
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Single(
-    val name: String = "",
-    val scopeName: String = ""
-)
+annotation class Single(val scopeName: String = "")

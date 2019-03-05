@@ -71,32 +71,26 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                 elementsByAnnotation[Reusable::class.java] +
                 elementsByAnnotation[Single::class.java])
             .filterIsInstance<TypeElement>()
-            .mapNotNull { createBindingDescriptor(it) }
-            .map { FactoryGenerator(it) }
-            .map { it.generate() }
+            .mapNotNull(this::createBindingDescriptor)
+            .map(::FactoryGenerator)
+            .map(FactoryGenerator::generate)
             .forEach { it.write(processingEnv) }
 
         return emptySet()
     }
 
     private fun createBindingDescriptor(element: TypeElement): BindingDescriptor? {
-        val kind = if (element.hasAnnotation<Single>()) {
-            BindingDescriptor.Kind.SINGLE
-        } else if (element.hasAnnotation<Reusable>()) {
-            BindingDescriptor.Kind.REUSABLE
-        } else {
-            BindingDescriptor.Kind.FACTORY
+        val kind = when {
+            element.hasAnnotation<Factory>() -> BindingDescriptor.Kind.FACTORY
+            element.hasAnnotation<Single>() -> BindingDescriptor.Kind.SINGLE
+            element.hasAnnotation<Reusable>() -> BindingDescriptor.Kind.REUSABLE
+            else -> error("unknown annotation type $element")
         }
 
         val annotation = when (kind) {
             BindingDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
             BindingDescriptor.Kind.REUSABLE -> element.getAnnotationMirror<Reusable>()
             BindingDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
-        }
-
-        var name: String? = annotation["name"].value as String
-        if (name!!.isEmpty()) {
-            name = null
         }
 
         var scope: String? = annotation["scopeName"].value as String
@@ -117,7 +111,6 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             targetName,
             factoryName,
             kind,
-            name,
             scope,
             element.enclosedElements
                 .filterIsInstance<ExecutableElement>()
@@ -139,7 +132,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                             Diagnostic.Kind.ERROR,
                             "Name must not be empty", it
                         )
-                        return null
+                        return@createBindingDescriptor null
                     }
 
                     if (paramIndex != -1 && getName != null) {
@@ -148,7 +141,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                             "Only one of @Name and @Param can be annotated per parameter",
                             it
                         )
-                        return null
+                        return@createBindingDescriptor null
                     }
 
                     val type = typeUtils.erasure(it.asType())

@@ -97,7 +97,7 @@ fun <T> Module.bindIntoMap(
 ) {
     withBinding<T>(implementationType, implementationName) {
         bindIntoMap(mapBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key(implementationType, implementationName)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(implementationType, implementationName)
     }
 }
 

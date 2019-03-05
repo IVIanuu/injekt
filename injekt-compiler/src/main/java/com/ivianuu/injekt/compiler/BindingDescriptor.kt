@@ -27,7 +27,6 @@ data class BindingDescriptor(
     val target: ClassName,
     val factoryName: ClassName,
     val kind: Kind,
-    val name: String?,
     val scopeName: String?,
     val constructorParams: List<ParamDescriptor>
 ) {
