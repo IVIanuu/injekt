@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 interface InstanceFactory {
     /**
-     * Returns a [Instance] for the [binding] inside the [component]
+     * Returns a [Instance] for the [binding] which lives inside the [component]
      */
     fun <T> create(binding: Binding<T>, component: Component?): Instance<T>
 }

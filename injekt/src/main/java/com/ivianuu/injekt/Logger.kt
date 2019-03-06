@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 interface Logger {
     /**
-     * Logs a debug msg
+     * Logs a debug message
      */
     fun debug(msg: String)
 
