@@ -28,10 +28,10 @@ class SpeedTest {
     fun testSpeed() {
         println("Run speed test..")
         val startup =
-            (1..ROUNDS).map { measureDurationOnly { component("test") { modules(fibonacciModule) } } }
+            (1..ROUNDS).map { measureDurationOnly { component { modules(fibonacciModule) } } }
                 .median().format()
 
-        val component = component("test") { modules(fibonacciModule) }
+        val component = component { modules(fibonacciModule) }
         val testDurations = (1..ROUNDS).map { measureDurationOnly { component.get<Fib8>() } }
 
         println("Speed test completed -> startup: $startup, injection time: ${testDurations.median().format()}")
