@@ -108,7 +108,7 @@ inline fun <reified T> Module.single(
 )
 
 /**
- * Adds all bindings of [module]
+ * Adds all bindings of the [module]
  */
 fun Module.module(module: Module) {
     module.bindings.forEach { add(it.value) }
@@ -152,7 +152,9 @@ inline fun <T> Module.withBinding(
     ) withContext body
 }
 
-/** Calls trough [Module.bindType] */
+/**
+ * Binds the [bindingType] to the existing [Binding] for [T] and [implementationName]
+ */
 inline fun <reified T> Module.bindType(
     bindingType: KClass<*>,
     implementationName: String? = null
@@ -160,7 +162,9 @@ inline fun <reified T> Module.bindType(
     withBinding<T>(implementationName) { bindType(bindingType) }
 }
 
-/** Calls trough [Module.bindName] */
+/**
+ * Binds the [bindingName] to the existing [Binding] for [T] and [implementationName]
+ */
 inline fun <reified T> Module.bindName(
     bindingName: String,
     implementationName: String? = null
