@@ -36,24 +36,24 @@ data class MultiBindingSet<T>(
  */
 fun <T> MultiBindingSet<T>.toSet(parameters: ParametersDefinition? = null): Set<T> =
     set.map {
-        component.get<T>(it.type, it.name, parameters = parameters)
+        component.get<T>(it.type, it.name, parameters)
     }.toSet()
 
 /**
  * Returns a [Set] of [Lazy]s of [T]
  */
 fun <T> MultiBindingSet<T>.toLazySet(parameters: ParametersDefinition? = null): Set<Lazy<T>> =
-    set.map { lazy { component.get<T>(it.type, it.name, parameters = parameters) } }.toSet()
+    set.map { lazy { component.get<T>(it.type, it.name, parameters) } }.toSet()
 
 /**
  * Returns a [Set] of [Provider]s of [T]
  */
 fun <T> MultiBindingSet<T>.toProviderSet(defaultParameters: ParametersDefinition? = null): Set<Provider<T>> =
-    set.map { (_, type, name) ->
+    set.map { binding ->
         provider {
             component.get<T>(
-                type,
-                name,
+                binding.type,
+                binding.name,
                 it ?: defaultParameters
             )
         }

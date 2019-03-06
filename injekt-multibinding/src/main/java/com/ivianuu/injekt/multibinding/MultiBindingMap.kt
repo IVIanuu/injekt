@@ -47,11 +47,11 @@ fun <K, T> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDefinition? = n
  * Returns a [Map] of [K] and [Provider]s of [T]
  */
 fun <K, T> MultiBindingMap<K, T>.toProviderMap(defaultParameters: ParametersDefinition? = null): Map<K, Provider<T>> =
-    map.mapValues { dec ->
+    map.mapValues { binding ->
         provider {
             component.get<T>(
-                dec.value.type,
-                dec.value.name,
+                binding.value.type,
+                binding.value.name,
                 it ?: defaultParameters
             )
         }
