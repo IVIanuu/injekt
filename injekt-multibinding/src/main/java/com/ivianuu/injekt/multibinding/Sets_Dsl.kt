@@ -24,7 +24,6 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrSet
 import com.ivianuu.injekt.withBinding
 import kotlin.collections.set
-import kotlin.reflect.KClass
 
 /**
  * Declares a empty set binding with the [setName]
@@ -37,7 +36,7 @@ fun Module.setBinding(setName: String) {
 }
 
 /**
- * Binds this [Binding] into [setBinding]
+ * Adds this [Binding] into [setBinding]
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
@@ -50,7 +49,7 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
 }
 
 /**
- * Binds this binding into [setName]
+ * Adds this binding into [setName]
  */
 fun <T> BindingContext<T>.bindIntoSet(
     setName: String,
@@ -58,20 +57,10 @@ fun <T> BindingContext<T>.bindIntoSet(
 ): BindingContext<T> = bindIntoSet(SetBinding(setName, override))
 
 /**
- * Binds this [Binding] into [setName]
+ * Adds this [Binding] into [setName]
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> =
     bindIntoSet(SetBinding(setName))
-
-/**
- * Binds a already existing [Binding] into [setBinding]
- */
-inline fun <reified T> Module.bindIntoSet(
-    setBinding: SetBinding,
-    implementationName: String? = null
-) {
-    bindIntoSet<T>(T::class, setBinding, implementationName)
-}
 
 /**
  * Binds a already existing [Binding] into a [Set] named [setName]
@@ -87,25 +76,12 @@ inline fun <reified T> Module.bindIntoSet(
 /**
  * Binds a already existing [Binding] into [setBinding]
  */
-fun <T> Module.bindIntoSet(
-    implementationType: KClass<*>,
+inline fun <reified T> Module.bindIntoSet(
     setBinding: SetBinding,
     implementationName: String? = null
 ) {
-    withBinding<T>(implementationType, implementationName) {
+    withBinding<T>(implementationName) {
         bindIntoSet(setBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(implementationType, implementationName)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationName)
     }
-}
-
-/**
- * Binds a already existing [Binding] into a [Set] named [setName]
- */
-fun <T> Module.bindIntoSet(
-    implementationType: KClass<*>,
-    setName: String,
-    override: Boolean = false,
-    implementationName: String? = null
-) {
-    bindIntoSet<T>(implementationType, SetBinding(setName, override), implementationName)
 }

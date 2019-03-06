@@ -22,7 +22,7 @@ class Module @PublishedApi internal constructor(
     /**
      * Adds the [binding]
      */
-    fun <T> declare(
+    fun <T> add(
         binding: Binding<T>
     ): BindingContext<T> {
         var binding = binding
@@ -41,7 +41,9 @@ class Module @PublishedApi internal constructor(
             )
         }
 
-        if (bindings.containsKey(binding.key) && !binding.override) {
+        val isOverride = bindings.remove(binding.key) != null
+
+        if (isOverride && !binding.override) {
             throw OverrideException("Try to override binding $binding")
         }
 
@@ -75,20 +77,9 @@ inline fun <reified T> Module.factory(
     scopeName: String? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = factory(T::class, name, scopeName, override, definition)
-
-/**
- * Provides a unscoped dependency which will be recreated on each request
- */
-fun <T> Module.factory(
-    type: KClass<*>,
-    name: String? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    definition: Definition<T>
-): BindingContext<T> = declare(
+): BindingContext<T> = add(
     Binding.createFactory(
-        type = type,
+        type = T::class,
         name = name,
         scopeName = scopeName,
         override = override,
@@ -105,21 +96,9 @@ inline fun <reified T> Module.single(
     override: Boolean = false,
     eager: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = single(T::class, name, scopeName, override, eager, definition)
-
-/**
- * Provides scoped dependency which will be created once for each component
- */
-fun <T> Module.single(
-    type: KClass<*>,
-    name: String? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    definition: Definition<T>
-): BindingContext<T> = declare(
+): BindingContext<T> = add(
     Binding.createSingle(
-        type = type,
+        type = T::class,
         name = name,
         scopeName = scopeName,
         override = override,
@@ -132,7 +111,7 @@ fun <T> Module.single(
  * Adds all bindings of [module]
  */
 fun Module.module(module: Module) {
-    module.bindings.forEach { declare(it.value) }
+    module.bindings.forEach { add(it.value) }
 }
 
 /**
@@ -164,25 +143,21 @@ inline fun <T> Module.withBinding(
     // we create a additional binding because we have now reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation
-    factory<T>(type, UUID.randomUUID().toString()) { get(type, name) { it } } withContext body
+    add(
+        Binding.createFactory(
+            type = type,
+            name = UUID.randomUUID().toString(),
+            definition = { component.get<T>(type, name) { it } }
+        )
+    ) withContext body
 }
 
 /** Calls trough [Module.bindType] */
-inline fun <reified T, reified S> Module.bindType(
-    implementationName: String? = null
-) {
-    bindType<T, S>(T::class, S::class, implementationName)
-}
-
-/**
- * Adds a binding for [bindingType] to a existing binding
- */
-fun <T, S> Module.bindType(
+inline fun <reified T> Module.bindType(
     bindingType: KClass<*>,
-    implementationType: KClass<*>,
     implementationName: String? = null
 ) {
-    withBinding<S>(implementationType, implementationName) { bindType(bindingType) }
+    withBinding<T>(implementationName) { bindType(bindingType) }
 }
 
 /** Calls trough [Module.bindName] */
@@ -190,18 +165,7 @@ inline fun <reified T> Module.bindName(
     bindingName: String,
     implementationName: String? = null
 ) {
-    bindName<T>(bindingName, T::class, implementationName)
-}
-
-/**
- * Adds a binding for [bindingName] to a existing binding
- */
-fun <T> Module.bindName(
-    bindingName: String,
-    implementationType: KClass<*>,
-    implementationName: String? = null
-) {
-    withBinding<T>(implementationType, implementationName) { bindName(bindingName) }
+    withBinding<T>(implementationName) { bindName(bindingName) }
 }
 
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)

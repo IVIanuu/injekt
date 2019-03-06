@@ -77,27 +77,25 @@ fun <T> Binding.Companion.createFactory(
     type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
-    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
     Binding.create(
         type, name, FACTORY_KIND, FactoryInstanceFactory,
-        scopeName, attributes, override, false, definition
+        scopeName, attributesOf(), override, false, definition
     )
 
 fun <T> Binding.Companion.createSingle(
     type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
-    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
     Binding.create(
         type, name, SINGLE_KIND, SingleInstanceFactory,
-        scopeName, attributes, override, eager, definition
+        scopeName, attributesOf(), override, eager, definition
     )
 
 /**

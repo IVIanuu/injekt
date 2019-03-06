@@ -21,16 +21,10 @@ import com.ivianuu.injekt.Component
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 
-inline fun <reified T> Component.declareMock(
-    name: String? = null,
-    stubbing: T.() -> Unit = {}
-) = declareMock(T::class, name, stubbing)
-
 /**
  * Declares a mocked version of [type] and [name]
  */
-inline fun <T> Component.declareMock(
-    type: KClass<*>,
+inline fun <reified T> Component.declareMock(
     name: String? = null,
     stubbing: T.() -> Unit = {}
 ): T {
@@ -38,21 +32,20 @@ inline fun <T> Component.declareMock(
         if (name != null) {
             it.name == name
         } else {
-            it.type == type
+            it.type == T::class
         }
     } as Binding<T>
 
-    val binding = foundBinding.cloneForMock(type)
+    val binding = foundBinding.cloneForMock(T::class)
     addBinding(binding)
 
-    return applyStub(type, stubbing)
+    return applyStub(stubbing)
 }
 
-inline fun <T> Component.applyStub(
-    type: KClass<*>,
-    stubbing: T.() -> Unit = {}
+inline fun <reified T> Component.applyStub(
+    stubbing: T.() -> Unit
 ): T {
-    val instance: T = get(type)
+    val instance = get<T>(T::class)
     stubbing.let { instance.apply(stubbing) }
     return instance
 }

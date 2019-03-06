@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Attributes
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
@@ -42,13 +41,12 @@ fun <T> Binding.Companion.createReusable(
     type: KClass<*>,
     name: String? = null,
     scopeName: String? = null,
-    attributes: Attributes = attributesOf(),
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
     Binding.create(
         type, name, REUSABLE_KIND, ReusableInstanceFactory,
-        scopeName, attributes, override, false, definition
+        scopeName, attributesOf(), override, false, definition
     )
 
 /**
@@ -98,20 +96,9 @@ inline fun <reified T> Module.reusable(
     scopeName: String? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = reusable(T::class, name, scopeName, override, definition)
-
-/**
- * Provides a reusable dependency which will use weak references internally
- */
-fun <T> Module.reusable(
-    type: KClass<*>,
-    name: String? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    definition: Definition<T>
-): BindingContext<T> = declare(
+): BindingContext<T> = add(
     Binding.createReusable(
-        type = type,
+        type = T::class,
         name = name,
         scopeName = scopeName,
         override = override,

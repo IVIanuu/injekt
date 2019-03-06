@@ -140,7 +140,7 @@ fun BindingBuilder<*>.bindIntoSet(setName: String, override: Boolean = false) {
 }
 
 inline fun <reified T> Module.bind(name: String? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
-return declare(BindingBuilder<T>(T::class, name).apply(body).build())
+return add(BindingBuilder<T>(T::class, name).apply(body).build())
 }
 
 inline fun <reified T> Module.bindSingle(name: String? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {

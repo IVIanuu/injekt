@@ -97,30 +97,10 @@ inline fun <reified T> Module.instance(
     scopeName: String? = null,
     override: Boolean = false,
     instance: () -> T
-): BindingContext<T> = instance(T::class, name, scopeName, override, instance)
-
-/**
- * Provides a existing instance
- */
-inline fun <T> Module.instance(
-    type: KClass<*>,
-    name: String? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    instance: () -> T
-): BindingContext<T> = instance(type, instance(), name, scopeName, override)
-
-@PublishedApi
-internal fun <T> Module.instance(
-    type: KClass<*>,
-    instance: T,
-    name: String? = null,
-    scopeName: String? = null,
-    override: Boolean = false
-): BindingContext<T> = declare(
+): BindingContext<T> = add(
     Binding.createInstance(
-        type = type,
-        instance = instance,
+        type = T::class,
+        instance = instance(),
         name = name,
         scopeName = scopeName,
         override = override

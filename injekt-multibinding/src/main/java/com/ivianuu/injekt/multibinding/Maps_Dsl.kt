@@ -24,10 +24,9 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrSet
 import com.ivianuu.injekt.withBinding
 import kotlin.collections.set
-import kotlin.reflect.KClass
 
 /**
- * Binds this binding into a map
+ * Adds this binding into a map
  */
 infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
@@ -40,14 +39,14 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
 }
 
 /**
- * Binds this binding into the name [Pair.first] with the key [Pair.second]
+ * Adds this binding into the name [Pair.first] with the key [Pair.second]
  */
 infix fun <T> BindingContext<T>.bindIntoMap(
     pair: Pair<String, Any>
 ): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
 
 /**
- * Binds this binding into [mapName] with [mapKey]
+ * Adds this binding into [mapName] with [mapKey]
  */
 fun <T> BindingContext<T>.bindIntoMap(
     mapName: String,
@@ -66,16 +65,6 @@ fun Module.mapBinding(mapName: String) {
 }
 
 /**
- * Binds a already existing [Binding] into [mapBinding]
- */
-inline fun <reified T> Module.bindIntoMap(
-    mapBinding: MapBinding,
-    implementationName: String? = null
-) {
-    bindIntoMap<T>(mapBinding, T::class, implementationName)
-}
-
-/**
  * Binds a already existing [Binding] into [mapName] with [mapKey]
  */
 inline fun <reified T> Module.bindIntoMap(
@@ -90,26 +79,12 @@ inline fun <reified T> Module.bindIntoMap(
 /**
  * Binds a already existing [Binding] into [mapBinding]
  */
-fun <T> Module.bindIntoMap(
+inline fun <reified T> Module.bindIntoMap(
     mapBinding: MapBinding,
-    implementationType: KClass<*>,
     implementationName: String? = null
 ) {
-    withBinding<T>(implementationType, implementationName) {
+    withBinding<T>(implementationName) {
         bindIntoMap(mapBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(implementationType, implementationName)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationName)
     }
-}
-
-/**
- * Binds a already existing [Binding] into [mapName] with [mapKey]
- */
-fun <T> Module.bindIntoMap(
-    mapName: String,
-    mapKey: Any,
-    override: Boolean = false,
-    implementationType: KClass<*>,
-    implementationName: String? = null
-) {
-    bindIntoMap<T>(MapBinding(mapName, mapKey, override), implementationType, implementationName)
 }
