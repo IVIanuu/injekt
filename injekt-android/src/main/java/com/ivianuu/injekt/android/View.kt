@@ -24,7 +24,7 @@ inline fun <T : View> T.viewComponent(
     scopeNames(VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+        ?: getApplicationComponentOrNull())?.let(this::dependencies)
     addInstance(this@viewComponent)
     definition.invoke(this)
 }
@@ -39,7 +39,7 @@ inline fun <T : View> T.childViewComponent(
     scopeNames(CHILD_VIEW_SCOPE)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+        ?: getApplicationComponentOrNull())?.let(this::dependencies)
     addInstance(this@childViewComponent)
     definition.invoke(this)
 }

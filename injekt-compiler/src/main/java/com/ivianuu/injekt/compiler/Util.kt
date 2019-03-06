@@ -25,7 +25,7 @@ import me.eugeniomarletti.kotlin.metadata.shadow.platform.JavaToKotlinClassMap
 
 fun TypeName.javaToKotlinType(): TypeName = if (this is ParameterizedTypeName) {
     (rawType.javaToKotlinType() as ClassName).parameterizedBy(
-        *typeArguments.map { it.javaToKotlinType() }.toTypedArray()
+        *typeArguments.map(TypeName::javaToKotlinType).toTypedArray()
     )
 } else {
     val className =

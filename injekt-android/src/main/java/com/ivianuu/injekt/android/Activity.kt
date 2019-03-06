@@ -36,7 +36,7 @@ inline fun <T : Activity> T.activityComponent(
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
     scopeNames(ACTIVITY_SCOPE)
-    getApplicationComponentOrNull()?.let { dependencies(it) }
+    getApplicationComponentOrNull()?.let(this::dependencies)
     addInstance(this@activityComponent)
     definition.invoke(this)
 }

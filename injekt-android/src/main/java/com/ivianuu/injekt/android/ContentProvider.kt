@@ -36,7 +36,7 @@ inline fun <T : ContentProvider> T.contentProviderComponent(
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
     scopeNames(CONTENT_PROVIDER_SCOPE)
-    getApplicationComponentOrNull()?.let { dependencies(it) }
+    getApplicationComponentOrNull()?.let(this::dependencies)
     addInstance(this@contentProviderComponent)
     definition.invoke(this)
 }

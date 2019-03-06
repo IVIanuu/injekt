@@ -36,7 +36,7 @@ inline fun <T : Service> T.serviceComponent(
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
     scopeNames(SERVICE_SCOPE)
-    getApplicationComponentOrNull()?.let { dependencies(it) }
+    getApplicationComponentOrNull()?.let(this::dependencies)
     addInstance(this@serviceComponent)
     definition.invoke(this)
 }

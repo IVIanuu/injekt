@@ -39,7 +39,7 @@ inline fun <T : Fragment> T.fragmentComponent(
     scopeNames(FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+        ?: getApplicationComponentOrNull())?.let(this::dependencies)
     addInstance(this@fragmentComponent)
     definition.invoke(this)
 }
@@ -54,7 +54,7 @@ inline fun <T : Fragment> T.childFragmentComponent(
     scopeNames(CHILD_FRAGMENT_SCOPE)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+        ?: getApplicationComponentOrNull())?.let(this::dependencies)
     addInstance(this@childFragmentComponent)
     definition.invoke(this)
 }
