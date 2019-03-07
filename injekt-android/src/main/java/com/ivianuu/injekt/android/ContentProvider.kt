@@ -51,4 +51,4 @@ fun ContentProvider.getApplicationComponentOrNull(): Component? =
  * Returns the parent [Component] or throws
  */
 fun ContentProvider.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application found for $this")
+    getApplicationComponentOrNull() ?: error("No application component found for $this")

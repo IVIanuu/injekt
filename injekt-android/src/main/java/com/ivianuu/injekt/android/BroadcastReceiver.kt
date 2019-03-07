@@ -53,4 +53,4 @@ fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component
  * Returns the parent [Component] or throws
  */
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
-    getApplicationComponentOrNull(context) ?: error("No application found for $this")
+    getApplicationComponentOrNull(context) ?: error("No application component found for $this")

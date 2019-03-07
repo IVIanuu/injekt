@@ -50,4 +50,4 @@ fun Activity.getApplicationComponentOrNull(): Component? = (application as? Inje
  * Returns the parent [Component] or throws
  */
 fun Activity.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application found for $this")
+    getApplicationComponentOrNull() ?: error("No application component found for $this")

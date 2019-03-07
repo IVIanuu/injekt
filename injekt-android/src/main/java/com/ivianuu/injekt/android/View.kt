@@ -87,4 +87,4 @@ fun View.getApplicationComponentOrNull(): Component? =
  * Returns the [Component] of the activity or throws
  */
 fun View.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: kotlin.error("No application component found for $this")
+    getApplicationComponentOrNull() ?: error("No application component found for $this")

@@ -50,4 +50,4 @@ fun Service.getApplicationComponentOrNull(): Component? = (application as? Injek
  * Returns the parent [Component] or throws
  */
 fun Service.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application found for $this")
+    getApplicationComponentOrNull() ?: error("No application component found for $this")
