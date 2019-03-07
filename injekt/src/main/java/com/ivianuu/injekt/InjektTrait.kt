@@ -14,13 +14,13 @@ interface InjektTrait {
 inline fun <reified T> InjektTrait.get(
     name: String? = null,
     noinline parameters: ParametersDefinition? = null
-): T = component.get(T::class, name, parameters)
+): T = component.get(name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
     name: String? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = component.inject(name, parameters)
+): Lazy<T> = lazy { component.get<T>(name, parameters) }
 
 /** Calls trough [Component.getProvider] */
 inline fun <reified T> InjektTrait.getProvider(
@@ -32,4 +32,4 @@ inline fun <reified T> InjektTrait.getProvider(
 inline fun <reified T> InjektTrait.injectProvider(
     name: String? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = component.injectProvider(name, defaultParameters)
+): Lazy<Provider<T>> = lazy { component.getProvider<T>(name, defaultParameters) }
