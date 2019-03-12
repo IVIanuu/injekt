@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
  * A module is the container for bindings
  */
 class Module @PublishedApi internal constructor(
-    val scopeName: String?,
+    val scope: Scope?,
     val eager: Boolean?,
     val override: Boolean?
 ) {
@@ -26,16 +26,16 @@ class Module @PublishedApi internal constructor(
         binding: Binding<T>
     ): BindingContext<T> {
         var binding = binding
-        val scopeName = scopeName ?: binding.scopeName
+        val scope = scope ?: binding.scope
         val override = override ?: binding.override
         val eager = eager ?: binding.eager
 
-        if (binding.scopeName != scopeName
+        if (binding.scope != scope
             || binding.eager != eager
             || binding.override != override
         ) {
             binding = binding.copy(
-                scopeName = scopeName,
+                scope = scope,
                 eager = eager,
                 override = override
             )
@@ -63,11 +63,11 @@ typealias ModuleDefinition = Module.() -> Unit
  * Defines a [Module]
  */
 inline fun module(
-    scopeName: String? = null,
+    scope: Scope? = null,
     override: Boolean? = null,
     eager: Boolean? = null,
     definition: ModuleDefinition = {}
-): Module = Module(scopeName, eager, override).apply(definition)
+): Module = Module(scope, eager, override).apply(definition)
 
 /**
  * Adds all bindings of the [module]
@@ -80,12 +80,12 @@ fun Module.module(module: Module) {
  * Adds all bindings of module
  */
 inline fun Module.module(
-    scopeName: String? = null,
+    scope: Scope? = null,
     override: Boolean? = null,
     eager: Boolean? = null,
     definition: ModuleDefinition = {}
 ) {
-    module(com.ivianuu.injekt.module(scopeName, override, eager, definition))
+    module(com.ivianuu.injekt.module(scope, override, eager, definition))
 }
 
 /** Calls trough [Module.withBinding] */

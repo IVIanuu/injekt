@@ -21,14 +21,18 @@ import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.common.addInstance
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopeNames
+import com.ivianuu.injekt.scopes
 
-const val RECEIVER_SCOPE = "receiver_scope"
+/**
+ * Receiver scope
+ */
+object ReceiverScope : NamedScope("ReceiverScope")
 
 /**
  * Receiver qualifier
@@ -43,7 +47,7 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(RECEIVER_SCOPE)
+    scopes(ReceiverScope)
     getApplicationComponentOrNull(context)?.let(this::dependencies)
     addInstance(this@receiverComponent)
     definition.invoke(this)

@@ -42,7 +42,7 @@ args: Map<String, Any>
 ): Binding<T>
 
 val Map<String, Any>.name: String? get() = get("name") as? String
-val Map<String, Any>.scopeName: String? get() = get("scopeName") as? String
+val Map<String, Any>.scope: Scope? get() = get("scope") as? String
 val Map<String, Any>.override: Boolean get() = get("override") as? Boolean ?: false
 val Map<String, Any>.eager: Boolean get() = get("eager") as? Boolean ?: false
 }
@@ -58,7 +58,7 @@ val Map<String, Any>.eager: Boolean get() = get("eager") as? Boolean ?: false
 @Creator(AppServiceBindingCreator::class)
 annotation class AppService(
 val name: String = "",
-val scopeName: String = "",
+val scope: String = "",
 val override: Boolean = false
 )
 
@@ -69,10 +69,10 @@ definition: Definition<T>,
 args: Map<String, Any>
 ): Binding<T> {
 val name = args.name
-val scopeName = args.scopeName
+val scope = args.scope
 val override = args.override
 val eager = args.eager
-return Binding.createSingle(type, name, scopeName,
+return Binding.createSingle(type, name, scope,
 override = override, eager = eager, definition = definition)
 }
 }
@@ -93,7 +93,7 @@ MyAppService(params[0], get("appContext"))
 
 private val args = mapOf(
 "name" to "",
-"scopeName" to "",
+"scope" to "",
 "override" to false,
 "eager" to false
 )

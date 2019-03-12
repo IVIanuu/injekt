@@ -22,7 +22,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.fragment.CHILD_FRAGMENT_SCOPE
+import com.ivianuu.injekt.android.fragment.ChildFragmentScope
 import com.ivianuu.injekt.android.fragment.childFragmentComponent
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.injekt.inject
@@ -65,7 +65,7 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single(CHILD_FRAGMENT_SCOPE)
+@Single(ChildFragmentScope::class)
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

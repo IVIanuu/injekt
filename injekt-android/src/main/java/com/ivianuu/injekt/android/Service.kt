@@ -22,15 +22,19 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scopeNames
+import com.ivianuu.injekt.scopes
 
-const val SERVICE_SCOPE = "service_scope"
+/**
+ * Service scope
+ */
+object ServiceScope : NamedScope("ServiceScope")
 
 /**
  * Service qualifier
@@ -44,7 +48,7 @@ inline fun <T : Service> T.serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(SERVICE_SCOPE)
+    scopes(ServiceScope)
     getApplicationComponentOrNull()?.let(this::dependencies)
     definition.invoke(this)
 }

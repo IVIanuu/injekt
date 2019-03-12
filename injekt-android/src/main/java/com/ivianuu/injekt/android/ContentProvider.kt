@@ -20,14 +20,18 @@ import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.common.addInstance
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopeNames
+import com.ivianuu.injekt.scopes
 
-const val CONTENT_PROVIDER_SCOPE = "content_provider_scope"
+/**
+ * Content provider scope
+ */
+object ContentProviderScope : NamedScope("ContentProviderScope")
 
 /**
  * Content provider qualifier
@@ -41,7 +45,7 @@ inline fun <reified T : ContentProvider> T.contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(CONTENT_PROVIDER_SCOPE)
+    scopes(ContentProviderScope)
     getApplicationComponentOrNull()?.let(this::dependencies)
     addInstance(this@contentProviderComponent)
     definition.invoke(this)

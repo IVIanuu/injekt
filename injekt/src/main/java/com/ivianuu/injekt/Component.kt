@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 class Component @PublishedApi internal constructor() {
 
     private val dependencies = linkedSetOf<Component>()
-    private val scopeNames = hashSetOf<String>()
+    private val scopes = hashSetOf<Scope>()
     private val bindings = linkedMapOf<Key, Binding<*>>()
     private val instances = hashMapOf<Key, Instance<*>>()
 
@@ -56,26 +56,26 @@ class Component @PublishedApi internal constructor() {
     fun getDependencies(): Set<Component> = dependencies
 
     /**
-     * Adds the [scopeName]
+     * Adds the [scope]
      */
-    fun addScopeName(scopeName: String) {
+    fun addScope(scope: Scope) {
         synchronized(this) {
-            if (!this.scopeNames.add(scopeName)) {
-                error("Scope name $scopeName was already added")
+            if (!this.scopes.add(scope)) {
+                error("Scope name $scope was already added")
             }
         }
-        InjektPlugins.logger?.info("${componentName()} Add scope name $scopeName")
+        InjektPlugins.logger?.info("${componentName()} Add scope name $scope")
     }
 
     /**
      * Returns all scope names of this component
      */
-    fun getScopeNames(): Set<String> = scopeNames
+    fun getScopes(): Set<Scope> = scopes
 
     /**
-     * Whether or not this component contains the [scopeName]
+     * Whether or not this component contains the [scope]
      */
-    fun containsScopeName(scopeName: String): Boolean = scopeNames.contains(scopeName)
+    fun containsScope(scope: Scope): Boolean = scopes.contains(scope)
 
     /**
      * Returns all [Binding]s added to this component
@@ -139,9 +139,9 @@ class Component @PublishedApi internal constructor() {
     }
 
     private fun <T> createInstance(binding: Binding<T>): Instance<T> {
-        val component = if (binding.scopeName != null) {
-            findComponentForScope(binding.scopeName)
-                ?: error("Cannot create instance for $binding unknown scope ${binding.scopeName}")
+        val component = if (binding.scope != null) {
+            findComponentForScope(binding.scope)
+                ?: error("Cannot create instance for $binding unknown scope ${binding.scope}")
         } else {
             null
         }
@@ -159,14 +159,14 @@ class Component @PublishedApi internal constructor() {
 
             bindings[binding.key] = binding
 
-            if (binding.scopeName != null && !scopeNames.contains(binding.scopeName)) {
-                val parentWithScope = findComponentForScope(binding.scopeName)
+            if (binding.scope != null && !scopes.contains(binding.scope)) {
+                val parentWithScope = findComponentForScope(binding.scope)
 
                 // add the binding to the parent
                 if (parentWithScope != null) {
                     return@addBindingInternal parentWithScope.addBindingInternal(binding)
                 } else {
-                    error("Component scope ${componentName()} does not match binding scope ${binding.scopeName}")
+                    error("Component scope ${componentName()} does not match binding scope ${binding.scope}")
                 }
             }
 
@@ -187,10 +187,10 @@ class Component @PublishedApi internal constructor() {
         }
     }
 
-    private fun findComponentForScope(scopeName: String): Component? {
-        if (scopeNames.contains(scopeName)) return this
+    private fun findComponentForScope(scope: Scope): Component? {
+        if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
-            val result = dependency.findComponentForScope(scopeName)
+            val result = dependency.findComponentForScope(scope)
             if (result != null) return result
         }
 
@@ -263,24 +263,24 @@ fun Component.dependencies(dependency: Component) {
 }
 
 /**
- * Adds all of [scopeNames]
+ * Adds all of [scopes]
  */
-fun Component.scopeNames(scopeNames: Iterable<String>) {
-    scopeNames.forEach(this::addScopeName)
+fun Component.scopes(scopes: Iterable<Scope>) {
+    scopes.forEach(this::addScope)
 }
 
 /**
- * Adds all [scopeNames]
+ * Adds all [scopes]
  */
-fun Component.scopeNames(vararg scopeNames: String) {
-    scopeNames.forEach(this::addScopeName)
+fun Component.scopes(vararg scopes: Scope) {
+    scopes.forEach(this::addScope)
 }
 
 /**
- * Adds the [scopeName]
+ * Adds the [scope]
  */
-fun Component.scopeNames(scopeName: String) {
-    addScopeName(scopeName)
+fun Component.scopes(scope: Scope) {
+    addScope(scope)
 }
 
 /**
@@ -324,8 +324,8 @@ inline fun <reified T> Component.injectProvider(
 }
 
 fun Component.componentName(): String {
-    return if (getScopeNames().isNotEmpty()) {
-        "Component[${getScopeNames().joinToString(",")}]"
+    return if (getScopes().isNotEmpty()) {
+        "Component[${getScopes().joinToString(",")}]"
     } else {
         "Component[Unscoped]"
     }

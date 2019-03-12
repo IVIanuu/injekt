@@ -22,6 +22,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
@@ -29,9 +30,12 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.scopeNames
+import com.ivianuu.injekt.scopes
 
-const val APPLICATION_SCOPE = "application_scope"
+/**
+ * Application scope
+ */
+object ApplicationScope : NamedScope("ApplicationScope")
 
 /**
  * Application qualifier
@@ -45,7 +49,7 @@ inline fun <reified T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(APPLICATION_SCOPE)
+    scopes(ApplicationScope)
     modules(applicationModule())
     definition.invoke(this)
 }

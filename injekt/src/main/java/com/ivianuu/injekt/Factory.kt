@@ -40,7 +40,7 @@ class FactoryInstance<T>(
  */
 inline fun <reified T> Module.factory(
     qualifier: Qualifier? = null,
-    scopeName: String? = null,
+    scope: Scope? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
@@ -48,7 +48,7 @@ inline fun <reified T> Module.factory(
         type = T::class,
         qualifier = qualifier,
         kind = FactoryKind,
-        scopeName = scopeName,
+        scope = scope,
         override = override,
         definition = definition
     )

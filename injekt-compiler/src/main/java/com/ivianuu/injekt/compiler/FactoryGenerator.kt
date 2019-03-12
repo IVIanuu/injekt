@@ -104,22 +104,16 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                                 }
                             }})"
 
+                        addCode("return %T.create(", Binding::class)
+                        addCode("type = %T::class, ", descriptor.target)
+                        addCode("kind = %T, ", descriptor.kind.impl)
+                        descriptor.scope?.let { addCode("scope = %T, ", it) }
                         addCode(
-                            "return %T.create(" +
-                                    "%T::class, " +
-                                    "null, " +
-                                    "%T, " +
-                                    "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +
-                                    "attributesOf(), " +
-                                    "false, " +
-                                    "false, " +
-                                    "{ params -> $constructorStatement }" +
-                                    ")",
-                            Binding::class,
-                            descriptor.target,
-                            descriptor.kind.impl,
+                            "definition = { params -> $constructorStatement }",
                             descriptor.target
                         )
+                        addCode(")")
+
                     }
                     .build()
             )

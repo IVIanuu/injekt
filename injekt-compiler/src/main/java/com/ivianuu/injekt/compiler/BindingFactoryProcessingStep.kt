@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 import com.ivianuu.processingx.ProcessingEnvHolder
 import com.ivianuu.processingx.ProcessingStep
+import com.ivianuu.processingx.asTypeValue
 import com.ivianuu.processingx.elementUtils
 import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
@@ -36,11 +38,13 @@ import com.ivianuu.processingx.typeUtils
 import com.ivianuu.processingx.write
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 
 class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnvironment) :
@@ -93,10 +97,24 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             BindingDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
-        var scope: String? = annotation["scopeName"].value as String
-        if (scope!!.isEmpty()) {
-            scope = null
+        var scopeType: TypeMirror? = annotation["scope"].asTypeValue()
+        if (scopeType!!.asTypeName() == Scope::class.asTypeName()) {
+            scopeType = null
         }
+
+        val scope = scopeType
+            ?.let(typeUtils::asElement)
+            ?.let {
+                if (!it.isObject) {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "scope must be an object", element
+                    )
+                    return@createBindingDescriptor null
+                }
+
+                scopeType.asTypeName() as ClassName
+            }
 
         var paramsIndex = -1
 

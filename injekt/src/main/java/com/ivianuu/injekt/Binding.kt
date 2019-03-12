@@ -12,7 +12,7 @@ data class Binding<T>(
     val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes,
-    val scopeName: String?,
+    val scope: Scope?,
     val override: Boolean,
     val eager: Boolean
 ) {
@@ -24,7 +24,7 @@ data class Binding<T>(
         if (key != other.key) return false
         if (kind != other.kind) return false
         if (attributes != other.attributes) return false
-        if (scopeName != other.scopeName) return false
+        if (scope != other.scope) return false
         if (override != other.override) return false
         if (eager != other.eager) return false
 
@@ -35,7 +35,7 @@ data class Binding<T>(
         var result = key.hashCode()
         result = 31 * result + kind.hashCode()
         result = 31 * result + attributes.hashCode()
-        result = 31 * result + (scopeName?.hashCode() ?: 0)
+        result = 31 * result + (scope?.hashCode() ?: 0)
         result = 31 * result + override.hashCode()
         result = 31 * result + eager.hashCode()
         return result
@@ -45,7 +45,7 @@ data class Binding<T>(
         return "${kind.asString()}(" +
                 "type=${type.java.name}, " +
                 "qualifier=$qualifier, " +
-                "scopeName=$scopeName, " +
+                "scope=$scope, " +
                 ")"
     }
 
@@ -56,7 +56,7 @@ fun <T> Binding.Companion.create(
     type: KClass<*>,
     qualifier: Qualifier? = null,
     kind: Kind,
-    scopeName: String? = null,
+    scope: Scope? = null,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
     eager: Boolean = false,
@@ -64,7 +64,7 @@ fun <T> Binding.Companion.create(
 ): Binding<T> {
     return Binding(
         Key.of(type, qualifier), type, qualifier, kind,
-        definition, attributes, scopeName, override, eager
+        definition, attributes, scope, override, eager
     )
 }
 

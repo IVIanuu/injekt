@@ -36,7 +36,7 @@ val name: String? = null
 var kind: Binding.Kind? = null
 var definition: Definition<T>? = null
 val attributes = Attributes()
-var scopeName: String? = null
+var scope: Scope? = null
 var override = false
 var eager = false
 
@@ -45,7 +45,7 @@ return Binding.create(
 type,
 name,
 kind ?: error("kind must be specified"),
-scopeName,
+scope,
 attributes,
 override,
 eager,
@@ -79,7 +79,7 @@ fun BindingBuilder<*>.eager(eager: Boolean = true) {
 
 }
 
-fun BindingBuilder<*>.scopeName(scopeName: String?) {
+fun BindingBuilder<*>.scope(scope: Scope?) {
 
 }
 
@@ -155,14 +155,14 @@ body()
 */
 inline fun <reified T> Module.single2(
 qualifier: Qualifier? = null,
-scopeName: String? = null,
+scope: Scope? = null,
 override: Boolean = false,
 eager: Boolean = false,
 noinline definition: Definition<T>
 ): BindingContext<T> {
 return bind(name) {
 single(definition)
-scopeName(scopeName)
+scope(scope)
 override(override)
 eager(eager)
 }
@@ -186,7 +186,7 @@ bindType<CharSequence>()
 
 bind<AppDependency>("my_name") {
 single { AppDependency(get()) }
-scopeName(APPLICATION_SCOPE)
+scope(APPLICATION_SCOPE)
 override()
 eager()
 bindIntoSet("my_set")

@@ -17,14 +17,14 @@
 package com.ivianuu.injekt.sample.dummy
 
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.android.APPLICATION_SCOPE
+import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 
-@Single(APPLICATION_SCOPE)
+@Single(ApplicationScope::class)
 class DummyDep
 
 @Reusable

@@ -48,7 +48,7 @@ class SingleInstance<T>(
  */
 inline fun <reified T> Module.single(
     qualifier: Qualifier? = null,
-    scopeName: String? = null,
+    scope: Scope? = null,
     override: Boolean = false,
     eager: Boolean = false,
     noinline definition: Definition<T>
@@ -57,7 +57,7 @@ inline fun <reified T> Module.single(
         type = T::class,
         qualifier = qualifier,
         kind = SingleKind,
-        scopeName = scopeName,
+        scope = scope,
         override = override,
         eager = eager,
         definition = definition

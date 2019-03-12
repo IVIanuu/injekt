@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
@@ -81,7 +82,7 @@ class ReusableInstance<T>(
  */
 inline fun <reified T> Module.reusable(
     qualifier: Qualifier? = null,
-    scopeName: String? = null,
+    scope: Scope? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
@@ -89,7 +90,7 @@ inline fun <reified T> Module.reusable(
         type = T::class,
         qualifier = qualifier,
         kind = ReusableKind,
-        scopeName = scopeName,
+        scope = scope,
         override = override,
         definition = definition
     )

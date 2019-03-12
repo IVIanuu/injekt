@@ -16,8 +16,11 @@
 
 package com.ivianuu.injekt.annotations
 
+import com.ivianuu.injekt.Scope
+import kotlin.reflect.KClass
+
 /**
  * Generates a factory for the annotated type
  */
 @Target(AnnotationTarget.CLASS)
-annotation class Factory(val scopeName: String = "")
+annotation class Factory(val scope: KClass<out Scope> = Scope::class)

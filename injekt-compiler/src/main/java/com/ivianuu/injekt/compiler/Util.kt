@@ -20,8 +20,13 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
 import me.eugeniomarletti.kotlin.metadata.shadow.name.FqName
 import me.eugeniomarletti.kotlin.metadata.shadow.platform.JavaToKotlinClassMap
+import javax.lang.model.element.Element
 
 fun TypeName.javaToKotlinType(): TypeName = if (this is ParameterizedTypeName) {
     (rawType.javaToKotlinType() as ClassName).parameterizedBy(
@@ -33,3 +38,11 @@ fun TypeName.javaToKotlinType(): TypeName = if (this is ParameterizedTypeName) {
     if (className == null) this
     else ClassName.bestGuess(className)
 }
+
+val Element.isObject: Boolean
+    get() {
+        return Flags.CLASS_KIND.get(
+            (kotlinMetadata as? KotlinClassMetadata)
+                ?.data?.classProto?.flags ?: 0
+        ) == ProtoBuf.Class.Kind.OBJECT
+    }

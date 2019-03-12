@@ -65,7 +65,7 @@ val factoryAnnotation: Factory? = type.java.getAnnotation(Factory::class.java)
 
 var kind: Binding.Kind? = null
 var name: String? = null
-var scopeName: String? = null
+var scope: Scope? = null
 var override = false
 var eager = false
 
@@ -78,8 +78,8 @@ factoryAnnotation.name
 null
 }
 
-scopeName = if (factoryAnnotation.scopeName.isNotEmpty()) {
-factoryAnnotation.scopeName
+scope = if (factoryAnnotation.scope.isNotEmpty()) {
+factoryAnnotation.scope
 } else {
 null
 }
@@ -96,8 +96,8 @@ singleAnnotation.name
 null
 }
 
-scopeName = if (singleAnnotation.scopeName.isNotEmpty()) {
-singleAnnotation.scopeName
+scope = if (singleAnnotation.scope.isNotEmpty()) {
+singleAnnotation.scope
 } else {
 null
 }
@@ -189,7 +189,7 @@ return Binding.create(
 type = type,
 name = name,
 kind = kind,
-scopeName = scopeName,
+scope = scope,
 override = override,
 eager = eager,
 definition = definition

@@ -20,15 +20,23 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.common.addInstance
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopeNames
+import com.ivianuu.injekt.scopes
 
-const val FRAGMENT_SCOPE = "fragment_scope"
-const val CHILD_FRAGMENT_SCOPE = "child_fragment_scope"
+/**
+ * Fragment scope
+ */
+object FragmentScope : NamedScope("FragmentScope")
+
+/**
+ * Child fragment scope
+ */
+object ChildFragmentScope : NamedScope("ChildFragmentScope")
 
 /**
  * Fragment qualifier
@@ -47,7 +55,7 @@ inline fun <reified T : Fragment> T.fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(FRAGMENT_SCOPE)
+    scopes(FragmentScope)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
@@ -62,7 +70,7 @@ inline fun <reified T : Fragment> T.childFragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(CHILD_FRAGMENT_SCOPE)
+    scopes(ChildFragmentScope)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)

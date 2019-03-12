@@ -5,15 +5,23 @@ import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.common.addInstance
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopeNames
+import com.ivianuu.injekt.scopes
 
-const val VIEW_SCOPE = "view_scope"
-const val CHILD_VIEW_SCOPE = "child_view_scope"
+/**
+ * View scope
+ */
+object ViewScope : NamedScope("ViewScope")
+
+/**
+ * Child view scope
+ */
+object ChildViewScope : NamedScope("ChildViewScope")
 
 /**
  * View qualifier
@@ -32,7 +40,7 @@ inline fun <reified T : View> T.viewComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(VIEW_SCOPE)
+    scopes(ViewScope)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
@@ -47,7 +55,7 @@ inline fun <reified T : View> T.childViewComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopeNames(CHILD_VIEW_SCOPE)
+    scopes(ChildViewScope)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
