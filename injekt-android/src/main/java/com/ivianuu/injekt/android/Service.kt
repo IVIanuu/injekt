@@ -17,16 +17,25 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
+import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.common.addInstance
-
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.StringQualifier
+import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
+import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopeNames
 
 const val SERVICE_SCOPE = "service_scope"
+
+/**
+ * Service qualifier
+ */
+object ForService : StringQualifier("ForService")
 
 /**
  * Returns a [Component] with convenient configurations
@@ -37,7 +46,6 @@ inline fun <T : Service> T.serviceComponent(
 ): Component = component(createEagerInstances) {
     scopeNames(SERVICE_SCOPE)
     getApplicationComponentOrNull()?.let(this::dependencies)
-    addInstance(this@serviceComponent)
     definition.invoke(this)
 }
 
@@ -51,3 +59,11 @@ fun Service.getApplicationComponentOrNull(): Component? = (application as? Injek
  */
 fun Service.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+inline fun <reified T : Service> T.serviceModule(): Module = module {
+    instance { this@serviceModule } bindType Service::class
+    instance<Context>(ForService) { this@serviceModule }
+}

@@ -22,9 +22,8 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
-
+import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.bindType
-import com.ivianuu.injekt.common.addInstance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
@@ -35,23 +34,27 @@ import com.ivianuu.injekt.scopeNames
 const val APPLICATION_SCOPE = "application_scope"
 
 /**
+ * Application qualifier
+ */
+object ForApplication : StringQualifier("ForApplication")
+
+/**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : Application> T.applicationComponent(
+inline fun <reified T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
     scopeNames(APPLICATION_SCOPE)
     modules(applicationModule())
-    addInstance(this@applicationComponent)
     definition.invoke(this)
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
-fun <T : Application> T.applicationModule(): Module = module {
-    factory { this@applicationModule as Application } bindType Context::class
+inline fun <reified T : Application> T.applicationModule(): Module = module {
+    factory { this@applicationModule } bindType Application::class bindType Context::class
 }
 
 fun DefinitionContext.application(): Application = get()

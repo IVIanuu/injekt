@@ -5,6 +5,7 @@ import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.common.addInstance
 
 import com.ivianuu.injekt.component
@@ -13,6 +14,16 @@ import com.ivianuu.injekt.scopeNames
 
 const val VIEW_SCOPE = "view_scope"
 const val CHILD_VIEW_SCOPE = "child_view_scope"
+
+/**
+ * View qualifier
+ */
+object ForView : StringQualifier("ForView")
+
+/**
+ * Child view qualifier
+ */
+object ForChildView : StringQualifier("ForChildView")
 
 /**
  * Returns a [Component] with convenient configurations

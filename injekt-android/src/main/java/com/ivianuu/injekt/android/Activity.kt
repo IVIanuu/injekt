@@ -17,15 +17,26 @@
 package com.ivianuu.injekt.android
 
 import android.app.Activity
+import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.common.addInstance
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.StringQualifier
+import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.scopeNames
 
 const val ACTIVITY_SCOPE = "activity_scope"
+
+/**
+ * Activity qualifier
+ */
+object ForActivity : StringQualifier("ForActivity")
 
 /**
  * Returns a [Component] with convenient configurations
@@ -36,7 +47,7 @@ inline fun <reified T : Activity> T.activityComponent(
 ): Component = component(createEagerInstances) {
     scopeNames(ACTIVITY_SCOPE)
     getApplicationComponentOrNull()?.let(this::dependencies)
-    addInstance(this@activityComponent)
+    modules(activityModule())
     definition.invoke(this)
 }
 
@@ -50,3 +61,11 @@ fun Activity.getApplicationComponentOrNull(): Component? = (application as? Inje
  */
 fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+inline fun <reified T : Activity> T.activityModule(): Module = module {
+    instance { this@activityModule } bindType Activity::class
+    instance<Context>(ForActivity) { this@activityModule }
+}

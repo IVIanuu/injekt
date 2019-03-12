@@ -21,6 +21,7 @@ import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.common.addInstance
 
 import com.ivianuu.injekt.component
@@ -28,6 +29,11 @@ import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.scopeNames
 
 const val RECEIVER_SCOPE = "receiver_scope"
+
+/**
+ * Receiver qualifier
+ */
+object ForReceiver : StringQualifier("ForReceiver")
 
 /**
  * Returns a [Component] with convenient configurations
