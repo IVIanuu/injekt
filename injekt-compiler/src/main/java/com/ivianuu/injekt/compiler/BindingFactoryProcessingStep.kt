@@ -22,6 +22,7 @@ import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Name
 import com.ivianuu.injekt.annotations.Param
+import com.ivianuu.injekt.annotations.Qualified
 import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
@@ -32,6 +33,7 @@ import com.ivianuu.processingx.elementUtils
 import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
+import com.ivianuu.processingx.getAsType
 import com.ivianuu.processingx.hasAnnotation
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.typeUtils
@@ -55,6 +57,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
         Factory::class.java,
         Name::class.java,
         Param::class.java,
+        Qualified::class.java,
         Raw::class.java,
         Reusable::class.java,
         Single::class.java
@@ -63,6 +66,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
         validateNameUsages(elementsByAnnotation[Name::class.java])
         validateParamUsages(elementsByAnnotation[Param::class.java])
+        validateQualifiedUsages(elementsByAnnotation[Qualified::class.java])
         validateRawUsages(elementsByAnnotation[Raw::class.java])
 
         val bindingElements = (elementsByAnnotation[Factory::class.java]
@@ -153,10 +157,28 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                         return@createBindingDescriptor null
                     }
 
-                    if (paramIndex != -1 && getName != null) {
+                    val qualifier =
+                        it.getAnnotationMirrorOrNull<Qualified>()?.getAsType("qualifier")
+                            ?.let(typeUtils::asElement)
+                            ?.let {
+                                if (!it.isObject) {
+                                    messager.printMessage(
+                                        Diagnostic.Kind.ERROR,
+                                        "qualifier must be an object", element
+                                    )
+                                    return@createBindingDescriptor null
+                                }
+
+                                it.asType().asTypeName() as ClassName
+                            }
+
+                    if ((paramIndex != -1 && getName != null)
+                        || (paramIndex != -1 && qualifier != null)
+                        || (getName != null && qualifier != null)
+                    ) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Only one of @Name and @Param can be annotated per parameter",
+                            "Only one of @Name and @Param @Qualified can be annotated per parameter",
                             it
                         )
                         return@createBindingDescriptor null
@@ -184,6 +206,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                     ParamDescriptor(
                         paramKind,
                         getName,
+                        qualifier,
                         paramIndex
                     )
                 }
@@ -219,6 +242,23 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
                     "@Param annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
+                    it
+                )
+            }
+    }
+
+    private fun validateQualifiedUsages(elements: Set<Element>) {
+        elements
+            .filter {
+                val type = it.enclosingElement.enclosingElement
+                !type.hasAnnotation<Factory>()
+                        && !type.hasAnnotation<Reusable>()
+                        && !type.hasAnnotation<Single>()
+            }
+            .forEach {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "@Qualified annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
                     it
                 )
             }
