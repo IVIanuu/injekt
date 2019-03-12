@@ -16,15 +16,15 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key_one")
-                    factory("name_two") { "value_two" } bindIntoMap ("values" to "key_two")
-                    factory("name_three") { "value_three" }
-                    bindIntoMap<String>("values", "key_three", implementationName = "name_three")
+                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key_one")
+                    factory(NameTwo) { "value_two" } bindIntoMap (Values to "key_two")
+                    factory(NameThree) { "value_three" }
+                    bindIntoMap<String>(Values, "key_three", implementationQualifier = NameThree)
                 }
             )
         }
 
-        val map = component.getMap<String, String>("values")
+        val map = component.getMap<String, String>(Values)
 
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
@@ -37,9 +37,9 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key_one")
-                    factory("name_two") { "value_two" } bindIntoMap MapBinding(
-                        "values",
+                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key_one")
+                    factory(NameTwo) { "value_two" } bindIntoMap MapBinding(
+                        Values,
                         "key_one",
                         true
                     )
@@ -47,7 +47,7 @@ class MapTest {
             )
         }
 
-        assertEquals("value_two", component.getMap<String, String>("values")["key_one"])
+        assertEquals("value_two", component.getMap<String, String>(Values)["key_one"])
     }
 
     @Test
@@ -55,9 +55,9 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key")
-                    factory("name_two") { "value_two" } bindIntoMap MapBinding(
-                        "values",
+                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key")
+                    factory(NameTwo) { "value_two" } bindIntoMap MapBinding(
+                        Values,
                         "key",
                         true
                     )
@@ -68,7 +68,7 @@ class MapTest {
         var throwed = false
 
         try {
-            component.getMap<String, String>("values")
+            component.getMap<String, String>(Values)
         } catch (e: Exception) {
             throwed = true
         }
@@ -81,8 +81,8 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoMap ("values" to "key")
-                    factory("name_two") { "value_two" } bindIntoMap ("values" to "key")
+                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key")
+                    factory(NameTwo) { "value_two" } bindIntoMap (Values to "key")
                 }
             )
         }
@@ -90,7 +90,7 @@ class MapTest {
         var throwed = false
 
         try {
-            component.getMap<String, String>("values")
+            component.getMap<String, String>(Values)
         } catch (e: Exception) {
             throwed = true
         }

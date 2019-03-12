@@ -17,15 +17,15 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory("name_one") { "value_one" } bindIntoSet "values"
-                    factory("name_two") { "value_two" } bindIntoSet "values"
-                    factory("name_three") { "value_three" }
-                    bindIntoSet<String>("values", implementationName = "name_three")
+                    factory(NameOne) { "value_one" } bindIntoSet Values
+                    factory(NameTwo) { "value_two" } bindIntoSet Values
+                    factory(NameThree) { "value_three" }
+                    bindIntoSet<String>(Values, implementationQualifier = NameThree)
                 }
             )
         }
 
-        val set = component.getSet<String>("values")
+        val set = component.getSet<String>(Values)
 
         assertEquals(3, set.size)
         assertTrue(set.contains("value_one"))
@@ -38,7 +38,7 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet "values"
+                    factory { "my_value" } bindIntoSet Values
                 }
             )
         }
@@ -47,12 +47,12 @@ class SetTest {
             dependencies(component1)
             modules(
                 module {
-                    factory { "my_overridden_value" } bindIntoSet SetBinding("values", true)
+                    factory { "my_overridden_value" } bindIntoSet SetBinding(Values, true)
                 }
             )
         }
 
-        assertEquals("my_overridden_value", component2.getSet<String>("values").first())
+        assertEquals("my_overridden_value", component2.getSet<String>(Values).first())
     }
 
     @Test
@@ -60,7 +60,7 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet "values"
+                    factory { "my_value" } bindIntoSet Values
                 }
             )
         }
@@ -69,7 +69,7 @@ class SetTest {
             dependencies(component1)
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet SetBinding("values", override = true)
+                    factory { "my_value" } bindIntoSet SetBinding(Values, override = true)
                 }
             )
         }
@@ -77,7 +77,7 @@ class SetTest {
         var throwed = false
 
         try {
-            component2.getSet<String>("values")
+            component2.getSet<String>(Values)
         } catch (e: Exception) {
             throwed = true
         }
