@@ -37,7 +37,7 @@ object ForContentProvider : StringQualifier("ForContentProvider")
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : ContentProvider> T.contentProviderComponent(
+inline fun <reified T : ContentProvider> T.contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {

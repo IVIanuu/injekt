@@ -43,7 +43,7 @@ object ForChildFragment : StringQualifier("ForChildFragment")
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : Fragment> T.fragmentComponent(
+inline fun <reified T : Fragment> T.fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
@@ -58,7 +58,7 @@ inline fun <T : Fragment> T.fragmentComponent(
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : Fragment> T.childFragmentComponent(
+inline fun <reified T : Fragment> T.childFragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {

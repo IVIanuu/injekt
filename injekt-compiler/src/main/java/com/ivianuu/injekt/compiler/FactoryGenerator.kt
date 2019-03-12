@@ -36,8 +36,6 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
             file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
         }
 
-        descriptor.kind.addImport(file)
-
         file.addType(factory())
 
         return file.build()
@@ -110,7 +108,6 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                             "return %T.create(" +
                                     "%T::class, " +
                                     "null, " +
-                                    "${descriptor.kind.kindConstantName}, " +
                                     "%T, " +
                                     "${if (descriptor.scopeName != null) "\"${descriptor.scopeName}\"" else "null"}, " +
                                     "attributesOf(), " +
@@ -120,7 +117,7 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                                     ")",
                             Binding::class,
                             descriptor.target,
-                            descriptor.kind.instanceFactory,
+                            descriptor.kind.impl,
                             descriptor.target
                         )
                     }

@@ -146,7 +146,7 @@ class Component @PublishedApi internal constructor() {
             null
         }
 
-        return binding.instanceFactory.create(binding, component)
+        return binding.kind.createInstance(binding, component)
     }
 
     private fun addBindingInternal(binding: Binding<*>): Instance<*> {

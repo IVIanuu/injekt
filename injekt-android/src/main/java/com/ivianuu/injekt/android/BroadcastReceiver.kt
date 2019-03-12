@@ -38,7 +38,7 @@ object ForReceiver : StringQualifier("ForReceiver")
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : BroadcastReceiver> T.receiverComponent(
+inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}

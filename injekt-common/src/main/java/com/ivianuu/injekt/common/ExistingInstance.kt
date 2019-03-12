@@ -16,75 +16,44 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Attributes
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.InstanceFactory
+import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.attributesOf
 import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
-import kotlin.reflect.KClass
-
-const val INSTANCE_KIND = "Instance"
-
-private val noopDefinition: Definition<Any> = {}
 
 /**
- * Creates a [Binding] for an existing instance
+ * Existing instance kind
  */
-fun <T> Binding.Companion.createInstance(
-    type: KClass<*>,
-    instance: T,
-    qualifier: Qualifier? = null,
-    scopeName: String? = null,
-    attributes: Attributes = attributesOf(),
-    override: Boolean = false
-): Binding<T> =
-    Binding.create(
-        type, qualifier, INSTANCE_KIND, ExistingInstanceFactory(instance),
-        scopeName, attributes, override, false, noopDefinition as Definition<T>
-    )
+object InstanceKind : Kind {
+
+    private const val INSTANCE_KIND = "Instance"
+
+    override fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T> =
+        ExistingInstance<T>(binding)
+
+    override fun asString(): String = INSTANCE_KIND
+
+}
 
 /**
  * Holds a already existing instance
  */
-class ExistingInstance<T>(
-    override val binding: Binding<T>,
-    private val instance: T
-) : Instance<T> {
+class ExistingInstance<T>(override val binding: Binding<T>) : Instance<T> {
 
     override val isCreated: Boolean
         get() = true
 
     override fun get(component: Component, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("${component.componentName()} Return instance $binding")
-        return instance
-    }
-
-}
-
-/**
- * Instance factory for [ExistingInstance]s
- */
-class ExistingInstanceFactory<S>(
-    private val existingInstance: S
-) : InstanceFactory {
-
-    private var instance: Instance<S>? = null
-
-    override fun <T> create(binding: Binding<T>, component: Component?): Instance<T> {
-        if (instance == null) {
-            instance = ExistingInstance(binding as Binding<S>, existingInstance)
-        }
-        return instance as Instance<T>
+        return create(component, parameters)
     }
 
 }
@@ -96,20 +65,27 @@ inline fun <reified T> Module.instance(
     qualifier: Qualifier? = null,
     scopeName: String? = null,
     override: Boolean = false,
-    instance: () -> T
+    crossinline instance: () -> T
 ): BindingContext<T> = add(
-    Binding.createInstance(
+    Binding.create(
         type = T::class,
-        instance = instance(),
         qualifier = qualifier,
+        kind = InstanceKind,
         scopeName = scopeName,
-        override = override
+        override = override,
+        definition = { instance() }
     )
 )
 
 /**
  * Adds a [Binding] for the [instance]
  */
-fun <T : Any> Component.addInstance(instance: T) {
-    addBinding(Binding.createInstance(instance::class, instance))
+inline fun <reified T : Any> Component.addInstance(instance: T) {
+    addBinding(
+        Binding.create(
+            type = T::class,
+            kind = InstanceKind,
+            definition = { instance }
+        )
+    )
 }

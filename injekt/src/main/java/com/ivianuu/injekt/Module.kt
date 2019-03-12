@@ -70,44 +70,6 @@ inline fun module(
 ): Module = Module(scopeName, eager, override).apply(definition)
 
 /**
- * Provides a unscoped dependency which will be recreated on each request
- */
-inline fun <reified T> Module.factory(
-    qualifier: Qualifier? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>
-): BindingContext<T> = add(
-    Binding.createFactory(
-        type = T::class,
-        qualifier = qualifier,
-        scopeName = scopeName,
-        override = override,
-        definition = definition
-    )
-)
-
-/**
- * Provides scoped dependency which will be created once for each component
- */
-inline fun <reified T> Module.single(
-    qualifier: Qualifier? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    noinline definition: Definition<T>
-): BindingContext<T> = add(
-    Binding.createSingle(
-        type = T::class,
-        qualifier = qualifier,
-        scopeName = scopeName,
-        override = override,
-        eager = eager,
-        definition = definition
-    )
-)
-
-/**
  * Adds all bindings of the [module]
  */
 fun Module.module(module: Module) {
@@ -144,9 +106,10 @@ inline fun <T> Module.withBinding(
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation
     add(
-        Binding.createFactory(
+        Binding.create(
             type = type,
             qualifier = named(UUID.randomUUID().toString()),
+            kind = FactoryKind,
             definition = { component.get<T>(type, qualifier) { it } }
         )
     ) withContext body

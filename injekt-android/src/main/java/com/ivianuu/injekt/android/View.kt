@@ -28,7 +28,7 @@ object ForChildView : StringQualifier("ForChildView")
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : View> T.viewComponent(
+inline fun <reified T : View> T.viewComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
@@ -43,7 +43,7 @@ inline fun <T : View> T.viewComponent(
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : View> T.childViewComponent(
+inline fun <reified T : View> T.childViewComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {

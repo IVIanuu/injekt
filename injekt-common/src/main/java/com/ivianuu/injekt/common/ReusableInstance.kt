@@ -22,33 +22,28 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.InstanceFactory
+import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.attributesOf
 import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import java.lang.ref.WeakReference
-import kotlin.reflect.KClass
-
-const val REUSABLE_KIND = "Reusable"
 
 /**
- * Creates a [Binding] for an reusable instance
+ * Reusable kind
  */
-fun <T> Binding.Companion.createReusable(
-    type: KClass<*>,
-    qualifier: Qualifier? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    definition: Definition<T>
-): Binding<T> =
-    Binding.create(
-        type, qualifier, REUSABLE_KIND, ReusableInstanceFactory,
-        scopeName, attributesOf(), override, false, definition
-    )
+object ReusableKind : Kind {
+
+    private const val REUSABLE_KIND = "Reusable"
+
+    override fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T> =
+        ReusableInstance(binding, component)
+
+    override fun asString(): String = REUSABLE_KIND
+
+}
 
 /**
  * Instance which holds a instance via [WeakReference]s
@@ -82,14 +77,6 @@ class ReusableInstance<T>(
 }
 
 /**
- * Instance factory for [ReusableInstance]s
- */
-object ReusableInstanceFactory : InstanceFactory {
-    override fun <T> create(binding: Binding<T>, component: Component?): Instance<T> =
-        ReusableInstance(binding, component)
-}
-
-/**
  * Provides a reusable dependency which will use weak references internally
  */
 inline fun <reified T> Module.reusable(
@@ -98,9 +85,10 @@ inline fun <reified T> Module.reusable(
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
-    Binding.createReusable(
+    Binding.create(
         type = T::class,
         qualifier = qualifier,
+        kind = ReusableKind,
         scopeName = scopeName,
         override = override,
         definition = definition

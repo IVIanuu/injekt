@@ -9,8 +9,7 @@ data class Binding<T>(
     val key: Key,
     val type: KClass<*>,
     val qualifier: Qualifier?,
-    val kind: String?,
-    val instanceFactory: InstanceFactory,
+    val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes,
     val scopeName: String?,
@@ -34,7 +33,7 @@ data class Binding<T>(
 
     override fun hashCode(): Int {
         var result = key.hashCode()
-        result = 31 * result + (kind?.hashCode() ?: 0)
+        result = 31 * result + kind.hashCode()
         result = 31 * result + attributes.hashCode()
         result = 31 * result + (scopeName?.hashCode() ?: 0)
         result = 31 * result + override.hashCode()
@@ -43,7 +42,7 @@ data class Binding<T>(
     }
 
     override fun toString(): String {
-        return "${kind ?: "Unknown"}(" +
+        return "${kind.asString()}(" +
                 "type=${type.java.name}, " +
                 "qualifier=$qualifier, " +
                 "scopeName=$scopeName, " +
@@ -53,14 +52,10 @@ data class Binding<T>(
     companion object
 }
 
-const val FACTORY_KIND = "Factory"
-const val SINGLE_KIND = "Single"
-
 fun <T> Binding.Companion.create(
     type: KClass<*>,
     qualifier: Qualifier? = null,
-    kind: String?,
-    instanceFactory: InstanceFactory,
+    kind: Kind,
     scopeName: String? = null,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
@@ -68,35 +63,10 @@ fun <T> Binding.Companion.create(
     definition: Definition<T>
 ): Binding<T> {
     return Binding(
-        Key.of(type, qualifier), type, qualifier, kind, instanceFactory,
+        Key.of(type, qualifier), type, qualifier, kind,
         definition, attributes, scopeName, override, eager
     )
 }
-
-fun <T> Binding.Companion.createFactory(
-    type: KClass<*>,
-    qualifier: Qualifier? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    definition: Definition<T>
-): Binding<T> =
-    Binding.create(
-        type, qualifier, FACTORY_KIND, FactoryInstanceFactory,
-        scopeName, attributesOf(), override, false, definition
-    )
-
-fun <T> Binding.Companion.createSingle(
-    type: KClass<*>,
-    qualifier: Qualifier? = null,
-    scopeName: String? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    definition: Definition<T>
-): Binding<T> =
-    Binding.create(
-        type, qualifier, SINGLE_KIND, SingleInstanceFactory,
-        scopeName, attributesOf(), override, eager, definition
-    )
 
 /**
  * Defines a [Binding]
