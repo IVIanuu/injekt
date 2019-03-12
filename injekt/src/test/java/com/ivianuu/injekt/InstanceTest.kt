@@ -29,8 +29,9 @@ class InstanceTest {
     fun testSingleCreatesOnce() {
         val component = component()
         component.addBinding(
-            Binding.createSingle(
+            Binding.create(
                 type = TestDep1::class,
+                kind = SingleKind,
                 definition = { TestDep1() }
             )
         )
@@ -51,8 +52,9 @@ class InstanceTest {
     fun testFactoryCreatesNew() {
         val component = component()
         component.addBinding(
-            Binding.createFactory(
+            Binding.create(
                 type = TestDep1::class,
+                kind = FactoryKind,
                 definition = { TestDep1() }
             )
         )
@@ -74,8 +76,9 @@ class InstanceTest {
     fun testInstanceCreationFailed() {
         val component = component()
         component.addBinding(
-            Binding.createSingle(
+            Binding.create(
                 type = TestDep1::class,
+                kind = SingleKind,
                 definition = { error("error") }
             )
         )
