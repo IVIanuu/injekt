@@ -20,7 +20,6 @@ import android.app.Activity
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
-
 import com.ivianuu.injekt.common.addInstance
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
@@ -31,7 +30,7 @@ const val ACTIVITY_SCOPE = "activity_scope"
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : Activity> T.activityComponent(
+inline fun <reified T : Activity> T.activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {

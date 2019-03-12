@@ -19,18 +19,25 @@ package com.ivianuu.injekt.util
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Instance
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
 inline fun <reified T> Component.getBinding(
-    name: String? = null
-): Binding<T> = getBinding(T::class, name)
+    qualifier: Qualifier? = null
+): Binding<T> = getBinding(T::class, qualifier)
 
 fun <T> Component.getBinding(
     type: KClass<*>,
-    name: String? = null
-): Binding<T> = getBindings().firstOrNull { it.type == type && it.name == name } as? Binding<T>
-    ?: error("binding not found")
+    qualifier: Qualifier? = null
+): Binding<T> {
+    val key = Key.of(type, qualifier)
+    return getBindings().firstOrNull { it.key == key } as? Binding<T>
+        ?: error("binding not found")
+}
 
-fun <T> Component.getInstance(type: KClass<*>, name: String?): Instance<T> =
-    getInstances().firstOrNull { it.binding.type == type && it.binding.name == name } as? Instance<T>
+fun <T> Component.getInstance(type: KClass<*>, qualifier: Qualifier? = null): Instance<T> {
+    val key = Key.of(type, qualifier)
+    return getInstances().firstOrNull { it.binding.key == key } as? Instance<T>
         ?: error("instance not found")
+}

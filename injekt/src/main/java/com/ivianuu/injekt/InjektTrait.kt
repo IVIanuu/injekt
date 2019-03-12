@@ -12,24 +12,24 @@ interface InjektTrait {
 
 /** Calls trough [Component.get] */
 inline fun <reified T> InjektTrait.get(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): T = component.get(name, parameters)
+): T = component.get(qualifier, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy { component.get<T>(name, parameters) }
+): Lazy<T> = lazy { component.get<T>(qualifier, parameters) }
 
 /** Calls trough [Component.getProvider] */
 inline fun <reified T> InjektTrait.getProvider(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = component.getProvider(name, defaultParameters)
+): Provider<T> = component.getProvider(qualifier, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T> InjektTrait.injectProvider(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = lazy { component.getProvider<T>(name, defaultParameters) }
+): Lazy<Provider<T>> = lazy { component.getProvider<T>(qualifier, defaultParameters) }

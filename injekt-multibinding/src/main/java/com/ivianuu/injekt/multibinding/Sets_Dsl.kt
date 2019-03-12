@@ -20,17 +20,18 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrSet
 import com.ivianuu.injekt.withBinding
 import kotlin.collections.set
 
 /**
- * Declares a empty set binding with the [setName]
+ * Declares a empty set binding with the [setQualifier]
  * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
  */
-fun Module.setBinding(setName: String) {
-    factory(name = setName, override = true) {
+fun Module.setBinding(setQualifier: Qualifier) {
+    factory(qualifier = setQualifier, override = true) {
         MultiBindingSet<Any>(component, emptySet())
     }
 }
@@ -40,37 +41,37 @@ fun Module.setBinding(setName: String) {
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
-        hashMapOf<String, SetBinding>()
-    }[setBinding.setName] = setBinding
+        hashMapOf<Qualifier, SetBinding>()
+    }[setBinding.setQualifier] = setBinding
 
-    module.declareSetBinding(setBinding.setName)
+    module.declareSetBinding(setBinding.setQualifier)
 
     return this
 }
 
 /**
- * Adds this binding into [setName]
+ * Adds this binding into [setQualifier]
  */
 fun <T> BindingContext<T>.bindIntoSet(
-    setName: String,
+    setQualifier: Qualifier,
     override: Boolean = false
-): BindingContext<T> = bindIntoSet(SetBinding(setName, override))
+): BindingContext<T> = bindIntoSet(SetBinding(setQualifier, override))
 
 /**
- * Adds this [Binding] into [setName]
+ * Adds this [Binding] into [setQualifier]
  */
-infix fun <T> BindingContext<T>.bindIntoSet(setName: String): BindingContext<T> =
-    bindIntoSet(SetBinding(setName))
+infix fun <T> BindingContext<T>.bindIntoSet(setQualifier: Qualifier): BindingContext<T> =
+    bindIntoSet(SetBinding(setQualifier))
 
 /**
- * Binds a already existing [Binding] into a [Set] named [setName]
+ * Binds a already existing [Binding] into a [Set] named [setQualifier]
  */
 inline fun <reified T> Module.bindIntoSet(
-    setName: String,
+    setQualifier: Qualifier,
     override: Boolean = false,
-    implementationName: String? = null
+    implementationQualifier: Qualifier? = null
 ) {
-    bindIntoSet<T>(SetBinding(setName, override), implementationName)
+    bindIntoSet<T>(SetBinding(setQualifier, override), implementationQualifier)
 }
 
 /**
@@ -78,10 +79,10 @@ inline fun <reified T> Module.bindIntoSet(
  */
 inline fun <reified T> Module.bindIntoSet(
     setBinding: SetBinding,
-    implementationName: String? = null
+    implementationQualifier: Qualifier? = null
 ) {
-    withBinding<T>(implementationName) {
+    withBinding<T>(implementationQualifier) {
         bindIntoSet(setBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationName)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationQualifier)
     }
 }

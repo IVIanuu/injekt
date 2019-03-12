@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 data class Binding<T>(
     val key: Key,
     val type: KClass<*>,
-    val name: String?,
+    val qualifier: Qualifier?,
     val kind: String?,
     val instanceFactory: InstanceFactory,
     val definition: Definition<T>,
@@ -45,7 +45,7 @@ data class Binding<T>(
     override fun toString(): String {
         return "${kind ?: "Unknown"}(" +
                 "type=${type.java.name}, " +
-                "name=$name, " +
+                "qualifier=$qualifier, " +
                 "scopeName=$scopeName, " +
                 ")"
     }
@@ -58,7 +58,7 @@ const val SINGLE_KIND = "Single"
 
 fun <T> Binding.Companion.create(
     type: KClass<*>,
-    name: String? = null,
+    qualifier: Qualifier? = null,
     kind: String?,
     instanceFactory: InstanceFactory,
     scopeName: String? = null,
@@ -68,33 +68,33 @@ fun <T> Binding.Companion.create(
     definition: Definition<T>
 ): Binding<T> {
     return Binding(
-        Key.of(type, name), type, name, kind, instanceFactory,
+        Key.of(type, qualifier), type, qualifier, kind, instanceFactory,
         definition, attributes, scopeName, override, eager
     )
 }
 
 fun <T> Binding.Companion.createFactory(
     type: KClass<*>,
-    name: String? = null,
+    qualifier: Qualifier? = null,
     scopeName: String? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
     Binding.create(
-        type, name, FACTORY_KIND, FactoryInstanceFactory,
+        type, qualifier, FACTORY_KIND, FactoryInstanceFactory,
         scopeName, attributesOf(), override, false, definition
     )
 
 fun <T> Binding.Companion.createSingle(
     type: KClass<*>,
-    name: String? = null,
+    qualifier: Qualifier? = null,
     scopeName: String? = null,
     override: Boolean = false,
     eager: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
     Binding.create(
-        type, name, SINGLE_KIND, SingleInstanceFactory,
+        type, qualifier, SINGLE_KIND, SingleInstanceFactory,
         scopeName, attributesOf(), override, eager, definition
     )
 

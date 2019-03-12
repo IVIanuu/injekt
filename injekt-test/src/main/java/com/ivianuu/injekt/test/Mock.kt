@@ -18,22 +18,21 @@ package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 
 /**
- * Declares a mocked version of [type] and [name]
+ * Declares a mocked version of [type] and [qualifier]
  */
 inline fun <reified T> Component.declareMock(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     stubbing: T.() -> Unit = {}
 ): T {
+    val key = Key.of(T::class, qualifier)
     val foundBinding = getBindings().first {
-        if (name != null) {
-            it.name == name
-        } else {
-            it.type == T::class
-        }
+        it.key == key
     } as Binding<T>
 
     val binding = foundBinding.cloneForMock(T::class)

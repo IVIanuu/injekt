@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrSet
 import com.ivianuu.injekt.withBinding
@@ -30,10 +31,10 @@ import kotlin.collections.set
  */
 infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
-        hashMapOf<String, MapBinding>()
-    }[mapBinding.mapName] = mapBinding
+        hashMapOf<Qualifier, MapBinding>()
+    }[mapBinding.mapQualifier] = mapBinding
 
-    module.declareMapBinding(mapBinding.mapName)
+    module.declareMapBinding(mapBinding.mapQualifier)
 
     return this
 }
@@ -42,38 +43,38 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
  * Adds this binding into the name [Pair.first] with the key [Pair.second]
  */
 infix fun <T> BindingContext<T>.bindIntoMap(
-    pair: Pair<String, Any>
+    pair: Pair<Qualifier, Any>
 ): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
 
 /**
- * Adds this binding into [mapName] with [mapKey]
+ * Adds this binding into [mapQualifier] with [mapKey]
  */
 fun <T> BindingContext<T>.bindIntoMap(
-    mapName: String,
+    mapQualifier: Qualifier,
     mapKey: Any,
     override: Boolean = false
-): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
+): BindingContext<T> = bindIntoMap(MapBinding(mapQualifier, mapKey, override))
 
 /**
  * Declares a empty map binding
  * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
-fun Module.mapBinding(mapName: String) {
-    factory(name = mapName, override = true) {
+fun Module.mapBinding(mapQualifier: Qualifier) {
+    factory(qualifier = mapQualifier, override = true) {
         MultiBindingMap<Any, Any>(component, emptyMap())
     }
 }
 
 /**
- * Binds a already existing [Binding] into [mapName] with [mapKey]
+ * Binds a already existing [Binding] into [mapQualifier] with [mapKey]
  */
 inline fun <reified T> Module.bindIntoMap(
-    mapName: String,
+    mapQualifier: Qualifier,
     mapKey: Any,
     override: Boolean = false,
-    implementationName: String? = null
+    implementationQualifier: Qualifier? = null
 ) {
-    bindIntoMap<T>(MapBinding(mapName, mapKey, override), implementationName)
+    bindIntoMap<T>(MapBinding(mapQualifier, mapKey, override), implementationQualifier)
 }
 
 /**
@@ -81,10 +82,10 @@ inline fun <reified T> Module.bindIntoMap(
  */
 inline fun <reified T> Module.bindIntoMap(
     mapBinding: MapBinding,
-    implementationName: String? = null
+    implementationQualifier: Qualifier? = null
 ) {
-    withBinding<T>(implementationName) {
+    withBinding<T>(implementationQualifier) {
         bindIntoMap(mapBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationName)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationQualifier)
     }
 }

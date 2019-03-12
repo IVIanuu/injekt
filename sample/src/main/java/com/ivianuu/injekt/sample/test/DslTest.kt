@@ -115,19 +115,19 @@ fun BindingBuilder<*>.bindTypes(types: Iterable<KClass<*>>) {
 
 }
 
-fun BindingBuilder<*>.bindName(name: String) {
+fun BindingBuilder<*>.bindQualifier(name: String) {
 
 }
 
-fun BindingBuilder<*>.bindNames(vararg names: String) {
+fun BindingBuilder<*>.bindQualifiers(vararg names: String) {
 
 }
 
-fun BindingBuilder<*>.bindNames(vararg names: Array<String>) {
+fun BindingBuilder<*>.bindQualifiers(vararg names: Array<String>) {
 
 }
 
-fun BindingBuilder<*>.bindNames(names: Iterable<String>) {
+fun BindingBuilder<*>.bindQualifiers(names: Iterable<String>) {
 
 }
 
@@ -139,11 +139,11 @@ fun BindingBuilder<*>.bindIntoSet(setName: String, override: Boolean = false) {
 
 }
 
-inline fun <reified T> Module.bind(name: String? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
+inline fun <reified T> Module.bind(qualifier: Qualifier? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
 return add(BindingBuilder<T>(T::class, name).apply(body).build())
 }
 
-inline fun <reified T> Module.bindSingle(name: String? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
+inline fun <reified T> Module.bindSingle(qualifier: Qualifier? = null, body: BindingBuilder<T>.() -> Unit): BindingContext<T> {
 return bind(name) {
 kind(Binding.Kind.SINGLE)
 body()
@@ -154,7 +154,7 @@ body()
  * Provides scoped dependency which will be created once for each component
 */
 inline fun <reified T> Module.single2(
-name: String? = null,
+qualifier: Qualifier? = null,
 scopeName: String? = null,
 override: Boolean = false,
 eager: Boolean = false,
@@ -179,7 +179,7 @@ bind<String> {
 factory { "my_string" }
 override()
 attributes("key" to "value")
-bindName("alias")
+bindQualifier("alias")
 bindIntoMap("map_name", Any::class)
 bindType<CharSequence>()
 }
@@ -195,7 +195,7 @@ bindTypes(Any::class)
 
 bind<Int> {
 single { 0 }
-bindNames("name_one")
+bindQualifiers("name_one")
 attribute("my_key", "my_value")
 }
 }*/

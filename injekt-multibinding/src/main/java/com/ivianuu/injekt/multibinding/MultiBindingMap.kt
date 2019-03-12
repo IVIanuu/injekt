@@ -35,13 +35,13 @@ data class MultiBindingMap<K, T>(
  * Returns a [Map] of [K] and [T]s
  */
 fun <K, T> MultiBindingMap<K, T>.toMap(parameters: ParametersDefinition? = null): Map<K, T> =
-    map.mapValues { component.get<T>(it.value.type, it.value.name, parameters) }
+    map.mapValues { component.get<T>(it.value.type, it.value.qualifier, parameters) }
 
 /**
  * Returns a [Map] of [K] and [Lazy]s of [T]
  */
 fun <K, T> MultiBindingMap<K, T>.toLazyMap(parameters: ParametersDefinition? = null): Map<K, Lazy<T>> =
-    map.mapValues { lazy { component.get<T>(it.value.type, it.value.name, parameters) } }
+    map.mapValues { lazy { component.get<T>(it.value.type, it.value.qualifier, parameters) } }
 
 /**
  * Returns a [Map] of [K] and [Provider]s of [T]
@@ -51,7 +51,7 @@ fun <K, T> MultiBindingMap<K, T>.toProviderMap(defaultParameters: ParametersDefi
         provider {
             component.get<T>(
                 binding.value.type,
-                binding.value.name,
+                binding.value.qualifier,
                 it ?: defaultParameters
             )
         }

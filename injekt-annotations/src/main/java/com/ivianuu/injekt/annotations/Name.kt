@@ -19,8 +19,7 @@ package com.ivianuu.injekt.annotations
 import com.ivianuu.injekt.Component
 
 /**
- * Will use the [name] when retrieving an instance from [Component.get]
+ * Will use the [qualifier] when retrieving an instance from [Component.get]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-@Retention(AnnotationRetention.RUNTIME)
 annotation class Name(val name: String)

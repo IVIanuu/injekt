@@ -25,10 +25,6 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 
-
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class FactoryGenerator(private val descriptor: BindingDescriptor) {
 
     fun generate(): FileSpec {
@@ -65,6 +61,10 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
             imports.add("getProvider")
         }
 
+        if (descriptor.constructorParams.any { it.name != null }) {
+            imports.add("named")
+        }
+
         return imports
     }
 
@@ -84,19 +84,19 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                                     when (it.kind) {
                                         ParamDescriptor.Kind.VALUE -> {
                                             when {
-                                                it.name != null -> "get(\"${it.name}\")"
+                                                it.name != null -> "get(named(\"${it.name}\"))"
                                                 else -> "get()"
                                             }
                                         }
                                         ParamDescriptor.Kind.LAZY -> {
                                             when {
-                                                it.name != null -> "inject(\"${it.name}\")"
+                                                it.name != null -> "inject(named(\"${it.name}\"))"
                                                 else -> "inject()"
                                             }
                                         }
                                         ParamDescriptor.Kind.PROVIDER -> {
                                             when {
-                                                it.name != null -> "getProvider(\"${it.name}\")"
+                                                it.name != null -> "getProvider(named(\"${it.name}\"))"
                                                 else -> "getProvider()"
                                             }
                                         }

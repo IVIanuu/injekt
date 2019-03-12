@@ -34,7 +34,7 @@ fun Component.check() {
     getBindings().forEach {
         get<Any?>(
             it.type,
-            it.name
+            it.qualifier
         ).also { instance -> println("got $instance") }
     }
 }

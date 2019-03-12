@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.attributesOf
 import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
@@ -42,13 +43,13 @@ private val noopDefinition: Definition<Any> = {}
 fun <T> Binding.Companion.createInstance(
     type: KClass<*>,
     instance: T,
-    name: String? = null,
+    qualifier: Qualifier? = null,
     scopeName: String? = null,
     attributes: Attributes = attributesOf(),
     override: Boolean = false
 ): Binding<T> =
     Binding.create(
-        type, name, INSTANCE_KIND, ExistingInstanceFactory(instance),
+        type, qualifier, INSTANCE_KIND, ExistingInstanceFactory(instance),
         scopeName, attributes, override, false, noopDefinition as Definition<T>
     )
 
@@ -83,7 +84,6 @@ class ExistingInstanceFactory<S>(
         if (instance == null) {
             instance = ExistingInstance(binding as Binding<S>, existingInstance)
         }
-
         return instance as Instance<T>
     }
 
@@ -93,7 +93,7 @@ class ExistingInstanceFactory<S>(
  * Provides a existing instance
  */
 inline fun <reified T> Module.instance(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     scopeName: String? = null,
     override: Boolean = false,
     instance: () -> T
@@ -101,7 +101,7 @@ inline fun <reified T> Module.instance(
     Binding.createInstance(
         type = T::class,
         instance = instance(),
-        name = name,
+        qualifier = qualifier,
         scopeName = scopeName,
         override = override
     )

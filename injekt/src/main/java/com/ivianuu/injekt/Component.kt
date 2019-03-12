@@ -14,14 +14,14 @@ class Component @PublishedApi internal constructor() {
     private val instances = hashMapOf<Key, Instance<*>>()
 
     /**
-     * Returns a instance of [T] matching the [type], [name] and [parameters]
+     * Returns a instance of [T] matching the [type], [qualifier] and [parameters]
      */
     fun <T> get(
         type: KClass<*>,
-        name: String? = null,
+        qualifier: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        val key = Key.of(type, name)
+        val key = Key.of(type, qualifier)
 
         val instance = findInstance<T>(key, true)
             ?: throw BindingNotFoundException("${componentName()} Could not find binding for $key")
@@ -123,7 +123,7 @@ class Component @PublishedApi internal constructor() {
             }
 
             // we search for generated factories as a last resort
-            if (includeFactories && key is Key.TypeKey) {
+            if (includeFactories) {
                 try {
                     val factory = InjektPlugins.factoryFinder.find<T>(key.type)
                         ?: return@findInstance null
@@ -220,7 +220,6 @@ inline fun component(
         }
 }
 
-
 /**
  * Adds all [modules]
  */
@@ -236,7 +235,7 @@ fun Component.modules(vararg modules: Module) {
 }
 
 /**
- * Adds the module
+ * Adds the [module]
  */
 fun Component.modules(module: Module) {
     addModule(module)
@@ -285,42 +284,42 @@ fun Component.scopeNames(scopeName: String) {
 }
 
 /**
- * Returns a instance of [T] matching the [name] and [parameters]
+ * Returns a instance of [T] matching the [qualifier] and [parameters]
  */
 inline fun <reified T> Component.get(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(T::class, name, parameters)
+): T = get(T::class, qualifier, parameters)
 
 /**
- * Lazily returns a instance of [T] matching the [name] and [parameters]
+ * Lazily returns a instance of [T] matching the [qualifier] and [parameters]
  */
 inline fun <reified T> Component.inject(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy { get<T>(name, parameters) }
+): Lazy<T> = lazy { get<T>(qualifier, parameters) }
 
 /**
- * Returns a [Provider] for [T] and [name]
+ * Returns a [Provider] for [T] and [qualifier]
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.getProvider(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Provider<T> = provider { parameters: ParametersDefinition? ->
-    get<T>(name, parameters ?: defaultParameters)
+    get<T>(qualifier, parameters ?: defaultParameters)
 }
 
 /**
- * Returns a [Provider] for [T] and [name]
+ * Returns a [Provider] for [T] and [qualifier]
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.injectProvider(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy {
     provider { parameters: ParametersDefinition? ->
-        get<T>(name, parameters ?: defaultParameters)
+        get<T>(qualifier, parameters ?: defaultParameters)
     }
 }
 

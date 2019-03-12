@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.attributesOf
 import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.create
@@ -39,13 +40,13 @@ const val REUSABLE_KIND = "Reusable"
  */
 fun <T> Binding.Companion.createReusable(
     type: KClass<*>,
-    name: String? = null,
+    qualifier: Qualifier? = null,
     scopeName: String? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
     Binding.create(
-        type, name, REUSABLE_KIND, ReusableInstanceFactory,
+        type, qualifier, REUSABLE_KIND, ReusableInstanceFactory,
         scopeName, attributesOf(), override, false, definition
     )
 
@@ -71,7 +72,7 @@ class ReusableInstance<T>(
 
         return if (value != null) {
             InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
-            return value
+            value
         } else {
             InjektPlugins.logger?.info("${component.componentName()} Create instance $binding")
             create(component, parameters).also { _value = WeakReference(it) }
@@ -92,14 +93,14 @@ object ReusableInstanceFactory : InstanceFactory {
  * Provides a reusable dependency which will use weak references internally
  */
 inline fun <reified T> Module.reusable(
-    name: String? = null,
+    qualifier: Qualifier? = null,
     scopeName: String? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
     Binding.createReusable(
         type = T::class,
-        name = name,
+        qualifier = qualifier,
         scopeName = scopeName,
         override = override,
         definition = definition

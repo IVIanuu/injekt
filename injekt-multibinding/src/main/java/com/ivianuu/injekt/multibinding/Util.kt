@@ -5,17 +5,18 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.OverrideException
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.getOrDefault
 
 const val KEY_ORIGINAL_KEY = "original_key"
 
-internal fun Module.declareMapBinding(mapName: String) {
-    factory(name = mapName, override = true) {
+internal fun Module.declareMapBinding(mapQualifier: Qualifier) {
+    factory(qualifier = mapQualifier, override = true) {
         val allMapBindings = component.getAllBindings()
             .mapNotNull { binding ->
-                binding.attributes.get<Map<String, MapBinding>>(KEY_MAP_BINDINGS)
-                    ?.get(mapName)?.let { binding to it }
+                binding.attributes.get<Map<Qualifier, MapBinding>>(KEY_MAP_BINDINGS)
+                    ?.get(mapQualifier)?.let { binding to it }
             }
 
         val mapBindingsToUse = hashMapOf<Any, Binding<*>>()
@@ -35,12 +36,12 @@ internal fun Module.declareMapBinding(mapName: String) {
     }
 }
 
-internal fun Module.declareSetBinding(setName: String) {
-    factory(name = setName, override = true) { _ ->
+internal fun Module.declareSetBinding(setQualifier: Qualifier) {
+    factory(qualifier = setQualifier, override = true) { _ ->
         val allSetBindings = component.getAllBindings()
             .mapNotNull { binding ->
-                binding.attributes.get<Map<String, SetBinding>>(KEY_SET_BINDINGS)
-                    ?.get(setName)?.let { binding to it }
+                binding.attributes.get<Map<Qualifier, SetBinding>>(KEY_SET_BINDINGS)
+                    ?.get(setQualifier)?.let { binding to it }
             }
 
         val setBindingsToUse = hashMapOf<Key, Binding<*>>()

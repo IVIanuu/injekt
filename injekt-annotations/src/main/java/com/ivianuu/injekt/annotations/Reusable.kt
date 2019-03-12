@@ -20,5 +20,4 @@ package com.ivianuu.injekt.annotations
  * Generates a factory for the annotated type
  */
 @Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
 annotation class Reusable(val scopeName: String = "")

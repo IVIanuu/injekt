@@ -37,7 +37,7 @@ class EagerTest {
 
         val binding = component.getBinding<TestDep1>()
         val instance = component.getInstance<TestDep1>(
-            binding.type, binding.name
+            binding.type, binding.qualifier
         )
 
         assertTrue(binding.eager)
@@ -56,7 +56,7 @@ class EagerTest {
 
         val binding = component.getBinding<TestDep1>()
         val instance = component.getInstance<TestDep1>(
-            binding.type, binding.name
+            binding.type, binding.qualifier
         )
 
         assertFalse(binding.eager)
@@ -75,7 +75,7 @@ class EagerTest {
 
         val binding = component.getBinding<TestDep1>()
         val instance = component.getInstance<TestDep1>(
-            binding.type, binding.name
+            binding.type, binding.qualifier
         )
 
         assertFalse(binding.eager)
@@ -94,7 +94,7 @@ class EagerTest {
 
         val binding = component.getBinding<TestDep1>()
         val instance = component.getInstance<TestDep1>(
-            binding.type, binding.name
+            binding.type, binding.qualifier
         )
 
         assertFalse(instance.isCreated)

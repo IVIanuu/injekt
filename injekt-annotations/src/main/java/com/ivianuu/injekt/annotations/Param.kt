@@ -23,5 +23,4 @@ import com.ivianuu.injekt.Parameters
  * Note that the parameters must be passed in the exact same order as in the constructor
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-@Retention(AnnotationRetention.RUNTIME)
 annotation class Param
