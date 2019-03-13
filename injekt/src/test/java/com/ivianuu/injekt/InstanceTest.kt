@@ -18,7 +18,6 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,7 +28,7 @@ class InstanceTest {
     fun testSingleCreatesOnce() {
         val component = component()
         component.addBinding(
-            Binding.create(
+            Binding(
                 type = TestDep1::class,
                 kind = SingleKind,
                 definition = { TestDep1() }
@@ -38,12 +37,8 @@ class InstanceTest {
 
         val instance = component.getInstances().first()
 
-        assertFalse(instance.isCreated)
-
         val value1 = instance.get(component, null)
-        assertTrue(instance.isCreated)
         val value2 = instance.get(component, null)
-        assertTrue(instance.isCreated)
 
         assertEquals(value1, value2)
     }
@@ -52,7 +47,7 @@ class InstanceTest {
     fun testFactoryCreatesNew() {
         val component = component()
         component.addBinding(
-            Binding.create(
+            Binding(
                 type = TestDep1::class,
                 kind = FactoryKind,
                 definition = { TestDep1() }
@@ -62,12 +57,9 @@ class InstanceTest {
         val instance = component.getInstances().last()
 
         assertTrue(instance is FactoryInstance)
-        assertFalse(instance.isCreated)
 
         val value1 = instance.get(component, null)
-        assertFalse(instance.isCreated)
         val value2 = instance.get(component, null)
-        assertFalse(instance.isCreated)
 
         assertNotEquals(value1, value2)
     }
@@ -76,7 +68,7 @@ class InstanceTest {
     fun testInstanceCreationFailed() {
         val component = component()
         component.addBinding(
-            Binding.create(
+            Binding(
                 type = TestDep1::class,
                 kind = SingleKind,
                 definition = { error("error") }

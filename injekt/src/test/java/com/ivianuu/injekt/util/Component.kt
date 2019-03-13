@@ -31,13 +31,13 @@ fun <T> Component.getBinding(
     type: KClass<*>,
     qualifier: Qualifier? = null
 ): Binding<T> {
-    val key = Key.of(type, qualifier)
+    val key = Key(type, qualifier)
     return getBindings().firstOrNull { it.key == key } as? Binding<T>
         ?: error("binding not found")
 }
 
 fun <T> Component.getInstance(type: KClass<*>, qualifier: Qualifier? = null): Instance<T> {
-    val key = Key.of(type, qualifier)
+    val key = Key(type, qualifier)
     return getInstances().firstOrNull { it.binding.key == key } as? Instance<T>
         ?: error("instance not found")
 }
