@@ -20,7 +20,7 @@ import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.annotations.Factory
-import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Named
 import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Qualified
 import com.ivianuu.injekt.annotations.Raw
@@ -55,7 +55,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
 
     override fun annotations(): Set<Class<out Annotation>> = setOf(
         Factory::class.java,
-        Name::class.java,
+        Named::class.java,
         Param::class.java,
         Qualified::class.java,
         Raw::class.java,
@@ -64,7 +64,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
     )
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
-        validateNameUsages(elementsByAnnotation[Name::class.java])
+        validateNameUsages(elementsByAnnotation[Named::class.java])
         validateParamUsages(elementsByAnnotation[Param::class.java])
         validateQualifiedUsages(elementsByAnnotation[Qualified::class.java])
         validateRawUsages(elementsByAnnotation[Raw::class.java])
@@ -147,12 +147,12 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                     }
 
                     val getName =
-                        it.getAnnotationMirrorOrNull<Name>()?.get("name")?.value as? String
+                        it.getAnnotationMirrorOrNull<Named>()?.get("name")?.value as? String
 
                     if (getName != null && getName.isEmpty()) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Name must not be empty", it
+                            "Named must not be empty", it
                         )
                         return@createBindingDescriptor null
                     }
@@ -178,7 +178,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                     ) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Only one of @Name and @Param @Qualified can be annotated per parameter",
+                            "Only one of @Named and @Param @Qualified can be annotated per parameter",
                             it
                         )
                         return@createBindingDescriptor null
@@ -224,7 +224,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "@Name annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
+                    "@Named annotation should only be used inside a class which is annotated with @Factory, @Reusable or @Single",
                     it
                 )
             }

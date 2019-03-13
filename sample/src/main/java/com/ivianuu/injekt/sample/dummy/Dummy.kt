@@ -21,7 +21,7 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.annotations.Factory
-import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Named
 import com.ivianuu.injekt.annotations.Qualified
 import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
@@ -35,13 +35,13 @@ class DummyDep2
 
 @Single
 class DummyDep3(
-    @Name("name") val dummyDep: DummyDep,
+    @Named("name") val dummyDep: DummyDep,
     val dummyDep2: DummyDep2
 )
 
 @Factory
 class DummyDep4(
     @Raw val rawProvider: Provider<String>,
-    @Name("name") @Raw val namedRawLazy: Lazy<Int>,
+    @Named("name") @Raw val namedRawLazy: Lazy<Int>,
     @Qualified(ForActivity::class) val loloQualified: Provider<Resources>
 )

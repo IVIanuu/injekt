@@ -21,7 +21,7 @@ import android.content.Context
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Named
 import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.createSingle
 import com.ivianuu.injekt.get
@@ -80,7 +80,7 @@ override = override, eager = eager, definition = definition)
 @AppService
 class MyAppService(
 @Param val something: Boolean,
-@Name("appContext") val appContext: Context
+@Named("appContext") val appContext: Context
 )
 
 object MyAppService__Factory : BindingFactory<MyAppService> {

@@ -23,7 +23,7 @@ import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.FactoryFinder
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.annotations.Factory
-import com.ivianuu.injekt.annotations.Name
+import com.ivianuu.injekt.annotations.Named
 import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Single
@@ -120,7 +120,7 @@ val parameterType = constructor.parameterTypes[i]
 val parameterAnnotations = constructor.parameterAnnotations[i]
 val isParam = parameterAnnotations.any { it is Param }
 if (!isParam) {
-val name = (parameterAnnotations.firstOrNull { it is Name } as? Name)?.name
+val name = (parameterAnnotations.firstOrNull { it is Named } as? Named)?.name
 val isRaw = parameterAnnotations.any { it is Raw }
 if (isRaw) {
 ParamDescriptor.Dependency(

@@ -22,4 +22,4 @@ import com.ivianuu.injekt.Component
  * Will use the [qualifier] when retrieving an instance from [Component.get]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Name(val name: String)
+annotation class Named(val name: String)
