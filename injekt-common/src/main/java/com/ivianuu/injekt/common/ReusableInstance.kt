@@ -28,7 +28,6 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.componentName
-import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 import java.lang.ref.WeakReference
 
@@ -86,8 +85,7 @@ inline fun <reified T> Module.reusable(
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
-    Binding.create(
-        type = T::class,
+    Binding(
         qualifier = qualifier,
         kind = ReusableKind,
         scope = scope,

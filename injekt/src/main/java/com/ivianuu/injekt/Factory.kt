@@ -44,8 +44,7 @@ inline fun <reified T> Module.factory(
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
-    Binding.create(
-        type = T::class,
+    Binding(
         qualifier = qualifier,
         kind = FactoryKind,
         scope = scope,

@@ -22,7 +22,8 @@ data class BindingDescriptor(
 
 data class ParamDescriptor(
     val kind: Kind,
-    val name: String?,
+    val paramName: String,
+    val qualifierName: String?,
     val qualifier: ClassName?,
     val paramIndex: Int
 ) {

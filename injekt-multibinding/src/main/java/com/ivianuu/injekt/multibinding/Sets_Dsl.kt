@@ -83,6 +83,6 @@ inline fun <reified T> Module.bindIntoSet(
 ) {
     withBinding<T>(implementationQualifier) {
         bindIntoSet(setBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationQualifier)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationQualifier)
     }
 }

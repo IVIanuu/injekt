@@ -53,8 +53,7 @@ inline fun <reified T> Module.single(
     eager: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
-    Binding.create(
-        type = T::class,
+    Binding(
         qualifier = qualifier,
         kind = SingleKind,
         scope = scope,

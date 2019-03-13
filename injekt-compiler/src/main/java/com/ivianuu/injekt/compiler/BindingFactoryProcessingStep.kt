@@ -138,8 +138,10 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                 .filterIsInstance<ExecutableElement>()
                 .first { it.kind == ElementKind.CONSTRUCTOR }
                 .parameters
-                .map {
-                    val paramIndex = if (it.hasAnnotation<Param>()) {
+                .map { param ->
+                    val paramName = param.simpleName.toString()
+
+                    val paramIndex = if (param.hasAnnotation<Param>()) {
                         paramsIndex++
                         paramsIndex
                     } else {
@@ -147,18 +149,18 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                     }
 
                     val getName =
-                        it.getAnnotationMirrorOrNull<Named>()?.get("name")?.value as? String
+                        param.getAnnotationMirrorOrNull<Named>()?.get("name")?.value as? String
 
                     if (getName != null && getName.isEmpty()) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Named must not be empty", it
+                            "@Named must not be empty", param
                         )
                         return@createBindingDescriptor null
                     }
 
                     val qualifier =
-                        it.getAnnotationMirrorOrNull<Qualified>()?.getAsType("qualifier")
+                        param.getAnnotationMirrorOrNull<Qualified>()?.getAsType("qualifier")
                             ?.let(typeUtils::asElement)
                             ?.let {
                                 if (!it.isObject) {
@@ -179,17 +181,17 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
                             "Only one of @Named and @Param @Qualified can be annotated per parameter",
-                            it
+                            param
                         )
                         return@createBindingDescriptor null
                     }
 
-                    val type = typeUtils.erasure(it.asType())
+                    val type = typeUtils.erasure(param.asType())
                     val lazyType = elementUtils.getTypeElement(Lazy::class.java.name).asType()
                     val providerType =
                         elementUtils.getTypeElement(Provider::class.java.name).asType()
 
-                    val isRaw = it.hasAnnotation<Raw>()
+                    val isRaw = param.hasAnnotation<Raw>()
 
                     val paramKind = when {
                         !isRaw && typeUtils.isAssignable(
@@ -205,6 +207,7 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
 
                     ParamDescriptor(
                         paramKind,
+                        paramName,
                         getName,
                         qualifier,
                         paramIndex

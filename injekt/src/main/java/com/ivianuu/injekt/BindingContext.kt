@@ -23,7 +23,7 @@ inline infix fun <T> BindingContext<T>.withContext(body: BindingContext<T>.() ->
  */
 infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {
     val copy = binding.copy(
-        key = Key.of(type),
+        key = Key(type),
         type = type,
         qualifier = null
     )
@@ -50,7 +50,7 @@ infix fun <T> BindingContext<T>.bindTypes(types: Iterable<KClass<*>>): BindingCo
  */
 infix fun <T> BindingContext<T>.bindQualifier(qualifier: Qualifier): BindingContext<T> {
     val copy = binding.copy(
-        key = Key.of(binding.type, qualifier),
+        key = Key(binding.type, qualifier),
         qualifier = qualifier
     )
     module.add(copy)

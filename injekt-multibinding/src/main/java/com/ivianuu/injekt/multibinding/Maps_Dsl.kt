@@ -86,6 +86,6 @@ inline fun <reified T> Module.bindIntoMap(
 ) {
     withBinding<T>(implementationQualifier) {
         bindIntoMap(mapBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key.of(T::class, implementationQualifier)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationQualifier)
     }
 }

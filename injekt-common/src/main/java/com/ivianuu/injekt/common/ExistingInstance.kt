@@ -27,7 +27,6 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.componentName
-import com.ivianuu.injekt.create
 import com.ivianuu.injekt.logger
 
 /**
@@ -68,8 +67,7 @@ inline fun <reified T> Module.instance(
     override: Boolean = false,
     crossinline instance: () -> T
 ): BindingContext<T> = add(
-    Binding.create(
-        type = T::class,
+    Binding(
         qualifier = qualifier,
         kind = ExistingKind,
         scope = scope,
@@ -83,8 +81,7 @@ inline fun <reified T> Module.instance(
  */
 inline fun <reified T : Any> Component.addInstance(instance: T) {
     addBinding(
-        Binding.create(
-            type = T::class,
+        Binding(
             kind = ExistingKind,
             definition = { instance }
         )

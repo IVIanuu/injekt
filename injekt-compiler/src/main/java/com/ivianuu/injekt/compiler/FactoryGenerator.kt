@@ -44,8 +44,7 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
     private fun imports(): Set<String> {
         val imports = mutableSetOf<String>()
 
-        imports.add("create")
-        imports.add("attributesOf")
+        imports.add("Binding")
 
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
@@ -59,7 +58,7 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
             imports.add("getProvider")
         }
 
-        if (descriptor.constructorParams.any { it.name != null }) {
+        if (descriptor.constructorParams.any { it.qualifierName != null }) {
             imports.add("named")
         }
 
@@ -71,78 +70,77 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
             .addSuperinterface(
                 BindingFactory::class.asClassName().plusParameter(descriptor.target)
             )
-            .addFunction(
-                FunSpec.builder("create")
-                    .addModifiers(KModifier.OVERRIDE)
-                    .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                    .apply {
-                        addCode("return %T.create(", Binding::class)
-                        addCode("type = %T::class, ", descriptor.target)
-                        addCode("kind = %T, ", descriptor.kind.impl)
-                        descriptor.scope?.let { addCode("scope = %T, ", it) }
-                        addCode(
-                            "definition = { params -> %T(",
-                            descriptor.target
-                        )
-
-                        descriptor.constructorParams.forEachIndexed { i, param ->
-                            if (param.paramIndex == -1) {
-                                when (param.kind) {
-                                    ParamDescriptor.Kind.VALUE -> {
-                                        when {
-                                            param.qualifier != null -> {
-                                                addCode("get(%T)", param.qualifier)
-                                            }
-                                            param.name != null -> {
-                                                addCode("get(named(\"${param.name}\"))")
-                                            }
-                                            else -> {
-                                                addCode("get()")
-                                            }
-                                        }
-                                    }
-                                    ParamDescriptor.Kind.LAZY -> {
-                                        when {
-                                            param.qualifier != null -> {
-                                                addCode("inject(%T)", param.qualifier)
-                                            }
-                                            param.name != null -> {
-                                                addCode("inject(named(\"${param.name}\"))")
-                                            }
-                                            else -> {
-                                                addCode("inject()")
-                                            }
-                                        }
-                                    }
-                                    ParamDescriptor.Kind.PROVIDER -> {
-                                        when {
-                                            param.qualifier != null -> {
-                                                addCode("getProvider(%T)", param.qualifier)
-                                            }
-                                            param.name != null -> {
-                                                addCode("getProvider(named(\"${param.name}\"))")
-                                            }
-                                            else -> {
-                                                addCode("getProvider()")
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                addCode("params.get(${param.paramIndex})")
-                            }
-
-                            if (i != descriptor.constructorParams.lastIndex) {
-                                addCode(", ")
-                            }
-                        }
-
-                        addCode(")})")
-
-                    }
-                    .build()
-            )
+            .addFunction(createFunction())
             .build()
     }
 
+    private fun createFunction(): FunSpec {
+        return FunSpec.builder("create")
+            .addModifiers(KModifier.OVERRIDE)
+            .returns(Binding::class.asClassName().plusParameter(descriptor.target))
+            .apply {
+                addCode("return Binding(")
+                addCode("kind = %T, ", descriptor.kind.impl)
+                descriptor.scope?.let { addCode("scope = %T, ", it) }
+                addCode("definition = { params -> ")
+                addCode("%T(", descriptor.target)
+
+                descriptor.constructorParams.forEachIndexed { i, param ->
+                    if (param.paramIndex == -1) {
+                        when (param.kind) {
+                            ParamDescriptor.Kind.VALUE -> {
+                                when {
+                                    param.qualifier != null -> {
+                                        addCode("get(%T)", param.qualifier)
+                                    }
+                                    param.qualifierName != null -> {
+                                        addCode("get(named(\"${param.qualifierName}\"))")
+                                    }
+                                    else -> {
+                                        addCode("get()")
+                                    }
+                                }
+                            }
+                            ParamDescriptor.Kind.LAZY -> {
+                                when {
+                                    param.qualifier != null -> {
+                                        addCode("inject(%T)", param.qualifier)
+                                    }
+                                    param.qualifierName != null -> {
+                                        addCode("inject(named(\"${param.qualifierName}\"))")
+                                    }
+                                    else -> {
+                                        addCode("inject()")
+                                    }
+                                }
+                            }
+                            ParamDescriptor.Kind.PROVIDER -> {
+                                when {
+                                    param.qualifier != null -> {
+                                        addCode("getProvider(%T)", param.qualifier)
+                                    }
+                                    param.qualifierName != null -> {
+                                        addCode("getProvider(named(\"${param.qualifierName}\"))")
+                                    }
+                                    else -> {
+                                        addCode("getProvider()")
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        addCode("params.get(${param.paramIndex})")
+                    }
+
+                    if (i != descriptor.constructorParams.lastIndex) {
+                        addCode(", ")
+                    }
+                }
+
+                addCode(")")
+                addCode("}")
+                addCode(")")
+            }
+            .build()
+    }
 }

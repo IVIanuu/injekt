@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * Represents a dependency binding.
  */
-data class Binding<T>(
+data class Binding<T> internal constructor(
     val key: Key,
     val type: KClass<*>,
     val qualifier: Qualifier?,
@@ -48,11 +48,30 @@ data class Binding<T>(
                 "scope=$scope, " +
                 ")"
     }
-
-    companion object
 }
 
-fun <T> Binding.Companion.create(
+inline fun <reified T> Binding(
+    qualifier: Qualifier? = null,
+    kind: Kind,
+    scope: Scope? = null,
+    attributes: Attributes = attributesOf(),
+    override: Boolean = false,
+    eager: Boolean = false,
+    noinline definition: Definition<T>
+): Binding<T> {
+    return Binding(
+        T::class,
+        qualifier,
+        kind,
+        scope,
+        attributes,
+        override,
+        eager,
+        definition
+    )
+}
+
+fun <T> Binding(
     type: KClass<*>,
     qualifier: Qualifier? = null,
     kind: Kind,
@@ -63,7 +82,7 @@ fun <T> Binding.Companion.create(
     definition: Definition<T>
 ): Binding<T> {
     return Binding(
-        Key.of(type, qualifier), type, qualifier, kind,
+        Key(type, qualifier), type, qualifier, kind,
         definition, attributes, scope, override, eager
     )
 }
