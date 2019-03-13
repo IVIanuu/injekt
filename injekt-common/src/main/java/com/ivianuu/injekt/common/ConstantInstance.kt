@@ -30,35 +30,35 @@ import com.ivianuu.injekt.componentName
 import com.ivianuu.injekt.logger
 
 /**
- * Existing instance kind
+ * Constant instance kind
  */
-object ExistingKind : Kind {
+object ConstantKind : Kind {
 
-    private const val INSTANCE_KIND = "Instance"
+    private const val INSTANCE_KIND = "Constant"
 
     override fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T> =
-        ExistingInstance(binding)
+        ConstantInstance(binding)
 
     override fun asString(): String = INSTANCE_KIND
 
 }
 
 /**
- * Holds a already existing instance
+ * Holds a constant instance
  */
-class ExistingInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(component: Component, parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("${component.componentName()} Return instance $binding")
+        InjektPlugins.logger?.info("${component.componentName()} Return constant $binding")
         return create(component, parameters)
     }
 
 }
 
 /**
- * Provides a existing instance
+ * Provides a constant instance
  */
-inline fun <reified T> Module.instance(
+inline fun <reified T> Module.constant(
     qualifier: Qualifier? = null,
     scope: Scope? = null,
     override: Boolean = false,
@@ -66,7 +66,7 @@ inline fun <reified T> Module.instance(
 ): BindingContext<T> = add(
     Binding(
         qualifier = qualifier,
-        kind = ExistingKind,
+        kind = ConstantKind,
         scope = scope,
         override = override,
         definition = { instance() }
@@ -76,10 +76,10 @@ inline fun <reified T> Module.instance(
 /**
  * Adds a [Binding] for the [instance]
  */
-inline fun <reified T : Any> Component.addInstance(instance: T) {
+inline fun <reified T : Any> Component.addConstant(instance: T) {
     addBinding(
         Binding(
-            kind = ExistingKind,
+            kind = ConstantKind,
             definition = { instance }
         )
     )

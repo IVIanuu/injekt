@@ -23,7 +23,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.StringScope
-import com.ivianuu.injekt.common.addInstance
+import com.ivianuu.injekt.common.addConstant
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.scopes
@@ -48,7 +48,7 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
 ): Component = component(createEagerInstances) {
     scopes(ReceiverScope)
     getApplicationComponentOrNull(context)?.let(this::dependencies)
-    addInstance(this@receiverComponent)
+    addConstant(this@receiverComponent)
     definition.invoke(this)
 }
 

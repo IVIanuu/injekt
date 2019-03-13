@@ -7,7 +7,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.StringScope
-import com.ivianuu.injekt.common.addInstance
+import com.ivianuu.injekt.common.addConstant
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.scopes
@@ -43,7 +43,7 @@ inline fun <reified T : View> T.viewComponent(
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
-    addInstance(this@viewComponent)
+    addConstant(this@viewComponent)
     definition.invoke(this)
 }
 
@@ -58,7 +58,7 @@ inline fun <reified T : View> T.childViewComponent(
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
-    addInstance(this@childViewComponent)
+    addConstant(this@childViewComponent)
     definition.invoke(this)
 }
 

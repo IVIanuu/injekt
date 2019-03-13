@@ -22,7 +22,7 @@ import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.StringScope
-import com.ivianuu.injekt.common.addInstance
+import com.ivianuu.injekt.common.addConstant
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.scopes
@@ -46,7 +46,7 @@ inline fun <reified T : ContentProvider> T.contentProviderComponent(
 ): Component = component(createEagerInstances) {
     scopes(ContentProviderScope)
     getApplicationComponentOrNull()?.let(this::dependencies)
-    addInstance(this@contentProviderComponent)
+    addConstant(this@contentProviderComponent)
     definition.invoke(this)
 }
 

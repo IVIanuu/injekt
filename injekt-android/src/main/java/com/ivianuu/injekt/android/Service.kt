@@ -25,7 +25,8 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.StringScope
 import com.ivianuu.injekt.bindType
-import com.ivianuu.injekt.common.instance
+import com.ivianuu.injekt.common.constant
+
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.module
@@ -68,6 +69,6 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 inline fun <reified T : Service> T.serviceModule(): Module = module {
-    instance { this@serviceModule } bindType Service::class
-    instance<Context>(ForService) { this@serviceModule }
+    constant { this@serviceModule } bindType Service::class
+    constant<Context>(ForService) { this@serviceModule }
 }
