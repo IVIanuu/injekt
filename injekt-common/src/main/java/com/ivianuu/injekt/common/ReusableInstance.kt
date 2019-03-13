@@ -55,9 +55,6 @@ class ReusableInstance<T>(
 
     private var _value: WeakReference<T>? = null
 
-    override val isCreated: Boolean
-        get() = _value?.get() != null
-
     override fun get(
         component: Component,
         parameters: ParametersDefinition?

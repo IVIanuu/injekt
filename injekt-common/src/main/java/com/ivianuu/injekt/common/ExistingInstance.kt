@@ -37,7 +37,7 @@ object ExistingKind : Kind {
     private const val INSTANCE_KIND = "Instance"
 
     override fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T> =
-        ExistingInstance<T>(binding)
+        ExistingInstance(binding)
 
     override fun asString(): String = INSTANCE_KIND
 
@@ -47,9 +47,6 @@ object ExistingKind : Kind {
  * Holds a already existing instance
  */
 class ExistingInstance<T>(override val binding: Binding<T>) : Instance<T> {
-
-    override val isCreated: Boolean
-        get() = true
 
     override fun get(component: Component, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("${component.componentName()} Return instance $binding")

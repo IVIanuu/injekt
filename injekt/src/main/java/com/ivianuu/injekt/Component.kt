@@ -104,7 +104,7 @@ class Component @PublishedApi internal constructor() {
      */
     fun createEagerInstances() {
         instances
-            .filter { it.value.binding.eager && !it.value.isCreated }
+            .filter { it.value.binding.eager }
             .forEach {
                 InjektPlugins.logger?.info("${componentName()} Create eager instance for ${it.value.binding}")
                 it.value.get(this, null)

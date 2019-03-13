@@ -21,9 +21,6 @@ class FactoryInstance<T>(
     val component: Component?
 ) : Instance<T> {
 
-    override val isCreated: Boolean
-        get() = false
-
     override fun get(
         component: Component,
         parameters: ParametersDefinition?

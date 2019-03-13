@@ -22,9 +22,6 @@ class SingleInstance<T>(
 
     private var _value: T? = null
 
-    override val isCreated: Boolean
-        get() = _value != null
-
     override fun get(
         component: Component,
         parameters: ParametersDefinition?

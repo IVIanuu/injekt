@@ -11,11 +11,6 @@ interface Instance<T> {
     val binding: Binding<T>
 
     /**
-     * Whether or not this instance is created
-     */
-    val isCreated: Boolean
-
-    /**
      * Returns a instance of [T]
      */
     fun get(
