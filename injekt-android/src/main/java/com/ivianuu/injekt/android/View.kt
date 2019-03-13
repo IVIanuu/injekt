@@ -72,7 +72,7 @@ fun View.getParentViewComponentOrNull(): Component? =
  * Returns the [Component] of the parent view or throws
  */
 fun View.getParentViewComponent(): Component =
-    getParentViewComponentOrNull() ?: kotlin.error("No parent view component found for $this")
+    getParentViewComponentOrNull() ?: error("No parent view component found for $this")
 
 /**
  * Returns the [Component] of the context or null
@@ -93,7 +93,7 @@ fun View.getContextComponentOrNull(): Component? {
  * Returns the [Component] of the context or throws
  */
 fun View.getContextComponent(): Component =
-    getContextComponentOrNull() ?: kotlin.error("No context component found for $this")
+    getContextComponentOrNull() ?: error("No context component found for $this")
 
 /**
  * Returns the [Component] of the activity or null
