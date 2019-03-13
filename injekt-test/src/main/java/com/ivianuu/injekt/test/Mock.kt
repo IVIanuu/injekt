@@ -30,7 +30,7 @@ inline fun <reified T> Component.declareMock(
     qualifier: Qualifier? = null,
     stubbing: T.() -> Unit = {}
 ): T {
-    val key = Key.of(T::class, qualifier)
+    val key = Key(T::class, qualifier)
     val foundBinding = getBindings().first {
         it.key == key
     } as Binding<T>
