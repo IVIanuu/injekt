@@ -22,8 +22,8 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
+import com.ivianuu.injekt.StringScope
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.component
@@ -35,7 +35,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Activity scope
  */
-object ActivityScope : NamedScope("ActivityScope")
+object ActivityScope : StringScope("ActivityScope")
 
 /**
  * Activity qualifier

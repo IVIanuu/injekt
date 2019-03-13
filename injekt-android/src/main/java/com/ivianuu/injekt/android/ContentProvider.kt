@@ -20,10 +20,9 @@ import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.StringQualifier
+import com.ivianuu.injekt.StringScope
 import com.ivianuu.injekt.common.addInstance
-
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.scopes
@@ -31,7 +30,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Content provider scope
  */
-object ContentProviderScope : NamedScope("ContentProviderScope")
+object ContentProviderScope : StringScope("ContentProviderScope")
 
 /**
  * Content provider qualifier
