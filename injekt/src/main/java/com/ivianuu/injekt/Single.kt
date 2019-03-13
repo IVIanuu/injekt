@@ -18,7 +18,7 @@ object SingleKind : Kind {
 class SingleInstance<T>(
     override val binding: Binding<T>,
     val component: Component?
-) : Instance<T> {
+) : Instance<T>() {
 
     private var _value: T? = null
 

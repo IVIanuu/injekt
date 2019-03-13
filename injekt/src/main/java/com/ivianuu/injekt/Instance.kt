@@ -3,22 +3,22 @@ package com.ivianuu.injekt
 /**
  * The [Instance] of an [Binding]
  */
-interface Instance<T> {
+abstract class Instance<T> {
 
     /**
      * The binding of this instance
      */
-    val binding: Binding<T>
+    abstract val binding: Binding<T>
 
     /**
      * Returns a instance of [T]
      */
-    fun get(
+    abstract fun get(
         component: Component,
         parameters: ParametersDefinition?
     ): T
 
-    fun create(
+    protected fun create(
         component: Component,
         parameters: ParametersDefinition?
     ): T {

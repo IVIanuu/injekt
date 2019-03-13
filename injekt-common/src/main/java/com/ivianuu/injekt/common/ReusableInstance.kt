@@ -51,7 +51,7 @@ object ReusableKind : Kind {
 class ReusableInstance<T>(
     override val binding: Binding<T>,
     val component: Component?
-) : Instance<T> {
+) : Instance<T>() {
 
     private var _value: WeakReference<T>? = null
 

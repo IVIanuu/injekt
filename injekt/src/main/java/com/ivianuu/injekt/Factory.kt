@@ -19,7 +19,7 @@ object FactoryKind : Kind {
 class FactoryInstance<T>(
     override val binding: Binding<T>,
     val component: Component?
-) : Instance<T> {
+) : Instance<T>() {
 
     override fun get(
         component: Component,

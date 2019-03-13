@@ -46,7 +46,7 @@ object ExistingKind : Kind {
 /**
  * Holds a already existing instance
  */
-class ExistingInstance<T>(override val binding: Binding<T>) : Instance<T> {
+class ExistingInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(component: Component, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("${component.componentName()} Return instance $binding")
