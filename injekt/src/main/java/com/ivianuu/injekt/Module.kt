@@ -105,7 +105,7 @@ inline fun <T> Module.withBinding(
 }
 
 /**
- * Binds the [bindingType] to the existing [Binding] for [T] and [implementationName]
+ * Binds the [bindingType] to the existing [Binding] for [T] and [implementationQualifier]
  */
 inline fun <reified T> Module.bindType(
     bindingType: KClass<*>,
