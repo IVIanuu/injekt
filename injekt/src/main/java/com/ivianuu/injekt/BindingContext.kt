@@ -70,7 +70,7 @@ infix fun <T> BindingContext<T>.bindQualifiers(names: Array<out Qualifier>): Bin
 /**
  * Adds this [Binding] to [names]
  */
-infix fun <T> BindingContext<T>.bindQualifiers(names: Iterable<out Qualifier>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindQualifiers(names: Iterable<Qualifier>): BindingContext<T> {
     names.forEach { bindQualifier(it) }
     return this
 }

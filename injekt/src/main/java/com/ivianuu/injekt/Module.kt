@@ -76,18 +76,6 @@ fun Module.module(module: Module) {
     module.bindings.forEach { add(it.value) }
 }
 
-/**
- * Adds all bindings of module
- */
-inline fun Module.module(
-    scope: Scope? = null,
-    override: Boolean? = null,
-    eager: Boolean? = null,
-    definition: ModuleDefinition = {}
-) {
-    module(com.ivianuu.injekt.module(scope, override, eager, definition))
-}
-
 /** Calls trough [Module.withBinding] */
 inline fun <reified T> Module.withBinding(
     qualifier: Qualifier? = null,
