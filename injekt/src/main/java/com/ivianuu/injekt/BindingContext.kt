@@ -60,14 +60,15 @@ infix fun <T> BindingContext<T>.bindQualifier(qualifier: Qualifier): BindingCont
 /**
  * Adds this [Binding] to [names]
  */
-infix fun <T> BindingContext<T>.bindQualifiers(names: Array<Qualifier>): BindingContext<T> = apply {
+infix fun <T> BindingContext<T>.bindQualifiers(names: Array<out Qualifier>): BindingContext<T> =
+    apply {
     names.forEach { bindQualifier(it) }
 }
 
 /**
  * Adds this [Binding] to [names]
  */
-infix fun <T> BindingContext<T>.bindQualifiers(names: Iterable<Qualifier>): BindingContext<T> =
+infix fun <T> BindingContext<T>.bindQualifiers(names: Iterable<out Qualifier>): BindingContext<T> =
     apply {
         names.forEach { bindQualifier(it) }
 }

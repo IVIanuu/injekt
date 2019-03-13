@@ -17,9 +17,10 @@
 package com.ivianuu.injekt.annotations
 
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.StringQualifier
 
 /**
- * Will use the [qualifier] when retrieving an instance from [Component.get]
+ * Will use the [name] via [StringQualifier] when retrieving an instance from [Component.get]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Named(val name: String)

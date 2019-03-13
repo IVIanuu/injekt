@@ -33,7 +33,7 @@ import com.ivianuu.injekt.logger
 /**
  * Existing instance kind
  */
-object InstanceKind : Kind {
+object ExistingKind : Kind {
 
     private const val INSTANCE_KIND = "Instance"
 
@@ -71,7 +71,7 @@ inline fun <reified T> Module.instance(
     Binding.create(
         type = T::class,
         qualifier = qualifier,
-        kind = InstanceKind,
+        kind = ExistingKind,
         scope = scope,
         override = override,
         definition = { instance() }
@@ -85,7 +85,7 @@ inline fun <reified T : Any> Component.addInstance(instance: T) {
     addBinding(
         Binding.create(
             type = T::class,
-            kind = InstanceKind,
+            kind = ExistingKind,
             definition = { instance }
         )
     )
