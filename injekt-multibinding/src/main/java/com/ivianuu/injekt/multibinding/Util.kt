@@ -19,7 +19,7 @@ internal fun Module.declareMapBinding(mapQualifier: Qualifier) {
                     ?.get(mapQualifier)?.let { binding to it }
             }
 
-        val mapBindingsToUse = hashMapOf<Any, Binding<*>>()
+        val mapBindingsToUse = linkedMapOf<Any, Binding<*>>()
 
         // check overrides
         allMapBindings.forEach { (binding, mapBinding) ->
@@ -44,7 +44,7 @@ internal fun Module.declareSetBinding(setQualifier: Qualifier) {
                     ?.get(setQualifier)?.let { binding to it }
             }
 
-        val setBindingsToUse = hashMapOf<Key, Binding<*>>()
+        val setBindingsToUse = linkedMapOf<Key, Binding<*>>()
 
         // check overrides
         allSetBindings.forEach { (binding, setBinding) ->
