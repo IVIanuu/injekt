@@ -82,7 +82,10 @@ class FactoryGenerator(private val descriptor: BindingDescriptor) {
                 addCode("return Binding(")
                 addCode("kind = %T, ", descriptor.kind.impl)
                 descriptor.scope?.let { addCode("scope = %T, ", it) }
-                addCode("definition = { params -> ")
+                addCode("definition = { ")
+                if (descriptor.constructorParams.any { it.paramIndex != -1 }) {
+                    addCode("params -> ")
+                }
                 addCode("%T(", descriptor.target)
 
                 descriptor.constructorParams.forEachIndexed { i, param ->

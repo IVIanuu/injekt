@@ -22,6 +22,7 @@ import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Named
+import com.ivianuu.injekt.annotations.Param
 import com.ivianuu.injekt.annotations.Qualified
 import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
@@ -36,7 +37,7 @@ class DummyDep2
 @Single
 class DummyDep3(
     @Named("name") val dummyDep: DummyDep,
-    val dummyDep2: DummyDep2
+    @Param val dummyDep2: DummyDep2
 )
 
 @Factory
