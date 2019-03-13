@@ -6,6 +6,11 @@ package com.ivianuu.injekt
 abstract class Instance<T> {
 
     /**
+     * Attributes of this instance
+     */
+    val attributes = attributesOf()
+
+    /**
      * The binding of this instance
      */
     abstract val binding: Binding<T>

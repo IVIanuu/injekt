@@ -8,10 +8,21 @@ import kotlin.reflect.KClass
  */
 class Component @PublishedApi internal constructor() {
 
+    /**
+     * Attributes of this component
+     */
+    val attributes = attributesOf()
+
     private val dependencies = linkedSetOf<Component>()
     private val scopes = hashSetOf<Scope>()
     private val bindings = linkedMapOf<Key, Binding<*>>()
     private val instances = hashMapOf<Key, Instance<*>>()
+
+    init {
+        InjektPlugins.getRegisteredComponentExtensions().forEach {
+            it.onComponentInitialized(this)
+        }
+    }
 
     /**
      * Returns a instance of [T] matching the [type], [qualifier] and [parameters]
@@ -34,6 +45,11 @@ class Component @PublishedApi internal constructor() {
      */
     fun addModule(module: Module) {
         InjektPlugins.logger?.info("${componentName()} load module ${module.bindings.size}")
+
+        InjektPlugins.getRegisteredComponentExtensions().forEach {
+            it.onModuleAdded(this, module)
+        }
+
         module.bindings.forEach { addBinding(it.value) }
     }
 
@@ -45,6 +61,10 @@ class Component @PublishedApi internal constructor() {
             if (!this.dependencies.add(dependency)) {
                 error("Already added ${dependency.componentName()} to ${componentName()}")
             }
+        }
+
+        InjektPlugins.getRegisteredComponentExtensions().forEach {
+            it.onDependencyAdded(this, dependency)
         }
 
         InjektPlugins.logger?.info("${componentName()} Add dependency $dependency")
@@ -64,6 +84,11 @@ class Component @PublishedApi internal constructor() {
                 error("Scope name $scope was already added")
             }
         }
+
+        InjektPlugins.getRegisteredComponentExtensions().forEach {
+            it.onScopeAdded(this, scope)
+        }
+
         InjektPlugins.logger?.info("${componentName()} Add scope name $scope")
     }
 
@@ -120,6 +145,13 @@ class Component @PublishedApi internal constructor() {
             for (dependency in dependencies) {
                 instance = dependency.findInstance<T>(key, false)
                 if (instance != null) return@synchronized instance
+            }
+
+            for (extension in InjektPlugins.getRegisteredComponentExtensions()) {
+                val binding = extension.onResolveBinding(this, key)
+                if (binding != null) {
+                    return@findInstance addBindingInternal(binding) as Instance<T>
+                }
             }
 
             // we search for generated factories as a last resort
@@ -181,6 +213,11 @@ class Component @PublishedApi internal constructor() {
                     "${componentName()} Declare $binding"
                 }
                 logger.debug(msg)
+            }
+
+            InjektPlugins.getRegisteredComponentExtensions().forEach {
+                it.onBindingAdded(this, binding)
+                it.onInstanceAdded(this, instance)
             }
 
             return@synchronized instance

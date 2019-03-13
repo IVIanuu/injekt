@@ -44,7 +44,7 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
         hashMapOf<Qualifier, SetBinding>()
     }[setBinding.setQualifier] = setBinding
 
-    module.declareSetBinding(setBinding.setQualifier)
+    registerExtensionIfNeeded()
 
     return this
 }

@@ -36,3 +36,16 @@ var InjektPlugins.logger: Logger?
     set(value) {
         _logger = value
     }
+
+private val registeredComponentExtensions =
+    linkedSetOf<ComponentExtension>()
+
+internal fun InjektPlugins.getRegisteredComponentExtensions(): Set<ComponentExtension> =
+    registeredComponentExtensions.toSet()
+
+fun InjektPlugins.isComponentExtensionRegistered(extension: ComponentExtension): Boolean =
+    registeredComponentExtensions.contains(extension)
+
+fun InjektPlugins.registerComponentExtension(extension: ComponentExtension) {
+    registeredComponentExtensions.add(extension)
+}

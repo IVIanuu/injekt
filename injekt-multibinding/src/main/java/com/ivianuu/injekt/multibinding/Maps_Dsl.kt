@@ -34,7 +34,7 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
         hashMapOf<Qualifier, MapBinding>()
     }[mapBinding.mapQualifier] = mapBinding
 
-    module.declareMapBinding(mapBinding.mapQualifier)
+    registerExtensionIfNeeded()
 
     return this
 }
