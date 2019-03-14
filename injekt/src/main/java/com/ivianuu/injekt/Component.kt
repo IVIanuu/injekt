@@ -24,7 +24,7 @@ class Component @PublishedApi internal constructor() {
         val key = Key(type, qualifier)
 
         val instance = findInstance<T>(key, true)
-            ?: throw BindingNotFoundException("${componentName()} Could not find binding for $key")
+            ?: throw BindingNotFoundException("${componentName()} Couldn't find a binding for $key")
 
         return instance.get(this, parameters)
     }

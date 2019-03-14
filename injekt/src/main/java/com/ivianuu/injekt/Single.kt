@@ -51,6 +51,7 @@ inline fun <reified T> Module.single(
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
     Binding(
+        type = T::class,
         qualifier = qualifier,
         kind = SingleKind,
         scope = scope,

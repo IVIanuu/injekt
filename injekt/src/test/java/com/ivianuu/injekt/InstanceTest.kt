@@ -29,7 +29,6 @@ class InstanceTest {
         val component = component()
         component.addBinding(
             Binding(
-                type = TestDep1::class,
                 kind = SingleKind,
                 definition = { TestDep1() }
             )
@@ -48,7 +47,6 @@ class InstanceTest {
         val component = component()
         component.addBinding(
             Binding(
-                type = TestDep1::class,
                 kind = FactoryKind,
                 definition = { TestDep1() }
             )

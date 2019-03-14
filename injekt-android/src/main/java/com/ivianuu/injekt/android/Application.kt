@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.DefinitionContext
@@ -25,8 +26,9 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.StringScope
 import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.common.ConstantKind
+import com.ivianuu.injekt.common.constant
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.modules
@@ -57,8 +59,16 @@ inline fun <reified T : Application> T.applicationComponent(
 /**
  * Returns a [Module] with convenient bindings
  */
-inline fun <reified T : Application> T.applicationModule(): Module = module {
-    factory { this@applicationModule } bindType Application::class bindType Context::class
+fun <T : Application> T.applicationModule(): Module = module {
+    add(
+        Binding(
+            type = this@applicationModule::class,
+            kind = ConstantKind,
+            definition = { this@applicationModule }
+        )
+    ) bindType Application::class bindType Context::class
+
+    constant<Context>(ForApplication) { this@applicationModule }
 }
 
 fun DefinitionContext.application(): Application = get()

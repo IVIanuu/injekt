@@ -65,6 +65,7 @@ inline fun <reified T> Module.constant(
     crossinline instance: () -> T
 ): BindingContext<T> = add(
     Binding(
+        type = T::class,
         qualifier = qualifier,
         kind = ConstantKind,
         scope = scope,
@@ -76,9 +77,10 @@ inline fun <reified T> Module.constant(
 /**
  * Adds a [Binding] for the [instance]
  */
-inline fun <reified T : Any> Component.addConstant(instance: T) {
+fun <T : Any> Component.addConstant(instance: T) {
     addBinding(
         Binding(
+            type = instance::class,
             kind = ConstantKind,
             definition = { instance }
         )

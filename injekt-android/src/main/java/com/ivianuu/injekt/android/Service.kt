@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Service
 import android.content.Context
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDefinition
 import com.ivianuu.injekt.InjektTrait
@@ -25,11 +26,12 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.StringQualifier
 import com.ivianuu.injekt.StringScope
 import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
-
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.dependencies
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.scopes
 
 /**
@@ -50,6 +52,7 @@ inline fun <T : Service> T.serviceComponent(
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
     scopes(ServiceScope)
+    modules(serviceModule())
     getApplicationComponentOrNull()?.let(this::dependencies)
     definition.invoke(this)
 }
@@ -68,7 +71,14 @@ fun Service.getApplicationComponent(): Component =
 /**
  * Returns a [Module] with convenient bindings
  */
-inline fun <reified T : Service> T.serviceModule(): Module = module {
-    constant { this@serviceModule } bindType Service::class
+fun <T : Service> T.serviceModule(): Module = module {
+    add(
+        Binding(
+            type = this@serviceModule::class,
+            kind = ConstantKind,
+            definition = { this@serviceModule }
+        )
+    ) bindType Service::class
+
     constant<Context>(ForService) { this@serviceModule }
 }
