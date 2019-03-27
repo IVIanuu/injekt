@@ -9,6 +9,7 @@ interface Qualifier
  * A [Qualifier] which uses a [name]
  */
 open class StringQualifier(val name: String) : Qualifier {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is StringQualifier) return false
@@ -23,6 +24,7 @@ open class StringQualifier(val name: String) : Qualifier {
     }
 
     override fun toString(): String = name
+
 }
 
 /**
