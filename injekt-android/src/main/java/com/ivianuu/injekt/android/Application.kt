@@ -37,7 +37,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Application scope
  */
-object ApplicationScope : StringScope("ApplicationScope")
+object PerApplication : StringScope("PerApplication")
 
 /**
  * Application qualifier
@@ -51,7 +51,7 @@ inline fun <reified T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ApplicationScope)
+    scopes(PerApplication)
     modules(applicationModule())
     definition.invoke(this)
 }

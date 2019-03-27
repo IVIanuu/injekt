@@ -31,7 +31,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Receiver scope
  */
-object ReceiverScope : StringScope("ReceiverScope")
+object PerReceiver : StringScope("PerReceiver")
 
 /**
  * Receiver qualifier
@@ -46,7 +46,7 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ReceiverScope)
+    scopes(PerReceiver)
     getApplicationComponentOrNull(context)?.let(this::dependencies)
     addConstant(this@receiverComponent)
     definition.invoke(this)

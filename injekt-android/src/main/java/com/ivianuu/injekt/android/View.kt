@@ -15,12 +15,12 @@ import com.ivianuu.injekt.scopes
 /**
  * View scope
  */
-object ViewScope : StringScope("ViewScope")
+object PerView : StringScope("PerView")
 
 /**
  * Child view scope
  */
-object ChildViewScope : StringScope("ChildViewScope")
+object PerChildView : StringScope("PerChildView")
 
 /**
  * View qualifier
@@ -39,7 +39,7 @@ inline fun <reified T : View> T.viewComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ViewScope)
+    scopes(PerView)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
@@ -54,7 +54,7 @@ inline fun <reified T : View> T.childViewComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ChildViewScope)
+    scopes(PerChildView)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)

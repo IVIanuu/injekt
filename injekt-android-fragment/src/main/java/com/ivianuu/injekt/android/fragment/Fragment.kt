@@ -30,12 +30,12 @@ import com.ivianuu.injekt.scopes
 /**
  * Fragment scope
  */
-object FragmentScope : StringScope("FragmentScope")
+object PerFragment : StringScope("PerFragment")
 
 /**
  * Child fragment scope
  */
-object ChildFragmentScope : StringScope("ChildFragmentScope")
+object PerChildFragment : StringScope("PerChildFragment")
 
 /**
  * Fragment qualifier
@@ -54,7 +54,7 @@ inline fun <reified T : Fragment> T.fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(FragmentScope)
+    scopes(PerFragment)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)
@@ -69,7 +69,7 @@ inline fun <reified T : Fragment> T.childFragmentComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ChildFragmentScope)
+    scopes(PerChildFragment)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let(this::dependencies)

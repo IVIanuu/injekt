@@ -30,7 +30,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Content provider scope
  */
-object ContentProviderScope : StringScope("ContentProviderScope")
+object PerContentProvider : StringScope("PerContentProvider")
 
 /**
  * Content provider qualifier
@@ -44,7 +44,7 @@ inline fun <reified T : ContentProvider> T.contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ContentProviderScope)
+    scopes(PerContentProvider)
     getApplicationComponentOrNull()?.let(this::dependencies)
     addConstant(this@contentProviderComponent)
     definition.invoke(this)

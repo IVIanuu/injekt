@@ -37,7 +37,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Service scope
  */
-object ServiceScope : StringScope("ServiceScope")
+object PerService : StringScope("PerService")
 
 /**
  * Service qualifier
@@ -51,7 +51,7 @@ inline fun <T : Service> T.serviceComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ServiceScope)
+    scopes(PerService)
     modules(serviceModule())
     getApplicationComponentOrNull()?.let(this::dependencies)
     definition.invoke(this)

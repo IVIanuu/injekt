@@ -18,7 +18,7 @@ package com.ivianuu.injekt.sample.dummy
 
 import android.content.res.Resources
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.android.ApplicationScope
+import com.ivianuu.injekt.android.PerApplication
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.annotations.Factory
 import com.ivianuu.injekt.annotations.Named
@@ -28,7 +28,7 @@ import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
 
-@Single(ApplicationScope::class)
+@Single(PerApplication::class)
 class DummyDep
 
 @Reusable

@@ -37,7 +37,7 @@ import com.ivianuu.injekt.scopes
 /**
  * Activity scope
  */
-object ActivityScope : StringScope("ActivityScope")
+object PerActivity : StringScope("PerActivity")
 
 /**
  * Activity qualifier
@@ -51,7 +51,7 @@ inline fun <T : Activity> T.activityComponent(
     createEagerInstances: Boolean = true,
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
-    scopes(ActivityScope)
+    scopes(PerActivity)
     getApplicationComponentOrNull()?.let(this::dependencies)
     modules(activityModule())
     definition.invoke(this)
