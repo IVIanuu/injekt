@@ -28,17 +28,6 @@ import me.eugeniomarletti.kotlin.metadata.shadow.name.FqName
 import me.eugeniomarletti.kotlin.metadata.shadow.platform.JavaToKotlinClassMap
 import javax.lang.model.element.Element
 
-fun TypeName.javaToKotlinType(): TypeName = if (this is ParameterizedTypeName) {
-    (rawType.javaToKotlinType() as ClassName).parameterizedBy(
-        *typeArguments.map(TypeName::javaToKotlinType).toTypedArray()
-    )
-} else {
-    val className =
-        JavaToKotlinClassMap.mapJavaToKotlin(FqName(toString()))?.asSingleFqName()?.asString()
-    if (className == null) this
-    else ClassName.bestGuess(className)
-}
-
 val Element.isObject: Boolean
     get() {
         return Flags.CLASS_KIND.get(

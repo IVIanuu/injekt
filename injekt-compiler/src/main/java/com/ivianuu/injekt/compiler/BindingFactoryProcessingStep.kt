@@ -27,60 +27,58 @@ import com.ivianuu.injekt.annotations.Qualified
 import com.ivianuu.injekt.annotations.Raw
 import com.ivianuu.injekt.annotations.Reusable
 import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.processingx.ProcessingEnvHolder
-import com.ivianuu.processingx.ProcessingStep
 import com.ivianuu.processingx.asTypeValue
 import com.ivianuu.processingx.elementUtils
+import com.ivianuu.processingx.filer
 import com.ivianuu.processingx.get
 import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
 import com.ivianuu.processingx.getAsType
 import com.ivianuu.processingx.hasAnnotation
+import com.ivianuu.processingx.javaToKotlinType
 import com.ivianuu.processingx.messager
+import com.ivianuu.processingx.steps.ProcessingStep
 import com.ivianuu.processingx.typeUtils
-import com.ivianuu.processingx.write
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
+import kotlin.reflect.KClass
 
-class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnvironment) :
-    ProcessingStep,
-    ProcessingEnvHolder {
+class BindingFactoryProcessingStep : ProcessingStep() {
 
-    override fun annotations(): Set<Class<out Annotation>> = setOf(
-        Factory::class.java,
-        Named::class.java,
-        Param::class.java,
-        Qualified::class.java,
-        Raw::class.java,
-        Reusable::class.java,
-        Single::class.java
+    override fun annotations(): Set<KClass<out Annotation>> = setOf(
+        Factory::class,
+        Named::class,
+        Param::class,
+        Qualified::class,
+        Raw::class,
+        Reusable::class,
+        Single::class
     )
 
-    override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): Set<Element> {
+    override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
         validateParameterAnnotations(elementsByAnnotation)
 
-        val bindingElements = (elementsByAnnotation[Factory::class.java]
-                + elementsByAnnotation[Reusable::class.java]
-                + elementsByAnnotation[Single::class.java])
+        val bindingElements = (elementsByAnnotation[Factory::class]
+                + elementsByAnnotation[Reusable::class]
+                + elementsByAnnotation[Single::class])
 
         validateOnlyOneKindAnnotation(bindingElements)
 
-        (elementsByAnnotation[Factory::class.java] +
-                elementsByAnnotation[Reusable::class.java] +
-                elementsByAnnotation[Single::class.java])
+        (elementsByAnnotation[Factory::class] +
+                elementsByAnnotation[Reusable::class] +
+                elementsByAnnotation[Single::class])
             .filterIsInstance<TypeElement>()
             .mapNotNull(this::createBindingDescriptor)
             .map(::FactoryGenerator)
             .map(FactoryGenerator::generate)
-            .forEach { it.write(processingEnv) }
+            .forEach { it.writeTo(filer) }
 
         return emptySet()
     }
@@ -246,20 +244,20 @@ class BindingFactoryProcessingStep(override val processingEnv: ProcessingEnviron
             }
     }
 
-    private fun validateParameterAnnotations(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>) {
-        elementsByAnnotation[Named::class.java].validateHasBuilderAnnotation {
+    private fun validateParameterAnnotations(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>) {
+        elementsByAnnotation[Named::class].validateHasBuilderAnnotation {
             "@Named can only used in a class which annotated with @Factory, @Reusable or @Single"
         }
 
-        elementsByAnnotation[Param::class.java].validateHasBuilderAnnotation {
+        elementsByAnnotation[Param::class].validateHasBuilderAnnotation {
             "@Param can only used in a class which annotated with @Factory, @Reusable or @Single"
         }
 
-        elementsByAnnotation[Qualified::class.java].validateHasBuilderAnnotation {
+        elementsByAnnotation[Qualified::class].validateHasBuilderAnnotation {
             "@Qualified can only used in a class which annotated with @Factory, @Reusable or @Single"
         }
 
-        elementsByAnnotation[Raw::class.java].validateHasBuilderAnnotation {
+        elementsByAnnotation[Raw::class].validateHasBuilderAnnotation {
             "@Raw can only used in a class which annotated with @Factory, @Reusable or @Single"
         }
     }
