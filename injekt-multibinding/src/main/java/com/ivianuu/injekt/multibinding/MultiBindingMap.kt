@@ -17,11 +17,7 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.provider
+import com.ivianuu.injekt.*
 
 /**
  * Wraps a [Map] of [Binding]s

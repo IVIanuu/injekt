@@ -16,14 +16,7 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.getOrSet
-import com.ivianuu.injekt.withBinding
+import com.ivianuu.injekt.*
 import kotlin.collections.set
 
 /**

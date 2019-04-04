@@ -16,12 +16,7 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.*
 
 /**
  * Returns a multi bound [Map] for [K], [T] [qualifier] and passes [parameters] to any of the entries

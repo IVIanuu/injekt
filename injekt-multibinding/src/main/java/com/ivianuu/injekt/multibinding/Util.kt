@@ -1,13 +1,7 @@
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.OverrideException
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.getOrDefault
+import com.ivianuu.injekt.*
+import kotlin.collections.set
 
 const val KEY_ORIGINAL_KEY = "original_key"
 
