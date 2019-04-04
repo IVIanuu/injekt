@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 /**
  * Represents a dependency binding.
  */
-data class Binding<T> internal constructor(
+class Binding<T> internal constructor(
     val key: Key,
     val type: KClass<*>,
     val qualifier: Qualifier?,
@@ -84,6 +84,29 @@ fun <T> Binding(
     return Binding(
         Key(type, qualifier), type, qualifier, kind,
         definition, attributes, scope, override, eager
+    )
+}
+
+fun <T> Binding<T>.copy(
+    type: KClass<*> = this.type,
+    qualifier: Qualifier? = this.qualifier,
+    kind: Kind = this.kind,
+    scope: Scope? = this.scope,
+    attributes: Attributes = this.attributes,
+    override: Boolean = this.override,
+    eager: Boolean = this.eager,
+    definition: Definition<T> = this.definition
+): Binding<T> {
+    return Binding(
+        Key(type, qualifier),
+        type,
+        qualifier,
+        kind,
+        definition,
+        attributes,
+        scope,
+        override,
+        eager
     )
 }
 
