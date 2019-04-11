@@ -42,7 +42,7 @@ internal fun Module.declareSetBinding(setQualifier: Qualifier) {
 
         // check overrides
         allSetBindings.forEach { (binding, setBinding) ->
-            val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY, binding::key)
+            val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
 
             val isOverride = setBindingsToUse.remove(binding.key) != null
 
@@ -62,7 +62,7 @@ internal fun Module.declareSetBinding(setQualifier: Qualifier) {
 }
 
 internal fun Component.getAllBindings(): Set<Binding<*>> =
-    linkedSetOf<Binding<*>>().also(this::collectBindings)
+    linkedSetOf<Binding<*>>().also { collectBindings(it) }
 
 internal fun Component.collectBindings(
     bindings: MutableSet<Binding<*>>

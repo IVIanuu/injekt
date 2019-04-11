@@ -224,14 +224,14 @@ inline fun component(
  * Adds all [modules]
  */
 fun Component.modules(modules: Iterable<Module>) {
-    modules.forEach(this::addModule)
+    modules.forEach { addModule(it) }
 }
 
 /**
  * Adds all [modules]
  */
 fun Component.modules(vararg modules: Module) {
-    modules.forEach(this::addModule)
+    modules.forEach { addModule(it) }
 }
 
 /**
@@ -245,14 +245,14 @@ fun Component.modules(module: Module) {
  * Adds all [dependencies]
  */
 fun Component.dependencies(dependencies: Iterable<Component>) {
-    dependencies.forEach(this::addDependency)
+    dependencies.forEach { addDependency(it) }
 }
 
 /**
  * Adds all [dependencies]
  */
 fun Component.dependencies(vararg dependencies: Component) {
-    dependencies.forEach(this::addDependency)
+    dependencies.forEach { addDependency(it) }
 }
 
 /**
@@ -266,14 +266,14 @@ fun Component.dependencies(dependency: Component) {
  * Adds all of [scopes]
  */
 fun Component.scopes(scopes: Iterable<Scope>) {
-    scopes.forEach(this::addScope)
+    scopes.forEach { addScope(it) }
 }
 
 /**
  * Adds all [scopes]
  */
 fun Component.scopes(vararg scopes: Scope) {
-    scopes.forEach(this::addScope)
+    scopes.forEach { addScope(it) }
 }
 
 /**

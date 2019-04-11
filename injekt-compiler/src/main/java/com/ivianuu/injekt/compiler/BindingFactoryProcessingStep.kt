@@ -20,25 +20,9 @@ import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.annotations.Factory
-import com.ivianuu.injekt.annotations.Named
-import com.ivianuu.injekt.annotations.Param
-import com.ivianuu.injekt.annotations.Qualified
-import com.ivianuu.injekt.annotations.Raw
-import com.ivianuu.injekt.annotations.Reusable
-import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.processingx.asTypeValue
-import com.ivianuu.processingx.elementUtils
-import com.ivianuu.processingx.filer
-import com.ivianuu.processingx.get
-import com.ivianuu.processingx.getAnnotationMirror
-import com.ivianuu.processingx.getAnnotationMirrorOrNull
-import com.ivianuu.processingx.getAsType
-import com.ivianuu.processingx.hasAnnotation
-import com.ivianuu.processingx.javaToKotlinType
-import com.ivianuu.processingx.messager
+import com.ivianuu.injekt.annotations.*
+import com.ivianuu.processingx.*
 import com.ivianuu.processingx.steps.ProcessingStep
-import com.ivianuu.processingx.typeUtils
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
@@ -75,9 +59,9 @@ class BindingFactoryProcessingStep : ProcessingStep() {
                 elementsByAnnotation[Reusable::class] +
                 elementsByAnnotation[Single::class])
             .filterIsInstance<TypeElement>()
-            .mapNotNull(this::createBindingDescriptor)
-            .map(::FactoryGenerator)
-            .map(FactoryGenerator::generate)
+            .mapNotNull { createBindingDescriptor(it) }
+            .map { FactoryGenerator(it) }
+            .map { it.generate() }
             .forEach { it.writeTo(filer) }
 
         return emptySet()
@@ -103,7 +87,7 @@ class BindingFactoryProcessingStep : ProcessingStep() {
         }
 
         val scope = scopeType
-            ?.let(typeUtils::asElement)
+            ?.let { typeUtils.asElement(it) }
             ?.let {
                 if (!it.isObject) {
                     messager.printMessage(
@@ -173,7 +157,7 @@ class BindingFactoryProcessingStep : ProcessingStep() {
                     }
 
                     val qualifier = qualifierType
-                        ?.let(typeUtils::asElement)
+                        ?.let { typeUtils.asElement(it) }
                         ?.let {
                             if (!it.isObject) {
                                 messager.printMessage(

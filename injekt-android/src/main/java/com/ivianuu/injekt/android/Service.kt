@@ -18,21 +18,9 @@ package com.ivianuu.injekt.android
 
 import android.app.Service
 import android.content.Context
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDefinition
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.StringQualifier
-import com.ivianuu.injekt.StringScope
-import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.scopes
 
 /**
  * Service scope
@@ -53,7 +41,7 @@ inline fun <T : Service> T.serviceComponent(
 ): Component = component(createEagerInstances) {
     scopes(PerService)
     modules(serviceModule())
-    getApplicationComponentOrNull()?.let(this::dependencies)
+    getApplicationComponentOrNull()?.let { dependencies(it) }
     definition.invoke(this)
 }
 

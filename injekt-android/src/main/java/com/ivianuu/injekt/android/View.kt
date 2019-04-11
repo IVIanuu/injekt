@@ -2,15 +2,8 @@ package com.ivianuu.injekt.android
 
 import android.content.ContextWrapper
 import android.view.View
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDefinition
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.StringQualifier
-import com.ivianuu.injekt.StringScope
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopes
 
 /**
  * View scope
@@ -42,7 +35,7 @@ inline fun <reified T : View> T.viewComponent(
     scopes(PerView)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let(this::dependencies)
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addConstant(this@viewComponent)
     definition.invoke(this)
 }
@@ -57,7 +50,7 @@ inline fun <reified T : View> T.childViewComponent(
     scopes(PerChildView)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let(this::dependencies)
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addConstant(this@childViewComponent)
     definition.invoke(this)
 }

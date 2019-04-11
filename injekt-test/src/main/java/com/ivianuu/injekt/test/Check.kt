@@ -40,7 +40,7 @@ fun Component.check() {
 }
 
 fun Component.setSandboxBindings() {
-    getDependencies().forEach(Component::setSandboxBindings)
+    getDependencies().forEach { it.setSandboxBindings() }
     getBindings().forEach {
         println("clone and save for sandbox $it")
         addBinding(it.cloneForSandbox())

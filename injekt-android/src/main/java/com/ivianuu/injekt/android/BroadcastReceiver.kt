@@ -18,15 +18,8 @@ package com.ivianuu.injekt.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDefinition
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.StringQualifier
-import com.ivianuu.injekt.StringScope
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopes
 
 /**
  * Receiver scope
@@ -47,7 +40,7 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     definition: ComponentDefinition = {}
 ): Component = component(createEagerInstances) {
     scopes(PerReceiver)
-    getApplicationComponentOrNull(context)?.let(this::dependencies)
+    getApplicationComponentOrNull(context)?.let { dependencies(it) }
     addConstant(this@receiverComponent)
     definition.invoke(this)
 }

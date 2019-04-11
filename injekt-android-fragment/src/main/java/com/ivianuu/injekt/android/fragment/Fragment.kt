@@ -17,15 +17,8 @@
 package com.ivianuu.injekt.android.fragment
 
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDefinition
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.StringQualifier
-import com.ivianuu.injekt.StringScope
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.dependencies
-import com.ivianuu.injekt.scopes
 
 /**
  * Fragment scope
@@ -57,7 +50,7 @@ inline fun <reified T : Fragment> T.fragmentComponent(
     scopes(PerFragment)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let(this::dependencies)
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addConstant(this@fragmentComponent)
     definition.invoke(this)
 }
@@ -72,7 +65,7 @@ inline fun <reified T : Fragment> T.childFragmentComponent(
     scopes(PerChildFragment)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let(this::dependencies)
+        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     addConstant(this@childFragmentComponent)
     definition.invoke(this)
 }
