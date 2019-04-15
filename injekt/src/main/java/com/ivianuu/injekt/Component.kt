@@ -87,9 +87,18 @@ class Component @PublishedApi internal constructor() {
             throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
         }
 
-        check(binding.scope == null || scopes.contains(binding.scope)) {
-            "Component scope ${componentName()} does not match binding scope ${binding.scope}"
+        if (binding.scope != null && !scopes.contains(binding.scope)) {
+            val parentWithScope = findComponentForScope(binding.scope)
+
+            // add the binding to the parent
+            if (parentWithScope != null) {
+                parentWithScope.addBinding(binding)
+                return
+            } else {
+                error("Component scope ${componentName()} does not match binding scope ${binding.scope}")
+            }
         }
+
 
         bindings[binding.key] = binding
 
@@ -138,6 +147,16 @@ class Component @PublishedApi internal constructor() {
         for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key)
             if (instance != null) return instance
+        }
+
+        return null
+    }
+
+    private fun findComponentForScope(scope: Scope): Component? {
+        if (scopes.contains(scope)) return this
+        for (dependency in dependencies) {
+            val result = dependency.findComponentForScope(scope)
+            if (result != null) return result
         }
 
         return null

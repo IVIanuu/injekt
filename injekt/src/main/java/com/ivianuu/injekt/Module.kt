@@ -50,7 +50,9 @@ fun Module.module(module: Module) {
 inline fun <reified T> Module.withBinding(
     qualifier: Qualifier? = null,
     body: BindingContext<T>.() -> Unit
-) = withBinding(T::class, qualifier, body)
+) {
+    withBinding(T::class, qualifier, body)
+}
 
 /**
  * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [qualifier]
