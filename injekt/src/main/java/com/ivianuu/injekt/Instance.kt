@@ -30,22 +30,22 @@ abstract class Instance<T> {
      * Returns a instance of [T]
      */
     abstract fun get(
-        component: Component,
+        context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T
 
     protected fun create(
-        component: Component,
+        context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T {
         return try {
             binding.definition.invoke(
-                DefinitionContext(component),
+                context,
                 parameters?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
             throw InstanceCreationException(
-                "${component.componentName()} Couldn't instantiate $binding",
+                "${context.component.componentName()} Couldn't instantiate $binding",
                 e
             )
         }

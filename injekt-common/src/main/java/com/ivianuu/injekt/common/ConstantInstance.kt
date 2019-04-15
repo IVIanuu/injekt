@@ -16,18 +16,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.Kind
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.componentName
-import com.ivianuu.injekt.logger
+import com.ivianuu.injekt.*
 
 /**
  * Constant instance kind
@@ -36,7 +25,7 @@ object ConstantKind : Kind {
 
     private const val INSTANCE_KIND = "Constant"
 
-    override fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T> =
+    override fun <T> createInstance(binding: Binding<T>, context: DefinitionContext?): Instance<T> =
         ConstantInstance(binding)
 
     override fun asString(): String = INSTANCE_KIND
@@ -48,9 +37,9 @@ object ConstantKind : Kind {
  */
 class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    override fun get(component: Component, parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("${component.componentName()} Return constant $binding")
-        return create(component, parameters)
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
+        InjektPlugins.logger?.info("${context.component.componentName()} Return constant $binding")
+        return create(context, parameters)
     }
 
 }

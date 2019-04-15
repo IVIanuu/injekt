@@ -30,6 +30,11 @@ class Component @PublishedApi internal constructor() {
     private val instances = hashMapOf<Key, Instance<*>>()
 
     /**
+     * The definition context of this component
+     */
+    val context = DefinitionContext(this)
+
+    /**
      * Returns a instance of [T] matching the [type], [qualifier] and [parameters]
      */
     fun <T> get(
@@ -42,7 +47,7 @@ class Component @PublishedApi internal constructor() {
         val instance = findInstance<T>(key)
             ?: throw BindingNotFoundException("${componentName()} Couldn't find a binding for $key")
 
-        return instance.get(this, parameters)
+        return instance.get(context, parameters)
     }
 
     /**
@@ -118,7 +123,7 @@ class Component @PublishedApi internal constructor() {
 
         bindings[binding.key] = binding
 
-        val instance = binding.kind.createInstance(binding, this)
+        val instance = binding.kind.createInstance(binding, context)
 
         instances[binding.key] = instance
 
@@ -151,7 +156,7 @@ class Component @PublishedApi internal constructor() {
             .filter { it.value.binding.eager }
             .forEach {
                 InjektPlugins.logger?.info("${componentName()} Create eager instance for ${it.value.binding}")
-                it.value.get(this, null)
+                it.value.get(context, null)
             }
     }
 

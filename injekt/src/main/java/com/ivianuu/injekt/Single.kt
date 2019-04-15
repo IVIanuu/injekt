@@ -22,8 +22,8 @@ package com.ivianuu.injekt
 object SingleKind : Kind {
     private const val SINGLE_KIND = "Single"
 
-    override fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T> =
-        SingleInstance(binding, component)
+    override fun <T> createInstance(binding: Binding<T>, context: DefinitionContext?): Instance<T> =
+        SingleInstance(binding, context)
 
     override fun asString(): String = SINGLE_KIND
 }
@@ -35,30 +35,30 @@ private object UNINITIALIZED
  */
 class SingleInstance<T>(
     override val binding: Binding<T>,
-    val component: Component?
+    val context: DefinitionContext?
 ) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
 
     override fun get(
-        component: Component,
+        context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T {
-        val component = this.component ?: component
+        val context = this.context ?: context
 
         if (_value !== UNINITIALIZED) {
-            InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
+            InjektPlugins.logger?.info("${context.component.componentName()} Return existing instance $binding")
             return _value as T
         }
 
         synchronized(this) {
             if (_value !== UNINITIALIZED) {
-                InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
+                InjektPlugins.logger?.info("${context.component.componentName()} Return existing instance $binding")
                 return@get _value as T
             }
 
-            InjektPlugins.logger?.info("${component.componentName()} Create instance $binding")
-            _value = create(component, parameters)
+            InjektPlugins.logger?.info("${context.component.componentName()} Create instance $binding")
+            _value = create(context, parameters)
             return@get _value as T
         }
     }

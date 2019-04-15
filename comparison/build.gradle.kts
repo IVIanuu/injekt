@@ -20,12 +20,17 @@ plugins {
 }
 
 android {
+    compileSdkVersion(Build.compileSdk)
+
     defaultConfig {
         applicationId = Build.applicationIdComparison
+        buildToolsVersion = Build.buildToolsVersion
+        minSdkVersion(Build.minSdk)
+        targetSdkVersion(Build.targetSdk)
+        versionCode = Build.versionCode
+        versionName = Build.versionName
     }
 }
-
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
 
 dependencies {
     implementation(Deps.androidxAppCompat)

@@ -25,7 +25,7 @@ interface Kind {
     /**
      * Creates a [Instance] for this kind
      */
-    fun <T> createInstance(binding: Binding<T>, component: Component?): Instance<T>
+    fun <T> createInstance(binding: Binding<T>, context: DefinitionContext?): Instance<T>
 
     /**
      * String representation for this kind
