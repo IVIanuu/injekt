@@ -19,8 +19,6 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.ConstantKind
-import com.ivianuu.injekt.common.constant
 
 /**
  * Application name
@@ -45,12 +43,12 @@ fun <T : Application> T.applicationModule(): Module = module {
     add(
         Binding(
             type = this@applicationModule::class,
-            kind = ConstantKind,
+            kind = SingleKind,
             definition = { this@applicationModule }
         )
     ) bindType Application::class bindType Context::class
 
-    constant<Context>(ForApplication) { this@applicationModule }
+    single<Context>(ForApplication) { this@applicationModule }
 }
 
 fun DefinitionContext.application(): Application = get()

@@ -19,8 +19,6 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.ConstantKind
-import com.ivianuu.injekt.common.constant
 
 /**
  * Service name
@@ -57,10 +55,10 @@ fun <T : Service> T.serviceModule(): Module = module {
     add(
         Binding(
             type = this@serviceModule::class,
-            kind = ConstantKind,
+            kind = SingleKind,
             definition = { this@serviceModule }
         )
     ) bindType Service::class
 
-    constant<Context>(ForService) { this@serviceModule }
+    single<Context>(ForService) { this@serviceModule }
 }

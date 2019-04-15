@@ -19,8 +19,6 @@ package com.ivianuu.injekt.android
 import android.app.Activity
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.ConstantKind
-import com.ivianuu.injekt.common.constant
 
 /**
  * Activity name
@@ -57,10 +55,10 @@ fun <T : Activity> T.activityModule(): Module = module {
     add(
         Binding(
             type = this@activityModule::class,
-            kind = ConstantKind,
+            kind = SingleKind,
             definition = { this@activityModule }
         )
     ) bindType Activity::class
 
-    constant<Context>(ForActivity) { this@activityModule }
+    single<Context>(ForActivity) { this@activityModule }
 }

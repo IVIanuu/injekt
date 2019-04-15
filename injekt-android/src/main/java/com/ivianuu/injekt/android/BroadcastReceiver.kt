@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.addConstant
+
 
 /**
  * Receiver name
@@ -35,7 +35,7 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     getApplicationComponentOrNull(context)?.let { dependencies(it) }
-    addConstant(this@receiverComponent)
+    modules(receiverModule())
     definition.invoke(this)
 }
 
@@ -50,3 +50,16 @@ fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component
  */
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
+    add(
+        Binding(
+            type = this@receiverModule::class,
+            kind = SingleKind,
+            definition = { this@receiverModule }
+        )
+    )
+}

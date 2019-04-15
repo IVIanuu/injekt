@@ -18,7 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.addConstant
+
 
 /**
  * Fragment name
@@ -40,7 +40,7 @@ inline fun <reified T : Fragment> T.fragmentComponent(
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
-    addConstant(this@fragmentComponent)
+    modules(fragmentModule())
     definition.invoke(this)
 }
 
@@ -79,3 +79,17 @@ fun Fragment.getApplicationComponentOrNull(): Component? =
  */
 fun Fragment.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
+
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+fun <T : Fragment> T.fragmentModule(): Module = module {
+    add(
+        Binding(
+            type = this@fragmentModule::class,
+            kind = SingleKind,
+            definition = { this@fragmentModule }
+        )
+    )
+}

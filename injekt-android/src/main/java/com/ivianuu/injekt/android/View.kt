@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.addConstant
+
 
 /**
  * View name
@@ -41,7 +41,7 @@ inline fun <reified T : View> T.viewComponent(
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
-    addConstant(this@viewComponent)
+    modules(viewModule())
     definition.invoke(this)
 }
 
@@ -89,3 +89,16 @@ fun View.getApplicationComponentOrNull(): Component? =
  */
 fun View.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+fun <T : View> T.viewModule(): Module = module {
+    add(
+        Binding(
+            type = this@viewModule::class,
+            kind = SingleKind,
+            definition = { this@viewModule }
+        )
+    )
+}

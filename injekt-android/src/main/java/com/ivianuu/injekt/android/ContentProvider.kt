@@ -18,7 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.addConstant
+
 
 /**
  * Content provider name
@@ -33,7 +33,7 @@ inline fun <reified T : ContentProvider> T.contentProviderComponent(
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     getApplicationComponentOrNull()?.let { dependencies(it) }
-    addConstant(this@contentProviderComponent)
+    modules(contentProviderModule())
     definition.invoke(this)
 }
 
@@ -48,3 +48,16 @@ fun ContentProvider.getApplicationComponentOrNull(): Component? =
  */
 fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+fun <T : ContentProvider> T.contentProviderModule(): Module = module {
+    add(
+        Binding(
+            type = this@contentProviderModule::class,
+            kind = SingleKind,
+            definition = { this@contentProviderModule }
+        )
+    )
+}

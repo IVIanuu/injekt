@@ -25,6 +25,5 @@ dependencies {
     implementation(Deps.androidxAppCompat)
     implementation(project(":injekt"))
     implementation(project(":injekt-android"))
-    implementation(project(":injekt-common"))
     implementation(project(":injekt-multibinding"))
 }
