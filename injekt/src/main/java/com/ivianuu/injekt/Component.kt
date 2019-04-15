@@ -89,11 +89,6 @@ class Component @PublishedApi internal constructor() {
     fun getScopes(): Set<Scope> = scopes
 
     /**
-     * Whether or not this component contains the [scope]
-     */
-    fun containsScope(scope: Scope): Boolean = scopes.contains(scope)
-
-    /**
      * Returns all [Binding]s added to this component
      */
     fun getBindings(): Set<Binding<*>> = bindings.values.toSet()
@@ -137,11 +132,6 @@ class Component @PublishedApi internal constructor() {
         }
 
     }
-
-    /**
-     * Whether or not contains the [binding]
-     */
-    fun containsBinding(binding: Binding<*>): Boolean = bindings.containsKey(binding.key)
 
     /**
      * Returns all [Instance]s of this component
