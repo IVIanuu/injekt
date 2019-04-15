@@ -47,7 +47,7 @@ fun <T> Component.getProviderSet(
 fun <T> Component.injectSet(
     qualifier: Qualifier,
     parameters: ParametersDefinition? = null
-): Lazy<Set<T>> = lazy { getSet<T>(qualifier, parameters) }
+): Lazy<Set<T>> = lazy(LazyThreadSafetyMode.NONE) { getSet<T>(qualifier, parameters) }
 
 /**
  * LazilyReturns multi bound [Set] of [Lazy]s for [T] [qualifier] and passes [parameters] to any of the entries

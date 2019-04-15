@@ -285,7 +285,7 @@ inline fun <reified T> Component.get(
 inline fun <reified T> Component.inject(
     qualifier: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy { get<T>(qualifier, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(qualifier, parameters) }
 
 /**
  * Returns a [Provider] for [T] and [qualifier]
@@ -305,7 +305,7 @@ inline fun <reified T> Component.getProvider(
 inline fun <reified T> Component.injectProvider(
     qualifier: Qualifier? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = lazy {
+): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
     provider { parameters: ParametersDefinition? ->
         get<T>(qualifier, parameters ?: defaultParameters)
     }
