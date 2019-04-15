@@ -20,25 +20,12 @@ import com.ivianuu.injekt.*
 import kotlin.collections.set
 
 /**
- * Declares a empty set binding with the [setName]
- * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
- */
-fun Module.setBinding(setName: Name) {
-    factory(name = setName, override = true) {
-        MultiBindingSet<Any>(component, emptySet())
-    }
-}
-
-/**
  * Adds this [Binding] into [setBinding]
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
         hashMapOf<Name, SetBinding>()
     }[setBinding.setName] = setBinding
-
-    module.declareSetBinding(setBinding.setName)
-
     return this
 }
 

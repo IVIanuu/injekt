@@ -26,9 +26,6 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
         hashMapOf<Name, MapBinding>()
     }[mapBinding.mapName] = mapBinding
-
-    module.declareMapBinding(mapBinding.mapName)
-
     return this
 }
 
@@ -47,16 +44,6 @@ fun <T> BindingContext<T>.bindIntoMap(
     mapKey: Any,
     override: Boolean = false
 ): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
-
-/**
- * Declares a empty map binding
- * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
- */
-fun Module.mapBinding(mapName: Name) {
-    factory(name = mapName, override = true) {
-        MultiBindingMap<Any, Any>(component, emptyMap())
-    }
-}
 
 /**
  * Binds a already existing [Binding] into [mapName] with [mapKey]

@@ -24,7 +24,7 @@ import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import org.nield.kotlinstatistics.median
 
-private const val ROUNDS = 100
+private const val ROUNDS = 1_000
 
 fun runAllInjectionTests() {
     runInjectionTests(

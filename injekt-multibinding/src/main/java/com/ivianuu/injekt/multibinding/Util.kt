@@ -21,60 +21,52 @@ import kotlin.collections.set
 
 const val KEY_ORIGINAL_KEY = "original_key"
 
-internal fun Module.declareMapBinding(mapName: Name) {
-    factory(name = mapName, override = true) {
-        val allMapBindings = component.getAllBindings()
-            .mapNotNull { binding ->
-                binding.attributes.get<Map<Name, MapBinding>>(KEY_MAP_BINDINGS)
-                    ?.get(mapName)?.let { binding to it }
-            }
-
-        val mapBindingsToUse = linkedMapOf<Any, Binding<*>>()
-
-        // check overrides
-        allMapBindings.forEach { (binding, mapBinding) ->
-            val isOverride = mapBindingsToUse.remove(mapBinding.key) != null
-
-            if (isOverride && !mapBinding.override) {
-                throw OverrideException("Try to override ${mapBinding.key} in map binding $mapBinding")
-            }
-
-            mapBindingsToUse[mapBinding.key] = binding
+internal fun <K, V> Component.getMultiBindingMap(mapName: Name): Map<K, Binding<V>> {
+    val allMapBindings = getAllBindings()
+        .mapNotNull { binding ->
+            binding.attributes.get<Map<Name, MapBinding>>(KEY_MAP_BINDINGS)
+                ?.get(mapName)?.let { binding to it }
         }
 
-        MultiBindingMap(component, mapBindingsToUse as Map<Any, Binding<Any>>)
+    val mapBindingsToUse = linkedMapOf<Any, Binding<*>>()
+
+    // check overrides
+    allMapBindings.forEach { (binding, mapBinding) ->
+        val isOverride = mapBindingsToUse.remove(mapBinding.key) != null
+
+        if (isOverride && !mapBinding.override) {
+            throw OverrideException("Try to override ${mapBinding.key} in map binding $mapBinding")
+        }
+
+        mapBindingsToUse[mapBinding.key] = binding
     }
+
+    return mapBindingsToUse as Map<K, Binding<V>>
 }
 
-internal fun Module.declareSetBinding(setName: Name) {
-    factory(name = setName, override = true) { _ ->
-        val allSetBindings = component.getAllBindings()
-            .mapNotNull { binding ->
-                binding.attributes.get<Map<Name, SetBinding>>(KEY_SET_BINDINGS)
-                    ?.get(setName)?.let { binding to it }
-            }
-
-        val setBindingsToUse = linkedMapOf<Key, Binding<*>>()
-
-        // check overrides
-        allSetBindings.forEach { (binding, setBinding) ->
-            val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
-
-            val isOverride = setBindingsToUse.remove(binding.key) != null
-
-            if (isOverride && !setBinding.override) {
-                throw OverrideException("Try to override $key in set binding $setBinding")
-            }
-
-            setBindingsToUse[binding.key] = binding
+internal fun <V> Component.getMultiBindingSet(setName: Name): Set<Binding<V>> {
+    val allSetBindings = getAllBindings()
+        .mapNotNull { binding ->
+            binding.attributes.get<Map<Name, SetBinding>>(KEY_SET_BINDINGS)
+                ?.get(setName)?.let { binding to it }
         }
 
-        MultiBindingSet(
-            component,
-            setBindingsToUse.values.toSet() as Set<Binding<Any>>
-        )
+    val setBindingsToUse = linkedMapOf<Key, Binding<*>>()
+
+    // check overrides
+    allSetBindings.forEach { (binding, setBinding) ->
+        val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
+
+        val isOverride = setBindingsToUse.remove(binding.key) != null
+
+        if (isOverride && !setBinding.override) {
+            throw OverrideException("Try to override $key in set binding $setBinding")
+        }
+
+        setBindingsToUse[binding.key] = binding
     }
 
+    return setBindingsToUse.values.toSet() as Set<Binding<V>>
 }
 
 internal fun Component.getAllBindings(): Set<Binding<*>> =
