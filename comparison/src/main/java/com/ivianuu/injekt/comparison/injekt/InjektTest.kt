@@ -32,11 +32,11 @@ class InjektTest : InjectionTest {
         component = component { modules(injektModule) }
     }
 
-    override fun test() {
+    override fun inject() {
         component!!.get<Fib8>()
     }
 
-    override fun teardown() {
+    override fun shutdown() {
         component = null
     }
 

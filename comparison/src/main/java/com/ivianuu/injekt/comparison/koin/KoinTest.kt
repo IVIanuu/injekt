@@ -31,11 +31,11 @@ class KoinTest : InjectionTest, KoinComponent {
         startKoin { modules(koinModule) }
     }
 
-    override fun test() {
+    override fun inject() {
         get<Fib8>()
     }
 
-    override fun teardown() {
+    override fun shutdown() {
         stopKoin()
     }
 

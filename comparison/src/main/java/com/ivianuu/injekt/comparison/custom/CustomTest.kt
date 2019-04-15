@@ -27,11 +27,11 @@ class CustomTest : InjectionTest {
         DIContainer.loadModule(customModule)
     }
 
-    override fun test() {
+    override fun inject() {
         DIContainer.get<Fib8>()
     }
 
-    override fun teardown() {
+    override fun shutdown() {
         DIContainer.unloadModules()
     }
 

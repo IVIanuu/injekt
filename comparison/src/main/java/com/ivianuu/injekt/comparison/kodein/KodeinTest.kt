@@ -33,11 +33,11 @@ class KodeinTest : InjectionTest {
         kodein = Kodein { import(kodeinModule) }
     }
 
-    override fun test() {
+    override fun inject() {
         kodein!!.direct.instance<Fib8>()
     }
 
-    override fun teardown() {
+    override fun shutdown() {
     }
 
 }

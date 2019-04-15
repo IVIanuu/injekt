@@ -31,11 +31,11 @@ class DaggerTest : InjectionTest {
         //component = DaggerDaggerComponent.create()
     }
 
-    override fun test() {
+    override fun inject() {
         //component!!.inject(this)
     }
 
-    override fun teardown() {
+    override fun shutdown() {
         component = null
         daggerFib8 = null
     }

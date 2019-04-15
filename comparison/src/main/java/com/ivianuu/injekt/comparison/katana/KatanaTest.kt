@@ -30,11 +30,11 @@ class KatanaTest : InjectionTest {
         component = Component(modules = listOf(katanaModule))
     }
 
-    override fun test() {
+    override fun inject() {
         component!!.injectNow<Fib8>()
     }
 
-    override fun teardown() {
+    override fun shutdown() {
         component = null
     }
 
