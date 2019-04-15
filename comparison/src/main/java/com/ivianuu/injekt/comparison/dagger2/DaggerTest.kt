@@ -32,7 +32,7 @@ class DaggerTest : InjectionTest {
     }
 
     override fun inject() {
-        //component!!.inject(this)
+        component!!.inject(this)
     }
 
     override fun shutdown() {

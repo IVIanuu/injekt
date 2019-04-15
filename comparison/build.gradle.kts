@@ -35,4 +35,6 @@ dependencies {
     implementation(Deps.koin)
 
     implementation(Deps.kotlinStdLib)
+
+    implementation(Deps.kotlinStatistics)
 }

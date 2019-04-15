@@ -40,6 +40,7 @@ object Versions {
     const val dagger = "2.22.1"
     const val junit = "4.12"
     const val kotlin = "1.3.30"
+    const val kotlinStatistics = "1.2.1"
     const val katana = "1.6.0"
     const val kodein = "6.1.0"
     const val koin = "2.0.0-rc-2"
@@ -67,6 +68,8 @@ object Deps {
 
     const val kotlinGradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.kotlin}"
     const val kotlinStdLib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${Versions.kotlin}"
+
+    const val kotlinStatistics = "org.nield:kotlin-statistics:${Versions.kotlinStatistics}"
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
