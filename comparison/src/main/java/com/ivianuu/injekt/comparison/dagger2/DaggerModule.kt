@@ -20,9 +20,6 @@ import com.ivianuu.injekt.comparison.*
 import dagger.Module
 import dagger.Provides
 
-/**
- * Generated with https://gist.github.com/Sloy/12affca1e49ba052053ab4c8bfc5bcb4
- */
 @Module class DaggerModule {
     @Provides
     fun provideFib1() = Fib1()

@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
-    id("java-library")
-    id("kotlin")
+    id("com.android.application")
+    id("kotlin-android")
     id("kotlin-kapt")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
+
+android {
+    defaultConfig {
+        applicationId = Build.applicationIdComparison
+    }
+}
 
 dependencies {
+    implementation(Deps.androidxAppCompat)
+
     implementation(Deps.dagger)
     kapt(Deps.daggerCompiler)
 

@@ -22,9 +22,6 @@ import org.kodein.di.erased.bind
 import org.kodein.di.erased.instance
 import org.kodein.di.erased.provider
 
-/**
- * Generated with https://gist.github.com/Sloy/12affca1e49ba052053ab4c8bfc5bcb4
- */
 val kodeinModule = Kodein.Module("fib") {
     bind<Fib1>() with provider { Fib1() }
     bind<Fib2>() with provider { Fib2() }

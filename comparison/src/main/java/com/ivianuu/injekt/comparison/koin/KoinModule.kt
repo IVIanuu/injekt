@@ -19,9 +19,6 @@ package com.ivianuu.injekt.comparison.koin
 import com.ivianuu.injekt.comparison.*
 import org.koin.dsl.module
 
-/**
- * Generated with https://gist.github.com/Sloy/12affca1e49ba052053ab4c8bfc5bcb4
- */
 val koinModule = module {
     factory { Fib1() }
     factory { Fib2() }

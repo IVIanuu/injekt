@@ -14,30 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger2
+package com.ivianuu.injekt.comparison
 
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
-import javax.inject.Inject
+import android.app.Activity
+import android.os.Bundle
 
-class DaggerTest : InjectionTest {
-
-    override val name = "Dagger"
-
-    @set:Inject var daggerFib8: Fib8? = null
-    private var component: DaggerComponent? = null
-
-    override fun setup() {
-        component = DaggerDaggerComponent.create()
+class MainActivity : Activity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        runInjectionTests()
     }
-
-    override fun inject() {
-        component!!.inject(this)
-    }
-
-    override fun shutdown() {
-        component = null
-        daggerFib8 = null
-    }
-
 }

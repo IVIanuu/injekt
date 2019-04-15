@@ -17,19 +17,20 @@
 package com.ivianuu.injekt.comparison
 
 import com.ivianuu.injekt.comparison.custom.CustomTest
+import com.ivianuu.injekt.comparison.dagger2.DaggerTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import org.nield.kotlinstatistics.median
 
-private const val ROUNDS = 100
+private const val ROUNDS = 1_000
 
 fun runInjectionTests() {
     println("Running $ROUNDS iterations. Please stand by...")
 
     val tests = listOf(
-        //  DaggerTest(),
+        DaggerTest(),
         CustomTest(),
         KodeinTest(),
         KoinTest(),
@@ -116,15 +117,4 @@ fun Map<String, Results>.print() {
         println("$name | ${results.injectionAverage} | ${results.injectionMedian} | ${results.injectionMin} | ${results.injectionMax}")
     }
 
-}
-
-fun Results.print() {
-    println("setup (average):     $setupAverage ns")
-    println("setup (median):      $setupMedian ns")
-    println("setup (min):         $setupMin ns")
-    println("setup (max):         $setupMax ns")
-    println("injection (average): $injectionAverage ns")
-    println("injection (median):  $injectionMedian ns")
-    println("injection (min):     $injectionMin ns")
-    println("injection (max):     $injectionMax ns")
 }
