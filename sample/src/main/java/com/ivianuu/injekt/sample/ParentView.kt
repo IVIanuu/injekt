@@ -20,7 +20,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.PerView
 import com.ivianuu.injekt.android.viewComponent
 
 /**
@@ -56,9 +55,7 @@ class ParentView @JvmOverloads constructor(
 }
 
 val parentViewModule = module {
-    single(scope = PerView) {
-        ParentViewDependency(get(), get(), get(), get(), get())
-    }
+    single { ParentViewDependency(get(), get(), get(), get(), get()) }
 }
 
 class ParentViewDependency(

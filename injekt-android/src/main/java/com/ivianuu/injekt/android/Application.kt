@@ -23,11 +23,6 @@ import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
 
 /**
- * Application scope
- */
-object PerApplication : StringScope("PerApplication")
-
-/**
  * Application qualifier
  */
 object ForApplication : StringQualifier("ForApplication")
@@ -39,7 +34,6 @@ inline fun <reified T : Application> T.applicationComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerApplication)
     modules(applicationModule())
     definition.invoke(this)
 }

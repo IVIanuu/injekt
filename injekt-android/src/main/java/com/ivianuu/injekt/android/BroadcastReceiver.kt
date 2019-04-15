@@ -22,11 +22,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * Receiver scope
- */
-object PerReceiver : StringScope("PerReceiver")
-
-/**
  * Receiver qualifier
  */
 object ForReceiver : StringQualifier("ForReceiver")
@@ -39,7 +34,6 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerReceiver)
     getApplicationComponentOrNull(context)?.let { dependencies(it) }
     addConstant(this@receiverComponent)
     definition.invoke(this)

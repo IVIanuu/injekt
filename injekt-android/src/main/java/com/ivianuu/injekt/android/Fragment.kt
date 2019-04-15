@@ -21,16 +21,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * Fragment scope
- */
-object PerFragment : StringScope("PerFragment")
-
-/**
- * Child fragment scope
- */
-object PerChildFragment : StringScope("PerChildFragment")
-
-/**
  * Fragment qualifier
  */
 object ForFragment : StringQualifier("ForFragment")
@@ -47,7 +37,6 @@ inline fun <reified T : Fragment> T.fragmentComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerFragment)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
@@ -62,7 +51,6 @@ inline fun <reified T : Fragment> T.childFragmentComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerChildFragment)
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }

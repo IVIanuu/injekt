@@ -21,11 +21,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * Content provider scope
- */
-object PerContentProvider : StringScope("PerContentProvider")
-
-/**
  * Content provider qualifier
  */
 object ForContentProvider : StringQualifier("ForContentProvider")
@@ -37,7 +32,6 @@ inline fun <reified T : ContentProvider> T.contentProviderComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerContentProvider)
     getApplicationComponentOrNull()?.let { dependencies(it) }
     addConstant(this@contentProviderComponent)
     definition.invoke(this)

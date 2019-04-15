@@ -22,16 +22,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * View scope
- */
-object PerView : StringScope("PerView")
-
-/**
- * Child view scope
- */
-object PerChildView : StringScope("PerChildView")
-
-/**
  * View qualifier
  */
 object ForView : StringQualifier("ForView")
@@ -48,7 +38,6 @@ inline fun <reified T : View> T.viewComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerView)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
@@ -63,7 +52,6 @@ inline fun <reified T : View> T.childViewComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerChildView)
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }

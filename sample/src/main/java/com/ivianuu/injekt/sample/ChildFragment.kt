@@ -22,7 +22,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.PerChildFragment
 import com.ivianuu.injekt.android.childFragmentComponent
 
 /**
@@ -68,9 +67,7 @@ class ChildFragment : Fragment(), InjektTrait {
 }
 
 val childFragmentModule = module {
-    single(scope = PerChildFragment) {
-        ChildFragmentDependency(get(), get(), get(), get())
-    }
+    single { ChildFragmentDependency(get(), get(), get(), get()) }
 }
 
 class ChildFragmentDependency(

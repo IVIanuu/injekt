@@ -23,11 +23,6 @@ import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
 
 /**
- * Activity scope
- */
-object PerActivity : StringScope("PerActivity")
-
-/**
  * Activity qualifier
  */
 object ForActivity : StringQualifier("ForActivity")
@@ -39,7 +34,6 @@ inline fun <T : Activity> T.activityComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerActivity)
     getApplicationComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     definition.invoke(this)

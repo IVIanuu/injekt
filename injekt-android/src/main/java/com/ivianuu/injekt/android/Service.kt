@@ -23,11 +23,6 @@ import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
 
 /**
- * Service scope
- */
-object PerService : StringScope("PerService")
-
-/**
  * Service qualifier
  */
 object ForService : StringQualifier("ForService")
@@ -39,7 +34,6 @@ inline fun <T : Service> T.serviceComponent(
     createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
-    scopes(PerService)
     modules(serviceModule())
     getApplicationComponentOrNull()?.let { dependencies(it) }
     definition.invoke(this)

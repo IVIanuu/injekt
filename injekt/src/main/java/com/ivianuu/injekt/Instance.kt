@@ -44,10 +44,7 @@ abstract class Instance<T> {
                 parameters?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
-            throw InstanceCreationException(
-                "${context.component.componentName()} Couldn't instantiate $binding",
-                e
-            )
+            throw InstanceCreationException("Couldn't instantiate $binding", e)
         }
     }
 

@@ -25,7 +25,6 @@ import kotlin.reflect.KClass
 class Component @PublishedApi internal constructor() {
 
     private val dependencies = linkedSetOf<Component>()
-    private val scopes = hashSetOf<Scope>()
     private val bindings = linkedMapOf<Key, Binding<*>>()
     private val instances = hashMapOf<Key, Instance<*>>()
 
@@ -45,7 +44,7 @@ class Component @PublishedApi internal constructor() {
         val key = Key(type, qualifier)
 
         val instance = findInstance<T>(key)
-            ?: throw BindingNotFoundException("${componentName()} Couldn't find a binding for $key")
+            ?: throw BindingNotFoundException("Couldn't find a binding for $key")
 
         return instance.get(context, parameters)
     }
@@ -54,7 +53,7 @@ class Component @PublishedApi internal constructor() {
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
-        InjektPlugins.logger?.info("${componentName()} load module ${module.bindings.size}")
+        InjektPlugins.logger?.info("load module ${module.bindings.size}")
         module.bindings.forEach { addBinding(it.value) }
     }
 
@@ -63,30 +62,15 @@ class Component @PublishedApi internal constructor() {
      */
     fun addDependency(dependency: Component) {
         if (!dependencies.add(dependency)) {
-            error("Already added ${dependency.componentName()} to ${componentName()}")
+            error("Already added $dependency")
         }
-        InjektPlugins.logger?.info("${componentName()} Add dependency $dependency")
+        InjektPlugins.logger?.info("Add dependency $dependency")
     }
 
     /**
      * Returns all direct dependencies of this component
      */
     fun getDependencies(): Set<Component> = dependencies
-
-    /**
-     * Adds the [scope]
-     */
-    fun addScope(scope: Scope) {
-        if (!scopes.add(scope)) {
-            error("Scope name $scope was already added")
-        }
-        InjektPlugins.logger?.info("${componentName()} Add scope name $scope")
-    }
-
-    /**
-     * Returns all scope names of this component
-     */
-    fun getScopes(): Set<Scope> = scopes
 
     /**
      * Returns all [Binding]s added to this component
@@ -103,19 +87,6 @@ class Component @PublishedApi internal constructor() {
             throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
         }
 
-        if (binding.scope != null && !scopes.contains(binding.scope)) {
-            val parentWithScope = findComponentForScope(binding.scope)
-
-            // add the binding to the parent
-            if (parentWithScope != null) {
-                parentWithScope.addBinding(binding)
-                return
-            } else {
-                error("Component scope ${componentName()} does not match binding scope ${binding.scope}")
-            }
-        }
-
-
         bindings[binding.key] = binding
 
         val instance = binding.kind.createInstance(binding, context)
@@ -124,9 +95,9 @@ class Component @PublishedApi internal constructor() {
 
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
-                "${componentName()} Override $binding"
+                "Override $binding"
             } else {
-                "${componentName()} Declare $binding"
+                "Declare $binding"
             }
             logger.debug(msg)
         }
@@ -145,7 +116,7 @@ class Component @PublishedApi internal constructor() {
         instances
             .filter { it.value.binding.eager }
             .forEach {
-                InjektPlugins.logger?.info("${componentName()} Create eager instance for ${it.value.binding}")
+                InjektPlugins.logger?.info("Create eager instance for ${it.value.binding}")
                 it.value.get(context, null)
             }
     }
@@ -158,16 +129,6 @@ class Component @PublishedApi internal constructor() {
         for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key)
             if (instance != null) return instance
-        }
-
-        return null
-    }
-
-    private fun findComponentForScope(scope: Scope): Component? {
-        if (scopes.contains(scope)) return this
-        for (dependency in dependencies) {
-            val result = dependency.findComponentForScope(scope)
-            if (result != null) return result
         }
 
         return null
@@ -234,27 +195,6 @@ fun Component.dependencies(dependency: Component) {
 }
 
 /**
- * Adds all of [scopes]
- */
-fun Component.scopes(scopes: Iterable<Scope>) {
-    scopes.forEach { addScope(it) }
-}
-
-/**
- * Adds all [scopes]
- */
-fun Component.scopes(vararg scopes: Scope) {
-    scopes.forEach { addScope(it) }
-}
-
-/**
- * Adds the [scope]
- */
-fun Component.scopes(scope: Scope) {
-    addScope(scope)
-}
-
-/**
  * Returns a instance of [T] matching the [qualifier] and [parameters]
  */
 inline fun <reified T> Component.get(
@@ -291,13 +231,5 @@ inline fun <reified T> Component.injectProvider(
 ): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
     provider { parameters: ParametersDefinition? ->
         get<T>(qualifier, parameters ?: defaultParameters)
-    }
-}
-
-fun Component.componentName(): String {
-    return if (getScopes().isNotEmpty()) {
-        "Component[${getScopes().joinToString(",")}]"
-    } else {
-        "Component[Unscoped]"
     }
 }

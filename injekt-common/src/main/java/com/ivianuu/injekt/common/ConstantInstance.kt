@@ -38,7 +38,7 @@ object ConstantKind : Kind {
 class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("${context.component.componentName()} Return constant $binding")
+        InjektPlugins.logger?.info("Return constant $binding")
         return create(context, parameters)
     }
 
@@ -49,7 +49,6 @@ class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
  */
 inline fun <reified T> Module.constant(
     qualifier: Qualifier? = null,
-    scope: Scope? = null,
     override: Boolean = false,
     crossinline instance: () -> T
 ): BindingContext<T> = add(
@@ -57,7 +56,6 @@ inline fun <reified T> Module.constant(
         type = T::class,
         qualifier = qualifier,
         kind = ConstantKind,
-        scope = scope,
         override = override,
         definition = { instance() }
     )

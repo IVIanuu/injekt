@@ -38,7 +38,7 @@ private class FactoryInstance<T>(
         parameters: ParametersDefinition?
     ): T {
         val context = this.context ?: context
-        InjektPlugins.logger?.info("${context.component.componentName()} Create instance $binding")
+        InjektPlugins.logger?.info("Create instance $binding")
         return create(context, parameters)
     }
 
@@ -49,7 +49,6 @@ private class FactoryInstance<T>(
  */
 inline fun <reified T> Module.factory(
     qualifier: Qualifier? = null,
-    scope: Scope? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
@@ -57,7 +56,6 @@ inline fun <reified T> Module.factory(
         type = T::class,
         qualifier = qualifier,
         kind = FactoryKind,
-        scope = scope,
         override = override,
         definition = definition
     )

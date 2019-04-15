@@ -18,7 +18,6 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.PerApplication
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
 
@@ -48,7 +47,7 @@ class App : Application(), InjektTrait {
 }
 
 val appModule = module {
-    single(scope = PerApplication) { AppDependency(get()) }
+    single { AppDependency(get()) }
 }
 
 class AppDependency(val app: App)

@@ -47,17 +47,17 @@ class SingleInstance<T>(
         val context = this.context ?: context
 
         if (_value !== UNINITIALIZED) {
-            InjektPlugins.logger?.info("${context.component.componentName()} Return existing instance $binding")
+            InjektPlugins.logger?.info("Return existing instance $binding")
             return _value as T
         }
 
         synchronized(this) {
             if (_value !== UNINITIALIZED) {
-                InjektPlugins.logger?.info("${context.component.componentName()} Return existing instance $binding")
+                InjektPlugins.logger?.info("Return existing instance $binding")
                 return@get _value as T
             }
 
-            InjektPlugins.logger?.info("${context.component.componentName()} Create instance $binding")
+            InjektPlugins.logger?.info("Create instance $binding")
             _value = create(context, parameters)
             return@get _value as T
         }
@@ -70,7 +70,6 @@ class SingleInstance<T>(
  */
 inline fun <reified T> Module.single(
     qualifier: Qualifier? = null,
-    scope: Scope? = null,
     override: Boolean = false,
     eager: Boolean = false,
     noinline definition: Definition<T>
@@ -79,7 +78,6 @@ inline fun <reified T> Module.single(
         type = T::class,
         qualifier = qualifier,
         kind = SingleKind,
-        scope = scope,
         override = override,
         eager = eager,
         definition = definition

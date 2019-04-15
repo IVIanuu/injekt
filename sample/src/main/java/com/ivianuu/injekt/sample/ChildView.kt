@@ -20,7 +20,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.PerChildView
 import com.ivianuu.injekt.android.childViewComponent
 
 /**
@@ -57,9 +56,7 @@ class ChildView @JvmOverloads constructor(
 }
 
 val childViewModule = module {
-    single(scope = PerChildView) {
-        ChildViewDependency(get(), get(), get(), get(), get(), get())
-    }
+    single { ChildViewDependency(get(), get(), get(), get(), get(), get()) }
 }
 
 class ChildViewDependency(

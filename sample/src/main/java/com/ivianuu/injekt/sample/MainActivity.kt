@@ -19,7 +19,6 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.PerActivity
 import com.ivianuu.injekt.android.activityComponent
 
 class MainActivity : AppCompatActivity(), InjektTrait {
@@ -49,7 +48,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 }
 
 val mainActivityModule = module {
-    single(scope = PerActivity) { MainActivityDependency(get(), get()) }
+    single { MainActivityDependency(get(), get()) }
 }
 
 class MainActivityDependency(
