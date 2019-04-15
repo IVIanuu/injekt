@@ -18,43 +18,11 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
-import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ModuleTest {
-
-    @Test
-    fun testModuleConfigOverridesBinding() {
-        val module = module(eager = true, override = true) {
-            single(override = false, eager = false) { TestDep1() }
-        }
-
-        val component = component { modules(module) }
-
-        val binding = component.getBindings().first()
-        assertEquals(true, module.override)
-        assertTrue(binding.override)
-
-        assertEquals(true, module.eager)
-        assertTrue(binding.eager)
-    }
-
-    @Test
-    fun testModuleConfigNotOverridesBindings() {
-        val module = module {
-            single(override = true, eager = true) { TestDep1() }
-        }
-
-        val binding = module.getBindings().first()
-        assertNull(module.override)
-        assertTrue(binding.override)
-
-        assertNull(module.eager)
-        assertTrue(binding.eager)
-    }
 
     @Test
     fun testAllowsValidOverride() {
