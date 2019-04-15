@@ -12,6 +12,8 @@ object SingleKind : Kind {
     override fun asString(): String = SINGLE_KIND
 }
 
+private object UNINITIALIZED
+
 /**
  * A [Instance] which creates the value 1 time per [Component] and caches the result
  */
@@ -20,21 +22,28 @@ class SingleInstance<T>(
     val component: Component?
 ) : Instance<T>() {
 
-    private var _value: T? = null
+    private var _value: Any? = UNINITIALIZED
 
     override fun get(
         component: Component,
         parameters: ParametersDefinition?
     ): T {
         val component = this.component ?: component
-        val value = _value
 
-        return if (value != null) {
+        if (_value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
-            return value
-        } else {
+            return _value as T
+        }
+
+        synchronized(this) {
+            if (_value !== UNINITIALIZED) {
+                InjektPlugins.logger?.info("${component.componentName()} Return existing instance $binding")
+                return@get _value as T
+            }
+
             InjektPlugins.logger?.info("${component.componentName()} Create instance $binding")
-            create(component, parameters).also { _value = it }
+            _value = create(component, parameters)
+            return@get _value as T
         }
     }
 
