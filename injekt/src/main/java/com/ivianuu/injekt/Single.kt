@@ -30,10 +30,7 @@ object SingleKind : Kind {
 
 private object UNINITIALIZED
 
-/**
- * A [Instance] which creates the value 1 time per [Component] and caches the result
- */
-class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+internal class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
 

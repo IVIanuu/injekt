@@ -36,8 +36,8 @@ class InstanceTest {
 
         val instance = component.getInstances().first()
 
-        val value1 = instance.get(component, null)
-        val value2 = instance.get(component, null)
+        val value1 = instance.get(component.context, null)
+        val value2 = instance.get(component.context, null)
 
         assertEquals(value1, value2)
     }
@@ -56,8 +56,8 @@ class InstanceTest {
 
         assertTrue(instance is FactoryInstance)
 
-        val value1 = instance.get(component, null)
-        val value2 = instance.get(component, null)
+        val value1 = instance.get(component.context, null)
+        val value2 = instance.get(component.context, null)
 
         assertNotEquals(value1, value2)
     }
@@ -76,7 +76,7 @@ class InstanceTest {
         val instance = component.getInstances().last()
 
         val throwed = try {
-            instance.get(component, null)
+            instance.get(component.context, null)
             false
         } catch (e: InstanceCreationException) {
             true

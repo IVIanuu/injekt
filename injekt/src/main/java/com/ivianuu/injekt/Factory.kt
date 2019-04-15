@@ -28,7 +28,7 @@ object FactoryKind : Kind {
     override fun asString(): String = FACTORY_KIND
 }
 
-private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+internal class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(
         context: DefinitionContext,
