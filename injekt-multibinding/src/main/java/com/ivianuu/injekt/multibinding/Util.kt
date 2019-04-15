@@ -42,7 +42,7 @@ internal fun Module.declareMapBinding(mapQualifier: Qualifier) {
             mapBindingsToUse[mapBinding.key] = binding
         }
 
-        returnMultiBindingMap(component, mapBindingsToUse as Map<Any, Binding<Any>>)
+        MultiBindingMap(component, mapBindingsToUse as Map<Any, Binding<Any>>)
     }
 }
 
@@ -69,7 +69,7 @@ internal fun Module.declareSetBinding(setQualifier: Qualifier) {
             setBindingsToUse[binding.key] = binding
         }
 
-        returnMultiBindingSet(
+        MultiBindingSet(
             component,
             setBindingsToUse.values.toSet() as Set<Binding<Any>>
         )
