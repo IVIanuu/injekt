@@ -45,20 +45,6 @@ inline fun <reified T : Fragment> T.fragmentComponent(
 }
 
 /**
- * Returns a [Component] with convenient configurations
- */
-inline fun <reified T : Fragment> T.childFragmentComponent(
-    createEagerInstances: Boolean = true,
-    definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
-    (getParentFragmentComponentOrNull()
-        ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
-    addConstant(this@childFragmentComponent)
-    definition.invoke(this)
-}
-
-/**
  * Returns the [Component] of the parent fragment or null
  */
 fun Fragment.getParentFragmentComponentOrNull(): Component? =

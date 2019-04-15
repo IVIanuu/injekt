@@ -22,8 +22,8 @@ package com.ivianuu.injekt
 object SingleKind : Kind {
     private const val SINGLE_KIND = "Single"
 
-    override fun <T> createInstance(binding: Binding<T>, context: DefinitionContext?): Instance<T> =
-        SingleInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> =
+        SingleInstance(binding)
 
     override fun asString(): String = SINGLE_KIND
 }
@@ -33,10 +33,7 @@ private object UNINITIALIZED
 /**
  * A [Instance] which creates the value 1 time per [Component] and caches the result
  */
-class SingleInstance<T>(
-    override val binding: Binding<T>,
-    val context: DefinitionContext?
-) : Instance<T>() {
+class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
 
@@ -44,8 +41,6 @@ class SingleInstance<T>(
         context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T {
-        val context = this.context ?: context
-
         if (_value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("Return existing instance $binding")
             return _value as T

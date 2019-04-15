@@ -20,7 +20,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.childViewComponent
+import com.ivianuu.injekt.android.viewComponent
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -31,7 +31,7 @@ class ChildView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
     override val component by lazy {
-        childViewComponent {
+        viewComponent {
             modules(childViewModule)
         }
     }

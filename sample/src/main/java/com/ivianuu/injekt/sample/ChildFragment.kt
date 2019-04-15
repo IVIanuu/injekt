@@ -22,7 +22,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.childFragmentComponent
+import com.ivianuu.injekt.android.fragmentComponent
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -30,7 +30,7 @@ import com.ivianuu.injekt.android.childFragmentComponent
 class ChildFragment : Fragment(), InjektTrait {
 
     override val component by lazy {
-        childFragmentComponent {
+        fragmentComponent {
             modules(childFragmentModule)
         }
     }

@@ -89,7 +89,7 @@ class Component @PublishedApi internal constructor() {
 
         bindings[binding.key] = binding
 
-        val instance = binding.kind.createInstance(binding, context)
+        val instance = binding.kind.createInstance(binding)
 
         instances[binding.key] = instance
 

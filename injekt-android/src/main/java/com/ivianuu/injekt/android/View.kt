@@ -46,20 +46,6 @@ inline fun <reified T : View> T.viewComponent(
 }
 
 /**
- * Returns a [Component] with convenient configurations
- */
-inline fun <reified T : View> T.childViewComponent(
-    createEagerInstances: Boolean = true,
-    definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
-    (getParentViewComponentOrNull()
-        ?: getContextComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
-    addConstant(this@childViewComponent)
-    definition.invoke(this)
-}
-
-/**
  * Returns the [Component] of the parent view or null
  */
 fun View.getParentViewComponentOrNull(): Component? =

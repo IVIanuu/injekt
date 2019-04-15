@@ -25,7 +25,7 @@ object ConstantKind : Kind {
 
     private const val INSTANCE_KIND = "Constant"
 
-    override fun <T> createInstance(binding: Binding<T>, context: DefinitionContext?): Instance<T> =
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> =
         ConstantInstance(binding)
 
     override fun asString(): String = INSTANCE_KIND

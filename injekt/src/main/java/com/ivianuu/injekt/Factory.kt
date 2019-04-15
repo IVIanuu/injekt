@@ -22,22 +22,18 @@ package com.ivianuu.injekt
 object FactoryKind : Kind {
     private const val FACTORY_KIND = "Factory"
 
-    override fun <T> createInstance(binding: Binding<T>, context: DefinitionContext?): Instance<T> =
-        FactoryInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> =
+        FactoryInstance(binding)
 
     override fun asString(): String = FACTORY_KIND
 }
 
-private class FactoryInstance<T>(
-    override val binding: Binding<T>,
-    val context: DefinitionContext?
-) : Instance<T>() {
+private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(
         context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T {
-        val context = this.context ?: context
         InjektPlugins.logger?.info("Create instance $binding")
         return create(context, parameters)
     }
