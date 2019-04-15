@@ -87,20 +87,13 @@ class Component @PublishedApi internal constructor() {
             throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
         }
 
-        bindings[binding.key] = binding
-
-        if (binding.scope != null && !scopes.contains(binding.scope)) {
-            val parentWithScope = findComponentForScope(binding.scope)
-
-            // add the binding to the parent
-            if (parentWithScope != null) {
-                parentWithScope.addBinding(binding)
-            } else {
-                error("Component scope ${componentName()} does not match binding scope ${binding.scope}")
-            }
+        check(binding.scope == null || scopes.contains(binding.scope)) {
+            "Component scope ${componentName()} does not match binding scope ${binding.scope}"
         }
 
-        val instance = createInstance(binding)
+        bindings[binding.key] = binding
+
+        val instance = binding.kind.createInstance(binding, this)
 
         instances[binding.key] = instance
 
@@ -138,36 +131,13 @@ class Component @PublishedApi internal constructor() {
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
-        return synchronized(this) {
-            var instance = instances[key]
+        var instance = instances[key]
 
-            if (instance != null) return@synchronized instance as Instance<T>
+        if (instance != null) return instance as Instance<T>
 
-            for (dependency in dependencies) {
-                instance = dependency.findInstance<T>(key)
-                if (instance != null) return@synchronized instance
-            }
-
-            return@synchronized null
-        }
-    }
-
-    private fun <T> createInstance(binding: Binding<T>): Instance<T> {
-        val component = if (binding.scope != null) {
-            findComponentForScope(binding.scope)
-                ?: error("Cannot create instance for $binding unknown scope ${binding.scope}")
-        } else {
-            null
-        }
-
-        return binding.kind.createInstance(binding, component)
-    }
-
-    private fun findComponentForScope(scope: Scope): Component? {
-        if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
-            val result = dependency.findComponentForScope(scope)
-            if (result != null) return result
+            instance = dependency.findInstance<T>(key)
+            if (instance != null) return instance
         }
 
         return null
