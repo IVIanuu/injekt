@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android.fragment
+package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*

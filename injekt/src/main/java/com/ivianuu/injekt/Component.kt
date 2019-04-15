@@ -23,7 +23,7 @@ class Component @PublishedApi internal constructor() {
     ): T {
         val key = Key(type, qualifier)
 
-        val instance = findInstance<T>(key, true)
+        val instance = findInstance<T>(key)
             ?: throw BindingNotFoundException("${componentName()} Couldn't find a binding for $key")
 
         return instance.get(this, parameters)
@@ -111,27 +111,15 @@ class Component @PublishedApi internal constructor() {
             }
     }
 
-    private fun <T> findInstance(key: Key, includeFactories: Boolean): Instance<T>? {
+    private fun <T> findInstance(key: Key): Instance<T>? {
         return synchronized(this) {
             var instance = instances[key]
 
             if (instance != null) return@synchronized instance as Instance<T>
 
             for (dependency in dependencies) {
-                instance = dependency.findInstance<T>(key, false)
+                instance = dependency.findInstance<T>(key)
                 if (instance != null) return@synchronized instance
-            }
-
-            // we search for generated factories as a last resort
-            if (includeFactories) {
-                try {
-                    val factory = InjektPlugins.factoryFinder.find<T>(key.type)
-                        ?: return@findInstance null
-                    val binding = factory.create()
-                    return@synchronized addBindingInternal(binding) as Instance<T>
-                } catch (e: ClassNotFoundException) {
-                    // ignore
-                }
             }
 
             return@synchronized null

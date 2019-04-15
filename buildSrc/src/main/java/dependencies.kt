@@ -20,20 +20,17 @@ object Publishing {
 object Versions {
     const val androidGradlePlugin = "3.3.0"
     const val androidxAppCompat = "1.1.0-alpha04"
-    const val androidxFragment = "1.1.0-alpha06"
     const val bintray = "1.8.4"
     const val junit = "4.12"
     const val kotlin = "1.3.30"
     const val mavenGradle = "2.1"
     const val mockito = "2.23.4"
-    const val processingX = "0.0.1-dev-2"
 }
 
 object Deps {
     const val androidGradlePlugin = "com.android.tools.build:gradle:${Versions.androidGradlePlugin}"
 
     const val androidxAppCompat = "androidx.appcompat:appcompat:${Versions.androidxAppCompat}"
-    const val androidxFragment = "androidx.fragment:fragment:${Versions.androidxFragment}"
 
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.bintray}"
@@ -45,8 +42,4 @@ object Deps {
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
-
-    const val mockito = "org.mockito:mockito-inline:${Versions.mockito}"
-
-    const val processingX = "com.ivianuu.processingx:processingx:${Versions.processingX}"
 }

@@ -21,18 +21,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.fragment.PerChildFragment
-import com.ivianuu.injekt.android.fragment.childFragmentComponent
-import com.ivianuu.injekt.annotations.Single
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.PerChildFragment
+import com.ivianuu.injekt.android.childFragmentComponent
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class ChildFragment : Fragment(), InjektTrait {
 
-    override val component by lazy { childFragmentComponent() }
+    override val component by lazy {
+        childFragmentComponent {
+            modules(childFragmentModule)
+        }
+    }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -65,7 +67,12 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single(PerChildFragment::class)
+val childFragmentModule = module {
+    single(scope = PerChildFragment) {
+        ChildFragmentDependency(get(), get(), get(), get())
+    }
+}
+
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
