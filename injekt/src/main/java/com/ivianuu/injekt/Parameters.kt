@@ -43,13 +43,14 @@ fun parametersOf(vararg values: Any?): Parameters = Parameters(listOf(*values))
 fun parametersOf(value: Any?): Parameters =
     Parameters(listOf(value))
 
+private val emptyParameters = Parameters(emptyList())
+
 /**
  * Returns new empty parameters
  */
-fun parametersOf(): Parameters =
-    Parameters(emptyList())
+fun parametersOf(): Parameters = emptyParameters
 
 /**
  * Returns empty [Parameters]
  */
-fun emptyParameters(): Parameters = parametersOf()
+fun emptyParameters(): Parameters = emptyParameters

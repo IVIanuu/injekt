@@ -37,7 +37,7 @@ object ForService : StringQualifier("ForService")
  */
 inline fun <T : Service> T.serviceComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerService)
     modules(serviceModule())

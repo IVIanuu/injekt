@@ -35,7 +35,7 @@ object ForContentProvider : StringQualifier("ForContentProvider")
  */
 inline fun <reified T : ContentProvider> T.contentProviderComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerContentProvider)
     getApplicationComponentOrNull()?.let { dependencies(it) }

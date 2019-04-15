@@ -37,7 +37,7 @@ object ForActivity : StringQualifier("ForActivity")
  */
 inline fun <T : Activity> T.activityComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerActivity)
     getApplicationComponentOrNull()?.let { dependencies(it) }

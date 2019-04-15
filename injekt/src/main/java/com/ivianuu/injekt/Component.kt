@@ -41,12 +41,9 @@ class Component @PublishedApi internal constructor() {
      * Adds the [dependency] as a dependency
      */
     fun addDependency(dependency: Component) {
-        synchronized(this) {
-            if (!this.dependencies.add(dependency)) {
-                error("Already added ${dependency.componentName()} to ${componentName()}")
-            }
+        if (!dependencies.add(dependency)) {
+            error("Already added ${dependency.componentName()} to ${componentName()}")
         }
-
         InjektPlugins.logger?.info("${componentName()} Add dependency $dependency")
     }
 
@@ -59,10 +56,8 @@ class Component @PublishedApi internal constructor() {
      * Adds the [scope]
      */
     fun addScope(scope: Scope) {
-        synchronized(this) {
-            if (!this.scopes.add(scope)) {
-                error("Scope name $scope was already added")
-            }
+        if (!scopes.add(scope)) {
+            error("Scope name $scope was already added")
         }
         InjektPlugins.logger?.info("${componentName()} Add scope name $scope")
     }
@@ -86,7 +81,38 @@ class Component @PublishedApi internal constructor() {
      * Saves the [binding]
      */
     fun addBinding(binding: Binding<*>) {
-        addBindingInternal(binding)
+        val isOverride = bindings.remove(binding.key) != null
+
+        if (isOverride && !binding.override) {
+            throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
+        }
+
+        bindings[binding.key] = binding
+
+        if (binding.scope != null && !scopes.contains(binding.scope)) {
+            val parentWithScope = findComponentForScope(binding.scope)
+
+            // add the binding to the parent
+            if (parentWithScope != null) {
+                parentWithScope.addBinding(binding)
+            } else {
+                error("Component scope ${componentName()} does not match binding scope ${binding.scope}")
+            }
+        }
+
+        val instance = createInstance(binding)
+
+        instances[binding.key] = instance
+
+        InjektPlugins.logger?.let { logger ->
+            val msg = if (isOverride) {
+                "${componentName()} Override $binding"
+            } else {
+                "${componentName()} Declare $binding"
+            }
+            logger.debug(msg)
+        }
+
     }
 
     /**
@@ -137,44 +163,6 @@ class Component @PublishedApi internal constructor() {
         return binding.kind.createInstance(binding, component)
     }
 
-    private fun addBindingInternal(binding: Binding<*>): Instance<*> {
-        return synchronized(this) {
-            val isOverride = bindings.remove(binding.key) != null
-
-            if (isOverride && !binding.override) {
-                throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
-            }
-
-            bindings[binding.key] = binding
-
-            if (binding.scope != null && !scopes.contains(binding.scope)) {
-                val parentWithScope = findComponentForScope(binding.scope)
-
-                // add the binding to the parent
-                if (parentWithScope != null) {
-                    return@addBindingInternal parentWithScope.addBindingInternal(binding)
-                } else {
-                    error("Component scope ${componentName()} does not match binding scope ${binding.scope}")
-                }
-            }
-
-            val instance = createInstance(binding)
-
-            instances[binding.key] = instance
-
-            InjektPlugins.logger?.let { logger ->
-                val msg = if (isOverride) {
-                    "${componentName()} Override $binding"
-                } else {
-                    "${componentName()} Declare $binding"
-                }
-                logger.debug(msg)
-            }
-
-            return@synchronized instance
-        }
-    }
-
     private fun findComponentForScope(scope: Scope): Component? {
         if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
@@ -188,16 +176,11 @@ class Component @PublishedApi internal constructor() {
 }
 
 /**
- * Defines a component
- */
-typealias ComponentDefinition = Component.() -> Unit
-
-/**
  * Returns a new [Component] and applies the [definition]
  */
 inline fun component(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component {
     return Component()
         .apply {

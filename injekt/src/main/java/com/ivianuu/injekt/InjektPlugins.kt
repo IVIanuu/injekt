@@ -6,14 +6,9 @@ package com.ivianuu.injekt
 object InjektPlugins
 
 /**
- * Defines inject configuration
- */
-typealias InjektDefinition = InjektPlugins.() -> Unit
-
-/**
  * Configure injekt
  */
-inline fun configureInjekt(definition: InjektDefinition) {
+inline fun configureInjekt(definition: InjektPlugins.() -> Unit) {
     InjektPlugins.apply(definition)
 }
 

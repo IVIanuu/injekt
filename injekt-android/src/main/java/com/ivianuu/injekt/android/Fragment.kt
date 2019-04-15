@@ -45,7 +45,7 @@ object ForChildFragment : StringQualifier("ForChildFragment")
  */
 inline fun <reified T : Fragment> T.fragmentComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerFragment)
     (getParentFragmentComponentOrNull()
@@ -60,7 +60,7 @@ inline fun <reified T : Fragment> T.fragmentComponent(
  */
 inline fun <reified T : Fragment> T.childFragmentComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerChildFragment)
     (getParentFragmentComponentOrNull()

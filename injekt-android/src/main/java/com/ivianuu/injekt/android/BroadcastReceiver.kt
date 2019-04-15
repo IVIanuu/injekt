@@ -37,7 +37,7 @@ object ForReceiver : StringQualifier("ForReceiver")
 inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerReceiver)
     getApplicationComponentOrNull(context)?.let { dependencies(it) }

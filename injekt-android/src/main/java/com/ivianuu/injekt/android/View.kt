@@ -30,7 +30,7 @@ object ForChildView : StringQualifier("ForChildView")
  */
 inline fun <reified T : View> T.viewComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerView)
     (getParentViewComponentOrNull()
@@ -45,7 +45,7 @@ inline fun <reified T : View> T.viewComponent(
  */
 inline fun <reified T : View> T.childViewComponent(
     createEagerInstances: Boolean = true,
-    definition: ComponentDefinition = {}
+    definition: Component.() -> Unit = {}
 ): Component = component(createEagerInstances) {
     scopes(PerChildView)
     (getParentViewComponentOrNull()

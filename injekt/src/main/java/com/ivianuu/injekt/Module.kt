@@ -35,14 +35,9 @@ class Module @PublishedApi internal constructor() {
 }
 
 /**
- * Defines module entries
- */
-typealias ModuleDefinition = Module.() -> Unit
-
-/**
  * Defines a [Module]
  */
-inline fun module(definition: ModuleDefinition = {}): Module = Module().apply(definition)
+inline fun module(definition: Module.() -> Unit = {}): Module = Module().apply(definition)
 
 /**
  * Adds all bindings of the [module]
