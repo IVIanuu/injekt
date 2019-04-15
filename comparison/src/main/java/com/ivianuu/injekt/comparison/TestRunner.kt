@@ -26,21 +26,21 @@ import org.nield.kotlinstatistics.median
 
 private const val ROUNDS = 1_000
 
-fun runInjektKatanaTests() {
-    runInjectionTests(listOf(KatanaTest(), InjektTest()))
-}
-
 fun runAllInjectionTests() {
     runInjectionTests(
         listOf(
-            DaggerTest(),
-            CustomTest(),
-            KodeinTest(),
-            KoinTest(),
-            KatanaTest(),
-            InjektTest()
+            DaggerTest,
+            CustomTest,
+            KodeinTest,
+            KoinTest,
+            KatanaTest,
+            InjektTest
         )
     )
+}
+
+fun runInjectionTests(vararg tests: InjectionTest) {
+    runInjectionTests(tests.toList())
 }
 
 fun runInjectionTests(tests: List<InjectionTest>) {
@@ -99,16 +99,20 @@ inline fun measureCall(body: () -> Unit): Long {
 fun Iterable<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName, // todo dirty
-        setupAverage = map { it.setup }.average(),
-        setupMedian = map { it.setup }.median(),
-        setupMin = map { it.setup }.min()?.toDouble() ?: 0.0,
-        setupMax = map { it.setup }.max()?.toDouble() ?: 0.0,
-        injectionAverage = map { it.injection }.average(),
-        injectionMedian = map { it.injection }.median(),
-        injectionMin = map { it.injection }.min()?.toDouble() ?: 0.0,
-        injectionMax = map { it.injection }.max()?.toDouble() ?: 0.0
+        setupAverage = map { it.setup }.average().toMillis(),
+        setupMedian = map { it.setup }.median().toMillis(),
+        setupMin = map { it.setup }.min()?.toDouble()?.toMillis() ?: 0.0,
+        setupMax = map { it.setup }.max()?.toDouble()?.toMillis() ?: 0.0,
+        injectionAverage = map { it.injection }.average().toMillis(),
+        injectionMedian = map { it.injection }.median().toMillis(),
+        injectionMin = map { it.injection }.min()?.toDouble()?.toMillis() ?: 0.0,
+        injectionMax = map { it.injection }.max()?.toDouble()?.toMillis() ?: 0.0
     )
 }
+
+fun Double?.format() = String.format("%.3f ms", this)
+
+fun Double.toMillis() = this / 1000000.0
 
 fun Map<String, Results>.print() {
     println("Setup:")
@@ -116,10 +120,10 @@ fun Map<String, Results>.print() {
     forEach { (name, results) ->
         println(
             "$name | " +
-                    "${results.setupAverage} | " +
-                    "${results.setupMedian} | " +
-                    "${results.setupMin} | " +
-                    "${results.setupMax}"
+                    "${results.setupAverage.format()} | " +
+                    "${results.setupMedian.format()} | " +
+                    "${results.setupMin.format()} | " +
+                    "${results.setupMax.format()}"
         )
     }
 
@@ -141,10 +145,10 @@ fun Map<String, Results>.print() {
     forEach { (name, results) ->
         println(
             "$name | " +
-                    "${results.injectionAverage} | " +
-                    "${results.injectionMedian} | " +
-                    "${results.injectionMin} | " +
-                    "${results.injectionMax}"
+                    "${results.injectionAverage.format()} | " +
+                    "${results.injectionMedian.format()} | " +
+                    "${results.injectionMin.format()} | " +
+                    "${results.injectionMax.format()}"
         )
     }
 

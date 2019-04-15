@@ -23,7 +23,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.modules
 
-class InjektTest : InjectionTest {
+object InjektTest : InjectionTest {
     override val name = "Injekt"
 
     private var component: Component? = null

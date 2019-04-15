@@ -19,7 +19,7 @@ package com.ivianuu.injekt.comparison.custom
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 
-class CustomTest : InjectionTest {
+object CustomTest : InjectionTest {
 
     override val name = "Custom"
 

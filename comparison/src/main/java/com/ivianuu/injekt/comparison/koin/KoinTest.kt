@@ -23,7 +23,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.core.get
 
-class KoinTest : InjectionTest, KoinComponent {
+object KoinTest : InjectionTest, KoinComponent {
 
     override val name = "Koin"
 

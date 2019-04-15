@@ -20,7 +20,7 @@ import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 import javax.inject.Inject
 
-class DaggerTest : InjectionTest {
+object DaggerTest : InjectionTest {
 
     override val name = "Dagger"
 

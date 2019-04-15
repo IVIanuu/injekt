@@ -18,12 +18,11 @@ package com.ivianuu.injekt.comparison.kodein
 
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.comparison.kodeinModule
 import org.kodein.di.Kodein
 import org.kodein.di.direct
 import org.kodein.di.erased.instance
 
-class KodeinTest : InjectionTest {
+object KodeinTest : InjectionTest {
 
     override val name = "Kodein"
 

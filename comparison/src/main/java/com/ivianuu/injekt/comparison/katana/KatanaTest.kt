@@ -20,7 +20,7 @@ import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 import org.rewedigital.katana.Component
 
-class KatanaTest : InjectionTest {
+object KatanaTest : InjectionTest {
 
     override val name = "Katana"
 
