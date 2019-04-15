@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 class Binding<T> internal constructor(
     val key: Key,
     val type: KClass<*>,
-    val qualifier: Qualifier?,
+    val name: Name?,
     val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes,
@@ -57,13 +57,13 @@ class Binding<T> internal constructor(
     override fun toString(): String {
         return "${kind.asString()}(" +
                 "type=${type.java.name}, " +
-                "qualifier=$qualifier" +
+                "name=$name" +
                 ")"
     }
 }
 
 inline fun <reified T> Binding(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     kind: Kind,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
@@ -72,7 +72,7 @@ inline fun <reified T> Binding(
 ): Binding<T> {
     return Binding(
         T::class,
-        qualifier,
+        name,
         kind,
         attributes,
         override,
@@ -83,7 +83,7 @@ inline fun <reified T> Binding(
 
 fun <T> Binding(
     type: KClass<*>,
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     kind: Kind,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
@@ -91,14 +91,14 @@ fun <T> Binding(
     definition: Definition<T>
 ): Binding<T> {
     return Binding(
-        Key(type, qualifier), type, qualifier, kind,
+        Key(type, name), type, name, kind,
         definition, attributes, override, eager
     )
 }
 
 fun <T> Binding<T>.copy(
     type: KClass<*> = this.type,
-    qualifier: Qualifier? = this.qualifier,
+    name: Name? = this.name,
     kind: Kind = this.kind,
     attributes: Attributes = this.attributes,
     override: Boolean = this.override,
@@ -106,9 +106,9 @@ fun <T> Binding<T>.copy(
     definition: Definition<T> = this.definition
 ): Binding<T> {
     return Binding(
-        Key(type, qualifier),
+        Key(type, name),
         type,
-        qualifier,
+        name,
         kind,
         definition,
         attributes,

@@ -38,7 +38,7 @@ inline infix fun <T> BindingContext<T>.withContext(body: BindingContext<T>.() ->
  * Adds this [Binding] to [type]
  */
 infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {
-    val copy = binding.copy(type = type, qualifier = null)
+    val copy = binding.copy(type = type, name = null)
     module.add(copy)
     return this
 }
@@ -60,10 +60,10 @@ infix fun <T> BindingContext<T>.bindTypes(types: Iterable<KClass<*>>): BindingCo
 }
 
 /**
- * Adds this [Binding] to [qualifier]
+ * Adds this [Binding] to [name]
  */
-infix fun <T> BindingContext<T>.bindQualifier(qualifier: Qualifier): BindingContext<T> {
-    val copy = binding.copy(qualifier = qualifier)
+infix fun <T> BindingContext<T>.bindQualifier(name: Name): BindingContext<T> {
+    val copy = binding.copy(name = name)
     module.add(copy)
     return this
 }
@@ -71,7 +71,7 @@ infix fun <T> BindingContext<T>.bindQualifier(qualifier: Qualifier): BindingCont
 /**
  * Adds this [Binding] to [names]
  */
-infix fun <T> BindingContext<T>.bindQualifiers(names: Array<out Qualifier>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindQualifiers(names: Array<out Name>): BindingContext<T> {
     names.forEach { bindQualifier(it) }
     return this
 }
@@ -79,7 +79,7 @@ infix fun <T> BindingContext<T>.bindQualifiers(names: Array<out Qualifier>): Bin
 /**
  * Adds this [Binding] to [names]
  */
-infix fun <T> BindingContext<T>.bindQualifiers(names: Iterable<Qualifier>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindQualifiers(names: Iterable<Name>): BindingContext<T> {
     names.forEach { bindQualifier(it) }
     return this
 }

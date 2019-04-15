@@ -21,14 +21,14 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * Fragment qualifier
+ * Fragment name
  */
-object ForFragment : StringQualifier("ForFragment")
+object ForFragment : StringName("ForFragment")
 
 /**
- * Child fragment qualifier
+ * Child fragment name
  */
-object ForChildFragment : StringQualifier("ForChildFragment")
+object ForChildFragment : StringName("ForChildFragment")
 
 /**
  * Returns a [Component] with convenient configurations

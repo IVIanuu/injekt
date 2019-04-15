@@ -21,9 +21,9 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * Content provider qualifier
+ * Content provider name
  */
-object ForContentProvider : StringQualifier("ForContentProvider")
+object ForContentProvider : StringName("ForContentProvider")
 
 /**
  * Returns a [Component] with convenient configurations

@@ -48,13 +48,13 @@ class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
  * Provides a constant instance
  */
 inline fun <reified T> Module.constant(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     override: Boolean = false,
     crossinline instance: () -> T
 ): BindingContext<T> = add(
     Binding(
         type = T::class,
-        qualifier = qualifier,
+        name = name,
         kind = ConstantKind,
         override = override,
         definition = { instance() }

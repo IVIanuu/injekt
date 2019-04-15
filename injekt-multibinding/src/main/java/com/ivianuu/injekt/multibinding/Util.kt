@@ -21,12 +21,12 @@ import kotlin.collections.set
 
 const val KEY_ORIGINAL_KEY = "original_key"
 
-internal fun Module.declareMapBinding(mapQualifier: Qualifier) {
-    factory(qualifier = mapQualifier, override = true) {
+internal fun Module.declareMapBinding(mapName: Name) {
+    factory(name = mapName, override = true) {
         val allMapBindings = component.getAllBindings()
             .mapNotNull { binding ->
-                binding.attributes.get<Map<Qualifier, MapBinding>>(KEY_MAP_BINDINGS)
-                    ?.get(mapQualifier)?.let { binding to it }
+                binding.attributes.get<Map<Name, MapBinding>>(KEY_MAP_BINDINGS)
+                    ?.get(mapName)?.let { binding to it }
             }
 
         val mapBindingsToUse = linkedMapOf<Any, Binding<*>>()
@@ -46,12 +46,12 @@ internal fun Module.declareMapBinding(mapQualifier: Qualifier) {
     }
 }
 
-internal fun Module.declareSetBinding(setQualifier: Qualifier) {
-    factory(qualifier = setQualifier, override = true) { _ ->
+internal fun Module.declareSetBinding(setName: Name) {
+    factory(name = setName, override = true) { _ ->
         val allSetBindings = component.getAllBindings()
             .mapNotNull { binding ->
-                binding.attributes.get<Map<Qualifier, SetBinding>>(KEY_SET_BINDINGS)
-                    ?.get(setQualifier)?.let { binding to it }
+                binding.attributes.get<Map<Name, SetBinding>>(KEY_SET_BINDINGS)
+                    ?.get(setName)?.let { binding to it }
             }
 
         val setBindingsToUse = linkedMapOf<Key, Binding<*>>()

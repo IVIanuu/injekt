@@ -20,7 +20,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.single
 
 /**
@@ -29,9 +29,9 @@ import com.ivianuu.injekt.single
 fun Module.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     override: Boolean = false,
     eager: Boolean = false
-): BindingContext<SharedPreferences> = single(qualifier, override, eager) {
+): BindingContext<SharedPreferences> = single(name, override, eager) {
     context().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
 }

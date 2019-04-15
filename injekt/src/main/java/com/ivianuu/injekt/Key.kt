@@ -23,5 +23,5 @@ import kotlin.reflect.KClass
  */
 data class Key(
     val type: KClass<*>,
-    val qualifier: Qualifier? = null
+    val name: Name? = null
 )

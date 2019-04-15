@@ -69,14 +69,14 @@ class SingleInstance<T>(
  * Provides scoped dependency which will be created once for each component
  */
 inline fun <reified T> Module.single(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     override: Boolean = false,
     eager: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
     Binding(
         type = T::class,
-        qualifier = qualifier,
+        name = name,
         kind = SingleKind,
         override = override,
         eager = eager,

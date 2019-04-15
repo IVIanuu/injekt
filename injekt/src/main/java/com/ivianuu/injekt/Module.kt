@@ -64,18 +64,18 @@ fun Module.module(module: Module) {
 
 /** Calls trough [Module.withBinding] */
 inline fun <reified T> Module.withBinding(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     body: BindingContext<T>.() -> Unit
 ) {
-    withBinding(T::class, qualifier, body)
+    withBinding(T::class, name, body)
 }
 
 /**
- * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [qualifier]
+ * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [name]
  */
 inline fun <T> Module.withBinding(
     type: KClass<*>,
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     body: BindingContext<T>.() -> Unit
 ) {
     // todo a little bit to hacky can we turn this into a clean thing?
@@ -85,31 +85,31 @@ inline fun <T> Module.withBinding(
     add(
         Binding(
             type = type,
-            qualifier = named(UUID.randomUUID().toString()),
+            name = named(UUID.randomUUID().toString()),
             kind = FactoryKind,
-            definition = { component.get<T>(type, qualifier) { it } }
+            definition = { component.get<T>(type, name) { it } }
         )
     ) withContext body
 }
 
 /**
- * Binds the [bindingType] to the existing [Binding] for [T] and [implementationQualifier]
+ * Binds the [bindingType] to the existing [Binding] for [T] and [implementationName]
  */
 inline fun <reified T> Module.bindType(
     bindingType: KClass<*>,
-    implementationQualifier: Qualifier? = null
+    implementationName: Name? = null
 ) {
-    withBinding<T>(implementationQualifier) { bindType(bindingType) }
+    withBinding<T>(implementationName) { bindType(bindingType) }
 }
 
 /**
- * Binds the [bindingQualifier] to the existing [Binding] for [T] and [implementationQualifier]
+ * Binds the [bindingName] to the existing [Binding] for [T] and [implementationName]
  */
 inline fun <reified T> Module.bindQualifier(
-    bindingQualifier: Qualifier,
-    implementationQualifier: Qualifier? = null
+    bindingName: Name,
+    implementationName: Name? = null
 ) {
-    withBinding<T>(implementationQualifier) { bindQualifier(bindingQualifier) }
+    withBinding<T>(implementationName) { bindQualifier(bindingName) }
 }
 
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)

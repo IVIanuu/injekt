@@ -32,7 +32,7 @@ class SetTest {
                     factory(NameOne) { "value_one" } bindIntoSet Values
                     factory(NameTwo) { "value_two" } bindIntoSet Values
                     factory(NameThree) { "value_three" }
-                    bindIntoSet<String>(Values, implementationQualifier = NameThree)
+                    bindIntoSet<String>(Values, implementationName = NameThree)
                 }
             )
         }

@@ -20,11 +20,11 @@ import com.ivianuu.injekt.*
 import kotlin.collections.set
 
 /**
- * Declares a empty set binding with the [setQualifier]
+ * Declares a empty set binding with the [setName]
  * This is useful for retrieving a [MultiBindingSet] even if no [Binding] was bound into it
  */
-fun Module.setBinding(setQualifier: Qualifier) {
-    factory(qualifier = setQualifier, override = true) {
+fun Module.setBinding(setName: Name) {
+    factory(name = setName, override = true) {
         MultiBindingSet<Any>(component, emptySet())
     }
 }
@@ -34,37 +34,37 @@ fun Module.setBinding(setQualifier: Qualifier) {
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
-        hashMapOf<Qualifier, SetBinding>()
-    }[setBinding.setQualifier] = setBinding
+        hashMapOf<Name, SetBinding>()
+    }[setBinding.setName] = setBinding
 
-    module.declareSetBinding(setBinding.setQualifier)
+    module.declareSetBinding(setBinding.setName)
 
     return this
 }
 
 /**
- * Adds this binding into [setQualifier]
+ * Adds this binding into [setName]
  */
 fun <T> BindingContext<T>.bindIntoSet(
-    setQualifier: Qualifier,
+    setName: Name,
     override: Boolean = false
-): BindingContext<T> = bindIntoSet(SetBinding(setQualifier, override))
+): BindingContext<T> = bindIntoSet(SetBinding(setName, override))
 
 /**
- * Adds this [Binding] into [setQualifier]
+ * Adds this [Binding] into [setName]
  */
-infix fun <T> BindingContext<T>.bindIntoSet(setQualifier: Qualifier): BindingContext<T> =
-    bindIntoSet(SetBinding(setQualifier))
+infix fun <T> BindingContext<T>.bindIntoSet(setName: Name): BindingContext<T> =
+    bindIntoSet(SetBinding(setName))
 
 /**
- * Binds a already existing [Binding] into a [Set] named [setQualifier]
+ * Binds a already existing [Binding] into a [Set] named [setName]
  */
 inline fun <reified T> Module.bindIntoSet(
-    setQualifier: Qualifier,
+    setName: Name,
     override: Boolean = false,
-    implementationQualifier: Qualifier? = null
+    implementationName: Name? = null
 ) {
-    bindIntoSet<T>(SetBinding(setQualifier, override), implementationQualifier)
+    bindIntoSet<T>(SetBinding(setName, override), implementationName)
 }
 
 /**
@@ -72,10 +72,10 @@ inline fun <reified T> Module.bindIntoSet(
  */
 inline fun <reified T> Module.bindIntoSet(
     setBinding: SetBinding,
-    implementationQualifier: Qualifier? = null
+    implementationName: Name? = null
 ) {
-    withBinding<T>(implementationQualifier) {
+    withBinding<T>(implementationName) {
         bindIntoSet(setBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationQualifier)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationName)
     }
 }

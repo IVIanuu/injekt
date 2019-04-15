@@ -24,10 +24,10 @@ import kotlin.collections.set
  */
 infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
-        hashMapOf<Qualifier, MapBinding>()
-    }[mapBinding.mapQualifier] = mapBinding
+        hashMapOf<Name, MapBinding>()
+    }[mapBinding.mapName] = mapBinding
 
-    module.declareMapBinding(mapBinding.mapQualifier)
+    module.declareMapBinding(mapBinding.mapName)
 
     return this
 }
@@ -36,38 +36,38 @@ infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingCont
  * Adds this binding into the name [Pair.first] with the key [Pair.second]
  */
 infix fun <T> BindingContext<T>.bindIntoMap(
-    pair: Pair<Qualifier, Any>
+    pair: Pair<Name, Any>
 ): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
 
 /**
- * Adds this binding into [mapQualifier] with [mapKey]
+ * Adds this binding into [mapName] with [mapKey]
  */
 fun <T> BindingContext<T>.bindIntoMap(
-    mapQualifier: Qualifier,
+    mapName: Name,
     mapKey: Any,
     override: Boolean = false
-): BindingContext<T> = bindIntoMap(MapBinding(mapQualifier, mapKey, override))
+): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
 
 /**
  * Declares a empty map binding
  * This is useful for retrieving a [MultiBindingMap] even if no [Binding] was bound into it
  */
-fun Module.mapBinding(mapQualifier: Qualifier) {
-    factory(qualifier = mapQualifier, override = true) {
+fun Module.mapBinding(mapName: Name) {
+    factory(name = mapName, override = true) {
         MultiBindingMap<Any, Any>(component, emptyMap())
     }
 }
 
 /**
- * Binds a already existing [Binding] into [mapQualifier] with [mapKey]
+ * Binds a already existing [Binding] into [mapName] with [mapKey]
  */
 inline fun <reified T> Module.bindIntoMap(
-    mapQualifier: Qualifier,
+    mapName: Name,
     mapKey: Any,
     override: Boolean = false,
-    implementationQualifier: Qualifier? = null
+    implementationName: Name? = null
 ) {
-    bindIntoMap<T>(MapBinding(mapQualifier, mapKey, override), implementationQualifier)
+    bindIntoMap<T>(MapBinding(mapName, mapKey, override), implementationName)
 }
 
 /**
@@ -75,10 +75,10 @@ inline fun <reified T> Module.bindIntoMap(
  */
 inline fun <reified T> Module.bindIntoMap(
     mapBinding: MapBinding,
-    implementationQualifier: Qualifier? = null
+    implementationName: Name? = null
 ) {
-    withBinding<T>(implementationQualifier) {
+    withBinding<T>(implementationName) {
         bindIntoMap(mapBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationQualifier)
+        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationName)
     }
 }

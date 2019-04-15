@@ -22,9 +22,9 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * Receiver qualifier
+ * Receiver name
  */
-object ForReceiver : StringQualifier("ForReceiver")
+object ForReceiver : StringName("ForReceiver")
 
 /**
  * Returns a [Component] with convenient configurations

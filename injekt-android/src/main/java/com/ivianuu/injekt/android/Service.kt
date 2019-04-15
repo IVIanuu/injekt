@@ -23,9 +23,9 @@ import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
 
 /**
- * Service qualifier
+ * Service name
  */
-object ForService : StringQualifier("ForService")
+object ForService : StringName("ForService")
 
 /**
  * Returns a [Component] with convenient configurations

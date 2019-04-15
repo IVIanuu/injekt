@@ -48,13 +48,13 @@ private class FactoryInstance<T>(
  * Provides a unscoped dependency which will be recreated on each request
  */
 inline fun <reified T> Module.factory(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
     Binding(
         type = T::class,
-        qualifier = qualifier,
+        name = name,
         kind = FactoryKind,
         override = override,
         definition = definition

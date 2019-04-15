@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Name
 
 /**
  * Attribute key for [MapBinding]s
@@ -27,7 +27,7 @@ const val KEY_MAP_BINDINGS = "map_bindings"
  * Map binding
  */
 data class MapBinding(
-    val mapQualifier: Qualifier,
+    val mapName: Name,
     val key: Any,
     val override: Boolean = false
 )

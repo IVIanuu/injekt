@@ -34,14 +34,14 @@ class Component @PublishedApi internal constructor() {
     val context = DefinitionContext(this)
 
     /**
-     * Returns a instance of [T] matching the [type], [qualifier] and [parameters]
+     * Returns a instance of [T] matching the [type], [name] and [parameters]
      */
     fun <T> get(
         type: KClass<*>,
-        qualifier: Qualifier? = null,
+        name: Name? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        val key = Key(type, qualifier)
+        val key = Key(type, name)
 
         val instance = findInstance<T>(key)
             ?: throw BindingNotFoundException("Couldn't find a binding for $key")
@@ -195,41 +195,41 @@ fun Component.dependencies(dependency: Component) {
 }
 
 /**
- * Returns a instance of [T] matching the [qualifier] and [parameters]
+ * Returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.get(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(T::class, qualifier, parameters)
+): T = get(T::class, name, parameters)
 
 /**
- * Lazily returns a instance of [T] matching the [qualifier] and [parameters]
+ * Lazily returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.inject(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(qualifier, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(name, parameters) }
 
 /**
- * Returns a [Provider] for [T] and [qualifier]
+ * Returns a [Provider] for [T] and [name]
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.getProvider(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Provider<T> = provider { parameters: ParametersDefinition? ->
-    get<T>(qualifier, parameters ?: defaultParameters)
+    get<T>(name, parameters ?: defaultParameters)
 }
 
 /**
- * Returns a [Provider] for [T] and [qualifier]
+ * Returns a [Provider] for [T] and [name]
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.injectProvider(
-    qualifier: Qualifier? = null,
+    name: Name? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
     provider { parameters: ParametersDefinition? ->
-        get<T>(qualifier, parameters ?: defaultParameters)
+        get<T>(name, parameters ?: defaultParameters)
     }
 }

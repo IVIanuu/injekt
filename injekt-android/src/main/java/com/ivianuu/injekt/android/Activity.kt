@@ -23,9 +23,9 @@ import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
 
 /**
- * Activity qualifier
+ * Activity name
  */
-object ForActivity : StringQualifier("ForActivity")
+object ForActivity : StringName("ForActivity")
 
 /**
  * Returns a [Component] with convenient configurations

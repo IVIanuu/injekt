@@ -23,9 +23,9 @@ import com.ivianuu.injekt.common.ConstantKind
 import com.ivianuu.injekt.common.constant
 
 /**
- * Application qualifier
+ * Application name
  */
-object ForApplication : StringQualifier("ForApplication")
+object ForApplication : StringName("ForApplication")
 
 /**
  * Returns a [Component] with convenient configurations

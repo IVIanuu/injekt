@@ -19,96 +19,96 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.*
 
 /**
- * Returns a multi bound [Map] for [K], [T] [qualifier] and passes [parameters] to any of the entries
+ * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.getMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
-): Map<K, T> = get<MultiBindingMap<K, T>>(qualifier).toMap(parameters)
+): Map<K, T> = get<MultiBindingMap<K, T>>(name).toMap(parameters)
 
 /**
- * Returns multi bound [Map] of [Lazy]s for [K], [T] [qualifier] and passes [parameters] to any of the entries
+ * Returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.getLazyMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> =
-    get<MultiBindingMap<K, T>>(qualifier).toLazyMap(parameters)
+    get<MultiBindingMap<K, T>>(name).toLazyMap(parameters)
 
 /**
- * Returns a multi bound [Map] of [Provider]s for [K], [T] [qualifier] and passes [defaultParameters] to each [Provider]
+ * Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
 fun <K, T> Component.getProviderMap(
-    qualifier: Qualifier,
+    name: Name,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> =
-    get<MultiBindingMap<K, T>>(qualifier).toProviderMap(defaultParameters)
+    get<MultiBindingMap<K, T>>(name).toProviderMap(defaultParameters)
 
 /**
- * Lazily Returns a multi bound [Map] for [K], [T] [qualifier] and passes [parameters] to any of the entries
+ * Lazily Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.injectMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, T>> =
-    lazy { getMap<K, T>(qualifier, parameters) }
+    lazy { getMap<K, T>(name, parameters) }
 
 /**
- * LazilyReturns multi bound [Map] of [Lazy]s for [K], [T] [qualifier] and passes [parameters] to any of the entries
+ * LazilyReturns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.injectLazyMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, Lazy<T>>> =
-    lazy { getLazyMap<K, T>(qualifier, parameters) }
+    lazy { getLazyMap<K, T>(name, parameters) }
 
 /**
- * Lazily Returns a multi bound [Map] of [Provider]s for [K], [T] [qualifier] and passes [defaultParameters] to each [Provider]
+ * Lazily Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
 fun <K, T> Component.injectProviderMap(
-    qualifier: Qualifier,
+    name: Name,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Map<K, Provider<T>>> =
-    lazy { getProviderMap<K, T>(qualifier, defaultParameters) }
+    lazy { getProviderMap<K, T>(name, defaultParameters) }
 
 /** Calls trough [Component.getMap] */
 fun <K, T> InjektTrait.getMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Map<K, T> =
-    component.getMap(qualifier, parameters)
+    component.getMap(name, parameters)
 
 /** Calls trough [Component.getLazyMap] */
 fun <K, T> InjektTrait.getLazyMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> =
-    component.getLazyMap(qualifier, parameters)
+    component.getLazyMap(name, parameters)
 
 /** Calls trough [Component.getProviderMap] */
 fun <K, T> InjektTrait.getProviderMap(
-    qualifier: Qualifier,
+    name: Name,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> =
-    component.getProviderMap(qualifier, defaultParameters)
+    component.getProviderMap(name, defaultParameters)
 
 /** Calls trough [Component.injectMap] */
 fun <K, T> InjektTrait.injectMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, T>> =
-    lazy { component.getMap<K, T>(qualifier, parameters) }
+    lazy { component.getMap<K, T>(name, parameters) }
 
 /** Calls trough [Component.injectLazyMap] */
 fun <K, T> InjektTrait.injectLazyMap(
-    qualifier: Qualifier,
+    name: Name,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, Lazy<T>>> =
-    lazy { component.getLazyMap<K, T>(qualifier, parameters) }
+    lazy { component.getLazyMap<K, T>(name, parameters) }
 
 /** Calls trough [Component.injectProviderMap] */
 fun <K, T> InjektTrait.injectProviderMap(
-    qualifier: Qualifier,
+    name: Name,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Map<K, Provider<T>>> =
-    lazy { component.getProviderMap<K, T>(qualifier, defaultParameters) }
+    lazy { component.getProviderMap<K, T>(name, defaultParameters) }

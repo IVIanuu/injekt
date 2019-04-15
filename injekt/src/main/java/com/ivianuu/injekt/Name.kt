@@ -19,16 +19,16 @@ package com.ivianuu.injekt
 /**
  * Interface to distinct [Binding]s of the same type
  */
-interface Qualifier
+interface Name
 
 /**
- * A [Qualifier] which uses a [name]
+ * A [Name] which uses a [name]
  */
-open class StringQualifier(val name: String) : Qualifier {
+open class StringName(val name: String) : Name {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is StringQualifier) return false
+        if (other !is StringName) return false
 
         if (name != other.name) return false
 
@@ -44,6 +44,6 @@ open class StringQualifier(val name: String) : Qualifier {
 }
 
 /**
- * Returns a new [StringQualifier] for [name]
+ * Returns a new [StringName] for [name]
  */
-fun named(name: String): StringQualifier = StringQualifier(name)
+fun named(name: String): StringName = StringName(name)

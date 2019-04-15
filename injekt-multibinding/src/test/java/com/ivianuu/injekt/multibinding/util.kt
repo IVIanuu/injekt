@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Name
 
-object Values : Qualifier
-object NameOne : Qualifier
-object NameTwo : Qualifier
-object NameThree : Qualifier
+object Values : Name
+object NameOne : Name
+object NameTwo : Name
+object NameThree : Name

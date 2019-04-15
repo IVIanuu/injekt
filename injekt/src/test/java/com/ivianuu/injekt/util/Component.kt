@@ -20,24 +20,24 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Name
 import kotlin.reflect.KClass
 
 inline fun <reified T> Component.getBinding(
-    qualifier: Qualifier? = null
-): Binding<T> = getBinding(T::class, qualifier)
+    name: Name? = null
+): Binding<T> = getBinding(T::class, name)
 
 fun <T> Component.getBinding(
     type: KClass<*>,
-    qualifier: Qualifier? = null
+    name: Name? = null
 ): Binding<T> {
-    val key = Key(type, qualifier)
+    val key = Key(type, name)
     return getBindings().firstOrNull { it.key == key } as? Binding<T>
         ?: error("binding not found")
 }
 
-fun <T> Component.getInstance(type: KClass<*>, qualifier: Qualifier? = null): Instance<T> {
-    val key = Key(type, qualifier)
+fun <T> Component.getInstance(type: KClass<*>, name: Name? = null): Instance<T> {
+    val key = Key(type, name)
     return getInstances().firstOrNull { it.binding.key == key } as? Instance<T>
         ?: error("instance not found")
 }

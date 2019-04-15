@@ -22,14 +22,14 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.addConstant
 
 /**
- * View qualifier
+ * View name
  */
-object ForView : StringQualifier("ForView")
+object ForView : StringName("ForView")
 
 /**
- * Child view qualifier
+ * Child view name
  */
-object ForChildView : StringQualifier("ForChildView")
+object ForChildView : StringName("ForChildView")
 
 /**
  * Returns a [Component] with convenient configurations
