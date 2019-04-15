@@ -16,7 +16,13 @@
 
 package com.ivianuu.injekt.comparison
 
-fun main(args: Array<String>) {
-    runAllInjectionTests()
-    //runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
+import org.junit.Test
+
+class Run {
+
+    @Test
+    fun test() {
+        runAllInjectionTests()
+    }
+
 }

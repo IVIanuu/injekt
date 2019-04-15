@@ -49,4 +49,6 @@ dependencies {
     implementation(Deps.kotlinStdLib)
 
     implementation(Deps.kotlinStatistics)
+
+    testImplementation(Deps.junit)
 }
