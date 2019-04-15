@@ -6,11 +6,7 @@ import kotlin.reflect.KClass
 /**
  * A module is the container for bindings
  */
-class Module @PublishedApi internal constructor(
-    val scope: Scope?,
-    val eager: Boolean?,
-    val override: Boolean?
-) {
+class Module @PublishedApi internal constructor() {
 
     internal val bindings = linkedMapOf<Key, Binding<*>>()
 
@@ -25,22 +21,6 @@ class Module @PublishedApi internal constructor(
     fun <T> add(
         binding: Binding<T>
     ): BindingContext<T> {
-        var binding = binding
-        val scope = scope ?: binding.scope
-        val override = override ?: binding.override
-        val eager = eager ?: binding.eager
-
-        if (binding.scope != scope
-            || binding.eager != eager
-            || binding.override != override
-        ) {
-            binding = binding.copy(
-                scope = scope,
-                eager = eager,
-                override = override
-            )
-        }
-
         val isOverride = bindings.remove(binding.key) != null
 
         if (isOverride && !binding.override) {
@@ -62,12 +42,7 @@ typealias ModuleDefinition = Module.() -> Unit
 /**
  * Defines a [Module]
  */
-inline fun module(
-    scope: Scope? = null,
-    override: Boolean? = null,
-    eager: Boolean? = null,
-    definition: ModuleDefinition = {}
-): Module = Module(scope, eager, override).apply(definition)
+inline fun module(definition: ModuleDefinition = {}): Module = Module().apply(definition)
 
 /**
  * Adds all bindings of the [module]
