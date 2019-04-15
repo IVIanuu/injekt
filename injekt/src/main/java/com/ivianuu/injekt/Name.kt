@@ -35,9 +35,7 @@ open class StringName(val name: String) : Name {
         return true
     }
 
-    override fun hashCode(): Int {
-        return name.hashCode()
-    }
+    override fun hashCode(): Int = name.hashCode()
 
     override fun toString(): String = name
 
