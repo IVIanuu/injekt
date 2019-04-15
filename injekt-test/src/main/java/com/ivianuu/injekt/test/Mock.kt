@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.*
 import org.mockito.Mockito.mock
 import kotlin.reflect.KClass
 

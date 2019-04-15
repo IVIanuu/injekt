@@ -16,14 +16,7 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingNotFoundException
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.InstanceCreationException
-import com.ivianuu.injekt.OverrideException
-import com.ivianuu.injekt.logger
+import com.ivianuu.injekt.*
 import org.mockito.Mockito
 
 /**
