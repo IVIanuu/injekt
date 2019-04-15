@@ -16,25 +16,35 @@
 
 package com.ivianuu.injekt.comparison
 
+import com.ivianuu.injekt.comparison.custom.CustomTest
+import com.ivianuu.injekt.comparison.dagger2.DaggerTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import org.nield.kotlinstatistics.median
 
-private const val ROUNDS = 10_000
+private const val ROUNDS = 1_000
 
-fun runInjectionTests() {
-    println("Running $ROUNDS iterations. Please stand by...")
+fun runInjektKatanaTests() {
+    runInjectionTests(listOf(KatanaTest(), InjektTest()))
+}
 
-    val tests = listOf(
-        //DaggerTest(),
-        //CustomTest(),
-        KodeinTest(),
-        KoinTest(),
-        InjektTest(),
-        KatanaTest()
+fun runAllInjectionTests() {
+    runInjectionTests(
+        listOf(
+            DaggerTest(),
+            CustomTest(),
+            KodeinTest(),
+            KoinTest(),
+            KatanaTest(),
+            InjektTest()
+        )
     )
+}
+
+fun runInjectionTests(tests: List<InjectionTest>) {
+    println("Running $ROUNDS iterations. Please stand by...")
 
     val timingsPerTest =
         mutableMapOf<String, MutableList<Timings>>()

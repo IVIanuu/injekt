@@ -19,13 +19,13 @@ plugins {
     id("kotlin-kapt")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-
 android {
     defaultConfig {
         applicationId = Build.applicationIdComparison
     }
 }
+
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
 
 dependencies {
     implementation(Deps.androidxAppCompat)

@@ -17,5 +17,5 @@
 package com.ivianuu.injekt.comparison
 
 fun main(args: Array<String>) {
-    runInjectionTests()
+    runAllInjectionTests()
 }
