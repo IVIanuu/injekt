@@ -1,5 +1,3 @@
-import java.io.File
-
 /*
  * Copyright 2018 Manuel Wrage
  *
