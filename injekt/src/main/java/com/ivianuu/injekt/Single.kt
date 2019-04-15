@@ -66,7 +66,6 @@ class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 inline fun <reified T> Module.single(
     name: Name? = null,
     override: Boolean = false,
-    eager: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = add(
     Binding(
@@ -74,7 +73,6 @@ inline fun <reified T> Module.single(
         name = name,
         kind = SingleKind,
         override = override,
-        eager = eager,
         definition = definition
     )
 )

@@ -29,9 +29,8 @@ object ForApplication : StringName("ForApplication")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : Application> T.applicationComponent(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     modules(applicationModule())
     definition.invoke(this)
 }

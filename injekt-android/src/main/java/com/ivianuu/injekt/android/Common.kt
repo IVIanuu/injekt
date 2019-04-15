@@ -30,8 +30,7 @@ fun Module.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
     name: Name? = null,
-    override: Boolean = false,
-    eager: Boolean = false
-): BindingContext<SharedPreferences> = single(name, override, eager) {
+    override: Boolean = false
+): BindingContext<SharedPreferences> = single(name, override) {
     context().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
 }

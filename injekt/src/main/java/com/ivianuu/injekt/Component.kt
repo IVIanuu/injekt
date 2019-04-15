@@ -109,18 +109,6 @@ class Component @PublishedApi internal constructor() {
      */
     fun getInstances(): Set<Instance<*>> = instances.values.toSet()
 
-    /**
-     * Creates all eager instances of this component
-     */
-    fun createEagerInstances() {
-        instances
-            .filter { it.value.binding.eager }
-            .forEach {
-                InjektPlugins.logger?.info("Create eager instance for ${it.value.binding}")
-                it.value.get(context, null)
-            }
-    }
-
     private fun <T> findInstance(key: Key): Instance<T>? {
         var instance = instances[key]
 
@@ -140,16 +128,9 @@ class Component @PublishedApi internal constructor() {
  * Returns a new [Component] and applies the [definition]
  */
 inline fun component(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
 ): Component {
-    return Component()
-        .apply {
-            definition.invoke(this)
-            if (createEagerInstances) {
-                createEagerInstances()
-            }
-        }
+    return Component().apply(definition)
 }
 
 /**

@@ -106,21 +106,4 @@ true
 
 assertTrue(throwed)
 }
-
-@Test
-fun testGetEagerInstance() {
-val module = module {
-factory { TestDep1() }
-single(eager = true) { TestDep2(TestDep1()) }
-}
-
-val eagerInstances = module.getBindings().filter { it.eager }.toSet()
-
-val registry = component {
-modules(module)
-}.beanRegistry
-
-assertEquals(eagerInstances, registry.getEagerInstances())
-}
-
-}*/
+ */

@@ -29,9 +29,8 @@ object ForActivity : StringName("ForActivity")
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Activity> T.activityComponent(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     getApplicationComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     definition.invoke(this)

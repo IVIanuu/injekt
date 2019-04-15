@@ -29,9 +29,8 @@ object ForService : StringName("ForService")
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Service> T.serviceComponent(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     modules(serviceModule())
     getApplicationComponentOrNull()?.let { dependencies(it) }
     definition.invoke(this)

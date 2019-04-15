@@ -34,9 +34,8 @@ object ForChildFragment : StringName("ForChildFragment")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : Fragment> T.fragmentComponent(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }

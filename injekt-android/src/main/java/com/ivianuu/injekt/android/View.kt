@@ -35,9 +35,8 @@ object ForChildView : StringName("ForChildView")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : View> T.viewComponent(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }

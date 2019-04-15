@@ -31,9 +31,8 @@ object ForReceiver : StringName("ForReceiver")
  */
 inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     context: Context,
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     getApplicationComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule())
     definition.invoke(this)

@@ -29,9 +29,8 @@ object ForContentProvider : StringName("ForContentProvider")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : ContentProvider> T.contentProviderComponent(
-    createEagerInstances: Boolean = true,
     definition: Component.() -> Unit = {}
-): Component = component(createEagerInstances) {
+): Component = component {
     getApplicationComponentOrNull()?.let { dependencies(it) }
     modules(contentProviderModule())
     definition.invoke(this)

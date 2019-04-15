@@ -28,8 +28,7 @@ class Binding<T> internal constructor(
     val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes,
-    val override: Boolean,
-    val eager: Boolean
+    val override: Boolean
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -40,7 +39,6 @@ class Binding<T> internal constructor(
         if (kind != other.kind) return false
         if (attributes != other.attributes) return false
         if (override != other.override) return false
-        if (eager != other.eager) return false
 
         return true
     }
@@ -50,7 +48,6 @@ class Binding<T> internal constructor(
         result = 31 * result + kind.hashCode()
         result = 31 * result + attributes.hashCode()
         result = 31 * result + override.hashCode()
-        result = 31 * result + eager.hashCode()
         return result
     }
 
@@ -67,7 +64,6 @@ inline fun <reified T> Binding(
     kind: Kind,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
-    eager: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> {
     return Binding(
@@ -76,7 +72,6 @@ inline fun <reified T> Binding(
         kind,
         attributes,
         override,
-        eager,
         definition
     )
 }
@@ -87,12 +82,11 @@ fun <T> Binding(
     kind: Kind,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
-    eager: Boolean = false,
     definition: Definition<T>
 ): Binding<T> {
     return Binding(
         Key(type, name), type, name, kind,
-        definition, attributes, override, eager
+        definition, attributes, override
     )
 }
 
@@ -102,7 +96,6 @@ fun <T> Binding<T>.copy(
     kind: Kind = this.kind,
     attributes: Attributes = this.attributes,
     override: Boolean = this.override,
-    eager: Boolean = this.eager,
     definition: Definition<T> = this.definition
 ): Binding<T> {
     return Binding(
@@ -112,8 +105,7 @@ fun <T> Binding<T>.copy(
         kind,
         definition,
         attributes,
-        override,
-        eager
+        override
     )
 }
 
