@@ -45,9 +45,7 @@ fun <T : Application> T.applicationModule(): Module = module {
             kind = Binding.Kind.SINGLE,
             definition = { this@applicationModule }
         )
-    ) bindType Application::class bindType Context::class
-
-    single<Context>(ForApplication) { this@applicationModule }
+    ) bindType Application::class bindType Context::class bindAlias (Context::class to ForApplication)
 }
 
 fun DefinitionContext.application(): Application = get()

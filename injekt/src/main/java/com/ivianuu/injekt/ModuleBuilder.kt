@@ -89,7 +89,7 @@ fun ModuleBuilder.module(module: Module) {
     module.bindings.forEach { addBinding(it.value) }
 }
 
-/** Calls trough [Module.withBinding] */
+/** Calls trough [ModuleBuilder.withBinding] */
 inline fun <reified T> ModuleBuilder.withBinding(
     name: Any? = null,
     body: BindingContext<T>.() -> Unit

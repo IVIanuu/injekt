@@ -80,3 +80,14 @@ infix fun <T> BindingContext<T>.bindNames(names: Iterable<Any>): BindingContext<
     names.forEach { bindName(it) }
     return this
 }
+
+fun <T> BindingContext<T>.bindAlias(type: KClass<*>, name: Any): BindingContext<T> {
+    val copy = binding.copy(type = type, name = name)
+    moduleBuilder.addBinding(copy)
+    return this
+}
+
+infix fun <T> BindingContext<T>.bindAlias(pair: Pair<KClass<*>, Any>): BindingContext<T> {
+    bindAlias(pair.first, pair.second)
+    return this
+}

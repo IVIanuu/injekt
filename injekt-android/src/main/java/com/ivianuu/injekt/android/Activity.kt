@@ -57,7 +57,5 @@ fun <T : Activity> T.activityModule(): Module = module {
             kind = Binding.Kind.SINGLE,
             definition = { this@activityModule }
         )
-    ) bindType Activity::class
-
-    single<Context>(ForActivity) { this@activityModule }
+    ) bindType Activity::class bindAlias (Context::class to ForActivity)
 }
