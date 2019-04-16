@@ -36,7 +36,7 @@ class App : Application(), InjektTrait {
     private val appDependency by inject<AppDependency>()
 
     override fun onCreate() {
-        configureInjekt {
+        injekt {
             androidLogger()
         }
 
