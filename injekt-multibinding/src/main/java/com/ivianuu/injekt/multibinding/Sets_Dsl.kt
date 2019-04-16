@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.getOrSet
 import kotlin.collections.set
 
 /**
@@ -42,27 +45,3 @@ fun <T> BindingContext<T>.bindIntoSet(
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setName: Name): BindingContext<T> =
     bindIntoSet(SetBinding(setName))
-
-/**
- * Binds a already existing [Binding] into a [Set] named [setName]
- */
-inline fun <reified T> Module.bindIntoSet(
-    setName: Name,
-    override: Boolean = false,
-    implementationName: Name? = null
-) {
-    bindIntoSet<T>(SetBinding(setName, override), implementationName)
-}
-
-/**
- * Binds a already existing [Binding] into [setBinding]
- */
-inline fun <reified T> Module.bindIntoSet(
-    setBinding: SetBinding,
-    implementationName: Name? = null
-) {
-    withBinding<T>(implementationName) {
-        bindIntoSet(setBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationName)
-    }
-}

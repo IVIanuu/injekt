@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.getOrSet
 import kotlin.collections.set
 
 /**
@@ -44,28 +46,3 @@ fun <T> BindingContext<T>.bindIntoMap(
     mapKey: Any,
     override: Boolean = false
 ): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
-
-/**
- * Binds a already existing [Binding] into [mapName] with [mapKey]
- */
-inline fun <reified T> Module.bindIntoMap(
-    mapName: Name,
-    mapKey: Any,
-    override: Boolean = false,
-    implementationName: Name? = null
-) {
-    bindIntoMap<T>(MapBinding(mapName, mapKey, override), implementationName)
-}
-
-/**
- * Binds a already existing [Binding] into [mapBinding]
- */
-inline fun <reified T> Module.bindIntoMap(
-    mapBinding: MapBinding,
-    implementationName: Name? = null
-) {
-    withBinding<T>(implementationName) {
-        bindIntoMap(mapBinding)
-        binding.attributes[KEY_ORIGINAL_KEY] = Key(T::class, implementationName)
-    }
-}

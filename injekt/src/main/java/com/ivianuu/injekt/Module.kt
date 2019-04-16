@@ -109,26 +109,6 @@ inline fun <T> Module.withBinding(
     ) withContext body
 }
 
-/**
- * Binds the [bindingType] to the existing [Binding] for [T] and [implementationName]
- */
-inline fun <reified T> Module.bindType(
-    bindingType: KClass<*>,
-    implementationName: Name? = null
-) {
-    withBinding<T>(implementationName) { bindType(bindingType) }
-}
-
-/**
- * Binds the [bindingName] to the existing [Binding] for [T] and [implementationName]
- */
-inline fun <reified T> Module.bindQualifier(
-    bindingName: Name,
-    implementationName: Name? = null
-) {
-    withBinding<T>(implementationName) { bindQualifier(bindingName) }
-}
-
 operator fun Module.plus(module: Module): List<Module> = listOf(this, module)
 operator fun Module.plus(modules: Iterable<Module>): List<Module> = listOf(this) + modules
 operator fun Module.plus(modules: Array<Module>): List<Module> = listOf(this) + modules
