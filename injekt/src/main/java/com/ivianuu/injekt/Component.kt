@@ -89,12 +89,10 @@ class Component @PublishedApi internal constructor() {
 
         bindings[binding.key] = binding
 
-        val instance = when (binding.kind) {
+        instances[binding.key] = when (binding.kind) {
             Binding.Kind.FACTORY -> FactoryInstance(binding)
             Binding.Kind.SINGLE -> SingleInstance(binding)
         }
-
-        instances[binding.key] = instance
 
         InjektPlugins.logger?.let { logger ->
             val msg = if (isOverride) {
