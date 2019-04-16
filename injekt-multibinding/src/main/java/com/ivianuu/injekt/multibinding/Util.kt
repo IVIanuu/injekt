@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Key
 import kotlin.collections.set
 
-const val KEY_ORIGINAL_KEY = "original_key"
+// todo improve performance
 
 internal fun <K, V> Component.getMultiBindingMap(mapName: Any): Map<K, Binding<V>> {
     val allMapBindings = getAllBindings()
@@ -30,14 +32,7 @@ internal fun <K, V> Component.getMultiBindingMap(mapName: Any): Map<K, Binding<V
 
     val mapBindingsToUse = linkedMapOf<Any, Binding<*>>()
 
-    // check overrides
     allMapBindings.forEach { (binding, mapBinding) ->
-        val isOverride = mapBindingsToUse.remove(mapBinding.key) != null
-
-        if (isOverride && !mapBinding.override) {
-            throw OverrideException("Try to override ${mapBinding.key} in map binding $mapBinding")
-        }
-
         mapBindingsToUse[mapBinding.key] = binding
     }
 
@@ -53,16 +48,7 @@ internal fun <V> Component.getMultiBindingSet(setName: Any): Set<Binding<V>> {
 
     val setBindingsToUse = linkedMapOf<Key, Binding<*>>()
 
-    // check overrides
     allSetBindings.forEach { (binding, setBinding) ->
-        val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
-
-        val isOverride = setBindingsToUse.remove(binding.key) != null
-
-        if (isOverride && !setBinding.override) {
-            throw OverrideException("Try to override $key in set binding $setBinding")
-        }
-
         setBindingsToUse[binding.key] = binding
     }
 

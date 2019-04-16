@@ -23,7 +23,7 @@ class Module internal constructor(
     /**
      * All bindings of this module
      */
-    val bindings: Map<Key, Binding<*>>
+    val bindings: List<Binding<*>>
 )
 
 /**

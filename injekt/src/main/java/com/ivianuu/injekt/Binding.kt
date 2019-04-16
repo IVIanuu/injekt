@@ -25,8 +25,7 @@ class Binding<T> internal constructor(
     val key: Key,
     val kind: Kind,
     val definition: Definition<T>,
-    val attributes: Attributes,
-    val override: Boolean
+    val attributes: Attributes
 ) {
 
     val type = key.type
@@ -39,7 +38,6 @@ class Binding<T> internal constructor(
         if (key != other.key) return false
         if (kind != other.kind) return false
         if (attributes != other.attributes) return false
-        if (override != other.override) return false
 
         return true
     }
@@ -48,7 +46,6 @@ class Binding<T> internal constructor(
         var result = key.hashCode()
         result = 31 * result + kind.hashCode()
         result = 31 * result + attributes.hashCode()
-        result = 31 * result + override.hashCode()
         return result
     }
 
@@ -66,10 +63,9 @@ inline fun <reified T> Binding(
     name: Any? = null,
     kind: Binding.Kind,
     attributes: Attributes = Attributes(),
-    override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> {
-    return Binding(T::class, name, kind, attributes, override, definition)
+    return Binding(T::class, name, kind, attributes, definition)
 }
 
 fun <T> Binding(
@@ -77,10 +73,9 @@ fun <T> Binding(
     name: Any? = null,
     kind: Binding.Kind,
     attributes: Attributes = Attributes(),
-    override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> {
-    return Binding(Key(type, name), kind, definition, attributes, override)
+    return Binding(Key(type, name), kind, definition, attributes)
 }
 
 fun <T> Binding<T>.copy(
@@ -88,15 +83,13 @@ fun <T> Binding<T>.copy(
     name: Any? = this.name,
     kind: Binding.Kind = this.kind,
     attributes: Attributes = Attributes(),
-    override: Boolean = this.override,
     definition: Definition<T> = this.definition
 ): Binding<T> {
     return Binding(
         Key(type, name),
         kind,
         definition,
-        attributes,
-        override
+        attributes
     )
 }
 

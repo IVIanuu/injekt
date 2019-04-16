@@ -33,14 +33,6 @@ infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingCont
 }
 
 /**
- * Adds this binding into [setName]
- */
-fun <T> BindingContext<T>.bindIntoSet(
-    setName: Any,
-    override: Boolean = false
-): BindingContext<T> = bindIntoSet(SetBinding(setName, override))
-
-/**
  * Adds this [Binding] into [setName]
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setName: Any): BindingContext<T> =

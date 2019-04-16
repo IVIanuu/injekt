@@ -24,20 +24,13 @@ import kotlin.reflect.KClass
  */
 class ModuleBuilder @PublishedApi internal constructor() {
 
-    private val bindings = linkedMapOf<Key, Binding<*>>()
+    private val bindings = arrayListOf<Binding<*>>()
 
     /**
      * Adds the [binding]
      */
     fun <T> addBinding(binding: Binding<T>): BindingContext<T> {
-        val isOverride = bindings.remove(binding.key) != null
-
-        if (isOverride && !binding.override) {
-            throw OverrideException("Try to override binding $binding")
-        }
-
-        bindings[binding.key] = binding
-
+        bindings.add(binding)
         return BindingContext(binding, this)
     }
 
@@ -53,14 +46,12 @@ class ModuleBuilder @PublishedApi internal constructor() {
  */
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,
-    override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = addBinding(
     Binding(
         type = T::class,
         name = name,
         kind = Binding.Kind.FACTORY,
-        override = override,
         definition = definition
     )
 )
@@ -70,14 +61,12 @@ inline fun <reified T> ModuleBuilder.factory(
  */
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,
-    override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = addBinding(
     Binding(
         type = T::class,
         name = name,
         kind = Binding.Kind.SINGLE,
-        override = override,
         definition = definition
     )
 )
@@ -86,7 +75,7 @@ inline fun <reified T> ModuleBuilder.single(
  * Adds all bindings of the [module]
  */
 fun ModuleBuilder.module(module: Module) {
-    module.bindings.forEach { addBinding(it.value) }
+    module.bindings.forEach { addBinding(it) }
 }
 
 /** Calls trough [ModuleBuilder.withBinding] */

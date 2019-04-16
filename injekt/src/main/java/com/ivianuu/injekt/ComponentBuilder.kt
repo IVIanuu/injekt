@@ -29,7 +29,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it.value) }
+        module.bindings.forEach { addBinding(it) }
     }
 
     /**
@@ -45,14 +45,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
      * Saves the [binding]
      */
     fun addBinding(binding: Binding<*>) {
-        val isOverride = bindings.remove(binding.key) != null
-
-        if (isOverride && !binding.override) {
-            throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
-        }
-
         bindings[binding.key] = binding
-
         instances[binding.key] = when (binding.kind) {
             Binding.Kind.FACTORY -> FactoryInstance(binding)
             Binding.Kind.SINGLE -> SingleInstance(binding)

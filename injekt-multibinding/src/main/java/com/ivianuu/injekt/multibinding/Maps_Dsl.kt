@@ -43,6 +43,5 @@ infix fun <T> BindingContext<T>.bindIntoMap(
  */
 fun <T> BindingContext<T>.bindIntoMap(
     mapName: Any,
-    mapKey: Any,
-    override: Boolean = false
-): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
+    mapKey: Any
+): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey))

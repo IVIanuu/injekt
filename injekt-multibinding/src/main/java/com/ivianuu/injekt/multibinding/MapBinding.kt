@@ -24,8 +24,4 @@ const val KEY_MAP_BINDINGS = "map_bindings"
 /**
  * Map binding
  */
-data class MapBinding(
-    val mapName: Any,
-    val key: Any,
-    val override: Boolean = false
-)
+data class MapBinding(val mapName: Any, val key: Any)

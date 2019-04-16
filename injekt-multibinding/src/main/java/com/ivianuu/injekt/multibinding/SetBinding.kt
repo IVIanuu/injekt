@@ -24,7 +24,4 @@ const val KEY_SET_BINDINGS = "set_bindings"
 /**
  * Set binding
  */
-data class SetBinding(
-    val setName: Any,
-    val override: Boolean = false
-)
+data class SetBinding(val setName: Any)
