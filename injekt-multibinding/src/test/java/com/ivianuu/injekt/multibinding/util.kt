@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.multibinding
 
 
-object Values : Name
-object NameOne : Name
-object NameTwo : Name
-object NameThree : Name
+object Values
+object NameOne
+object NameTwo
+object NameThree

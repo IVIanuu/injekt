@@ -34,8 +34,7 @@ class MapTest {
                 module {
                     factory(NameOne) { "value_one" } bindIntoMap (Values to "key_one")
                     factory(NameTwo) { "value_two" } bindIntoMap (Values to "key_two")
-                    factory(NameThree) { "value_three" }
-                    bindIntoMap<String>(Values, "key_three", implementationName = NameThree)
+                    factory(NameThree) { "value_three" } bindIntoMap (Values to "key_three")
                 }
             )
         }

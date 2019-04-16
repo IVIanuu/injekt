@@ -31,8 +31,7 @@ class SetTest {
                 module {
                     factory(NameOne) { "value_one" } bindIntoSet Values
                     factory(NameTwo) { "value_two" } bindIntoSet Values
-                    factory(NameThree) { "value_three" }
-                    bindIntoSet<String>(Values, implementationName = NameThree)
+                    factory(NameThree) { "value_three" } bindIntoSet Values
                 }
             )
         }
