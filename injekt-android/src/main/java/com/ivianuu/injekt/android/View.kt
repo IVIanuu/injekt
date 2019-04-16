@@ -35,13 +35,13 @@ object ForChildView : StringName("ForChildView")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : View> T.viewComponent(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     (getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     modules(viewModule())
-    definition.invoke(this)
+    definition()
 }
 
 /**

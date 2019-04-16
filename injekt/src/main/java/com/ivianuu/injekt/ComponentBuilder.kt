@@ -29,7 +29,6 @@ class ComponentBuilder {
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
-        //InjektPlugins.logger?.info("load module ${module.bindings.size}")
         module.bindings.forEach { addBinding(it.value) }
     }
 
@@ -41,7 +40,6 @@ class ComponentBuilder {
         if (!dependencies.add(dependency)) {
             error("Already added $dependency")
         }
-        //InjektPlugins.logger?.info("Add dependency $dependency")
     }
 
     /**
@@ -60,16 +58,6 @@ class ComponentBuilder {
             Binding.Kind.FACTORY -> FactoryInstance(binding)
             Binding.Kind.SINGLE -> SingleInstance(binding)
         }
-
-        // todo
-        /*InjektPlugins.logger?.let { logger ->
-            val msg = if (isOverride) {
-                "Override $binding"
-            } else {
-                "Declare $binding"
-            }
-            logger.debug(msg)
-        }*/
     }
 
     /**

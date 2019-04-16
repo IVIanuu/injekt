@@ -29,11 +29,11 @@ object ForActivity : StringName("ForActivity")
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Activity> T.activityComponent(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     getApplicationComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
-    definition.invoke(this)
+    definition()
 }
 
 /**

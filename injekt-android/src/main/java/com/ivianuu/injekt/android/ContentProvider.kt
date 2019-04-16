@@ -29,11 +29,11 @@ object ForContentProvider : StringName("ForContentProvider")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : ContentProvider> T.contentProviderComponent(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     getApplicationComponentOrNull()?.let { dependencies(it) }
     modules(contentProviderModule())
-    definition.invoke(this)
+    definition()
 }
 
 /**

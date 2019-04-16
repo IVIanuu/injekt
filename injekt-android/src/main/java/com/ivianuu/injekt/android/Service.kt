@@ -29,11 +29,11 @@ object ForService : StringName("ForService")
  * Returns a [Component] with convenient configurations
  */
 inline fun <T : Service> T.serviceComponent(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     modules(serviceModule())
     getApplicationComponentOrNull()?.let { dependencies(it) }
-    definition.invoke(this)
+    definition()
 }
 
 /**

@@ -31,11 +31,11 @@ object ForReceiver : StringName("ForReceiver")
  */
 inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     context: Context,
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     getApplicationComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule())
-    definition.invoke(this)
+    definition()
 }
 
 /**

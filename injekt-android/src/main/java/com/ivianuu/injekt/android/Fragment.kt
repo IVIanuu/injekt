@@ -34,13 +34,13 @@ object ForChildFragment : StringName("ForChildFragment")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : Fragment> T.fragmentComponent(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     (getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull())?.let { dependencies(it) }
     modules(fragmentModule())
-    definition.invoke(this)
+    definition()
 }
 
 /**

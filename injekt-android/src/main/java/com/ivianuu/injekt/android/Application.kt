@@ -29,10 +29,10 @@ object ForApplication : StringName("ForApplication")
  * Returns a [Component] with convenient configurations
  */
 inline fun <reified T : Application> T.applicationComponent(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
     modules(applicationModule())
-    definition.invoke(this)
+    definition()
 }
 
 /**
