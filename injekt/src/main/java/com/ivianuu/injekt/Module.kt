@@ -56,6 +56,23 @@ class Module @PublishedApi internal constructor() {
 inline fun module(definition: Module.() -> Unit = {}): Module = Module().apply(definition)
 
 /**
+ * Provides a unscoped dependency which will be recreated on each request
+ */
+inline fun <reified T> Module.factory(
+    name: Name? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = add(
+    Binding(
+        type = T::class,
+        name = name,
+        kind = Binding.Kind.FACTORY,
+        override = override,
+        definition = definition
+    )
+)
+
+/**
  * Provides scoped dependency which will be created once for each component
  */
 inline fun <reified T> Module.single(

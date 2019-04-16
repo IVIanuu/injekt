@@ -62,23 +62,6 @@ internal class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T
 
 }
 
-/**
- * Provides a unscoped dependency which will be recreated on each request
- */
-inline fun <reified T> Module.factory(
-    name: Name? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>
-): BindingContext<T> = add(
-    Binding(
-        type = T::class,
-        name = name,
-        kind = Binding.Kind.FACTORY,
-        override = override,
-        definition = definition
-    )
-)
-
 internal class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
