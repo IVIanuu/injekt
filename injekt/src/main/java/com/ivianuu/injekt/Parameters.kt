@@ -19,21 +19,23 @@ package com.ivianuu.injekt
 /**
  * Parameters which will be used for assisted injection
  */
-class Parameters(val values: List<Any?>) {
+class Parameters(
+    /**
+     * All values of this params
+     */
+    val values: List<Any?>
+) {
 
-    operator fun <T> component1(): T = elementAt(0)
-    operator fun <T> component2(): T = elementAt(1)
-    operator fun <T> component3(): T = elementAt(2)
-    operator fun <T> component4(): T = elementAt(3)
-    operator fun <T> component5(): T = elementAt(4)
+    operator fun <T> component1(): T = get(0)
+    operator fun <T> component2(): T = get(1)
+    operator fun <T> component3(): T = get(2)
+    operator fun <T> component4(): T = get(3)
+    operator fun <T> component5(): T = get(4)
 
     /**
      * Returns the element [i]
      */
     operator fun <T> get(i: Int): T = values[i] as T
-
-    private fun <T> elementAt(i: Int): T =
-        if (values.size > i) values[i] as T else throw IllegalArgumentException("Can't get parameter value #$i from $this")
 
 }
 
