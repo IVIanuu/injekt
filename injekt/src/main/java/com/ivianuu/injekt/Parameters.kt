@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Parameters which will be used for assisted injection
  */
-/*inline*/ class Parameters(val values: List<Any?>) {
+class Parameters(val values: List<Any?>) {
 
     operator fun <T> component1(): T = elementAt(0)
     operator fun <T> component2(): T = elementAt(1)
