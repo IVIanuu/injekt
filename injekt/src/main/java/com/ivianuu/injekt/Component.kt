@@ -38,6 +38,10 @@ class Component internal constructor(
      */
     val context = DefinitionContext(this)
 
+    init {
+        instances.forEach { it.value.context = context }
+    }
+
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
      */
@@ -56,11 +60,7 @@ class Component internal constructor(
 
     private fun <T> findInstance(key: Key): Instance<T>? {
         var instance = instances[key]
-
-        if (instance != null) {
-            instance.context = context
-            return instance as Instance<T>
-        }
+        if (instance != null) return instance as Instance<T>
 
         for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key)
