@@ -56,8 +56,7 @@ fun parametersOf(vararg values: Any?): Parameters = Parameters(listOf(*values))
 /**
  * Returns new [Parameters] which contains the [value]
  */
-fun parametersOf(value: Any?): Parameters =
-    Parameters(listOf(value))
+fun parametersOf(value: Any?): Parameters = Parameters(listOf(value))
 
 private val emptyParameters = Parameters(emptyList())
 
