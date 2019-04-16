@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
 /**
  * Builder for [Module]s
  */
-class ModuleBuilder {
+class ModuleBuilder @PublishedApi internal constructor() {
 
     private val bindings = linkedMapOf<Key, Binding<*>>()
 
