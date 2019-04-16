@@ -47,9 +47,13 @@ interface Logger {
 const val INJEKT_TAG = "[INJEKT]"
 
 /**
- * Simple [Logger] which prints messages
+ * Sets the [InjektPlugins.logger] to [PrintLogger]
  */
-class PrintLogger : Logger {
+fun InjektPlugins.printLogger() {
+    logger = PrintLogger()
+}
+
+private class PrintLogger : Logger {
 
     override fun debug(msg: String) {
         println("[DEBUG] $INJEKT_TAG $msg")
@@ -66,11 +70,4 @@ class PrintLogger : Logger {
     override fun error(msg: String) {
         println("[ERROR] $INJEKT_TAG $msg")
     }
-}
-
-/**
- * Sets the [InjektPlugins.logger] to [PrintLogger]
- */
-fun InjektPlugins.printLogger() {
-    logger = PrintLogger()
 }

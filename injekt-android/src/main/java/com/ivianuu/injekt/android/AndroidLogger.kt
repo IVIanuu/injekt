@@ -23,9 +23,13 @@ import com.ivianuu.injekt.Logger
 import com.ivianuu.injekt.logger
 
 /**
- * [Logger] for android
+ * Uses the android logger
  */
-class AndroidLogger : Logger {
+fun InjektPlugins.androidLogger() {
+    logger = AndroidLogger()
+}
+
+private class AndroidLogger : Logger {
 
     override fun debug(msg: String) {
         Log.d(INJEKT_TAG, msg)
@@ -43,11 +47,4 @@ class AndroidLogger : Logger {
         Log.e(INJEKT_TAG, msg)
     }
 
-}
-
-/**
- * Sets the [AndroidLogger]
- */
-fun InjektPlugins.androidLogger() {
-    logger = AndroidLogger()
 }
