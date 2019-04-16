@@ -18,9 +18,7 @@ package com.ivianuu.injekt.util
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.Key
-
 import kotlin.reflect.KClass
 
 inline fun <reified T> Component.getBinding(
@@ -34,10 +32,4 @@ fun <T> Component.getBinding(
     val key = Key(type, name)
     return bindings.values.firstOrNull { it.key == key } as? Binding<T>
         ?: error("binding not found")
-}
-
-fun <T> Component.getInstance(type: KClass<*>, name: Any? = null): Instance<T> {
-    val key = Key(type, name)
-    return instances[key] as? Instance<T>
-        ?: error("instance not found")
 }

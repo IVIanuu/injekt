@@ -18,7 +18,6 @@ package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.*
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -58,72 +57,12 @@ class SetTest {
             dependencies(component1)
             modules(
                 module {
-                    factory { "my_overridden_value" } bindIntoSet SetBinding(Values, true)
+                    factory { "my_overridden_value" } bindIntoSet Values
                 }
             )
         }
 
         assertEquals("my_overridden_value", component2.getSet<String>(Values).first())
     }
-
-    @Test
-    fun testAllowValidOverride() {
-        val component1 = component {
-            modules(
-                module {
-                    factory { "my_value" } bindIntoSet Values
-                }
-            )
-        }
-
-        val component2 = component {
-            dependencies(component1)
-            modules(
-                module {
-                    factory { "my_value" } bindIntoSet SetBinding(Values, override = true)
-                }
-            )
-        }
-
-        var throwed = false
-
-        try {
-            component2.getSet<String>(Values)
-        } catch (e: Exception) {
-            throwed = true
-        }
-
-        assertFalse(throwed)
-    }
-
-    /*@Test
-    fun testDisallowInvalidOverride() {
-        val component1 = component {
-            modules(
-                module {
-                    factory { "my_value" } bindIntoSet "values"
-                }
-            )
-        }
-
-        val component2 = component {
-            dependencies(component1)
-            modules(
-                module {
-                    factory { "my_value" } bindIntoSet "values"
-                }
-            )
-        }
-
-        var throwed = false
-
-        try {
-            component2.getSet<String>("values")
-        } catch (e: Exception) {
-            throwed = true
-        }
-
-        assertTrue(throwed)
-    }*/
 
 }

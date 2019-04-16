@@ -21,8 +21,6 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class MapTest {
@@ -55,8 +53,7 @@ class MapTest {
                     factory(NameOne) { "value_one" } bindIntoMap (Values to "key_one")
                     factory(NameTwo) { "value_two" } bindIntoMap MapBinding(
                         Values,
-                        "key_one",
-                        true
+                        "key_one"
                     )
                 }
             )
@@ -65,51 +62,4 @@ class MapTest {
         assertEquals("value_two", component.getMap<String, String>(Values)["key_one"])
     }
 
-    @Test
-    fun testAllowValidOverride() {
-        val component = component {
-            modules(
-                module {
-                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key")
-                    factory(NameTwo) { "value_two" } bindIntoMap MapBinding(
-                        Values,
-                        "key",
-                        true
-                    )
-                }
-            )
-        }
-
-        var throwed = false
-
-        try {
-            component.getMap<String, String>(Values)
-        } catch (e: Exception) {
-            throwed = true
-        }
-
-        assertFalse(throwed)
-    }
-
-    @Test
-    fun testDisallowInvalidOverride() {
-        val component = component {
-            modules(
-                module {
-                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key")
-                    factory(NameTwo) { "value_two" } bindIntoMap (Values to "key")
-                }
-            )
-        }
-
-        var throwed = false
-
-        try {
-            component.getMap<String, String>(Values)
-        } catch (e: Exception) {
-            throwed = true
-        }
-
-        assertTrue(throwed)
-    }
 }

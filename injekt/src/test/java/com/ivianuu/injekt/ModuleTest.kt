@@ -17,11 +17,7 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.util.TestDep1
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
-import org.junit.Test
-
+/**
 class ModuleTest {
 
     @Test
@@ -62,4 +58,4 @@ class ModuleTest {
         assertTrue(throwed)
     }
 
-}
+}*/
