@@ -43,7 +43,7 @@ class Component internal constructor(
      */
     fun <T> get(
         type: KClass<*>,
-        name: Name? = null,
+        name: Any? = null,
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
@@ -80,7 +80,7 @@ inline fun component(
  * Returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.get(
-    name: Name? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(T::class, name, parameters)
 
@@ -88,7 +88,7 @@ inline fun <reified T> Component.get(
  * Lazily returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.inject(
-    name: Name? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(name, parameters) }
 
@@ -97,7 +97,7 @@ inline fun <reified T> Component.inject(
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.getProvider(
-    name: Name? = null,
+    name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Provider<T> = provider { parameters: ParametersDefinition? ->
     get<T>(name, parameters ?: defaultParameters)
@@ -108,7 +108,7 @@ inline fun <reified T> Component.getProvider(
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.injectProvider(
-    name: Name? = null,
+    name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
     provider { parameters: ParametersDefinition? ->

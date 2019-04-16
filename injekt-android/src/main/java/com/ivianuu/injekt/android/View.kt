@@ -24,12 +24,12 @@ import com.ivianuu.injekt.*
 /**
  * View name
  */
-object ForView : StringName("ForView")
+object ForView
 
 /**
  * Child view name
  */
-object ForChildView : StringName("ForChildView")
+object ForChildView
 
 /**
  * Returns a [Component] with convenient configurations

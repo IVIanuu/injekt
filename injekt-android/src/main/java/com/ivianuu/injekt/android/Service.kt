@@ -23,7 +23,7 @@ import com.ivianuu.injekt.*
 /**
  * Service name
  */
-object ForService : StringName("ForService")
+object ForService
 
 /**
  * Returns a [Component] with convenient configurations

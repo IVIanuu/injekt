@@ -52,7 +52,7 @@ class ModuleBuilder @PublishedApi internal constructor() {
  * Provides a unscoped dependency which will be recreated on each request
  */
 inline fun <reified T> ModuleBuilder.factory(
-    name: Name? = null,
+    name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = addBinding(
@@ -69,7 +69,7 @@ inline fun <reified T> ModuleBuilder.factory(
  * Provides scoped dependency which will be created once for each component
  */
 inline fun <reified T> ModuleBuilder.single(
-    name: Name? = null,
+    name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = addBinding(
@@ -91,7 +91,7 @@ fun ModuleBuilder.module(module: Module) {
 
 /** Calls trough [Module.withBinding] */
 inline fun <reified T> ModuleBuilder.withBinding(
-    name: Name? = null,
+    name: Any? = null,
     body: BindingContext<T>.() -> Unit
 ) {
     withBinding(T::class, name, body)
@@ -102,7 +102,7 @@ inline fun <reified T> ModuleBuilder.withBinding(
  */
 inline fun <T> ModuleBuilder.withBinding(
     type: KClass<*>,
-    name: Name? = null,
+    name: Any? = null,
     body: BindingContext<T>.() -> Unit
 ) {
     // todo this is a little hacky can we turn this into a clean thing?
@@ -112,7 +112,7 @@ inline fun <T> ModuleBuilder.withBinding(
     addBinding(
         Binding(
             type = type,
-            name = named(UUID.randomUUID().toString()),
+            name = UUID.randomUUID().toString(),
             kind = Binding.Kind.FACTORY,
             definition = { component.get<T>(type, name) { it } }
         )

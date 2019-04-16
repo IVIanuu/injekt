@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Name
-
 /**
  * Attribute key for [SetBinding]s
  */
@@ -27,6 +25,6 @@ const val KEY_SET_BINDINGS = "set_bindings"
  * Set binding
  */
 data class SetBinding(
-    val setName: Name,
+    val setName: Any,
     val override: Boolean = false
 )

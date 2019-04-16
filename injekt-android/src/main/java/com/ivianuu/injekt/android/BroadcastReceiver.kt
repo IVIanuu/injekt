@@ -24,7 +24,7 @@ import com.ivianuu.injekt.*
 /**
  * Receiver name
  */
-object ForReceiver : StringName("ForReceiver")
+object ForReceiver
 
 /**
  * Returns a [Component] with convenient configurations

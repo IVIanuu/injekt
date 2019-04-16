@@ -23,12 +23,12 @@ import com.ivianuu.injekt.*
 /**
  * Fragment name
  */
-object ForFragment : StringName("ForFragment")
+object ForFragment
 
 /**
  * Child fragment name
  */
-object ForChildFragment : StringName("ForChildFragment")
+object ForChildFragment
 
 /**
  * Returns a [Component] with convenient configurations

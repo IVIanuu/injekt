@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.provider
 
 /**
  * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.getMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Map<K, T> = getMultiBindingMap<K, T>(name).mapValues {
     get<T>(it.value.type, it.value.name, parameters)
@@ -32,7 +35,7 @@ fun <K, T> Component.getMap(
  * Returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.getLazyMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> = getMultiBindingMap<K, T>(name).mapValues {
     lazy { get<T>(it.value.type, it.value.name, parameters) }
@@ -42,7 +45,7 @@ fun <K, T> Component.getLazyMap(
  * Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
 fun <K, T> Component.getProviderMap(
-    name: Name,
+    name: Any,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> = getMultiBindingMap<K, T>(name).mapValues { (_, binding) ->
     provider {
@@ -57,7 +60,7 @@ fun <K, T> Component.getProviderMap(
  * Lazily Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.injectMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, T>> =
     lazy { getMap<K, T>(name, parameters) }
@@ -66,7 +69,7 @@ fun <K, T> Component.injectMap(
  * LazilyReturns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, T> Component.injectLazyMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, Lazy<T>>> =
     lazy { getLazyMap<K, T>(name, parameters) }
@@ -75,7 +78,7 @@ fun <K, T> Component.injectLazyMap(
  * Lazily Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
 fun <K, T> Component.injectProviderMap(
-    name: Name,
+    name: Any,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Map<K, Provider<T>>> =
     lazy { getProviderMap<K, T>(name, defaultParameters) }

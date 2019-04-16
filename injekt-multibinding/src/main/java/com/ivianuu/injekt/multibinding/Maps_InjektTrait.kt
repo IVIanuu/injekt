@@ -16,46 +16,49 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.Provider
 
 /** Calls trough [Component.getMap] */
 fun <K, T> InjektTrait.getMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Map<K, T> =
     component.getMap(name, parameters)
 
 /** Calls trough [Component.getLazyMap] */
 fun <K, T> InjektTrait.getLazyMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<T>> =
     component.getLazyMap(name, parameters)
 
 /** Calls trough [Component.getProviderMap] */
 fun <K, T> InjektTrait.getProviderMap(
-    name: Name,
+    name: Any,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<T>> =
     component.getProviderMap(name, defaultParameters)
 
 /** Calls trough [Component.injectMap] */
 fun <K, T> InjektTrait.injectMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, T>> =
     lazy { component.getMap<K, T>(name, parameters) }
 
 /** Calls trough [Component.injectLazyMap] */
 fun <K, T> InjektTrait.injectLazyMap(
-    name: Name,
+    name: Any,
     parameters: ParametersDefinition? = null
 ): Lazy<Map<K, Lazy<T>>> =
     lazy { component.getLazyMap<K, T>(name, parameters) }
 
 /** Calls trough [Component.injectProviderMap] */
 fun <K, T> InjektTrait.injectProviderMap(
-    name: Name,
+    name: Any,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Map<K, Provider<T>>> =
     lazy { component.getProviderMap<K, T>(name, defaultParameters) }

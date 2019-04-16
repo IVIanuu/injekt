@@ -21,10 +21,10 @@ import kotlin.collections.set
 
 const val KEY_ORIGINAL_KEY = "original_key"
 
-internal fun <K, V> Component.getMultiBindingMap(mapName: Name): Map<K, Binding<V>> {
+internal fun <K, V> Component.getMultiBindingMap(mapName: Any): Map<K, Binding<V>> {
     val allMapBindings = getAllBindings()
         .mapNotNull { binding ->
-            binding.attributes.get<Map<Name, MapBinding>>(KEY_MAP_BINDINGS)
+            binding.attributes.get<Map<Any, MapBinding>>(KEY_MAP_BINDINGS)
                 ?.get(mapName)?.let { binding to it }
         }
 
@@ -44,10 +44,10 @@ internal fun <K, V> Component.getMultiBindingMap(mapName: Name): Map<K, Binding<
     return mapBindingsToUse as Map<K, Binding<V>>
 }
 
-internal fun <V> Component.getMultiBindingSet(setName: Name): Set<Binding<V>> {
+internal fun <V> Component.getMultiBindingSet(setName: Any): Set<Binding<V>> {
     val allSetBindings = getAllBindings()
         .mapNotNull { binding ->
-            binding.attributes.get<Map<Name, SetBinding>>(KEY_SET_BINDINGS)
+            binding.attributes.get<Map<Any, SetBinding>>(KEY_SET_BINDINGS)
                 ?.get(setName)?.let { binding to it }
         }
 

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Name
 
 object Values : Name
 object NameOne : Name

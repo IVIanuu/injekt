@@ -23,7 +23,7 @@ import com.ivianuu.injekt.*
 /**
  * Activity name
  */
-object ForActivity : StringName("ForActivity")
+object ForActivity
 
 /**
  * Returns a [Component] with convenient configurations

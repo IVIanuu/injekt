@@ -23,7 +23,7 @@ import com.ivianuu.injekt.*
 /**
  * Content provider name
  */
-object ForContentProvider : StringName("ForContentProvider")
+object ForContentProvider
 
 /**
  * Returns a [Component] with convenient configurations

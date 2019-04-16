@@ -23,7 +23,7 @@ import com.ivianuu.injekt.*
 /**
  * Application name
  */
-object ForApplication : StringName("ForApplication")
+object ForApplication
 
 /**
  * Returns a [Component] with convenient configurations

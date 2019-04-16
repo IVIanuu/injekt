@@ -28,25 +28,25 @@ interface InjektTrait {
 
 /** Calls trough [Component.get] */
 inline fun <reified T> InjektTrait.get(
-    name: Name? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = component.get(name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
-    name: Name? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(name, parameters) }
 
 /** Calls trough [Component.getProvider] */
 inline fun <reified T> InjektTrait.getProvider(
-    name: Name? = null,
+    name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Provider<T> = component.getProvider(name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T> InjektTrait.injectProvider(
-    name: Name? = null,
+    name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> =
     lazy(LazyThreadSafetyMode.NONE) { component.getProvider<T>(name, defaultParameters) }

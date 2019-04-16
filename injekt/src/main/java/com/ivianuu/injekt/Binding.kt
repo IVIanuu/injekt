@@ -63,7 +63,7 @@ class Binding<T> internal constructor(
 }
 
 inline fun <reified T> Binding(
-    name: Name? = null,
+    name: Any? = null,
     kind: Binding.Kind,
     attributes: Attributes = Attributes(),
     override: Boolean = false,
@@ -74,7 +74,7 @@ inline fun <reified T> Binding(
 
 fun <T> Binding(
     type: KClass<*>,
-    name: Name? = null,
+    name: Any? = null,
     kind: Binding.Kind,
     attributes: Attributes = Attributes(),
     override: Boolean = false,
@@ -85,7 +85,7 @@ fun <T> Binding(
 
 fun <T> Binding<T>.copy(
     type: KClass<*> = this.type,
-    name: Name? = this.name,
+    name: Any? = this.name,
     kind: Binding.Kind = this.kind,
     attributes: Attributes = Attributes(),
     override: Boolean = this.override,
