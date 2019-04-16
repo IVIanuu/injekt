@@ -49,3 +49,62 @@ abstract class Instance<T> {
     }
 
 }
+
+internal class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+
+    override fun get(
+        context: DefinitionContext,
+        parameters: ParametersDefinition?
+    ): T {
+        InjektPlugins.logger?.info("Create instance $binding")
+        return create(context, parameters)
+    }
+
+}
+
+/**
+ * Provides a unscoped dependency which will be recreated on each request
+ */
+inline fun <reified T> Module.factory(
+    name: Name? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = add(
+    Binding(
+        type = T::class,
+        name = name,
+        kind = Binding.Kind.FACTORY,
+        override = override,
+        definition = definition
+    )
+)
+
+internal class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+
+    private var _value: Any? = UNINITIALIZED
+
+    override fun get(
+        context: DefinitionContext,
+        parameters: ParametersDefinition?
+    ): T {
+        if (_value !== UNINITIALIZED) {
+            InjektPlugins.logger?.info("Return existing instance $binding")
+            return _value as T
+        }
+
+        synchronized(this) {
+            if (_value !== UNINITIALIZED) {
+                InjektPlugins.logger?.info("Return existing instance $binding")
+                return@get _value as T
+            }
+
+            InjektPlugins.logger?.info("Create instance $binding")
+            _value = create(context, parameters)
+            return@get _value as T
+        }
+    }
+
+    private companion object {
+        private object UNINITIALIZED
+    }
+}

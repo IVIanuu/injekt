@@ -89,7 +89,10 @@ class Component @PublishedApi internal constructor() {
 
         bindings[binding.key] = binding
 
-        val instance = binding.kind.createInstance(binding)
+        val instance = when (binding.kind) {
+            Binding.Kind.FACTORY -> FactoryInstance(binding)
+            Binding.Kind.SINGLE -> SingleInstance(binding)
+        }
 
         instances[binding.key] = instance
 

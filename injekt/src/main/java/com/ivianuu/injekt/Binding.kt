@@ -52,16 +52,18 @@ class Binding<T> internal constructor(
     }
 
     override fun toString(): String {
-        return "${kind.asString()}(" +
+        return "${kind}(" +
                 "type=${type.java.name}, " +
                 "name=$name" +
                 ")"
     }
+
+    enum class Kind { FACTORY, SINGLE }
 }
 
 inline fun <reified T> Binding(
     name: Name? = null,
-    kind: Kind,
+    kind: Binding.Kind,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -79,7 +81,7 @@ inline fun <reified T> Binding(
 fun <T> Binding(
     type: KClass<*>,
     name: Name? = null,
-    kind: Kind,
+    kind: Binding.Kind,
     attributes: Attributes = attributesOf(),
     override: Boolean = false,
     definition: Definition<T>
@@ -93,7 +95,7 @@ fun <T> Binding(
 fun <T> Binding<T>.copy(
     type: KClass<*> = this.type,
     name: Name? = this.name,
-    kind: Kind = this.kind,
+    kind: Binding.Kind = this.kind,
     attributes: Attributes = this.attributes,
     override: Boolean = this.override,
     definition: Definition<T> = this.definition

@@ -96,7 +96,7 @@ fun <T : View> T.viewModule(): Module = module {
     add(
         Binding(
             type = this@viewModule::class,
-            kind = SingleKind,
+            kind = Binding.Kind.SINGLE,
             definition = { this@viewModule }
         )
     )

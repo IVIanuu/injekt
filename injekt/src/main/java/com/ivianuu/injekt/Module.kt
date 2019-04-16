@@ -51,9 +51,26 @@ class Module @PublishedApi internal constructor() {
 }
 
 /**
- * Defines a [Module]
+ * Creates a new [Module]
  */
 inline fun module(definition: Module.() -> Unit = {}): Module = Module().apply(definition)
+
+/**
+ * Provides scoped dependency which will be created once for each component
+ */
+inline fun <reified T> Module.single(
+    name: Name? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = add(
+    Binding(
+        type = T::class,
+        name = name,
+        kind = Binding.Kind.SINGLE,
+        override = override,
+        definition = definition
+    )
+)
 
 /**
  * Adds all bindings of the [module]
@@ -86,7 +103,7 @@ inline fun <T> Module.withBinding(
         Binding(
             type = type,
             name = named(UUID.randomUUID().toString()),
-            kind = FactoryKind,
+            kind = Binding.Kind.FACTORY,
             definition = { component.get<T>(type, name) { it } }
         )
     ) withContext body

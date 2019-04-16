@@ -54,7 +54,7 @@ fun <T : Service> T.serviceModule(): Module = module {
     add(
         Binding(
             type = this@serviceModule::class,
-            kind = SingleKind,
+            kind = Binding.Kind.SINGLE,
             definition = { this@serviceModule }
         )
     ) bindType Service::class

@@ -42,7 +42,7 @@ fun <T : Application> T.applicationModule(): Module = module {
     add(
         Binding(
             type = this@applicationModule::class,
-            kind = SingleKind,
+            kind = Binding.Kind.SINGLE,
             definition = { this@applicationModule }
         )
     ) bindType Application::class bindType Context::class
