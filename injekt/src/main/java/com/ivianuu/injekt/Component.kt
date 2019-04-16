@@ -48,29 +48,26 @@ class Component internal constructor(
     ): T {
         val key = Key(type, name)
 
-        val instance = findInstance<T>(key, parameters)
+        val instance = findInstance<T>(key)
+            ?: throw IllegalStateException("Couldn't find a binding for $key")
 
-        check(instance !== NullSorogate) {
-            "Couldn't find a binding for $key"
-        }
-
-        return instance as T
+        return instance.get(parameters)
     }
 
-    private fun <T> findInstance(
-        key: Key,
-        parameters: ParametersDefinition?
-    ): Any? {
-        instances[key]?.let { return@findInstance it.get(context, parameters) }
+    private fun <T> findInstance(key: Key): Instance<T>? {
+        var instance = instances[key]
 
-        for (dependency in dependencies) {
-            val instance = dependency.findInstance<T>(key, parameters)
-            if (instance !== NullSorogate) {
-                return instance
-            }
+        if (instance != null) {
+            instance.context = context
+            return instance as Instance<T>
         }
 
-        return NullSorogate
+        for (dependency in dependencies) {
+            instance = dependency.findInstance<T>(key)
+            if (instance != null) return instance
+        }
+
+        return null
     }
 
 }
@@ -121,5 +118,3 @@ inline fun <reified T> Component.injectProvider(
         get<T>(name, parameters ?: defaultParameters)
     }
 }
-
-private object NullSorogate

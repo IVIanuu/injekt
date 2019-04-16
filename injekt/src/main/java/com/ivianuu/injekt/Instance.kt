@@ -20,10 +20,9 @@ internal abstract class Instance<T> {
 
     abstract val binding: Binding<T>
 
-    abstract fun get(
-        context: DefinitionContext,
-        parameters: ParametersDefinition?
-    ): T
+    lateinit var context: DefinitionContext
+
+    abstract fun get(parameters: ParametersDefinition?): T
 
     protected fun create(
         context: DefinitionContext,
@@ -43,10 +42,7 @@ internal abstract class Instance<T> {
 
 internal class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    override fun get(
-        context: DefinitionContext,
-        parameters: ParametersDefinition?
-    ): T {
+    override fun get(parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Create instance $binding")
         return create(context, parameters)
     }
@@ -57,10 +53,7 @@ internal class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>
 
     private var _value: Any? = UNINITIALIZED
 
-    override fun get(
-        context: DefinitionContext,
-        parameters: ParametersDefinition?
-    ): T {
+    override fun get(parameters: ParametersDefinition?): T {
         if (_value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("Return existing instance $binding")
             return _value as T
