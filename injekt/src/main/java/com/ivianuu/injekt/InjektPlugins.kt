@@ -24,7 +24,7 @@ object InjektPlugins
 /**
  * Configure injekt
  */
-inline fun configureInjekt(definition: InjektPlugins.() -> Unit) {
+inline fun injekt(definition: InjektPlugins.() -> Unit) {
     InjektPlugins.apply(definition)
 }
 
