@@ -50,8 +50,8 @@ class Component internal constructor(
 
         val instance = findInstance<T>(key, parameters)
 
-        if (instance === NullSorogate) {
-            throw BindingNotFoundException("Couldn't find a binding for $key")
+        check(instance !== NullSorogate) {
+            "Couldn't find a binding for $key"
         }
 
         return instance as T

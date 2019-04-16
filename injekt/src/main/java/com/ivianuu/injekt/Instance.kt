@@ -35,7 +35,7 @@ internal abstract class Instance<T> {
                 parameters?.invoke() ?: emptyParameters()
             )
         } catch (e: Exception) {
-            throw InstanceCreationException("Couldn't instantiate $binding", e)
+            throw IllegalStateException("Couldn't instantiate $binding", e)
         }
     }
 
