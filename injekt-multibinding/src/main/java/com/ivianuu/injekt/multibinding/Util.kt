@@ -18,41 +18,24 @@ package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Key
-import kotlin.collections.set
-
-// todo improve performance
 
 internal fun <K, V> Component.getMultiBindingMap(mapName: Any): Map<K, Binding<V>> {
-    val allMapBindings = getAllBindings()
+    return getAllBindings()
         .mapNotNull { binding ->
             binding.attributes.get<Map<Any, MapBinding>>(KEY_MAP_BINDINGS)
-                ?.get(mapName)?.let { binding to it }
+                ?.get(mapName)
+                ?.let { it.key to binding }
         }
-
-    val mapBindingsToUse = linkedMapOf<Any, Binding<*>>()
-
-    allMapBindings.forEach { (binding, mapBinding) ->
-        mapBindingsToUse[mapBinding.key] = binding
-    }
-
-    return mapBindingsToUse as Map<K, Binding<V>>
+        .toMap() as Map<K, Binding<V>>
 }
 
 internal fun <V> Component.getMultiBindingSet(setName: Any): Set<Binding<V>> {
-    val allSetBindings = getAllBindings()
-        .mapNotNull { binding ->
-            binding.attributes.get<Map<Any, SetBinding>>(KEY_SET_BINDINGS)
-                ?.get(setName)?.let { binding to it }
+    return getAllBindings()
+        .filter {
+            it.attributes.get<Map<Any, SetBinding>>(KEY_SET_BINDINGS)
+                ?.get(setName) != null
         }
-
-    val setBindingsToUse = linkedMapOf<Key, Binding<*>>()
-
-    allSetBindings.forEach { (binding, setBinding) ->
-        setBindingsToUse[binding.key] = binding
-    }
-
-    return setBindingsToUse.values.toSet() as Set<Binding<V>>
+        .toSet() as Set<Binding<V>>
 }
 
 internal fun Component.getAllBindings(): List<Binding<*>> =

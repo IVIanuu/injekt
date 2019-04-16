@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
  * Represents a dependency binding.
  */
 class Binding<T> internal constructor(
-    val key: Key,
+    internal val key: Key,
     val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes
