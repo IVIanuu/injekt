@@ -16,12 +16,7 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.util.TestDep1
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-
+/**
 class InstanceTest {
 
     @Test
@@ -34,7 +29,7 @@ class InstanceTest {
             )
         )
 
-        val instance = component.getInstances().first()
+val instance = component.instances.first()
 
         val value1 = instance.get(component.context, null)
         val value2 = instance.get(component.context, null)
@@ -84,4 +79,4 @@ class InstanceTest {
 
         assertTrue(throwed)
     }
-}
+}*/

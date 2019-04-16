@@ -32,12 +32,12 @@ fun <T> Component.getBinding(
     name: Any? = null
 ): Binding<T> {
     val key = Key(type, name)
-    return getBindings().firstOrNull { it.key == key } as? Binding<T>
+    return bindings.values.firstOrNull { it.key == key } as? Binding<T>
         ?: error("binding not found")
 }
 
 fun <T> Component.getInstance(type: KClass<*>, name: Any? = null): Instance<T> {
     val key = Key(type, name)
-    return getInstances().firstOrNull { it.binding.key == key } as? Instance<T>
+    return instances[key] as? Instance<T>
         ?: error("instance not found")
 }

@@ -30,7 +30,7 @@ class Component internal constructor(
      * All bindings of this component
      */
     val bindings: Map<Key, Binding<*>>,
-    private val instances: Map<Key, Instance<*>>
+    internal val instances: Map<Key, Instance<*>>
 ) {
 
     /**
