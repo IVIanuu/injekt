@@ -16,19 +16,10 @@
 
 package com.ivianuu.injekt
 
-/**
- * The [Instance] of an [Binding]
- */
-abstract class Instance<T> {
+internal abstract class Instance<T> {
 
-    /**
-     * The binding of this instance
-     */
     abstract val binding: Binding<T>
 
-    /**
-     * Returns a instance of [T]
-     */
     abstract fun get(
         context: DefinitionContext,
         parameters: ParametersDefinition?
