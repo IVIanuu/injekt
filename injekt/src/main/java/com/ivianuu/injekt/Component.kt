@@ -16,17 +16,22 @@
 
 package com.ivianuu.injekt
 
-import kotlin.collections.set
 import kotlin.reflect.KClass
 
 /**
  * The actual dependency container which provides bindings
  */
-class Component @PublishedApi internal constructor() {
-
-    private val dependencies = linkedSetOf<Component>()
-    private val bindings = linkedMapOf<Key, Binding<*>>()
-    private val instances = hashMapOf<Key, Instance<*>>()
+class Component internal constructor(
+    /**
+     * All dependencies of this component
+     */
+    val dependencies: Set<Component>,
+    /**
+     * All bindings of this component
+     */
+    val bindings: Map<Key, Binding<*>>,
+    private val instances: Map<Key, Instance<*>>
+) {
 
     /**
      * The definition context of this component
@@ -49,61 +54,6 @@ class Component @PublishedApi internal constructor() {
         return instance.get(context, parameters)
     }
 
-    /**
-     * Adds all binding of the [module]
-     */
-    fun addModule(module: Module) {
-        InjektPlugins.logger?.info("load module ${module.bindings.size}")
-        module.bindings.forEach { addBinding(it.value) }
-    }
-
-    /**
-     * Adds the [dependency] as a dependency
-     */
-    fun addDependency(dependency: Component) {
-        if (!dependencies.add(dependency)) {
-            error("Already added $dependency")
-        }
-        InjektPlugins.logger?.info("Add dependency $dependency")
-    }
-
-    /**
-     * Returns all direct dependencies of this component
-     */
-    fun getDependencies(): Set<Component> = dependencies
-
-    /**
-     * Returns all [Binding]s added to this component
-     */
-    fun getBindings(): Set<Binding<*>> = bindings.values.toSet()
-
-    /**
-     * Saves the [binding]
-     */
-    fun addBinding(binding: Binding<*>) {
-        val isOverride = bindings.remove(binding.key) != null
-
-        if (isOverride && !binding.override) {
-            throw OverrideException("Try to override binding $binding but was already declared ${binding.key}")
-        }
-
-        bindings[binding.key] = binding
-
-        instances[binding.key] = when (binding.kind) {
-            Binding.Kind.FACTORY -> FactoryInstance(binding)
-            Binding.Kind.SINGLE -> SingleInstance(binding)
-        }
-
-        InjektPlugins.logger?.let { logger ->
-            val msg = if (isOverride) {
-                "Override $binding"
-            } else {
-                "Declare $binding"
-            }
-            logger.debug(msg)
-        }
-    }
-
     private fun <T> findInstance(key: Key): Instance<T>? {
         var instance = instances[key]
 
@@ -123,51 +73,9 @@ class Component @PublishedApi internal constructor() {
  * Returns a new [Component] and applies the [definition]
  */
 inline fun component(
-    definition: Component.() -> Unit = {}
+    definition: ComponentBuilder.() -> Unit = {}
 ): Component {
-    return Component().apply(definition)
-}
-
-/**
- * Adds all [modules]
- */
-fun Component.modules(modules: Iterable<Module>) {
-    modules.forEach { addModule(it) }
-}
-
-/**
- * Adds all [modules]
- */
-fun Component.modules(vararg modules: Module) {
-    modules.forEach { addModule(it) }
-}
-
-/**
- * Adds the [module]
- */
-fun Component.modules(module: Module) {
-    addModule(module)
-}
-
-/**
- * Adds all [dependencies]
- */
-fun Component.dependencies(dependencies: Iterable<Component>) {
-    dependencies.forEach { addDependency(it) }
-}
-
-/**
- * Adds all [dependencies]
- */
-fun Component.dependencies(vararg dependencies: Component) {
-    dependencies.forEach { addDependency(it) }
-}
-
-/**
- * Adds the [dependency]
- */
-fun Component.dependencies(dependency: Component) {
-    addDependency(dependency)
+    return ComponentBuilder().apply(definition).build()
 }
 
 /**
