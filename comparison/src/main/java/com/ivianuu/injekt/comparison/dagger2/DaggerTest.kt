@@ -24,7 +24,7 @@ object DaggerTest : InjectionTest {
 
     override val name = "Dagger"
 
-    @set:Inject var daggerFib8: Fib8? = null
+    @set:Inject var dep: Fib8? = null
     private var component: DaggerComponent? = null
 
     override fun setup() {
@@ -37,7 +37,7 @@ object DaggerTest : InjectionTest {
 
     override fun shutdown() {
         component = null
-        daggerFib8 = null
+        dep = null
     }
 
 }
