@@ -51,7 +51,7 @@ fun Activity.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Activity> T.activityModule(): Module = module {
-    add(
+    addBinding(
         Binding(
             type = this@activityModule::class,
             kind = Binding.Kind.SINGLE,

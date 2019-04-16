@@ -54,7 +54,7 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
-    add(
+    addBinding(
         Binding(
             type = this@receiverModule::class,
             kind = Binding.Kind.SINGLE,

@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 /**
  * Binding context
  */
-data class BindingContext<T>(val binding: Binding<T>, val module: Module)
+data class BindingContext<T>(val binding: Binding<T>, val moduleBuilder: ModuleBuilder)
 
 /**
  * Invokes the [body]
@@ -36,7 +36,7 @@ inline infix fun <T> BindingContext<T>.withContext(body: BindingContext<T>.() ->
  */
 infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {
     val copy = binding.copy(type = type, name = null)
-    module.add(copy)
+    moduleBuilder.addBinding(copy)
     return this
 }
 
@@ -61,7 +61,7 @@ infix fun <T> BindingContext<T>.bindTypes(types: Iterable<KClass<*>>): BindingCo
  */
 infix fun <T> BindingContext<T>.bindName(name: Name): BindingContext<T> {
     val copy = binding.copy(name = name)
-    module.add(copy)
+    moduleBuilder.addBinding(copy)
     return this
 }
 

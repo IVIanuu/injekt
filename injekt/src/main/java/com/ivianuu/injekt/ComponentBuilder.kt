@@ -36,7 +36,6 @@ class ComponentBuilder {
      * Adds the [dependency] as a dependency
      */
     fun addDependency(dependency: Component) {
-        // todo should we check if any parent component does depend on the component?
         if (!dependencies.add(dependency)) {
             error("Already added $dependency")
         }
@@ -61,7 +60,7 @@ class ComponentBuilder {
     }
 
     /**
-     * Builds a component for this builder
+     * Builds a [Component] for this builder
      */
     fun build(): Component {
         return Component(dependencies, bindings, instances)

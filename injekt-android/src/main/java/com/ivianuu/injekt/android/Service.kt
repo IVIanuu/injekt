@@ -51,7 +51,7 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Service> T.serviceModule(): Module = module {
-    add(
+    addBinding(
         Binding(
             type = this@serviceModule::class,
             kind = Binding.Kind.SINGLE,

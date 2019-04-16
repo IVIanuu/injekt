@@ -39,7 +39,7 @@ inline fun <reified T : Application> T.applicationComponent(
  * Returns a [Module] with convenient bindings
  */
 fun <T : Application> T.applicationModule(): Module = module {
-    add(
+    addBinding(
         Binding(
             type = this@applicationModule::class,
             kind = Binding.Kind.SINGLE,

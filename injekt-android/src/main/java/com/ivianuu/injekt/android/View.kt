@@ -93,7 +93,7 @@ fun View.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.viewModule(): Module = module {
-    add(
+    addBinding(
         Binding(
             type = this@viewModule::class,
             kind = Binding.Kind.SINGLE,

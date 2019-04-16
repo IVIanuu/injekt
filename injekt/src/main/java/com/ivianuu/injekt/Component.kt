@@ -74,9 +74,7 @@ class Component internal constructor(
  */
 inline fun component(
     definition: ComponentBuilder.() -> Unit = {}
-): Component {
-    return ComponentBuilder().apply(definition).build()
-}
+): Component = ComponentBuilder().apply(definition).build()
 
 /**
  * Returns a instance of [T] matching the [name] and [parameters]
