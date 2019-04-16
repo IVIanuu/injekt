@@ -27,7 +27,7 @@ import kotlin.collections.set
  */
 infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_SET_BINDINGS) {
-        hashMapOf<Any, SetBinding>()
+        linkedMapOf<Any, SetBinding>()
     }[setBinding.setName] = setBinding
     return this
 }

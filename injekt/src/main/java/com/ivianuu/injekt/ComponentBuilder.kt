@@ -21,9 +21,9 @@ package com.ivianuu.injekt
  */
 class ComponentBuilder @PublishedApi internal constructor() {
 
-    private val dependencies = linkedSetOf<Component>()
+    private val dependencies = arrayListOf<Component>()
     private val bindings = linkedMapOf<Key, Binding<*>>()
-    private val instances = hashMapOf<Key, Instance<*>>()
+    private val instances = linkedMapOf<Key, Instance<*>>()
 
     /**
      * Adds all binding of the [module]
@@ -36,9 +36,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
      * Adds the [dependency] as a dependency
      */
     fun addDependency(dependency: Component) {
-        if (!dependencies.add(dependency)) {
-            error("Already added $dependency")
-        }
+        dependencies.add(dependency)
     }
 
     /**

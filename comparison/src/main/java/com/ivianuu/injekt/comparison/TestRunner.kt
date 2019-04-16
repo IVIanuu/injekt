@@ -24,7 +24,7 @@ import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import org.nield.kotlinstatistics.median
 
-private const val ROUNDS = 100_000
+private const val ROUNDS = 10_000
 
 fun runAllInjectionTests() {
     runInjectionTests(
@@ -46,8 +46,7 @@ fun runInjectionTests(vararg tests: InjectionTest) {
 fun runInjectionTests(tests: List<InjectionTest>) {
     println("Running $ROUNDS iterations. Please stand by...")
 
-    val timingsPerTest =
-        mutableMapOf<String, MutableList<Timings>>()
+    val timingsPerTest = linkedMapOf<String, MutableList<Timings>>()
 
     repeat(ROUNDS) {
         tests.forEach { test ->

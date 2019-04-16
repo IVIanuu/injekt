@@ -25,7 +25,7 @@ class Component internal constructor(
     /**
      * All dependencies of this component
      */
-    val dependencies: Set<Component>,
+    val dependencies: List<Component>,
     /**
      * All bindings of this component
      */

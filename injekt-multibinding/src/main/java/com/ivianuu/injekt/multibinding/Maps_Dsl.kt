@@ -26,7 +26,7 @@ import kotlin.collections.set
  */
 infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingContext<T> {
     binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
-        hashMapOf<Any, MapBinding>()
+        linkedMapOf<Any, MapBinding>()
     }[mapBinding.mapName] = mapBinding
     return this
 }

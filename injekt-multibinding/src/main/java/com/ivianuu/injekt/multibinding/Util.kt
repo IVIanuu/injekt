@@ -55,11 +55,11 @@ internal fun <V> Component.getMultiBindingSet(setName: Any): Set<Binding<V>> {
     return setBindingsToUse.values.toSet() as Set<Binding<V>>
 }
 
-internal fun Component.getAllBindings(): Set<Binding<*>> =
-    linkedSetOf<Binding<*>>().also { collectBindings(it) }
+internal fun Component.getAllBindings(): List<Binding<*>> =
+    arrayListOf<Binding<*>>().also { collectBindings(it) }
 
 internal fun Component.collectBindings(
-    bindings: MutableSet<Binding<*>>
+    bindings: MutableList<Binding<*>>
 ) {
     dependencies.forEach { it.collectBindings(bindings) }
     bindings.addAll(this.bindings.values)
