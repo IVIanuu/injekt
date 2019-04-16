@@ -21,10 +21,7 @@ import kotlin.reflect.KClass
 /**
  * Binding context
  */
-data class BindingContext<T>(
-    val binding: Binding<T>,
-    val module: Module
-)
+data class BindingContext<T>(val binding: Binding<T>, val module: Module)
 
 /**
  * Invokes the [body]
