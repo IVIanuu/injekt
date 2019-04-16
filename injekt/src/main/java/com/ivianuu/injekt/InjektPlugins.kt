@@ -22,10 +22,10 @@ package com.ivianuu.injekt
 object InjektPlugins
 
 /**
- * Configure injekt
+ * Configures [InjektPlugins] via [block]
  */
-inline fun injekt(definition: InjektPlugins.() -> Unit) {
-    InjektPlugins.apply(definition)
+inline fun injekt(block: InjektPlugins.() -> Unit) {
+    InjektPlugins.apply(block)
 }
 
 private var _logger: Logger? = null

@@ -27,7 +27,7 @@ class Module internal constructor(
 )
 
 /**
- * Creates a new [Module]
+ * Returns a new [Module] configured by [block]
  */
-inline fun module(definition: ModuleBuilder.() -> Unit = {}): Module =
-    ModuleBuilder().apply(definition).build()
+inline fun module(block: ModuleBuilder.() -> Unit = {}): Module =
+    ModuleBuilder().apply(block).build()

@@ -70,11 +70,11 @@ class Component internal constructor(
 }
 
 /**
- * Returns a new [Component] and applies the [definition]
+ * Returns a new [Component] configured by [block]
  */
 inline fun component(
-    definition: ComponentBuilder.() -> Unit = {}
-): Component = ComponentBuilder().apply(definition).build()
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ComponentBuilder().apply(block).build()
 
 /**
  * Returns a instance of [T] matching the [name] and [parameters]
