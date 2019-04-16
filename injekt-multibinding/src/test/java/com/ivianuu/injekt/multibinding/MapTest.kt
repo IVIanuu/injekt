@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.factoryBuilder
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
@@ -32,10 +32,18 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key_one")
-                    factory(NameTwo) { "value_two" } bindIntoMap (Values to "key_two")
-                    factory(NameThree) { "value_three" }
-                    bindIntoMap<String>(Values, "key_three", implementationName = NameThree)
+                    factoryBuilder<String>(NameOne) {
+                        definition { "value_one" }
+                        bindIntoMap(Values, "key_one")
+                    }
+                    factoryBuilder<String>(NameTwo) {
+                        definition { "value_two" }
+                        bindIntoMap(Values, "key_two")
+                    }
+                    factoryBuilder<String>(NameThree) {
+                        definition { "value_three" }
+                        bindIntoMap(Values, "key_three")
+                    }
                 }
             )
         }
@@ -53,12 +61,14 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key_one")
-                    factory(NameTwo) { "value_two" } bindIntoMap MapBinding(
-                        Values,
-                        "key_one",
-                        true
-                    )
+                    factoryBuilder<String>(NameOne) {
+                        definition { "value_one" }
+                        bindIntoMap(Values, "key_one")
+                    }
+                    factoryBuilder<String>(NameTwo) {
+                        definition { "value_two" }
+                        bindIntoMap(Values, "key_one", true)
+                    }
                 }
             )
         }
@@ -71,12 +81,14 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key")
-                    factory(NameTwo) { "value_two" } bindIntoMap MapBinding(
-                        Values,
-                        "key",
-                        true
-                    )
+                    factoryBuilder<String>(NameOne) {
+                        definition { "value_one" }
+                        bindIntoMap(Values, "key")
+                    }
+                    factoryBuilder<String>(NameTwo) {
+                        definition { "value_two" }
+                        bindIntoMap(Values, "key", true)
+                    }
                 }
             )
         }
@@ -97,8 +109,14 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoMap (Values to "key")
-                    factory(NameTwo) { "value_two" } bindIntoMap (Values to "key")
+                    factoryBuilder<String>(NameOne) {
+                        definition { "value_one" }
+                        bindIntoMap(Values, "key")
+                    }
+                    factoryBuilder<String>(NameTwo) {
+                        definition { "value_two" }
+                        bindIntoMap(Values, "key", false)
+                    }
                 }
             )
         }

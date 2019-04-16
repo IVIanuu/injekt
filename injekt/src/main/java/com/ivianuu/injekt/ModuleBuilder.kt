@@ -29,7 +29,7 @@ class ModuleBuilder @PublishedApi internal constructor() {
     /**
      * Adds the [binding]
      */
-    fun <T> addBinding(binding: Binding<T>): BindingContext<T> {
+    fun <T> bind(binding: Binding<T>) {
         val isOverride = bindings.remove(binding.key) != null
 
         if (isOverride && !binding.override) {
@@ -38,7 +38,7 @@ class ModuleBuilder @PublishedApi internal constructor() {
 
         bindings[binding.key] = binding
 
-        return BindingContext(binding, this)
+        binding.additionalBindings.forEach { bind(it) }
     }
 
     /**
@@ -48,6 +48,36 @@ class ModuleBuilder @PublishedApi internal constructor() {
 
 }
 
+inline fun <reified T> ModuleBuilder.bind(
+    name: Name? = null,
+    kind: Binding.Kind? = null,
+    override: Boolean = false,
+    noinline bindingDefinition: Definition<T>? = null,
+    noinline definition: BindingBuilder<T>.() -> Unit = {}
+) {
+    bind(T::class, name, kind, override, bindingDefinition, definition)
+}
+
+fun <T> ModuleBuilder.bind(
+    type: KClass<*>,
+    name: Name? = null,
+    kind: Binding.Kind? = null,
+    override: Boolean = false,
+    bindingDefinition: Definition<T>? = null,
+    definition: BindingBuilder<T>.() -> Unit = {}
+) {
+    bind(
+        binding<T> {
+            type(type)
+            name?.let { name(it) }
+            kind?.let { kind(it) }
+            override(override)
+            bindingDefinition?.let { definition(it) }
+            definition()
+        }
+    )
+}
+
 /**
  * Provides a unscoped dependency which will be recreated on each request
  */
@@ -55,15 +85,18 @@ inline fun <reified T> ModuleBuilder.factory(
     name: Name? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = addBinding(
-    Binding(
-        type = T::class,
-        name = name,
-        kind = Binding.Kind.FACTORY,
-        override = override,
-        definition = definition
-    )
-)
+) {
+    bind(name, Binding.Kind.FACTORY, override, bindingDefinition = definition)
+}
+
+inline fun <reified T> ModuleBuilder.factoryBuilder(
+    name: Name? = null,
+    override: Boolean = false,
+    noinline bindingDefinition: Definition<T>? = null,
+    noinline definition: BindingBuilder<T>.() -> Unit
+) {
+    bind(name, Binding.Kind.FACTORY, override, bindingDefinition, definition)
+}
 
 /**
  * Provides scoped dependency which will be created once for each component
@@ -72,49 +105,53 @@ inline fun <reified T> ModuleBuilder.single(
     name: Name? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = addBinding(
-    Binding(
-        type = T::class,
-        name = name,
-        kind = Binding.Kind.SINGLE,
-        override = override,
-        definition = definition
-    )
-)
+) {
+    bind(name, Binding.Kind.SINGLE, override, bindingDefinition = definition)
+}
+
+inline fun <reified T> ModuleBuilder.singleBuilder(
+    name: Name? = null,
+    override: Boolean = false,
+    noinline bindingDefinition: Definition<T>? = null,
+    noinline definition: BindingBuilder<T>.() -> Unit
+) {
+    bind(name, Binding.Kind.SINGLE, override, bindingDefinition, definition)
+}
 
 /**
  * Adds all bindings of the [module]
  */
 fun ModuleBuilder.module(module: Module) {
-    module.bindings.forEach { addBinding(it.value) }
+    module.bindings.forEach { bind(it.value) }
 }
 
-/** Calls trough [Module.withBinding] */
-inline fun <reified T> ModuleBuilder.withBinding(
+/** Calls trough [ModuleBuilder.bridge] */
+inline fun <reified T> ModuleBuilder.bridge(
     name: Name? = null,
-    body: BindingContext<T>.() -> Unit
+    noinline body: BindingBuilder<T>.() -> Unit
 ) {
-    withBinding(T::class, name, body)
+    bridge(T::class, name, body)
 }
 
 /**
- * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [name]
+ * Allows to add additional bindings to an existing binding
  */
-inline fun <T> ModuleBuilder.withBinding(
+fun <T> ModuleBuilder.bridge(
     type: KClass<*>,
     name: Name? = null,
-    body: BindingContext<T>.() -> Unit
+    body: BindingBuilder<T>.() -> Unit
 ) {
     // todo this is a little hacky can we turn this into a clean thing?
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation
-    addBinding(
-        Binding(
-            type = type,
-            name = named(UUID.randomUUID().toString()),
-            kind = Binding.Kind.FACTORY,
-            definition = { component.get<T>(type, name) { it } }
-        )
-    ) withContext body
+    bind(
+        binding<T> {
+            type(type)
+            name(named(UUID.randomUUID().toString()))
+            kind(Binding.Kind.FACTORY)
+            definition { component.get(type, name) }
+            body()
+        }
+    )
 }

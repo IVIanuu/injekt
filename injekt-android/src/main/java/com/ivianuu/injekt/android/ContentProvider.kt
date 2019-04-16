@@ -52,11 +52,11 @@ fun ContentProvider.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    addBinding(
-        Binding(
-            type = this@contentProviderModule::class,
-            kind = Binding.Kind.SINGLE,
-            definition = { this@contentProviderModule }
-        )
+    bind(
+        binding<T> {
+            type(this@contentProviderModule::class)
+            single()
+            definition { this@contentProviderModule }
+        }
     )
 }

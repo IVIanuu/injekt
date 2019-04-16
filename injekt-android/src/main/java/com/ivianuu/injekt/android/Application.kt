@@ -39,15 +39,15 @@ inline fun <reified T : Application> T.applicationComponent(
  * Returns a [Module] with convenient bindings
  */
 fun <T : Application> T.applicationModule(): Module = module {
-    addBinding(
-        Binding(
-            type = this@applicationModule::class,
-            kind = Binding.Kind.SINGLE,
-            definition = { this@applicationModule }
-        )
-    ) bindType Application::class bindType Context::class
-
-    single<Context>(ForApplication) { this@applicationModule }
+    bind(
+        binding<T> {
+            type(this@applicationModule::class)
+            definition { this@applicationModule }
+            single()
+            bindTypes(Application::class, Context::class)
+            bindAlias<Context>(ForApplication)
+        }
+    )
 }
 
 fun DefinitionContext.application(): Application = get()

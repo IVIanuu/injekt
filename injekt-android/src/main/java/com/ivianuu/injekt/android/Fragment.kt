@@ -84,11 +84,11 @@ fun Fragment.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    addBinding(
-        Binding(
-            type = this@fragmentModule::class,
-            kind = Binding.Kind.SINGLE,
-            definition = { this@fragmentModule }
-        )
+    bind(
+        binding<T> {
+            type(this@fragmentModule::class)
+            single()
+            definition { this@fragmentModule }
+        }
     )
 }

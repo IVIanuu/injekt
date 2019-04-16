@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Represents a dependency binding.
  */
@@ -26,7 +24,8 @@ class Binding<T> internal constructor(
     val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes,
-    val override: Boolean
+    val override: Boolean,
+    val additionalBindings: List<Binding<*>>
 ) {
 
     val type = key.type
@@ -53,7 +52,7 @@ class Binding<T> internal constructor(
     }
 
     override fun toString(): String {
-        return "${kind}(" +
+        return "$kind(" +
                 "type=${type.java.name}, " +
                 "name=$name" +
                 ")"
@@ -62,42 +61,13 @@ class Binding<T> internal constructor(
     enum class Kind { FACTORY, SINGLE }
 }
 
-inline fun <reified T> Binding(
-    name: Name? = null,
-    kind: Binding.Kind,
-    attributes: Attributes = Attributes(),
-    override: Boolean = false,
-    noinline definition: Definition<T>
-): Binding<T> {
-    return Binding(T::class, name, kind, attributes, override, definition)
-}
-
-fun <T> Binding(
-    type: KClass<*>,
-    name: Name? = null,
-    kind: Binding.Kind,
-    attributes: Attributes = Attributes(),
-    override: Boolean = false,
-    definition: Definition<T>
-): Binding<T> {
-    return Binding(Key(type, name), kind, definition, attributes, override)
-}
-
-fun <T> Binding<T>.copy(
-    type: KClass<*> = this.type,
-    name: Name? = this.name,
-    kind: Binding.Kind = this.kind,
-    attributes: Attributes = Attributes(),
-    override: Boolean = this.override,
-    definition: Definition<T> = this.definition
-): Binding<T> {
-    return Binding(
-        Key(type, name),
-        kind,
-        definition,
-        attributes,
-        override
-    )
+/**
+ * Returns a new [Binding] configured by [block]
+ */
+inline fun <T> binding(block: BindingBuilder<T>.() -> Unit): Binding<T> {
+    return BindingBuilder<T>()
+        .apply(block)
+        .build()
 }
 
 /**

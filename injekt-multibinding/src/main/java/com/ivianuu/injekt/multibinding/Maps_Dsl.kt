@@ -16,33 +16,25 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.BindingBuilder
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.getOrSet
-import kotlin.collections.set
 
 /**
  * Adds this binding into a map
  */
-infix fun <T> BindingContext<T>.bindIntoMap(mapBinding: MapBinding): BindingContext<T> {
-    binding.attributes.getOrSet(KEY_MAP_BINDINGS) {
-        hashMapOf<Name, MapBinding>()
-    }[mapBinding.mapName] = mapBinding
-    return this
+fun <T> BindingBuilder<T>.bindIntoMap(mapBinding: MapBinding) {
+    attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Name, MapBinding>() }
+        .put(mapBinding.mapName, mapBinding)
 }
 
 /**
- * Adds this binding into the name [Pair.first] with the key [Pair.second]
+ * Adds this binding into a map
  */
-infix fun <T> BindingContext<T>.bindIntoMap(
-    pair: Pair<Name, Any>
-): BindingContext<T> = bindIntoMap(MapBinding(pair.first, pair.second))
-
-/**
- * Adds this binding into [mapName] with [mapKey]
- */
-fun <T> BindingContext<T>.bindIntoMap(
+fun <T> BindingBuilder<T>.bindIntoMap(
     mapName: Name,
-    mapKey: Any,
+    key: Any,
     override: Boolean = false
-): BindingContext<T> = bindIntoMap(MapBinding(mapName, mapKey, override))
+) {
+    bindIntoMap(MapBinding(mapName, key, override))
+}

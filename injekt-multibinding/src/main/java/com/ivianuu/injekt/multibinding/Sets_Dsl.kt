@@ -16,32 +16,26 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.BindingBuilder
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.getOrSet
 import kotlin.collections.set
 
 /**
- * Adds this [Binding] into [setBinding]
+ * Adds this binding into a set
  */
-infix fun <T> BindingContext<T>.bindIntoSet(setBinding: SetBinding): BindingContext<T> {
-    binding.attributes.getOrSet(KEY_SET_BINDINGS) {
+fun <T> BindingBuilder<T>.bindIntoSet(setBinding: SetBinding) {
+    attributes.getOrSet(KEY_SET_BINDINGS) {
         hashMapOf<Name, SetBinding>()
     }[setBinding.setName] = setBinding
-    return this
 }
 
 /**
- * Adds this binding into [setName]
+ * Adds this binding into a set
  */
-fun <T> BindingContext<T>.bindIntoSet(
+fun <T> BindingBuilder<T>.bindIntoSet(
     setName: Name,
     override: Boolean = false
-): BindingContext<T> = bindIntoSet(SetBinding(setName, override))
-
-/**
- * Adds this [Binding] into [setName]
- */
-infix fun <T> BindingContext<T>.bindIntoSet(setName: Name): BindingContext<T> =
-    bindIntoSet(SetBinding(setName))
+) {
+    bindIntoSet(SetBinding(setName, override))
+}

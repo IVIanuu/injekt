@@ -29,10 +29,18 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoSet Values
-                    factory(NameTwo) { "value_two" } bindIntoSet Values
-                    factory(NameThree) { "value_three" }
-                    bindIntoSet<String>(Values, implementationName = NameThree)
+                    factoryBuilder<String>(NameOne) {
+                        definition { "value_one" }
+                        bindIntoSet(Values)
+                    }
+                    factoryBuilder<String>(NameTwo) {
+                        definition { "value_two" }
+                        bindIntoSet(Values)
+                    }
+                    factoryBuilder<String>(NameThree) {
+                        definition { "value_three" }
+                        bindIntoSet(Values)
+                    }
                 }
             )
         }
@@ -50,7 +58,10 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet Values
+                    factoryBuilder<String> {
+                        definition { "my_value" }
+                        bindIntoSet(Values)
+                    }
                 }
             )
         }
@@ -59,7 +70,10 @@ class SetTest {
             dependencies(component1)
             modules(
                 module {
-                    factory { "my_overridden_value" } bindIntoSet SetBinding(Values, true)
+                    factoryBuilder<String> {
+                        definition { "my_overridden_value" }
+                        bindIntoSet(Values, true)
+                    }
                 }
             )
         }
@@ -72,7 +86,10 @@ class SetTest {
         val component1 = component {
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet Values
+                    factoryBuilder<String> {
+                        definition { "my_value" }
+                        bindIntoSet(Values)
+                    }
                 }
             )
         }
@@ -81,7 +98,10 @@ class SetTest {
             dependencies(component1)
             modules(
                 module {
-                    factory { "my_value" } bindIntoSet SetBinding(Values, override = true)
+                    factoryBuilder<String> {
+                        definition { "my_value" }
+                        bindIntoSet(Values, true)
+                    }
                 }
             )
         }
