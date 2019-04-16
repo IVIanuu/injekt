@@ -104,11 +104,6 @@ class Component @PublishedApi internal constructor() {
         }
     }
 
-    /**
-     * Returns all [Instance]s of this component
-     */
-    fun getInstances(): Set<Instance<*>> = instances.values.toSet()
-
     private fun <T> findInstance(key: Key): Instance<T>? {
         var instance = instances[key]
 
