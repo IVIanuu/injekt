@@ -30,7 +30,7 @@ class Component internal constructor(
      * All bindings of this component
      */
     val bindings: Map<Key, Binding<*>>,
-    internal val instances: Map<Key, Instance<*>>
+    private val instances: Map<Key, Instance<*>>
 ) {
 
     /**
@@ -48,23 +48,29 @@ class Component internal constructor(
     ): T {
         val key = Key(type, name)
 
-        val instance = findInstance<T>(key)
-            ?: throw BindingNotFoundException("Couldn't find a binding for $key")
+        val instance = findInstance<T>(key, parameters)
 
-        return instance.get(context, parameters)
-    }
-
-    private fun <T> findInstance(key: Key): Instance<T>? {
-        var instance = instances[key]
-
-        if (instance != null) return instance as Instance<T>
-
-        for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key)
-            if (instance != null) return instance
+        if (instance === NullSorogate) {
+            throw BindingNotFoundException("Couldn't find a binding for $key")
         }
 
-        return null
+        return instance as T
+    }
+
+    private fun <T> findInstance(
+        key: Key,
+        parameters: ParametersDefinition?
+    ): Any? {
+        instances[key]?.let { return@findInstance it.get(context, parameters) }
+
+        for (dependency in dependencies) {
+            val instance = dependency.findInstance<T>(key, parameters)
+            if (instance !== NullSorogate) {
+                return instance
+            }
+        }
+
+        return NullSorogate
     }
 
 }
@@ -115,3 +121,5 @@ inline fun <reified T> Component.injectProvider(
         get<T>(name, parameters ?: defaultParameters)
     }
 }
+
+private object NullSorogate
