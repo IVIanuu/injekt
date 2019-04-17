@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Holds a [Component] and allows for shorter syntax
  */
@@ -30,23 +32,51 @@ interface InjektTrait {
 inline fun <reified T> InjektTrait.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): T = component.get(name, parameters)
+): T = get(T::class, name, parameters)
+
+/** Calls trough [Component.get] */
+fun <T> InjektTrait.get(
+    type: KClass<*>,
+    name: Any? = null,
+    parameters: ParametersDefinition? = null
+): T = component.get(type, name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(name, parameters) }
+): Lazy<T> = inject(T::class, name, parameters)
+
+/** Calls trough [Component.inject] */
+fun <T> InjektTrait.inject(
+    type: KClass<*>,
+    name: Any? = null,
+    parameters: ParametersDefinition? = null
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(type, name, parameters) }
 
 /** Calls trough [Component.getProvider] */
 inline fun <reified T> InjektTrait.getProvider(
     name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = component.getProvider(name, defaultParameters)
+): Provider<T> = getProvider(T::class, name, defaultParameters)
+
+/** Calls trough [Component.getProvider] */
+fun <T> InjektTrait.getProvider(
+    type: KClass<*>,
+    name: Any? = null,
+    defaultParameters: ParametersDefinition? = null
+): Provider<T> = component.getProvider(type, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T> InjektTrait.injectProvider(
     name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
+): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
+
+/** Calls trough [Component.injectProvider] */
+fun <T> InjektTrait.injectProvider(
+    type: KClass<*>,
+    name: Any? = null,
+    defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> =
-    lazy(LazyThreadSafetyMode.NONE) { component.getProvider<T>(name, defaultParameters) }
+    lazy(LazyThreadSafetyMode.NONE) { component.getProvider<T>(type, name, defaultParameters) }

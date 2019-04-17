@@ -98,7 +98,16 @@ inline fun <reified T> Component.get(
 inline fun <reified T> Component.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(name, parameters) }
+): Lazy<T> = inject(T::class, name, parameters)
+
+/**
+ * Lazily returns a instance of [T] matching the [name] and [parameters]
+ */
+fun <T> Component.inject(
+    type: KClass<*>,
+    name: Any? = null,
+    parameters: ParametersDefinition? = null
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
 
 /**
  * Returns a [Provider] for [T] and [name]
@@ -107,8 +116,18 @@ inline fun <reified T> Component.inject(
 inline fun <reified T> Component.getProvider(
     name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
+): Provider<T> = getProvider(T::class, name, defaultParameters)
+
+/**
+ * Returns a [Provider] for [T] and [name]
+ * Each [Provider.get] call results in a potentially new value
+ */
+fun <T> Component.getProvider(
+    type: KClass<*>,
+    name: Any? = null,
+    defaultParameters: ParametersDefinition? = null
 ): Provider<T> = provider { parameters: ParametersDefinition? ->
-    get<T>(name, parameters ?: defaultParameters)
+    get<T>(type, name, parameters ?: defaultParameters)
 }
 
 /**
@@ -118,8 +137,18 @@ inline fun <reified T> Component.getProvider(
 inline fun <reified T> Component.injectProvider(
     name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
+): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
+
+/**
+ * Returns a [Provider] for [T] and [name]
+ * Each [Provider.get] call results in a potentially new value
+ */
+fun <T> Component.injectProvider(
+    type: KClass<*>,
+    name: Any? = null,
+    defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
     provider { parameters: ParametersDefinition? ->
-        get<T>(name, parameters ?: defaultParameters)
+        get<T>(type, name, parameters ?: defaultParameters)
     }
 }
