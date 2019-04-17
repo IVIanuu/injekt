@@ -26,8 +26,11 @@ object BridgeKind : Kind() {
     override fun toString(): String = "Bridge"
 }
 
-private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(parameters: ParametersDefinition?): T = create(parameters)
+/**
+ * Applies the [BridgeKind]
+ */
+fun BindingBuilder<*>.bridge() {
+    kind(BridgeKind)
 }
 
 inline fun <reified T> ModuleBuilder.bridge(
@@ -50,4 +53,8 @@ fun <T> ModuleBuilder.bridge(
         definition { get(type, name) { it } }
         block()
     }
+}
+
+private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+    override fun get(parameters: ParametersDefinition?): T = create(parameters)
 }

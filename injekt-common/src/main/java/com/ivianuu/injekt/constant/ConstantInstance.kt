@@ -40,6 +40,13 @@ class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 }
 
 /**
+ * Applies the [ConstantKind]
+ */
+fun BindingBuilder<*>.constant() {
+    kind(ConstantKind)
+}
+
+/**
  * Adds a [Binding] which already exists
  */
 fun <T : Any> ModuleBuilder.constant(
