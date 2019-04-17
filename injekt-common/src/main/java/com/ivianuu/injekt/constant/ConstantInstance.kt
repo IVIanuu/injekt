@@ -30,16 +30,6 @@ object ConstantKind : Kind() {
 }
 
 /**
- * Holds a constant instance
- */
-class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("Return constant $binding")
-        return create(parameters)
-    }
-}
-
-/**
  * Applies the [ConstantKind]
  */
 fun BindingBuilder<*>.constant() {
@@ -67,4 +57,11 @@ fun <T : Any> ModuleBuilder.constantBuilder(
     block: BindingBuilder<T>.() -> Unit
 ) {
     bind(type, name, ConstantKind, { instance }, block)
+}
+
+private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+    override fun get(parameters: ParametersDefinition?): T {
+        InjektPlugins.logger?.info("Return constant $binding")
+        return create(parameters)
+    }
 }
