@@ -31,10 +31,22 @@ object ForService
 inline fun <T : Service> T.serviceComponent(
     definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
+    getClosestComponentOrNull()?.let { dependencies(it) }
     modules(serviceModule())
-    getApplicationComponentOrNull()?.let { dependencies(it) }
     definition()
 }
+
+/**
+ * Returns the closest [Component] or null
+ */
+fun Service.getClosestComponentOrNull(): Component? =
+    getApplicationComponentOrNull()
+
+/**
+ * Returns the closest [Component]
+ */
+fun Service.getClosestComponent(): Component =
+    getClosestComponentOrNull() ?: error("No close component found for $this")
 
 /**
  * Returns the parent [Component] if available or null

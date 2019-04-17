@@ -31,10 +31,22 @@ object ForActivity
 inline fun <T : Activity> T.activityComponent(
     definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
-    getApplicationComponentOrNull()?.let { dependencies(it) }
+    getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     definition()
 }
+
+/**
+ * Returns the closest [Component] or null
+ */
+fun Activity.getClosestComponentOrNull(): Component? =
+    getApplicationComponentOrNull()
+
+/**
+ * Returns the closest [Component]
+ */
+fun Activity.getClosestComponent(): Component =
+    getClosestComponentOrNull() ?: error("No close component found for $this")
 
 /**
  * Returns the application [Component] or null

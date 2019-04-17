@@ -37,12 +37,25 @@ object ForChildView
 inline fun <reified T : View> T.viewComponent(
     definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
-    (getParentViewComponentOrNull()
-        ?: getContextComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+    getClosestComponentOrNull()?.let { dependencies(it) }
     modules(viewModule())
     definition()
 }
+
+/**
+ * Returns the closest [Component] or null
+ */
+fun View.getClosestComponentOrNull(): Component? {
+    return getParentViewComponentOrNull()
+        ?: getContextComponentOrNull()
+        ?: getApplicationComponentOrNull()
+}
+
+/**
+ * Returns the closest [Component]
+ */
+fun View.getClosestComponent(): Component =
+    getClosestComponentOrNull() ?: error("No close component found for $this")
 
 /**
  * Returns the [Component] of the parent view or null

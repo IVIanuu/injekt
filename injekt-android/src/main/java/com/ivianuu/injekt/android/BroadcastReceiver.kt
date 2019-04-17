@@ -33,10 +33,22 @@ inline fun <reified T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
-    getApplicationComponentOrNull(context)?.let { dependencies(it) }
+    getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule())
     definition()
 }
+
+/**
+ * Returns the closest [Component] or null
+ */
+fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
+    getApplicationComponentOrNull(context)
+
+/**
+ * Returns the closest [Component]
+ */
+fun BroadcastReceiver.getClosestComponent(context: Context): Component =
+    getClosestComponentOrNull(context) ?: error("No close component found for $this")
 
 /**
  * Returns the parent [Component] if available or null

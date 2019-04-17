@@ -36,12 +36,25 @@ object ForChildFragment
 inline fun <reified T : Fragment> T.fragmentComponent(
     definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
-    (getParentFragmentComponentOrNull()
-        ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull())?.let { dependencies(it) }
+    getClosestComponentOrNull()?.let { dependencies(it) }
     modules(fragmentModule())
     definition()
 }
+
+/**
+ * Returns the closest [Component] or null
+ */
+fun Fragment.getClosestComponentOrNull(): Component? {
+    return getParentFragmentComponentOrNull()
+        ?: getActivityComponentOrNull()
+        ?: getApplicationComponentOrNull()
+}
+
+/**
+ * Returns the closest [Component]
+ */
+fun Fragment.getClosestComponent(): Component =
+    getClosestComponentOrNull() ?: error("No close component found for $this")
 
 /**
  * Returns the [Component] of the parent fragment or null

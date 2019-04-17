@@ -31,10 +31,22 @@ object ForContentProvider
 inline fun <reified T : ContentProvider> T.contentProviderComponent(
     definition: ComponentBuilder.() -> Unit = {}
 ): Component = component {
-    getApplicationComponentOrNull()?.let { dependencies(it) }
+    getClosestComponentOrNull()?.let { dependencies(it) }
     modules(contentProviderModule())
     definition()
 }
+
+/**
+ * Returns the closest [Component] or null
+ */
+fun ContentProvider.getClosestComponentOrNull(): Component? =
+    getApplicationComponentOrNull()
+
+/**
+ * Returns the closest [Component]
+ */
+fun ContentProvider.getClosestComponent(): Component =
+    getClosestComponentOrNull() ?: error("No close component found for $this")
 
 /**
  * Returns the parent [Component] if available or null
