@@ -87,7 +87,7 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
         val params = parameters()
 
-        val key = params.hashCode()
+        val key = params.values.hashCode()
 
         var value = values[key]
 

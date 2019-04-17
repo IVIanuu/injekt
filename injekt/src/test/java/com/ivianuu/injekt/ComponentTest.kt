@@ -31,12 +31,10 @@ class ComponentTest {
         val named = TestDep1()
 
         val component = component {
-            modules(
-                module {
-                    factory { typed }
-                    single("named") { named }
-                }
-            )
+            module {
+                factory { typed }
+                single("named") { named }
+            }
         }
 
         val typedGet = component.get<TestDep1>()
@@ -53,7 +51,7 @@ class ComponentTest {
         val throwed = try {
             component.get<TestDep1>()
             false
-        } catch (e: BindingNotFoundException) {
+        } catch (e: Exception) {
             true
         }
 
@@ -65,14 +63,12 @@ class ComponentTest {
         var called = false
 
         val component = component {
-            modules(
-                module {
-                    factory {
-                        called = true
-                        TestDep1()
-                    }
+            module {
+                factory {
+                    called = true
+                    TestDep1()
                 }
-            )
+            }
         }
 
         assertFalse(called)
@@ -89,12 +85,10 @@ class ComponentTest {
         val named = TestDep1()
 
         val component = component {
-            modules(
-                module {
-                    factory { typed }
-                    factory("named") { named }
-                }
-            )
+            module {
+                factory { typed }
+                factory("named") { named }
+            }
         }
 
         assertEquals(typed, component.get<TestDep1>())

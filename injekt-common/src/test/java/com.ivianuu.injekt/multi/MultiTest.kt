@@ -48,7 +48,20 @@ class MultiTest {
 
     @Test
     fun testThrowsOnNullParams() {
+        val component = component {
+            module {
+                multi { (value: Int) -> MultiValue(value) }
+            }
+        }
 
+        val throwed = try {
+            component.get<MultiValue>()
+            false
+        } catch (e: Exception) {
+            true
+        }
+
+        assertTrue(throwed)
     }
 
 }

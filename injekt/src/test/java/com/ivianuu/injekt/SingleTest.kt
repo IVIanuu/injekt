@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt
 
+import com.ivianuu.injekt.util.TestDep1
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class Run {
+class SingleTest {
 
     @Test
-    fun test() {
-        runAllInjectionTests()
+    fun testCreatesOnlyOnce() {
+        val component = component {
+            module {
+                single { TestDep1() }
+            }
+        }
+
+        val instance = component.instances.values.first()
+
+        val value1 = instance.get()
+        val value2 = instance.get()
+
+        assertTrue(value1 === value2)
     }
 
 }
