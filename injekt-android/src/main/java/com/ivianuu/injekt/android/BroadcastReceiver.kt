@@ -29,13 +29,13 @@ object ForReceiver
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <reified T : BroadcastReceiver> T.receiverComponent(
+fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
-    definition: ComponentBuilder.() -> Unit = {}
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

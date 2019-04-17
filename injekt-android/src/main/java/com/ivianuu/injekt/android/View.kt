@@ -34,12 +34,12 @@ object ForChildView
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <reified T : View> T.viewComponent(
-    definition: ComponentBuilder.() -> Unit = {}
+fun <T : View> T.viewComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(viewModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

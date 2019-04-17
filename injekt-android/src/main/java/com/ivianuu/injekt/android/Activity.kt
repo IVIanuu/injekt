@@ -28,12 +28,12 @@ object ForActivity
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : Activity> T.activityComponent(
-    definition: ComponentBuilder.() -> Unit = {}
+fun <T : Activity> T.activityComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

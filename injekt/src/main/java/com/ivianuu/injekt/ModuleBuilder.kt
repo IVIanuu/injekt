@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
 /**
  * Builder for [Module]s
  */
-class ModuleBuilder @PublishedApi internal constructor() {
+class ModuleBuilder internal constructor() {
 
     private val bindings = arrayListOf<Binding<*>>()
 
@@ -51,18 +51,18 @@ fun ModuleBuilder.module(module: Module) {
 /** Calls trough [ModuleBuilder.withBinding] */
 inline fun <reified T> ModuleBuilder.withBinding(
     name: Any? = null,
-    noinline body: BindingContext<T>.() -> Unit
+    noinline block: BindingContext<T>.() -> Unit
 ) {
-    withBinding(T::class, name, body)
+    withBinding(T::class, name, block)
 }
 
 /**
- * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [name]
+ * Invokes the [block] in the [BindingContext] of the [Binding] with [type] and [name]
  */
 fun <T> ModuleBuilder.withBinding(
     type: KClass<*>,
     name: Any? = null,
-    body: BindingContext<T>.() -> Unit
+    block: BindingContext<T>.() -> Unit
 ) {
     // todo this is a little hacky can we turn this into a clean thing?
     // we create a additional binding because we have no reference to the original one
@@ -75,5 +75,5 @@ fun <T> ModuleBuilder.withBinding(
             kind = FactoryKind,
             definition = { component.get<T>(type, name) { it } }
         )
-    ) withContext body
+    ) withContext block
 }

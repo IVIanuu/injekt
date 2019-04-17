@@ -33,12 +33,12 @@ object ForChildFragment
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <reified T : Fragment> T.fragmentComponent(
-    definition: ComponentBuilder.() -> Unit = {}
+fun <T : Fragment> T.fragmentComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(fragmentModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

@@ -28,11 +28,11 @@ object ForApplication
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <reified T : Application> T.applicationComponent(
-    definition: ComponentBuilder.() -> Unit = {}
+fun <T : Application> T.applicationComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     modules(applicationModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

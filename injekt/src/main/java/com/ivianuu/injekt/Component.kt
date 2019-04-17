@@ -76,9 +76,13 @@ class Component internal constructor(
 /**
  * Returns a new [Component] configured by [block]
  */
-inline fun component(
-    block: ComponentBuilder.() -> Unit = {}
-): Component = ComponentBuilder().apply(block).build()
+fun component(
+    block: (ComponentBuilder.() -> Unit)? = null
+): Component {
+    return ComponentBuilder()
+        .apply { block?.invoke(this) }
+        .build()
+}
 
 /**
  * Returns a instance of [T] matching the [name] and [parameters]

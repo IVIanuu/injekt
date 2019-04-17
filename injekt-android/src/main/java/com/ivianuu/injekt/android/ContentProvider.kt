@@ -28,12 +28,12 @@ object ForContentProvider
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <reified T : ContentProvider> T.contentProviderComponent(
-    definition: ComponentBuilder.() -> Unit = {}
+fun <T : ContentProvider> T.contentProviderComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(contentProviderModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

@@ -24,10 +24,10 @@ import kotlin.reflect.KClass
 data class BindingContext<T>(val binding: Binding<T>, val moduleBuilder: ModuleBuilder)
 
 /**
- * Invokes the [body]
+ * Invokes the [block]
  */
-inline infix fun <T> BindingContext<T>.withContext(body: BindingContext<T>.() -> Unit): BindingContext<T> {
-    body()
+infix fun <T> BindingContext<T>.withContext(block: BindingContext<T>.() -> Unit): BindingContext<T> {
+    block()
     return this
 }
 

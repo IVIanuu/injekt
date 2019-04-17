@@ -28,12 +28,12 @@ object ForService
 /**
  * Returns a [Component] with convenient configurations
  */
-inline fun <T : Service> T.serviceComponent(
-    definition: ComponentBuilder.() -> Unit = {}
+fun <T : Service> T.serviceComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(serviceModule())
-    definition()
+    block?.invoke(this)
 }
 
 /**

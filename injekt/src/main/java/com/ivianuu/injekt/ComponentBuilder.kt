@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Builder for [Component]s
  */
-class ComponentBuilder @PublishedApi internal constructor() {
+class ComponentBuilder internal constructor() {
 
     private val dependencies = arrayListOf<Component>()
     private val bindings = linkedMapOf<Key, Binding<*>>()
