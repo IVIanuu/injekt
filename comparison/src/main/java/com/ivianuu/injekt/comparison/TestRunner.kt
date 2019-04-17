@@ -23,6 +23,7 @@ import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import org.nield.kotlinstatistics.median
+import kotlin.system.measureNanoTime
 
 private const val ROUNDS = 100_000
 
@@ -64,8 +65,8 @@ fun runInjectionTests(tests: List<InjectionTest>) {
 }
 
 fun measure(test: InjectionTest): Timings {
-    val setup = measureCall { test.setup() }
-    val injection = measureCall { test.inject() }
+    val setup = measureNanoTime { test.setup() }
+    val injection = measureNanoTime { test.inject() }
     test.shutdown()
     return Timings(test.name, setup, injection)
 }
@@ -87,13 +88,6 @@ data class Results(
     val injectionMin: Double,
     val injectionMax: Double
 )
-
-inline fun measureCall(body: () -> Unit): Long {
-    val before = System.nanoTime()
-    body()
-    val after = System.nanoTime()
-    return after - before
-}
 
 fun Iterable<Timings>.results(): Results {
     return Results(
