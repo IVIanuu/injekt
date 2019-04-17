@@ -37,17 +37,6 @@ class Parameters(
      */
     operator fun <T> get(i: Int): T = values[i] as T
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Parameters) return false
-
-        if (values != other.values) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = values.hashCode()
-
     override fun toString(): String = values.toString()
 
 }

@@ -44,17 +44,6 @@ class Attributes constructor(private val _entries: MutableMap<String, Any?> = li
     @Suppress("UNCHECKED_CAST")
     operator fun <T> get(key: String): T? = _entries[key] as? T
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Attributes) return false
-
-        if (_entries != other._entries) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = _entries.hashCode()
-
     override fun toString(): String = entries.toString()
 
 }

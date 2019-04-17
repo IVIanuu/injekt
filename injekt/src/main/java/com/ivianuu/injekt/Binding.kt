@@ -32,24 +32,6 @@ class Binding<T> internal constructor(
     val type = key.type
     val name = key.name
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Binding<*>) return false
-
-        if (key != other.key) return false
-        if (kind != other.kind) return false
-        if (attributes != other.attributes) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = key.hashCode()
-        result = 31 * result + kind.hashCode()
-        result = 31 * result + attributes.hashCode()
-        return result
-    }
-
     override fun toString(): String {
         return "$kind(" +
                 "type=${type.java.name}, " +
