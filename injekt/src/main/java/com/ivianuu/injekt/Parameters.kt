@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Parameters which will be used for assisted injection
  */
-class Parameters(
+data class Parameters(
     /**
      * All values of this params
      */
