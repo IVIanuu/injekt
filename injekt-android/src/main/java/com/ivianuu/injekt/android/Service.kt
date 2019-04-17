@@ -63,11 +63,7 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Service> T.serviceModule(): Module = module {
-    addBinding(
-        Binding(
-            type = this@serviceModule::class,
-            kind = SingleKind,
-            definition = { this@serviceModule }
-        )
-    ) bindType Service::class bindAlias (Context::class to ForService)
+    single(this@serviceModule::class) {
+        this@serviceModule
+    } bindType Service::class bindAlias (Context::class to ForService)
 }

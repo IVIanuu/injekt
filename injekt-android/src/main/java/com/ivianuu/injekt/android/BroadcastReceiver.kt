@@ -66,11 +66,5 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
-    addBinding(
-        Binding(
-            type = this@receiverModule::class,
-            kind = SingleKind,
-            definition = { this@receiverModule }
-        )
-    )
+    single(this@receiverModule::class) { this@receiverModule }
 }

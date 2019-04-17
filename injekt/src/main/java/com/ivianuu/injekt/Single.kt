@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Kind for single instances
  */
@@ -30,9 +32,18 @@ object SingleKind : Kind() {
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,
     noinline definition: Definition<T>
+): BindingContext<T> = single(T::class, name, definition)
+
+/**
+ * Adds a [Binding] which will be created once per [Component]
+ */
+fun <T> ModuleBuilder.single(
+    type: KClass<*>,
+    name: Any? = null,
+    definition: Definition<T>
 ): BindingContext<T> = addBinding(
     Binding(
-        type = T::class,
+        type = type,
         name = name,
         kind = SingleKind,
         definition = definition

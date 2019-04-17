@@ -63,11 +63,7 @@ fun Activity.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Activity> T.activityModule(): Module = module {
-    addBinding(
-        Binding(
-            type = this@activityModule::class,
-            kind = SingleKind,
-            definition = { this@activityModule }
-        )
-    ) bindType Activity::class bindAlias (Context::class to ForActivity)
+    single(this@activityModule::class) {
+        this@activityModule
+    } bindType Activity::class bindAlias (Context::class to ForActivity)
 }
