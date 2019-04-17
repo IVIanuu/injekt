@@ -20,70 +20,84 @@ import com.ivianuu.injekt.*
 import kotlin.reflect.KClass
 
 /**
- * Eager single kind
+ * Eager kind
  */
-object EagerSingleKind : Kind() {
+object EagerKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> =
-        EagerSingleInstance(SingleKind.createInstance(binding))
+        EagerInstance(binding)
 
-    override fun toString(): String = "EagerSingle"
+    override fun toString(): String = "Eager"
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-inline fun <reified T> ModuleBuilder.eagerSingle(
+inline fun <reified T> ModuleBuilder.eager(
     name: Any? = null,
     noinline definition: Definition<T>
 ) {
-    eagerSingle(T::class, name, definition)
+    eager(T::class, name, definition)
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-fun <T> ModuleBuilder.eagerSingle(
+fun <T> ModuleBuilder.eager(
     type: KClass<*>,
     name: Any? = null,
     definition: Definition<T>
 ) {
-    bind(type, name, EagerSingleKind, definition)
+    bind(type, name, EagerKind, definition)
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-inline fun <reified T> ModuleBuilder.eagerSingleBuilder(
+inline fun <reified T> ModuleBuilder.eagerBuilder(
     name: Any? = null,
     noinline definition: Definition<T>? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    eagerSingleBuilder(T::class, name, definition, block)
+    eagerBuilder(T::class, name, definition, block)
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-fun <T> ModuleBuilder.eagerSingleBuilder(
+fun <T> ModuleBuilder.eagerBuilder(
     type: KClass<*>,
     name: Any? = null,
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, EagerSingleKind, definition, block)
+    bind(type, name, EagerKind, definition, block)
 }
 
-private class EagerSingleInstance<T>(
-    private val singleInstance: Instance<T>
-) : Instance<T>() {
+private object UNINITIALIZED
 
-    override val binding: Binding<T>
-        get() = singleInstance.binding
+private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    override fun get(parameters: ParametersDefinition?): T = singleInstance.get(parameters)
+    private var _value: Any? = UNINITIALIZED
 
-    override fun setDefinitionContext(context: DefinitionContext) {
-        super.setDefinitionContext(context)
-        get(null)
+    override fun get(parameters: ParametersDefinition?): T {
+        var value = _value
+        if (value !== UNINITIALIZED) {
+            InjektPlugins.logger?.info("Return existing eager instance $binding")
+            return value as T
+        }
+
+        synchronized(this) {
+            value = _value
+            if (value !== UNINITIALIZED) {
+                InjektPlugins.logger?.info("Return existing eager instance $binding")
+                return@get value as T
+            }
+
+            InjektPlugins.logger?.info("Initialize eager instance $binding")
+            value = create(parameters)
+            _value = value
+            return@get value as T
+        }
     }
+
 }
