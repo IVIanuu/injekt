@@ -78,6 +78,13 @@ fun ComponentBuilder.modules(module: Module) {
 }
 
 /**
+ * Adds the [Module] built by [block]
+ */
+fun ComponentBuilder.module(block: (ModuleBuilder.() -> Unit)? = null) {
+    modules(com.ivianuu.injekt.module(block))
+}
+
+/**
  * Adds all [dependencies]
  */
 fun ComponentBuilder.dependencies(dependencies: Iterable<Component>) {

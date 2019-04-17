@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.common.multibinding
+package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.common.NameOne
-import com.ivianuu.injekt.common.NameThree
-import com.ivianuu.injekt.common.NameTwo
-import com.ivianuu.injekt.common.Values
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factoryBuilder
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
-import com.ivianuu.injekt.multibinding.bindIntoSet
-import com.ivianuu.injekt.multibinding.getSet
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -35,22 +28,20 @@ class SetTest {
     @Test
     fun testSetMultiBinding() {
         val component = component {
-            modules(
-                module {
-                    factoryBuilder<String>(NameOne) {
-                        definition { "value_one" }
-                        bindIntoSet(Values)
-                    }
-                    factoryBuilder<String>(NameTwo) {
-                        definition { "value_two" }
-                        bindIntoSet(Values)
-                    }
-                    factoryBuilder<String>(NameThree) {
-                        definition { "value_three" }
-                        bindIntoSet(Values)
-                    }
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoSet(Values)
                 }
-            )
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoSet(Values)
+                }
+                factoryBuilder<String>(NameThree) {
+                    definition { "value_three" }
+                    bindIntoSet(Values)
+                }
+            }
         }
 
         val set = component.getSet<String>(Values)

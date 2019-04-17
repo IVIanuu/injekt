@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.common
+package com.ivianuu.injekt.multibinding
 
 object Values
 object NameOne

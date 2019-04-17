@@ -19,7 +19,6 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factoryBuilder
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -28,22 +27,20 @@ class MapTest {
     @Test
     fun testMapMultiBinding() {
         val component = component {
-            modules(
-                module {
-                    factoryBuilder<String>(NameOne) {
-                        definition { "value_one" }
-                        bindIntoMap(Values, "key_one")
-                    }
-                    factoryBuilder<String>(NameTwo) {
-                        definition { "value_two" }
-                        bindIntoMap(Values, "key_two")
-                    }
-                    factoryBuilder<String>(NameThree) {
-                        definition { "value_three" }
-                        bindIntoMap(Values, "key_three")
-                    }
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoMap(Values, "key_one")
                 }
-            )
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoMap(Values, "key_two")
+                }
+                factoryBuilder<String>(NameThree) {
+                    definition { "value_three" }
+                    bindIntoMap(Values, "key_three")
+                }
+            }
         }
 
         val map = component.getMap<String, String>(Values)

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.common.provider
+package com.ivianuu.injekt.provider
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.provider.getProvider
 import com.ivianuu.injekt.util.TestDep1
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -28,11 +27,9 @@ class ProviderTest {
     @Test
     fun testProviderNotReturnsSameValue() {
         val component = component {
-            modules(
-                module {
-                    factory { TestDep1() }
-                }
-            )
+            module {
+                factory { TestDep1() }
+            }
         }
         val getProvider = component.getProvider<TestDep1>()
         val value1 = getProvider.get()
@@ -45,14 +42,12 @@ class ProviderTest {
         var usedParams: Parameters? = null
 
         val component = component {
-            modules(
-                module {
-                    factory {
-                        usedParams = it
-                        TestDep1()
-                    }
+            module {
+                factory {
+                    usedParams = it
+                    TestDep1()
                 }
-            )
+            }
         }
 
         val defaultParams = parametersOf("one", "two")
@@ -69,14 +64,12 @@ class ProviderTest {
         var usedParams: Parameters? = null
 
         val component = component {
-            modules(
-                module {
-                    factory {
-                        usedParams = it
-                        TestDep1()
-                    }
+            module {
+                factory {
+                    usedParams = it
+                    TestDep1()
                 }
-            )
+            }
         }
 
         val parameters = parametersOf("one", "two")
@@ -93,14 +86,12 @@ class ProviderTest {
         var usedParams: Parameters? = null
 
         val component = component {
-            modules(
-                module {
-                    factory {
-                        usedParams = it
-                        TestDep1()
-                    }
+            module {
+                factory {
+                    usedParams = it
+                    TestDep1()
                 }
-            )
+            }
         }
 
         val defaultParams = parametersOf("default")
