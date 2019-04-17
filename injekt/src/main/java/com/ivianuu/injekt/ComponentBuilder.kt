@@ -44,10 +44,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
      */
     fun addBinding(binding: Binding<*>) {
         bindings[binding.key] = binding
-        instances[binding.key] = when (binding.kind) {
-            Binding.Kind.FACTORY -> FactoryInstance(binding)
-            Binding.Kind.SINGLE -> SingleInstance(binding)
-        }
+        instances[binding.key] = binding.kind.createInstance(binding)
     }
 
     /**

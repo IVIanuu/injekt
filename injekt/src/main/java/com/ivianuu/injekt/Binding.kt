@@ -56,12 +56,11 @@ class Binding<T> internal constructor(
                 ")"
     }
 
-    enum class Kind { FACTORY, SINGLE }
 }
 
 inline fun <reified T> Binding(
     name: Any? = null,
-    kind: Binding.Kind,
+    kind: Kind,
     attributes: Attributes = Attributes(),
     noinline definition: Definition<T>
 ): Binding<T> {
@@ -71,7 +70,7 @@ inline fun <reified T> Binding(
 fun <T> Binding(
     type: KClass<*>,
     name: Any? = null,
-    kind: Binding.Kind,
+    kind: Kind,
     attributes: Attributes = Attributes(),
     definition: Definition<T>
 ): Binding<T> {
@@ -81,7 +80,7 @@ fun <T> Binding(
 fun <T> Binding<T>.copy(
     type: KClass<*> = this.type,
     name: Any? = this.name,
-    kind: Binding.Kind = this.kind,
+    kind: Kind = this.kind,
     attributes: Attributes = Attributes(),
     definition: Definition<T> = this.definition
 ): Binding<T> {

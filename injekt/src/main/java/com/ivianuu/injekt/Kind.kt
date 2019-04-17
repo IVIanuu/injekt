@@ -16,23 +16,14 @@
 
 package com.ivianuu.injekt
 
-abstract class Instance<T> {
+/**
+ * Provides instances for its kind
+ */
+abstract class Kind {
+    /**
+     * Returns a new [Instance] for the [binding]
+     */
+    abstract fun <T> createInstance(binding: Binding<T>): Instance<T>
 
-    abstract val binding: Binding<T>
-
-    lateinit var context: DefinitionContext
-
-    abstract fun get(parameters: ParametersDefinition?): T
-
-    protected fun create(parameters: ParametersDefinition?): T {
-        return try {
-            binding.definition.invoke(
-                context,
-                parameters?.invoke() ?: emptyParameters()
-            )
-        } catch (e: Exception) {
-            throw IllegalStateException("Couldn't instantiate $binding", e)
-        }
-    }
-
+    override fun toString() = "Unknown"
 }

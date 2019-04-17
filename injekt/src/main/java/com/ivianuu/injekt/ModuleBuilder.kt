@@ -42,36 +42,6 @@ class ModuleBuilder @PublishedApi internal constructor() {
 }
 
 /**
- * Provides a unscoped dependency which will be recreated on each request
- */
-inline fun <reified T> ModuleBuilder.factory(
-    name: Any? = null,
-    noinline definition: Definition<T>
-): BindingContext<T> = addBinding(
-    Binding(
-        type = T::class,
-        name = name,
-        kind = Binding.Kind.FACTORY,
-        definition = definition
-    )
-)
-
-/**
- * Provides scoped dependency which will be created once for each component
- */
-inline fun <reified T> ModuleBuilder.single(
-    name: Any? = null,
-    noinline definition: Definition<T>
-): BindingContext<T> = addBinding(
-    Binding(
-        type = T::class,
-        name = name,
-        kind = Binding.Kind.SINGLE,
-        definition = definition
-    )
-)
-
-/**
  * Adds all bindings of the [module]
  */
 fun ModuleBuilder.module(module: Module) {
@@ -102,7 +72,7 @@ inline fun <T> ModuleBuilder.withBinding(
         Binding(
             type = type,
             name = UUID.randomUUID().toString(),
-            kind = Binding.Kind.FACTORY,
+            kind = FactoryKind,
             definition = { component.get<T>(type, name) { it } }
         )
     ) withContext body
