@@ -25,7 +25,7 @@ object SingleKind : Kind() {
 }
 
 /**
- * Provides scoped dependency which will be created once for each component
+ * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,

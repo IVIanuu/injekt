@@ -25,7 +25,7 @@ object FactoryKind : Kind() {
 }
 
 /**
- * Provides a unscoped dependency which will be recreated on each request
+ * Adds a [Binding] which will be created on each request
  */
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,

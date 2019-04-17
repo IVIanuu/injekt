@@ -51,7 +51,7 @@ fun ModuleBuilder.module(module: Module) {
 /** Calls trough [ModuleBuilder.withBinding] */
 inline fun <reified T> ModuleBuilder.withBinding(
     name: Any? = null,
-    body: BindingContext<T>.() -> Unit
+    noinline body: BindingContext<T>.() -> Unit
 ) {
     withBinding(T::class, name, body)
 }
@@ -59,7 +59,7 @@ inline fun <reified T> ModuleBuilder.withBinding(
 /**
  * Invokes the [body] in the [BindingContext] of the [Binding] with [type] and [name]
  */
-inline fun <T> ModuleBuilder.withBinding(
+fun <T> ModuleBuilder.withBinding(
     type: KClass<*>,
     name: Any? = null,
     body: BindingContext<T>.() -> Unit
