@@ -23,6 +23,10 @@ object CustomTest : InjectionTest {
 
     override val name = "Custom"
 
+    override fun moduleCreation() {
+        createModule()
+    }
+
     override fun setup() {
         DIContainer.loadModule(customModule)
     }

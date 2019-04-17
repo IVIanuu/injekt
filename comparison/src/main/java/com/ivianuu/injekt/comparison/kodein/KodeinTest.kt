@@ -28,6 +28,10 @@ object KodeinTest : InjectionTest {
 
     private var kodein: Kodein? = null
 
+    override fun moduleCreation() {
+        createModule()
+    }
+
     override fun setup() {
         kodein = Kodein { import(kodeinModule) }
     }

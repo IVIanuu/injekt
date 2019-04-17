@@ -21,7 +21,9 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 
-val injektModule = module {
+val injektModule = createModule()
+
+fun createModule() = module {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }

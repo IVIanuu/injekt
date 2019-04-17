@@ -22,7 +22,9 @@ import org.kodein.di.erased.bind
 import org.kodein.di.erased.instance
 import org.kodein.di.erased.provider
 
-val kodeinModule = Kodein.Module("fib") {
+val kodeinModule = createModule()
+
+fun createModule() = Kodein.Module("fib") {
     bind<Fib1>() with provider { Fib1() }
     bind<Fib2>() with provider { Fib2() }
     bind<Fib3>() with provider { Fib3(instance(), instance()) }

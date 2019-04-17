@@ -78,20 +78,26 @@ fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultCo
 }
 
 fun measure(test: InjectionTest): Timings {
+    val moduleCreation = measureNanoTime { test.moduleCreation() }
     val setup = measureNanoTime { test.setup() }
     val injection = measureNanoTime { test.inject() }
     test.shutdown()
-    return Timings(test.name, setup, injection)
+    return Timings(test.name, moduleCreation, setup, injection)
 }
 
 data class Timings(
     val injectorName: String,
+    val moduleCreation: Long,
     val setup: Long,
     val injection: Long
 )
 
 data class Results(
     val injectorName: String,
+    val moduleCreationAverage: Double,
+    val moduleCreationMedian: Double,
+    val moduleCreationMin: Double,
+    val moduleCreationMax: Double,
     val setupAverage: Double,
     val setupMedian: Double,
     val setupMin: Double,
@@ -105,6 +111,10 @@ data class Results(
 fun Iterable<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName, // todo dirty
+        moduleCreationAverage = map { it.moduleCreation }.average(),
+        moduleCreationMedian = map { it.moduleCreation }.median(),
+        moduleCreationMin = map { it.moduleCreation }.min()!!.toDouble(),
+        moduleCreationMax = map { it.moduleCreation }.max()!!.toDouble(),
         setupAverage = map { it.setup }.average(),
         setupMedian = map { it.setup }.median(),
         setupMin = map { it.setup }.min()!!.toDouble(),
@@ -124,6 +134,31 @@ fun Double.format(config: Config): String {
 }
 
 fun Map<String, Results>.print(config: Config) {
+    println("Module:")
+    println("Library | Average | Median | Min | Max")
+    forEach { (name, results) ->
+        println(
+            "$name | " +
+                    "${results.moduleCreationAverage.format(config)} | " +
+                    "${results.moduleCreationMedian.format(config)} | " +
+                    "${results.moduleCreationMin.format(config)} | " +
+                    "${results.moduleCreationMax.format(config)}"
+        )
+    }
+
+    println()
+
+    println("Best:")
+    println("Average | Median | Min | Max")
+    println(
+        "${minBy { it.value.moduleCreationAverage }?.key} | " +
+                "${minBy { it.value.moduleCreationMedian }?.key} | " +
+                "${minBy { it.value.moduleCreationMin }?.key} | " +
+                "${maxBy { it.value.moduleCreationMax }?.key}"
+    )
+
+    println()
+
     println("Setup:")
     println("Library | Average | Median | Min | Max")
     forEach { (name, results) ->

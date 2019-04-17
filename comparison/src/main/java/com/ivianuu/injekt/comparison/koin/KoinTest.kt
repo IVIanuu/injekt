@@ -27,6 +27,10 @@ object KoinTest : InjectionTest, KoinComponent {
 
     override val name = "Koin"
 
+    override fun moduleCreation() {
+        createModule()
+    }
+
     override fun setup() {
         startKoin { modules(koinModule) }
     }

@@ -27,6 +27,10 @@ object DaggerTest : InjectionTest {
     @set:Inject var dep: Fib8? = null
     private var component: DaggerComponent? = null
 
+    override fun moduleCreation() {
+        DaggerModule()
+    }
+
     override fun setup() {
         component = DaggerDaggerComponent.create()
     }

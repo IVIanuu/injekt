@@ -19,7 +19,9 @@ package com.ivianuu.injekt.comparison.koin
 import com.ivianuu.injekt.comparison.*
 import org.koin.dsl.module
 
-val koinModule = module {
+val koinModule = createModule()
+
+fun createModule() = module {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }

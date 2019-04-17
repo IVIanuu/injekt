@@ -28,6 +28,10 @@ object InjektTest : InjectionTest {
 
     private var component: Component? = null
 
+    override fun moduleCreation() {
+        createModule()
+    }
+
     override fun setup() {
         component = component { modules(injektModule) }
     }

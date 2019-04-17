@@ -21,7 +21,9 @@ import org.rewedigital.katana.Module
 import org.rewedigital.katana.dsl.compact.factory
 import org.rewedigital.katana.dsl.get
 
-val katanaModule = Module("katanaKotlinModule") {
+val katanaModule = createModule()
+
+fun createModule() = Module("katanaKotlinModule") {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }

@@ -18,7 +18,9 @@ package com.ivianuu.injekt.comparison.custom
 
 import com.ivianuu.injekt.comparison.*
 
-val customModule = module {
+val customModule = createModule()
+
+fun createModule() = module {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }
