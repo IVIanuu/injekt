@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.constant.constant
 
 
 /**
@@ -97,5 +98,5 @@ fun Fragment.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    single(this@fragmentModule::class) { this@fragmentModule }
+    constant(this@fragmentModule)
 }

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.constant.constantBuilder
 
 /**
  * Application name
@@ -39,8 +40,7 @@ fun <T : Application> T.applicationComponent(
  * Returns a [Module] with convenient bindings
  */
 fun <T : Application> T.applicationModule(): Module = module {
-    singleBuilder<T>(this@applicationModule::class) {
-        definition { this@applicationModule }
+    constantBuilder(this@applicationModule) {
         bindTypes(Application::class, Context::class)
         bindAlias<Context>(ForApplication)
     }

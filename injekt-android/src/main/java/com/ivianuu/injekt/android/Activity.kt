@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Activity
 import android.content.Context
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.constant.constantBuilder
 
 /**
  * Activity name
@@ -63,8 +64,7 @@ fun Activity.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Activity> T.activityModule(): Module = module {
-    singleBuilder<T>(this@activityModule::class) {
-        definition { this@activityModule }
+    constantBuilder(this@activityModule) {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
     }

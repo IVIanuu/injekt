@@ -42,7 +42,6 @@ fun <T> ModuleBuilder.bridge(
     name: Any? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    // todo this is a little hacky can we turn this into a clean thing?
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation

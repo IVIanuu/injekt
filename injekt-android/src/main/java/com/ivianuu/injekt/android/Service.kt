@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.Context
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.constant.constantBuilder
 
 /**
  * Service name
@@ -63,8 +64,7 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Service> T.serviceModule(): Module = module {
-    singleBuilder<T>(this@serviceModule::class) {
-        definition { this@serviceModule }
+    constantBuilder(this@serviceModule) {
         bindType<Service>()
         bindAlias<Context>(ForService)
     }
