@@ -18,4 +18,7 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-internal data class Key(val type: KClass<*>, val name: Any? = null)
+/**
+ * A key for a [Binding]
+ */
+data class Key(val type: KClass<*>, val name: Any? = null)
