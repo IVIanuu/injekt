@@ -20,7 +20,6 @@ import android.app.Application
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.eager.eager
 
 
 /**
@@ -48,7 +47,7 @@ class App : Application(), InjektTrait {
 }
 
 val appModule = module {
-    eager { AppDependency(get()) }
+    single { AppDependency(get()) }
 }
 
 class AppDependency(val app: App)
