@@ -54,7 +54,7 @@ fun <T : Service> T.serviceModule(): Module = module {
     addBinding(
         Binding(
             type = this@serviceModule::class,
-            kind = Binding.Kind.SINGLE,
+            kind = SingleKind,
             definition = { this@serviceModule }
         )
     ) bindType Service::class bindAlias (Context::class to ForService)

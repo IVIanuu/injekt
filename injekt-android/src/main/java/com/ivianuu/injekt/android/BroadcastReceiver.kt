@@ -57,7 +57,7 @@ fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
     addBinding(
         Binding(
             type = this@receiverModule::class,
-            kind = Binding.Kind.SINGLE,
+            kind = SingleKind,
             definition = { this@receiverModule }
         )
     )

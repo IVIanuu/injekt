@@ -87,7 +87,7 @@ fun <T : Fragment> T.fragmentModule(): Module = module {
     addBinding(
         Binding(
             type = this@fragmentModule::class,
-            kind = Binding.Kind.SINGLE,
+            kind = SingleKind,
             definition = { this@fragmentModule }
         )
     )

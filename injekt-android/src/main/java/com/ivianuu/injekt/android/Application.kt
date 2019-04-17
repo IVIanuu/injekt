@@ -42,7 +42,7 @@ fun <T : Application> T.applicationModule(): Module = module {
     addBinding(
         Binding(
             type = this@applicationModule::class,
-            kind = Binding.Kind.SINGLE,
+            kind = SingleKind,
             definition = { this@applicationModule }
         )
     ) bindType Application::class bindType Context::class bindAlias (Context::class to ForApplication)

@@ -55,7 +55,7 @@ fun <T : ContentProvider> T.contentProviderModule(): Module = module {
     addBinding(
         Binding(
             type = this@contentProviderModule::class,
-            kind = Binding.Kind.SINGLE,
+            kind = SingleKind,
             definition = { this@contentProviderModule }
         )
     )
