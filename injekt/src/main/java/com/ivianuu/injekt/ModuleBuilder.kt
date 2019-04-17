@@ -48,9 +48,9 @@ inline fun <reified T> ModuleBuilder.bind(
     name: Any? = null,
     kind: Kind? = null,
     noinline definition: Definition<T>? = null,
-    noinline body: (BindingBuilder<T>.() -> Unit)? = null
+    noinline block: (BindingBuilder<T>.() -> Unit)? = null
 ) {
-    bind(T::class, name, kind, definition, body)
+    bind(T::class, name, kind, definition, block)
 }
 
 /**
@@ -61,17 +61,9 @@ fun <T> ModuleBuilder.bind(
     name: Any? = null,
     kind: Kind? = null,
     definition: Definition<T>? = null,
-    body: (BindingBuilder<T>.() -> Unit)? = null
+    block: (BindingBuilder<T>.() -> Unit)? = null
 ) {
-    addBinding(
-        binding<T> {
-            type(type)
-            name?.let { name(it) }
-            kind?.let { kind(it) }
-            definition?.let { definition(it) }
-            body?.invoke(this)
-        }
-    )
+    addBinding(binding(type, name, kind, definition, block))
 }
 
 /**

@@ -60,9 +60,9 @@ fun <T> ModuleBuilder.single(
 inline fun <reified T> ModuleBuilder.singleBuilder(
     name: Any? = null,
     noinline definition: Definition<T>? = null,
-    noinline body: BindingBuilder<T>.() -> Unit
+    noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    singleBuilder(T::class, name, definition, body)
+    singleBuilder(T::class, name, definition, block)
 }
 
 /**
@@ -72,9 +72,9 @@ fun <T> ModuleBuilder.singleBuilder(
     type: KClass<*>,
     name: Any? = null,
     definition: Definition<T>? = null,
-    body: BindingBuilder<T>.() -> Unit
+    block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, SingleKind, definition, body)
+    bind(type, name, SingleKind, definition, block)
 }
 
 private object UNINITIALIZED

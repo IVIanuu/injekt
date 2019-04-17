@@ -60,9 +60,9 @@ fun <T> ModuleBuilder.factory(
 inline fun <reified T> ModuleBuilder.factoryBuilder(
     name: Any? = null,
     noinline definition: Definition<T>? = null,
-    noinline body: BindingBuilder<T>.() -> Unit
+    noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    factoryBuilder(T::class, name, definition, body)
+    factoryBuilder(T::class, name, definition, block)
 }
 
 /**
@@ -72,9 +72,9 @@ fun <T> ModuleBuilder.factoryBuilder(
     type: KClass<*>,
     name: Any? = null,
     definition: Definition<T>? = null,
-    body: BindingBuilder<T>.() -> Unit
+    block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, SingleKind, definition, body)
+    bind(type, name, SingleKind, definition, block)
 }
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {

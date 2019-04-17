@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Represents a dependency binding.
  */
@@ -61,9 +63,21 @@ class Binding<T> internal constructor(
 /**
  * Returns a new [Binding] configured by [block]
  */
-fun <T> binding(block: BindingBuilder<T>.() -> Unit): Binding<T> {
+fun <T> binding(
+    type: KClass<*>? = null,
+    name: Any? = null,
+    kind: Kind? = null,
+    definition: Definition<T>? = null,
+    block: (BindingBuilder<T>.() -> Unit)? = null
+): Binding<T> {
     return BindingBuilder<T>()
-        .apply(block)
+        .apply {
+            type?.let { type(it) }
+            name?.let { name(it) }
+            kind?.let { kind(it) }
+            definition?.let { definition(it) }
+            block?.invoke(this)
+        }
         .build()
 }
 

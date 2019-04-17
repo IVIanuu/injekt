@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/comparison/comparison.iml" filepath="$PROJECT_DIR$/comparison/comparison.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt/injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-common/injekt-common.iml" filepath="$PROJECT_DIR$/injekt-common/injekt-common.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-multibinding/injekt-multibinding.iml" filepath="$PROJECT_DIR$/injekt-multibinding/injekt-multibinding.iml" />
       <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" />
     </modules>

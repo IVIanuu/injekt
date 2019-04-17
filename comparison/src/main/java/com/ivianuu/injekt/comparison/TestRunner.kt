@@ -118,7 +118,7 @@ fun Iterable<Timings>.results(): Results {
 
 fun Double.format(config: Config): String {
     return when (config.timeUnit) {
-        TimeUnit.MILLIS -> (this / 1000000.0).toString()
+        TimeUnit.MILLIS -> String.format("%.5f ms", this / 1000000.0)
         TimeUnit.NANOS -> this.toString()
     }
 }
