@@ -35,7 +35,7 @@ fun BindingBuilder<*>.bridge() {
 
 /**
  * Acts as an bridge for an existing [Binding]
- * This allows to add a alias multi bindings and so on to existing bindings
+ * This allows to add alias bindings and so on to existing bindings
  */
 inline fun <reified T> ModuleBuilder.bridge(
     name: Any? = null,
@@ -46,7 +46,7 @@ inline fun <reified T> ModuleBuilder.bridge(
 
 /**
  * Acts as an bridge for an existing [Binding]
- * This allows to add a alias multi bindings and so on to existing bindings
+ * This allows to add alias bindings and so on to existing bindings
  */
 fun <T> ModuleBuilder.bridge(
     type: KClass<*>,
@@ -55,7 +55,7 @@ fun <T> ModuleBuilder.bridge(
 ) {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
-    // the new factory acts as bridge and just calls trough the original implementation
+    // this binding acts as bridge and just calls trough the original implementation
     bind<T>(type, UUID.randomUUID().toString()) {
         bridge()
         definition { get(type, name) { it } }
