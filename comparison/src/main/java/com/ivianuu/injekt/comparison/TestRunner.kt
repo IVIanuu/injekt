@@ -25,9 +25,21 @@ import com.ivianuu.injekt.comparison.koin.KoinTest
 import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
 
-private const val ROUNDS = 100_000
+val defaultConfig = Config(
+    rounds = 100_000,
+    timeUnit = TimeUnit.MILLIS
+)
 
-fun runAllInjectionTests() {
+data class Config(
+    val rounds: Int,
+    val timeUnit: TimeUnit
+)
+
+enum class TimeUnit {
+    NANOS, MILLIS
+}
+
+fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
             DaggerTest,
@@ -36,20 +48,21 @@ fun runAllInjectionTests() {
             KoinTest,
             KatanaTest,
             InjektTest
-        )
+        ),
+        config
     )
 }
 
-fun runInjectionTests(vararg tests: InjectionTest) {
-    runInjectionTests(tests.toList())
+fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfig) {
+    runInjectionTests(tests.toList(), config)
 }
 
-fun runInjectionTests(tests: List<InjectionTest>) {
-    println("Running $ROUNDS iterations. Please stand by...")
+fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultConfig) {
+    println("Running ${config.rounds} iterations. Please stand by...")
 
     val timingsPerTest = linkedMapOf<String, MutableList<Timings>>()
 
-    repeat(ROUNDS) {
+    repeat(config.rounds) {
         tests.forEach { test ->
             timingsPerTest.getOrPut(test.name) { mutableListOf() }
                 .add(measure(test))
@@ -61,7 +74,7 @@ fun runInjectionTests(tests: List<InjectionTest>) {
 
     println()
 
-    results.print()
+    results.print(config)
 }
 
 fun measure(test: InjectionTest): Timings {
@@ -92,31 +105,34 @@ data class Results(
 fun Iterable<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName, // todo dirty
-        setupAverage = map { it.setup }.average().toMillis(),
-        setupMedian = map { it.setup }.median().toMillis(),
-        setupMin = map { it.setup }.min()?.toDouble()?.toMillis() ?: 0.0,
-        setupMax = map { it.setup }.max()?.toDouble()?.toMillis() ?: 0.0,
-        injectionAverage = map { it.injection }.average().toMillis(),
-        injectionMedian = map { it.injection }.median().toMillis(),
-        injectionMin = map { it.injection }.min()?.toDouble()?.toMillis() ?: 0.0,
-        injectionMax = map { it.injection }.max()?.toDouble()?.toMillis() ?: 0.0
+        setupAverage = map { it.setup }.average(),
+        setupMedian = map { it.setup }.median(),
+        setupMin = map { it.setup }.min()!!.toDouble(),
+        setupMax = map { it.setup }.max()!!.toDouble(),
+        injectionAverage = map { it.injection }.average(),
+        injectionMedian = map { it.injection }.median(),
+        injectionMin = map { it.injection }.min()!!.toDouble(),
+        injectionMax = map { it.injection }.max()!!.toDouble()
     )
 }
 
-fun Double?.format() = String.format("%.3f ms", this)
+fun Double.format(config: Config): String {
+    return when (config.timeUnit) {
+        TimeUnit.MILLIS -> (this / 1000000.0).toString()
+        TimeUnit.NANOS -> this.toString()
+    }
+}
 
-fun Double.toMillis() = this / 1000000.0
-
-fun Map<String, Results>.print() {
+fun Map<String, Results>.print(config: Config) {
     println("Setup:")
     println("Library | Average | Median | Min | Max")
     forEach { (name, results) ->
         println(
             "$name | " +
-                    "${results.setupAverage.format()} | " +
-                    "${results.setupMedian.format()} | " +
-                    "${results.setupMin.format()} | " +
-                    "${results.setupMax.format()}"
+                    "${results.setupAverage.format(config)} | " +
+                    "${results.setupMedian.format(config)} | " +
+                    "${results.setupMin.format(config)} | " +
+                    "${results.setupMax.format(config)}"
         )
     }
 
@@ -138,10 +154,10 @@ fun Map<String, Results>.print() {
     forEach { (name, results) ->
         println(
             "$name | " +
-                    "${results.injectionAverage.format()} | " +
-                    "${results.injectionMedian.format()} | " +
-                    "${results.injectionMin.format()} | " +
-                    "${results.injectionMax.format()}"
+                    "${results.injectionAverage.format(config)} | " +
+                    "${results.injectionMedian.format(config)} | " +
+                    "${results.injectionMin.format(config)} | " +
+                    "${results.injectionMax.format(config)}"
         )
     }
 
