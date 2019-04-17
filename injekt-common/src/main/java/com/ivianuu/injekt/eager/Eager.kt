@@ -100,4 +100,9 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
         }
     }
 
+    override fun setDefinitionContext(context: DefinitionContext) {
+        super.setDefinitionContext(context)
+        get(null)
+    }
+
 }
