@@ -27,12 +27,21 @@ object SingleKind : Kind() {
 }
 
 /**
+ * Applies the [SingleKind]
+ */
+fun BindingBuilder<*>.single() {
+    kind(SingleKind)
+}
+
+/**
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,
     noinline definition: Definition<T>
-): BindingContext<T> = single(T::class, name, definition)
+) {
+    single(T::class, name, definition)
+}
 
 /**
  * Adds a [Binding] which will be created once per [Component]
@@ -41,14 +50,32 @@ fun <T> ModuleBuilder.single(
     type: KClass<*>,
     name: Any? = null,
     definition: Definition<T>
-): BindingContext<T> = addBinding(
-    Binding(
-        type = type,
-        name = name,
-        kind = SingleKind,
-        definition = definition
-    )
-)
+) {
+    bind(type, name, SingleKind, definition)
+}
+
+/**
+ * Adds a [Binding] which will be created once per [Component]
+ */
+inline fun <reified T> ModuleBuilder.singleBuilder(
+    name: Any? = null,
+    noinline definition: Definition<T>? = null,
+    noinline body: BindingBuilder<T>.() -> Unit
+) {
+    singleBuilder(T::class, name, definition, body)
+}
+
+/**
+ * Adds a [Binding] which will be created once per [Component]
+ */
+fun <T> ModuleBuilder.singleBuilder(
+    type: KClass<*>,
+    name: Any? = null,
+    definition: Definition<T>? = null,
+    body: BindingBuilder<T>.() -> Unit
+) {
+    bind(type, name, SingleKind, definition, body)
+}
 
 private object UNINITIALIZED
 

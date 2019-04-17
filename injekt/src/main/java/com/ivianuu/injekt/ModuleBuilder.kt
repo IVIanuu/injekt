@@ -29,9 +29,9 @@ class ModuleBuilder internal constructor() {
     /**
      * Adds the [binding]
      */
-    fun <T> addBinding(binding: Binding<T>): BindingContext<T> {
+    fun addBinding(binding: Binding<*>) {
         bindings.add(binding)
-        return BindingContext(binding, this)
+        binding.additionalBindings.forEach { addBinding(it) }
     }
 
     /**
@@ -42,38 +42,63 @@ class ModuleBuilder internal constructor() {
 }
 
 /**
+ * Adds a [Binding]
+ */
+inline fun <reified T> ModuleBuilder.bind(
+    name: Any? = null,
+    kind: Kind? = null,
+    noinline definition: Definition<T>? = null,
+    noinline body: (BindingBuilder<T>.() -> Unit)? = null
+) {
+    bind(T::class, name, kind, definition, body)
+}
+
+/**
+ * Adds a [Binding]
+ */
+fun <T> ModuleBuilder.bind(
+    type: KClass<*>,
+    name: Any? = null,
+    kind: Kind? = null,
+    definition: Definition<T>? = null,
+    body: (BindingBuilder<T>.() -> Unit)? = null
+) {
+    addBinding(
+        binding<T> {
+            type(type)
+            name?.let { name(it) }
+            kind?.let { kind(it) }
+            definition?.let { definition(it) }
+            body?.invoke(this)
+        }
+    )
+}
+
+/**
  * Adds all bindings of the [module]
  */
 fun ModuleBuilder.module(module: Module) {
     module.bindings.forEach { addBinding(it) }
 }
 
-/** Calls trough [ModuleBuilder.withBinding] */
-inline fun <reified T> ModuleBuilder.withBinding(
+inline fun <reified T> ModuleBuilder.bridge(
     name: Any? = null,
-    noinline block: BindingContext<T>.() -> Unit
+    noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    withBinding(T::class, name, block)
+    bridge(T::class, name, block)
 }
 
-/**
- * Invokes the [block] in the [BindingContext] of the [Binding] with [type] and [name]
- */
-fun <T> ModuleBuilder.withBinding(
+fun <T> ModuleBuilder.bridge(
     type: KClass<*>,
     name: Any? = null,
-    block: BindingContext<T>.() -> Unit
+    block: BindingBuilder<T>.() -> Unit
 ) {
     // todo this is a little hacky can we turn this into a clean thing?
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation
-    addBinding(
-        Binding(
-            type = type,
-            name = UUID.randomUUID().toString(),
-            kind = FactoryKind,
-            definition = { component.get<T>(type, name) { it } }
-        )
-    ) withContext block
+    factoryBuilder<T>(type, UUID.randomUUID().toString()) {
+        definition { get(type, name) { it } }
+        block()
+    }
 }

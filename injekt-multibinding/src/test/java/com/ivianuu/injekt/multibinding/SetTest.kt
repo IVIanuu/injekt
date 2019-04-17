@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.factoryBuilder
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -28,9 +31,18 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoSet Values
-                    factory(NameTwo) { "value_two" } bindIntoSet Values
-                    factory(NameThree) { "value_three" } bindIntoSet Values
+                    factoryBuilder<String>(NameOne) {
+                        definition { "value_one" }
+                        bindIntoSet(Values)
+                    }
+                    factoryBuilder<String>(NameTwo) {
+                        definition { "value_two" }
+                        bindIntoSet(Values)
+                    }
+                    factoryBuilder<String>(NameThree) {
+                        definition { "value_three" }
+                        bindIntoSet(Values)
+                    }
                 }
             )
         }
@@ -41,28 +53,6 @@ class SetTest {
         assertTrue(set.contains("value_one"))
         assertTrue(set.contains("value_two"))
         assertTrue(set.contains("value_three"))
-    }
-
-    @Test
-    fun testOverride() {
-        val component1 = component {
-            modules(
-                module {
-                    factory { "my_value" } bindIntoSet Values
-                }
-            )
-        }
-
-        val component2 = component {
-            dependencies(component1)
-            modules(
-                module {
-                    factory { "my_overridden_value" } bindIntoSet Values
-                }
-            )
-        }
-
-        assertEquals("my_overridden_value", component2.getSet<String>(Values).first())
     }
 
 }

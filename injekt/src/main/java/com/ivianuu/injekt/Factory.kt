@@ -27,12 +27,21 @@ object FactoryKind : Kind() {
 }
 
 /**
+ * Applies the [FactoryKind]
+ */
+fun BindingBuilder<*>.factory() {
+    kind(FactoryKind)
+}
+
+/**
  * Adds a [Binding] which will be created on each request
  */
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,
     noinline definition: Definition<T>
-): BindingContext<T> = factory(T::class, name, definition)
+) {
+    factory(T::class, name, definition)
+}
 
 /**
  * Adds a [Binding] which will be created on each request
@@ -41,14 +50,32 @@ fun <T> ModuleBuilder.factory(
     type: KClass<*>,
     name: Any? = null,
     definition: Definition<T>
-): BindingContext<T> = addBinding(
-    Binding(
-        type = type,
-        name = name,
-        kind = FactoryKind,
-        definition = definition
-    )
-)
+) {
+    bind(type, name, FactoryKind, definition)
+}
+
+/**
+ * Adds a [Binding] which will be created on each request
+ */
+inline fun <reified T> ModuleBuilder.factoryBuilder(
+    name: Any? = null,
+    noinline definition: Definition<T>? = null,
+    noinline body: BindingBuilder<T>.() -> Unit
+) {
+    factoryBuilder(T::class, name, definition, body)
+}
+
+/**
+ * Adds a [Binding] which will be created on each request
+ */
+fun <T> ModuleBuilder.factoryBuilder(
+    type: KClass<*>,
+    name: Any? = null,
+    definition: Definition<T>? = null,
+    body: BindingBuilder<T>.() -> Unit
+) {
+    bind(type, name, SingleKind, definition, body)
+}
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

@@ -39,9 +39,11 @@ fun <T : Application> T.applicationComponent(
  * Returns a [Module] with convenient bindings
  */
 fun <T : Application> T.applicationModule(): Module = module {
-    single(this@applicationModule::class) {
-        this@applicationModule
-    } bindType Application::class bindType Context::class bindAlias (Context::class to ForApplication)
+    singleBuilder<T>(this@applicationModule::class) {
+        definition { this@applicationModule }
+        bindTypes(Application::class, Context::class)
+        bindAlias<Context>(ForApplication)
+    }
 }
 
 fun DefinitionContext.application(): Application = get()
