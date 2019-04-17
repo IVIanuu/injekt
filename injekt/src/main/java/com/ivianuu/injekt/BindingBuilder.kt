@@ -54,7 +54,7 @@ class BindingBuilder<T> internal constructor() {
         this.definition = definition
     }
 
-    fun attributes(attributes: Attributes) {
+    fun setAttributes(attributes: Attributes) {
         this.attributes = attributes
     }
 
@@ -81,9 +81,23 @@ fun <T> BindingBuilder<T>.copy(): BindingBuilder<T> {
     other.name(name)
     other.kind(kind)
     other.definition(definition)
-    other.attributes(attributes)
+    other.setAttributes(attributes)
 
     return other
+}
+
+fun BindingBuilder<*>.attributes(attributes: Attributes) {
+    attributes(attributes.entries)
+}
+
+fun BindingBuilder<*>.attributes(attributes: Map<String, Any?>) {
+    attributes.forEach {
+        this.attributes[it.key] = it.value
+    }
+}
+
+fun BindingBuilder<*>.attribute(key: String, value: Any?) {
+    attributes.set(key, value)
 }
 
 /**
