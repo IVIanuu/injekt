@@ -53,7 +53,7 @@ class Binding<T> internal constructor(
     override fun toString(): String {
         return "$kind(" +
                 "type=${type.java.name}, " +
-                "name=$name" +
+                "name=$name, " +
                 "attributes=$attributes" +
                 ")"
     }
