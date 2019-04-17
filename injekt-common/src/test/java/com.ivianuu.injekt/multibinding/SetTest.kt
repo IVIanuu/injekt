@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.component
+import com.ivianuu.injekt.definition
 import com.ivianuu.injekt.factoryBuilder
 import com.ivianuu.injekt.module
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class SetTest {
@@ -47,9 +47,23 @@ class SetTest {
         val set = component.getSet<String>(Values)
 
         assertEquals(3, set.size)
-        assertTrue(set.contains("value_one"))
-        assertTrue(set.contains("value_two"))
-        assertTrue(set.contains("value_three"))
+        assertEquals("value_one", set.toList()[0])
+        assertEquals("value_two", set.toList()[1])
+        assertEquals("value_three", set.toList()[2])
+
+        val lazySet = component.getLazySet<String>(Values)
+
+        assertEquals(3, lazySet.size)
+        assertEquals("value_one", lazySet.toList()[0].value)
+        assertEquals("value_two", lazySet.toList()[1].value)
+        assertEquals("value_three", lazySet.toList()[2].value)
+
+        val providerSet = component.getProviderSet<String>(Values)
+
+        assertEquals(3, providerSet.size)
+        assertEquals("value_one", providerSet.toList()[0].get())
+        assertEquals("value_two", providerSet.toList()[1].get())
+        assertEquals("value_three", providerSet.toList()[2].get())
     }
 
 }

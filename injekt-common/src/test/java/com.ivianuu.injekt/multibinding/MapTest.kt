@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.component
+import com.ivianuu.injekt.definition
 import com.ivianuu.injekt.factoryBuilder
 import com.ivianuu.injekt.module
 import junit.framework.Assert.assertEquals
@@ -49,6 +50,20 @@ class MapTest {
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
+
+        val lazyMap = component.getLazyMap<String, String>(Values)
+
+        assertEquals(3, lazyMap.size)
+        assertEquals(lazyMap.getValue("key_one").value, "value_one")
+        assertEquals(lazyMap.getValue("key_two").value, "value_two")
+        assertEquals(lazyMap.getValue("key_three").value, "value_three")
+
+        val providerMap = component.getProviderMap<String, String>(Values)
+
+        assertEquals(3, providerMap.size)
+        assertEquals(providerMap.getValue("key_one").get(), "value_one")
+        assertEquals(providerMap.getValue("key_two").get(), "value_two")
+        assertEquals(providerMap.getValue("key_three").get(), "value_three")
     }
 
 }
