@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 object SingleKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = SingleInstance(binding)
-    override fun toString() = "Single"
+    override fun toString(): String = "Single"
 }
 
 /**

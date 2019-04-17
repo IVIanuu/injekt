@@ -44,6 +44,8 @@ class Attributes constructor(private val _entries: MutableMap<String, Any?> = li
     @Suppress("UNCHECKED_CAST")
     operator fun <T> get(key: String): T? = _entries[key] as? T
 
+    override fun toString(): String = entries.toString()
+
 }
 
 /**

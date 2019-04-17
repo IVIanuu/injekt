@@ -25,5 +25,5 @@ abstract class Kind {
      */
     abstract fun <T> createInstance(binding: Binding<T>): Instance<T>
 
-    override fun toString() = "Unknown"
+    override fun toString(): String = "Unknown"
 }

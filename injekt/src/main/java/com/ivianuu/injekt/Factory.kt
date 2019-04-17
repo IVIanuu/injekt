@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 object FactoryKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = FactoryInstance(binding)
-    override fun toString() = "Factory"
+    override fun toString(): String = "Factory"
 }
 
 /**

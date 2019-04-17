@@ -37,6 +37,8 @@ class Parameters(
      */
     operator fun <T> get(i: Int): T = values[i] as T
 
+    override fun toString(): String = values.toString()
+
 }
 
 /**
