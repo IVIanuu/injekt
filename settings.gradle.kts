@@ -18,6 +18,6 @@ include(
     ":comparison",
     ":injekt",
     ":injekt-android",
-    ":injekt-multibinding",
+    ":injekt-common",
     ":sample"
 )

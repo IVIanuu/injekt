@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
+package com.ivianuu.injekt.multibinding
+
+import com.ivianuu.injekt.BindingBuilder
+import com.ivianuu.injekt.getOrSet
+
+/**
+ * Adds this binding into a map
+ */
+fun BindingBuilder<*>.bindIntoMap(mapBinding: MapBinding) {
+    attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Any, MapBinding>() }
+        .put(mapBinding.mapName, mapBinding)
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
+/**
+ * Adds this binding into a map
+ */
+fun <T> BindingBuilder<T>.bindIntoMap(
+    mapName: Any,
+    key: Any
+) {
+    bindIntoMap(MapBinding(mapName, key))
 }

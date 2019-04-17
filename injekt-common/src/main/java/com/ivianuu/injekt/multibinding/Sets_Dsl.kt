@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
+package com.ivianuu.injekt.multibinding
+
+import com.ivianuu.injekt.BindingBuilder
+import com.ivianuu.injekt.getOrSet
+
+/**
+ * Adds this binding into a set
+ */
+fun BindingBuilder<*>.bindIntoSet(setBinding: SetBinding) {
+    attributes.getOrSet(KEY_SET_BINDINGS) {
+        hashMapOf<Any, SetBinding>()
+    }[setBinding.setName] = setBinding
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
+/**
+ * Adds this binding into a set
+ */
+fun <T> BindingBuilder<T>.bindIntoSet(setName: Any) {
+    bindIntoSet(SetBinding(setName))
 }

@@ -53,30 +53,3 @@ fun <T> InjektTrait.inject(
     name: Any? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(type, name, parameters) }
-
-/** Calls trough [Component.getProvider] */
-inline fun <reified T> InjektTrait.getProvider(
-    name: Any? = null,
-    noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = getProvider(T::class, name, defaultParameters)
-
-/** Calls trough [Component.getProvider] */
-fun <T> InjektTrait.getProvider(
-    type: KClass<*>,
-    name: Any? = null,
-    defaultParameters: ParametersDefinition? = null
-): Provider<T> = component.getProvider(type, name, defaultParameters)
-
-/** Calls trough [Component.injectProvider] */
-inline fun <reified T> InjektTrait.injectProvider(
-    name: Any? = null,
-    noinline defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
-
-/** Calls trough [Component.injectProvider] */
-fun <T> InjektTrait.injectProvider(
-    type: KClass<*>,
-    name: Any? = null,
-    defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> =
-    lazy(LazyThreadSafetyMode.NONE) { component.getProvider<T>(type, name, defaultParameters) }

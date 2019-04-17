@@ -16,8 +16,12 @@
 
 package com.ivianuu.injekt.multibinding
 
+/**
+ * Attribute key for [SetBinding]s
+ */
+const val KEY_SET_BINDINGS = "set_bindings"
 
-object Values
-object NameOne
-object NameTwo
-object NameThree
+/**
+ * Set binding
+ */
+data class SetBinding(val setName: Any)

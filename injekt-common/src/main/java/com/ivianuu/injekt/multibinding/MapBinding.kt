@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-}
+package com.ivianuu.injekt.multibinding
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
+/**
+ * Attribute key for [MapBinding]s
+ */
+const val KEY_MAP_BINDINGS = "map_bindings"
 
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-}
+/**
+ * Map binding
+ */
+data class MapBinding(val mapName: Any, val key: Any)
