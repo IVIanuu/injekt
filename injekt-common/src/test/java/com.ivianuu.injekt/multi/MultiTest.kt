@@ -43,7 +43,7 @@ class MultiTest {
 
         val valueTwo = component.get<MultiValue> { parametersOf(2) }
 
-        assertFalse(firstValueOne == valueTwo)
+        assertFalse(firstValueOne === valueTwo)
     }
 
     @Test
