@@ -19,7 +19,7 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.provider.Provider
 
 /** Calls trough [Component.getSet] */
 fun <T> InjektTrait.getSet(name: Any, parameters: ParametersDefinition? = null): Set<T> =

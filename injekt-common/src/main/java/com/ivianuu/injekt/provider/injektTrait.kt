@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.provider
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.getProvider
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ParametersDefinition
 import kotlin.reflect.KClass
 
 /** Calls trough [Component.getProvider] */

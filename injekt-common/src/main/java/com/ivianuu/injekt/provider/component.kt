@@ -18,7 +18,6 @@ package com.ivianuu.injekt.provider
 
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Provider
 import kotlin.reflect.KClass
 
 /**
@@ -38,7 +37,7 @@ fun <T> Component.getProvider(
     type: KClass<*>,
     name: Any? = null,
     defaultParameters: ParametersDefinition? = null
-): Provider<T> = com.ivianuu.injekt.provider { parameters: ParametersDefinition? ->
+): Provider<T> = provider { parameters: ParametersDefinition? ->
     get<T>(type, name, parameters ?: defaultParameters)
 }
 
@@ -60,7 +59,7 @@ fun <T> Component.injectProvider(
     name: Any? = null,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
-    com.ivianuu.injekt.provider { parameters: ParametersDefinition? ->
+    provider { parameters: ParametersDefinition? ->
         get<T>(type, name, parameters ?: defaultParameters)
     }
 }
