@@ -18,12 +18,24 @@ package com.ivianuu.injekt
 
 abstract class Instance<T> {
 
+    /**
+     * The binding of this instance
+     */
     abstract val binding: Binding<T>
 
+    /**
+     * The context of this instance
+     */
     lateinit var context: DefinitionContext
 
+    /**
+     * Returns the value for this instance
+     */
     abstract fun get(parameters: ParametersDefinition?): T
 
+    /**
+     * Creates the value for this instance
+     */
     protected fun create(parameters: ParametersDefinition?): T {
         return try {
             binding.definition.invoke(
