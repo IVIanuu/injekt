@@ -30,7 +30,7 @@ object SingleKind : Kind() {
  * Applies the [SingleKind]
  */
 fun BindingBuilder<*>.single() {
-    kind(SingleKind)
+    kind = SingleKind
 }
 
 /**

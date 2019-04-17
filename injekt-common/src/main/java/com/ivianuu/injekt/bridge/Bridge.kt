@@ -30,7 +30,7 @@ object BridgeKind : Kind() {
  * Applies the [BridgeKind]
  */
 fun BindingBuilder<*>.bridge() {
-    kind(BridgeKind)
+    kind = BridgeKind
 }
 
 /**
@@ -57,7 +57,7 @@ fun <T> ModuleBuilder.bridge(
     // we use a unique id here to make sure that the binding does not collide with any user config
     // the new factory acts as bridge and just calls trough the original implementation
     bind<T>(type, UUID.randomUUID().toString()) {
-        kind(BridgeKind)
+        bridge()
         definition { get(type, name) { it } }
         block()
     }

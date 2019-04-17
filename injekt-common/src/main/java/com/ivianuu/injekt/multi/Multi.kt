@@ -31,7 +31,7 @@ object MultiKind : Kind() {
  * Applies the [MultiKind]
  */
 fun BindingBuilder<*>.multi() {
-    kind(MultiKind)
+    kind = MultiKind
 }
 
 /**

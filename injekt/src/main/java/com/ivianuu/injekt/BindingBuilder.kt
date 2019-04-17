@@ -25,42 +25,11 @@ import kotlin.reflect.KClass
 class BindingBuilder<T> internal constructor() {
 
     var type: KClass<*> by Delegates.notNull()
-        private set
     var name: Any? = null
-        private set
     var kind: Kind by Delegates.notNull()
-        private set
     var definition: Definition<T> by Delegates.notNull()
-        private set
     var attributes = Attributes()
-        private set
-
-    val additionalBindings: List<Binding<*>> get() = _additionalBindings
-    private val _additionalBindings = arrayListOf<Binding<*>>()
-
-    fun type(type: KClass<*>) {
-        this.type = type
-    }
-
-    fun name(name: Any?) {
-        this.name = name
-    }
-
-    fun kind(kind: Kind) {
-        this.kind = kind
-    }
-
-    fun definition(definition: Definition<T>) {
-        this.definition = definition
-    }
-
-    fun setAttributes(attributes: Attributes) {
-        this.attributes = attributes
-    }
-
-    fun additionalBinding(binding: Binding<*>) {
-        _additionalBindings.add(binding)
-    }
+    var additionalBindings: MutableList<Binding<*>> = arrayListOf()
 
     /**
      * Builds the [Binding] from this builder
@@ -74,14 +43,13 @@ class BindingBuilder<T> internal constructor() {
 /**
  * Creates a copy of this builder
  */
-fun <T> BindingBuilder<T>.copy(): BindingBuilder<T> {
+fun <T> BindingBuilder<T>.copyLight(): BindingBuilder<T> {
     val other = BindingBuilder<T>()
 
-    other.type(type)
-    other.name(name)
-    other.kind(kind)
-    other.definition(definition)
-    other.setAttributes(attributes)
+    other.type = type
+    other.name = name
+    other.kind = kind
+    other.definition = definition
 
     return other
 }
@@ -97,7 +65,23 @@ fun BindingBuilder<*>.attributes(attributes: Map<String, Any?>) {
 }
 
 fun BindingBuilder<*>.attribute(key: String, value: Any?) {
-    attributes.set(key, value)
+    attributes[key] = value
+}
+
+fun <T> BindingBuilder<T>.definition(definition: Definition<T>) {
+    this.definition = definition
+}
+
+fun BindingBuilder<*>.additionalBindings(vararg bindings: Binding<*>) {
+    additionalBindings.addAll(bindings)
+}
+
+fun BindingBuilder<*>.additionalBindings(bindings: Iterable<Binding<*>>) {
+    additionalBindings.addAll(bindings)
+}
+
+fun BindingBuilder<*>.additionalBinding(binding: Binding<*>) {
+    additionalBindings.add(binding)
 }
 
 /**
@@ -111,9 +95,10 @@ inline fun <reified T> BindingBuilder<*>.bindType() {
  * Adds a additional binding for [type]
  */
 fun BindingBuilder<*>.bindType(type: KClass<*>) {
-    val copy = copy()
-    copy.type(type)
-    copy.name(null)
+    // todo only maybe use bridge
+    val copy = copyLight()
+    copy.type = type
+    copy.name = null
     additionalBinding(copy.build())
 }
 
@@ -138,10 +123,10 @@ fun BindingBuilder<*>.bindTypes(type: KClass<*>) {
     bindType(type)
 }
 
-
 fun BindingBuilder<*>.bindName(name: Any) {
-    val copy = copy()
-    copy.name(name)
+    // todo only maybe use bridge
+    val copy = copyLight()
+    copy.name = name
     additionalBinding(copy.build())
 }
 
@@ -162,8 +147,9 @@ inline fun <reified T> BindingBuilder<*>.bindAlias(name: Any) {
 }
 
 fun BindingBuilder<*>.bindAlias(type: KClass<*>, name: Any) {
-    val copy = copy()
-    copy.type(type)
-    copy.name(name)
+    // todo only maybe use bridge
+    val copy = copyLight()
+    copy.type = type
+    copy.name = name
     additionalBinding(copy.build())
 }

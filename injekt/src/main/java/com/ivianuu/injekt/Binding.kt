@@ -72,10 +72,10 @@ fun <T> binding(
 ): Binding<T> {
     return BindingBuilder<T>()
         .apply {
-            type?.let { type(it) }
-            name?.let { name(it) }
-            kind?.let { kind(it) }
-            definition?.let { definition(it) }
+            type?.let { this.type = it }
+            name?.let { this.name = it }
+            kind?.let { this.kind = it }
+            definition?.let { this.definition = it }
             block?.invoke(this)
         }
         .build()

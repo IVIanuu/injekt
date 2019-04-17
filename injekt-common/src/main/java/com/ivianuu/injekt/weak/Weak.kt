@@ -36,7 +36,7 @@ object WeakKind : Kind() {
  * Applies the [WeakKind]
  */
 fun BindingBuilder<*>.weak() {
-    kind(WeakKind)
+    kind = WeakKind
 }
 
 /**

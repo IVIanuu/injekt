@@ -30,7 +30,7 @@ object FactoryKind : Kind() {
  * Applies the [FactoryKind]
  */
 fun BindingBuilder<*>.factory() {
-    kind(FactoryKind)
+    kind = FactoryKind
 }
 
 /**
@@ -74,7 +74,7 @@ fun <T> ModuleBuilder.factoryBuilder(
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, SingleKind, definition, block)
+    bind(type, name, FactoryKind, definition, block)
 }
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {

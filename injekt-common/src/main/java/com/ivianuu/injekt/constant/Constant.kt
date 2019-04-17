@@ -33,7 +33,7 @@ object ConstantKind : Kind() {
  * Applies the [ConstantKind]
  */
 fun BindingBuilder<*>.constant() {
-    kind(ConstantKind)
+    kind = ConstantKind
 }
 
 /**
