@@ -27,6 +27,7 @@ abstract class Instance<T> {
      * The context of this instance
      */
     lateinit var context: DefinitionContext
+        private set
 
     /**
      * Returns the value for this instance
@@ -45,6 +46,10 @@ abstract class Instance<T> {
         } catch (e: Exception) {
             throw IllegalStateException("Couldn't instantiate $binding", e)
         }
+    }
+
+    open fun setDefinitionContext(context: DefinitionContext) {
+        this.context = context
     }
 
 }

@@ -39,7 +39,8 @@ class Component internal constructor(
     val context = DefinitionContext(this)
 
     init {
-        instances.forEach { it.value.context = context }
+        // set context for each instance
+        instances.forEach { it.value.setDefinitionContext(context) }
     }
 
     /**
