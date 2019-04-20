@@ -36,7 +36,6 @@ class Binding<T> internal constructor(
         return "$kind(" +
                 "type=${type.java.name}, " +
                 "name=$name, " +
-                "attributes=$attributes" +
                 ")"
     }
 
