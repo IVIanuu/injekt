@@ -32,7 +32,8 @@ fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
  */
 fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(
     mapName: MapName<K, V>,
-    key: K
+    key: K,
+    override: Boolean = false
 ) {
-    bindIntoMap(MapBinding(mapName, key))
+    bindIntoMap(MapBinding(mapName, key, override))
 }

@@ -60,8 +60,11 @@ fun <T> ModuleBuilder.bridge(
         bridge()
         definition { get(type, name) { it } }
         block()
+        attribute(KEY_ORIGINAL_KEY, Key(type, name))
     }
 }
+
+const val KEY_ORIGINAL_KEY = "Bridge.originalKey"
 
 private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
     override fun get(parameters: ParametersDefinition?): T = create(parameters)

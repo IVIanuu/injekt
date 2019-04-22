@@ -27,8 +27,11 @@ import com.ivianuu.injekt.provider.provider
 fun <T> Component.getSet(
     name: SetName<T>,
     parameters: ParametersDefinition? = null
-): Set<T> =
-    getMultiBindingSet(name).map { get<T>(it.type, it.name, parameters) }.toSet()
+): Set<T> {
+    return getMultiBindingSet(name)
+        .map { get<T>(it.type, it.name, parameters) }
+        .toSet()
+}
 
 /**
  * Returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries

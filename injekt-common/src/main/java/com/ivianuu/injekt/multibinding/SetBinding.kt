@@ -26,4 +26,7 @@ class SetName<T>
 /**
  * Set binding
  */
-data class SetBinding<T>(val setName: SetName<T>)
+data class SetBinding<T>(
+    val setName: SetName<T>,
+    val override: Boolean
+)

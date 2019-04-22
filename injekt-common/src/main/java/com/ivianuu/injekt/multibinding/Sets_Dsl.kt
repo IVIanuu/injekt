@@ -31,6 +31,9 @@ fun <T> BindingBuilder<*>.bindIntoSet(setBinding: SetBinding<T>) {
 /**
  * Adds this binding into a set
  */
-fun <T, V : T> BindingBuilder<V>.bindIntoSet(setName: SetName<T>) {
-    bindIntoSet(SetBinding(setName))
+fun <T, V : T> BindingBuilder<V>.bindIntoSet(
+    setName: SetName<T>,
+    override: Boolean = false
+) {
+    bindIntoSet(SetBinding(setName, override))
 }

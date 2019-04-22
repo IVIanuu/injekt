@@ -16,11 +16,10 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.definition
-import com.ivianuu.injekt.factoryBuilder
-import com.ivianuu.injekt.module
+import com.ivianuu.injekt.*
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class SetTest {
@@ -65,5 +64,92 @@ class SetTest {
         assertEquals("value_two", providerSet.toList()[1].get())
         assertEquals("value_three", providerSet.toList()[2].get())
     }
+
+    @Test
+    fun testOverride() {
+        val component1 = component {
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoSet(setValues)
+                }
+            }
+        }
+
+        val component2 = component {
+            dependencies(component1)
+            module {
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoSet(setValues, true)
+                }
+            }
+        }
+
+        assertEquals("my_overridden_value", component2.getSet(setValues).first())
+    }
+
+    @Test
+    fun testAllowValidOverride() {
+        val component1 = component {
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoSet(setValues)
+                }
+            }
+        }
+
+        val component2 = component {
+            dependencies(component1)
+            module {
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoSet(setValues, true)
+                }
+            }
+        }
+
+        var throwed = false
+
+        try {
+            component2.getSet(setValues)
+        } catch (e: Exception) {
+            throwed = true
+        }
+
+        assertFalse(throwed)
+    }
+
+    @Test
+    fun testDisallowInvalidOverride() {
+        val component1 = component {
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoSet(setValues)
+                }
+            }
+        }
+
+        val component2 = component {
+            dependencies(component1)
+            module {
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoSet(setValues, true)
+                }
+            }
+        }
+
+        var throwed = false
+        try {
+            component2.getSet(setValues)
+        } catch (e: Exception) {
+            throwed = true
+        }
+        assertTrue(throwed)
+    }
+
 
 }

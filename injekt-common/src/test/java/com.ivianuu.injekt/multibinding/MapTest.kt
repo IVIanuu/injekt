@@ -21,6 +21,8 @@ import com.ivianuu.injekt.definition
 import com.ivianuu.injekt.factoryBuilder
 import com.ivianuu.injekt.module
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class MapTest {
@@ -64,6 +66,76 @@ class MapTest {
         assertEquals(providerMap.getValue("key_one").get(), "value_one")
         assertEquals(providerMap.getValue("key_two").get(), "value_two")
         assertEquals(providerMap.getValue("key_three").get(), "value_three")
+    }
+
+    @Test
+    fun testOverride() {
+        val component = component {
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoMap(mapValues, "key_one")
+                }
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoMap(mapValues, "key_one", true)
+                }
+            }
+        }
+
+        assertEquals("value_two", component.getMap(mapValues)["key_one"])
+    }
+
+    @Test
+    fun testAllowValidOverride() {
+        val component = component {
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoMap(mapValues, "key_one")
+                }
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoMap(mapValues, "key_one", true)
+                }
+            }
+        }
+
+        var throwed = false
+
+        try {
+            component.getMap(mapValues)
+        } catch (e: Exception) {
+            throwed = true
+        }
+
+        assertFalse(throwed)
+    }
+
+    @Test
+    fun testDisallowInvalidOverride() {
+        val component = component {
+            module {
+                factoryBuilder<String>(NameOne) {
+                    definition { "value_one" }
+                    bindIntoMap(mapValues, "key_one")
+                }
+                factoryBuilder<String>(NameTwo) {
+                    definition { "value_two" }
+                    bindIntoMap(mapValues, "key_one")
+                }
+            }
+        }
+
+        var throwed = false
+
+        try {
+            component.getMap(mapValues)
+        } catch (e: Exception) {
+            throwed = true
+        }
+
+        assertTrue(throwed)
     }
 
 }

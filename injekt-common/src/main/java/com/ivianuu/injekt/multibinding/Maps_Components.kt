@@ -27,8 +27,10 @@ import com.ivianuu.injekt.provider.provider
 fun <K, V> Component.getMap(
     name: MapName<K, V>,
     parameters: ParametersDefinition? = null
-): Map<K, V> = getMultiBindingMap(name).mapValues {
-    get<V>(it.value.type, it.value.name, parameters)
+): Map<K, V> {
+    return getMultiBindingMap(name).mapValues {
+        get<V>(it.value.type, it.value.name, parameters)
+    }
 }
 
 /**
