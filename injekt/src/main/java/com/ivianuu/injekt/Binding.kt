@@ -26,7 +26,8 @@ class Binding<T> internal constructor(
     val kind: Kind,
     val definition: Definition<T>,
     val attributes: Attributes,
-    val additionalBindings: List<Binding<*>>
+    val additionalBindings: List<Binding<*>>,
+    var override: Boolean
 ) {
 
     val type = key.type
@@ -48,6 +49,7 @@ fun <T> binding(
     type: KClass<*>? = null,
     name: Any? = null,
     kind: Kind? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: (BindingBuilder<T>.() -> Unit)? = null
 ): Binding<T> {
@@ -57,6 +59,7 @@ fun <T> binding(
             name?.let { this.name = it }
             kind?.let { this.kind = it }
             definition?.let { this.definition = it }
+            this.override = override
             block?.invoke(this)
         }
         .build()

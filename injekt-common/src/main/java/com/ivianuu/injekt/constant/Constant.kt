@@ -42,9 +42,10 @@ fun BindingBuilder<*>.constant() {
 fun <T : Any> ModuleBuilder.constant(
     instance: T,
     type: KClass<*> = instance::class,
-    name: Any? = null
+    name: Any? = null,
+    override: Boolean = false
 ) {
-    bind(type, name, ConstantKind, { instance })
+    bind(type, name, ConstantKind, override, { instance })
 }
 
 /**
@@ -54,9 +55,10 @@ fun <T : Any> ModuleBuilder.constantBuilder(
     instance: T,
     type: KClass<*> = instance::class,
     name: Any? = null,
+    override: Boolean = false,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, ConstantKind, { instance }, block)
+    bind(type, name, ConstantKind, override, { instance }, block)
 }
 
 private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {

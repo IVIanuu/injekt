@@ -29,7 +29,7 @@ class ComponentBuilder internal constructor() {
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it) }
+        module.bindings.forEach { addBinding(it.value) }
     }
 
     /**
@@ -43,6 +43,10 @@ class ComponentBuilder internal constructor() {
      * Saves the [binding]
      */
     fun addBinding(binding: Binding<*>) {
+        require(bindings.remove(binding.key) == null || binding.override) {
+            "Already declared binding with key ${binding.key}"
+        }
+
         bindings[binding.key] = binding
         instances[binding.key] = binding.kind.createInstance(binding)
     }
@@ -51,6 +55,15 @@ class ComponentBuilder internal constructor() {
      * Builds a [Component] for this builder
      */
     fun build(): Component {
+        val existingBindings = mutableMapOf<Key, Binding<*>>()
+        dependencies.forEach { existingBindings.putAll(it.getAllBindings()) }
+
+        bindings.forEach { (_, binding) ->
+            require(existingBindings.remove(binding.key) == null || binding.override) {
+                "Already declared binding with key ${binding.key}"
+            }
+        }
+
         return Component(dependencies, bindings, instances)
     }
 

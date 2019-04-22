@@ -38,9 +38,10 @@ fun BindingBuilder<*>.single() {
  */
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
 ) {
-    single(T::class, name, definition)
+    single(T::class, name, override, definition)
 }
 
 /**
@@ -49,9 +50,10 @@ inline fun <reified T> ModuleBuilder.single(
 fun <T> ModuleBuilder.single(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>
 ) {
-    bind(type, name, SingleKind, definition)
+    bind(type, name, SingleKind, override, definition)
 }
 
 /**
@@ -59,10 +61,11 @@ fun <T> ModuleBuilder.single(
  */
 inline fun <reified T> ModuleBuilder.singleBuilder(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    singleBuilder(T::class, name, definition, block)
+    singleBuilder(T::class, name, override, definition, block)
 }
 
 /**
@@ -71,10 +74,11 @@ inline fun <reified T> ModuleBuilder.singleBuilder(
 fun <T> ModuleBuilder.singleBuilder(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, SingleKind, definition, block)
+    bind(type, name, SingleKind, override, definition, block)
 }
 
 private object UNINITIALIZED

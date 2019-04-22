@@ -16,21 +16,12 @@
 
 package com.ivianuu.injekt
 
-/**
- * A module is the container for bindings
- */
-class Module internal constructor(
-    /**
-     * All bindings of this module
-     */
-    val bindings: Map<Key, Binding<*>>
-)
+internal fun Component.getAllBindings(): Map<Key, Binding<*>> =
+    linkedMapOf<Key, Binding<*>>().also { collectBindings(it) }
 
-/**
- * Returns a new [Module] configured by [block]
- */
-fun module(block: (ModuleBuilder.() -> Unit)? = null): Module {
-    return ModuleBuilder()
-        .apply { block?.invoke(this) }
-        .build()
+private fun Component.collectBindings(
+    bindings: MutableMap<Key, Binding<*>>
+) {
+    dependencies.forEach { it.collectBindings(bindings) }
+    bindings.putAll(this.bindings)
 }

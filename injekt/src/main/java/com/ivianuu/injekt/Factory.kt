@@ -38,9 +38,10 @@ fun BindingBuilder<*>.factory() {
  */
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
 ) {
-    factory(T::class, name, definition)
+    factory(T::class, name, override, definition)
 }
 
 /**
@@ -49,9 +50,10 @@ inline fun <reified T> ModuleBuilder.factory(
 fun <T> ModuleBuilder.factory(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>
 ) {
-    bind(type, name, FactoryKind, definition)
+    bind(type, name, FactoryKind, override, definition)
 }
 
 /**
@@ -59,10 +61,11 @@ fun <T> ModuleBuilder.factory(
  */
 inline fun <reified T> ModuleBuilder.factoryBuilder(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    factoryBuilder(T::class, name, definition, block)
+    factoryBuilder(T::class, name, override, definition, block)
 }
 
 /**
@@ -71,10 +74,11 @@ inline fun <reified T> ModuleBuilder.factoryBuilder(
 fun <T> ModuleBuilder.factoryBuilder(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, FactoryKind, definition, block)
+    bind(type, name, FactoryKind, override, definition, block)
 }
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {

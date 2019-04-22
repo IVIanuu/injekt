@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -24,13 +23,17 @@ import kotlin.reflect.KClass
  */
 class ModuleBuilder internal constructor() {
 
-    private val bindings = arrayListOf<Binding<*>>()
+    private val bindings = mutableMapOf<Key, Binding<*>>()
 
     /**
      * Adds the [binding]
      */
     fun addBinding(binding: Binding<*>) {
-        bindings.add(binding)
+        require(bindings.remove(binding.key) == null || binding.override) {
+            "Already declared binding with key ${binding.key}"
+        }
+
+        bindings[binding.key] = binding
         binding.additionalBindings.forEach { addBinding(it) }
     }
 
@@ -47,10 +50,11 @@ class ModuleBuilder internal constructor() {
 inline fun <reified T> ModuleBuilder.bind(
     name: Any? = null,
     kind: Kind? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>? = null,
     noinline block: (BindingBuilder<T>.() -> Unit)? = null
 ) {
-    bind(T::class, name, kind, definition, block)
+    bind(T::class, name, kind, override, definition, block)
 }
 
 /**
@@ -60,15 +64,16 @@ fun <T> ModuleBuilder.bind(
     type: KClass<*>,
     name: Any? = null,
     kind: Kind? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: (BindingBuilder<T>.() -> Unit)? = null
 ) {
-    addBinding(binding(type, name, kind, definition, block))
+    addBinding(binding(type, name, kind, override, definition, block))
 }
 
 /**
  * Adds all bindings of the [module]
  */
 fun ModuleBuilder.module(module: Module) {
-    module.bindings.forEach { addBinding(it) }
+    module.bindings.forEach { addBinding(it.value) }
 }

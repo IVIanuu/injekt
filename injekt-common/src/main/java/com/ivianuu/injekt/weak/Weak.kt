@@ -44,9 +44,10 @@ fun BindingBuilder<*>.weak() {
  */
 inline fun <reified T> ModuleBuilder.weak(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
 ) {
-    weak(T::class, name, definition)
+    weak(T::class, name, override, definition)
 }
 
 /**
@@ -55,9 +56,10 @@ inline fun <reified T> ModuleBuilder.weak(
 fun <T> ModuleBuilder.weak(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>
 ) {
-    bind(type, name, WeakKind, definition)
+    bind(type, name, WeakKind, override, definition)
 }
 
 /**
@@ -65,10 +67,11 @@ fun <T> ModuleBuilder.weak(
  */
 inline fun <reified T> ModuleBuilder.weakBuilder(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    weakBuilder(T::class, name, definition, block)
+    weakBuilder(T::class, name, override, definition, block)
 }
 
 /**
@@ -77,10 +80,11 @@ inline fun <reified T> ModuleBuilder.weakBuilder(
 fun <T> ModuleBuilder.weakBuilder(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, WeakKind, definition, block)
+    bind(type, name, WeakKind, override, definition, block)
 }
 
 private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() {

@@ -27,6 +27,7 @@ class BindingBuilder<T> internal constructor() {
     var type: KClass<*> by Delegates.notNull()
     var name: Any? = null
     var kind: Kind by Delegates.notNull()
+    var override = false
     var definition: Definition<T> by Delegates.notNull()
     var attributes = Attributes()
     var additionalBindings: MutableList<Binding<*>> = arrayListOf()
@@ -35,7 +36,7 @@ class BindingBuilder<T> internal constructor() {
      * Builds the [Binding] from this builder
      */
     fun build(): Binding<T> = Binding(
-        Key(type, name), kind, definition, attributes, additionalBindings
+        Key(type, name), kind, definition, attributes, additionalBindings, override
     )
 
 }
@@ -82,6 +83,10 @@ fun BindingBuilder<*>.additionalBindings(bindings: Iterable<Binding<*>>) {
 
 fun BindingBuilder<*>.additionalBinding(binding: Binding<*>) {
     additionalBindings.add(binding)
+}
+
+fun BindingBuilder<*>.override() {
+    override = true
 }
 
 /**

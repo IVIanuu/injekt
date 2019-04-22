@@ -34,9 +34,10 @@ object EagerKind : Kind() {
  */
 inline fun <reified T> ModuleBuilder.eager(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
 ) {
-    eager(T::class, name, definition)
+    eager(T::class, name, override, definition)
 }
 
 /**
@@ -45,9 +46,10 @@ inline fun <reified T> ModuleBuilder.eager(
 fun <T> ModuleBuilder.eager(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>
 ) {
-    bind(type, name, EagerKind, definition)
+    bind(type, name, EagerKind, override, definition)
 }
 
 /**
@@ -55,10 +57,11 @@ fun <T> ModuleBuilder.eager(
  */
 inline fun <reified T> ModuleBuilder.eagerBuilder(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    eagerBuilder(T::class, name, definition, block)
+    eagerBuilder(T::class, name, override, definition, block)
 }
 
 /**
@@ -67,10 +70,11 @@ inline fun <reified T> ModuleBuilder.eagerBuilder(
 fun <T> ModuleBuilder.eagerBuilder(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, EagerKind, definition, block)
+    bind(type, name, EagerKind, override, definition, block)
 }
 
 private object UNINITIALIZED

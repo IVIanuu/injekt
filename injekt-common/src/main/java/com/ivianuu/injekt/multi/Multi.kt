@@ -39,9 +39,10 @@ fun BindingBuilder<*>.multi() {
  */
 inline fun <reified T> ModuleBuilder.multi(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
 ) {
-    multi(T::class, name, definition)
+    multi(T::class, name, override, definition)
 }
 
 /**
@@ -50,9 +51,10 @@ inline fun <reified T> ModuleBuilder.multi(
 fun <T> ModuleBuilder.multi(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>
 ) {
-    bind(type, name, MultiKind, definition)
+    bind(type, name, MultiKind, override, definition)
 }
 
 /**
@@ -60,10 +62,11 @@ fun <T> ModuleBuilder.multi(
  */
 inline fun <reified T> ModuleBuilder.multiBuilder(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
-    multiBuilder(T::class, name, definition, block)
+    multiBuilder(T::class, name, override, definition, block)
 }
 
 /**
@@ -72,10 +75,11 @@ inline fun <reified T> ModuleBuilder.multiBuilder(
 fun <T> ModuleBuilder.multiBuilder(
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>? = null,
     block: BindingBuilder<T>.() -> Unit
 ) {
-    bind(type, name, MultiKind, definition, block)
+    bind(type, name, MultiKind, override, definition, block)
 }
 
 private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
