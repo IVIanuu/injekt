@@ -22,40 +22,42 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.provider.Provider
 
 /** Calls trough [Component.getSet] */
-fun <T> InjektTrait.getSet(name: Any, parameters: ParametersDefinition? = null): Set<T> =
-    component.getSet(name, parameters)
+fun <T> InjektTrait.getSet(
+    name: SetName<T>,
+    parameters: ParametersDefinition? = null
+): Set<T> = component.getSet(name, parameters)
 
 /** Calls trough [Component.getLazySet] */
 fun <T> InjektTrait.getLazySet(
-    name: Any,
+    name: SetName<T>,
     parameters: ParametersDefinition? = null
 ): Set<Lazy<T>> =
     component.getLazySet(name, parameters)
 
 /** Calls trough [Component.getProviderSet] */
 fun <T> InjektTrait.getProviderSet(
-    name: Any,
+    name: SetName<T>,
     defaultParameters: ParametersDefinition? = null
 ): Set<Provider<T>> =
     component.getProviderSet(name, defaultParameters)
 
 /** Calls trough [Component.injectSet] */
 fun <T> InjektTrait.injectSet(
-    name: Any,
+    name: SetName<T>,
     parameters: ParametersDefinition? = null
 ): Lazy<Set<T>> =
-    lazy { component.getSet<T>(name, parameters) }
+    lazy { component.getSet(name, parameters) }
 
 /** Calls trough [Component.injectLazySet] */
 fun <T> InjektTrait.injectLazySet(
-    name: Any,
+    name: SetName<T>,
     parameters: ParametersDefinition? = null
 ): Lazy<Set<Lazy<T>>> =
-    lazy { component.getLazySet<T>(name, parameters) }
+    lazy { component.getLazySet(name, parameters) }
 
 /** Calls trough [Component.injectProviderSet] */
 fun <T> InjektTrait.injectProviderSet(
-    name: Any,
+    name: SetName<T>,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Set<Provider<T>>> =
-    lazy { component.getProviderSet<T>(name, defaultParameters) }
+    lazy { component.getProviderSet(name, defaultParameters) }

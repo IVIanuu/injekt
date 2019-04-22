@@ -22,43 +22,43 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.provider.Provider
 
 /** Calls trough [Component.getMap] */
-fun <K, T> InjektTrait.getMap(
-    name: Any,
+fun <K, V> InjektTrait.getMap(
+    name: MapName<K, V>,
     parameters: ParametersDefinition? = null
-): Map<K, T> =
+): Map<K, V> =
     component.getMap(name, parameters)
 
 /** Calls trough [Component.getLazyMap] */
-fun <K, T> InjektTrait.getLazyMap(
-    name: Any,
+fun <K, V> InjektTrait.getLazyMap(
+    name: MapName<K, V>,
     parameters: ParametersDefinition? = null
-): Map<K, Lazy<T>> =
+): Map<K, Lazy<V>> =
     component.getLazyMap(name, parameters)
 
 /** Calls trough [Component.getProviderMap] */
-fun <K, T> InjektTrait.getProviderMap(
-    name: Any,
+fun <K, V> InjektTrait.getProviderMap(
+    name: MapName<K, V>,
     defaultParameters: ParametersDefinition? = null
-): Map<K, Provider<T>> =
+): Map<K, Provider<V>> =
     component.getProviderMap(name, defaultParameters)
 
 /** Calls trough [Component.injectMap] */
-fun <K, T> InjektTrait.injectMap(
-    name: Any,
+fun <K, V> InjektTrait.injectMap(
+    name: MapName<K, V>,
     parameters: ParametersDefinition? = null
-): Lazy<Map<K, T>> =
-    lazy { component.getMap<K, T>(name, parameters) }
+): Lazy<Map<K, V>> =
+    lazy { component.getMap<K, V>(name, parameters) }
 
 /** Calls trough [Component.injectLazyMap] */
-fun <K, T> InjektTrait.injectLazyMap(
-    name: Any,
+fun <K, V> InjektTrait.injectLazyMap(
+    name: MapName<K, V>,
     parameters: ParametersDefinition? = null
-): Lazy<Map<K, Lazy<T>>> =
-    lazy { component.getLazyMap<K, T>(name, parameters) }
+): Lazy<Map<K, Lazy<V>>> =
+    lazy { component.getLazyMap<K, V>(name, parameters) }
 
 /** Calls trough [Component.injectProviderMap] */
-fun <K, T> InjektTrait.injectProviderMap(
-    name: Any,
+fun <K, V> InjektTrait.injectProviderMap(
+    name: MapName<K, V>,
     defaultParameters: ParametersDefinition? = null
-): Lazy<Map<K, Provider<T>>> =
-    lazy { component.getProviderMap<K, T>(name, defaultParameters) }
+): Lazy<Map<K, Provider<V>>> =
+    lazy { component.getProviderMap<K, V>(name, defaultParameters) }

@@ -22,6 +22,14 @@ package com.ivianuu.injekt.multibinding
 const val KEY_MAP_BINDINGS = "map_bindings"
 
 /**
+ * Map name
+ */
+class MapName<K, V>
+
+/**
  * Map binding
  */
-data class MapBinding(val mapName: Any, val key: Any)
+data class MapBinding<K, V>(
+    val mapName: MapName<K, V>,
+    val key: K
+)

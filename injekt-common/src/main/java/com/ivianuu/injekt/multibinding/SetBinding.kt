@@ -21,7 +21,9 @@ package com.ivianuu.injekt.multibinding
  */
 const val KEY_SET_BINDINGS = "set_bindings"
 
+class SetName<T>
+
 /**
  * Set binding
  */
-data class SetBinding(val setName: Any)
+data class SetBinding<T>(val setName: SetName<T>)

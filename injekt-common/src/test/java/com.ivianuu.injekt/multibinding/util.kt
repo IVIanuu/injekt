@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.multibinding
 
-object Values
+val mapValues = MapName<String, String>()
+val setValues = SetName<String>()
+
 object NameOne
 object NameTwo
 object NameThree

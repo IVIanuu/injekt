@@ -22,17 +22,17 @@ import com.ivianuu.injekt.getOrSet
 /**
  * Adds this binding into a map
  */
-fun BindingBuilder<*>.bindIntoMap(mapBinding: MapBinding) {
-    attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Any, MapBinding>() }
+fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
+    attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Any, MapBinding<K, V>>() }
         .put(mapBinding.mapName, mapBinding)
 }
 
 /**
  * Adds this binding into a map
  */
-fun <T> BindingBuilder<T>.bindIntoMap(
-    mapName: Any,
-    key: Any
+fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(
+    mapName: MapName<K, V>,
+    key: K
 ) {
     bindIntoMap(MapBinding(mapName, key))
 }

@@ -19,23 +19,23 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 
-internal fun <K, V> Component.getMultiBindingMap(mapName: Any): Map<K, Binding<V>> {
+internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K, Binding<V>> {
     return getAllBindings()
         .mapNotNull { binding ->
-            binding.attributes.get<Map<Any, MapBinding>>(KEY_MAP_BINDINGS)
+            binding.attributes.get<Map<MapName<*, *>, MapBinding<*, *>>>(KEY_MAP_BINDINGS)
                 ?.get(mapName)
                 ?.let { it.key to binding }
         }
         .toMap() as Map<K, Binding<V>>
 }
 
-internal fun <V> Component.getMultiBindingSet(setName: Any): Set<Binding<V>> {
+internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<T>> {
     return getAllBindings()
         .filter {
-            it.attributes.get<Map<Any, SetBinding>>(KEY_SET_BINDINGS)
+            it.attributes.get<Map<SetName<*>, SetBinding<*>>>(KEY_SET_BINDINGS)
                 ?.get(setName) != null
         }
-        .toSet() as Set<Binding<V>>
+        .toSet() as Set<Binding<T>>
 }
 
 internal fun Component.getAllBindings(): List<Binding<*>> =

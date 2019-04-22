@@ -31,34 +31,34 @@ class MapTest {
             module {
                 factoryBuilder<String>(NameOne) {
                     definition { "value_one" }
-                    bindIntoMap(Values, "key_one")
+                    bindIntoMap(mapValues, "key_one")
                 }
                 factoryBuilder<String>(NameTwo) {
                     definition { "value_two" }
-                    bindIntoMap(Values, "key_two")
+                    bindIntoMap(mapValues, "key_two")
                 }
                 factoryBuilder<String>(NameThree) {
                     definition { "value_three" }
-                    bindIntoMap(Values, "key_three")
+                    bindIntoMap(mapValues, "key_three")
                 }
             }
         }
 
-        val map = component.getMap<String, String>(Values)
+        val map = component.getMap(mapValues)
 
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
 
-        val lazyMap = component.getLazyMap<String, String>(Values)
+        val lazyMap = component.getLazyMap(mapValues)
 
         assertEquals(3, lazyMap.size)
         assertEquals(lazyMap.getValue("key_one").value, "value_one")
         assertEquals(lazyMap.getValue("key_two").value, "value_two")
         assertEquals(lazyMap.getValue("key_three").value, "value_three")
 
-        val providerMap = component.getProviderMap<String, String>(Values)
+        val providerMap = component.getProviderMap(mapValues)
 
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("key_one").get(), "value_one")

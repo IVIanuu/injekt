@@ -31,34 +31,34 @@ class SetTest {
             module {
                 factoryBuilder<String>(NameOne) {
                     definition { "value_one" }
-                    bindIntoSet(Values)
+                    bindIntoSet(setValues)
                 }
                 factoryBuilder<String>(NameTwo) {
                     definition { "value_two" }
-                    bindIntoSet(Values)
+                    bindIntoSet(setValues)
                 }
                 factoryBuilder<String>(NameThree) {
                     definition { "value_three" }
-                    bindIntoSet(Values)
+                    bindIntoSet(setValues)
                 }
             }
         }
 
-        val set = component.getSet<String>(Values)
+        val set = component.getSet(setValues)
 
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val lazySet = component.getLazySet<String>(Values)
+        val lazySet = component.getLazySet(setValues)
 
         assertEquals(3, lazySet.size)
         assertEquals("value_one", lazySet.toList()[0].value)
         assertEquals("value_two", lazySet.toList()[1].value)
         assertEquals("value_three", lazySet.toList()[2].value)
 
-        val providerSet = component.getProviderSet<String>(Values)
+        val providerSet = component.getProviderSet(setValues)
 
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0].get())

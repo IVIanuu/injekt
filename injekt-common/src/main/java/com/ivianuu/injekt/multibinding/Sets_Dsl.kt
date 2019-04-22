@@ -22,15 +22,15 @@ import com.ivianuu.injekt.getOrSet
 /**
  * Adds this binding into a set
  */
-fun BindingBuilder<*>.bindIntoSet(setBinding: SetBinding) {
+fun <T> BindingBuilder<*>.bindIntoSet(setBinding: SetBinding<T>) {
     attributes.getOrSet(KEY_SET_BINDINGS) {
-        hashMapOf<Any, SetBinding>()
+        hashMapOf<SetName<T>, SetBinding<T>>()
     }[setBinding.setName] = setBinding
 }
 
 /**
  * Adds this binding into a set
  */
-fun <T> BindingBuilder<T>.bindIntoSet(setName: Any) {
+fun <T, V : T> BindingBuilder<V>.bindIntoSet(setName: SetName<T>) {
     bindIntoSet(SetBinding(setName))
 }
