@@ -49,6 +49,7 @@ internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<
             binding.attributes.get<Map<SetName<*>, SetBinding<*>>>(KEY_SET_BINDINGS)
                 ?.get(setName)?.let { binding }
         }
+        .distinctBy { it.key }
         .toSet() as Set<Binding<T>>
 }
 
