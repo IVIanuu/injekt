@@ -18,9 +18,6 @@ package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.bridge.KEY_ORIGINAL_KEY
-import com.ivianuu.injekt.getOrDefault
 
 internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K, Binding<V>> {
     val allMapBindings = getAllBindings()
@@ -47,29 +44,12 @@ internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K,
 }
 
 internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<T>> {
-    val allSetBindings = getAllBindings()
+    return getAllBindings()
         .mapNotNull { binding ->
             binding.attributes.get<Map<SetName<*>, SetBinding<*>>>(KEY_SET_BINDINGS)
-                ?.get(setName)?.let { binding to it }
+                ?.get(setName)?.let { binding }
         }
-
-    val setBindingsToUse = linkedMapOf<Key, Binding<*>>()
-
-    // check overrides
-    allSetBindings.forEach { (binding, setBinding) ->
-        val key = binding.attributes.getOrDefault(KEY_ORIGINAL_KEY) { binding.key }
-
-        val isOverride = setBindingsToUse.remove(binding.key) != null
-
-        if (isOverride && !setBinding.override) {
-            throw IllegalStateException("Try to override $key in set binding $setBinding")
-        }
-
-        setBindingsToUse[binding.key] = binding
-    }
-
-
-    return setBindingsToUse.values.toSet() as Set<Binding<T>>
+        .toSet() as Set<Binding<T>>
 }
 
 internal fun Component.getAllBindings(): List<Binding<*>> =
