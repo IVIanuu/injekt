@@ -63,7 +63,7 @@ fun <K, V> Component.getProviderMap(
     }
 }
 /**
- * Lazily Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
+ * Lazily returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, V> Component.injectMap(
     name: MapName<K, V>,
@@ -73,7 +73,7 @@ fun <K, V> Component.injectMap(
 }
 
 /**
- * LazilyReturns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
+ * Lazily returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
  */
 fun <K, V> Component.injectLazyMap(
     name: MapName<K, V>,
@@ -82,7 +82,7 @@ fun <K, V> Component.injectLazyMap(
     lazy { getLazyMap(name, parameters) }
 
 /**
- * Lazily Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
+ * Lazily returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
  */
 fun <K, V> Component.injectProviderMap(
     name: MapName<K, V>,

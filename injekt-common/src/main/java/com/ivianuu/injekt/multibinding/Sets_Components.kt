@@ -64,7 +64,7 @@ fun <T> Component.getProviderSet(
 }
 
 /**
- * Lazily Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
+ * Lazily returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
  */
 fun <T> Component.injectSet(
     name: SetName<T>,
@@ -72,7 +72,7 @@ fun <T> Component.injectSet(
 ): Lazy<Set<T>> = lazy(LazyThreadSafetyMode.NONE) { getSet(name, parameters) }
 
 /**
- * LazilyReturns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
+ * Lazily returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
  */
 fun <T> Component.injectLazySet(
     name: SetName<T>,
@@ -81,7 +81,7 @@ fun <T> Component.injectLazySet(
     lazy { getLazySet(name, parameters) }
 
 /**
- * Lazily Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
+ * Lazily returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
  */
 fun <T> Component.injectProviderSet(
     name: SetName<T>,
