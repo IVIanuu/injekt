@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Resources
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constantBuilder
 
@@ -43,6 +44,11 @@ fun <T : Application> T.applicationModule(): Module = module {
     constantBuilder(this@applicationModule) {
         bindTypes(Application::class, Context::class)
         bindAlias<Context>(ForApplication)
+    }
+
+    factoryBuilder<Resources> {
+        definition { resources }
+        bindName(ForApplication)
     }
 }
 

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Resources
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constantBuilder
 
@@ -68,5 +69,10 @@ fun <T : Activity> T.activityModule(): Module = module {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
         bindType<Context>(true)
+    }
+
+    factoryBuilder<Resources>(override = true) {
+        definition { resources }
+        bindName(ForActivity)
     }
 }

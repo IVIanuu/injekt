@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.res.Resources
 import android.view.View
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constantBuilder
@@ -116,6 +117,11 @@ fun <T : View> T.viewModule(): Module = module {
         definition { context }
         bindName(ForView)
     }
+
+    factoryBuilder<Resources>(override = true) {
+        definition { resources }
+        bindName(ForView)
+    }
 }
 
 /**
@@ -129,6 +135,11 @@ fun <T : View> T.childViewModule(): Module = module {
 
     factoryBuilder<Context>(override = true) {
         definition { context }
+        bindName(ForChildView)
+    }
+
+    factoryBuilder<Resources>(override = true) {
+        definition { resources }
         bindName(ForChildView)
     }
 }

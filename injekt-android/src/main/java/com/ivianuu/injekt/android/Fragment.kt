@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.content.Context
+import android.content.res.Resources
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constantBuilder
@@ -106,6 +107,11 @@ fun <T : Fragment> T.fragmentModule(): Module = module {
     factoryBuilder<Context>(override = true) {
         bindName(ForFragment)
     }
+
+    factoryBuilder<Resources>(override = true) {
+        definition { resources }
+        bindName(ForFragment)
+    }
 }
 
 /**
@@ -118,6 +124,11 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
     }
 
     factoryBuilder<Context>(override = true) {
+        bindName(ForChildFragment)
+    }
+
+    factoryBuilder<Resources>(override = true) {
+        definition { resources }
         bindName(ForChildFragment)
     }
 }
