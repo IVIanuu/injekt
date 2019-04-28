@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.constant.constantBuilder
 
 
 /**
@@ -67,5 +67,7 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
-    constant(this@receiverModule)
+    constantBuilder(this@receiverModule) {
+        bindType<BroadcastReceiver>()
+    }
 }

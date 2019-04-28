@@ -32,6 +32,6 @@ fun ModuleBuilder.sharedPreferences(
     override: Boolean = false
 ) {
     single(name, override) {
-        context().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
+        application().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
     }
 }

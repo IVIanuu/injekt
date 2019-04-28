@@ -67,5 +67,6 @@ fun <T : Service> T.serviceModule(): Module = module {
     constantBuilder(this@serviceModule) {
         bindType<Service>()
         bindAlias<Context>(ForService)
+        bindType<Context>(true)
     }
 }

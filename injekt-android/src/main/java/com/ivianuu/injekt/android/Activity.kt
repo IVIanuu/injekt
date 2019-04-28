@@ -67,5 +67,6 @@ fun <T : Activity> T.activityModule(): Module = module {
     constantBuilder(this@activityModule) {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
+        bindType<Context>(true)
     }
 }

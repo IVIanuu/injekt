@@ -18,8 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constant
-
+import com.ivianuu.injekt.constant.constantBuilder
 
 /**
  * Content provider name
@@ -65,5 +64,7 @@ fun ContentProvider.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    constant(this@contentProviderModule)
+    constantBuilder(this@contentProviderModule) {
+        bindType<ContentProvider>()
+    }
 }

@@ -19,8 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constant
-
+import com.ivianuu.injekt.constant.constantBuilder
 
 /**
  * View name
@@ -107,5 +106,7 @@ fun View.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.viewModule(): Module = module {
-    constant(this@viewModule)
+    constantBuilder(this@viewModule) {
+        bindType<View>()
+    }
 }

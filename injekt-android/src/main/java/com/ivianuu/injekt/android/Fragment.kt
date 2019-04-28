@@ -20,7 +20,6 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-
 /**
  * Fragment name
  */
