@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.Context
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.constant.constantBuilder
 
 /**
  * Fragment name
@@ -97,5 +98,26 @@ fun Fragment.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    constant(this@fragmentModule)
+    constantBuilder(this@fragmentModule) {
+        bindType<Fragment>()
+        bindAlias<Fragment>(ForFragment)
+    }
+
+    factoryBuilder<Context>(override = true) {
+        bindName(ForFragment)
+    }
+}
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+fun <T : Fragment> T.childFragmentModule(): Module = module {
+    constantBuilder(this@childFragmentModule) {
+        bindType<Fragment>(true)
+        bindAlias<Fragment>(ForChildFragment)
+    }
+
+    factoryBuilder<Context>(override = true) {
+        bindName(ForChildFragment)
+    }
 }

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.Context
 import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.*
@@ -108,5 +109,26 @@ fun View.getApplicationComponent(): Component =
 fun <T : View> T.viewModule(): Module = module {
     constantBuilder(this@viewModule) {
         bindType<View>()
+        bindAlias<View>(ForView)
+    }
+
+    factoryBuilder<Context>(override = true) {
+        definition { context }
+        bindName(ForView)
+    }
+}
+
+/**
+ * Returns a [Module] with convenient bindings
+ */
+fun <T : View> T.childViewModule(): Module = module {
+    constantBuilder(this@childViewModule) {
+        bindType<View>(true)
+        bindAlias<View>(ForChildView)
+    }
+
+    factoryBuilder<Context>(override = true) {
+        definition { context }
+        bindName(ForChildView)
     }
 }
