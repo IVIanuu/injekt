@@ -84,13 +84,6 @@ fun ComponentBuilder.modules(vararg modules: Module) {
 }
 
 /**
- * Adds the [module]
- */
-fun ComponentBuilder.modules(module: Module) {
-    addModule(module)
-}
-
-/**
  * Adds the [Module] built by [block]
  */
 fun ComponentBuilder.module(block: (ModuleBuilder.() -> Unit)? = null) {
@@ -109,11 +102,4 @@ fun ComponentBuilder.dependencies(dependencies: Iterable<Component>) {
  */
 fun ComponentBuilder.dependencies(vararg dependencies: Component) {
     dependencies.forEach { addDependency(it) }
-}
-
-/**
- * Adds the [dependency]
- */
-fun ComponentBuilder.dependencies(dependency: Component) {
-    addDependency(dependency)
 }

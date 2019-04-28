@@ -74,8 +74,3 @@ inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T =
  */
 fun attributesOf(vararg pairs: Pair<String, Any?>): Attributes =
     Attributes(mutableMapOf(*pairs))
-
-/**
- * Returns new empty parameters
- */
-fun attributesOf(): Attributes = Attributes(mutableMapOf())

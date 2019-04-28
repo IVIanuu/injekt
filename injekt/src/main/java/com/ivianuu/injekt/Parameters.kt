@@ -57,16 +57,11 @@ typealias ParametersDefinition = () -> Parameters
 fun parametersOf(vararg values: Any?): Parameters = Parameters(listOf(*values))
 
 /**
- * Returns new [Parameters] which contains the [value]
+ * Returns new [Parameters] which contains all [values]
  */
-fun parametersOf(value: Any?): Parameters = Parameters(listOf(value))
+fun parametersOf(values: Iterable<Any?>): Parameters = Parameters(values.toList())
 
 private val emptyParameters = Parameters(emptyList())
-
-/**
- * Returns new empty parameters
- */
-fun parametersOf(): Parameters = emptyParameters
 
 /**
  * Returns empty [Parameters]

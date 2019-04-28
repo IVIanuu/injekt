@@ -92,17 +92,18 @@ fun BindingBuilder<*>.override() {
 /**
  * Adds a additional binding for [T]
  */
-inline fun <reified T> BindingBuilder<*>.bindType() {
-    bindType(T::class)
+inline fun <reified T> BindingBuilder<*>.bindType(override: Boolean = false) {
+    bindType(T::class, override)
 }
 
 /**
  * Adds a additional binding for [type]
  */
-fun BindingBuilder<*>.bindType(type: KClass<*>) {
+fun BindingBuilder<*>.bindType(type: KClass<*>, override: Boolean = false) {
     val copy = copyLight()
     copy.type = type
     copy.name = null
+    copy.override = override
     additionalBinding(copy.build())
 }
 
@@ -120,16 +121,10 @@ fun BindingBuilder<*>.bindTypes(types: Iterable<KClass<*>>) {
     types.forEach { bindTypes(it) }
 }
 
-/**
- * Binds all of [types]
- */
-fun BindingBuilder<*>.bindTypes(type: KClass<*>) {
-    bindType(type)
-}
-
-fun BindingBuilder<*>.bindName(name: Any) {
+fun BindingBuilder<*>.bindName(name: Any, override: Boolean = false) {
     val copy = copyLight()
     copy.name = name
+    copy.override = override
     additionalBinding(copy.build())
 }
 
@@ -141,17 +136,14 @@ fun BindingBuilder<*>.bindNames(names: Iterable<Any>) {
     names.forEach { bindName(it) }
 }
 
-fun BindingBuilder<*>.bindNames(name: Any) {
-    bindName(name)
+inline fun <reified T> BindingBuilder<*>.bindAlias(name: Any, override: Boolean = false) {
+    bindAlias(T::class, name, override)
 }
 
-inline fun <reified T> BindingBuilder<*>.bindAlias(name: Any) {
-    bindAlias(T::class, name)
-}
-
-fun BindingBuilder<*>.bindAlias(type: KClass<*>, name: Any) {
+fun BindingBuilder<*>.bindAlias(type: KClass<*>, name: Any, override: Boolean = false) {
     val copy = copyLight()
     copy.type = type
     copy.name = name
+    copy.override = override
     additionalBinding(copy.build())
 }
