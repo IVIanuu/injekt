@@ -100,7 +100,6 @@ inline fun <reified T> BindingBuilder<*>.bindType() {
  * Adds a additional binding for [type]
  */
 fun BindingBuilder<*>.bindType(type: KClass<*>) {
-    // todo only maybe use bridge
     val copy = copyLight()
     copy.type = type
     copy.name = null
@@ -129,7 +128,6 @@ fun BindingBuilder<*>.bindTypes(type: KClass<*>) {
 }
 
 fun BindingBuilder<*>.bindName(name: Any) {
-    // todo only maybe use bridge
     val copy = copyLight()
     copy.name = name
     additionalBinding(copy.build())
@@ -152,7 +150,6 @@ inline fun <reified T> BindingBuilder<*>.bindAlias(name: Any) {
 }
 
 fun BindingBuilder<*>.bindAlias(type: KClass<*>, name: Any) {
-    // todo only maybe use bridge
     val copy = copyLight()
     copy.type = type
     copy.name = name
