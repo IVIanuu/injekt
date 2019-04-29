@@ -38,7 +38,7 @@ inline fun <reified T> Module.weak(
     name: Qualifier? = null,
     scope: Scope? = null,
     noinline definition: Definition<T>
-) = weak(T::class, name, scope, definition)
+): Binding<T> = weak(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
@@ -48,7 +48,7 @@ fun <T> Module.weak(
     name: Qualifier? = null,
     scope: Scope? = null,
     definition: Definition<T>
-) = bind(type, name, WeakKind, scope, definition)
+): Binding<T> = bind(WeakKind, type, name, scope, definition)
 
 private class WeakInstance<T>(
     override val binding: Binding<T>,

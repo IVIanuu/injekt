@@ -36,7 +36,7 @@ object BridgeKind : Kind() {
 inline fun <reified T> Module.bridge(
     name: Qualifier? = null,
     noinline block: (Binding<T>.() -> Unit)? = null
-) = bridge(T::class, name, block)
+): Binding<T> = bridge(T::class, name, block)
 
 /**
  * Acts as an bridge for an existing [Binding]
@@ -51,9 +51,9 @@ fun <T> Module.bridge(
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
     return bind<T>(
+        BridgeKind,
         type,
         named(UUID.randomUUID().toString()),
-        BridgeKind,
         null
     ) { get(type, name) { it } }.apply {
         block?.invoke(this)

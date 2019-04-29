@@ -37,7 +37,7 @@ fun <T : Any> Module.constant(
     instance: T,
     type: KClass<*> = instance::class,
     name: Qualifier? = null
-) = bind(type, name, ConstantKind, null) { instance }
+): Binding<T> = bind(ConstantKind, type, name, null) { instance }
 
 private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {

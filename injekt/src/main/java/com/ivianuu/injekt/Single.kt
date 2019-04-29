@@ -36,7 +36,7 @@ inline fun <reified T> Module.single(
     name: Qualifier? = null,
     scope: Scope? = null,
     noinline definition: Definition<T>
-) = single(T::class, name, scope, definition)
+): Binding<T> = single(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
@@ -46,7 +46,7 @@ fun <T> Module.single(
     name: Qualifier? = null,
     scope: Scope? = null,
     definition: Definition<T>
-) = bind(type, name, SingleKind, scope, definition)
+): Binding<T> = bind(SingleKind, type, name, scope, definition)
 
 private object UNINITIALIZED
 

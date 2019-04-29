@@ -36,7 +36,7 @@ inline fun <reified T> Module.factory(
     name: Qualifier? = null,
     scope: Scope? = null,
     noinline definition: Definition<T>
-) = factory(T::class, name, scope, definition)
+): Binding<T> = factory(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created on each request
@@ -46,7 +46,7 @@ fun <T> Module.factory(
     name: Qualifier? = null,
     scope: Scope? = null,
     definition: Definition<T>
-) = bind(type, name, FactoryKind, scope, definition)
+): Binding<T> = bind(FactoryKind, type, name, scope, definition)
 
 private class FactoryInstance<T>(
     override val binding: Binding<T>,

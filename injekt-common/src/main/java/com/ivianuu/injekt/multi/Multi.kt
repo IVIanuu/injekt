@@ -37,7 +37,7 @@ inline fun <reified T> Module.multi(
     name: Qualifier? = null,
     scope: Scope? = null,
     noinline definition: Definition<T>
-) = multi(T::class, name, scope, definition)
+): Binding<T> = multi(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
@@ -47,7 +47,7 @@ fun <T> Module.multi(
     name: Qualifier? = null,
     scope: Scope? = null,
     definition: Definition<T>
-) = bind(type, name, MultiKind, scope, definition)
+): Binding<T> = bind(MultiKind, type, name, scope, definition)
 
 private class MultiInstance<T>(
     override val binding: Binding<T>,

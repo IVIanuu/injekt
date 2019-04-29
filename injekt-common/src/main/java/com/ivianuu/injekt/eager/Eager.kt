@@ -37,7 +37,7 @@ inline fun <reified T> Module.eager(
     name: Qualifier? = null,
     scope: Scope? = null,
     noinline definition: Definition<T>
-) = eager(T::class, name, scope, definition)
+): Binding<T> = eager(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
@@ -47,7 +47,7 @@ fun <T> Module.eager(
     name: Qualifier? = null,
     scope: Scope? = null,
     definition: Definition<T>
-) = bind(type, name, EagerKind, scope, definition)
+): Binding<T> = bind(EagerKind, type, name, scope, definition)
 
 private object UNINITIALIZED
 

@@ -22,9 +22,9 @@ import kotlin.reflect.KClass
  * Represents a dependency binding.
  */
 class Binding<T> internal constructor(
+    val kind: Kind,
     val type: KClass<*>,
     val name: Qualifier? = null,
-    val kind: Kind,
     val scope: Scope? = null,
     val definition: Definition<T>
 ) {
@@ -46,6 +46,27 @@ class Binding<T> internal constructor(
  * Defines a [Binding]
  */
 typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
+
+/**
+ * Returns a new [Binding]
+ */
+inline fun <reified T> binding(
+    kind: Kind,
+    name: Qualifier? = null,
+    scope: Scope? = null,
+    noinline definition: Definition<T>
+): Binding<T> = binding(kind, T::class, name, scope, definition)
+
+/**
+ * Returns a new [Binding]
+ */
+fun <T> binding(
+    kind: Kind,
+    type: KClass<*>,
+    name: Qualifier? = null,
+    scope: Scope? = null,
+    definition: Definition<T>
+): Binding<T> = Binding(kind, type, name, scope, definition)
 
 fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
     attributes(attributes.entries)
@@ -91,7 +112,7 @@ inline fun <reified T> Binding<*>.bindType() {
  * Adds a additional binding for [type]
  */
 infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> {
-    additionalBinding(Binding(type, null, kind, scope, definition))
+    additionalBinding(binding(kind, type, null, scope, definition))
     return this
 }
 
@@ -112,7 +133,7 @@ infix fun <T> Binding<T>.bindTypes(types: Iterable<KClass<*>>): Binding<T> {
 }
 
 infix fun <T> Binding<T>.bindName(name: Qualifier): Binding<T> {
-    additionalBinding(Binding(type, name, kind, scope, definition))
+    additionalBinding(binding(kind, type, name, scope, definition))
     return this
 }
 
@@ -131,7 +152,7 @@ inline fun <reified T> Binding<*>.bindAlias(name: Qualifier) {
 }
 
 fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Qualifier): Binding<T> {
-    additionalBinding(Binding(type, name, kind, scope, definition))
+    additionalBinding(binding(kind, type, name, scope, definition))
     return this
 }
 
