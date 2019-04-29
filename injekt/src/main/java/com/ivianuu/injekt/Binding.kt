@@ -66,15 +66,17 @@ fun <T> binding(
 ): Binding<T> = Binding(kind, type, name, definition)
 
 fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
-    attributes(attributes.entries)
+    attributes.entries.forEach { this.attributes[it.key] = it.value }
     return this
 }
 
 fun <T> Binding<T>.attributes(attributes: Map<String, Any?>): Binding<T> {
-    attributes.forEach {
-        this.attributes[it.key] = it.value
-    }
+    attributes.forEach { this.attributes[it.key] = it.value }
+    return this
+}
 
+fun <T> Binding<T>.attributes(vararg attributes: Pair<String, Any?>): Binding<T> {
+    attributes.forEach { this.attributes[it.first] = it.second }
     return this
 }
 
