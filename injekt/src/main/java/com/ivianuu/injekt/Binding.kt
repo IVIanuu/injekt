@@ -33,6 +33,19 @@ class Binding<T> internal constructor(
     val attributes = attributesOf()
     val additionalBindings = mutableListOf<Binding<*>>()
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Binding<*>) return false
+
+        if (key != other.key) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return key.hashCode()
+    }
+
     override fun toString(): String {
         return "$kind(" +
                 "type=${type.java.name}, " +

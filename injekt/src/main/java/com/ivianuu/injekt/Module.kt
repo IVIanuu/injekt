@@ -26,14 +26,27 @@ class Module internal constructor() {
     /**
      * All bindings of this module
      */
-    val bindings: Collection<Binding<*>> get() = _bindings.values
-    private val _bindings = mutableMapOf<Key, Binding<*>>()
+    val bindings: Set<Binding<*>> get() = _bindings
+    private val _bindings = linkedSetOf<Binding<*>>()
+
+    /**
+     * The modules which are included in this one
+     */
+    val includes: Set<Module> get() = _includes
+    private val _includes = linkedSetOf<Module>()
 
     /**
      * Adds the [binding]
      */
-    fun addBinding(binding: Binding<*>) {
-        _bindings[binding.key] = binding
+    fun bind(binding: Binding<*>) {
+        _bindings.add(binding)
+    }
+
+    /**
+     * Adds the [module]
+     */
+    fun include(module: Module) {
+        _includes.add(module)
     }
 
 }
@@ -53,7 +66,7 @@ inline fun <reified T> Module.bind(
     kind: Kind,
     name: Any? = null,
     noinline definition: Definition<T>
-) = bind(kind, T::class, name, definition)
+): Binding<T> = bind(kind, T::class, name, definition)
 
 /**
  * Adds a [Binding]
@@ -65,13 +78,6 @@ fun <T> Module.bind(
     definition: Definition<T>
 ): Binding<T> {
     val binding = binding(kind, type, name, definition)
-    addBinding(binding)
+    bind(binding)
     return binding
-}
-
-/**
- * Adds all bindings of the [module] to this module
- */
-fun Module.module(module: Module) {
-    module.bindings.forEach { addBinding(it) }
 }

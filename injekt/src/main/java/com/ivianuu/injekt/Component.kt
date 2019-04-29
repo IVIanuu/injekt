@@ -73,6 +73,7 @@ class Component internal constructor() {
      */
     fun addModule(module: Module) {
         module.bindings.forEach { addBinding(it) }
+        module.includes.forEach { addModule(it) }
     }
 
     /**
