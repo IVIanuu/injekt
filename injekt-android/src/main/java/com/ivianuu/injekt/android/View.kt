@@ -23,26 +23,15 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
-
-/**
- * View scope
- */
-object ViewScope : Scope
-
-/**
- * Child view scope
- */
-object ChildViewScope : Scope
-
 /**
  * View name
  */
-object ForView : Qualifier
+object ForView
 
 /**
  * Child view name
  */
-object ForChildView : Qualifier
+object ForChildView
 
 /**
  * Returns a [Component] with convenient configurations
@@ -50,7 +39,6 @@ object ForChildView : Qualifier
 fun <T : View> T.viewComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ViewScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(viewModule())
     block?.invoke(this)
@@ -63,7 +51,6 @@ fun <T : View> T.viewComponent(
 fun <T : View> T.childViewComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ChildViewScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(childViewModule())
     block?.invoke(this)

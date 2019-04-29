@@ -24,8 +24,7 @@ import kotlin.reflect.KClass
 class Binding<T> internal constructor(
     val kind: Kind,
     val type: KClass<*>,
-    val name: Qualifier? = null,
-    val scope: Scope? = null,
+    val name: Any? = null,
     val definition: Definition<T>
 ) {
 
@@ -52,10 +51,9 @@ typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
  */
 inline fun <reified T> binding(
     kind: Kind,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = binding(kind, T::class, name, scope, definition)
+): Binding<T> = binding(kind, T::class, name, definition)
 
 /**
  * Returns a new [Binding]
@@ -63,10 +61,9 @@ inline fun <reified T> binding(
 fun <T> binding(
     kind: Kind,
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
-): Binding<T> = Binding(kind, type, name, scope, definition)
+): Binding<T> = Binding(kind, type, name, definition)
 
 fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
     attributes(attributes.entries)
@@ -112,7 +109,7 @@ inline fun <reified T> Binding<*>.bindType() {
  * Adds a additional binding for [type]
  */
 infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> {
-    additionalBinding(binding(kind, type, null, scope, definition))
+    additionalBinding(binding(kind, type, null, definition))
     return this
 }
 
@@ -132,27 +129,27 @@ infix fun <T> Binding<T>.bindTypes(types: Iterable<KClass<*>>): Binding<T> {
     return this
 }
 
-infix fun <T> Binding<T>.bindName(name: Qualifier): Binding<T> {
-    additionalBinding(binding(kind, type, name, scope, definition))
+infix fun <T> Binding<T>.bindName(name: Any): Binding<T> {
+    additionalBinding(binding(kind, type, name, definition))
     return this
 }
 
-fun <T> Binding<T>.bindNames(vararg names: Qualifier): Binding<T> {
+fun <T> Binding<T>.bindNames(vararg names: Any): Binding<T> {
     names.forEach { bindName(it) }
     return this
 }
 
-fun <T> Binding<T>.bindNames(names: Iterable<Qualifier>): Binding<T> {
+fun <T> Binding<T>.bindNames(names: Iterable<Any>): Binding<T> {
     names.forEach { bindName(it) }
     return this
 }
 
-inline fun <reified T> Binding<*>.bindAlias(name: Qualifier) {
+inline fun <reified T> Binding<*>.bindAlias(name: Any) {
     bindAlias(T::class, name)
 }
 
-fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Qualifier): Binding<T> {
-    additionalBinding(binding(kind, type, name, scope, definition))
+fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Any): Binding<T> {
+    additionalBinding(binding(kind, type, name, definition))
     return this
 }
 

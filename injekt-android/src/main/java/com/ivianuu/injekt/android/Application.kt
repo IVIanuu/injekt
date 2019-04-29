@@ -22,16 +22,10 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
-
-/**
- * Application scope
- */
-object ApplicationScope : Scope
-
 /**
  * Application name
  */
-object ForApplication : Qualifier
+object ForApplication
 
 /**
  * Returns a [Component] with convenient configurations
@@ -39,7 +33,6 @@ object ForApplication : Qualifier
 fun <T : Application> T.applicationComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ApplicationScope)
     modules(applicationModule())
     block?.invoke(this)
     createEagerInstances()

@@ -34,7 +34,7 @@ object BridgeKind : Kind() {
  * This allows to add alias bindings and so on to existing bindings
  */
 inline fun <reified T> Module.bridge(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline block: (Binding<T>.() -> Unit)? = null
 ): Binding<T> = bridge(T::class, name, block)
 
@@ -44,7 +44,7 @@ inline fun <reified T> Module.bridge(
  */
 fun <T> Module.bridge(
     type: KClass<*>,
-    name: Qualifier? = null,
+    name: Any? = null,
     block: (Binding<T>.() -> Unit)? = null
 ): Binding<T> {
     // we create a additional binding because we have no reference to the original one
@@ -53,8 +53,7 @@ fun <T> Module.bridge(
     return bind<T>(
         BridgeKind,
         type,
-        named(UUID.randomUUID().toString()),
-        null
+        UUID.randomUUID().toString()
     ) { get(type, name) { it } }.apply {
         block?.invoke(this)
     }

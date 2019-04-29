@@ -30,12 +30,6 @@ class Component internal constructor() {
     private val _dependencies = linkedSetOf<Component>()
 
     /**
-     * All scopes names of this component
-     */
-    val scopes: Set<Scope> get() = _scopes
-    private val _scopes = linkedSetOf<Scope>()
-
-    /**
      * All bindings of this component
      */
     val bindings: Collection<Binding<*>> get() = _instances.values.map { it.binding }
@@ -56,7 +50,7 @@ class Component internal constructor() {
      */
     fun <T> get(
         type: KClass<*>,
-        name: Qualifier? = null,
+        name: Any? = null,
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
@@ -75,13 +69,6 @@ class Component internal constructor() {
     }
 
     /**
-     * Adds the [scope] as a scope name
-     */
-    fun addScope(scope: Scope) {
-        _scopes.add(scope)
-    }
-
-    /**
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
@@ -92,19 +79,8 @@ class Component internal constructor() {
      * Saves the [binding]
      */
     fun addBinding(binding: Binding<*>) {
-        if (binding.scope == null || _scopes.contains(binding.scope)) {
-            _instances[binding.key] = binding.kind.createInstance(binding, context)
-            binding.additionalBindings.forEach { addBinding(it) }
-        } else {
-            val parentWithScope = findComponentForScope(binding.scope)
-
-            // add the binding to the parent
-            if (parentWithScope != null) {
-                parentWithScope.addBinding(binding)
-            } else {
-                error("does not match binding scope ${binding.scope}")
-            }
-        }
+        _instances[binding.key] = binding.kind.createInstance(binding, context)
+        binding.additionalBindings.forEach { addBinding(it) }
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
@@ -114,16 +90,6 @@ class Component internal constructor() {
         for (dependency in _dependencies) {
             instance = dependency.findInstance<T>(key)
             if (instance != null) return instance
-        }
-
-        return null
-    }
-
-    private fun findComponentForScope(scope: Scope): Component? {
-        if (_scopes.contains(scope)) return this
-        for (dependency in _dependencies) {
-            val result = dependency.findComponentForScope(scope)
-            if (result != null) return result
         }
 
         return null
@@ -144,7 +110,7 @@ fun component(
  * Returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.get(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(T::class, name, parameters)
 
@@ -152,7 +118,7 @@ inline fun <reified T> Component.get(
  * Lazily returns a instance of [T] matching the [name] and [parameters]
  */
 inline fun <reified T> Component.inject(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(T::class, name, parameters)
 
@@ -161,7 +127,7 @@ inline fun <reified T> Component.inject(
  */
 fun <T> Component.inject(
     type: KClass<*>,
-    name: Qualifier? = null,
+    name: Any? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
 
@@ -177,20 +143,6 @@ fun Component.dependencies(dependencies: Iterable<Component>) {
  */
 fun Component.dependencies(vararg dependencies: Component) {
     dependencies.forEach { addDependency(it) }
-}
-
-/**
- * Adds all [scopes]
- */
-fun Component.scopes(scopes: Iterable<Scope>) {
-    scopes.forEach { addScope(it) }
-}
-
-/**
- * Adds all [scopes]
- */
-fun Component.scopes(vararg scopes: Scope) {
-    scopes.forEach { addScope(it) }
 }
 
 /**

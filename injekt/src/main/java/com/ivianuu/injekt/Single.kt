@@ -33,20 +33,18 @@ object SingleKind : Kind() {
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.single(
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = single(T::class, name, scope, definition)
+): Binding<T> = single(T::class, name, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.single(
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
-): Binding<T> = bind(SingleKind, type, name, scope, definition)
+): Binding<T> = bind(SingleKind, type, name, definition)
 
 private object UNINITIALIZED
 

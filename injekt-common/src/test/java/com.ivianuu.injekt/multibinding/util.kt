@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.Qualifier
+
 
 val mapValues = MapName<String, String>()
 val setValues = SetName<String>()
 
-object NameOne : Qualifier
-object NameTwo : Qualifier
-object NameThree : Qualifier
+object NameOne
+object NameTwo
+object NameThree

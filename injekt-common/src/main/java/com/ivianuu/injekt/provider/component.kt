@@ -18,7 +18,7 @@ package com.ivianuu.injekt.provider
 
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
+
 import kotlin.reflect.KClass
 
 /**
@@ -26,7 +26,7 @@ import kotlin.reflect.KClass
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.getProvider(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Provider<T> = getProvider(T::class, name, defaultParameters)
 
@@ -36,7 +36,7 @@ inline fun <reified T> Component.getProvider(
  */
 fun <T> Component.getProvider(
     type: KClass<*>,
-    name: Qualifier? = null,
+    name: Any? = null,
     defaultParameters: ParametersDefinition? = null
 ): Provider<T> = provider { parameters: ParametersDefinition? ->
     get<T>(type, name, parameters ?: defaultParameters)
@@ -47,7 +47,7 @@ fun <T> Component.getProvider(
  * Each [Provider.get] call results in a potentially new value
  */
 inline fun <reified T> Component.injectProvider(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
 
@@ -57,7 +57,7 @@ inline fun <reified T> Component.injectProvider(
  */
 fun <T> Component.injectProvider(
     type: KClass<*>,
-    name: Qualifier? = null,
+    name: Any? = null,
     defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
     provider { parameters: ParametersDefinition? ->

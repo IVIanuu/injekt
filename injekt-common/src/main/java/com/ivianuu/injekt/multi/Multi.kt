@@ -34,20 +34,18 @@ object MultiKind : Kind() {
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.multi(
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = multi(T::class, name, scope, definition)
+): Binding<T> = multi(T::class, name, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.multi(
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
-): Binding<T> = bind(MultiKind, type, name, scope, definition)
+): Binding<T> = bind(MultiKind, type, name, definition)
 
 private class MultiInstance<T>(
     override val binding: Binding<T>,

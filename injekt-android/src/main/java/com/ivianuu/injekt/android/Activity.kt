@@ -23,14 +23,9 @@ import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
 /**
- * Activity scope
- */
-object ActivityScope : Scope
-
-/**
  * Activity name
  */
-object ForActivity : Qualifier
+object ForActivity
 
 /**
  * Returns a [Component] with convenient configurations
@@ -38,7 +33,6 @@ object ForActivity : Qualifier
 fun <T : Activity> T.activityComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ActivityScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     block?.invoke(this)

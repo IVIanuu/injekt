@@ -51,10 +51,9 @@ fun module(block: (Module.() -> Unit)? = null): Module {
  */
 inline fun <reified T> Module.bind(
     kind: Kind,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-) = bind(kind, T::class, name, scope, definition)
+) = bind(kind, T::class, name, definition)
 
 /**
  * Adds a [Binding]
@@ -62,11 +61,10 @@ inline fun <reified T> Module.bind(
 fun <T> Module.bind(
     kind: Kind,
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
 ): Binding<T> {
-    val binding = binding(kind, type, name, scope, definition)
+    val binding = binding(kind, type, name, definition)
     addBinding(binding)
     return binding
 }

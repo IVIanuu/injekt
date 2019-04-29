@@ -34,7 +34,7 @@ class ComponentTest {
             modules(
                 module {
                     factory { typed }
-                    single(named("named")) { named }
+                    single("named") { named }
                 }
             )
         }
@@ -42,7 +42,7 @@ class ComponentTest {
         val typedGet = component.get<TestDep1>()
         assertEquals(typed, typedGet)
 
-        val namedGet = component.get<TestDep1>(named("named"))
+        val namedGet = component.get<TestDep1>("named")
         assertEquals(named, namedGet)
     }
 
@@ -92,13 +92,13 @@ class ComponentTest {
             modules(
                 module {
                     factory { typed }
-                    factory(named("named")) { named }
+                    factory("named") { named }
                 }
             )
         }
 
         assertEquals(typed, component.get<TestDep1>())
-        assertEquals(named, component.get<TestDep1>(named("named")))
+        assertEquals(named, component.get<TestDep1>("named"))
     }
 
     @Test

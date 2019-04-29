@@ -33,20 +33,18 @@ object FactoryKind : Kind() {
  * Adds a [Binding] which will be created on each request
  */
 inline fun <reified T> Module.factory(
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = factory(T::class, name, scope, definition)
+): Binding<T> = factory(T::class, name, definition)
 
 /**
  * Adds a [Binding] which will be created on each request
  */
 fun <T> Module.factory(
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
-): Binding<T> = bind(FactoryKind, type, name, scope, definition)
+): Binding<T> = bind(FactoryKind, type, name, definition)
 
 private class FactoryInstance<T>(
     override val binding: Binding<T>,

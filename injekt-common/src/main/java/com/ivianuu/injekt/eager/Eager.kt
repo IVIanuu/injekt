@@ -34,20 +34,18 @@ object EagerKind : Kind() {
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
 inline fun <reified T> Module.eager(
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = eager(T::class, name, scope, definition)
+): Binding<T> = eager(T::class, name, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
 fun <T> Module.eager(
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
-): Binding<T> = bind(EagerKind, type, name, scope, definition)
+): Binding<T> = bind(EagerKind, type, name, definition)
 
 private object UNINITIALIZED
 

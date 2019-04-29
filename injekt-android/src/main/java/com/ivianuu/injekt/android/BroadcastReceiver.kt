@@ -22,16 +22,10 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
-
-/**
- * Receiver scope
- */
-object ReceiverScope : Scope
-
 /**
  * Receiver name
  */
-object ForReceiver : Qualifier
+object ForReceiver
 
 /**
  * Returns a [Component] with convenient configurations
@@ -40,7 +34,6 @@ fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ReceiverScope)
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule())
     block?.invoke(this)

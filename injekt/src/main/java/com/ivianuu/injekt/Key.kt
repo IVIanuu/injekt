@@ -21,4 +21,4 @@ import kotlin.reflect.KClass
 /**
  * A key for a [Binding]
  */
-data class Key(val type: KClass<*>, val name: Qualifier? = null)
+data class Key(val type: KClass<*>, val name: Any? = null)

@@ -27,8 +27,8 @@ class BridgeTest {
         val component = component {
             modules(
                 module {
-                    factory(named("original_name")) { "original_value" }
-                    bridge<String>(named("original_name")) bindType CharSequence::class
+                    factory("original_name") { "original_value" }
+                    bridge<String>("original_name") bindType CharSequence::class
                 }
             )
         }

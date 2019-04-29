@@ -21,16 +21,10 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
-
-/**
- * Content provider scope
- */
-object ContentProviderScope : Scope
-
 /**
  * Content provider name
  */
-object ForContentProvider : Qualifier
+object ForContentProvider
 
 /**
  * Returns a [Component] with convenient configurations
@@ -38,7 +32,6 @@ object ForContentProvider : Qualifier
 fun <T : ContentProvider> T.contentProviderComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ContentProviderScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(contentProviderModule())
     block?.invoke(this)

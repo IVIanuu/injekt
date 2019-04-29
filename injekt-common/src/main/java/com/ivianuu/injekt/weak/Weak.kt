@@ -35,20 +35,18 @@ object WeakKind : Kind() {
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.weak(
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = weak(T::class, name, scope, definition)
+): Binding<T> = weak(T::class, name, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.weak(
     type: KClass<*>,
-    name: Qualifier? = null,
-    scope: Scope? = null,
+    name: Any? = null,
     definition: Definition<T>
-): Binding<T> = bind(WeakKind, type, name, scope, definition)
+): Binding<T> = bind(WeakKind, type, name, definition)
 
 private class WeakInstance<T>(
     override val binding: Binding<T>,

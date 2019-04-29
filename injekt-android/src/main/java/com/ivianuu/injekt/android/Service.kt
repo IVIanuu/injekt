@@ -23,16 +23,10 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
-
-/**
- * Service scope
- */
-object ServiceScope : Scope
-
 /**
  * Service name
  */
-object ForService : Qualifier
+object ForService
 
 /**
  * Returns a [Component] with convenient configurations
@@ -40,7 +34,6 @@ object ForService : Qualifier
 fun <T : Service> T.serviceComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ServiceScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(serviceModule())
     block?.invoke(this)

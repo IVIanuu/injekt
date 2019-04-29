@@ -21,26 +21,15 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.eager.createEagerInstances
 
-
-/**
- * Fragment scope
- */
-object FragmentScope : Scope
-
-/**
- * Child fragment scope
- */
-object ChildFragmentScope : Scope
-
 /**
  * Fragment name
  */
-object ForFragment : Qualifier
+object ForFragment
 
 /**
  * Child fragment name
  */
-object ForChildFragment : Qualifier
+object ForChildFragment
 
 /**
  * Returns a [Component] with convenient configurations
@@ -48,7 +37,6 @@ object ForChildFragment : Qualifier
 fun <T : Fragment> T.fragmentComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(FragmentScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(fragmentModule())
     block?.invoke(this)
@@ -61,7 +49,6 @@ fun <T : Fragment> T.fragmentComponent(
 fun <T : Fragment> T.childFragmentComponent(
     block: (Component.() -> Unit)? = null
 ): Component = component {
-    scopes(ChildFragmentScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(childFragmentModule())
     block?.invoke(this)
