@@ -23,10 +23,7 @@ import kotlin.reflect.KClass
  * Kind for multi instances
  */
 object MultiKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> = MultiInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = MultiInstance(binding)
     override fun toString(): String = "Multi"
 }
 
@@ -47,17 +44,12 @@ fun <T> Module.multi(
     definition: Definition<T>
 ): Binding<T> = bind(MultiKind, type, name, definition)
 
-private class MultiInstance<T>(
-    override val binding: Binding<T>,
-    val defaultContext: DefinitionContext?
-) : Instance<T>() {
+private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private val values = linkedMapOf<Int, T>()
 
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
         checkNotNull(parameters) { "Parameters cannot be null" }
-
-        val context = defaultContext ?: context
 
         val params = parameters()
 

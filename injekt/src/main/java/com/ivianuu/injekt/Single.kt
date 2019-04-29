@@ -22,10 +22,7 @@ import kotlin.reflect.KClass
  * Kind for single instances
  */
 object SingleKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> = SingleInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = SingleInstance(binding)
     override fun toString(): String = "Single"
 }
 
@@ -48,10 +45,7 @@ fun <T> Module.single(
 
 private object UNINITIALIZED
 
-private class SingleInstance<T>(
-    override val binding: Binding<T>,
-    val defaultContext: DefinitionContext?
-) : Instance<T>() {
+private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
 
@@ -59,8 +53,6 @@ private class SingleInstance<T>(
         context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T {
-        val context = defaultContext ?: context
-
         var value = _value
         if (value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("Return existing instance $binding")

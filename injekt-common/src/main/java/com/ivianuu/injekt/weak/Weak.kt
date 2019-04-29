@@ -24,10 +24,7 @@ import kotlin.reflect.KClass
  * Weak kind
  */
 object WeakKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> = WeakInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = WeakInstance(binding)
     override fun toString() = "Weak"
 }
 
@@ -48,16 +45,11 @@ fun <T> Module.weak(
     definition: Definition<T>
 ): Binding<T> = bind(WeakKind, type, name, definition)
 
-private class WeakInstance<T>(
-    override val binding: Binding<T>,
-    val defaultContext: DefinitionContext?
-) : Instance<T>() {
+private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: WeakReference<T>? = null
 
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
-        val context = defaultContext ?: context
-
         val value = _value?.get()
 
         return if (value != null) {

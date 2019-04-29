@@ -23,10 +23,7 @@ import kotlin.reflect.KClass
  * Eager kind
  */
 object EagerKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> = EagerInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = EagerInstance(binding)
     override fun toString(): String = "Eager"
 }
 
@@ -49,16 +46,11 @@ fun <T> Module.eager(
 
 private object UNINITIALIZED
 
-private class EagerInstance<T>(
-    override val binding: Binding<T>,
-    val defaultContext: DefinitionContext?
-) : Instance<T>() {
+private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
 
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
-        val context = defaultContext ?: context
-
         var value = _value
         if (value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("Return existing eager instance $binding")

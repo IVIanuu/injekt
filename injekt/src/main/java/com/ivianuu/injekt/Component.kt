@@ -80,7 +80,7 @@ class Component internal constructor() {
      * Saves the [binding]
      */
     fun addBinding(binding: Binding<*>) {
-        _instances[binding.key] = binding.kind.createInstance(binding, context)
+        _instances[binding.key] = binding.kind.createInstance(binding)
         binding.additionalBindings.forEach { addBinding(it) }
     }
 

@@ -23,10 +23,7 @@ abstract class Kind {
     /**
      * Returns a new [Instance] for the [binding]
      */
-    abstract fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T>
+    abstract fun <T> createInstance(binding: Binding<T>): Instance<T>
 
     override fun toString(): String = "Unknown"
 }

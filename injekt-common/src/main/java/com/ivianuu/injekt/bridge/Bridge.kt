@@ -21,11 +21,7 @@ import java.util.*
 import kotlin.reflect.KClass
 
 object BridgeKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> =
-        BridgeInstance(binding)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = BridgeInstance(binding)
     override fun toString(): String = "Bridge"
 }
 

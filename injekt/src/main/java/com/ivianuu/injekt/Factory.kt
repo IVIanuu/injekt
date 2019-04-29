@@ -22,10 +22,7 @@ import kotlin.reflect.KClass
  * Kind for factory instances
  */
 object FactoryKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> = FactoryInstance(binding, context)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = FactoryInstance(binding)
     override fun toString(): String = "Factory"
 }
 
@@ -46,16 +43,12 @@ fun <T> Module.factory(
     definition: Definition<T>
 ): Binding<T> = bind(FactoryKind, type, name, definition)
 
-private class FactoryInstance<T>(
-    override val binding: Binding<T>,
-    val defaultContext: DefinitionContext?
-) : Instance<T>() {
+private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(
         context: DefinitionContext,
         parameters: ParametersDefinition?
     ): T {
-        val context = defaultContext ?: context
         InjektPlugins.logger?.info("Create instance $binding")
         return create(context, parameters)
     }

@@ -29,10 +29,7 @@ abstract class Instance<T> {
     /**
      * Returns the value for this instance
      */
-    abstract fun get(
-        context: DefinitionContext,
-        parameters: ParametersDefinition? = null
-    ): T
+    abstract fun get(context: DefinitionContext, parameters: ParametersDefinition? = null): T
 
     /**
      * Creates the value for this instance

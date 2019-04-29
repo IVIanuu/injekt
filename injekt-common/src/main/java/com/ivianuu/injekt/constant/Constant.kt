@@ -23,10 +23,7 @@ import kotlin.reflect.KClass
  * Constant instance kind
  */
 object ConstantKind : Kind() {
-    override fun <T> createInstance(
-        binding: Binding<T>,
-        context: DefinitionContext?
-    ): Instance<T> = ConstantInstance(binding)
+    override fun <T> createInstance(binding: Binding<T>): Instance<T> = ConstantInstance(binding)
     override fun toString(): String = "Constant"
 }
 
