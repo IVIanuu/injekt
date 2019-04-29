@@ -105,6 +105,7 @@ fun <T : Fragment> T.fragmentModule(): Module = module {
     }
 
     factoryBuilder<Context>(override = true) {
+        definition { requireContext() }
         bindName(ForFragment)
     }
 
@@ -124,6 +125,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
     }
 
     factoryBuilder<Context>(override = true) {
+        definition { requireContext() }
         bindName(ForChildFragment)
     }
 
