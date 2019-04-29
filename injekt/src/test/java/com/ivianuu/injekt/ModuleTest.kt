@@ -36,8 +36,8 @@ class ModuleTest {
         )
 
         val module = module {
-            addBinding(firstBinding)
-            addBinding(overrideBinding)
+            bind(firstBinding)
+            bind(overrideBinding)
         }
 
         assertTrue(module.bindings.associateBy { it.key }[Key(String::class)] === overrideBinding)

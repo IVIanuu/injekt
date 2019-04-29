@@ -26,8 +26,8 @@ class Module internal constructor() {
     /**
      * All bindings of this module
      */
-    val bindings: Set<Binding<*>> get() = _bindings
-    private val _bindings = linkedSetOf<Binding<*>>()
+    val bindings: Collection<Binding<*>> get() = _bindings.values
+    private val _bindings = linkedMapOf<Key, Binding<*>>()
 
     /**
      * The modules which are included in this one
@@ -39,13 +39,14 @@ class Module internal constructor() {
      * Adds the [binding]
      */
     fun bind(binding: Binding<*>) {
-        _bindings.add(binding)
+        _bindings[binding.key] = binding
     }
 
     /**
      * Adds the [module]
      */
     fun include(module: Module) {
+        _includes.remove(module)
         _includes.add(module)
     }
 
