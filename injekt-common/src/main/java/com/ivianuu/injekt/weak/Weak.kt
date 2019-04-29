@@ -42,7 +42,7 @@ fun BindingBuilder<*>.weak() {
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-inline fun <reified T> ModuleBuilder.weak(
+inline fun <reified T> Module.weak(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -53,7 +53,7 @@ inline fun <reified T> ModuleBuilder.weak(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-fun <T> ModuleBuilder.weak(
+fun <T> Module.weak(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,
@@ -65,7 +65,7 @@ fun <T> ModuleBuilder.weak(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-inline fun <reified T> ModuleBuilder.weakBuilder(
+inline fun <reified T> Module.weakBuilder(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>? = null,
@@ -77,7 +77,7 @@ inline fun <reified T> ModuleBuilder.weakBuilder(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-fun <T> ModuleBuilder.weakBuilder(
+fun <T> Module.weakBuilder(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,

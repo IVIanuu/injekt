@@ -36,7 +36,7 @@ fun BindingBuilder<*>.factory() {
 /**
  * Adds a [Binding] which will be created on each request
  */
-inline fun <reified T> ModuleBuilder.factory(
+inline fun <reified T> Module.factory(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -47,7 +47,7 @@ inline fun <reified T> ModuleBuilder.factory(
 /**
  * Adds a [Binding] which will be created on each request
  */
-fun <T> ModuleBuilder.factory(
+fun <T> Module.factory(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,
@@ -59,7 +59,7 @@ fun <T> ModuleBuilder.factory(
 /**
  * Adds a [Binding] which will be created on each request
  */
-inline fun <reified T> ModuleBuilder.factoryBuilder(
+inline fun <reified T> Module.factoryBuilder(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>? = null,
@@ -71,7 +71,7 @@ inline fun <reified T> ModuleBuilder.factoryBuilder(
 /**
  * Adds a [Binding] which will be created on each request
  */
-fun <T> ModuleBuilder.factoryBuilder(
+fun <T> Module.factoryBuilder(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,

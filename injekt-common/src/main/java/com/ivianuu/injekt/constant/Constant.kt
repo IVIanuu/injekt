@@ -39,7 +39,7 @@ fun BindingBuilder<*>.constant() {
 /**
  * Adds a [Binding] which already exists
  */
-fun <T : Any> ModuleBuilder.constant(
+fun <T : Any> Module.constant(
     instance: T,
     type: KClass<*> = instance::class,
     name: Any? = null,
@@ -51,7 +51,7 @@ fun <T : Any> ModuleBuilder.constant(
 /**
  * Adds a [Binding] which already exists
  */
-fun <T : Any> ModuleBuilder.constantBuilder(
+fun <T : Any> Module.constantBuilder(
     instance: T,
     type: KClass<*> = instance::class,
     name: Any? = null,

@@ -32,7 +32,7 @@ object EagerKind : Kind() {
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-inline fun <reified T> ModuleBuilder.eager(
+inline fun <reified T> Module.eager(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -43,7 +43,7 @@ inline fun <reified T> ModuleBuilder.eager(
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-fun <T> ModuleBuilder.eager(
+fun <T> Module.eager(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,
@@ -55,7 +55,7 @@ fun <T> ModuleBuilder.eager(
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-inline fun <reified T> ModuleBuilder.eagerBuilder(
+inline fun <reified T> Module.eagerBuilder(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>? = null,
@@ -67,7 +67,7 @@ inline fun <reified T> ModuleBuilder.eagerBuilder(
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
-fun <T> ModuleBuilder.eagerBuilder(
+fun <T> Module.eagerBuilder(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,

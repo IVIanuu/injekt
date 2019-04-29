@@ -37,7 +37,7 @@ fun BindingBuilder<*>.bridge() {
  * Acts as an bridge for an existing [Binding]
  * This allows to add alias bindings and so on to existing bindings
  */
-inline fun <reified T> ModuleBuilder.bridge(
+inline fun <reified T> Module.bridge(
     name: Any? = null,
     noinline block: BindingBuilder<T>.() -> Unit
 ) {
@@ -48,7 +48,7 @@ inline fun <reified T> ModuleBuilder.bridge(
  * Acts as an bridge for an existing [Binding]
  * This allows to add alias bindings and so on to existing bindings
  */
-fun <T> ModuleBuilder.bridge(
+fun <T> Module.bridge(
     type: KClass<*>,
     name: Any? = null,
     block: BindingBuilder<T>.() -> Unit

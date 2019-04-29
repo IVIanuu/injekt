@@ -29,7 +29,7 @@ class ComponentBuilder internal constructor() {
      * Adds all binding of the [module]
      */
     fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it.value) }
+        module.bindings.forEach { addBinding(it) }
     }
 
     /**
@@ -81,13 +81,6 @@ fun ComponentBuilder.modules(modules: Iterable<Module>) {
  */
 fun ComponentBuilder.modules(vararg modules: Module) {
     modules.forEach { addModule(it) }
-}
-
-/**
- * Adds the [Module] built by [block]
- */
-fun ComponentBuilder.module(block: (ModuleBuilder.() -> Unit)? = null) {
-    modules(com.ivianuu.injekt.module(block))
 }
 
 /**

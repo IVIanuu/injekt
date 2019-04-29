@@ -36,7 +36,7 @@ fun BindingBuilder<*>.single() {
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-inline fun <reified T> ModuleBuilder.single(
+inline fun <reified T> Module.single(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -47,7 +47,7 @@ inline fun <reified T> ModuleBuilder.single(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-fun <T> ModuleBuilder.single(
+fun <T> Module.single(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,
@@ -59,7 +59,7 @@ fun <T> ModuleBuilder.single(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-inline fun <reified T> ModuleBuilder.singleBuilder(
+inline fun <reified T> Module.singleBuilder(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>? = null,
@@ -71,7 +71,7 @@ inline fun <reified T> ModuleBuilder.singleBuilder(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-fun <T> ModuleBuilder.singleBuilder(
+fun <T> Module.singleBuilder(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,

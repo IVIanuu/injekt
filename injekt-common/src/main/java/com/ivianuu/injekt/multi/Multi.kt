@@ -37,7 +37,7 @@ fun BindingBuilder<*>.multi() {
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-inline fun <reified T> ModuleBuilder.multi(
+inline fun <reified T> Module.multi(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -48,7 +48,7 @@ inline fun <reified T> ModuleBuilder.multi(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-fun <T> ModuleBuilder.multi(
+fun <T> Module.multi(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,
@@ -60,7 +60,7 @@ fun <T> ModuleBuilder.multi(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-inline fun <reified T> ModuleBuilder.multiBuilder(
+inline fun <reified T> Module.multiBuilder(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>? = null,
@@ -72,7 +72,7 @@ inline fun <reified T> ModuleBuilder.multiBuilder(
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
-fun <T> ModuleBuilder.multiBuilder(
+fun <T> Module.multiBuilder(
     type: KClass<*>,
     name: Any? = null,
     override: Boolean = false,
