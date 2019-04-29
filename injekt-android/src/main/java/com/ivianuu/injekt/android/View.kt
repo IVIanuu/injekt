@@ -45,6 +45,17 @@ fun <T : View> T.viewComponent(
 }
 
 /**
+ * Returns a [Component] with convenient configurations
+ */
+fun <T : View> T.childViewComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
+): Component = component {
+    getClosestComponentOrNull()?.let { dependencies(it) }
+    modules(childViewModule())
+    block?.invoke(this)
+}
+
+/**
  * Returns the closest [Component] or null
  */
 fun View.getClosestComponentOrNull(): Component? {

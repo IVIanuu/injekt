@@ -44,6 +44,17 @@ fun <T : Fragment> T.fragmentComponent(
 }
 
 /**
+ * Returns a [Component] with convenient configurations
+ */
+fun <T : Fragment> T.childFragmentComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
+): Component = component {
+    getClosestComponentOrNull()?.let { dependencies(it) }
+    modules(childFragmentModule())
+    block?.invoke(this)
+}
+
+/**
  * Returns the closest [Component] or null
  */
 fun Fragment.getClosestComponentOrNull(): Component? {
