@@ -16,42 +16,56 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
-import android.content.res.Resources
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
+
+
+/**
+ * Fragment scope
+ */
+object FragmentScope : Scope
+
+/**
+ * Child fragment scope
+ */
+object ChildFragmentScope : Scope
 
 /**
  * Fragment name
  */
-object ForFragment
+object ForFragment : Qualifier
 
 /**
  * Child fragment name
  */
-object ForChildFragment
+object ForChildFragment : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.fragmentComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(FragmentScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(fragmentModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.childFragmentComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ChildFragmentScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(childFragmentModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
@@ -110,38 +124,24 @@ fun Fragment.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    constantBuilder(this@fragmentModule) {
+    constant(this@fragmentModule) apply {
         bindType<Fragment>()
         bindAlias<Fragment>(ForFragment)
     }
 
-    factoryBuilder<Context>(override = true) {
-        definition { requireContext() }
-        bindName(ForFragment)
-    }
-
-    factoryBuilder<Resources>(override = true) {
-        definition { resources }
-        bindName(ForFragment)
-    }
+    factory { requireContext() } bindName ForFragment
+    factory { resources } bindName ForFragment
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.childFragmentModule(): Module = module {
-    constantBuilder(this@childFragmentModule) {
-        bindType<Fragment>(true)
+    constant(this@childFragmentModule) apply {
+        bindType<Fragment>()
         bindAlias<Fragment>(ForChildFragment)
     }
 
-    factoryBuilder<Context>(override = true) {
-        definition { requireContext() }
-        bindName(ForChildFragment)
-    }
-
-    factoryBuilder<Resources>(override = true) {
-        definition { resources }
-        bindName(ForChildFragment)
-    }
+    factory { requireContext() } bindName ForChildFragment
+    factory { resources } bindName ForChildFragment
 }

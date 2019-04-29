@@ -20,27 +20,13 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 
 internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K, Binding<V>> {
-    val allMapBindings = getAllBindings()
+    return getAllBindings()
         .mapNotNull { binding ->
             binding.attributes.get<Map<MapName<*, *>, MapBinding<*, *>>>(KEY_MAP_BINDINGS)
-                ?.get(mapName)
-                ?.let { binding to it }
+                ?.get(mapName)?.let { binding to it }
         }
-
-    val mapBindingsToUse = linkedMapOf<Any?, Binding<*>>()
-
-    // check overrides
-    allMapBindings.forEach { (binding, mapBinding) ->
-        val isOverride = mapBindingsToUse.remove(mapBinding.key) != null
-
-        if (isOverride && !mapBinding.override) {
-            throw IllegalStateException("Try to override ${mapBinding.key} in map binding $mapBinding")
-        }
-
-        mapBindingsToUse[mapBinding.key] = binding
-    }
-
-    return mapBindingsToUse as Map<K, Binding<V>>
+        .associateBy { it.second.key }
+        .mapValues { it.value.first } as Map<K, Binding<V>>
 }
 
 internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<T>> {
@@ -60,5 +46,5 @@ internal fun Component.collectBindings(
     bindings: MutableList<Binding<*>>
 ) {
     dependencies.forEach { it.collectBindings(bindings) }
-    bindings.addAll(this.bindings.values)
+    bindings.addAll(this.bindings)
 }

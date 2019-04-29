@@ -24,74 +24,42 @@ import kotlin.reflect.KClass
  * Weak kind
  */
 object WeakKind : Kind() {
-
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> =
-        WeakInstance(binding)
-
+    override fun <T> createInstance(
+        binding: Binding<T>,
+        context: DefinitionContext?
+    ): Instance<T> = WeakInstance(binding, context)
     override fun toString() = "Weak"
-
-}
-
-/**
- * Applies the [WeakKind]
- */
-fun BindingBuilder<*>.weak() {
-    kind = WeakKind
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.weak(
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     noinline definition: Definition<T>
-) {
-    weak(T::class, name, override, definition)
-}
+) = weak(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.weak(
     type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     definition: Definition<T>
-) {
-    bind(type, name, WeakKind, override, definition)
-}
+) = bind(type, name, WeakKind, scope, definition)
 
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
-inline fun <reified T> Module.weakBuilder(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>? = null,
-    noinline block: BindingBuilder<T>.() -> Unit
-) {
-    weakBuilder(T::class, name, override, definition, block)
-}
-
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
-fun <T> Module.weakBuilder(
-    type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
-    definition: Definition<T>? = null,
-    block: BindingBuilder<T>.() -> Unit
-) {
-    bind(type, name, WeakKind, override, definition, block)
-}
-
-private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+private class WeakInstance<T>(
+    override val binding: Binding<T>,
+    val defaultContext: DefinitionContext?
+) : Instance<T>() {
 
     private var _value: WeakReference<T>? = null
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
+        val context = defaultContext ?: context
+
         val value = _value?.get()
 
         return if (value != null) {
@@ -99,7 +67,7 @@ private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() 
             value
         } else {
             InjektPlugins.logger?.info("Create weak instance $binding")
-            create(parameters).also { _value = WeakReference(it) }
+            create(context, parameters).also { _value = WeakReference(it) }
         }
     }
 

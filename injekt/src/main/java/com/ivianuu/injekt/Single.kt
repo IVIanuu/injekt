@@ -22,72 +22,47 @@ import kotlin.reflect.KClass
  * Kind for single instances
  */
 object SingleKind : Kind() {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = SingleInstance(binding)
+    override fun <T> createInstance(
+        binding: Binding<T>,
+        context: DefinitionContext?
+    ): Instance<T> = SingleInstance(binding, context)
     override fun toString(): String = "Single"
-}
-
-/**
- * Applies the [SingleKind]
- */
-fun BindingBuilder<*>.single() {
-    kind = SingleKind
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.single(
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     noinline definition: Definition<T>
-) {
-    single(T::class, name, override, definition)
-}
+) = single(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.single(
     type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     definition: Definition<T>
-) {
-    bind(type, name, SingleKind, override, definition)
-}
-
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
-inline fun <reified T> Module.singleBuilder(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>? = null,
-    noinline block: BindingBuilder<T>.() -> Unit
-) {
-    singleBuilder(T::class, name, override, definition, block)
-}
-
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
-fun <T> Module.singleBuilder(
-    type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
-    definition: Definition<T>? = null,
-    block: BindingBuilder<T>.() -> Unit
-) {
-    bind(type, name, SingleKind, override, definition, block)
-}
+) = bind(type, name, SingleKind, scope, definition)
 
 private object UNINITIALIZED
 
-private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+private class SingleInstance<T>(
+    override val binding: Binding<T>,
+    val defaultContext: DefinitionContext?
+) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(
+        context: DefinitionContext,
+        parameters: ParametersDefinition?
+    ): T {
+        val context = defaultContext ?: context
+
         var value = _value
         if (value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("Return existing instance $binding")
@@ -102,7 +77,7 @@ private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>(
             }
 
             InjektPlugins.logger?.info("Create instance $binding")
-            value = create(parameters)
+            value = create(context, parameters)
             _value = value
             return@get value as T
         }

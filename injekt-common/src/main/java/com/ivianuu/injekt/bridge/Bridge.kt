@@ -21,16 +21,12 @@ import java.util.*
 import kotlin.reflect.KClass
 
 object BridgeKind : Kind() {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> =
+    override fun <T> createInstance(
+        binding: Binding<T>,
+        context: DefinitionContext?
+    ): Instance<T> =
         BridgeInstance(binding)
     override fun toString(): String = "Bridge"
-}
-
-/**
- * Applies the [BridgeKind]
- */
-fun BindingBuilder<*>.bridge() {
-    kind = BridgeKind
 }
 
 /**
@@ -38,11 +34,9 @@ fun BindingBuilder<*>.bridge() {
  * This allows to add alias bindings and so on to existing bindings
  */
 inline fun <reified T> Module.bridge(
-    name: Any? = null,
-    noinline block: BindingBuilder<T>.() -> Unit
-) {
-    bridge(T::class, name, block)
-}
+    name: Qualifier? = null,
+    noinline block: (Binding<T>.() -> Unit)? = null
+) = bridge(T::class, name, block)
 
 /**
  * Acts as an bridge for an existing [Binding]
@@ -50,22 +44,22 @@ inline fun <reified T> Module.bridge(
  */
 fun <T> Module.bridge(
     type: KClass<*>,
-    name: Any? = null,
-    block: BindingBuilder<T>.() -> Unit
-) {
+    name: Qualifier? = null,
+    block: (Binding<T>.() -> Unit)? = null
+): Binding<T> {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    bind<T>(type, UUID.randomUUID().toString()) {
-        bridge()
-        definition { get(type, name) { it } }
-        block()
-        attribute(KEY_ORIGINAL_KEY, Key(type, name))
+    return bind<T>(
+        type,
+        named(UUID.randomUUID().toString()),
+        BridgeKind,
+        null
+    ) { get(type, name) { it } }.apply {
+        block?.invoke(this)
     }
 }
-
-const val KEY_ORIGINAL_KEY = "Bridge.originalKey"
-
 private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(parameters: ParametersDefinition?): T = create(parameters)
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
+        create(context, parameters)
 }

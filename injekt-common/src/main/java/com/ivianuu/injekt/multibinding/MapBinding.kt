@@ -29,8 +29,4 @@ class MapName<K, V>
 /**
  * Map binding
  */
-data class MapBinding<K, V>(
-    val mapName: MapName<K, V>,
-    val key: K,
-    val override: Boolean
-)
+data class MapBinding<K, V>(val mapName: MapName<K, V>, val key: K)

@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.BindingBuilder
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.getOrSet
 
 /**
  * Adds this binding into a map
  */
-fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
+infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
     attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Any, MapBinding<K, V>>() }
         .put(mapBinding.mapName, mapBinding)
 }
@@ -30,10 +30,18 @@ fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
 /**
  * Adds this binding into a map
  */
-fun <T : V, K, V> BindingBuilder<T>.bindIntoMap(
+fun <T : V, K, V> Binding<T>.bindIntoMap(
     mapName: MapName<K, V>,
-    key: K,
-    override: Boolean = false
+    key: K
 ) {
-    bindIntoMap(MapBinding(mapName, key, override))
+    bindIntoMap(MapBinding(mapName, key))
+}
+
+/**
+ * Adds this binding into a map
+ */
+infix fun <T : V, K, V> Binding<T>.bindIntoMap(
+    pair: Pair<MapName<K, V>, K>
+) {
+    bindIntoMap(MapBinding(pair.first, pair.second))
 }

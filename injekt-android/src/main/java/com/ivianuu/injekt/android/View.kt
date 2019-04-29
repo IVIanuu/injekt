@@ -18,41 +18,56 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.res.Resources
 import android.view.View
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
+
+
+/**
+ * View scope
+ */
+object ViewScope : Scope
+
+/**
+ * Child view scope
+ */
+object ChildViewScope : Scope
 
 /**
  * View name
  */
-object ForView
+object ForView : Qualifier
 
 /**
  * Child view name
  */
-object ForChildView
+object ForChildView : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : View> T.viewComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ViewScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(viewModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : View> T.childViewComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ChildViewScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(childViewModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
@@ -119,38 +134,24 @@ fun View.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.viewModule(): Module = module {
-    constantBuilder(this@viewModule) {
+    constant(this@viewModule) apply {
         bindType<View>()
         bindAlias<View>(ForView)
     }
 
-    factoryBuilder<Context>(override = true) {
-        definition { context }
-        bindName(ForView)
-    }
-
-    factoryBuilder<Resources>(override = true) {
-        definition { resources }
-        bindName(ForView)
-    }
+    factory<Context> { context } bindName ForView
+    factory { resources } bindName ForView
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.childViewModule(): Module = module {
-    constantBuilder(this@childViewModule) {
-        bindType<View>(true)
+    constant(this@childViewModule) apply {
+        bindType<View>()
         bindAlias<View>(ForChildView)
     }
 
-    factoryBuilder<Context>(override = true) {
-        definition { context }
-        bindName(ForChildView)
-    }
-
-    factoryBuilder<Resources>(override = true) {
-        definition { resources }
-        bindName(ForChildView)
-    }
+    factory<Context> { context } bindName ForChildView
+    factory { resources } bindName ForChildView
 }

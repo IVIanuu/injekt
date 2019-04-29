@@ -18,38 +18,43 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
-import android.content.res.Resources
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
+
+
+/**
+ * Application scope
+ */
+object ApplicationScope : Scope
 
 /**
  * Application name
  */
-object ForApplication
+object ForApplication : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Application> T.applicationComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ApplicationScope)
     modules(applicationModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
 fun <T : Application> T.applicationModule(): Module = module {
-    constantBuilder(this@applicationModule) {
+    constant(this@applicationModule) apply {
         bindTypes(Application::class, Context::class)
         bindAlias<Context>(ForApplication)
     }
 
-    factoryBuilder<Resources> {
-        definition { resources }
-        bindName(ForApplication)
-    }
+    factory { resources } bindName ForApplication
 }
 
 fun DefinitionContext.application(): Application = get()

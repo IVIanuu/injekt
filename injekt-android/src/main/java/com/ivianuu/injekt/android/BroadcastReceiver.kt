@@ -19,24 +19,32 @@ package com.ivianuu.injekt.android
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
 
+
+/**
+ * Receiver scope
+ */
+object ReceiverScope : Scope
 
 /**
  * Receiver name
  */
-object ForReceiver
+object ForReceiver : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ReceiverScope)
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
@@ -67,7 +75,5 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
-    constantBuilder(this@receiverModule) {
-        bindType<BroadcastReceiver>()
-    }
+    constant(this@receiverModule) bindType BroadcastReceiver::class
 }

@@ -23,17 +23,11 @@ import kotlin.reflect.KClass
  * Constant instance kind
  */
 object ConstantKind : Kind() {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> =
-        ConstantInstance(binding)
-
+    override fun <T> createInstance(
+        binding: Binding<T>,
+        context: DefinitionContext?
+    ): Instance<T> = ConstantInstance(binding)
     override fun toString(): String = "Constant"
-}
-
-/**
- * Applies the [ConstantKind]
- */
-fun BindingBuilder<*>.constant() {
-    kind = ConstantKind
 }
 
 /**
@@ -42,28 +36,12 @@ fun BindingBuilder<*>.constant() {
 fun <T : Any> Module.constant(
     instance: T,
     type: KClass<*> = instance::class,
-    name: Any? = null,
-    override: Boolean = false
-) {
-    bind(type, name, ConstantKind, override, { instance })
-}
-
-/**
- * Adds a [Binding] which already exists
- */
-fun <T : Any> Module.constantBuilder(
-    instance: T,
-    type: KClass<*> = instance::class,
-    name: Any? = null,
-    override: Boolean = false,
-    block: BindingBuilder<T>.() -> Unit
-) {
-    bind(type, name, ConstantKind, override, { instance }, block)
-}
+    name: Qualifier? = null
+) = bind(type, name, ConstantKind, null) { instance }
 
 private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Return constant $binding")
-        return create(parameters)
+        return create(context, parameters)
     }
 }

@@ -16,9 +16,16 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+/**
+ * Qualifier marker
+ */
+interface Qualifier
 
 /**
- * A key for a [Binding]
+ * Returns a string qualifier
  */
-data class Key(val type: KClass<*>, val name: Qualifier? = null)
+fun named(name: String): Qualifier = StringQualifier(name)
+
+private data class StringQualifier(private val name: String) : Qualifier {
+    override fun toString() = name
+}

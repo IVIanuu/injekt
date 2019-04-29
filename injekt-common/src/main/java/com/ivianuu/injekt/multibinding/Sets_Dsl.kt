@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.multibinding
 
-import com.ivianuu.injekt.BindingBuilder
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.getOrSet
 
 /**
  * Adds this binding into a set
  */
-fun <T> BindingBuilder<*>.bindIntoSet(setBinding: SetBinding<T>) {
+infix fun <T> Binding<*>.bindIntoSet(setBinding: SetBinding<T>) {
     attributes.getOrSet(KEY_SET_BINDINGS) {
         hashMapOf<SetName<T>, SetBinding<T>>()
     }[setBinding.setName] = setBinding
@@ -31,6 +31,6 @@ fun <T> BindingBuilder<*>.bindIntoSet(setBinding: SetBinding<T>) {
 /**
  * Adds this binding into a set
  */
-fun <T, V : T> BindingBuilder<V>.bindIntoSet(setName: SetName<T>) {
+infix fun <T, V : T> Binding<V>.bindIntoSet(setName: SetName<T>) {
     bindIntoSet(SetBinding(setName))
 }

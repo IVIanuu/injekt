@@ -16,28 +16,31 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.util.TestDep1
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class SingleTest {
+class ModuleTest {
 
     @Test
-    fun testCreatesOnlyOnce() {
-        val component = component {
-            modules(
-                module {
-                    single { TestDep1() }
-                }
-            )
+    fun testOverride() {
+        val firstBinding = Binding(
+            type = String::class,
+            kind = FactoryKind,
+            definition = { "my_value" }
+        )
+
+        val overrideBinding = Binding(
+            type = String::class,
+            kind = SingleKind,
+            definition = { "my_overridden_value" }
+        )
+
+        val module = module {
+            addBinding(firstBinding)
+            addBinding(overrideBinding)
         }
 
-        val instance = component.instances.first()
-
-        val value1 = instance.get(component.context)
-        val value2 = instance.get(component.context)
-
-        assertTrue(value1 === value2)
+        assertTrue(module.bindings.associateBy { it.key }[Key(String::class)] === overrideBinding)
     }
 
 }

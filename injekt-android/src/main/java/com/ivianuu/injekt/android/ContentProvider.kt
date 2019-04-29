@@ -18,22 +18,31 @@ package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
+
+
+/**
+ * Content provider scope
+ */
+object ContentProviderScope : Scope
 
 /**
  * Content provider name
  */
-object ForContentProvider
+object ForContentProvider : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : ContentProvider> T.contentProviderComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ContentProviderScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(contentProviderModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
@@ -64,7 +73,5 @@ fun ContentProvider.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    constantBuilder(this@contentProviderModule) {
-        bindType<ContentProvider>()
-    }
+    constant(this@contentProviderModule) bindType ContentProvider::class
 }

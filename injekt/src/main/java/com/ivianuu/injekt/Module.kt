@@ -33,12 +33,7 @@ class Module internal constructor() {
      * Adds the [binding]
      */
     fun addBinding(binding: Binding<*>) {
-        require(_bindings.remove(binding.key) == null || binding.override) {
-            "Already declared binding with key ${binding.key}"
-        }
-
         _bindings[binding.key] = binding
-        binding.additionalBindings.forEach { addBinding(it) }
     }
 
 }
@@ -55,27 +50,25 @@ fun module(block: (Module.() -> Unit)? = null): Module {
  * Adds a [Binding]
  */
 inline fun <reified T> Module.bind(
-    name: Any? = null,
-    kind: Kind? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>? = null,
-    noinline block: (BindingBuilder<T>.() -> Unit)? = null
-) {
-    bind(T::class, name, kind, override, definition, block)
-}
+    name: Qualifier? = null,
+    kind: Kind,
+    scope: Scope? = null,
+    noinline definition: Definition<T>
+) = bind(T::class, name, kind, scope, definition)
 
 /**
  * Adds a [Binding]
  */
 fun <T> Module.bind(
     type: KClass<*>,
-    name: Any? = null,
-    kind: Kind? = null,
-    override: Boolean = false,
-    definition: Definition<T>? = null,
-    block: (BindingBuilder<T>.() -> Unit)? = null
-) {
-    addBinding(binding(type, name, kind, override, definition, block))
+    name: Qualifier? = null,
+    kind: Kind,
+    scope: Scope? = null,
+    definition: Definition<T>
+): Binding<T> {
+    val binding = Binding(type, name, kind, scope, definition)
+    addBinding(binding)
+    return binding
 }
 
 /**

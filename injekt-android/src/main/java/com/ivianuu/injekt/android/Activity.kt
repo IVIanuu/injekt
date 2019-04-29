@@ -18,24 +18,31 @@ package com.ivianuu.injekt.android
 
 import android.app.Activity
 import android.content.Context
-import android.content.res.Resources
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
+
+/**
+ * Activity scope
+ */
+object ActivityScope : Scope
 
 /**
  * Activity name
  */
-object ForActivity
+object ForActivity : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Activity> T.activityComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ActivityScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
@@ -65,14 +72,11 @@ fun Activity.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Activity> T.activityModule(): Module = module {
-    constantBuilder(this@activityModule) {
+    constant(this@activityModule) apply {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
-        bindType<Context>(true)
+        bindType<Context>()
     }
 
-    factoryBuilder<Resources>(override = true) {
-        definition { resources }
-        bindName(ForActivity)
-    }
+    factory { resources } bindName ForActivity
 }

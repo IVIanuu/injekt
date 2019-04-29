@@ -20,22 +20,31 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.constant.constantBuilder
+import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.eager.createEagerInstances
+
+
+/**
+ * Service scope
+ */
+object ServiceScope : Scope
 
 /**
  * Service name
  */
-object ForService
+object ForService : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Service> T.serviceComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
+    block: (Component.() -> Unit)? = null
 ): Component = component {
+    scopes(ServiceScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(serviceModule())
     block?.invoke(this)
+    createEagerInstances()
 }
 
 /**
@@ -65,14 +74,11 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Service> T.serviceModule(): Module = module {
-    constantBuilder(this@serviceModule) {
+    constant(this@serviceModule) apply {
         bindType<Service>()
         bindAlias<Context>(ForService)
-        bindType<Context>(true)
+        bindType<Context>()
     }
 
-    factoryBuilder<Resources>(override = true) {
-        definition { resources }
-        bindName(ForService)
-    }
+    factory<Resources> { resources } bindName ForService
 }

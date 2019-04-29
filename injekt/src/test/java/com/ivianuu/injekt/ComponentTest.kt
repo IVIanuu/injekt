@@ -31,16 +31,18 @@ class ComponentTest {
         val named = TestDep1()
 
         val component = component {
-            module {
-                factory { typed }
-                single("named") { named }
-            }
+            modules(
+                module {
+                    factory { typed }
+                    single(named("named")) { named }
+                }
+            )
         }
 
         val typedGet = component.get<TestDep1>()
         assertEquals(typed, typedGet)
 
-        val namedGet = component.get<TestDep1>("named")
+        val namedGet = component.get<TestDep1>(named("named"))
         assertEquals(named, namedGet)
     }
 
@@ -63,12 +65,14 @@ class ComponentTest {
         var called = false
 
         val component = component {
-            module {
-                factory {
-                    called = true
-                    TestDep1()
+            modules(
+                module {
+                    factory {
+                        called = true
+                        TestDep1()
+                    }
                 }
-            }
+            )
         }
 
         assertFalse(called)
@@ -85,13 +89,30 @@ class ComponentTest {
         val named = TestDep1()
 
         val component = component {
-            module {
-                factory { typed }
-                factory("named") { named }
-            }
+            modules(
+                module {
+                    factory { typed }
+                    factory(named("named")) { named }
+                }
+            )
         }
 
         assertEquals(typed, component.get<TestDep1>())
-        assertEquals(named, component.get<TestDep1>("named"))
+        assertEquals(named, component.get<TestDep1>(named("named")))
     }
+
+    @Test
+    fun testOverride() {
+        val component = component {
+            modules(
+                module {
+                    factory { "my_value" }
+                    single { "my_overridden_value" }
+                }
+            )
+        }
+
+        assertEquals("my_overridden_value", component.get<String>())
+    }
+
 }

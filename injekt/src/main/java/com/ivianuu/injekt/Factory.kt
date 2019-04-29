@@ -22,70 +22,44 @@ import kotlin.reflect.KClass
  * Kind for factory instances
  */
 object FactoryKind : Kind() {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = FactoryInstance(binding)
+    override fun <T> createInstance(
+        binding: Binding<T>,
+        context: DefinitionContext?
+    ): Instance<T> = FactoryInstance(binding, context)
     override fun toString(): String = "Factory"
-}
-
-/**
- * Applies the [FactoryKind]
- */
-fun BindingBuilder<*>.factory() {
-    kind = FactoryKind
 }
 
 /**
  * Adds a [Binding] which will be created on each request
  */
 inline fun <reified T> Module.factory(
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     noinline definition: Definition<T>
-) {
-    factory(T::class, name, override, definition)
-}
+) = factory(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created on each request
  */
 fun <T> Module.factory(
     type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     definition: Definition<T>
-) {
-    bind(type, name, FactoryKind, override, definition)
-}
+) = bind(type, name, FactoryKind, scope, definition)
 
-/**
- * Adds a [Binding] which will be created on each request
- */
-inline fun <reified T> Module.factoryBuilder(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>? = null,
-    noinline block: BindingBuilder<T>.() -> Unit
-) {
-    factoryBuilder(T::class, name, override, definition, block)
-}
+private class FactoryInstance<T>(
+    override val binding: Binding<T>,
+    val defaultContext: DefinitionContext?
+) : Instance<T>() {
 
-/**
- * Adds a [Binding] which will be created on each request
- */
-fun <T> Module.factoryBuilder(
-    type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
-    definition: Definition<T>? = null,
-    block: BindingBuilder<T>.() -> Unit
-) {
-    bind(type, name, FactoryKind, override, definition, block)
-}
-
-private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(
+        context: DefinitionContext,
+        parameters: ParametersDefinition?
+    ): T {
+        val context = defaultContext ?: context
         InjektPlugins.logger?.info("Create instance $binding")
-        return create(parameters)
+        return create(context, parameters)
     }
 
 }

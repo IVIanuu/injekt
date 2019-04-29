@@ -25,15 +25,17 @@ class FactoryTest {
     @Test
     fun testFactoryCreatesNew() {
         val component = component {
-            module {
-                factory { TestDep1() }
-            }
+            modules(
+                module {
+                    factory { TestDep1() }
+                }
+            )
         }
 
-        val instance = component.instances.values.first()
+        val instance = component.instances.first()
 
-        val value1 = instance.get()
-        val value2 = instance.get()
+        val value1 = instance.get(component.context)
+        val value2 = instance.get(component.context)
 
         assertFalse(value1 === value2)
     }

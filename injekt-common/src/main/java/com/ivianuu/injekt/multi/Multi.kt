@@ -23,71 +23,43 @@ import kotlin.reflect.KClass
  * Kind for multi instances
  */
 object MultiKind : Kind() {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = MultiInstance(binding)
+    override fun <T> createInstance(
+        binding: Binding<T>,
+        context: DefinitionContext?
+    ): Instance<T> = MultiInstance(binding, context)
     override fun toString(): String = "Multi"
-}
-
-/**
- * Applies the [MultiKind]
- */
-fun BindingBuilder<*>.multi() {
-    kind = MultiKind
 }
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.multi(
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     noinline definition: Definition<T>
-) {
-    multi(T::class, name, override, definition)
-}
+) = multi(T::class, name, scope, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.multi(
     type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
+    name: Qualifier? = null,
+    scope: Scope? = null,
     definition: Definition<T>
-) {
-    bind(type, name, MultiKind, override, definition)
-}
+) = bind(type, name, MultiKind, scope, definition)
 
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
-inline fun <reified T> Module.multiBuilder(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>? = null,
-    noinline block: BindingBuilder<T>.() -> Unit
-) {
-    multiBuilder(T::class, name, override, definition, block)
-}
-
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
-fun <T> Module.multiBuilder(
-    type: KClass<*>,
-    name: Any? = null,
-    override: Boolean = false,
-    definition: Definition<T>? = null,
-    block: BindingBuilder<T>.() -> Unit
-) {
-    bind(type, name, MultiKind, override, definition, block)
-}
-
-private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+private class MultiInstance<T>(
+    override val binding: Binding<T>,
+    val defaultContext: DefinitionContext?
+) : Instance<T>() {
 
     private val values = linkedMapOf<Int, T>()
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
         checkNotNull(parameters) { "Parameters cannot be null" }
+
+        val context = defaultContext ?: context
 
         val params = parameters()
 
@@ -97,7 +69,7 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
         return if (value == null && !values.containsKey(key)) {
             InjektPlugins.logger?.info("Create multi instance for params $params $binding")
-            value = create(parameters)
+            value = create(context, parameters)
             values[key] = value
             value
         } else {

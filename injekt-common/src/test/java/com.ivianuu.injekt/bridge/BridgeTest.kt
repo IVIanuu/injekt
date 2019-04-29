@@ -25,13 +25,12 @@ class BridgeTest {
     @Test
     fun testDelegatesToOriginal() {
         val component = component {
-            module {
-                factory("original_name") { "original_value" }
-
-                bridge<String>("original_name") {
-                    bindType<CharSequence>()
+            modules(
+                module {
+                    factory(named("original_name")) { "original_value" }
+                    bridge<String>(named("original_name")) bindType CharSequence::class
                 }
-            }
+            )
         }
 
         assertEquals("original_value", component.get<CharSequence>())

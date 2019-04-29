@@ -24,20 +24,20 @@ abstract class Instance<T> {
     abstract val binding: Binding<T>
 
     /**
-     * The context of this instance
-     */
-    lateinit var context: DefinitionContext
-        private set
-
-    /**
      * Returns the value for this instance
      */
-    abstract fun get(parameters: ParametersDefinition? = null): T
+    abstract fun get(
+        context: DefinitionContext,
+        parameters: ParametersDefinition? = null
+    ): T
 
     /**
      * Creates the value for this instance
      */
-    protected fun create(parameters: ParametersDefinition?): T {
+    protected fun create(
+        context: DefinitionContext,
+        parameters: ParametersDefinition?
+    ): T {
         return try {
             binding.definition.invoke(
                 context,
@@ -46,10 +46,6 @@ abstract class Instance<T> {
         } catch (e: Exception) {
             throw IllegalStateException("Couldn't instantiate $binding", e)
         }
-    }
-
-    open fun setDefinitionContext(context: DefinitionContext) {
-        this.context = context
     }
 
 }

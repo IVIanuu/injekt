@@ -17,9 +17,9 @@
 package com.ivianuu.injekt.multibinding
 
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.definition
-import com.ivianuu.injekt.factoryBuilder
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -28,20 +28,13 @@ class SetTest {
     @Test
     fun testSetMultiBinding() {
         val component = component {
-            module {
-                factoryBuilder<String>(NameOne) {
-                    definition { "value_one" }
-                    bindIntoSet(setValues)
+            modules(
+                module {
+                    factory(NameOne) { "value_one" } bindIntoSet setValues
+                    factory(NameTwo) { "value_two" } bindIntoSet setValues
+                    factory(NameThree) { "value_three" } bindIntoSet setValues
                 }
-                factoryBuilder<String>(NameTwo) {
-                    definition { "value_two" }
-                    bindIntoSet(setValues)
-                }
-                factoryBuilder<String>(NameThree) {
-                    definition { "value_three" }
-                    bindIntoSet(setValues)
-                }
-            }
+            )
         }
 
         val set = component.getSet(setValues)

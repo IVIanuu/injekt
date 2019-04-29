@@ -27,9 +27,11 @@ class ProviderTest {
     @Test
     fun testProviderNotReturnsSameValue() {
         val component = component {
-            module {
-                factory { TestDep1() }
-            }
+            modules(
+                module {
+                    factory { TestDep1() }
+                }
+            )
         }
         val getProvider = component.getProvider<TestDep1>()
         val value1 = getProvider.get()
@@ -42,12 +44,14 @@ class ProviderTest {
         var usedParams: Parameters? = null
 
         val component = component {
-            module {
-                factory {
-                    usedParams = it
-                    TestDep1()
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
                 }
-            }
+            )
         }
 
         val defaultParams = parametersOf("one", "two")
@@ -64,12 +68,14 @@ class ProviderTest {
         var usedParams: Parameters? = null
 
         val component = component {
-            module {
-                factory {
-                    usedParams = it
-                    TestDep1()
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
                 }
-            }
+            )
         }
 
         val parameters = parametersOf("one", "two")
@@ -86,12 +92,14 @@ class ProviderTest {
         var usedParams: Parameters? = null
 
         val component = component {
-            module {
-                factory {
-                    usedParams = it
-                    TestDep1()
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
                 }
-            }
+            )
         }
 
         val defaultParams = parametersOf("default")

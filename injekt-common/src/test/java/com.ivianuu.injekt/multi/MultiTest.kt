@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.multi
 
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.module
-import com.ivianuu.injekt.parametersOf
+import com.ivianuu.injekt.*
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -31,9 +28,11 @@ class MultiTest {
     @Test
     fun testMultiValues() {
         val component = component {
-            module {
-                multi { (value: Int) -> MultiValue(value) }
-            }
+            modules(
+                module {
+                    multi { (value: Int) -> MultiValue(value) }
+                }
+            )
         }
 
         val firstValueOne = component.get<MultiValue> { parametersOf(1) }
@@ -49,9 +48,11 @@ class MultiTest {
     @Test
     fun testThrowsOnNullParams() {
         val component = component {
-            module {
-                multi { (value: Int) -> MultiValue(value) }
-            }
+            modules(
+                module {
+                    multi { (value: Int) -> MultiValue(value) }
+                }
+            )
         }
 
         val throwed = try {
