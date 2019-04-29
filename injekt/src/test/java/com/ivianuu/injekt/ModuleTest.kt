@@ -22,6 +22,13 @@ import org.junit.Test
 class ModuleTest {
 
     @Test
+    fun testBind() {
+        val binding = binding(FactoryKind) { "value" }
+        val module = module { bind(binding) }
+        assertTrue(module.bindings.contains(binding))
+    }
+
+    @Test
     fun testOverride() {
         val firstBinding = Binding(
             type = String::class,
