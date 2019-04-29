@@ -18,6 +18,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
+import com.ivianuu.injekt.util.TestDep2
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
@@ -44,6 +45,35 @@ class ComponentTest {
 
         val namedGet = component.get<TestDep1>("named")
         assertEquals(named, namedGet)
+    }
+
+    @Test
+    fun testGetNested() {
+        val dependency = component {
+            modules(
+                module {
+                    factory { TestDep1() }
+                }
+            )
+        }
+
+        val component = component {
+            dependencies(dependency)
+            modules(
+                module {
+                    factory { TestDep2(get()) }
+                }
+            )
+        }
+
+        val throwed = try {
+            component.get<TestDep2>()
+            false
+        } catch (e: Exception) {
+            true
+        }
+
+        assertFalse(throwed)
     }
 
     @Test
@@ -84,21 +114,28 @@ class ComponentTest {
     }
 
     @Test
-    fun testInstanceResolving() {
-        val typed = TestDep1()
-        val named = TestDep1()
-
+    fun testAddDependency() {
+        val dependency = component()
         val component = component {
-            modules(
-                module {
-                    factory { typed }
-                    factory("named") { named }
-                }
-            )
+            dependencies(dependency)
         }
 
-        assertEquals(typed, component.get<TestDep1>())
-        assertEquals(named, component.get<TestDep1>("named"))
+        assertTrue(component.dependencies.contains(dependency))
+    }
+
+    @Test
+    fun testAddModule() {
+        val binding = binding(FactoryKind) { "value" }
+        val module = module { bind(binding) }
+        val component = component { modules(module) }
+        assertTrue(component.bindings.contains(binding))
+    }
+
+    @Test
+    fun testAddBinding() {
+        val binding = binding(FactoryKind) { "value" }
+        val component = component { addBinding(binding) }
+        assertTrue(component.bindings.contains(binding))
     }
 
     @Test
