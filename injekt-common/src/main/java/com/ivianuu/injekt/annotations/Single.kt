@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt.annotations
+
+/**
+ * Generates a factory for the annotated type
+ */
+@Target(AnnotationTarget.CLASS)
+annotation class Single//(val scope: KClass<out Scope> = Scope::class)

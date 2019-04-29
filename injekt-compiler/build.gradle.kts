@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+plugins {
+    id("java-library")
+    id("kotlin")
+    id("kotlin-kapt")
+}
+
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
+
+dependencies {
+    implementation(project(":injekt"))
+    implementation(project(":injekt-common"))
+
+    implementation(Deps.processingX)
+    kapt(Deps.processingX)
+}

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt.sample
+
+import com.ivianuu.injekt.annotations.Factory
+import com.ivianuu.injekt.annotations.Single
+
+@Factory
+class MyCoolClass
+
+@Single
+class MyOtherCoolClass

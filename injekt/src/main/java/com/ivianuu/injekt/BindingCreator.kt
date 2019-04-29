@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt
+
+/**
+ * @author Manuel Wrage (IVIanuu)
+ */
+interface BindingCreator<T> {
+    fun create(): Binding<T>
+
+    interface Interceptor<T> {
+        fun intercept(builder: BindingBuilder<T>)
+    }
+}
+
+class StringBindingCreator : BindingCreator<String> {
+    override fun create(): Binding<String> = binding {
+        type = String::class
+        definition { "hello" }
+        single()
+    }
+}

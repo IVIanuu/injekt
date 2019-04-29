@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt.annotations
+
+/**
+/**
+ * Will use the [name] via [StringQualifier] when retrieving an instance from [Component.get]
+*/
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Named(val name: String)*/

@@ -14,11 +14,18 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt.compiler
+
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
+import javax.lang.model.element.Element
+
+val Element.isObject: Boolean
+    get() {
+        return Flags.CLASS_KIND.get(
+            (kotlinMetadata as? KotlinClassMetadata)
+                ?.data?.classProto?.flags ?: 0
+        ) == ProtoBuf.Class.Kind.OBJECT
+    }

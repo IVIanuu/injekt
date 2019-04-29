@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt.annotations
+
+/**
+/**
+ * Annotated properties will be injected without trying to use [Component.inject] or [Component.getProvider]
+*/
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Raw*/

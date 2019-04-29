@@ -27,6 +27,7 @@ class BindingBuilder<T> internal constructor() {
     var type: KClass<*> by Delegates.notNull()
     var name: Any? = null
     var kind: Kind by Delegates.notNull()
+    var scope: Scope? = null
     var override = false
     var definition: Definition<T> by Delegates.notNull()
     var attributes = Attributes()
@@ -36,7 +37,7 @@ class BindingBuilder<T> internal constructor() {
      * Builds the [Binding] from this builder
      */
     fun build(): Binding<T> = Binding(
-        Key(type, name), kind, definition, attributes, additionalBindings, override
+        Key(type, name), kind, definition, scope, attributes, additionalBindings, override
     )
 
 }
@@ -50,6 +51,7 @@ fun <T> BindingBuilder<T>.copyLight(): BindingBuilder<T> {
     other.type = type
     other.name = name
     other.kind = kind
+    other.scope = scope
     other.definition = definition
 
     return other

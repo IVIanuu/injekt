@@ -17,13 +17,27 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    id("kotlin-kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+
+/*
+android {
+    buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+            isShrinkResources = true
+        }
+    }
+}*/
 
 dependencies {
     implementation(Deps.androidxAppCompat)
     implementation(project(":injekt"))
     implementation(project(":injekt-common"))
     implementation(project(":injekt-android"))
+    kapt(project(":injekt-compiler"))
 }

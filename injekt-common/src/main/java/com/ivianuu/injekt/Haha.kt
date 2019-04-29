@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt
+
+class IntBindingCreator : BindingCreator<Int> {
+    override fun create(): Binding<Int> = binding {
+        type = Int::class
+        definition { 0 }
+        factory()
+    }
+}

@@ -14,11 +14,21 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt.annotations
+
+import com.ivianuu.injekt.BindingBuilder
+import com.ivianuu.injekt.BindingCreator
+import com.ivianuu.injekt.bindType
+
+interface Worker {
+    fun doWork()
+}
+
+@CreatorInterceptor(WorkerInterceptor::class)
+annotation class BindWorker
+
+object WorkerInterceptor : BindingCreator.Interceptor<Worker> {
+    override fun intercept(builder: BindingBuilder<Worker>) = with(builder) {
+        bindType<String>()
+    }
+}

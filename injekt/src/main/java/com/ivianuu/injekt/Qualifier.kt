@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-common",
-    ":injekt-compiler",
-    ":sample"
-)
+package com.ivianuu.injekt
+
+/**
+ * @author Manuel Wrage (IVIanuu)
+ */
+interface Qualifier

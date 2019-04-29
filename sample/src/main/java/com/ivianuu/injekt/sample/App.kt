@@ -20,6 +20,30 @@ import android.app.Application
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.androidLogger
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.annotations.Scoped
+import com.ivianuu.injekt.annotations.Single
+
+
+@Scoped(ActivityScope::class)
+@BindWorker
+@Single
+@UseInterceptors([MyWorker.SpecialBindingLogic::class])
+@BindTypes([Any::class])
+class MyWorker : Worker {
+    override fun doWork() {
+    }
+
+    object SpecialBindingLogic : BindingCreator.Interceptor<MyWorker> {
+        override fun intercept(builder: BindingBuilder<MyWorker>) = with(builder) {
+            bindAlias<Any>("worker")
+        }
+    }
+}*/
+
+object ApplicationScope : Scope
+
+@Single @Scoped(ApplicationScope::class)
+class MyRepo
 
 
 /**
