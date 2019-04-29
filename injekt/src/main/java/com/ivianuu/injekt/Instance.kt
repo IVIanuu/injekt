@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Creates the actual dependency for [Binding]s
+ */
 abstract class Instance<T> {
 
     /**

@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Provides instances for its kind
+ * Provides [Instance]s for [Binding]s
  */
 abstract class Kind {
     /**
