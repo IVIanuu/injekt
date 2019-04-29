@@ -38,8 +38,7 @@ class Component internal constructor() {
     /**
      * All bindings of this component
      */
-    val bindings: Collection<Binding<*>> get() = _bindings.values
-    private val _bindings = linkedMapOf<Key, Binding<*>>()
+    val bindings: Collection<Binding<*>> get() = _instances.values.map { it.binding }
 
     /**
      * All instances of this component
@@ -94,7 +93,6 @@ class Component internal constructor() {
      */
     fun addBinding(binding: Binding<*>) {
         if (binding.scope == null || _scopes.contains(binding.scope)) {
-            _bindings[binding.key] = binding
             _instances[binding.key] = binding.kind.createInstance(binding, context)
             binding.additionalBindings.forEach { addBinding(it) }
         } else {
