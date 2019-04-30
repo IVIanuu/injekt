@@ -92,7 +92,7 @@ fun component(
     }
 
     fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it) }
+        module.bindings.forEach { addBinding(it.value) }
         module.includes.forEach { addModule(it) }
     }
 

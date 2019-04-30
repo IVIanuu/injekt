@@ -26,7 +26,7 @@ class Module internal constructor() {
     /**
      * All bindings of this module
      */
-    val bindings: Collection<Binding<*>> get() = _bindings.values
+    val bindings: Map<Key, Binding<*>> get() = _bindings
     private val _bindings = linkedMapOf<Key, Binding<*>>()
 
     /**
