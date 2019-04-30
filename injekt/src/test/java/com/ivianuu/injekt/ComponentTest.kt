@@ -31,14 +31,14 @@ class ComponentTest {
         val typed = TestDep1()
         val named = TestDep1()
 
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     factory { typed }
                     single("named") { named }
                 }
             )
-        }
+        )
 
         val typedGet = component.get<TestDep1>()
         assertEquals(typed, typedGet)
@@ -49,53 +49,38 @@ class ComponentTest {
 
     @Test
     fun testGetNested() {
-        val dependency = component {
-            modules(
+        val dependency = component(
+            modules = listOf(
                 module {
                     factory { TestDep1() }
                 }
             )
-        }
+        )
 
-        val component = component {
-            dependencies(dependency)
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     factory { TestDep2(get()) }
                 }
-            )
-        }
+            ),
+            dependencies = listOf(dependency)
+        )
 
-        val throwed = try {
-            component.get<TestDep2>()
-            false
-        } catch (e: Exception) {
-            true
-        }
-
-        assertFalse(throwed)
+        component.get<TestDep2>()
     }
 
-    @Test
+    @Test(expected = IllegalStateException::class)
     fun testGetUnknownDefinitionThrows() {
-        val component = component {}
-
-        val throwed = try {
-            component.get<TestDep1>()
-            false
-        } catch (e: Exception) {
-            true
-        }
-
-        assertTrue(throwed)
+        val component = component()
+        component.get<TestDep1>()
     }
 
     @Test
     fun testLazy() {
         var called = false
 
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     factory {
                         called = true
@@ -103,7 +88,7 @@ class ComponentTest {
                     }
                 }
             )
-        }
+        )
 
         assertFalse(called)
 
@@ -116,9 +101,7 @@ class ComponentTest {
     @Test
     fun testAddDependency() {
         val dependency = component()
-        val component = component {
-            dependencies(dependency)
-        }
+        val component = component(dependencies = listOf(dependency))
 
         assertTrue(component.dependencies.contains(dependency))
     }
@@ -127,27 +110,31 @@ class ComponentTest {
     fun testAddModule() {
         val binding = binding(FactoryKind) { "value" }
         val module = module { bind(binding) }
-        val component = component { modules(module) }
-        assertTrue(component.bindings.contains(binding))
+        val component = component(modules = listOf(module))
+        assertTrue(component.bindings.values.contains(binding))
     }
 
     @Test
     fun testAddBinding() {
         val binding = binding(FactoryKind) { "value" }
-        val component = component { addBinding(binding) }
-        assertTrue(component.bindings.contains(binding))
+        val component = component(
+            modules = listOf(
+                module { bind(binding) }
+            )
+        )
+        assertTrue(component.bindings.containsValue(binding))
     }
 
     @Test
     fun testOverride() {
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     factory { "my_value" }
                     single { "my_overridden_value" }
                 }
             )
-        }
+        )
 
         assertEquals("my_overridden_value", component.get<String>())
     }

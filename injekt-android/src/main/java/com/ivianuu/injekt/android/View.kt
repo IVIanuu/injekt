@@ -21,7 +21,6 @@ import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
 
 /**
  * View name
@@ -37,25 +36,25 @@ object ForChildView
  * Returns a [Component] with convenient configurations
  */
 fun <T : View> T.viewComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(viewModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { viewModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : View> T.childViewComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(childViewModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { childViewModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns the closest [Component] or null

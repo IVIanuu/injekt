@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt.multi
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.parametersOf
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -27,13 +30,13 @@ class MultiTest {
 
     @Test
     fun testMultiValues() {
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     multi { (value: Int) -> MultiValue(value) }
                 }
             )
-        }
+        )
 
         val firstValueOne = component.get<MultiValue> { parametersOf(1) }
         val secondValueOne = component.get<MultiValue> { parametersOf(1) }
@@ -45,24 +48,15 @@ class MultiTest {
         assertFalse(firstValueOne === valueTwo)
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun testThrowsOnNullParams() {
-        val component = component {
-            modules(
-                module {
-                    multi { (value: Int) -> MultiValue(value) }
-                }
-            )
-        }
+        val component = component(modules = listOf(
+            module {
+                multi { (value: Int) -> MultiValue(value) }
+            }
+        ))
 
-        val throwed = try {
-            component.get<MultiValue>()
-            false
-        } catch (e: Exception) {
-            true
-        }
-
-        assertTrue(throwed)
+        component.get<MultiValue>()
     }
 
 }

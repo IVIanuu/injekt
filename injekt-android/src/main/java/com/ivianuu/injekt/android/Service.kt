@@ -21,7 +21,7 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
+
 
 /**
  * Service name
@@ -32,13 +32,13 @@ object ForService
  * Returns a [Component] with convenient configurations
  */
 fun <T : Service> T.serviceComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(serviceModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { serviceModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns the closest [Component] or null

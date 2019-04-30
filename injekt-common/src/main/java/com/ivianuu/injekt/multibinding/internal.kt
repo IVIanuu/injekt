@@ -46,5 +46,5 @@ internal fun Component.collectBindings(
     bindings: MutableList<Binding<*>>
 ) {
     dependencies.forEach { it.collectBindings(bindings) }
-    bindings.addAll(this.bindings)
+    bindings.addAll(this.bindings.values)
 }

@@ -24,9 +24,7 @@ import com.ivianuu.injekt.android.activityComponent
 class MainActivity : AppCompatActivity(), InjektTrait {
 
     override val component by lazy {
-        activityComponent {
-            modules(mainActivityModule)
-        }
+        activityComponent(modules = listOf(mainActivityModule))
     }
 
     private val appDependency by inject<AppDependency>()

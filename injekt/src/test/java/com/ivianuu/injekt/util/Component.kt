@@ -31,6 +31,6 @@ fun <T> Component.getBinding(
     name: Any? = null
 ): Binding<T> {
     val key = Key(type, name)
-    return bindings.firstOrNull { it.key == key } as? Binding<T>
+    return bindings.values.firstOrNull { it.key == key } as? Binding<T>
         ?: error("binding not found")
 }

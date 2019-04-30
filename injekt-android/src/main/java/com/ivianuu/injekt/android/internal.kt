@@ -14,30 +14,20 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.android
 
-import com.ivianuu.injekt.util.TestDep1
-import org.junit.Assert.assertFalse
-import org.junit.Test
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.component
 
-class FactoryTest {
-
-    @Test
-    fun testFactoryCreatesNew() {
-        val component = component(
-            modules = listOf(
-                module {
-                    factory { TestDep1() }
-                }
-            )
-        )
-
-        val instance = component.instances.first()
-
-        val value1 = instance.get(component.context)
-        val value2 = instance.get(component.context)
-
-        assertFalse(value1 === value2)
-    }
-
+internal fun androidComponent(
+    modules: Iterable<Module>,
+    dependencies: Iterable<Component>,
+    module: () -> Module,
+    dependency: () -> Component?
+): Component {
+    val allModules = modules + listOf(module())
+    val allDependencies = dependencies +
+            (dependency()?.let { listOf(it) } ?: emptyList())
+    return component(allModules, allDependencies)
 }

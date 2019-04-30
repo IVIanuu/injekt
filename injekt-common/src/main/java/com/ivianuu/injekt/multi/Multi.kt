@@ -39,7 +39,7 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
     private val values = linkedMapOf<Int, T>()
 
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
-        checkNotNull(parameters) { "Parameters cannot be null" }
+        requireNotNull(parameters) { "Parameters cannot be null" }
 
         val params = parameters()
 

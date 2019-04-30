@@ -27,9 +27,7 @@ import com.ivianuu.injekt.android.applicationComponent
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        applicationComponent {
-            modules(appModule)
-        }
+        applicationComponent(modules = listOf(appModule))
     }
 
     private val appDependency by inject<AppDependency>()

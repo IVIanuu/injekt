@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android
 import android.content.ContentProvider
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
 
 /**
  * Content provider name
@@ -30,13 +29,13 @@ object ForContentProvider
  * Returns a [Component] with convenient configurations
  */
 fun <T : ContentProvider> T.contentProviderComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(contentProviderModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { contentProviderModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns the closest [Component] or null

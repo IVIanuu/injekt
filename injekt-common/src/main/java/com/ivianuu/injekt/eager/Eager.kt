@@ -61,26 +61,8 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
         }
     }
 
-}
-
-/**
- * Creates all eager instances
- */
-fun Component.createEagerInstances(parameters: ParametersDefinition? = null) {
-    bindings
-        .filter { it.kind is EagerKind }
-        .map { b -> instances.first { i -> i.binding == b } }
-        .forEach { it.get(context, parameters) }
-}
-
-/**
- * Returns a new [Component] configured by [block] which calls [createEagerInstances]
- */
-fun eagerComponent(
-    block: (Component.() -> Unit)? = null
-): Component {
-    return component {
-        block?.invoke(this)
-        createEagerInstances()
+    override fun attachedTo(context: DefinitionContext) {
+        super.attachedTo(context)
+        get(context, null)
     }
 }

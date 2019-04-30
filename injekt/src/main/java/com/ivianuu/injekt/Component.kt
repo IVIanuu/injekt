@@ -21,18 +21,10 @@ import kotlin.reflect.KClass
 /**
  * The actual dependency container which provides bindings
  */
-class Component internal constructor() {
-
-    /**
-     * All dependencies of this component
-     */
-    val dependencies: Set<Component> get() = _dependencies
-    private val _dependencies = linkedSetOf<Component>()
-
-    /**
-     * All bindings of this component
-     */
-    val bindings: Collection<Binding<*>> get() = _instances.values.map { it.binding }
+class Component internal constructor(
+    val bindings: Map<Key, Binding<*>>,
+    val dependencies: Set<Component>
+) {
 
     /**
      * All instances of this component
@@ -44,6 +36,14 @@ class Component internal constructor() {
      * The definition context of this component
      */
     val context = DefinitionContext(this)
+
+    init {
+        bindings.forEach { (_, binding) ->
+            _instances[binding.key] = binding.kind.createInstance(binding)
+        }
+
+        _instances.forEach { it.value.attachedTo(context) }
+    }
 
     /**
      * Returns a instance of [T] matching the [type], [name] and [parameters]
@@ -61,34 +61,11 @@ class Component internal constructor() {
         return instance.get(context, parameters)
     }
 
-    /**
-     * Adds the [dependency] as a dependency
-     */
-    fun addDependency(dependency: Component) {
-        _dependencies.add(dependency)
-    }
-
-    /**
-     * Adds all binding of the [module]
-     */
-    fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it) }
-        module.includes.forEach { addModule(it) }
-    }
-
-    /**
-     * Saves the [binding]
-     */
-    fun addBinding(binding: Binding<*>) {
-        _instances[binding.key] = binding.kind.createInstance(binding)
-        binding.additionalBindings.forEach { addBinding(it) }
-    }
-
     private fun <T> findInstance(key: Key): Instance<T>? {
         var instance = _instances[key]
         if (instance != null) return instance as Instance<T>
 
-        for (dependency in _dependencies) {
+        for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key)
             if (instance != null) return instance
         }
@@ -99,12 +76,29 @@ class Component internal constructor() {
 }
 
 /**
- * Returns a new [Component] configured by [block]
+ * Returns a new [Component] composed by all of [modules] and [dependencies]
  */
 fun component(
-    block: (Component.() -> Unit)? = null
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
 ): Component {
-    return Component().apply { block?.invoke(this) }
+    val bindings = linkedMapOf<Key, Binding<*>>()
+
+    // todo clean up
+
+    fun addBinding(binding: Binding<*>) {
+        bindings[binding.key] = binding
+        binding.additionalBindings.forEach { addBinding(it) }
+    }
+
+    fun addModule(module: Module) {
+        module.bindings.forEach { addBinding(it) }
+        module.includes.forEach { addModule(it) }
+    }
+
+    modules.forEach { addModule(it) }
+
+    return Component(bindings, dependencies.toSet())
 }
 
 /**
@@ -122,31 +116,3 @@ inline fun <reified T> Component.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(T::class, name, parameters) }
-
-/**
- * Adds all [dependencies]
- */
-fun Component.dependencies(dependencies: Iterable<Component>) {
-    dependencies.forEach { addDependency(it) }
-}
-
-/**
- * Adds all [dependencies]
- */
-fun Component.dependencies(vararg dependencies: Component) {
-    dependencies.forEach { addDependency(it) }
-}
-
-/**
- * Adds all [modules]
- */
-fun Component.modules(modules: Iterable<Module>) {
-    modules.forEach { addModule(it) }
-}
-
-/**
- * Adds all [modules]
- */
-fun Component.modules(vararg modules: Module) {
-    modules.forEach { addModule(it) }
-}

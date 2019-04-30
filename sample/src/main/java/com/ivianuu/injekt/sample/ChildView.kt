@@ -31,9 +31,7 @@ class ChildView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
     override val component by lazy {
-        childViewComponent {
-            modules(childViewModule)
-        }
+        childViewComponent(modules = listOf(childViewModule))
     }
 
     private val appDependency by inject<AppDependency>()

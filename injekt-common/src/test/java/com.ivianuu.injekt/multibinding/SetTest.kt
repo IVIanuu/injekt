@@ -19,7 +19,6 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -27,15 +26,15 @@ class SetTest {
 
     @Test
     fun testSetMultiBinding() {
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     factory(NameOne) { "value_one" } bindIntoSet setValues
                     factory(NameTwo) { "value_two" } bindIntoSet setValues
                     factory(NameThree) { "value_three" } bindIntoSet setValues
                 }
             )
-        }
+        )
 
         val set = component.getSet(setValues)
 

@@ -21,7 +21,6 @@ import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.modules
 
 object InjektTest : InjectionTest {
     override val name = "Injekt"
@@ -33,7 +32,7 @@ object InjektTest : InjectionTest {
     }
 
     override fun setup() {
-        component = component { modules(injektModule) }
+        component = component(modules = listOf(injektModule))
     }
 
     override fun inject() {

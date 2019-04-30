@@ -26,13 +26,11 @@ class ProviderTest {
 
     @Test
     fun testProviderNotReturnsSameValue() {
-        val component = component {
-            modules(
-                module {
-                    factory { TestDep1() }
-                }
-            )
-        }
+        val component = component(modules = listOf(
+            module {
+                factory { TestDep1() }
+            }
+        ))
         val getProvider = component.getProvider<TestDep1>()
         val value1 = getProvider.get()
         val value2 = getProvider.get()
@@ -43,16 +41,14 @@ class ProviderTest {
     fun testProviderUsesDefaultParams() {
         var usedParams: Parameters? = null
 
-        val component = component {
-            modules(
-                module {
-                    factory {
-                        usedParams = it
-                        TestDep1()
-                    }
+        val component = component(modules = listOf(
+            module {
+                factory {
+                    usedParams = it
+                    TestDep1()
                 }
-            )
-        }
+            }
+        ))
 
         val defaultParams = parametersOf("one", "two")
 
@@ -67,16 +63,14 @@ class ProviderTest {
     fun testProviderUsesExplicitParams() {
         var usedParams: Parameters? = null
 
-        val component = component {
-            modules(
-                module {
-                    factory {
-                        usedParams = it
-                        TestDep1()
-                    }
+        val component = component(modules = listOf(
+            module {
+                factory {
+                    usedParams = it
+                    TestDep1()
                 }
-            )
-        }
+            }
+        ))
 
         val parameters = parametersOf("one", "two")
 
@@ -91,8 +85,8 @@ class ProviderTest {
     fun testProviderPrefersExplicitParams() {
         var usedParams: Parameters? = null
 
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     factory {
                         usedParams = it
@@ -100,7 +94,7 @@ class ProviderTest {
                     }
                 }
             )
-        }
+        )
 
         val defaultParams = parametersOf("default")
         val explicitParams = parametersOf("explicit")

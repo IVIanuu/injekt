@@ -20,7 +20,6 @@ import android.app.Activity
 import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
 
 /**
  * Activity name
@@ -31,13 +30,13 @@ object ForActivity
  * Returns a [Component] with convenient configurations
  */
 fun <T : Activity> T.activityComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(activityModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { activityModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns the closest [Component] or null

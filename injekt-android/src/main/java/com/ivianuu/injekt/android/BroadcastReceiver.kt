@@ -20,7 +20,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
 
 /**
  * Receiver name
@@ -32,13 +31,13 @@ object ForReceiver
  */
 fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull(context)?.let { dependencies(it) }
-    modules(receiverModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { receiverModule() },
+    { getClosestComponentOrNull(context) }
+)
 
 /**
  * Returns the closest [Component] or null

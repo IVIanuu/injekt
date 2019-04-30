@@ -24,13 +24,13 @@ class SingleTest {
 
     @Test
     fun testCreatesOnlyOnce() {
-        val component = component {
-            modules(
+        val component = component(
+            modules = listOf(
                 module {
                     single { TestDep1() }
                 }
             )
-        }
+        )
 
         val instance = component.instances.first()
 

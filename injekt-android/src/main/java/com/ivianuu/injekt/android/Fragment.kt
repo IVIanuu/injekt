@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
+
 
 /**
  * Fragment name
@@ -35,25 +35,25 @@ object ForChildFragment
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.fragmentComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(fragmentModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { fragmentModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.childFragmentComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(childFragmentModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { childFragmentModule() },
+    { getClosestComponentOrNull() }
+)
 
 /**
  * Returns the closest [Component] or null

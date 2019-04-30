@@ -48,4 +48,6 @@ abstract class Instance<T> {
         }
     }
 
+    open fun attachedTo(context: DefinitionContext) {
+    }
 }

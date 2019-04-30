@@ -19,7 +19,6 @@ package com.ivianuu.injekt.multibinding
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -27,15 +26,13 @@ class MapTest {
 
     @Test
     fun testMapMultiBinding() {
-        val component = component {
-            modules(
-                module {
-                    factory(NameOne) { "value_one" } bindIntoMap (mapValues to "key_one")
-                    factory(NameTwo) { "value_two" } bindIntoMap (mapValues to "key_two")
-                    factory(NameThree) { "value_three" } bindIntoMap (mapValues to "key_three")
-                }
-            )
-        }
+        val component = component(modules = listOf(
+            module {
+                factory(NameOne) { "value_one" } bindIntoMap (mapValues to "key_one")
+                factory(NameTwo) { "value_two" } bindIntoMap (mapValues to "key_two")
+                factory(NameThree) { "value_three" } bindIntoMap (mapValues to "key_three")
+            }
+        ))
 
         val map = component.getMap(mapValues)
 
@@ -61,14 +58,12 @@ class MapTest {
 
     @Test
     fun testOverride() {
-        val component = component {
-            modules(
-                module {
-                    factory(NameOne) { "value_one" } bindIntoMap (mapValues to "key_one")
-                    factory(NameTwo) { "value_two" } bindIntoMap (mapValues to "key_one")
-                }
-            )
-        }
+        val component = component(modules = listOf(
+            module {
+                factory(NameOne) { "value_one" } bindIntoMap (mapValues to "key_one")
+                factory(NameTwo) { "value_two" } bindIntoMap (mapValues to "key_one")
+            }
+        ))
 
         assertEquals("value_two", component.getMap(mapValues)["key_one"])
     }

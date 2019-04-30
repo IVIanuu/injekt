@@ -20,7 +20,6 @@ import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
-import com.ivianuu.injekt.eager.createEagerInstances
 
 /**
  * Application name
@@ -31,12 +30,13 @@ object ForApplication
  * Returns a [Component] with convenient configurations
  */
 fun <T : Application> T.applicationComponent(
-    block: (Component.() -> Unit)? = null
-): Component = component {
-    modules(applicationModule())
-    block?.invoke(this)
-    createEagerInstances()
-}
+    modules: Iterable<Module> = emptyList(),
+    dependencies: Iterable<Component> = emptyList()
+): Component = androidComponent(
+    modules, dependencies,
+    { applicationModule() },
+    { null }
+)
 
 /**
  * Returns a [Module] with convenient bindings

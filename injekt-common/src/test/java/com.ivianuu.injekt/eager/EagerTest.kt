@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.eager
 
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.modules
 import com.ivianuu.injekt.util.TestDep1
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -28,26 +28,22 @@ class EagerTest {
     fun testCreatesOnInit() {
         var called = false
 
-        eagerComponent {
-            modules(
-                module {
-                    eager { called = true }
-                }
-            )
-        }
+        component(modules = listOf(
+            module {
+                eager { called = true }
+            }
+        ))
 
         assertTrue(called)
     }
 
     @Test
     fun testCreatesOnlyOnce() {
-        val component = eagerComponent {
-            modules(
-                module {
-                    eager { TestDep1() }
-                }
-            )
-        }
+        val component = component(modules = listOf(
+            module {
+                eager { TestDep1() }
+            }
+        ))
 
         val instance = component.instances.first()
 
