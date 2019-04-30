@@ -65,12 +65,12 @@ fun <T> binding(
     definition: Definition<T>
 ): Binding<T> = Binding(kind, type, name, definition)
 
-fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
+infix fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
     attributes.entries.forEach { this.attributes[it.key] = it.value }
     return this
 }
 
-fun <T> Binding<T>.attributes(attributes: Map<String, Any?>): Binding<T> {
+infix fun <T> Binding<T>.attributes(attributes: Map<String, Any?>): Binding<T> {
     attributes.forEach { this.attributes[it.key] = it.value }
     return this
 }
@@ -85,17 +85,22 @@ fun <T> Binding<T>.attribute(key: String, value: Any?): Binding<T> {
     return this
 }
 
+infix fun <T> Binding<T>.attribute(pair: Pair<String, Any?>): Binding<T> {
+    attributes[pair.first] = pair.second
+    return this
+}
+
 fun <T> Binding<T>.additionalBindings(vararg bindings: Binding<*>): Binding<T> {
     additionalBindings.addAll(bindings)
     return this
 }
 
-fun <T> Binding<T>.additionalBindings(bindings: Iterable<Binding<*>>): Binding<T> {
+infix fun <T> Binding<T>.additionalBindings(bindings: Iterable<Binding<*>>): Binding<T> {
     additionalBindings.addAll(bindings)
     return this
 }
 
-fun <T> Binding<T>.additionalBinding(binding: Binding<*>): Binding<T> {
+infix fun <T> Binding<T>.additionalBinding(binding: Binding<*>): Binding<T> {
     additionalBindings.add(binding)
     return this
 }
@@ -141,7 +146,7 @@ fun <T> Binding<T>.bindNames(vararg names: Any): Binding<T> {
     return this
 }
 
-fun <T> Binding<T>.bindNames(names: Iterable<Any>): Binding<T> {
+infix fun <T> Binding<T>.bindNames(names: Iterable<Any>): Binding<T> {
     names.forEach { bindName(it) }
     return this
 }
@@ -152,5 +157,10 @@ inline fun <reified T> Binding<*>.bindAlias(name: Any) {
 
 fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Any): Binding<T> {
     additionalBinding(binding(kind, type, name, definition))
+    return this
+}
+
+infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Any>): Binding<T> {
+    bindAlias(pair.first, pair.second)
     return this
 }

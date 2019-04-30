@@ -22,9 +22,10 @@ import com.ivianuu.injekt.getOrSet
 /**
  * Adds this binding into a map
  */
-infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
+infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
     attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Any, MapBinding<K, V>>() }
         .put(mapBinding.mapName, mapBinding)
+    return this
 }
 
 /**
@@ -33,8 +34,9 @@ infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>) {
 fun <T : V, K, V> Binding<T>.bindIntoMap(
     mapName: MapName<K, V>,
     key: K
-) {
+): Binding<T> {
     bindIntoMap(MapBinding(mapName, key))
+    return this
 }
 
 /**
@@ -42,6 +44,7 @@ fun <T : V, K, V> Binding<T>.bindIntoMap(
  */
 infix fun <T : V, K, V> Binding<T>.bindIntoMap(
     pair: Pair<MapName<K, V>, K>
-) {
+): Binding<T> {
     bindIntoMap(MapBinding(pair.first, pair.second))
+    return this
 }

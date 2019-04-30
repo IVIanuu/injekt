@@ -22,15 +22,17 @@ import com.ivianuu.injekt.getOrSet
 /**
  * Adds this binding into a set
  */
-infix fun <T> Binding<*>.bindIntoSet(setBinding: SetBinding<T>) {
+infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
     attributes.getOrSet(KEY_SET_BINDINGS) {
-        hashMapOf<SetName<T>, SetBinding<T>>()
+        hashMapOf<SetName<V>, SetBinding<V>>()
     }[setBinding.setName] = setBinding
+    return this
 }
 
 /**
  * Adds this binding into a set
  */
-infix fun <T, V : T> Binding<V>.bindIntoSet(setName: SetName<T>) {
+infix fun <T : V, V> Binding<T>.bindIntoSet(setName: SetName<V>): Binding<T> {
     bindIntoSet(SetBinding(setName))
+    return this
 }
