@@ -23,14 +23,9 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(
     val bindings: Map<Key, Binding<*>>,
+    val instances: Map<Key, Instance<*>>,
     val dependencies: Set<Component>
 ) {
-
-    /**
-     * All instances of this component
-     */
-    val instances: Collection<Instance<*>> get() = _instances.values
-    private val _instances = linkedMapOf<Key, Instance<*>>()
 
     /**
      * The definition context of this component
@@ -38,11 +33,7 @@ class Component internal constructor(
     val context = DefinitionContext(this)
 
     init {
-        bindings.forEach { (_, binding) ->
-            _instances[binding.key] = binding.kind.createInstance(binding)
-        }
-
-        _instances.forEach { it.value.attachedTo(context) }
+        instances.forEach { it.value.attachedTo(context) }
     }
 
     /**
@@ -62,7 +53,7 @@ class Component internal constructor(
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
-        var instance = _instances[key]
+        var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
         for (dependency in dependencies) {
@@ -83,11 +74,13 @@ fun component(
     dependencies: Iterable<Component> = emptyList()
 ): Component {
     val bindings = linkedMapOf<Key, Binding<*>>()
+    val instances = linkedMapOf<Key, Instance<*>>()
 
     // todo clean up
 
     fun addBinding(binding: Binding<*>) {
         bindings[binding.key] = binding
+        instances[binding.key] = binding.kind.createInstance(binding)
         binding.additionalBindings.forEach { addBinding(it) }
     }
 
@@ -98,7 +91,7 @@ fun component(
 
     modules.forEach { addModule(it) }
 
-    return Component(bindings, dependencies.toSet())
+    return Component(bindings, instances, dependencies.toSet())
 }
 
 /**
