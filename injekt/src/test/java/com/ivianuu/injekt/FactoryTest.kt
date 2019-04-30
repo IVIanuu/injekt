@@ -32,10 +32,8 @@ class FactoryTest {
             )
         )
 
-        val instance = component.instances.first()
-
-        val value1 = instance.get(component.context)
-        val value2 = instance.get(component.context)
+        val value1 = component.get<TestDep1>()
+        val value2 = component.get<TestDep1>()
 
         assertFalse(value1 === value2)
     }

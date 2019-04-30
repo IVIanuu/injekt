@@ -154,8 +154,3 @@ fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Any): Binding<T> {
     additionalBinding(binding(kind, type, name, definition))
     return this
 }
-
-inline infix fun <T> Binding<T>.apply(block: Binding<T>.() -> Unit): Binding<T> {
-    block()
-    return this
-}

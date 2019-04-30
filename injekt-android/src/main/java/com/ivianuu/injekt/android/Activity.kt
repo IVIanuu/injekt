@@ -65,7 +65,7 @@ fun Activity.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Activity> T.activityModule(): Module = module {
-    constant(this@activityModule) apply {
+    constant(this@activityModule).apply {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
         bindType<Context>()

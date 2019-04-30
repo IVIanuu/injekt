@@ -42,7 +42,7 @@ fun <T : Application> T.applicationComponent(
  * Returns a [Module] with convenient bindings
  */
 fun <T : Application> T.applicationModule(): Module = module {
-    constant(this@applicationModule) apply {
+    constant(this@applicationModule).apply {
         bindTypes(Application::class, Context::class)
         bindAlias<Context>(ForApplication)
     }

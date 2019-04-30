@@ -25,7 +25,7 @@ class ModuleTest {
     fun testBind() {
         val binding = binding(FactoryKind) { "value" }
         val module = module { bind(binding) }
-        assertTrue(module.bindings.contains(binding))
+        assertTrue(module.bindings.values.contains(binding))
     }
 
     @Test
@@ -47,7 +47,7 @@ class ModuleTest {
             bind(overrideBinding)
         }
 
-        assertTrue(module.bindings.associateBy { it.key }[Key(String::class)] === overrideBinding)
+        assertTrue(module.bindings[Key(String::class)] === overrideBinding)
     }
 
 }

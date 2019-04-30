@@ -120,7 +120,7 @@ fun View.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.viewModule(): Module = module {
-    constant(this@viewModule) apply {
+    constant(this@viewModule).apply {
         bindType<View>()
         bindAlias<View>(ForView)
     }
@@ -133,7 +133,7 @@ fun <T : View> T.viewModule(): Module = module {
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.childViewModule(): Module = module {
-    constant(this@childViewModule) apply {
+    constant(this@childViewModule).apply {
         bindType<View>()
         bindAlias<View>(ForChildView)
     }

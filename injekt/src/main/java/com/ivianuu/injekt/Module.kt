@@ -46,7 +46,6 @@ class Module internal constructor() {
      * Adds the [module]
      */
     fun include(module: Module) {
-        _includes.remove(module)
         _includes.add(module)
     }
 

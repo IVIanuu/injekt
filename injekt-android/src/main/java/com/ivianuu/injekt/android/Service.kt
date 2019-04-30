@@ -67,7 +67,7 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Service> T.serviceModule(): Module = module {
-    constant(this@serviceModule) apply {
+    constant(this@serviceModule).apply {
         bindType<Service>()
         bindAlias<Context>(ForService)
         bindType<Context>()

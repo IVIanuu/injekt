@@ -111,7 +111,7 @@ fun Fragment.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    constant(this@fragmentModule) apply {
+    constant(this@fragmentModule).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(ForFragment)
     }
@@ -124,7 +124,7 @@ fun <T : Fragment> T.fragmentModule(): Module = module {
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.childFragmentModule(): Module = module {
-    constant(this@childFragmentModule) apply {
+    constant(this@childFragmentModule).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(ForChildFragment)
     }
