@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 class Component internal constructor(
     val bindings: Map<Key, Binding<*>>,
     val instances: Map<Key, Instance<*>>,
-    val dependencies: Set<Component>
+    val dependencies: Iterable<Component>
 ) {
 
     /**
@@ -91,7 +91,7 @@ fun component(
 
     modules.forEach { addModule(it) }
 
-    return Component(bindings, instances, dependencies.toSet())
+    return Component(bindings, instances, dependencies)
 }
 
 /**
