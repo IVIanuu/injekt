@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.component
 
-internal fun androidComponent(
+internal inline fun androidComponent(
     modules: Iterable<Module>,
     dependencies: Iterable<Component>,
     module: () -> Module,
