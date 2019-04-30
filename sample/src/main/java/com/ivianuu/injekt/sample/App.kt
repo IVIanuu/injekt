@@ -18,9 +18,8 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.androidLogger
+import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
-
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -36,9 +35,7 @@ class App : Application(), InjektTrait {
     private val appDependency by inject<AppDependency>()
 
     override fun onCreate() {
-        injekt {
-            androidLogger()
-        }
+        InjektPlugins.logger = AndroidLogger()
 
         d { "Injected app dependency $appDependency" }
 

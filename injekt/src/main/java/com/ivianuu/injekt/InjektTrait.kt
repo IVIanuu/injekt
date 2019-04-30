@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Holds a [Component] and allows for shorter syntax
  */
@@ -32,24 +30,10 @@ interface InjektTrait {
 inline fun <reified T> InjektTrait.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(T::class, name, parameters)
-
-/** Calls trough [Component.get] */
-fun <T> InjektTrait.get(
-    type: KClass<*>,
-    name: Any? = null,
-    parameters: ParametersDefinition? = null
-): T = component.get(type, name, parameters)
+): T = component.get(T::class, name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(T::class, name, parameters)
-
-/** Calls trough [Component.inject] */
-fun <T> InjektTrait.inject(
-    type: KClass<*>,
-    name: Any? = null,
-    parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(type, name, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(T::class, name, parameters) }

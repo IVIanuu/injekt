@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Kind for factory instances
  */
@@ -32,16 +30,7 @@ object FactoryKind : Kind() {
 inline fun <reified T> Module.factory(
     name: Any? = null,
     noinline definition: Definition<T>
-): Binding<T> = factory(T::class, name, definition)
-
-/**
- * Adds a [Binding] which will be created on each request
- */
-fun <T> Module.factory(
-    type: KClass<*>,
-    name: Any? = null,
-    definition: Definition<T>
-): Binding<T> = bind(FactoryKind, type, name, definition)
+): Binding<T> = bind(FactoryKind, T::class, name, definition)
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

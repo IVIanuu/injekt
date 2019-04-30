@@ -21,13 +21,6 @@ package com.ivianuu.injekt
  */
 object InjektPlugins
 
-/**
- * Configures [InjektPlugins] via [block]
- */
-fun injekt(block: InjektPlugins.() -> Unit) {
-    InjektPlugins.apply(block)
-}
-
 private var _logger: Logger? = null
 /**
  * The logger to use

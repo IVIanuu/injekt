@@ -47,13 +47,9 @@ interface Logger {
 const val INJEKT_TAG = "[INJEKT]"
 
 /**
- * Sets the [InjektPlugins.logger] to [PrintLogger]
+ * Logs messages using [println]
  */
-fun InjektPlugins.printLogger() {
-    logger = PrintLogger()
-}
-
-private class PrintLogger : Logger {
+class PrintLogger : Logger {
 
     override fun debug(msg: String) {
         println("[DEBUG] $INJEKT_TAG $msg")

@@ -121,16 +121,7 @@ inline fun <reified T> Component.get(
 inline fun <reified T> Component.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(T::class, name, parameters)
-
-/**
- * Lazily returns a instance of [T] matching the [name] and [parameters]
- */
-fun <T> Component.inject(
-    type: KClass<*>,
-    name: Any? = null,
-    parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(T::class, name, parameters) }
 
 /**
  * Adds all [dependencies]

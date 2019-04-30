@@ -18,18 +18,12 @@ package com.ivianuu.injekt.android
 
 import android.util.Log
 import com.ivianuu.injekt.INJEKT_TAG
-import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Logger
-import com.ivianuu.injekt.logger
 
 /**
- * Uses the android logger
+ * Uses [Log] for logging messages
  */
-fun InjektPlugins.androidLogger() {
-    logger = AndroidLogger()
-}
-
-private class AndroidLogger : Logger {
+class AndroidLogger : Logger {
 
     override fun debug(msg: String) {
         Log.d(INJEKT_TAG, msg)

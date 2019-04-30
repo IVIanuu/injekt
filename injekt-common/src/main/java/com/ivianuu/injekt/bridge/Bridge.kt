@@ -50,7 +50,7 @@ fun <T> Module.bridge(
         BridgeKind,
         type,
         UUID.randomUUID().toString()
-    ) { get(type, name) { it } }.apply {
+    ) { component.get(type, name) { it } }.apply {
         block?.invoke(this)
     }
 }
