@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.eager
 
 import com.ivianuu.injekt.component
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.util.TestDep1
 import junit.framework.Assert.assertTrue
@@ -45,10 +46,8 @@ class EagerTest {
             }
         ))
 
-        val instance = component.instances.first()
-
-        val value1 = instance.get(component.context)
-        val value2 = instance.get(component.context)
+        val value1 = component.get<TestDep1>()
+        val value2 = component.get<TestDep1>()
 
         assertTrue(value1 === value2)
     }

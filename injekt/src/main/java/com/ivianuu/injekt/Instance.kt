@@ -48,6 +48,9 @@ abstract class Instance<T> {
         }
     }
 
+    /**
+     * Used by the eager kind to instantiate value
+     */
     open fun attachedTo(context: DefinitionContext) {
     }
 }
