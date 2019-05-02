@@ -31,7 +31,7 @@ class Binding<T> internal constructor(
     val key = Key(type, name)
 
     val attributes = attributesOf()
-    val additionalBindings = mutableListOf<Binding<*>>()
+    val additionalKeys = mutableListOf<Key>()
 
     override fun toString(): String {
         return "$kind(" +
@@ -90,18 +90,18 @@ infix fun <T> Binding<T>.attribute(pair: Pair<String, Any?>): Binding<T> {
     return this
 }
 
-fun <T> Binding<T>.additionalBindings(vararg bindings: Binding<*>): Binding<T> {
-    additionalBindings.addAll(bindings)
+fun <T> Binding<T>.additionalKeys(vararg keys: Key): Binding<T> {
+    additionalKeys.addAll(keys)
     return this
 }
 
-infix fun <T> Binding<T>.additionalBindings(bindings: Iterable<Binding<*>>): Binding<T> {
-    additionalBindings.addAll(bindings)
+infix fun <T> Binding<T>.additionalKeys(keys: Iterable<Key>): Binding<T> {
+    additionalKeys.addAll(keys)
     return this
 }
 
-infix fun <T> Binding<T>.additionalBinding(binding: Binding<*>): Binding<T> {
-    additionalBindings.add(binding)
+infix fun <T> Binding<T>.additionalKey(key: Key): Binding<T> {
+    additionalKeys.add(key)
     return this
 }
 
@@ -115,10 +115,8 @@ inline fun <reified T> Binding<*>.bindType() {
 /**
  * Adds a additional binding for [type]
  */
-infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> {
-    additionalBinding(binding(kind, type, null, definition))
-    return this
-}
+infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> =
+    additionalKey(Key(type))
 
 /**
  * Binds all of [types]
@@ -136,10 +134,8 @@ infix fun <T> Binding<T>.bindTypes(types: Iterable<KClass<*>>): Binding<T> {
     return this
 }
 
-infix fun <T> Binding<T>.bindName(name: Any): Binding<T> {
-    additionalBinding(binding(kind, type, name, definition))
-    return this
-}
+infix fun <T> Binding<T>.bindName(name: Any): Binding<T> =
+    additionalKey(Key(type, name))
 
 fun <T> Binding<T>.bindNames(vararg names: Any): Binding<T> {
     names.forEach { bindName(it) }
@@ -155,10 +151,8 @@ inline fun <reified T> Binding<*>.bindAlias(name: Any) {
     bindAlias(T::class, name)
 }
 
-fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Any): Binding<T> {
-    additionalBinding(binding(kind, type, name, definition))
-    return this
-}
+fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Any): Binding<T> =
+    additionalKey(Key(type, name))
 
 infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Any>): Binding<T> {
     bindAlias(pair.first, pair.second)

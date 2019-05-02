@@ -51,10 +51,21 @@ fun <T> Module.bridge(
         type,
         UUID.randomUUID().toString()
     ) { component.get(type, name) { it } }.apply {
+        attribute(ORIGINAL_KEY, Key(type, name))
         block?.invoke(this)
     }
 }
+
+const val ORIGINAL_KEY = "bridge_original_key"
+
 private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
-        create(context, parameters)
+
+    private val originalKey by lazy(LazyThreadSafetyMode.NONE) {
+        binding.attributes.get<Key>(ORIGINAL_KEY)
+    }
+
+    override fun get(parameters: ParametersDefinition?): T {
+        InjektPlugins.logger?.info("Bridge to $originalKey")
+        return create(parameters)
+    }
 }

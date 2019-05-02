@@ -56,8 +56,7 @@ class Component internal constructor(
         val instance = findInstance<T>(key)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
 
-        // todo
-        return instance.get(instance.context, parameters)
+        return instance.get(parameters)
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
@@ -87,9 +86,15 @@ fun component(
     // todo clean up
 
     fun addBinding(binding: Binding<*>) {
+        val instance = binding.kind.createInstance(binding)
+
         bindings[binding.key] = binding
-        instances[binding.key] = binding.kind.createInstance(binding)
-        binding.additionalBindings.forEach { addBinding(it) }
+        instances[binding.key] = instance
+
+        binding.additionalKeys.forEach {
+            bindings[it] = binding
+            instances[it] = instance
+        }
     }
 
     fun addModule(module: Module) {

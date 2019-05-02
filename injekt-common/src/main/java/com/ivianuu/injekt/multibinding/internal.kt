@@ -22,7 +22,7 @@ import com.ivianuu.injekt.Component
 internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K, Binding<V>> {
     return getAllBindings()
         .mapNotNull { binding ->
-            binding.attributes.get<Map<MapName<*, *>, MapBinding<*, *>>>(KEY_MAP_BINDINGS)
+            binding.attributes.getOrNull<Map<MapName<*, *>, MapBinding<*, *>>>(KEY_MAP_BINDINGS)
                 ?.get(mapName)?.let { binding to it }
         }
         .associateBy { it.second.key }
@@ -32,7 +32,7 @@ internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K,
 internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<T>> {
     return getAllBindings()
         .mapNotNull { binding ->
-            binding.attributes.get<Map<SetName<*>, SetBinding<*>>>(KEY_SET_BINDINGS)
+            binding.attributes.getOrNull<Map<SetName<*>, SetBinding<*>>>(KEY_SET_BINDINGS)
                 ?.get(setName)?.let { binding }
         }
         .distinctBy { it.key }

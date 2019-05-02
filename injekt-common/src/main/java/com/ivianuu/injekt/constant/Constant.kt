@@ -37,8 +37,8 @@ fun <T : Any> Module.constant(
 ): Binding<T> = bind(ConstantKind, type, name) { instance }
 
 private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
+    override fun get(parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Return constant $binding")
-        return create(context, parameters)
+        return create(parameters)
     }
 }

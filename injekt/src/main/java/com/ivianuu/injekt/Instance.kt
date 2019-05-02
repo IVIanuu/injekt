@@ -35,15 +35,12 @@ abstract class Instance<T> {
     /**
      * Returns the value for this instance
      */
-    abstract fun get(context: DefinitionContext, parameters: ParametersDefinition? = null): T
+    abstract fun get(parameters: ParametersDefinition? = null): T
 
     /**
      * Creates the value for this instance
      */
-    protected fun create(
-        context: DefinitionContext,
-        parameters: ParametersDefinition?
-    ): T {
+    protected fun create(parameters: ParametersDefinition?): T {
         return try {
             binding.definition.invoke(
                 context,

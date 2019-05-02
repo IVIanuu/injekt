@@ -39,14 +39,20 @@ class Attributes constructor(private val _entries: MutableMap<String, Any?> = li
     }
 
     /**
-     * Returns the value for [key]
+     * Returns the value for [key] or null
      */
-    @Suppress("UNCHECKED_CAST")
-    operator fun <T> get(key: String): T? = _entries[key] as? T
+    fun <T> getOrNull(key: String): T? = _entries[key] as? T
 
     override fun toString(): String = entries.toString()
 
 }
+
+/**
+ * Returns the value for [key]
+ */
+@Suppress("UNCHECKED_CAST")
+operator fun <T> Attributes.get(key: String): T =
+    getOrNull<T>(key) ?: error("Couldn't get attribute for $key")
 
 /**
  * Returns the value for [key] if present or returns and sets [defaultValue]

@@ -34,12 +34,9 @@ inline fun <reified T> Module.factory(
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    override fun get(
-        context: DefinitionContext,
-        parameters: ParametersDefinition?
-    ): T {
+    override fun get(parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Create instance $binding")
-        return create(context, parameters)
+        return create(parameters)
     }
 
 }
