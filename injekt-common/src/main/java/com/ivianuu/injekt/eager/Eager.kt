@@ -61,8 +61,8 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
         }
     }
 
-    override fun attachedTo(context: DefinitionContext) {
-        super.attachedTo(context)
+    override fun attached() {
+        super.attached()
         get(context, null)
     }
 }

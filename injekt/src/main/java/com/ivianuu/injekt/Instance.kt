@@ -22,6 +22,12 @@ package com.ivianuu.injekt
 abstract class Instance<T> {
 
     /**
+     * Context of this instance
+     */
+    lateinit var context: DefinitionContext
+        internal set
+
+    /**
      * The binding of this instance
      */
     abstract val binding: Binding<T>
@@ -51,6 +57,6 @@ abstract class Instance<T> {
     /**
      * Used by the eager kind to instantiate value
      */
-    open fun attachedTo(context: DefinitionContext) {
+    open fun attached() {
     }
 }

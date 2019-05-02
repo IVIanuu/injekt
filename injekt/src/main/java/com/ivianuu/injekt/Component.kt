@@ -33,7 +33,14 @@ class Component internal constructor(
     val context = DefinitionContext(this)
 
     init {
-        instances.forEach { it.value.attachedTo(context) }
+        InjektPlugins.logger?.let { logger ->
+            instances.forEach {
+                logger.info("Register binding ${it.value.binding}")
+            }
+        }
+        instances
+            .onEach { it.value.context = context }
+            .forEach { it.value.attached() }
     }
 
     /**
@@ -49,7 +56,8 @@ class Component internal constructor(
         val instance = findInstance<T>(key)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
 
-        return instance.get(context, parameters)
+        // todo
+        return instance.get(instance.context, parameters)
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
