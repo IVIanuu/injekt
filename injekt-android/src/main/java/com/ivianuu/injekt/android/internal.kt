@@ -26,8 +26,8 @@ internal inline fun androidComponent(
     module: () -> Module,
     dependency: () -> Component?
 ): Component {
-    val allModules = modules + listOf(module())
-    val allDependencies = dependencies +
-            (dependency()?.let { listOf(it) } ?: emptyList())
+    val allModules = listOf(module()) + modules
+    val allDependencies = (dependency()?.let { listOf(it) } ?: emptyList()) +
+            dependencies
     return component(allModules, allDependencies)
 }
