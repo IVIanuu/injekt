@@ -18,6 +18,12 @@ package com.ivianuu.injekt.android
 
 import android.app.Activity
 import android.content.Context
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
@@ -69,7 +75,26 @@ fun <T : Activity> T.activityModule(): Module = module {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
         bindType<Context>()
+
+        (this@activityModule as? ComponentActivity)?.let { bindType<ComponentActivity>() }
+        (this@activityModule as? FragmentActivity)?.let { bindType<ComponentActivity>() }
+        (this@activityModule as? AppCompatActivity)?.let { bindType<AppCompatActivity>() }
     }
 
     factory { resources } bindName ForActivity
+
+    (this@activityModule as? LifecycleOwner)?.let {
+        constant<LifecycleOwner>(this@activityModule) bindName ForActivity
+        factory { lifecycle } bindName ForActivity
+    }
+
+    (this@activityModule as? ViewModelStoreOwner)?.let {
+        constant<ViewModelStoreOwner>(this@activityModule) bindName ForActivity
+        factory { viewModelStore } bindName ForActivity
+    }
+
+    (this@activityModule as? SavedStateRegistryOwner)?.let {
+        constant<SavedStateRegistryOwner>(this@activityModule) bindName ForActivity
+        factory { savedStateRegistry } bindName ForActivity
+    }
 }

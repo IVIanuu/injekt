@@ -120,24 +120,22 @@ fun View.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.viewModule(): Module = module {
-    constant(this@viewModule).apply {
-        bindType<View>()
-        bindAlias<View>(ForView)
-    }
-
-    factory<Context> { context } bindName ForView
-    factory { resources } bindName ForView
+    include(internalViewModule(ForView))
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
 fun <T : View> T.childViewModule(): Module = module {
-    constant(this@childViewModule).apply {
+    include(internalViewModule(ForChildView))
+}
+
+private fun <T : View> T.internalViewModule(qualifier: Any) = module {
+    constant(this@internalViewModule).apply {
         bindType<View>()
-        bindAlias<View>(ForChildView)
+        bindAlias<View>(qualifier)
     }
 
-    factory<Context> { context } bindName ForChildView
-    factory { resources } bindName ForChildView
+    factory<Context> { context } bindName qualifier
+    factory { resources } bindName qualifier
 }

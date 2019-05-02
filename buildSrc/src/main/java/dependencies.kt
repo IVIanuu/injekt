@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev-25"
+    const val version = "${Build.versionName}-dev-26"
 }
 
 object Versions {
@@ -40,7 +40,7 @@ object Versions {
     const val bintray = "1.8.4"
     const val dagger = "2.22.1"
     const val junit = "4.12"
-    const val kotlin = "1.3.30"
+    const val kotlin = "1.3.31"
     const val kotlinStatistics = "1.2.1"
     const val katana = "1.6.0"
     const val kodein = "6.1.0"

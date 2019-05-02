@@ -17,6 +17,9 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
@@ -111,24 +114,37 @@ fun Fragment.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    constant(this@fragmentModule).apply {
-        bindType<Fragment>()
-        bindAlias<Fragment>(ForFragment)
-    }
-
-    factory { requireContext() } bindName ForFragment
-    factory { resources } bindName ForFragment
+    include(internalFragmentModule(ForFragment))
 }
 
 /**
  * Returns a [Module] with convenient bindings
  */
 fun <T : Fragment> T.childFragmentModule(): Module = module {
-    constant(this@childFragmentModule).apply {
+    include(internalFragmentModule(ForChildFragment))
+}
+
+private fun <T : Fragment> T.internalFragmentModule(qualifier: Any) = module {
+    constant(this@internalFragmentModule).apply {
         bindType<Fragment>()
-        bindAlias<Fragment>(ForChildFragment)
+        bindAlias<Fragment>(qualifier)
     }
 
-    factory { requireContext() } bindName ForChildFragment
-    factory { resources } bindName ForChildFragment
+    factory { requireContext() } bindName qualifier
+    factory { resources } bindName qualifier
+
+    (this@internalFragmentModule as? LifecycleOwner)?.let {
+        constant<LifecycleOwner>(this@internalFragmentModule) bindName qualifier
+        factory { lifecycle } bindName qualifier
+    }
+
+    (this@internalFragmentModule as? ViewModelStoreOwner)?.let {
+        constant<ViewModelStoreOwner>(this@internalFragmentModule) bindName qualifier
+        factory { viewModelStore } bindName qualifier
+    }
+
+    (this@internalFragmentModule as? SavedStateRegistryOwner)?.let {
+        constant<SavedStateRegistryOwner>(this@internalFragmentModule) bindName qualifier
+        factory { savedStateRegistry } bindName qualifier
+    }
 }
