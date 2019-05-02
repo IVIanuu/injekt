@@ -129,8 +129,11 @@ private fun <T : Fragment> T.internalFragmentModule(qualifier: Any) = module {
         bindType<Fragment>()
         bindAlias<Fragment>(qualifier)
         bindType<LifecycleOwner>()
+        bindAlias<LifecycleOwner>(qualifier)
         bindType<ViewModelStoreOwner>()
+        bindAlias<ViewModelStoreOwner>(qualifier)
         bindType<SavedStateRegistryOwner>()
+        bindAlias<SavedStateRegistryOwner>(qualifier)
     }
 
     factory { requireContext() } bindName qualifier
