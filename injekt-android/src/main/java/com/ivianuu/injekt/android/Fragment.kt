@@ -128,23 +128,15 @@ private fun <T : Fragment> T.internalFragmentModule(qualifier: Any) = module {
     constant(this@internalFragmentModule).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(qualifier)
+        bindType<LifecycleOwner>()
+        bindType<ViewModelStoreOwner>()
+        bindType<SavedStateRegistryOwner>()
     }
 
     factory { requireContext() } bindName qualifier
     factory { resources } bindName qualifier
-
-    (this@internalFragmentModule as? LifecycleOwner)?.let {
-        constant<LifecycleOwner>(this@internalFragmentModule) bindName qualifier
-        factory { lifecycle } bindName qualifier
-    }
-
-    (this@internalFragmentModule as? ViewModelStoreOwner)?.let {
-        constant<ViewModelStoreOwner>(this@internalFragmentModule) bindName qualifier
-        factory { viewModelStore } bindName qualifier
-    }
-
-    (this@internalFragmentModule as? SavedStateRegistryOwner)?.let {
-        constant<SavedStateRegistryOwner>(this@internalFragmentModule) bindName qualifier
-        factory { savedStateRegistry } bindName qualifier
-    }
+    factory { lifecycle } bindName qualifier
+    factory { viewModelStore } bindName qualifier
+    factory { savedStateRegistry } bindName qualifier
+    factory { childFragmentManager } bindName qualifier
 }

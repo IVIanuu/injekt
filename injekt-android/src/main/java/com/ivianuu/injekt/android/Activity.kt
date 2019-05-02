@@ -97,4 +97,8 @@ fun <T : Activity> T.activityModule(): Module = module {
         constant<SavedStateRegistryOwner>(this@activityModule) bindName ForActivity
         factory { savedStateRegistry } bindName ForActivity
     }
+
+    (this@activityModule as? FragmentActivity)?.let {
+        factory { supportFragmentManager } bindName ForActivity
+    }
 }
