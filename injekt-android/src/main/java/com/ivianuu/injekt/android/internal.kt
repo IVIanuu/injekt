@@ -23,10 +23,10 @@ import com.ivianuu.injekt.component
 internal inline fun androidComponent(
     modules: Iterable<Module>,
     dependencies: Iterable<Component>,
-    module: () -> Module,
+    module: () -> Module?,
     dependency: () -> Component?
 ): Component {
-    val allModules = listOf(module()) + modules
+    val allModules = (module()?.let { listOf(it) } ?: emptyList()) + modules
     val allDependencies = (dependency()?.let { listOf(it) } ?: emptyList()) +
             dependencies
     return component(allModules, allDependencies)
