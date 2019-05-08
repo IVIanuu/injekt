@@ -44,7 +44,7 @@ class Component internal constructor(
     }
 
     /**
-     * Returns a instance of [T] matching the [type], [name] and [parameters]
+     * Returns the instance matching the [type] and [name]
      */
     fun <T> get(
         type: KClass<*>,
@@ -52,11 +52,22 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-
         val instance = findInstance<T>(key)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
-
         return instance.get(parameters)
+    }
+
+    /**
+     * Returns the instance matching the [type] and [name] or null
+     */
+    fun <T> getOrNull(
+        type: KClass<*>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): T? {
+        val key = Key(type, name)
+        val instance = findInstance<T>(key)
+        return instance?.get(parameters)
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
@@ -108,7 +119,7 @@ fun component(
 }
 
 /**
- * Returns a instance of [T] matching the [name] and [parameters]
+ * Returns the instance matching the [type] and [name]
  */
 inline fun <reified T> Component.get(
     name: Any? = null,
@@ -116,9 +127,25 @@ inline fun <reified T> Component.get(
 ): T = get(T::class, name, parameters)
 
 /**
- * Lazily returns a instance of [T] matching the [name] and [parameters]
+ * Returns the instance matching the [type] and [name] or null
+ */
+inline fun <reified T> Component.getOrNull(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): T? = getOrNull(T::class, name, parameters)
+
+/**
+ * Lazy version of [Component.get]
  */
 inline fun <reified T> Component.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(T::class, name, parameters) }
+
+/**
+ * Lazy version of [Component.getOrNull]
+ */
+inline fun <reified T> Component.injectOrNull(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { getOrNull<T>(T::class, name, parameters) }
