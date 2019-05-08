@@ -32,8 +32,20 @@ inline fun <reified T> InjektTrait.get(
     noinline parameters: ParametersDefinition? = null
 ): T = component.get(T::class, name, parameters)
 
+/** Calls trough [Component.get] */
+inline fun <reified T> InjektTrait.getOrNull(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): T? = component.getOrNull(T::class, name, parameters)
+
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(T::class, name, parameters) }
+
+/** Calls trough [Component.injectOrNull] */
+inline fun <reified T> InjektTrait.injectOrNull(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { component.getOrNull<T>(T::class, name, parameters) }
