@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 class Binding<T> internal constructor(
     val kind: Kind,
     val type: KClass<*>,
-    val name: Any? = null,
+    val name: Any?,
     val definition: Definition<T>
 ) {
 
