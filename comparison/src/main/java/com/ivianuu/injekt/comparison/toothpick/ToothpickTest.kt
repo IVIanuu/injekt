@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger2
+package com.ivianuu.injekt.comparison.toothpick
 
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
+import toothpick.Scope
+import toothpick.Toothpick
 import javax.inject.Inject
 
-object DaggerTest : InjectionTest {
-
-    override val name = "Dagger"
+object ToothpickTest : InjectionTest {
+    override val name: String
+        get() = "Toothpick"
 
     @set:Inject var dep: Fib8? = null
-    private var component: DaggerComponent? = null
+    private var scope: Scope? = null
 
     override fun moduleCreation() {
     }
 
     override fun setup() {
-        component = DaggerDaggerComponent.create()
+        scope = Toothpick.openScope(this)
     }
 
     override fun inject() {
-        component!!.inject(this)
+        Toothpick.inject(this, scope)
     }
 
     override fun shutdown() {
-        component = null
-        dep = null
+        Toothpick.closeScope(this)
     }
-
 }

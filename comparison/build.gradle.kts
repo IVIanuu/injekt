@@ -34,21 +34,14 @@ android {
 
 dependencies {
     implementation(Deps.androidxAppCompat)
-
     implementation(Deps.dagger)
     kapt(Deps.daggerCompiler)
-
     implementation(project(":injekt"))
-
     implementation(Deps.katana)
-
     implementation(Deps.kodein)
-
     implementation(Deps.koin)
-
     implementation(Deps.kotlinStdLib)
-
     implementation(Deps.kotlinStatistics)
-
-    testImplementation(Deps.junit)
+    implementation(Deps.toothpick)
+    kapt(Deps.toothpickCompiler)
 }

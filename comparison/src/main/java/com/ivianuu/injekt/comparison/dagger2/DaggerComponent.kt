@@ -18,7 +18,7 @@ package com.ivianuu.injekt.comparison.dagger2
 
 import dagger.Component
 
-@Component(modules = [DaggerModule::class])
+@Component
 interface DaggerComponent {
     fun inject(test: DaggerTest)
 }
