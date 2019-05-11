@@ -40,7 +40,7 @@ internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<
 }
 
 internal fun Component.getAllBindings(): List<Binding<*>> =
-    arrayListOf<Binding<*>>().also { collectBindings(it) }
+    mutableListOf<Binding<*>>().also { collectBindings(it) }
 
 internal fun Component.collectBindings(
     bindings: MutableList<Binding<*>>

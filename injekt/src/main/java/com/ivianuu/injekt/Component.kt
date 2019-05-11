@@ -91,8 +91,8 @@ fun component(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
-    val bindings = linkedMapOf<Key, Binding<*>>()
-    val instances = linkedMapOf<Key, Instance<*>>()
+    val bindings = mutableMapOf<Key, Binding<*>>()
+    val instances = mutableMapOf<Key, Instance<*>>()
 
     // todo clean up
 

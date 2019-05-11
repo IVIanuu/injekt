@@ -23,7 +23,7 @@ import com.ivianuu.injekt.getOrSet
  * Adds this binding into a map
  */
 infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
-    attributes.getOrSet(KEY_MAP_BINDINGS) { hashMapOf<Any, MapBinding<K, V>>() }
+    attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<Any, MapBinding<K, V>>() }
         .put(mapBinding.mapName, mapBinding)
     return this
 }

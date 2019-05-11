@@ -27,13 +27,13 @@ class Module internal constructor() {
      * All bindings of this module
      */
     val bindings: Map<Key, Binding<*>> get() = _bindings
-    private val _bindings = linkedMapOf<Key, Binding<*>>()
+    private val _bindings = mutableMapOf<Key, Binding<*>>()
 
     /**
      * The modules which are included in this one
      */
     val includes: Set<Module> get() = _includes
-    private val _includes = linkedSetOf<Module>()
+    private val _includes = mutableSetOf<Module>()
 
     /**
      * Adds the [binding]

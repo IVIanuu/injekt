@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Attributes for [Binding]s
  */
-class Attributes constructor(private val _entries: MutableMap<String, Any?> = linkedMapOf()) {
+class Attributes constructor(private val _entries: MutableMap<String, Any?> = mutableMapOf()) {
 
     /**
      * All entries
@@ -79,4 +79,4 @@ inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T =
  * Returns new [Attributes] which contains all [pairs]
  */
 fun attributesOf(vararg pairs: Pair<String, Any?>): Attributes =
-    Attributes(linkedMapOf(*pairs))
+    Attributes(mutableMapOf(*pairs))

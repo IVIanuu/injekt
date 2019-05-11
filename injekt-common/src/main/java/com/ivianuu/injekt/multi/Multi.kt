@@ -36,7 +36,7 @@ inline fun <reified T> Module.multi(
 
 private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    private val values = linkedMapOf<Int, T>()
+    private val values = mutableMapOf<Int, T>()
 
     override fun get(parameters: ParametersDefinition?): T {
         requireNotNull(parameters) { "Parameters cannot be null" }

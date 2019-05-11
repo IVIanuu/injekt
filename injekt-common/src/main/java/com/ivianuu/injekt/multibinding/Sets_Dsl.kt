@@ -24,7 +24,7 @@ import com.ivianuu.injekt.getOrSet
  */
 infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
     attributes.getOrSet(KEY_SET_BINDINGS) {
-        hashMapOf<SetName<V>, SetBinding<V>>()
+        mutableMapOf<SetName<V>, SetBinding<V>>()
     }[setBinding.setName] = setBinding
     return this
 }
