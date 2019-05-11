@@ -41,7 +41,7 @@ class AttributesTest {
     fun testGetIfNotSet() {
         val attrs = attributesOf()
         assertFalse(attrs.contains("key"))
-        assertTrue(attrs.get<String>("key") == null)
+        assertTrue(attrs.getOrNull<String>("key") == null)
     }
 
     @Test

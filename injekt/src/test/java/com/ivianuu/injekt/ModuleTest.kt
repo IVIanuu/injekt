@@ -28,8 +28,8 @@ class ModuleTest {
         assertTrue(module.bindings.values.contains(binding))
     }
 
-    @Test
-    fun testOverride() {
+    @Test(expected = IllegalStateException::class)
+    fun testDisallowsOverride() {
         val firstBinding = Binding(
             type = String::class,
             kind = FactoryKind,
@@ -42,12 +42,10 @@ class ModuleTest {
             definition = { "my_overridden_value" }
         )
 
-        val module = module {
+        module {
             bind(firstBinding)
             bind(overrideBinding)
         }
-
-        assertTrue(module.bindings[Key(String::class)] === overrideBinding)
     }
 
 }

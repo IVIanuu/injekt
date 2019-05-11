@@ -125,18 +125,39 @@ class ComponentTest {
         assertTrue(component.bindings.containsValue(binding))
     }
 
-    @Test
-    fun testOverride() {
-        val component = component(
+    @Test(expected = IllegalStateException::class)
+    fun testDisallowsOverride() {
+        val module1 = module {
+            factory { "my_value" }
+        }
+
+        val module2 = module {
+            factory { "my_overridden_value" }
+        }
+
+        component(
+            modules = listOf(module1, module2)
+        )
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testDisallowsNestedOverride() {
+        val rootComponent = component(
             modules = listOf(
                 module {
                     factory { "my_value" }
-                    single { "my_overridden_value" }
                 }
             )
         )
 
-        assertEquals("my_overridden_value", component.get<String>())
+        component(
+            dependencies = listOf(rootComponent),
+            modules = listOf(
+                module {
+                    factory { "my_overridden_value" }
+                }
+            )
+        )
     }
 
 }

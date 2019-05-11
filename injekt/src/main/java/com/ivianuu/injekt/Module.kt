@@ -39,6 +39,10 @@ class Module internal constructor() {
      * Adds the [binding]
      */
     fun bind(binding: Binding<*>) {
+        if (_bindings.contains(binding.key)) {
+            error("Cannot override bindings $binding")
+        }
+
         _bindings[binding.key] = binding
     }
 

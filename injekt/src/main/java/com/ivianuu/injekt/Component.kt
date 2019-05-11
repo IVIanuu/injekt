@@ -91,12 +91,20 @@ fun component(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
+    val dependencyBindings = dependencies
+        .flatMap { it.getAllBindings() }
+        .associateBy { it.key }
+
     val bindings = mutableMapOf<Key, Binding<*>>()
     val instances = mutableMapOf<Key, Instance<*>>()
 
     // todo clean up
 
     fun addBinding(binding: Binding<*>) {
+        if (bindings.contains(binding.key) || dependencyBindings.contains(binding.key)) {
+            error("Cannot override bindings $binding")
+        }
+
         val instance = binding.kind.createInstance(binding)
 
         bindings[binding.key] = binding
