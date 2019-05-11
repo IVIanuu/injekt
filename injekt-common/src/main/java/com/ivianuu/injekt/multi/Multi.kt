@@ -31,8 +31,9 @@ object MultiKind : Kind() {
  */
 inline fun <reified T> Module.multi(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(MultiKind, T::class, name, definition)
+): Binding<T> = bind(MultiKind, T::class, name, override, definition)
 
 private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

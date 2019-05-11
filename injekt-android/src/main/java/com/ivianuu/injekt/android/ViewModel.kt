@@ -28,9 +28,14 @@ import kotlin.reflect.KClass
 inline fun <reified T : ViewModel> Module.viewModel(
     name: Any? = null,
     viewModelStoreName: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> =
-    factory(name, ViewModelDefinition(T::class, name?.toString(), viewModelStoreName, definition))
+    factory(
+        name,
+        override,
+        ViewModelDefinition(T::class, name?.toString(), viewModelStoreName, definition)
+    )
 
 @PublishedApi
 internal class ViewModelDefinition<T : ViewModel>(

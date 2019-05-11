@@ -20,7 +20,6 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.bridge.bridge
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
@@ -47,9 +46,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 }
 
 val mainActivityModule = module {
-    single("dummy") { MainActivityDependency(get(), get()) }
-
-    bridge<MainActivityDependency>("dummy") bindType MainActivityDependency::class
+    single { MainActivityDependency(get(), get()) }
 }
 
 class MainActivityDependency(

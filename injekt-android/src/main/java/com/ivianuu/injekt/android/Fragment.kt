@@ -125,7 +125,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
 }
 
 private fun <T : Fragment> T.internalFragmentModule(qualifier: Any) = module {
-    constant(this@internalFragmentModule).apply {
+    constant(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(qualifier)
         bindType<LifecycleOwner>()
@@ -136,10 +136,10 @@ private fun <T : Fragment> T.internalFragmentModule(qualifier: Any) = module {
         bindAlias<SavedStateRegistryOwner>(qualifier)
     }
 
-    factory { requireContext() } bindName qualifier
-    factory { resources } bindName qualifier
-    factory { lifecycle } bindName qualifier
-    factory { viewModelStore } bindName qualifier
-    factory { savedStateRegistry } bindName qualifier
-    factory { childFragmentManager } bindName qualifier
+    factory(override = true) { requireContext() } bindName qualifier
+    factory(override = true) { resources } bindName qualifier
+    factory(override = true) { lifecycle } bindName qualifier
+    factory(override = true) { viewModelStore } bindName qualifier
+    factory(override = true) { savedStateRegistry } bindName qualifier
+    factory(override = true) { childFragmentManager } bindName qualifier
 }

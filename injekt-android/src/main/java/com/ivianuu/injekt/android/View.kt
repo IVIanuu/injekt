@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
 import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.*
@@ -131,11 +130,11 @@ fun <T : View> T.childViewModule(): Module = module {
 }
 
 private fun <T : View> T.internalViewModule(qualifier: Any) = module {
-    constant(this@internalViewModule).apply {
+    constant(this@internalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(qualifier)
     }
 
-    factory<Context> { context } bindName qualifier
-    factory { resources } bindName qualifier
+    factory(override = true) { context } bindName qualifier
+    factory(override = true) { resources } bindName qualifier
 }

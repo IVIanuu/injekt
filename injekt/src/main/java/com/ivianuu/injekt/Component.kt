@@ -101,8 +101,11 @@ fun component(
     // todo clean up
 
     fun addBinding(binding: Binding<*>) {
-        if (bindings.contains(binding.key) || dependencyBindings.contains(binding.key)) {
-            error("Cannot override bindings $binding")
+        if (!binding.override &&
+            (bindings.contains(binding.key)
+                    || dependencyBindings.contains(binding.key))
+        ) {
+            error("Already declared binding for ${binding.key}")
         }
 
         val instance = binding.kind.createInstance(binding)
@@ -111,6 +114,13 @@ fun component(
         instances[binding.key] = instance
 
         binding.additionalKeys.forEach {
+            if (!binding.override &&
+                (bindings.contains(it)
+                        || dependencyBindings.contains(it))
+            ) {
+                error("Already declared binding for $it")
+            }
+
             bindings[it] = binding
             instances[it] = instance
         }

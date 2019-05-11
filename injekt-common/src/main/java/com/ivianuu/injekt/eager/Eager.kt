@@ -31,8 +31,9 @@ object EagerKind : Kind() {
  */
 inline fun <reified T> Module.eager(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(EagerKind, T::class, name, definition)
+): Binding<T> = bind(EagerKind, T::class, name, override, definition)
 
 private object UNINITIALIZED
 

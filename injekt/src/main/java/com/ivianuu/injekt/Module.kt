@@ -39,11 +39,9 @@ class Module internal constructor() {
      * Adds the [binding]
      */
     fun bind(binding: Binding<*>) {
-        if (_bindings.contains(binding.key)) {
-            error("Cannot override bindings $binding")
+        if (_bindings.put(binding.key, binding) != null && !binding.override) {
+            error("Already declared binding for ${binding.key}")
         }
-
-        _bindings[binding.key] = binding
     }
 
     /**
@@ -69,8 +67,9 @@ fun module(block: (Module.() -> Unit)? = null): Module {
 inline fun <reified T> Module.bind(
     kind: Kind,
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(kind, T::class, name, definition)
+): Binding<T> = bind(kind, T::class, name, override, definition)
 
 /**
  * Adds a [Binding]
@@ -79,9 +78,10 @@ fun <T> Module.bind(
     kind: Kind,
     type: KClass<*>,
     name: Any? = null,
+    override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> {
-    val binding = binding(kind, type, name, definition)
+    val binding = binding(kind, type, name, override, definition)
     bind(binding)
     return binding
 }

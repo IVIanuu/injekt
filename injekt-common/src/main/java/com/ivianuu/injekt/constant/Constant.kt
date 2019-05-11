@@ -33,8 +33,9 @@ object ConstantKind : Kind() {
 fun <T : Any> Module.constant(
     instance: T,
     type: KClass<*> = instance::class,
-    name: Any? = null
-): Binding<T> = bind(ConstantKind, type, name) { instance }
+    name: Any? = null,
+    override: Boolean = false
+): Binding<T> = bind(ConstantKind, type, name, override) { instance }
 
 private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
     override fun get(parameters: ParametersDefinition?): T {

@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android
 
 import android.app.Service
 import android.content.Context
-import android.content.res.Resources
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
@@ -67,11 +66,11 @@ fun Service.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Service> T.serviceModule(): Module = module {
-    constant(this@serviceModule).apply {
+    constant(this@serviceModule, override = true).apply {
         bindType<Service>()
         bindAlias<Context>(ForService)
         bindType<Context>()
     }
 
-    factory<Resources> { resources } bindName ForService
+    factory(override = true) { resources } bindName ForService
 }

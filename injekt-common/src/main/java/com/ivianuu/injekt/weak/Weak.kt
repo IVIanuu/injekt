@@ -32,8 +32,9 @@ object WeakKind : Kind() {
  */
 inline fun <reified T> Module.weak(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(WeakKind, T::class, name, definition)
+): Binding<T> = bind(WeakKind, T::class, name, override, definition)
 
 private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

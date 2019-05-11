@@ -125,8 +125,47 @@ class ComponentTest {
         assertTrue(component.bindings.containsValue(binding))
     }
 
+    @Test
+    fun testExplicitOverride() {
+        val module1 = module {
+            factory { "my_value" }
+        }
+
+        val module2 = module {
+            factory(override = true) { "my_overridden_value" }
+        }
+
+        val component = component(
+            modules = listOf(module1, module2)
+        )
+
+        assertEquals("my_overridden_value", component.get<String>())
+    }
+
+    @Test
+    fun testExplicitOverrideInNestedComponents() {
+        val parentComponent = component(
+            modules = listOf(
+                module {
+                    factory { "my_value" }
+                }
+            )
+        )
+
+        val childComponent = component(
+            modules = listOf(
+                module {
+                    factory(override = true) { "my_overridden_value" }
+                }
+            )
+        )
+
+        assertEquals("my_value", parentComponent.get<String>())
+        assertEquals("my_overridden_value", childComponent.get<String>())
+    }
+
     @Test(expected = IllegalStateException::class)
-    fun testDisallowsOverride() {
+    fun testDisallowsImplicitOverride() {
         val module1 = module {
             factory { "my_value" }
         }
@@ -141,7 +180,7 @@ class ComponentTest {
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testDisallowsNestedOverride() {
+    fun testDisallowsNestedImplicitOverride() {
         val rootComponent = component(
             modules = listOf(
                 module {

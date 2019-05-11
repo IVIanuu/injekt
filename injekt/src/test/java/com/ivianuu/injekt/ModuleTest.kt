@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -28,16 +29,35 @@ class ModuleTest {
         assertTrue(module.bindings.values.contains(binding))
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun testDisallowsOverride() {
-        val firstBinding = Binding(
-            type = String::class,
+    @Test
+    fun testAllowsExplicitOverride() {
+        val firstBinding = binding(
             kind = FactoryKind,
             definition = { "my_value" }
         )
 
-        val overrideBinding = Binding(
-            type = String::class,
+        val overrideBinding = binding(
+            kind = SingleKind,
+            override = true,
+            definition = { "my_overridden_value" }
+        )
+
+        val module = module {
+            bind(firstBinding)
+            bind(overrideBinding)
+        }
+
+        assertEquals(module.bindings[Key(String::class)], overrideBinding)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testDisallowsImplicitOverride() {
+        val firstBinding = binding(
+            kind = FactoryKind,
+            definition = { "my_value" }
+        )
+
+        val overrideBinding = binding(
             kind = SingleKind,
             definition = { "my_overridden_value" }
         )

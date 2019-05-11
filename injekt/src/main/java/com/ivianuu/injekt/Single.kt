@@ -29,8 +29,9 @@ object SingleKind : Kind() {
  */
 inline fun <reified T> Module.single(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(SingleKind, T::class, name, definition)
+): Binding<T> = bind(SingleKind, T::class, name, override, definition)
 
 private object UNINITIALIZED
 

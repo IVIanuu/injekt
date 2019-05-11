@@ -29,8 +29,9 @@ object FactoryKind : Kind() {
  */
 inline fun <reified T> Module.factory(
     name: Any? = null,
+    override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(FactoryKind, T::class, name, definition)
+): Binding<T> = bind(FactoryKind, T::class, name, override, definition)
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

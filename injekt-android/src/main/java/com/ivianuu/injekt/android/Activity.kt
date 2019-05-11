@@ -71,7 +71,7 @@ fun Activity.getApplicationComponent(): Component =
  * Returns a [Module] with convenient bindings
  */
 fun <T : Activity> T.activityModule(): Module = module {
-    constant(this@activityModule).apply {
+    constant(this@activityModule, override = true).apply {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
         bindType<Context>()
@@ -81,20 +81,20 @@ fun <T : Activity> T.activityModule(): Module = module {
         (this@activityModule as? AppCompatActivity)?.let { bindType<AppCompatActivity>() }
     }
 
-    factory { resources } bindName ForActivity
+    factory(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        constant<LifecycleOwner>(this@activityModule) bindName ForActivity
+        constant(this@activityModule, type = LifecycleOwner::class) bindName ForActivity
         factory { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        constant<ViewModelStoreOwner>(this@activityModule) bindName ForActivity
+        constant(this@activityModule, type = ViewModelStoreOwner::class) bindName ForActivity
         factory { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        constant<SavedStateRegistryOwner>(this@activityModule) bindName ForActivity
+        constant(this@activityModule, type = SavedStateRegistryOwner::class) bindName ForActivity
         factory { savedStateRegistry } bindName ForActivity
     }
 
