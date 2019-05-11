@@ -41,6 +41,7 @@ fun <T : Fragment> T.fragmentComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { fragmentModule() },
     { getClosestComponentOrNull() }
@@ -53,6 +54,7 @@ fun <T : Fragment> T.childFragmentComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { childFragmentModule() },
     { getClosestComponentOrNull() }

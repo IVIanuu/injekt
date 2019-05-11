@@ -81,7 +81,7 @@ fun <T> Module.bind(
     name: Any? = null,
     definition: Definition<T>
 ): Binding<T> {
-    val binding = binding(kind, type, name, definition)
+    val binding = binding(kind, type, name, null, definition)
     bind(binding)
     return binding
 }

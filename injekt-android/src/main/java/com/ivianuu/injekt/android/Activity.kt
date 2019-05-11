@@ -39,6 +39,7 @@ fun <T : Activity> T.activityComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { activityModule() },
     { getClosestComponentOrNull() }

@@ -22,7 +22,6 @@ import android.content.res.Resources
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-
 /**
  * Service name
  */
@@ -35,6 +34,7 @@ fun <T : Service> T.serviceComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { serviceModule() },
     { getClosestComponentOrNull() }

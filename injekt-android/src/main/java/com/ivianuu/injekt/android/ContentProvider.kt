@@ -32,6 +32,7 @@ fun <T : ContentProvider> T.contentProviderComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { contentProviderModule() },
     { getClosestComponentOrNull() }

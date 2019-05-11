@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.component
+import kotlin.reflect.KClass
 
-internal inline fun androidComponent(
-    scope: Any?,
-    modules: Iterable<Module>,
-    dependencies: Iterable<Component>,
-    module: () -> Module?,
-    dependency: () -> Component?
-): Component {
-    val allModules = (module()?.let { listOf(it) } ?: emptyList()) + modules
-    val allDependencies = (dependency()?.let { listOf(it) } ?: emptyList()) +
-            dependencies
-    return component(scope, allModules, allDependencies)
-}
+// todo annotation class Bind(val kind: KClass<out Kind>, val scope: KClass<*> = Nothing::class)
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Name(val name: KClass<*>)
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Param
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Raw

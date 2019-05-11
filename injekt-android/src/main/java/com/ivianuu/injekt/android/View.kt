@@ -39,6 +39,7 @@ fun <T : View> T.viewComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { viewModule() },
     { getClosestComponentOrNull() }
@@ -51,6 +52,7 @@ fun <T : View> T.childViewComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { childViewModule() },
     { getClosestComponentOrNull() }

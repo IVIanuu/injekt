@@ -34,6 +34,7 @@ fun <T : BroadcastReceiver> T.receiverComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
+    null,
     modules, dependencies,
     { receiverModule() },
     { getClosestComponentOrNull(context) }

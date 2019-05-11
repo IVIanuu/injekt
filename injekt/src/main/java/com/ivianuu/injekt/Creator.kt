@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.component
-
-internal inline fun androidComponent(
-    scope: Any?,
-    modules: Iterable<Module>,
-    dependencies: Iterable<Component>,
-    module: () -> Module?,
-    dependency: () -> Component?
-): Component {
-    val allModules = (module()?.let { listOf(it) } ?: emptyList()) + modules
-    val allDependencies = (dependency()?.let { listOf(it) } ?: emptyList()) +
-            dependencies
-    return component(scope, allModules, allDependencies)
+/**
+ * @author Manuel Wrage (IVIanuu)
+ */
+interface Creator<T> {
+    fun create(): Binding<T>
 }
