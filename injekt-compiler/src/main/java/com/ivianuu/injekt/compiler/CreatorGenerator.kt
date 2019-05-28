@@ -86,8 +86,8 @@ class CreatorGenerator(private val descriptor: BindingDescriptor) {
                         when (param.kind) {
                             ParamDescriptor.Kind.VALUE -> {
                                 when {
-                                    param.qualifier != null -> {
-                                        addCode("get(%T)", param.qualifier)
+                                    param.name != null -> {
+                                        addCode("get(%T)", param.name)
                                     }
                                     else -> {
                                         addCode("get()")
@@ -96,8 +96,8 @@ class CreatorGenerator(private val descriptor: BindingDescriptor) {
                             }
                             ParamDescriptor.Kind.LAZY -> {
                                 when {
-                                    param.qualifier != null -> {
-                                        addCode("inject(%T)", param.qualifier)
+                                    param.name != null -> {
+                                        addCode("inject(%T)", param.name)
                                     }
                                     else -> {
                                         addCode("inject()")
@@ -106,8 +106,8 @@ class CreatorGenerator(private val descriptor: BindingDescriptor) {
                             }
                             ParamDescriptor.Kind.PROVIDER -> {
                                 when {
-                                    param.qualifier != null -> {
-                                        addCode("getProvider(%T)", param.qualifier)
+                                    param.name != null -> {
+                                        addCode("getProvider(%T)", param.name)
                                     }
                                     else -> {
                                         addCode("getProvider()")

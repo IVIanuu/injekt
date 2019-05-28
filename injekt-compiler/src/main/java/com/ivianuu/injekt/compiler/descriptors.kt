@@ -21,7 +21,7 @@ data class BindingDescriptor(
 data class ParamDescriptor(
     val kind: Kind,
     val paramName: String,
-    val qualifier: ClassName?,
+    val name: ClassName?,
     val paramIndex: Int
 ) {
     enum class Kind { VALUE, LAZY, PROVIDER }

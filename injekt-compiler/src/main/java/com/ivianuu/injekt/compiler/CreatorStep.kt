@@ -39,7 +39,6 @@ class CreatorStep : ProcessingStep() {
         Factory::class,
         Name::class,
         Param::class,
-        Qualifier::class,
         Raw::class,
         Single::class
     )
@@ -122,18 +121,18 @@ class CreatorStep : ProcessingStep() {
                         -1
                     }
 
-                    val qualifierAnnotation =
-                        param.getAnnotationMirrorOrNull<Qualifier>()
+                    val nameAnnotation =
+                        param.getAnnotationMirrorOrNull<Name>()
 
-                    val qualifierType = qualifierAnnotation?.getAsType("qualifier")
+                    val nameType = nameAnnotation?.getAsType("name")
 
-                    val qualifier = qualifierType
+                    val name = nameType
                         ?.let { typeUtils.asElement(it) }
                         ?.let {
                             if (!it.isObject) {
                                 messager.printMessage(
                                     Diagnostic.Kind.ERROR,
-                                    "qualifier must be an object", element
+                                    "name must be an object", element
                                 )
                                 return@createBindingDescriptor null
                             }
@@ -141,10 +140,10 @@ class CreatorStep : ProcessingStep() {
                             it.asType().asTypeName() as ClassName
                         }
 
-                    if (paramIndex != -1 && qualifier != null) {
+                    if (paramIndex != -1 && name != null) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Only one of @Param or @Qualifier can be annotated per parameter",
+                            "Only one of @Param or @Name can be annotated per parameter",
                             param
                         )
                         return@createBindingDescriptor null
@@ -172,7 +171,7 @@ class CreatorStep : ProcessingStep() {
                     ParamDescriptor(
                         paramKind,
                         paramName,
-                        qualifier,
+                        name,
                         paramIndex
                     )
                 }
