@@ -66,4 +66,5 @@ class PrintLogger : Logger {
     override fun error(msg: String) {
         println("[ERROR] $INJEKT_TAG $msg")
     }
+
 }

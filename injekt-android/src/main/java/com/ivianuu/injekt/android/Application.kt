@@ -21,6 +21,8 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
+object ApplicationScope
+
 /**
  * Application name
  */
@@ -35,7 +37,8 @@ fun <T : Application> T.applicationComponent(
 ): Component = androidComponent(
     modules, dependencies,
     { applicationModule() },
-    { null }
+    { null },
+    scope = ApplicationScope
 )
 
 /**

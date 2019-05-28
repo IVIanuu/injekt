@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.util
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Creator
-import com.ivianuu.injekt.FactoryKind
-import com.ivianuu.injekt.binding
-
-class TestDep1
-
-class TestDep1__Creator : Creator<TestDep1> {
-    override fun create(): Binding<TestDep1> = binding(
-        kind = FactoryKind, definition = { TestDep1() }
-    )
+/**
+ * Used to link generated code
+ */
+interface Creator<T> {
+    fun create(): Binding<T>
 }
-
-class TestDep2(val dep1: TestDep1)
-class TestDep3(val dep1: TestDep1, val dep2: TestDep2)

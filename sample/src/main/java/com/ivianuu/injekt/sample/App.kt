@@ -42,7 +42,13 @@ class App : Application(), InjektTrait {
 }
 
 val appModule = module {
-    single { AppDependency(get()) }
+    // single { AppDependency(get()) }
 }
 
 class AppDependency(val app: App)
+
+class AppDependency__Creator : Creator<AppDependency> {
+    override fun create(): Binding<AppDependency> = binding(
+        kind = SingleKind, definition = { AppDependency(get()) }
+    )
+}

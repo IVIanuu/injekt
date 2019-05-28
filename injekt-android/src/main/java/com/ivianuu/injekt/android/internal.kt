@@ -22,6 +22,7 @@ import com.ivianuu.injekt.component
 
 @PublishedApi
 internal inline fun androidComponent(
+    scope: Any? = null,
     modules: Iterable<Module>,
     dependencies: Iterable<Component>,
     module: () -> Module?,
@@ -30,5 +31,5 @@ internal inline fun androidComponent(
     val allModules = (module()?.let { listOf(it) } ?: emptyList()) + modules
     val allDependencies = (dependency()?.let { listOf(it) } ?: emptyList()) +
             dependencies
-    return component(allModules, allDependencies)
+    return component(scope, allModules, allDependencies)
 }
