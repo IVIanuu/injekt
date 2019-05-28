@@ -19,6 +19,8 @@ plugins {
     id("kotlin-kapt")
 }
 
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+
 android {
     compileSdkVersion(Build.compileSdk)
 
@@ -37,6 +39,8 @@ dependencies {
     implementation(Deps.dagger)
     kapt(Deps.daggerCompiler)
     implementation(project(":injekt"))
+    implementation(project(":injekt-common"))
+    kapt(project(":injekt-compiler"))
     implementation(Deps.katana)
     implementation(Deps.kodein)
     implementation(Deps.koin)

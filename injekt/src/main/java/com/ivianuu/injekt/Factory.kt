@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Kind for factory instances
  */
@@ -32,6 +34,9 @@ inline fun <reified T> Module.factory(
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = bind(FactoryKind, T::class, name, override, definition)
+
+@Target(AnnotationTarget.CLASS)
+annotation class Factory(val scope: KClass<*> = Nothing::class)
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

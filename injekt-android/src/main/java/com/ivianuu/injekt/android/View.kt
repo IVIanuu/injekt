@@ -22,6 +22,16 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
 /**
+ * View scope
+ */
+object ViewScope
+
+/**
+ * Child view scope
+ */
+object ChildViewScope
+
+/**
  * View name
  */
 object ForView
@@ -35,10 +45,11 @@ object ForChildView
  * Returns a [Component] with convenient configurations
  */
 fun <T : View> T.viewComponent(
+    scope: Any? = ViewScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    modules, dependencies,
+    scope, modules, dependencies,
     { viewModule() },
     { getClosestComponentOrNull() }
 )
@@ -47,10 +58,11 @@ fun <T : View> T.viewComponent(
  * Returns a [Component] with convenient configurations
  */
 fun <T : View> T.childViewComponent(
+    scope: Any? = ChildViewScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    modules, dependencies,
+    scope, modules, dependencies,
     { childViewModule() },
     { getClosestComponentOrNull() }
 )

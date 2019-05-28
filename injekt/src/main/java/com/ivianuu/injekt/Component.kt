@@ -22,8 +22,9 @@ import kotlin.reflect.KClass
  * The actual dependency container which provides bindings
  */
 class Component internal constructor(
+    val scope: Any?,
     val bindings: Map<Key, Binding<*>>,
-    val instances: Map<Key, Instance<*>>,
+    val instances: MutableMap<Key, Instance<*>>,
     val dependencies: Iterable<Component>
 ) {
 
@@ -52,7 +53,7 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        val instance = findInstance<T>(key)
+        val instance = findInstance<T>(key, true)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
         return instance.get(parameters)
     }
@@ -66,28 +67,56 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T? {
         val key = Key(type, name)
-        val instance = findInstance<T>(key)
+        val instance = findInstance<T>(key, true)
         return instance?.get(parameters)
     }
 
-    private fun <T> findInstance(key: Key): Instance<T>? {
+    private fun <T> findInstance(key: Key, includeGlobalPool: Boolean): Instance<T>? {
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
         for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key)
+            instance = dependency.findInstance<T>(key, false)
             if (instance != null) return instance
+        }
+
+        if (includeGlobalPool) {
+            val binding = GlobalPool.get<T>(key)
+            if (binding != null) {
+                val component = findComponentForScope(scope)
+                    ?: error("Couldn't find component for $scope")
+                return component.addInstance(binding)
+            }
         }
 
         return null
     }
 
+    private fun <T> addInstance(binding: Binding<T>): Instance<T> {
+        val instance = binding.kind.createInstance(binding)
+        instances[binding.key] = instance
+        instance.context = context
+        instance.attached()
+        return instance
+    }
+
+    private fun findComponentForScope(scope: Any?): Component? {
+        if (scope == null) return this
+        if (this.scope == scope) return this
+        for (dependency in dependencies) {
+            dependency.findComponentForScope(scope)
+                ?.let { return@findComponentForScope it }
+        }
+
+        return null
+    }
 }
 
 /**
  * Returns a new [Component] composed by all of [modules] and [dependencies]
  */
 fun component(
+    scope: Any? = null,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
@@ -133,7 +162,7 @@ fun component(
 
     modules.forEach { addModule(it) }
 
-    return Component(bindings, instances, dependencies)
+    return Component(scope, bindings, instances, dependencies)
 }
 
 /**

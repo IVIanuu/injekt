@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
-}
+package com.ivianuu.injekt.compiler
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+import com.google.auto.service.AutoService
+import com.ivianuu.processingx.steps.ProcessingStep
+import com.ivianuu.processingx.steps.StepProcessor
+import javax.annotation.processing.Processor
 
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
+@AutoService(Processor::class)
+class InjektProcessor : StepProcessor() {
+
+    override fun initSteps(): Set<ProcessingStep> =
+        setOf(CreatorStep())
+
 }
