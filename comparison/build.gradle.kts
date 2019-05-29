@@ -40,7 +40,6 @@ dependencies {
     kapt(Deps.daggerCompiler)
     implementation(project(":injekt"))
     implementation(project(":injekt-common"))
-    kapt(project(":injekt-compiler"))
     implementation(Deps.katana)
     implementation(Deps.kodein)
     implementation(Deps.koin)

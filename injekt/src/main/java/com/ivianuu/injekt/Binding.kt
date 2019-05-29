@@ -25,7 +25,6 @@ class Binding<T> internal constructor(
     val kind: Kind,
     val type: KClass<*>,
     val name: Any?,
-    val scope: Any?,
     val override: Boolean,
     val definition: Definition<T>
 ) {
@@ -54,10 +53,9 @@ typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
 inline fun <reified T> binding(
     kind: Kind,
     name: Any? = null,
-    scope: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = binding(kind, T::class, name, scope, override, definition)
+): Binding<T> = binding(kind, T::class, name, override, definition)
 
 /**
  * Returns a new [Binding]
@@ -66,10 +64,9 @@ fun <T> binding(
     kind: Kind,
     type: KClass<*>,
     name: Any? = null,
-    scope: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = Binding(kind, type, name, scope, override, definition)
+): Binding<T> = Binding(kind, type, name, override, definition)
 
 infix fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
     attributes.entries.forEach { this.attributes[it.key] = it.value }

@@ -46,7 +46,6 @@ object Versions {
     const val kodein = "6.1.0"
     const val koin = "2.0.0-rc-2"
     const val mavenGradle = "2.1"
-    const val processingX = "0.0.1-dev-2"
     const val toothpick = "2.1.0"
 }
 
@@ -76,8 +75,6 @@ object Deps {
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
-
-    const val processingX = "com.ivianuu.processingx:processingx:${Versions.processingX}"
 
     const val toothpick =
         "com.github.stephanenicolas.toothpick:toothpick-runtime:${Versions.toothpick}"

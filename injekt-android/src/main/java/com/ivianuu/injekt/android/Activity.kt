@@ -28,11 +28,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
 /**
- * Activity scope
- */
-object ActivityScope
-
-/**
  * Activity name
  */
 object ForActivity
@@ -41,11 +36,10 @@ object ForActivity
  * Returns a [Component] with convenient configurations
  */
 fun <T : Activity> T.activityComponent(
-    scope: Any? = ActivityScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    scope, modules, dependencies,
+    modules, dependencies,
     { activityModule() },
     { getClosestComponentOrNull() }
 )
