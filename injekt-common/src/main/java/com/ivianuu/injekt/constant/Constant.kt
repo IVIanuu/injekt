@@ -37,9 +37,14 @@ fun <T : Any> Module.constant(
     override: Boolean = false
 ): Binding<T> = bind(ConstantKind, type, name, override) { instance }
 
+private val noContext = DefinitionContext(component())
+
 private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+    private val instance by lazy(LazyThreadSafetyMode.NONE) {
+        binding.definition(noContext, emptyParameters())
+    }
     override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Return constant $binding")
-        return create(attachedContext, parameters)
+        return instance
     }
 }
