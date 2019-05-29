@@ -14,22 +14,32 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.comparison.injektcodegen
 
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.InjectionTest
 import com.ivianuu.injekt.component
+import com.ivianuu.injekt.get
 
-@PublishedApi
-internal inline fun androidComponent(
-    scope: Any? = null,
-    modules: Iterable<Module>,
-    dependencies: Iterable<Component>,
-    module: () -> Module?,
-    dependency: () -> Component?
-): Component {
-    val allModules = (module()?.let { listOf(it) } ?: emptyList()) + modules
-    val allDependencies = (dependency()?.let { listOf(it) } ?: emptyList()) +
-            dependencies
-    return component(scope, allModules, allDependencies)
+object InjektCodegenTest : InjectionTest {
+    override val name = "InjektCodegen"
+
+    private var component: Component? = null
+
+    override fun moduleCreation() {
+    }
+
+    override fun setup() {
+        component = component()
+    }
+
+    override fun inject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun shutdown() {
+        component = null
+    }
+
 }

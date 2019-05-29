@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
-}
+package com.ivianuu.injekt.compiler
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
+import javax.lang.model.element.Element
 
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
-}
+val Element.isObject: Boolean
+    get() {
+        return Flags.CLASS_KIND.get(
+            (kotlinMetadata as? KotlinClassMetadata)
+                ?.data?.classProto?.flags ?: 0
+        ) == ProtoBuf.Class.Kind.OBJECT
+    }

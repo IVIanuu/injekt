@@ -19,6 +19,7 @@ package com.ivianuu.injekt.sample
 import android.app.Application
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.AndroidLogger
+import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.applicationComponent
 
 /**
@@ -26,9 +27,7 @@ import com.ivianuu.injekt.android.applicationComponent
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy {
-        applicationComponent(modules = listOf(appModule))
-    }
+    override val component by lazy { applicationComponent() }
 
     private val appDependency by inject<AppDependency>()
 
@@ -41,8 +40,5 @@ class App : Application(), InjektTrait {
     }
 }
 
-val appModule = module {
-    single { AppDependency(get()) }
-}
-
+@Single(scope = ApplicationScope::class)
 class AppDependency(val app: App)

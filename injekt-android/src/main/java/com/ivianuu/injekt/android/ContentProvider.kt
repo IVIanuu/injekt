@@ -21,6 +21,11 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
 /**
+ * Content provider scope
+ */
+object ContentProviderScope
+
+/**
  * Content provider name
  */
 object ForContentProvider
@@ -29,10 +34,11 @@ object ForContentProvider
  * Returns a [Component] with convenient configurations
  */
 fun <T : ContentProvider> T.contentProviderComponent(
+    scope: Any? = ContentProviderScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    modules, dependencies,
+    scope, modules, dependencies,
     { contentProviderModule() },
     { getClosestComponentOrNull() }
 )

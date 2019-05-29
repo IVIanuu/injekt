@@ -23,6 +23,15 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
+/**
+ * Fragment scope
+ */
+object FragmentScope
+
+/**
+ * Child fragment scope
+ */
+object ChildFragmentScope
 
 /**
  * Fragment name
@@ -38,10 +47,11 @@ object ForChildFragment
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.fragmentComponent(
+    scope: Any? = FragmentScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    modules, dependencies,
+    scope, modules, dependencies,
     { fragmentModule() },
     { getClosestComponentOrNull() }
 )
@@ -50,10 +60,11 @@ fun <T : Fragment> T.fragmentComponent(
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.childFragmentComponent(
+    scope: Any? = ChildFragmentScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    modules, dependencies,
+    scope, modules, dependencies,
     { childFragmentModule() },
     { getClosestComponentOrNull() }
 )

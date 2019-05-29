@@ -21,17 +21,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.android.FragmentScope
 import com.ivianuu.injekt.android.fragmentComponent
+import com.ivianuu.injekt.inject
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
 class ParentFragment : Fragment(), InjektTrait {
 
-    override val component by lazy {
-        fragmentComponent(modules = listOf(parentFragmentModule))
-    }
+    override val component by lazy { fragmentComponent() }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -60,10 +61,7 @@ class ParentFragment : Fragment(), InjektTrait {
     }
 }
 
-val parentFragmentModule = module {
-    single { ParentFragmentDependency(get(), get(), get()) }
-}
-
+@Single(scope = FragmentScope::class)
 class ParentFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

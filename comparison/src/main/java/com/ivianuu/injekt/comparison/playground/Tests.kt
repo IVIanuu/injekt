@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
-}
+package com.ivianuu.injekt.comparison.playground
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Param
 
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
-}
+object MyName
+
+@Factory
+class TestDep(
+    @Param val myValue: TestDep,
+    @Name(MyName::class) val myNamedValue: TestDep
+)

@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
-}
+package com.ivianuu.injekt
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
+import kotlin.reflect.KClass
 
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
-}
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Param
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Name(val name: KClass<*>)
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Raw
