@@ -45,7 +45,7 @@ annotation class Factory(val scope: KClass<*> = Nothing::class)
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private val unbounded: Boolean by lazy(LazyThreadSafetyMode.NONE) {
-        binding.attributes[KEY_UNBOUNDED] ?: false
+        binding.attributes.getOrNull<Boolean>(KEY_UNBOUNDED) ?: false
     }
 
     override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
