@@ -28,7 +28,7 @@ object WeakKind : Kind() {
 }
 
 /**
- * Adds a [Binding] which will be created once per [Component]
+ * Adds a [Binding] which will be cached by a [WeakReference]
  */
 inline fun <reified T> Module.weak(
     name: Any? = null,
