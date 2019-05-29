@@ -41,7 +41,7 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
     private var _value: Any? = UNINITIALIZED
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
             InjektPlugins.logger?.info("Return existing eager instance $binding")
@@ -56,7 +56,7 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
             }
 
             InjektPlugins.logger?.info("Initialize eager instance $binding")
-            value = create(parameters)
+            value = create(attachedContext, parameters)
             _value = value
             return@get value as T
         }
@@ -64,6 +64,6 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
     override fun attached() {
         super.attached()
-        get(null)
+        get(attachedContext, null)
     }
 }

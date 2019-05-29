@@ -30,14 +30,22 @@ object FactoryKind : Kind() {
 inline fun <reified T> Module.factory(
     name: Any? = null,
     override: Boolean = false,
+    unbounded: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = bind(FactoryKind, T::class, name, override, definition)
+    .also { it.attribute(KEY_UNBOUNDED, unbounded) }
+
+const val KEY_UNBOUNDED = "unbounded"
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    override fun get(parameters: ParametersDefinition?): T {
+    private val unbounded: Boolean by lazy(LazyThreadSafetyMode.NONE) {
+        binding.attributes[KEY_UNBOUNDED] ?: false
+    }
+
+    override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Create instance $binding")
-        return create(parameters)
+        return create(if (unbounded) requestingContext else attachedContext, parameters)
     }
 
 }

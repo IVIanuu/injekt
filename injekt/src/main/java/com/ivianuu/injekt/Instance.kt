@@ -24,7 +24,7 @@ abstract class Instance<T> {
     /**
      * Context of this instance
      */
-    lateinit var context: DefinitionContext
+    lateinit var attachedContext: DefinitionContext
         internal set
 
     /**
@@ -35,12 +35,18 @@ abstract class Instance<T> {
     /**
      * Returns the value for this instance
      */
-    abstract fun get(parameters: ParametersDefinition? = null): T
+    abstract fun get(
+        requestingContext: DefinitionContext,
+        parameters: ParametersDefinition? = null
+    ): T
 
     /**
      * Creates the value for this instance
      */
-    protected fun create(parameters: ParametersDefinition?): T {
+    protected fun create(
+        context: DefinitionContext,
+        parameters: ParametersDefinition?
+    ): T {
         return try {
             binding.definition.invoke(
                 context,

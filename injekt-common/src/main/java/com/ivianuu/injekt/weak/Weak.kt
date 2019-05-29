@@ -40,7 +40,7 @@ private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() 
 
     private var _value: WeakReference<T>? = null
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
         val value = _value?.get()
 
         return if (value != null) {
@@ -48,7 +48,7 @@ private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() 
             value
         } else {
             InjektPlugins.logger?.info("Create weak instance $binding")
-            create(parameters).also { _value = WeakReference(it) }
+            create(attachedContext, parameters).also { _value = WeakReference(it) }
         }
     }
 

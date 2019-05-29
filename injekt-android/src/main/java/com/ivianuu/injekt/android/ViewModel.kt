@@ -34,6 +34,7 @@ inline fun <reified T : ViewModel> Module.viewModel(
     factory(
         name,
         override,
+        false,
         ViewModelDefinition(T::class, name?.toString(), viewModelStoreName, definition)
     )
 

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.util.TestDep1
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
@@ -36,6 +37,32 @@ class FactoryTest {
         val value2 = component.get<TestDep1>()
 
         assertFalse(value1 === value2)
+    }
+
+    @Test
+    fun testContextUsage() {
+        lateinit var rootComponent: Component
+        lateinit var nestedComponent: Component
+
+        rootComponent = component(
+            modules = listOf(
+                module {
+                    factory("bound", unbounded = false) {
+                        assertEquals(rootComponent, component)
+                        "bound"
+                    }
+                    factory("unbounded", unbounded = true) {
+                        assertEquals(nestedComponent, component)
+                        "unbounded"
+                    }
+                }
+            )
+        )
+
+        nestedComponent = component(dependencies = listOf(rootComponent))
+
+        nestedComponent.get<String>("bound")
+        nestedComponent.get<String>("unbounded")
     }
 
 }

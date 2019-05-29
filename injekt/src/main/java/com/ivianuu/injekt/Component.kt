@@ -39,7 +39,7 @@ class Component internal constructor(
             }
         }
         instances
-            .onEach { it.value.context = context }
+            .onEach { it.value.attachedContext = context }
             .forEach { it.value.attached() }
     }
 
@@ -54,7 +54,7 @@ class Component internal constructor(
         val key = Key(type, name)
         val instance = findInstance<T>(key)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
-        return instance.get(parameters)
+        return instance.get(context, parameters)
     }
 
     /**
@@ -67,7 +67,7 @@ class Component internal constructor(
     ): T? {
         val key = Key(type, name)
         val instance = findInstance<T>(key)
-        return instance?.get(parameters)
+        return instance?.get(context, parameters)
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
