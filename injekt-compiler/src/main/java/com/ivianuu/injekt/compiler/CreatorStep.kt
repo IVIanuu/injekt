@@ -24,7 +24,6 @@ import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import me.eugeniomarletti.kotlin.metadata.shadow.javax.inject.Qualifier
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -194,15 +193,11 @@ class CreatorStep : ProcessingStep() {
 
     private fun validateParameterAnnotations(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>) {
         elementsByAnnotation[Name::class].validateHasBuilderAnnotation {
-            "@Named can only used in a class which annotated with @Factory or @Single"
+            "@Name can only used in a class which annotated with @Factory or @Single"
         }
 
         elementsByAnnotation[Param::class].validateHasBuilderAnnotation {
             "@Param can only used in a class which annotated with @Factory or @Single"
-        }
-
-        elementsByAnnotation[Qualifier::class].validateHasBuilderAnnotation {
-            "@Qualified can only used in a class which annotated with @Factory or @Single"
         }
 
         elementsByAnnotation[Raw::class].validateHasBuilderAnnotation {
