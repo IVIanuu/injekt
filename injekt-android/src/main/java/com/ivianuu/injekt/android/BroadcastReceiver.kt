@@ -35,8 +35,8 @@ object ForReceiver
  * Returns a [Component] with convenient configurations
  */
 fun <T : BroadcastReceiver> T.receiverComponent(
-    scope: Any? = ReceiverScope,
     context: Context,
+    scope: Any? = ReceiverScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
