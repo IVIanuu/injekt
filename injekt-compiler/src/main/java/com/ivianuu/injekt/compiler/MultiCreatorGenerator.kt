@@ -36,7 +36,7 @@ class MultiCreatorGenerator(private val descriptor: MultiCreatorDescriptor) {
                             .apply {
                                 val creatorNames = descriptor.creatorNames.toList()
                                 creatorNames.forEachIndexed { index, className ->
-                                    addCode("%T()", className)
+                                    addCode("%T", className)
                                     if (index != creatorNames.lastIndex) {
                                         addCode(", ")
                                     }

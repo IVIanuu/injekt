@@ -32,7 +32,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
         }
 
-        file.addType(factory())
+        file.addType(creator())
 
         return file.build()
     }
@@ -51,14 +51,14 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         }
 
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
-            imports.add("getProvider")
+            imports.add("provider.getProvider")
         }
 
         return imports
     }
 
-    private fun factory(): TypeSpec {
-        return TypeSpec.classBuilder(descriptor.creatorName)
+    private fun creator(): TypeSpec {
+        return TypeSpec.objectBuilder(descriptor.creatorName)
             .addSuperinterface(
                 Creator::class.asClassName().plusParameter(descriptor.target)
             )
