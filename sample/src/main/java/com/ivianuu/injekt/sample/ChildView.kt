@@ -23,7 +23,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ChildViewScope
 import com.ivianuu.injekt.android.childViewComponent
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.get
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -35,22 +35,15 @@ class ChildView @JvmOverloads constructor(
 
     override val component by lazy { childViewComponent() }
 
-    private val appDependency by inject<AppDependency>()
-    private val mainActivityDependency by inject<MainActivityDependency>()
-    private val parentFragmentDependency by inject<ParentFragmentDependency>()
-    private val childFragmentDependency by inject<ChildFragmentDependency>()
-    private val parentViewDependency by inject<ParentViewDependency>()
-    private val childViewDependency by inject<ChildViewDependency>()
-
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        d { "Injected app dependency $appDependency" }
-        d { "Injected main activity dependency $mainActivityDependency" }
-        d { "Injected parent fragment dependency $parentFragmentDependency" }
-        d { "Injected child fragment dependency $childFragmentDependency" }
-        d { "Injected parent view dependency $parentViewDependency" }
-        d { "Injected child view dependency $childViewDependency" }
+        d { "Injected app dependency ${get<AppDependency>()}" }
+        d { "Injected main activity dependency ${get<MainActivityDependency>()}" }
+        d { "Injected parent fragment dependency ${get<ParentFragmentDependency>()}" }
+        d { "Injected child fragment dependency ${get<ChildFragmentDependency>()}" }
+        d { "Injected parent view dependency ${get<ParentViewDependency>()}" }
+        d { "Injected child view dependency ${get<ChildViewDependency>()}" }
     }
 }
 

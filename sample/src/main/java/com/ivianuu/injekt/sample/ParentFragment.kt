@@ -25,7 +25,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.FragmentScope
 import com.ivianuu.injekt.android.fragmentComponent
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.get
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -34,14 +34,10 @@ class ParentFragment : Fragment(), InjektTrait {
 
     override val component by lazy { fragmentComponent() }
 
-    private val appDependency by inject<AppDependency>()
-    private val mainActivityDependency by inject<MainActivityDependency>()
-    private val parentFragmentDependency by inject<ParentFragmentDependency>()
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        d { "Injected app dependency $appDependency" }
-        d { "Injected main activity dependency $mainActivityDependency" }
-        d { "Injected parent fragment dependency $parentFragmentDependency" }
+        d { "Injected app dependency ${get<AppDependency>()}" }
+        d { "Injected main activity dependency ${get<MainActivityDependency>()}" }
+        d { "Injected parent fragment dependency ${get<ParentFragmentDependency>()}" }
 
         super.onCreate(savedInstanceState)
 

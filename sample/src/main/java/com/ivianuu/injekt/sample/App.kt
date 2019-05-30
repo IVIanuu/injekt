@@ -29,12 +29,10 @@ class App : Application(), InjektTrait {
 
     override val component by lazy { applicationComponent() }
 
-    private val appDependency by inject<AppDependency>()
-
     override fun onCreate() {
         InjektPlugins.logger = AndroidLogger()
 
-        d { "Injected app dependency $appDependency" }
+        d { "Injected app dependency ${get<AppDependency>()}" }
 
         super.onCreate()
     }

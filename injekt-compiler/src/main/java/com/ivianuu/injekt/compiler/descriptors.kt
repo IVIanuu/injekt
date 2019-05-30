@@ -33,9 +33,11 @@ data class CreatorDescriptor(
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
 ) {
-    enum class Kind(val impl: ClassName) {
-        FACTORY(FactoryKind::class.asClassName()),
-        SINGLE(SingleKind::class.asClassName())
+    data class Kind(val impl: ClassName) {
+        companion object {
+            val Factory = Kind(FactoryKind::class.asClassName())
+            val Single = Kind(SingleKind::class.asClassName())
+        }
     }
 }
 

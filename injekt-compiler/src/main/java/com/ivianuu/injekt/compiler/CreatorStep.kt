@@ -35,6 +35,7 @@ import kotlin.reflect.KClass
 class CreatorStep : ProcessingStep() {
 
     override fun annotations(): Set<KClass<out Annotation>> = setOf(
+        Bind::class,
         Factory::class,
         Name::class,
         Param::class,
@@ -62,15 +63,20 @@ class CreatorStep : ProcessingStep() {
     }
 
     private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
-        val kind = when {
-            element.hasAnnotation<Factory>() -> CreatorDescriptor.Kind.FACTORY
-            element.hasAnnotation<Single>() -> CreatorDescriptor.Kind.SINGLE
-            else -> error("unknown annotation type $element")
+        val annotation = when {
+            element.hasAnnotation<Bind>() -> element.getAnnotationMirror<Bind>()
+            element.hasAnnotation<Factory>() -> element.getAnnotationMirror<Factory>()
+            element.hasAnnotation<Single>() -> element.getAnnotationMirror<Single>()
+            else -> return null
         }
 
-        val annotation = when (kind) {
-            CreatorDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            CreatorDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
+        val kind = when {
+            element.hasAnnotation<Bind>() -> CreatorDescriptor.Kind(
+                annotation.getAsType("kind").asTypeName() as ClassName
+            )
+            element.hasAnnotation<Factory>() -> CreatorDescriptor.Kind.Factory
+            element.hasAnnotation<Single>() -> CreatorDescriptor.Kind.Single
+            else -> error("unknown annotation type $element")
         }
 
         var scopeType: TypeMirror? = annotation["scope"].asTypeValue()
@@ -193,22 +199,23 @@ class CreatorStep : ProcessingStep() {
 
     private fun validateParameterAnnotations(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>) {
         elementsByAnnotation[Name::class].validateHasBuilderAnnotation {
-            "@Name can only used in a class which annotated with @Factory or @Single"
+            "@Name can only used in a class which annotated with @Bind, @Factory or @Single"
         }
 
         elementsByAnnotation[Param::class].validateHasBuilderAnnotation {
-            "@Param can only used in a class which annotated with @Factory or @Single"
+            "@Param can only used in a class which annotated with @Bind, @Factory or @Single"
         }
 
         elementsByAnnotation[Raw::class].validateHasBuilderAnnotation {
-            "@Raw can only used in a class which annotated with @Factory or @Single"
+            "@Raw can only used in a class which annotated with @Bind, @Factory or @Single"
         }
     }
 
     private inline fun Set<Element>.validateHasBuilderAnnotation(message: (Element) -> String) {
         filter {
             val type = it.enclosingElement.enclosingElement
-            !type.hasAnnotation<Factory>()
+            !type.hasAnnotation<Bind>()
+                    && !type.hasAnnotation<Factory>()
                     && !type.hasAnnotation<Single>()
         }
             .forEach {

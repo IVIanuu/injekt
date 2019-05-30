@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
+import com.ivianuu.injekt.Bind
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.MultiCreator
 import com.ivianuu.injekt.Single
@@ -31,12 +32,10 @@ import javax.tools.StandardLocation
 import kotlin.math.absoluteValue
 import kotlin.reflect.KClass
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class MultiCreatorStep : ProcessingStep() {
 
     override fun annotations() = setOf(
+        Bind::class,
         Factory::class,
         Single::class
     )

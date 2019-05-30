@@ -18,6 +18,12 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
+@Target(AnnotationTarget.CLASS)
+annotation class Bind(
+    val kind: KClass<out Kind>,
+    val scope: KClass<*> = Nothing::class
+)
+
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Param
 
