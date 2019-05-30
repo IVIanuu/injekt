@@ -54,7 +54,7 @@ class MultiCreatorStep : ProcessingStep() {
     override fun postRound(processingOver: Boolean) {
         super.postRound(processingOver)
         if (!processingOver) return
-
+        if (creatorNames.isEmpty()) return
 
         val multiCreatorName = creatorNames
             .map { it.canonicalName }
