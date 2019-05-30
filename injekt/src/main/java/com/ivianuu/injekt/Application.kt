@@ -14,28 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
-
-import android.app.Application
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.AndroidLogger
-import com.ivianuu.injekt.android.applicationComponent
+package com.ivianuu.injekt
 
 /**
- * @author Manuel Wrage (IVIanuu)
+ * Application scope
  */
-class App : Application(), InjektTrait {
+object ApplicationScope
 
-    override val component by lazy { applicationComponent() }
-
-    override fun onCreate() {
-        InjektPlugins.logger = AndroidLogger()
-
-        d { "Injected app dependency ${get<AppDependency>()}" }
-
-        super.onCreate()
-    }
-}
-
-@Single(scope = ApplicationScope::class)
-class AppDependency(val app: App)
+/**
+ * Application name
+ */
+object ForApplication

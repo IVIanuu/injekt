@@ -22,16 +22,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
 /**
- * Application scope
- */
-object ApplicationScope
-
-/**
- * Application name
- */
-object ForApplication
-
-/**
  * Returns a [Component] with convenient configurations
  */
 fun <T : Application> T.applicationComponent(
