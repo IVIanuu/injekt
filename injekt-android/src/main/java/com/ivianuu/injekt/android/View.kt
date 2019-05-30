@@ -129,12 +129,12 @@ fun <T : View> T.childViewModule(): Module = module {
     include(internalViewModule(ForChildView))
 }
 
-private fun <T : View> T.internalViewModule(qualifier: Any) = module {
+private fun <T : View> T.internalViewModule(name: Any) = module {
     constant(this@internalViewModule, override = true).apply {
         bindType<View>()
-        bindAlias<View>(qualifier)
+        bindAlias<View>(name)
     }
 
-    factory(override = true) { context } bindName qualifier
-    factory(override = true) { resources } bindName qualifier
+    factory(override = true) { context } bindName name
+    factory(override = true) { resources } bindName name
 }

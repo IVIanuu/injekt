@@ -123,22 +123,22 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
     include(internalFragmentModule(ForChildFragment))
 }
 
-private fun <T : Fragment> T.internalFragmentModule(qualifier: Any) = module {
+private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
     constant(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
-        bindAlias<Fragment>(qualifier)
+        bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()
-        bindAlias<LifecycleOwner>(qualifier)
+        bindAlias<LifecycleOwner>(name)
         bindType<ViewModelStoreOwner>()
-        bindAlias<ViewModelStoreOwner>(qualifier)
+        bindAlias<ViewModelStoreOwner>(name)
         bindType<SavedStateRegistryOwner>()
-        bindAlias<SavedStateRegistryOwner>(qualifier)
+        bindAlias<SavedStateRegistryOwner>(name)
     }
 
-    factory(override = true) { requireContext() } bindName qualifier
-    factory(override = true) { resources } bindName qualifier
-    factory(override = true) { lifecycle } bindName qualifier
-    factory(override = true) { viewModelStore } bindName qualifier
-    factory(override = true) { savedStateRegistry } bindName qualifier
-    factory(override = true) { childFragmentManager } bindName qualifier
+    factory(override = true) { requireContext() } bindName name
+    factory(override = true) { resources } bindName name
+    factory(override = true) { lifecycle } bindName name
+    factory(override = true) { viewModelStore } bindName name
+    factory(override = true) { savedStateRegistry } bindName name
+    factory(override = true) { childFragmentManager } bindName name
 }
