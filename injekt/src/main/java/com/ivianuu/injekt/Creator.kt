@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
+package com.ivianuu.injekt
+
+/**
+ * Used by the compiler
+ */
+interface Creator<T> {
+    fun create(): Binding<T>
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
-
-dependencies {
-    implementation(Deps.androidxAppCompat)
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
+interface MultiCreator {
+    fun create(): List<Binding<*>>
 }

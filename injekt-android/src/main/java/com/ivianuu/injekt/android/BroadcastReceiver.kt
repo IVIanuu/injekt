@@ -22,6 +22,11 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
 /**
+ * Receiver scope
+ */
+object ReceiverScope
+
+/**
  * Receiver name
  */
 object ForReceiver
@@ -30,11 +35,12 @@ object ForReceiver
  * Returns a [Component] with convenient configurations
  */
 fun <T : BroadcastReceiver> T.receiverComponent(
+    scope: Any? = ReceiverScope,
     context: Context,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
-    modules, dependencies,
+    scope, modules, dependencies,
     { receiverModule() },
     { getClosestComponentOrNull(context) }
 )

@@ -19,5 +19,6 @@ include(
     ":injekt",
     ":injekt-android",
     ":injekt-common",
+    ":injekt-compiler",
     ":sample"
 )

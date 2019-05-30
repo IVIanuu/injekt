@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Kind for single instances
  */
@@ -32,6 +34,9 @@ inline fun <reified T> Module.single(
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = bind(SingleKind, T::class, name, override, definition)
+
+@Target(AnnotationTarget.CLASS)
+annotation class Single(val scope: KClass<*>)
 
 private object UNINITIALIZED
 

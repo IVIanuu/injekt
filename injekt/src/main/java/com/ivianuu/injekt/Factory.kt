@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Kind for factory instances
  */
@@ -34,6 +36,9 @@ inline fun <reified T> Module.factory(
     noinline definition: Definition<T>
 ): Binding<T> = bind(FactoryKind, T::class, name, override, definition)
     .also { it.attribute(KEY_UNBOUNDED, unbounded) }
+
+@Target(AnnotationTarget.CLASS)
+annotation class Factory(val scope: KClass<*> = Nothing::class)
 
 const val KEY_UNBOUNDED = "unbounded"
 

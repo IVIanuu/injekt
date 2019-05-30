@@ -61,16 +61,16 @@ class CreatorStep : ProcessingStep() {
         return emptySet()
     }
 
-    private fun createBindingDescriptor(element: TypeElement): BindingDescriptor? {
+    private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
         val kind = when {
-            element.hasAnnotation<Factory>() -> BindingDescriptor.Kind.FACTORY
-            element.hasAnnotation<Single>() -> BindingDescriptor.Kind.SINGLE
+            element.hasAnnotation<Factory>() -> CreatorDescriptor.Kind.FACTORY
+            element.hasAnnotation<Single>() -> CreatorDescriptor.Kind.SINGLE
             else -> error("unknown annotation type $element")
         }
 
         val annotation = when (kind) {
-            BindingDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
-            BindingDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
+            CreatorDescriptor.Kind.FACTORY -> element.getAnnotationMirror<Factory>()
+            CreatorDescriptor.Kind.SINGLE -> element.getAnnotationMirror<Single>()
         }
 
         var scopeType: TypeMirror? = annotation["scope"].asTypeValue()
@@ -101,7 +101,7 @@ class CreatorStep : ProcessingStep() {
             element.simpleName.toString() + "__Creator"
         )
 
-        return BindingDescriptor(
+        return CreatorDescriptor(
             targetName,
             factoryName,
             kind,

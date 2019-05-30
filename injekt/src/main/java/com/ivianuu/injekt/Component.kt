@@ -22,8 +22,9 @@ import kotlin.reflect.KClass
  * The actual dependency container which provides bindings
  */
 class Component internal constructor(
+    val scope: Any?,
     val bindings: Map<Key, Binding<*>>,
-    val instances: Map<Key, Instance<*>>,
+    val instances: MutableMap<Key, Instance<*>>,
     val dependencies: Iterable<Component>
 ) {
 
@@ -88,6 +89,7 @@ class Component internal constructor(
  * Returns a new [Component] composed by all of [modules] and [dependencies]
  */
 fun component(
+    scope: Any? = null,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
@@ -100,40 +102,43 @@ fun component(
 
     // todo clean up
 
-    fun addBinding(binding: Binding<*>) {
+    fun addBindingByKey(
+        key: Key,
+        binding: Binding<*>,
+        instance: Instance<*>,
+        dropOverride: Boolean
+    ) {
         if (!binding.override &&
-            (bindings.contains(binding.key)
-                    || dependencyBindings.contains(binding.key))
+            (bindings.contains(key)
+                    || dependencyBindings.contains(key))
         ) {
-            error("Already declared binding for ${binding.key}")
+            if (dropOverride) return
+            else error("Already declared binding for ${key}")
         }
 
+        bindings[key] = binding
+        instances[key] = instance
+    }
+
+    fun addBinding(binding: Binding<*>, dropOverride: Boolean) {
         val instance = binding.kind.createInstance(binding)
-
-        bindings[binding.key] = binding
-        instances[binding.key] = instance
-
+        addBindingByKey(binding.key, binding, instance, dropOverride)
         binding.additionalKeys.forEach {
-            if (!binding.override &&
-                (bindings.contains(it)
-                        || dependencyBindings.contains(it))
-            ) {
-                error("Already declared binding for $it")
-            }
-
-            bindings[it] = binding
-            instances[it] = instance
+            addBindingByKey(it, binding, instance, dropOverride)
         }
     }
 
     fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it.value) }
+        module.bindings.forEach { addBinding(it.value, false) }
         module.includes.forEach { addModule(it) }
     }
 
     modules.forEach { addModule(it) }
 
-    return Component(bindings, instances, dependencies)
+    GlobalPool.getBindingsForScope(scope).forEach { addBinding(it, true) }
+    GlobalPool.getUnscopedBindings().forEach { addBinding(it, true) }
+
+    return Component(scope, bindings, instances, dependencies)
 }
 
 /**

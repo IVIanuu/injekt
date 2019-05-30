@@ -19,8 +19,11 @@ package com.ivianuu.injekt.sample
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.android.ChildViewScope
 import com.ivianuu.injekt.android.childViewComponent
+import com.ivianuu.injekt.inject
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -30,9 +33,7 @@ class ChildView @JvmOverloads constructor(
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
-    override val component by lazy {
-        childViewComponent(modules = listOf(childViewModule))
-    }
+    override val component by lazy { childViewComponent() }
 
     private val appDependency by inject<AppDependency>()
     private val mainActivityDependency by inject<MainActivityDependency>()
@@ -53,10 +54,7 @@ class ChildView @JvmOverloads constructor(
     }
 }
 
-val childViewModule = module {
-    single { ChildViewDependency(get(), get(), get(), get(), get(), get()) }
-}
-
+@Single(scope = ChildViewScope::class)
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,
