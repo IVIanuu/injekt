@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.system.measureTimeMillis
-
 /**
  * @author Manuel Wrage (IVIanuu)
  */
@@ -27,17 +25,19 @@ object GlobalPool {
     private val unscopedBindings = mutableSetOf<Binding<*>>()
 
     init {
-        measureTimeMillis {
-            FastServiceLoader.load(MultiCreator::class.java, javaClass.classLoader)
-                .flatMap { it.create() }
-                .forEach { binding ->
-                    if (binding.scope != null) {
-                        bindingsByScope.getOrPut(binding.scope) { mutableSetOf() }.add(binding)
-                    } else {
-                        unscopedBindings.add(binding)
-                    }
+        loadGeneratedBindings() // todo make this optional
+    }
+
+    fun loadGeneratedBindings() {
+        FastServiceLoader.load(MultiCreator::class.java, javaClass.classLoader)
+            .flatMap { it.create() }
+            .forEach { binding ->
+                if (binding.scope != null) {
+                    bindingsByScope.getOrPut(binding.scope) { mutableSetOf() }.add(binding)
+                } else {
+                    unscopedBindings.add(binding)
                 }
-        }.let { println("loading creators took: $it ms") }
+            }
     }
 
     fun getBindingsForScope(scope: Any?): Set<Binding<*>> = bindingsByScope[scope] ?: emptySet()
