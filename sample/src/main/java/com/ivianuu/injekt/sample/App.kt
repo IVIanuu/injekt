@@ -20,7 +20,6 @@ import android.app.Application
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.provider.Provider
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -40,6 +39,3 @@ class App : Application(), InjektTrait {
 
 @Single(scope = ApplicationScope::class)
 class AppDependency(val app: App)
-
-@Factory
-class ProviderDep(val myProvider: Provider<String>)

@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 /**
  * Creates/holds the actual instance for [Binding]s
  */
+// todo remove attached context
 abstract class Instance<T> {
 
     /**

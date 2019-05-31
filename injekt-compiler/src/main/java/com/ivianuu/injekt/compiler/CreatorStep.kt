@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.multibinding.BindingMap
+import com.ivianuu.injekt.multibinding.BindingSet
 import com.ivianuu.injekt.provider.Provider
 import com.ivianuu.processingx.*
 import com.ivianuu.processingx.steps.ProcessingStep
@@ -28,32 +30,26 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
 class CreatorStep : ProcessingStep() {
 
-    override fun annotations(): Set<KClass<out Annotation>> = setOf(
-        Bind::class,
-        Factory::class,
-        Name::class,
-        Param::class,
-        Raw::class,
-        Single::class
-    )
+    override fun annotations(): Set<KClass<out Annotation>> =
+        kindAnnotations + paramAnnotations
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        validateParameterAnnotations(elementsByAnnotation)
-
-        val bindingElements = (elementsByAnnotation[Factory::class]
-                + elementsByAnnotation[Single::class])
-
-        validateOnlyOneKindAnnotation(bindingElements)
-
-        (elementsByAnnotation[Factory::class] +
-                elementsByAnnotation[Single::class])
+        val allKindElements = kindAnnotations
+            .flatMap { elementsByAnnotation[it] }
             .filterIsInstance<TypeElement>()
+
+        validateParameterAnnotationsOnlyUsedWithKind(elementsByAnnotation)
+
+        validateOnlyOneKindAnnotation(allKindElements)
+
+        allKindElements
             .mapNotNull { createBindingDescriptor(it) }
             .map { CreatorGenerator(it) }
             .map { it.generate() }
@@ -113,6 +109,7 @@ class CreatorStep : ProcessingStep() {
             kind,
             scope,
             element.enclosedElements
+                // todo consider multiple constructors
                 .filterIsInstance<ExecutableElement>()
                 .first { it.kind == ElementKind.CONSTRUCTOR }
                 .parameters
@@ -154,7 +151,49 @@ class CreatorStep : ProcessingStep() {
                         return@createBindingDescriptor null
                     }
 
-                    val type = typeUtils.erasure(param.asType())
+                    val mapName = param.getAnnotationMirrorOrNull<BindingMap>()
+                        ?.getAsType("mapName")
+                    // todo check map name type is matching param type
+                    val setName = param.getAnnotationMirrorOrNull<BindingSet>()
+                        ?.getAsType("setName")
+                    // todo check set name type is matching param type
+
+                    val typeForParamKind = when {
+                        mapName != null -> {
+                            val mapType = param.asType()
+
+                            messager.printMessage(
+                                Diagnostic.Kind.WARNING,
+                                "map type is $mapType ${mapType.javaClass}"
+                            )
+
+                            if (mapType is DeclaredType) {
+                                typeUtils.erasure(mapType.typeArguments[1])
+                            } else {
+                                // todo error
+                                null
+                            }
+                        }
+                        setName != null -> {
+                            val setType = param.asType()
+                            if (setType is DeclaredType) {
+                                typeUtils.erasure(setType.typeArguments[0])
+                            } else {
+                                // todo error
+                                null
+                            }
+                        }
+                        else -> typeUtils.erasure(param.asType())
+                    }
+
+                    if (typeForParamKind == null) {
+                        messager.printMessage(
+                            Diagnostic.Kind.ERROR,
+                            "failed to parse type for ${param.asType()}", param
+                        )
+                        return@createBindingDescriptor null
+                    }
+
                     val lazyType = elementUtils.getTypeElement(Lazy::class.java.name).asType()
                     val providerType =
                         elementUtils.getTypeElement(Provider::class.java.name).asType()
@@ -164,11 +203,11 @@ class CreatorStep : ProcessingStep() {
                     val paramKind = when {
                         !isRaw && typeUtils.isAssignable(
                             lazyType,
-                            type
+                            typeForParamKind
                         ) -> ParamDescriptor.Kind.LAZY
                         !isRaw && typeUtils.isAssignable(
                             providerType,
-                            type
+                            typeForParamKind
                         ) -> ParamDescriptor.Kind.PROVIDER
                         else -> ParamDescriptor.Kind.VALUE
                     }
@@ -177,53 +216,52 @@ class CreatorStep : ProcessingStep() {
                         paramKind,
                         paramName,
                         name,
-                        paramIndex
+                        paramIndex,
+                        mapName?.asTypeName() as? ClassName,
+                        setName?.asTypeName() as? ClassName
                     )
                 }
         )
     }
 
-    private fun validateOnlyOneKindAnnotation(elements: Set<Element>) {
+    private fun validateOnlyOneKindAnnotation(elements: Iterable<Element>) {
         elements
-            .filter {
-                it.hasAnnotation<Factory>() && it.hasAnnotation<Single>()
+            .filter { element ->
+                kindAnnotations.count { element.hasAnnotation(it) } > 1
             }
             .forEach {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Annotated class can only be annotated with one off @Factory or @Single",
+                    "Classes can only have one kind annotation",
                     it
                 )
             }
     }
 
-    private fun validateParameterAnnotations(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>) {
-        elementsByAnnotation[Name::class].validateHasBuilderAnnotation {
-            "@Name can only used in a class which annotated with @Bind, @Factory or @Single"
-        }
-
-        elementsByAnnotation[Param::class].validateHasBuilderAnnotation {
-            "@Param can only used in a class which annotated with @Bind, @Factory or @Single"
-        }
-
-        elementsByAnnotation[Raw::class].validateHasBuilderAnnotation {
-            "@Raw can only used in a class which annotated with @Bind, @Factory or @Single"
-        }
-    }
-
-    private inline fun Set<Element>.validateHasBuilderAnnotation(message: (Element) -> String) {
-        filter {
-            val type = it.enclosingElement.enclosingElement
-            !type.hasAnnotation<Bind>()
-                    && !type.hasAnnotation<Factory>()
-                    && !type.hasAnnotation<Single>()
-        }
-            .forEach {
+    private fun validateParameterAnnotationsOnlyUsedWithKind(
+        elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>
+    ) {
+        paramAnnotations
+            .flatMap { annotation ->
+                elementsByAnnotation[annotation].map { annotation to it }
+            }
+            .filterNot { (_, param) ->
+                kindAnnotations.any {
+                    param
+                        // constructor
+                        .enclosingElement
+                        // class
+                        .enclosingElement
+                        .hasAnnotation(it)
+                }
+            }
+            .forEach { (annotation, param) ->
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    message(it),
-                    it
+                    "@${annotation.java.simpleName} can only used in a class which annotated with a kind annotation",
+                    param
                 )
             }
     }
+
 }

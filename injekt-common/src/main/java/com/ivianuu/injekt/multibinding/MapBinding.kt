@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.multibinding
 
+import kotlin.reflect.KClass
+
 /**
  * Attribute key for [MapBinding]s
  */
@@ -24,7 +26,11 @@ const val KEY_MAP_BINDINGS = "map_bindings"
 /**
  * Map name
  */
-class MapName<K, V>
+interface MapName<K, V>
+
+// todo find a better name
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class BindingMap(val mapName: KClass<out MapName<*, *>>)
 
 /**
  * Map binding

@@ -42,6 +42,8 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
 
         imports.add("binding")
 
+        // todo multi binding imports
+
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
         }
@@ -53,6 +55,26 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
             imports.add("provider.getProvider")
         }
+
+        descriptor.constructorParams
+            .filter { it.mapName != null }
+            .forEach {
+                when (it.kind) {
+                    ParamDescriptor.Kind.VALUE -> imports.add("multibinding.getMap")
+                    ParamDescriptor.Kind.LAZY -> imports.add("multibinding.getLazyMap")
+                    ParamDescriptor.Kind.PROVIDER -> imports.add("multibinding.getProviderMap")
+                }
+            }
+
+        descriptor.constructorParams
+            .filter { it.setName != null }
+            .forEach {
+                when (it.kind) {
+                    ParamDescriptor.Kind.VALUE -> imports.add("multibinding.getSet")
+                    ParamDescriptor.Kind.LAZY -> imports.add("multibinding.getLazySet")
+                    ParamDescriptor.Kind.PROVIDER -> imports.add("multibinding.getProviderSet")
+                }
+            }
 
         return imports
     }
@@ -81,41 +103,41 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
                 addCode("%T(", descriptor.target)
 
                 descriptor.constructorParams.forEachIndexed { i, param ->
-                    if (param.paramIndex == -1) {
-                        when (param.kind) {
-                            ParamDescriptor.Kind.VALUE -> {
-                                when {
-                                    param.name != null -> {
-                                        addCode("get(%T)", param.name)
-                                    }
-                                    else -> {
-                                        addCode("get()")
-                                    }
-                                }
+                    when {
+                        param.paramIndex != -1 -> {
+                            addCode("params.get(${param.paramIndex})")
+                        }
+                        param.mapName != null -> {
+                            val keyword = when (param.kind) {
+                                ParamDescriptor.Kind.VALUE -> "getMap"
+                                ParamDescriptor.Kind.LAZY -> "getLazyMap"
+                                ParamDescriptor.Kind.PROVIDER -> "getProviderMap"
                             }
-                            ParamDescriptor.Kind.LAZY -> {
-                                when {
-                                    param.name != null -> {
-                                        addCode("inject(%T)", param.name)
-                                    }
-                                    else -> {
-                                        addCode("inject()")
-                                    }
-                                }
+
+                            addCode("$keyword(%T)", param.mapName)
+                        }
+                        param.setName != null -> {
+                            val keyword = when (param.kind) {
+                                ParamDescriptor.Kind.VALUE -> "getSet"
+                                ParamDescriptor.Kind.LAZY -> "getLazySet"
+                                ParamDescriptor.Kind.PROVIDER -> "getProviderSet"
                             }
-                            ParamDescriptor.Kind.PROVIDER -> {
-                                when {
-                                    param.name != null -> {
-                                        addCode("getProvider(%T)", param.name)
-                                    }
-                                    else -> {
-                                        addCode("getProvider()")
-                                    }
-                                }
+
+                            addCode("$keyword(%T)", param.setName)
+                        }
+                        else -> {
+                            val keyword = when (param.kind) {
+                                ParamDescriptor.Kind.VALUE -> "get"
+                                ParamDescriptor.Kind.LAZY -> "inject"
+                                ParamDescriptor.Kind.PROVIDER -> "getProvider"
+                            }
+
+                            if (param.name != null) {
+                                addCode("$keyword(%T)", param.name)
+                            } else {
+                                addCode("$keyword()")
                             }
                         }
-                    } else {
-                        addCode("params.get(${param.paramIndex})")
                     }
 
                     if (i != descriptor.constructorParams.lastIndex) {

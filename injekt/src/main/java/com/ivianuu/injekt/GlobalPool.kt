@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 /**
  * @author Manuel Wrage (IVIanuu)
  */
+// todo unscoped instances can live here
 object GlobalPool {
 
     private val bindingsByScope = mutableMapOf<Any, MutableSet<Binding<*>>>()

@@ -16,12 +16,18 @@
 
 package com.ivianuu.injekt.multibinding
 
+import kotlin.reflect.KClass
+
 /**
  * Attribute key for [SetBinding]s
  */
 const val KEY_SET_BINDINGS = "set_bindings"
 
-class SetName<T>
+interface SetName<T>
+
+// todo find a better name
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class BindingSet(val setName: KClass<out SetName<*>>)
 
 /**
  * Set binding

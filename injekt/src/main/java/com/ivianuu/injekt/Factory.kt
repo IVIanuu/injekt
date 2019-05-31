@@ -48,6 +48,8 @@ fun <T> Module.factory(
 ): Binding<T> = bind(FactoryKind, type, name, override, definition)
     .also { it.attribute(KEY_UNBOUNDED, unbounded) }
 
+// todo remove unbounded in favor of unscoped bindings
+
 @Target(AnnotationTarget.CLASS)
 annotation class Factory(val scope: KClass<*> = Nothing::class)
 
