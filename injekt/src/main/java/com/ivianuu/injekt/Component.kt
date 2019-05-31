@@ -49,7 +49,7 @@ class Component internal constructor(
      */
     fun <T> get(
         type: KClass<*>,
-        name: Any? = null,
+        name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
@@ -63,7 +63,7 @@ class Component internal constructor(
      */
     fun <T> getOrNull(
         type: KClass<*>,
-        name: Any? = null,
+        name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T? {
         val key = Key(type, name)
@@ -145,7 +145,7 @@ fun component(
  * Returns the instance matching the [type] and [name]
  */
 inline fun <reified T> Component.get(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(T::class, name, parameters)
 
@@ -153,7 +153,7 @@ inline fun <reified T> Component.get(
  * Returns the instance matching the [type] and [name] or null
  */
 inline fun <reified T> Component.getOrNull(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): T? = getOrNull(T::class, name, parameters)
 
@@ -161,7 +161,7 @@ inline fun <reified T> Component.getOrNull(
  * Lazy version of [Component.get]
  */
 inline fun <reified T> Component.inject(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(T::class, name, parameters)
 
@@ -170,7 +170,7 @@ inline fun <reified T> Component.inject(
  */
 fun <T> Component.inject(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
 
@@ -178,7 +178,7 @@ fun <T> Component.inject(
  * Lazy version of [Component.getOrNull]
  */
 inline fun <reified T> Component.injectOrNull(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T?> = injectOrNull(T::class, name, parameters)
 
@@ -187,6 +187,6 @@ inline fun <reified T> Component.injectOrNull(
  */
 fun <T> Component.injectOrNull(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { getOrNull<T>(type, name, parameters) }

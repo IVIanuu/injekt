@@ -30,52 +30,52 @@ interface InjektTrait {
 
 /** Calls trough [Component.get] */
 inline fun <reified T> InjektTrait.get(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(T::class, name, parameters)
 
 /** Calls trough [Component.get] */
 fun <T> InjektTrait.get(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): T = component.get(type, name, parameters)
 
 /** Calls trough [Component.get] */
 inline fun <reified T> InjektTrait.getOrNull(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): T? = getOrNull(T::class, name, parameters)
 
 /** Calls trough [Component.get] */
 fun <T> InjektTrait.getOrNull(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): T? = component.getOrNull(type, name, parameters)
 
 /** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(T::class, name, parameters)
 
 /** Calls trough [Component.inject] */
 fun <T> InjektTrait.inject(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(type, name, parameters) }
 
 /** Calls trough [Component.injectOrNull] */
 inline fun <reified T> InjektTrait.injectOrNull(
-    name: Any? = null,
+    name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T?> = injectOrNull(T::class, name, parameters)
 
 /** Calls trough [Component.injectOrNull] */
 fun <T> InjektTrait.injectOrNull(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { component.getOrNull<T>(type, name, parameters) }

@@ -30,7 +30,7 @@ object FactoryKind : Kind() {
  * Adds a [Binding] which will be created on each request
  */
 inline fun <reified T> Module.factory(
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     unbounded: Boolean = false,
     noinline definition: Definition<T>
@@ -41,7 +41,7 @@ inline fun <reified T> Module.factory(
  */
 fun <T> Module.factory(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     unbounded: Boolean = false,
     definition: Definition<T>

@@ -66,7 +66,7 @@ fun module(block: (Module.() -> Unit)? = null): Module {
  */
 inline fun <reified T> Module.bind(
     kind: Kind,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = bind(kind, T::class, name, override, definition)
@@ -77,7 +77,7 @@ inline fun <reified T> Module.bind(
 fun <T> Module.bind(
     kind: Kind,
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> {

@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
-
-import android.content.Context
-import android.content.SharedPreferences
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Qualifier
-
-import com.ivianuu.injekt.single
+package com.ivianuu.injekt
 
 /**
- * Declare [SharedPreferences] using [sharedPreferencesName] and [sharedPreferencesMode]
+ * Name marker
  */
-fun Module.sharedPreferences(
-    sharedPreferencesName: String,
-    sharedPreferencesMode: Int = Context.MODE_PRIVATE,
-    name: Qualifier? = null
-) {
-    single(name) {
-        application().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
-    }
-}
+interface Qualifier
+
+/**
+ * String name
+ */
+data class StringName(val name: String) : Qualifier
+
+fun named(name: String) = StringName(name)

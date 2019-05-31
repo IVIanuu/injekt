@@ -23,12 +23,12 @@ import com.ivianuu.injekt.Key
 import kotlin.reflect.KClass
 
 inline fun <reified T> Component.getBinding(
-    name: Any? = null
+    name: Qualifier? = null
 ): Binding<T> = getBinding(T::class, name)
 
 fun <T> Component.getBinding(
     type: KClass<*>,
-    name: Any? = null
+    name: Qualifier? = null
 ): Binding<T> {
     val key = Key(type, name)
     return bindings.values.firstOrNull { it.key == key } as? Binding<T>

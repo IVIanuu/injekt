@@ -32,7 +32,7 @@ object WeakKind : Kind() {
  * Adds a [Binding] which will be cached by a [WeakReference]
  */
 inline fun <reified T> Module.weak(
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = weak(T::class, name, override, definition)
@@ -42,7 +42,7 @@ inline fun <reified T> Module.weak(
  */
 fun <T> Module.weak(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> = bind(WeakKind, type, name, override, definition)

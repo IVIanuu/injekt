@@ -33,7 +33,7 @@ object ConstantKind : Kind() {
 fun <T : Any> Module.constant(
     instance: T,
     type: KClass<*> = instance::class,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false
 ): Binding<T> = bind(ConstantKind, type, name, override) { instance }
 

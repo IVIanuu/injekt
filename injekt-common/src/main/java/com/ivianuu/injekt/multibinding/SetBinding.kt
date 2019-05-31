@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.multibinding
 
+import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
 /**
@@ -23,7 +24,7 @@ import kotlin.reflect.KClass
  */
 const val KEY_SET_BINDINGS = "set_bindings"
 
-interface SetName<T>
+interface SetName<T> : Qualifier
 
 // todo find a better name
 @Target(AnnotationTarget.VALUE_PARAMETER)

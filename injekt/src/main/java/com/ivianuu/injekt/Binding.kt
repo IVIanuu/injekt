@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 class Binding<T> internal constructor(
     val kind: Kind,
     val type: KClass<*>,
-    val name: Any?,
+    val name: Qualifier?,
     val scope: Scope?,
     val override: Boolean,
     val definition: Definition<T>
@@ -53,7 +53,7 @@ typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
  */
 inline fun <reified T> binding(
     kind: Kind,
-    name: Any? = null,
+    name: Qualifier? = null,
     scope: Scope? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
@@ -65,7 +65,7 @@ inline fun <reified T> binding(
 fun <T> binding(
     kind: Kind,
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     scope: Scope? = null,
     override: Boolean = false,
     definition: Definition<T>
@@ -140,27 +140,27 @@ infix fun <T> Binding<T>.bindTypes(types: Iterable<KClass<*>>): Binding<T> {
     return this
 }
 
-infix fun <T> Binding<T>.bindName(name: Any): Binding<T> =
+infix fun <T> Binding<T>.bindName(name: Qualifier): Binding<T> =
     additionalKey(Key(type, name))
 
-fun <T> Binding<T>.bindNames(vararg names: Any): Binding<T> {
+fun <T> Binding<T>.bindNames(vararg names: Qualifier): Binding<T> {
     names.forEach { bindName(it) }
     return this
 }
 
-infix fun <T> Binding<T>.bindNames(names: Iterable<Any>): Binding<T> {
+infix fun <T> Binding<T>.bindNames(names: Iterable<Qualifier>): Binding<T> {
     names.forEach { bindName(it) }
     return this
 }
 
-inline fun <reified T> Binding<*>.bindAlias(name: Any) {
+inline fun <reified T> Binding<*>.bindAlias(name: Qualifier) {
     bindAlias(T::class, name)
 }
 
-fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Any): Binding<T> =
+fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Qualifier): Binding<T> =
     additionalKey(Key(type, name))
 
-infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Any>): Binding<T> {
+infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Qualifier>): Binding<T> {
     bindAlias(pair.first, pair.second)
     return this
 }

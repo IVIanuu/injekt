@@ -31,7 +31,7 @@ object EagerKind : Kind() {
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
 inline fun <reified T> Module.eager(
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = eager(T::class, name, override, definition)
@@ -41,7 +41,7 @@ inline fun <reified T> Module.eager(
  */
 fun <T> Module.eager(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> = bind(EagerKind, type, name, override, definition)

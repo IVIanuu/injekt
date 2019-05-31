@@ -28,7 +28,7 @@ annotation class Bind(
 annotation class Param
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Name(val name: KClass<*>)
+annotation class Name(val name: KClass<out Qualifier>)
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Raw

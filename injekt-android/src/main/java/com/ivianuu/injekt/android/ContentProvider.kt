@@ -28,7 +28,7 @@ object ContentProviderScope : Scope
 /**
  * Content provider name
  */
-object ForContentProvider
+object ForContentProvider : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations

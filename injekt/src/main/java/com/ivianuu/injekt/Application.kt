@@ -24,4 +24,4 @@ object ApplicationScope : Scope
 /**
  * Application name
  */
-object ForApplication
+object ForApplication : Qualifier

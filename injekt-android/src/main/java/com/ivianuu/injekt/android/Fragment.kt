@@ -36,12 +36,12 @@ object ChildFragmentScope : Scope
 /**
  * Fragment name
  */
-object ForFragment
+object ForFragment : Qualifier
 
 /**
  * Child fragment name
  */
-object ForChildFragment
+object ForChildFragment : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
@@ -135,7 +135,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
     include(internalFragmentModule(ForChildFragment))
 }
 
-private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
+private fun <T : Fragment> T.internalFragmentModule(name: Qualifier) = module {
     constant(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)

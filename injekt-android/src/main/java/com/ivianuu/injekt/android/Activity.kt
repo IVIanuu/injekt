@@ -35,7 +35,7 @@ object ActivityScope : Scope
 /**
  * Activity name
  */
-object ForActivity
+object ForActivity : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations

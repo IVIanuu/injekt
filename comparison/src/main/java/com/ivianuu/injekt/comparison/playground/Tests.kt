@@ -19,8 +19,9 @@ package com.ivianuu.injekt.comparison.playground
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
+import com.ivianuu.injekt.Qualifier
 
-object MyName
+object MyName : Qualifier
 
 @Factory
 class TestDep(

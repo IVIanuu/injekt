@@ -29,7 +29,7 @@ object ServiceScope : Scope
 /**
  * Service name
  */
-object ForService
+object ForService : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations

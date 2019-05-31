@@ -30,7 +30,7 @@ object SingleKind : Kind() {
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.single(
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = single(T::class, name, override, definition)
@@ -40,7 +40,7 @@ inline fun <reified T> Module.single(
  */
 fun <T> Module.single(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> = bind(SingleKind, type, name, override, definition)

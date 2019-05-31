@@ -34,12 +34,12 @@ object ChildViewScope : Scope
 /**
  * View name
  */
-object ForView
+object ForView : Qualifier
 
 /**
  * Child view name
  */
-object ForChildView
+object ForChildView : Qualifier
 
 /**
  * Returns a [Component] with convenient configurations
@@ -141,7 +141,7 @@ fun <T : View> T.childViewModule(): Module = module {
     include(internalViewModule(ForChildView))
 }
 
-private fun <T : View> T.internalViewModule(name: Any) = module {
+private fun <T : View> T.internalViewModule(name: Qualifier) = module {
     constant(this@internalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)

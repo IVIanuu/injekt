@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.multibinding
 
+import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
 /**
@@ -26,7 +27,7 @@ const val KEY_MAP_BINDINGS = "map_bindings"
 /**
  * Map name
  */
-interface MapName<K, V>
+interface MapName<K, V> : Qualifier
 
 // todo find a better name
 @Target(AnnotationTarget.VALUE_PARAMETER)

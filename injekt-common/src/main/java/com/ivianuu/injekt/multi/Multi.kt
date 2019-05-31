@@ -31,7 +31,7 @@ object MultiKind : Kind() {
  * Adds a [Binding] which will be created once per [Component]
  */
 inline fun <reified T> Module.multi(
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = multi(T::class, name, override, definition)
@@ -41,7 +41,7 @@ inline fun <reified T> Module.multi(
  */
 fun <T> Module.multi(
     type: KClass<*>,
-    name: Any? = null,
+    name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> = bind(MultiKind, type, name, override, definition)

@@ -26,8 +26,8 @@ import kotlin.reflect.KClass
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
  */
 inline fun <reified T : ViewModel> Module.viewModel(
-    name: Any? = null,
-    viewModelStoreName: Any? = null,
+    name: Qualifier? = null,
+    viewModelStoreName: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = viewModel(T::class, name, viewModelStoreName, override, definition)
@@ -37,8 +37,8 @@ inline fun <reified T : ViewModel> Module.viewModel(
  */
 fun <T : ViewModel> Module.viewModel(
     type: KClass<T>,
-    name: Any? = null,
-    viewModelStoreName: Any? = null,
+    name: Qualifier? = null,
+    viewModelStoreName: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> =
@@ -53,7 +53,7 @@ fun <T : ViewModel> Module.viewModel(
 private class ViewModelDefinition<T : ViewModel>(
     private val type: KClass<T>,
     private val key: String?,
-    private val viewModelStoreName: Any?,
+    private val viewModelStoreName: Qualifier?,
     private val definition: Definition<T>
 ) : (DefinitionContext, Parameters) -> T {
     override fun invoke(context: DefinitionContext, parameters: Parameters): T = with(context) {
