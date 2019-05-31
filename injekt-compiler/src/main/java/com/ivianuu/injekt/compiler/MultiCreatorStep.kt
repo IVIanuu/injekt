@@ -43,7 +43,9 @@ class MultiCreatorStep : ProcessingStep() {
     private val creatorNames = mutableSetOf<ClassName>()
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        (elementsByAnnotation[Factory::class] + elementsByAnnotation[Single::class])
+        (elementsByAnnotation[Bind::class] +
+                elementsByAnnotation[Factory::class] +
+                elementsByAnnotation[Single::class])
             .map { ClassName.bestGuess(it.asType().toString() + "__Creator") }
             .let { creatorNames.addAll(it) }
 

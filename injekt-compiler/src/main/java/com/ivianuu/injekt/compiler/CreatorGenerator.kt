@@ -72,7 +72,6 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             .returns(Binding::class.asClassName().plusParameter(descriptor.target))
             .apply {
                 addCode("return binding(\n")
-                addCode("type = %T::class,\n", descriptor.target)
                 addCode("kind = %T,\n", descriptor.kind.impl)
                 descriptor.scope?.let { addCode("scope = %T,\n", it) }
                 addCode("definition = { ")
