@@ -61,7 +61,7 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
         return if (value == null && !values.containsKey(key)) {
             InjektPlugins.logger?.info("Create multi instance for params $params $binding")
-            value = create(attachedContext, parameters)
+            value = create(attachedContext!!, parameters)
             values[key] = value
             value
         } else {

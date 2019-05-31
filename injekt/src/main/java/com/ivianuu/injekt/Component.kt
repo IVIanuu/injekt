@@ -53,7 +53,7 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        val instance = findInstance<T>(key)
+        val instance = findInstance<T>(key, true)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
         return instance.get(context, parameters)
     }
@@ -67,22 +67,52 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T? {
         val key = Key(type, name)
-        val instance = findInstance<T>(key)
+        val instance = findInstance<T>(key, true)
         return instance?.get(context, parameters)
     }
 
-    private fun <T> findInstance(key: Key): Instance<T>? {
+    private fun <T> findInstance(key: Key, includeUnscoped: Boolean): Instance<T>? {
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
+        if (includeUnscoped) {
+            instance = unscopedInstances[key]
+            if (instance != null) return instance as Instance<T>
+        }
+
         for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key)
+            instance = dependency.findInstance<T>(key, false)
             if (instance != null) return instance
         }
 
         return null
     }
 
+    companion object {
+        internal val bindingsByScope = mutableMapOf<Scope, MutableSet<Binding<*>>>()
+
+        internal val unscopedBindings = mutableSetOf<Binding<*>>()
+        internal val unscopedInstances = mutableMapOf<Key, Instance<*>>()
+
+        init {
+            FastServiceLoader.load(MultiCreator::class.java, javaClass.classLoader)
+                .flatMap { it.create() }
+                .forEach { binding ->
+                    if (binding.scope != null) {
+                        bindingsByScope.getOrPut(binding.scope) { mutableSetOf() }
+                            .add(binding)
+                    } else {
+                        unscopedBindings.add(binding)
+                        val instance = binding.kind.createInstance(binding)
+                        // todo check overrides
+                        unscopedInstances[binding.key] = instance
+                        binding.additionalKeys.forEach {
+                            unscopedInstances[it] = instance
+                        }
+                    }
+                }
+        }
+    }
 }
 
 /**
@@ -135,8 +165,7 @@ fun component(
 
     modules.forEach { addModule(it) }
 
-    GlobalPool.getBindingsForScope(scope).forEach { addBinding(it, true) }
-    GlobalPool.getUnscopedBindings().forEach { addBinding(it, true) }
+    Component.bindingsByScope[scope]?.forEach { addBinding(it, true) }
 
     return Component(scope, bindings, instances, dependencies)
 }

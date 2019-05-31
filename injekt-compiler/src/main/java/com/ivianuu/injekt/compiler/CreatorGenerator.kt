@@ -42,8 +42,6 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
 
         imports.add("binding")
 
-        // todo multi binding imports
-
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.VALUE }) {
             imports.add("get")
         }

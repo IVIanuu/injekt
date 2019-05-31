@@ -69,7 +69,7 @@ private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>(
             }
 
             InjektPlugins.logger?.info("Create instance $binding")
-            value = create(attachedContext, parameters)
+            value = create(attachedContext!!, parameters)
             _value = value
             return@get value as T
         }

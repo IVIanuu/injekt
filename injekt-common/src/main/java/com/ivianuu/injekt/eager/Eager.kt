@@ -67,7 +67,7 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
             }
 
             InjektPlugins.logger?.info("Initialize eager instance $binding")
-            value = create(attachedContext, parameters)
+            value = create(attachedContext!!, parameters)
             _value = value
             return@get value as T
         }
@@ -75,6 +75,6 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
     override fun attached() {
         super.attached()
-        get(attachedContext, null)
+        get(attachedContext!!, null)
     }
 }

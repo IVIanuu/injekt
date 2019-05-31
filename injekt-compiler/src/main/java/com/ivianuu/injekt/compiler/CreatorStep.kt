@@ -153,10 +153,8 @@ class CreatorStep : ProcessingStep() {
 
                     val mapName = param.getAnnotationMirrorOrNull<BindingMap>()
                         ?.getAsType("mapName")
-                    // todo check map name type is matching param type
                     val setName = param.getAnnotationMirrorOrNull<BindingSet>()
                         ?.getAsType("setName")
-                    // todo check set name type is matching param type
 
                     val typeForParamKind = when {
                         mapName != null -> {

@@ -25,7 +25,7 @@ abstract class Instance<T> {
     /**
      * Context of this instance
      */
-    lateinit var attachedContext: DefinitionContext
+    var attachedContext: DefinitionContext? = null
         internal set
 
     /**

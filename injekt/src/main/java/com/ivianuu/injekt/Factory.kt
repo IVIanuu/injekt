@@ -63,7 +63,10 @@ private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>
 
     override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Create instance $binding")
-        return create(if (unbounded) requestingContext else attachedContext, parameters)
+        return create(
+            if (unbounded) requestingContext else attachedContext ?: requestingContext,
+            parameters
+        )
     }
 
 }

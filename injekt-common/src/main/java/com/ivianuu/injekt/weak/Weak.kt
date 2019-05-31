@@ -59,7 +59,7 @@ private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() 
             value
         } else {
             InjektPlugins.logger?.info("Create weak instance $binding")
-            create(attachedContext, parameters).also { _value = WeakReference(it) }
+            create(attachedContext!!, parameters).also { _value = WeakReference(it) }
         }
     }
 
