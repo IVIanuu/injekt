@@ -17,8 +17,10 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.multibinding.BindingMap
 import com.ivianuu.injekt.multibinding.MapName
 import com.ivianuu.injekt.multibinding.bindIntoMap
+import com.ivianuu.injekt.provider.Provider
 
 @KindRegistry([_AppService::class])
 private object dummy
@@ -37,6 +39,15 @@ interface AppService {
 annotation class _AppService
 
 object AppServices : MapName<String, AppService>
+
+@BindingMap(AppServices::class) annotation class AppServiceMap
+
+@Factory
+class AppServiceStarter(
+    @AppServiceMap private val appServices: Map<String, Provider<AppService>>
+) {
+
+}
 
 object AppServiceInterceptor : Interceptor<AppService> {
     override fun intercept(binding: Binding<AppService>) {

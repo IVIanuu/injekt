@@ -41,7 +41,6 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@SingleInActivity
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

@@ -30,7 +30,7 @@ const val KEY_MAP_BINDINGS = "map_bindings"
 interface MapName<K, V> : Qualifier
 
 // todo find a better name
-@Target(AnnotationTarget.VALUE_PARAMETER)
+@Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.VALUE_PARAMETER)
 annotation class BindingMap(val mapName: KClass<out MapName<*, *>>)
 
 /**

@@ -215,9 +215,28 @@ class CreatorStep(
                     return@createBindingDescriptor null
                 }
 
-                val mapName = param.getAnnotationMirrorOrNull<BindingMap>()
+                var bindingMapAnnotation = param.getAnnotationMirrorOrNull<BindingMap>()
+                if (bindingMapAnnotation == null) {
+                    bindingMapAnnotation = param.getAnnotatedAnnotations<BindingMap>()
+                        .firstOrNull()
+                        ?.annotationType
+                        ?.asElement()
+                        ?.getAnnotationMirror<BindingMap>()
+                }
+
+                val mapName = bindingMapAnnotation
                     ?.getAsType("mapName")
-                val setName = param.getAnnotationMirrorOrNull<BindingSet>()
+
+                var bindingSetAnnotation = param.getAnnotationMirrorOrNull<BindingSet>()
+                if (bindingSetAnnotation == null) {
+                    bindingSetAnnotation = param.getAnnotatedAnnotations<BindingSet>()
+                        .firstOrNull()
+                        ?.annotationType
+                        ?.asElement()
+                        ?.getAnnotationMirror<BindingSet>()
+                }
+
+                val setName = bindingSetAnnotation
                     ?.getAsType("setName")
 
                 val typeForParamKind = when {

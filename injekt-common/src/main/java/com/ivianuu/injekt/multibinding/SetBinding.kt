@@ -27,7 +27,7 @@ const val KEY_SET_BINDINGS = "set_bindings"
 interface SetName<T> : Qualifier
 
 // todo find a better name
-@Target(AnnotationTarget.VALUE_PARAMETER)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.VALUE_PARAMETER)
 annotation class BindingSet(val setName: KClass<out SetName<*>>)
 
 /**
