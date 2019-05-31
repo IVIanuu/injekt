@@ -21,6 +21,28 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
 
+@KindRegistry([Fancy::class])
+object MyScope : Scope
+
+@ScopeAnnotation(MyScope::class)
+@KindAnnotation(FancyKind::class)
+annotation class Fancy
+
+object FancyKind : Kind() {
+    override fun <T> createInstance(binding: Binding<T>): com.ivianuu.injekt.Instance<T> =
+        Instance(binding)
+
+    private class Instance<T>(override val binding: Binding<T>) : com.ivianuu.injekt.Instance<T>() {
+        override fun get(
+            requestingContext: DefinitionContext,
+            parameters: ParametersDefinition?
+        ): T = create(requestingContext, parameters)
+    }
+}
+
+@Fancy
+class AClass
+
 /**
  * @author Manuel Wrage (IVIanuu)
  */

@@ -24,21 +24,31 @@ import com.squareup.kotlinpoet.ClassName
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets.UTF_8
+import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
 import javax.tools.Diagnostic
 import javax.tools.StandardLocation
 import kotlin.math.absoluteValue
 import kotlin.reflect.KClass
 
-class MultiCreatorStep : ProcessingStep() {
+class MultiCreatorStep(
+    private val kindCollector: KindCollector
+) : ProcessingStep() {
 
     override fun annotations() = setOf(Bind::class) + kindAnnotations
 
     private val creatorNames = mutableSetOf<ClassName>()
 
+    lateinit var roundEnv: RoundEnvironment
+
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        annotations()
+        val dynamicKinds = kindCollector.kinds.flatMap {
+            roundEnv.getElementsAnnotatedWith(it)
+        }
+        val staticKinds = annotations()
             .flatMap { elementsByAnnotation[it] }
+
+        (dynamicKinds + staticKinds)
             .map { ClassName.bestGuess(it.asType().toString() + "__Creator") }
             .let { creatorNames.addAll(it) }
 

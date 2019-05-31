@@ -20,11 +20,23 @@ import com.google.auto.service.AutoService
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.ivianuu.processingx.steps.StepProcessor
 import javax.annotation.processing.Processor
+import javax.annotation.processing.RoundEnvironment
+import javax.lang.model.element.TypeElement
 
 @AutoService(Processor::class)
 class InjektProcessor : StepProcessor() {
 
+    private val kindCollector = KindCollector()
+    private val creatorStep = CreatorStep(kindCollector)
+    private val multiCreatorStep = MultiCreatorStep(kindCollector)
+
     override fun initSteps(): Set<ProcessingStep> =
-        setOf(CreatorStep(), MultiCreatorStep())
+        setOf(kindCollector, creatorStep, multiCreatorStep)
+
+    override fun process(elements: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
+        creatorStep.roundEnv = roundEnv
+        multiCreatorStep.roundEnv = roundEnv
+        return super.process(elements, roundEnv)
+    }
 
 }

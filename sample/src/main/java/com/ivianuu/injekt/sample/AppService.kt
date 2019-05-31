@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.sample
 
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.*
 
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class KindAnnotation(val kind: KClass<out Kind>)
-
-annotation class KindRegistry(val kindAnnotations: Array<KClass<*>>)
+@KindRegistry([_AppService::class])
+private object dummy
 
 /**
- * Provides [Instance]s for [Binding]s
+ * @author Manuel Wrage (IVIanuu)
  */
-abstract class Kind {
-    /**
-     * Returns a new [Instance] for the [binding]
-     */
-    abstract fun <T> createInstance(binding: Binding<T>): Instance<T>
+interface AppService {
+    fun start() {
+    }
+}
 
-    override fun toString(): String = "Unknown"
+@KindAnnotation(FactoryKind::class)
+@ScopeAnnotation(ApplicationScope::class)
+annotation class _AppService
+
+@_AppService
+class MyAppService : AppService {
+    override fun start() {
+        super.start()
+    }
 }

@@ -26,6 +26,7 @@ import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
+import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -34,7 +35,11 @@ import javax.lang.model.type.DeclaredType
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
-class CreatorStep : ProcessingStep() {
+class CreatorStep(
+    private val kindCollector: KindCollector
+) : ProcessingStep() {
+
+    lateinit var roundEnv: RoundEnvironment
 
     override fun annotations() = setOf(Bind::class) + kindAnnotations
 
@@ -43,7 +48,11 @@ class CreatorStep : ProcessingStep() {
             .flatMap { elementsByAnnotation[it] }
             .filterNot { it.hasAnnotation<Bind>() }
 
-        (elementsByAnnotation[Bind::class] + kindsWithoutBind)
+        val dynamicKinds = kindCollector.kinds
+            .flatMap { roundEnv.getElementsAnnotatedWith(it) }
+            .filterNot { it.hasAnnotation<Bind>() }
+
+        (elementsByAnnotation[Bind::class] + kindsWithoutBind + dynamicKinds)
             .filterIsInstance<TypeElement>()
             .mapNotNull { createBindingDescriptor(it) }
             .map { CreatorGenerator(it) }
@@ -54,13 +63,12 @@ class CreatorStep : ProcessingStep() {
     }
 
     private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
-        var kindType = element.getAnnotationMirrorOrNull<KindAnnotation>()
-            ?.getAsType("kind")
+        var kindAnnotation = element.getAnnotationMirrorOrNull<KindAnnotation>()
 
         val kindAnnotations =
             element.getAnnotatedAnnotations<KindAnnotation>()
 
-        if (kindType != null && kindAnnotations.isNotEmpty()) {
+        if (kindAnnotation != null && kindAnnotations.isNotEmpty()) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Can only have 1 kind annotation",
@@ -69,7 +77,7 @@ class CreatorStep : ProcessingStep() {
             return null
         }
 
-        if (kindType == null) {
+        if (kindAnnotation == null) {
             when {
                 kindAnnotations.size > 1 -> {
                     messager.printMessage(
@@ -89,22 +97,21 @@ class CreatorStep : ProcessingStep() {
                 }
             }
 
-            kindType = kindAnnotations.first()
+            kindAnnotation = kindAnnotations.first()
                 .annotationType
                 .asElement()
                 .getAnnotationMirror<KindAnnotation>()
-                .getAsType("kind")
         }
 
-        val kindName = kindType.asTypeName() as ClassName
+        val kindName = kindAnnotation.getAsType("kind")
+            .asTypeName() as ClassName
 
-        var scopeType = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
-            ?.getAsType("scope")
+        var scopeAnnotation = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
 
         val scopeAnnotations =
             element.getAnnotatedAnnotations<ScopeAnnotation>()
 
-        if (scopeType != null && scopeAnnotations.isNotEmpty()) {
+        if (scopeAnnotation != null && scopeAnnotations.isNotEmpty()) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Can only have 1 scope annotation",
@@ -113,7 +120,7 @@ class CreatorStep : ProcessingStep() {
             return null
         }
 
-        if (scopeType == null) {
+        if (scopeAnnotation == null) {
             if (scopeAnnotations.size > 1) {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
@@ -123,14 +130,19 @@ class CreatorStep : ProcessingStep() {
                 return null
             }
 
-            scopeType = scopeAnnotations.firstOrNull()
+            scopeAnnotation = scopeAnnotations.firstOrNull()
                 ?.annotationType
                 ?.asElement()
                 ?.getAnnotationMirror<ScopeAnnotation>()
-                ?.getAsType("scope")
         }
 
-        val scopeName = scopeType?.asTypeName() as? ClassName
+        if (scopeAnnotation == null) {
+            scopeAnnotation = kindAnnotation.annotationType.asElement()
+                .getAnnotationMirrorOrNull<ScopeAnnotation>()
+        }
+
+        val scopeName = scopeAnnotation?.getAsType("scope")
+            ?.asTypeName() as? ClassName
 
         var paramsIndex = -1
 
