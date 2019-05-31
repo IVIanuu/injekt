@@ -46,6 +46,10 @@ fun <T> Module.multi(
     definition: Definition<T>
 ): Binding<T> = bind(MultiKind, type, name, override, definition)
 
+@Target(AnnotationTarget.CLASS)
+@KindAnnotation(MultiKind::class)
+annotation class Multi(val scope: KClass<out Scope>)
+
 private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private val values = mutableMapOf<Int, T>()

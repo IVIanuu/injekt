@@ -92,7 +92,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             .returns(Binding::class.asClassName().plusParameter(descriptor.target))
             .apply {
                 addCode("return binding(\n")
-                addCode("kind = %T,\n", descriptor.kind.impl)
+                addCode("kind = %T,\n", descriptor.kind)
                 descriptor.scope?.let { addCode("scope = %T,\n", it) }
                 addCode("definition = { ")
                 if (descriptor.constructorParams.any { it.paramIndex != -1 }) {

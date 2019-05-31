@@ -17,7 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.KindAnnotation
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Param
+import com.ivianuu.injekt.Raw
 import com.ivianuu.injekt.multibinding.BindingMap
 import com.ivianuu.injekt.multibinding.BindingSet
 import com.ivianuu.injekt.provider.Provider
@@ -42,15 +45,18 @@ class CreatorStep : ProcessingStep() {
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
         val allKindElements = kindAnnotations
-            .flatMap { elementsByAnnotation[it] }
-            .filterIsInstance<TypeElement>()
+            .flatMap { annotation ->
+                elementsByAnnotation[annotation]
+                    .filterIsInstance<TypeElement>()
+                    .map { it to annotation }
+            }
 
         validateParameterAnnotationsOnlyUsedWithKind(elementsByAnnotation)
 
-        validateOnlyOneKindAnnotation(allKindElements)
+        validateOnlyOneKindAnnotation(allKindElements.map { it.first })
 
         allKindElements
-            .mapNotNull { createBindingDescriptor(it) }
+            .mapNotNull { createBindingDescriptor(it.first, it.second) }
             .map { CreatorGenerator(it) }
             .map { it.generate() }
             .forEach { it.writeTo(filer) }
@@ -58,22 +64,16 @@ class CreatorStep : ProcessingStep() {
         return emptySet()
     }
 
-    private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
-        val annotation = when {
-            element.hasAnnotation<Bind>() -> element.getAnnotationMirror<Bind>()
-            element.hasAnnotation<Factory>() -> element.getAnnotationMirror<Factory>()
-            element.hasAnnotation<Single>() -> element.getAnnotationMirror<Single>()
-            else -> return null
-        }
+    private fun createBindingDescriptor(
+        element: TypeElement,
+        annotationType: KClass<out Annotation>
+    ): CreatorDescriptor? {
+        val annotation = element.getAnnotationMirror(annotationType)
 
-        val kind = when {
-            element.hasAnnotation<Bind>() -> CreatorDescriptor.Kind(
-                annotation.getAsType("kind").asTypeName() as ClassName
-            )
-            element.hasAnnotation<Factory>() -> CreatorDescriptor.Kind.Factory
-            element.hasAnnotation<Single>() -> CreatorDescriptor.Kind.Single
-            else -> error("unknown annotation type $element")
-        }
+        val kind = annotation.annotationType.asElement()
+            .getAnnotationMirror<KindAnnotation>()
+            .getAsType("kind")
+            .asTypeName() as ClassName
 
         var scopeType: TypeMirror? = annotation["scope"].asTypeValue()
         if (scopeType!!.asTypeName() == Nothing::class.asTypeName()) {

@@ -51,6 +51,7 @@ fun <T> Module.factory(
 // todo remove unbounded in favor of unscoped bindings
 
 @Target(AnnotationTarget.CLASS)
+@KindAnnotation(FactoryKind::class)
 annotation class Factory(val scope: KClass<out Scope> = Nothing::class)
 
 const val KEY_UNBOUNDED = "unbounded"

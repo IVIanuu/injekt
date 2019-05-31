@@ -46,6 +46,10 @@ fun <T> Module.eager(
     definition: Definition<T>
 ): Binding<T> = bind(EagerKind, type, name, override, definition)
 
+@Target(AnnotationTarget.CLASS)
+@KindAnnotation(EagerKind::class)
+annotation class Eager(val scope: KClass<out Scope>)
+
 private object UNINITIALIZED
 
 private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>() {

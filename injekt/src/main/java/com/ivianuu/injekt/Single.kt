@@ -46,6 +46,7 @@ fun <T> Module.single(
 ): Binding<T> = bind(SingleKind, type, name, override, definition)
 
 @Target(AnnotationTarget.CLASS)
+@KindAnnotation(SingleKind::class)
 annotation class Single(val scope: KClass<out Scope>)
 
 private object UNINITIALIZED

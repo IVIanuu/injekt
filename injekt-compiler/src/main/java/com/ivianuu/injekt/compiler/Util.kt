@@ -17,15 +17,25 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.eager.Eager
+import com.ivianuu.injekt.multi.Multi
 import com.ivianuu.injekt.multibinding.BindingMap
 import com.ivianuu.injekt.multibinding.BindingSet
+import com.ivianuu.injekt.weak.Weak
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
 import javax.lang.model.element.Element
 
-val kindAnnotations = setOf(Bind::class, Factory::class, Single::class)
+val kindAnnotations = setOf(
+    Eager::class,
+    Factory::class,
+    Multi::class,
+    Single::class,
+    Weak::class
+)
+
 val paramAnnotations = setOf(
     BindingMap::class, BindingSet::class, Name::class, Param::class, Raw::class
 )

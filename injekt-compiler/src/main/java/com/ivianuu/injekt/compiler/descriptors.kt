@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.FactoryKind
-import com.ivianuu.injekt.SingleKind
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.asClassName
 
 data class MultiCreatorDescriptor(
     val multiCreatorName: ClassName,
@@ -29,17 +26,10 @@ data class MultiCreatorDescriptor(
 data class CreatorDescriptor(
     val target: ClassName,
     val creatorName: ClassName,
-    val kind: Kind,
+    val kind: ClassName,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
-) {
-    data class Kind(val impl: ClassName) {
-        companion object {
-            val Factory = Kind(FactoryKind::class.asClassName())
-            val Single = Kind(SingleKind::class.asClassName())
-        }
-    }
-}
+)
 
 // todo make a sealed class
 data class ParamDescriptor(
