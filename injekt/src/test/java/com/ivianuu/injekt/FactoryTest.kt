@@ -47,11 +47,11 @@ class FactoryTest {
         rootComponent = component(
             modules = listOf(
                 module {
-                    factory("bound", unbounded = false) {
+                    factory(named("bound"), unbounded = false) {
                         assertEquals(rootComponent, component)
                         "bound"
                     }
-                    factory("unbounded", unbounded = true) {
+                    factory(named("unbounded"), unbounded = true) {
                         assertEquals(nestedComponent, component)
                         "unbounded"
                     }
@@ -61,8 +61,8 @@ class FactoryTest {
 
         nestedComponent = component(dependencies = listOf(rootComponent))
 
-        nestedComponent.get<String>("bound")
-        nestedComponent.get<String>("unbounded")
+        nestedComponent.get<String>(named("bound"))
+        nestedComponent.get<String>(named("unbounded"))
     }
 
 }

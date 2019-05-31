@@ -44,7 +44,6 @@ internal object FastServiceLoader {
         // Filter out situations when both JAR and regular files are in the classpath (e.g. IDEA)
         val urls = loader.getResources(fullServiceName)
         val providers = urls.toList().flatMap { parse(it) }.toSet()
-        require(providers.isNotEmpty()) { "No providers were loaded with FastServiceLoader" }
         return providers.map { getProviderInstance(it, loader, service) }
     }
 

@@ -29,28 +29,28 @@ class SetTest {
         val component = component(
             modules = listOf(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoSet setValues
-                    factory(NameTwo) { "value_two" } bindIntoSet setValues
-                    factory(NameThree) { "value_three" } bindIntoSet setValues
+                    factory(NameOne) { "value_one" } bindIntoSet SetValues
+                    factory(NameTwo) { "value_two" } bindIntoSet SetValues
+                    factory(NameThree) { "value_three" } bindIntoSet SetValues
                 }
             )
         )
 
-        val set = component.getSet(setValues)
+        val set = component.getSet(SetValues)
 
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val lazySet = component.getLazySet(setValues)
+        val lazySet = component.getLazySet(SetValues)
 
         assertEquals(3, lazySet.size)
         assertEquals("value_one", lazySet.toList()[0].value)
         assertEquals("value_two", lazySet.toList()[1].value)
         assertEquals("value_three", lazySet.toList()[2].value)
 
-        val providerSet = component.getProviderSet(setValues)
+        val providerSet = component.getProviderSet(SetValues)
 
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0].get())
