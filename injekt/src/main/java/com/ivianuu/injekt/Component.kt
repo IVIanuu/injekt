@@ -163,7 +163,16 @@ inline fun <reified T> Component.getOrNull(
 inline fun <reified T> Component.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(T::class, name, parameters) }
+): Lazy<T> = inject(T::class, name, parameters)
+
+/**
+ * Lazy version of [Component.get]
+ */
+fun <T> Component.inject(
+    type: KClass<*>,
+    name: Any? = null,
+    parameters: ParametersDefinition? = null
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
 
 /**
  * Lazy version of [Component.getOrNull]
@@ -171,4 +180,13 @@ inline fun <reified T> Component.inject(
 inline fun <reified T> Component.injectOrNull(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { getOrNull<T>(T::class, name, parameters) }
+): Lazy<T?> = injectOrNull(T::class, name, parameters)
+
+/**
+ * Lazy version of [Component.getOrNull]
+ */
+fun <T> Component.injectOrNull(
+    type: KClass<*>,
+    name: Any? = null,
+    parameters: ParametersDefinition? = null
+): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { getOrNull<T>(type, name, parameters) }

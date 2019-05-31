@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.multi
 
 import com.ivianuu.injekt.*
+import kotlin.reflect.KClass
 
 /**
  * Kind for multi instances
@@ -33,7 +34,17 @@ inline fun <reified T> Module.multi(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(MultiKind, T::class, name, override, definition)
+): Binding<T> = multi(T::class, name, override, definition)
+
+/**
+ * Adds a [Binding] which will be created once per [Component]
+ */
+fun <T> Module.multi(
+    type: KClass<*>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: Definition<T>
+): Binding<T> = bind(MultiKind, type, name, override, definition)
 
 private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 

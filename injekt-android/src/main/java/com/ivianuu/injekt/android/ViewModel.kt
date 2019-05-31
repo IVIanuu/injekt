@@ -30,16 +30,27 @@ inline fun <reified T : ViewModel> Module.viewModel(
     viewModelStoreName: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
+): Binding<T> = viewModel(T::class, name, viewModelStoreName, override, definition)
+
+/**
+ * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
+ */
+fun <T : ViewModel> Module.viewModel(
+    type: KClass<T>,
+    name: Any? = null,
+    viewModelStoreName: Any? = null,
+    override: Boolean = false,
+    definition: Definition<T>
 ): Binding<T> =
     factory(
+        type,
         name,
         override,
         false,
-        ViewModelDefinition(T::class, name?.toString(), viewModelStoreName, definition)
+        ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
     )
 
-@PublishedApi
-internal class ViewModelDefinition<T : ViewModel>(
+private class ViewModelDefinition<T : ViewModel>(
     private val type: KClass<T>,
     private val key: String?,
     private val viewModelStoreName: Any?,

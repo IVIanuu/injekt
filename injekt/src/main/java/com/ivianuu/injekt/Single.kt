@@ -33,7 +33,17 @@ inline fun <reified T> Module.single(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(SingleKind, T::class, name, override, definition)
+): Binding<T> = single(T::class, name, override, definition)
+
+/**
+ * Adds a [Binding] which will be created once per [Component]
+ */
+fun <T> Module.single(
+    type: KClass<*>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: Definition<T>
+): Binding<T> = bind(SingleKind, type, name, override, definition)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Single(val scope: KClass<*>)

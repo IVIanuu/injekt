@@ -19,16 +19,31 @@ package com.ivianuu.injekt.provider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.ParametersDefinition
+import kotlin.reflect.KClass
 
 /** Calls trough [Component.getProvider] */
 inline fun <reified T> InjektTrait.getProvider(
     name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = component.getProvider(name, defaultParameters)
+): Provider<T> = getProvider(T::class, name, defaultParameters)
+
+/** Calls trough [Component.getProvider] */
+fun <T> InjektTrait.getProvider(
+    type: KClass<*>,
+    name: Any? = null,
+    defaultParameters: ParametersDefinition? = null
+): Provider<T> = component.getProvider(type, name, defaultParameters)
 
 /** Calls trough [Component.injectProvider] */
 inline fun <reified T> InjektTrait.injectProvider(
     name: Any? = null,
     noinline defaultParameters: ParametersDefinition? = null
+): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
+
+/** Calls trough [Component.injectProvider] */
+fun <T> InjektTrait.injectProvider(
+    type: KClass<*>,
+    name: Any? = null,
+    defaultParameters: ParametersDefinition? = null
 ): Lazy<Provider<T>> =
-    lazy(LazyThreadSafetyMode.NONE) { component.getProvider<T>(name, defaultParameters) }
+    lazy(LazyThreadSafetyMode.NONE) { component.getProvider<T>(type, name, defaultParameters) }

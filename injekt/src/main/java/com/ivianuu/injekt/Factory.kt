@@ -34,7 +34,18 @@ inline fun <reified T> Module.factory(
     override: Boolean = false,
     unbounded: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(FactoryKind, T::class, name, override, definition)
+): Binding<T> = factory(T::class, name, override, unbounded, definition)
+
+/**
+ * Adds a [Binding] which will be created on each request
+ */
+fun <T> Module.factory(
+    type: KClass<*>,
+    name: Any? = null,
+    override: Boolean = false,
+    unbounded: Boolean = false,
+    definition: Definition<T>
+): Binding<T> = bind(FactoryKind, type, name, override, definition)
     .also { it.attribute(KEY_UNBOUNDED, unbounded) }
 
 @Target(AnnotationTarget.CLASS)
