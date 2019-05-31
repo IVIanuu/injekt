@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Bind
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.multibinding.BindingMap
 import com.ivianuu.injekt.multibinding.BindingSet
@@ -30,7 +29,7 @@ interface Command
 
 object Commands : MapName<String, Command>, SetName<Command>
 
-@Bind @Factory
+@Factory
 class MyDep(
     // default
     private val command: Command,

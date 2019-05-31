@@ -14,30 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt
 
-import android.app.Application
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.AndroidLogger
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.logger
+import kotlin.reflect.KClass
 
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class App : Application(), InjektTrait {
-
-    override val component by lazy { applicationComponent() }
-
-    override fun onCreate() {
-        InjektPlugins.logger = AndroidLogger()
-
-        d { "Injected app dependency ${get<AppDependency>()}" }
-
-        super.onCreate()
-    }
+interface Interceptor<T> {
+    fun intercept(binding: Binding<T>)
 }
 
-class AppDependency(val app: App)
+annotation class Interceptors(val interceptors: Array<KClass<out Interceptor<*>>>)

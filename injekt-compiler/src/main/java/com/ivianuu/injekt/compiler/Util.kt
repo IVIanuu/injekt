@@ -16,11 +16,24 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.google.j2objc.annotations.Weak
+import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.eager.Eager
+import com.ivianuu.injekt.multi.Multi
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
 import javax.lang.model.element.Element
+
+val kindAnnotations = setOf(
+    Eager::class,
+    Factory::class,
+    Multi::class,
+    Single::class,
+    Weak::class
+)
 
 val Element.isObject: Boolean
     get() {

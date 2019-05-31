@@ -16,20 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.google.j2objc.annotations.Weak
-import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.eager.Eager
-import com.ivianuu.injekt.multi.Multi
 import com.squareup.kotlinpoet.ClassName
-
-val kindAnnotations = setOf(
-    Eager::class,
-    Factory::class,
-    Multi::class,
-    Single::class,
-    Weak::class
-)
 
 data class MultiCreatorDescriptor(
     val multiCreatorName: ClassName,
@@ -41,7 +28,8 @@ data class CreatorDescriptor(
     val creatorName: ClassName,
     val kind: ClassName,
     val scope: ClassName?,
-    val constructorParams: List<ParamDescriptor>
+    val constructorParams: List<ParamDescriptor>,
+    val interceptors: List<ClassName>
 )
 
 // todo make a sealed class

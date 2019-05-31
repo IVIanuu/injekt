@@ -19,9 +19,6 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.ScopeAnnotation
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.android.ActivityScope
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.get
 
@@ -44,7 +41,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Single @ScopeAnnotation(ActivityScope::class)
+@SingleInActivity
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

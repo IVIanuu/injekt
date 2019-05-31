@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.multibinding.MapName
+import com.ivianuu.injekt.multibinding.bindIntoMap
 
 @KindRegistry([_AppService::class])
 private object dummy
@@ -31,7 +33,16 @@ interface AppService {
 
 @KindAnnotation(FactoryKind::class)
 @ScopeAnnotation(ApplicationScope::class)
+@Interceptors([AppServiceInterceptor::class])
 annotation class _AppService
+
+object AppServices : MapName<String, AppService>
+
+object AppServiceInterceptor : Interceptor<AppService> {
+    override fun intercept(binding: Binding<AppService>) {
+        binding.bindIntoMap(AppServices, binding.type.java.name)
+    }
+}
 
 @_AppService
 class MyAppService : AppService {

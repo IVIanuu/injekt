@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Creator
+import com.ivianuu.injekt.Interceptor
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 
@@ -91,7 +92,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             .addModifiers(KModifier.OVERRIDE)
             .returns(Binding::class.asClassName().plusParameter(descriptor.target))
             .apply {
-                addCode("return binding(\n")
+                addCode("val binding = binding(\n")
                 addCode("kind = %T,\n", descriptor.kind)
                 descriptor.scope?.let { addCode("scope = %T,\n", it) }
                 addCode("definition = { ")
@@ -146,6 +147,22 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
                 addCode(")")
                 addCode(" }")
                 addCode("\n)")
+                addCode("\n")
+
+                // todo the cast is dirty
+                descriptor.interceptors.forEach {
+                    addCode(
+                        "(%T as %T<%T>).intercept(binding)",
+                        it,
+                        Interceptor::class.asClassName(),
+                        descriptor.target
+                    )
+                    addCode("\n")
+                }
+
+                addCode("return binding")
+
+                addCode("\n")
             }
             .build()
     }

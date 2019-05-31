@@ -63,7 +63,10 @@ class CreatorStep(
     }
 
     private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
+        var kindAnnotatedElement: TypeElement? = null
+
         var kindAnnotation = element.getAnnotationMirrorOrNull<KindAnnotation>()
+        if (kindAnnotation != null) kindAnnotatedElement = element
 
         val kindAnnotations =
             element.getAnnotatedAnnotations<KindAnnotation>()
@@ -100,6 +103,7 @@ class CreatorStep(
             kindAnnotation = kindAnnotations.first()
                 .annotationType
                 .asElement()
+                .also { kindAnnotatedElement = it as TypeElement }
                 .getAnnotationMirror<KindAnnotation>()
         }
 
@@ -280,12 +284,26 @@ class CreatorStep(
                 )
             }
 
+        val interceptors = mutableListOf<ClassName>()
+
+        element.getAnnotationMirrorOrNull<Interceptors>()
+            ?.getAsTypeList("interceptors")
+            ?.map { it.asTypeName() as ClassName }
+            ?.forEach { interceptors.add(it) }
+
+        kindAnnotatedElement
+            ?.getAnnotationMirrorOrNull<Interceptors>()
+            ?.getAsTypeList("interceptors")
+            ?.map { it.asTypeName() as ClassName }
+            ?.forEach { interceptors.add(it) }
+
         return CreatorDescriptor(
             targetName,
             creatorName,
             kindName,
             scopeName,
-            constructorParams
+            constructorParams,
+            interceptors
         )
     }
 
