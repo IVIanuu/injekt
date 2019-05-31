@@ -32,12 +32,13 @@ import kotlin.reflect.KClass
 
 class MultiCreatorStep : ProcessingStep() {
 
-    override fun annotations() = setOf(Bind::class)
+    override fun annotations() = setOf(Bind::class) + kindAnnotations
 
     private val creatorNames = mutableSetOf<ClassName>()
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        elementsByAnnotation[Bind::class]
+        annotations()
+            .flatMap { elementsByAnnotation[it] }
             .map { ClassName.bestGuess(it.asType().toString() + "__Creator") }
             .let { creatorNames.addAll(it) }
 

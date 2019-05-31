@@ -36,10 +36,14 @@ import kotlin.reflect.KClass
 
 class CreatorStep : ProcessingStep() {
 
-    override fun annotations() = setOf(Bind::class)
+    override fun annotations() = setOf(Bind::class) + kindAnnotations
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        elementsByAnnotation[Bind::class]
+        val kindsWithoutBind = kindAnnotations
+            .flatMap { elementsByAnnotation[it] }
+            .filterNot { it.hasAnnotation<Bind>() }
+
+        (elementsByAnnotation[Bind::class] + kindsWithoutBind)
             .filterIsInstance<TypeElement>()
             .mapNotNull { createBindingDescriptor(it) }
             .map { CreatorGenerator(it) }

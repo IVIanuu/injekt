@@ -16,7 +16,20 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.google.j2objc.annotations.Weak
+import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.eager.Eager
+import com.ivianuu.injekt.multi.Multi
 import com.squareup.kotlinpoet.ClassName
+
+val kindAnnotations = setOf(
+    Eager::class,
+    Factory::class,
+    Multi::class,
+    Single::class,
+    Weak::class
+)
 
 data class MultiCreatorDescriptor(
     val multiCreatorName: ClassName,

@@ -19,9 +19,12 @@ package com.ivianuu.injekt.sample
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ViewScope
 import com.ivianuu.injekt.android.viewComponent
+import com.ivianuu.injekt.get
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -45,7 +48,7 @@ class ParentView @JvmOverloads constructor(
 
 }
 
-@Bind @Single @ScopeAnnotation(ViewScope::class)
+@Single @ScopeAnnotation(ViewScope::class)
 class ParentViewDependency(
     val app: App,
     val mainActivity: MainActivity,

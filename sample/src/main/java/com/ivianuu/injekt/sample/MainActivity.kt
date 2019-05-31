@@ -18,9 +18,12 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ActivityScope
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.get
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
@@ -41,7 +44,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Bind @Single @ScopeAnnotation(ActivityScope::class)
+@Single @ScopeAnnotation(ActivityScope::class)
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

@@ -37,5 +37,5 @@ class App : Application(), InjektTrait {
     }
 }
 
-@Bind @Single @ScopeAnnotation(ApplicationScope::class)
+@Single @ScopeAnnotation(ApplicationScope::class)
 class AppDependency(val app: App)

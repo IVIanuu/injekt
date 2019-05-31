@@ -19,9 +19,12 @@ package com.ivianuu.injekt.sample
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ChildViewScope
 import com.ivianuu.injekt.android.childViewComponent
+import com.ivianuu.injekt.get
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -45,7 +48,7 @@ class ChildView @JvmOverloads constructor(
     }
 }
 
-@Bind @Single @ScopeAnnotation(ChildViewScope::class)
+@Single @ScopeAnnotation(ChildViewScope::class)
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,
