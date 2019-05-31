@@ -16,19 +16,7 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-@Target(AnnotationTarget.CLASS)
-annotation class Bind(
-    val kind: KClass<out Kind>,
-    val scope: KClass<out Scope> = Nothing::class
-)
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Param
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Name(val name: KClass<*>)
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Raw
+/**
+ * Scope marker
+ */
+interface Scope

@@ -30,7 +30,7 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Activity scope
  */
-object ActivityScope
+object ActivityScope : Scope
 
 /**
  * Activity name
@@ -41,7 +41,7 @@ object ForActivity
  * Returns a [Component] with convenient configurations
  */
 fun <T : Activity> T.activityComponent(
-    scope: Any? = ActivityScope,
+    scope: Scope? = ActivityScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(

@@ -26,12 +26,12 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Fragment scope
  */
-object FragmentScope
+object FragmentScope : Scope
 
 /**
  * Child fragment scope
  */
-object ChildFragmentScope
+object ChildFragmentScope : Scope
 
 /**
  * Fragment name
@@ -47,7 +47,7 @@ object ForChildFragment
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.fragmentComponent(
-    scope: Any? = FragmentScope,
+    scope: Scope? = FragmentScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
@@ -60,7 +60,7 @@ fun <T : Fragment> T.fragmentComponent(
  * Returns a [Component] with convenient configurations
  */
 fun <T : Fragment> T.childFragmentComponent(
-    scope: Any? = ChildFragmentScope,
+    scope: Scope? = ChildFragmentScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(

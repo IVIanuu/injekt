@@ -25,7 +25,7 @@ import com.ivianuu.injekt.constant.constant
  * Returns a [Component] with convenient configurations
  */
 fun <T : Application> T.applicationComponent(
-    scope: Any? = ApplicationScope,
+    scope: Scope? = ApplicationScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(

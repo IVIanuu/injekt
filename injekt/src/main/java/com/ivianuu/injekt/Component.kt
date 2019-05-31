@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
  * The actual dependency container which provides bindings
  */
 class Component internal constructor(
-    val scope: Any?,
+    val scope: Scope?,
     val bindings: Map<Key, Binding<*>>,
     val instances: MutableMap<Key, Instance<*>>,
     val dependencies: Iterable<Component>
@@ -89,7 +89,7 @@ class Component internal constructor(
  * Returns a new [Component] composed by all of [modules] and [dependencies]
  */
 fun component(
-    scope: Any? = null,
+    scope: Scope? = null,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {

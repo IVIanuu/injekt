@@ -22,7 +22,7 @@ package com.ivianuu.injekt
 // todo unscoped instances can live here
 object GlobalPool {
 
-    private val bindingsByScope = mutableMapOf<Any, MutableSet<Binding<*>>>()
+    private val bindingsByScope = mutableMapOf<Scope, MutableSet<Binding<*>>>()
     private val unscopedBindings = mutableSetOf<Binding<*>>()
 
     init {
@@ -41,7 +41,7 @@ object GlobalPool {
             }
     }
 
-    fun getBindingsForScope(scope: Any?): Set<Binding<*>> = bindingsByScope[scope] ?: emptySet()
+    fun getBindingsForScope(scope: Scope?): Set<Binding<*>> = bindingsByScope[scope] ?: emptySet()
 
     fun getUnscopedBindings(): Set<Binding<*>> = unscopedBindings
 }

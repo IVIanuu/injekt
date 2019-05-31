@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Application scope
  */
-object ApplicationScope
+object ApplicationScope : Scope
 
 /**
  * Application name

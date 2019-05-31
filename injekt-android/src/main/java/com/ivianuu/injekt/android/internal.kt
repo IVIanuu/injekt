@@ -18,11 +18,12 @@ package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.component
 
 @PublishedApi
 internal inline fun androidComponent(
-    scope: Any? = null,
+    scope: Scope? = null,
     modules: Iterable<Module>,
     dependencies: Iterable<Component>,
     module: () -> Module?,

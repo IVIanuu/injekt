@@ -24,7 +24,7 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Service scope
  */
-object ServiceScope
+object ServiceScope : Scope
 
 /**
  * Service name
@@ -35,7 +35,7 @@ object ForService
  * Returns a [Component] with convenient configurations
  */
 fun <T : Service> T.serviceComponent(
-    scope: Any? = ServiceScope,
+    scope: Scope? = ServiceScope,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component = androidComponent(
