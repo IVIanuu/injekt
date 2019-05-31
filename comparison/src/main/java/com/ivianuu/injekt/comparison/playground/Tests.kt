@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.comparison.playground
 
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.NameAnnotation
+import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Qualifier
 
@@ -26,5 +26,5 @@ object MyName : Qualifier
 @Factory
 class TestDep(
     @Param val myValue: TestDep,
-    @NameAnnotation(MyName::class) val myNamedValue: TestDep
+    @Name(MyName::class) val myNamedValue: TestDep
 )

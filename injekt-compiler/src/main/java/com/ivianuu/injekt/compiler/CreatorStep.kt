@@ -156,11 +156,11 @@ class CreatorStep : ProcessingStep() {
                     -1
                 }
 
-                var nameType = element.getAnnotationMirrorOrNull<NameAnnotation>()
+                var nameType = element.getAnnotationMirrorOrNull<Name>()
                     ?.getAsType("name")
 
                 val nameAnnotations =
-                    element.getAnnotatedAnnotations<NameAnnotation>()
+                    element.getAnnotatedAnnotations<Name>()
 
                 if (nameType != null && nameAnnotations.isNotEmpty()) {
                     messager.printMessage(
@@ -184,7 +184,7 @@ class CreatorStep : ProcessingStep() {
                     nameType = nameAnnotations.firstOrNull()
                         ?.annotationType
                         ?.asElement()
-                        ?.getAnnotationMirror<NameAnnotation>()
+                        ?.getAnnotationMirror<Name>()
                         ?.getAsType("name")
                 }
 
@@ -193,7 +193,7 @@ class CreatorStep : ProcessingStep() {
                 if (paramIndex != -1 && nameName != null) {
                     messager.printMessage(
                         Diagnostic.Kind.ERROR,
-                        "Only one of @Param or @NameAnnotation can be annotated per parameter",
+                        "Only one of @Param or @Name can be annotated per parameter",
                         param
                     )
                     return@createBindingDescriptor null

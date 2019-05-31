@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * NameAnnotation marker
+ * Name marker
  */
 interface Qualifier
 
