@@ -16,7 +16,11 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Scope marker
  */
 interface Scope
+
+annotation class ScopeAnnotation(val scope: KClass<out Scope>)

@@ -52,7 +52,7 @@ fun <T> Module.factory(
 
 @Target(AnnotationTarget.CLASS)
 @KindAnnotation(FactoryKind::class)
-annotation class Factory(val scope: KClass<out Scope> = Nothing::class)
+annotation class Factory
 
 const val KEY_UNBOUNDED = "unbounded"
 

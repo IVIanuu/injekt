@@ -18,11 +18,14 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
+@Target(AnnotationTarget.CLASS)
+annotation class Bind
+
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Param
 
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Name(val name: KClass<out Qualifier>)
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.CLASS)
+annotation class NameAnnotation(val name: KClass<out Qualifier>)
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Raw

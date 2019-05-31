@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
+import com.ivianuu.injekt.Bind
 import com.ivianuu.injekt.MultiCreator
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
@@ -31,12 +32,12 @@ import kotlin.reflect.KClass
 
 class MultiCreatorStep : ProcessingStep() {
 
-    override fun annotations() = kindAnnotations
+    override fun annotations() = setOf(Bind::class)
 
     private val creatorNames = mutableSetOf<ClassName>()
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        (kindAnnotations.flatMap { elementsByAnnotation[it] })
+        elementsByAnnotation[Bind::class]
             .map { ClassName.bestGuess(it.asType().toString() + "__Creator") }
             .let { creatorNames.addAll(it) }
 

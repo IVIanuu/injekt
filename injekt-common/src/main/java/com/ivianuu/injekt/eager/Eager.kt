@@ -48,7 +48,7 @@ fun <T> Module.eager(
 
 @Target(AnnotationTarget.CLASS)
 @KindAnnotation(EagerKind::class)
-annotation class Eager(val scope: KClass<out Scope>)
+annotation class Eager
 
 private object UNINITIALIZED
 

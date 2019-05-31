@@ -47,7 +47,7 @@ fun <T> Module.single(
 
 @Target(AnnotationTarget.CLASS)
 @KindAnnotation(SingleKind::class)
-annotation class Single(val scope: KClass<out Scope>)
+annotation class Single
 
 private object UNINITIALIZED
 

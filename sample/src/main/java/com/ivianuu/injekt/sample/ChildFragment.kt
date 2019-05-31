@@ -21,11 +21,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.ChildFragmentScope
 import com.ivianuu.injekt.android.childFragmentComponent
-import com.ivianuu.injekt.get
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -54,7 +52,7 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single(scope = ChildFragmentScope::class)
+@Bind @Single @ScopeAnnotation(ChildFragmentScope::class)
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

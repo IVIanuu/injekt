@@ -16,41 +16,21 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.Bind
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.eager.Eager
-import com.ivianuu.injekt.multi.Multi
 import com.ivianuu.injekt.multibinding.BindingMap
 import com.ivianuu.injekt.multibinding.BindingSet
 import com.ivianuu.injekt.multibinding.MapName
 import com.ivianuu.injekt.multibinding.SetName
 import com.ivianuu.injekt.provider.Provider
-import com.ivianuu.injekt.weak.Weak
 
-object NoScope : Scope
-
-@Eager(scope = NoScope::class)
-class EagerDep
-
-@Factory
-class FactoryDep
-
-@Multi(scope = NoScope::class)
-class MultiDep
-
-@Single(scope = NoScope::class)
-class SingleDep
-
-@Weak(scope = NoScope::class)
-class WeakDep
 
 // kinds
 interface Command
 
 object Commands : MapName<String, Command>, SetName<Command>
 
-@Factory
+@Bind @Factory
 class MyDep(
     // default
     private val command: Command,

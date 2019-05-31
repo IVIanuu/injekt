@@ -17,10 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
-import com.ivianuu.injekt.KindAnnotation
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.Param
-import com.ivianuu.injekt.Raw
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.multibinding.BindingMap
 import com.ivianuu.injekt.multibinding.BindingSet
 import com.ivianuu.injekt.provider.Provider
@@ -34,29 +31,17 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
 class CreatorStep : ProcessingStep() {
 
-    override fun annotations(): Set<KClass<out Annotation>> =
-        kindAnnotations + paramAnnotations
+    override fun annotations() = setOf(Bind::class)
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        val allKindElements = kindAnnotations
-            .flatMap { annotation ->
-                elementsByAnnotation[annotation]
-                    .filterIsInstance<TypeElement>()
-                    .map { it to annotation }
-            }
-
-        validateParameterAnnotationsOnlyUsedWithKind(elementsByAnnotation)
-
-        validateOnlyOneKindAnnotation(allKindElements.map { it.first })
-
-        allKindElements
-            .mapNotNull { createBindingDescriptor(it.first, it.second) }
+        elementsByAnnotation[Bind::class]
+            .filterIsInstance<TypeElement>()
+            .mapNotNull { createBindingDescriptor(it) }
             .map { CreatorGenerator(it) }
             .map { it.generate() }
             .forEach { it.writeTo(filer) }
@@ -64,202 +49,228 @@ class CreatorStep : ProcessingStep() {
         return emptySet()
     }
 
-    private fun createBindingDescriptor(
-        element: TypeElement,
-        annotationType: KClass<out Annotation>
-    ): CreatorDescriptor? {
-        val annotation = element.getAnnotationMirror(annotationType)
+    private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
+        var kindType = element.getAnnotationMirrorOrNull<KindAnnotation>()
+            ?.getAsType("kind")
 
-        val kind = annotation.annotationType.asElement()
-            .getAnnotationMirror<KindAnnotation>()
-            .getAsType("kind")
-            .asTypeName() as ClassName
+        val kindAnnotations =
+            element.getAnnotatedAnnotations<KindAnnotation>()
 
-        var scopeType: TypeMirror? = annotation["scope"].asTypeValue()
-        if (scopeType!!.asTypeName() == Nothing::class.asTypeName()) {
-            scopeType = null
+        if (kindType != null && kindAnnotations.isNotEmpty()) {
+            messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Can only have 1 kind annotation",
+                element
+            )
+            return null
         }
 
-        val scope = scopeType
-            ?.let { typeUtils.asElement(it) }
-            ?.let {
-                if (!it.isObject) {
+        if (kindType == null) {
+            when {
+                kindAnnotations.size > 1 -> {
                     messager.printMessage(
                         Diagnostic.Kind.ERROR,
-                        "scope must be an object", element
+                        "Can only have 1 kind annotation",
+                        element
                     )
-                    return@createBindingDescriptor null
+                    return null
                 }
-
-                scopeType.asTypeName() as ClassName
+                kindAnnotations.isEmpty() -> {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Must have a kind annotation",
+                        element
+                    )
+                    return null
+                }
             }
+
+            kindType = kindAnnotations.first()
+                .annotationType
+                .asElement()
+                .getAnnotationMirror<KindAnnotation>()
+                .getAsType("kind")
+        }
+
+        val kindName = kindType.asTypeName() as ClassName
+
+        var scopeType = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
+            ?.getAsType("scope")
+
+        val scopeAnnotations =
+            element.getAnnotatedAnnotations<ScopeAnnotation>()
+
+        if (scopeType != null && scopeAnnotations.isNotEmpty()) {
+            messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Can only have 1 scope annotation",
+                element
+            )
+            return null
+        }
+
+        if (scopeType == null) {
+            if (scopeAnnotations.size > 1) {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Can only have 1 scope annotation",
+                    element
+                )
+                return null
+            }
+
+            scopeType = scopeAnnotations.firstOrNull()
+                ?.annotationType
+                ?.asElement()
+                ?.getAnnotationMirror<ScopeAnnotation>()
+                ?.getAsType("scope")
+        }
+
+        val scopeName = scopeType?.asTypeName() as? ClassName
 
         var paramsIndex = -1
 
         val targetName = element.asClassName().javaToKotlinType() as ClassName
 
-        val factoryName = ClassName(
+        val creatorName = ClassName(
             targetName.packageName,
             element.simpleName.toString() + "__Creator"
         )
 
+        val constructorParams = element.enclosedElements
+            // todo consider multiple constructors
+            .filterIsInstance<ExecutableElement>()
+            .first { it.kind == ElementKind.CONSTRUCTOR }
+            .parameters
+            .map { param ->
+                val paramName = param.simpleName.toString()
+
+                val paramIndex = if (param.hasAnnotation<Param>()) {
+                    paramsIndex++
+                    paramsIndex
+                } else {
+                    -1
+                }
+
+                var nameType = element.getAnnotationMirrorOrNull<NameAnnotation>()
+                    ?.getAsType("name")
+
+                val nameAnnotations =
+                    element.getAnnotatedAnnotations<NameAnnotation>()
+
+                if (nameType != null && nameAnnotations.isNotEmpty()) {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Can only have 1 name annotation",
+                        element
+                    )
+                    return@createBindingDescriptor null
+                }
+
+                if (nameType == null) {
+                    if (nameAnnotations.size > 1) {
+                        messager.printMessage(
+                            Diagnostic.Kind.ERROR,
+                            "Can only have 1 name annotation",
+                            element
+                        )
+                        return@createBindingDescriptor null
+                    }
+
+                    nameType = nameAnnotations.firstOrNull()
+                        ?.annotationType
+                        ?.asElement()
+                        ?.getAnnotationMirror<NameAnnotation>()
+                        ?.getAsType("name")
+                }
+
+                val nameName = nameType?.asTypeName() as? ClassName
+
+                if (paramIndex != -1 && nameName != null) {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Only one of @Param or @NameAnnotation can be annotated per parameter",
+                        param
+                    )
+                    return@createBindingDescriptor null
+                }
+
+                val mapName = param.getAnnotationMirrorOrNull<BindingMap>()
+                    ?.getAsType("mapName")
+                val setName = param.getAnnotationMirrorOrNull<BindingSet>()
+                    ?.getAsType("setName")
+
+                val typeForParamKind = when {
+                    mapName != null -> {
+                        val mapType = param.asType()
+
+                        messager.printMessage(
+                            Diagnostic.Kind.WARNING,
+                            "map type is $mapType ${mapType.javaClass}"
+                        )
+
+                        if (mapType is DeclaredType) {
+                            typeUtils.erasure(mapType.typeArguments[1])
+                        } else {
+                            // todo error
+                            null
+                        }
+                    }
+                    setName != null -> {
+                        val setType = param.asType()
+                        if (setType is DeclaredType) {
+                            typeUtils.erasure(setType.typeArguments[0])
+                        } else {
+                            // todo error
+                            null
+                        }
+                    }
+                    else -> typeUtils.erasure(param.asType())
+                }
+
+                if (typeForParamKind == null) {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "failed to parse type for ${param.asType()}", param
+                    )
+                    return@createBindingDescriptor null
+                }
+
+                val lazyType = elementUtils.getTypeElement(Lazy::class.java.name).asType()
+                val providerType =
+                    elementUtils.getTypeElement(Provider::class.java.name).asType()
+
+                val isRaw = param.hasAnnotation<Raw>()
+
+                val paramKind = when {
+                    !isRaw && typeUtils.isAssignable(
+                        lazyType,
+                        typeForParamKind
+                    ) -> ParamDescriptor.Kind.LAZY
+                    !isRaw && typeUtils.isAssignable(
+                        providerType,
+                        typeForParamKind
+                    ) -> ParamDescriptor.Kind.PROVIDER
+                    else -> ParamDescriptor.Kind.VALUE
+                }
+
+                ParamDescriptor(
+                    paramKind,
+                    paramName,
+                    nameName,
+                    paramIndex,
+                    mapName?.asTypeName() as? ClassName,
+                    setName?.asTypeName() as? ClassName
+                )
+            }
+
         return CreatorDescriptor(
             targetName,
-            factoryName,
-            kind,
-            scope,
-            element.enclosedElements
-                // todo consider multiple constructors
-                .filterIsInstance<ExecutableElement>()
-                .first { it.kind == ElementKind.CONSTRUCTOR }
-                .parameters
-                .map { param ->
-                    val paramName = param.simpleName.toString()
-
-                    val paramIndex = if (param.hasAnnotation<Param>()) {
-                        paramsIndex++
-                        paramsIndex
-                    } else {
-                        -1
-                    }
-
-                    val nameAnnotation =
-                        param.getAnnotationMirrorOrNull<Name>()
-
-                    val nameType = nameAnnotation?.getAsType("name")
-
-                    val name = nameType
-                        ?.let { typeUtils.asElement(it) }
-                        ?.let {
-                            if (!it.isObject) {
-                                messager.printMessage(
-                                    Diagnostic.Kind.ERROR,
-                                    "name must be an object", element
-                                )
-                                return@createBindingDescriptor null
-                            }
-
-                            it.asType().asTypeName() as ClassName
-                        }
-
-                    if (paramIndex != -1 && name != null) {
-                        messager.printMessage(
-                            Diagnostic.Kind.ERROR,
-                            "Only one of @Param or @Name can be annotated per parameter",
-                            param
-                        )
-                        return@createBindingDescriptor null
-                    }
-
-                    val mapName = param.getAnnotationMirrorOrNull<BindingMap>()
-                        ?.getAsType("mapName")
-                    val setName = param.getAnnotationMirrorOrNull<BindingSet>()
-                        ?.getAsType("setName")
-
-                    val typeForParamKind = when {
-                        mapName != null -> {
-                            val mapType = param.asType()
-
-                            messager.printMessage(
-                                Diagnostic.Kind.WARNING,
-                                "map type is $mapType ${mapType.javaClass}"
-                            )
-
-                            if (mapType is DeclaredType) {
-                                typeUtils.erasure(mapType.typeArguments[1])
-                            } else {
-                                // todo error
-                                null
-                            }
-                        }
-                        setName != null -> {
-                            val setType = param.asType()
-                            if (setType is DeclaredType) {
-                                typeUtils.erasure(setType.typeArguments[0])
-                            } else {
-                                // todo error
-                                null
-                            }
-                        }
-                        else -> typeUtils.erasure(param.asType())
-                    }
-
-                    if (typeForParamKind == null) {
-                        messager.printMessage(
-                            Diagnostic.Kind.ERROR,
-                            "failed to parse type for ${param.asType()}", param
-                        )
-                        return@createBindingDescriptor null
-                    }
-
-                    val lazyType = elementUtils.getTypeElement(Lazy::class.java.name).asType()
-                    val providerType =
-                        elementUtils.getTypeElement(Provider::class.java.name).asType()
-
-                    val isRaw = param.hasAnnotation<Raw>()
-
-                    val paramKind = when {
-                        !isRaw && typeUtils.isAssignable(
-                            lazyType,
-                            typeForParamKind
-                        ) -> ParamDescriptor.Kind.LAZY
-                        !isRaw && typeUtils.isAssignable(
-                            providerType,
-                            typeForParamKind
-                        ) -> ParamDescriptor.Kind.PROVIDER
-                        else -> ParamDescriptor.Kind.VALUE
-                    }
-
-                    ParamDescriptor(
-                        paramKind,
-                        paramName,
-                        name,
-                        paramIndex,
-                        mapName?.asTypeName() as? ClassName,
-                        setName?.asTypeName() as? ClassName
-                    )
-                }
+            creatorName,
+            kindName,
+            scopeName,
+            constructorParams
         )
-    }
-
-    private fun validateOnlyOneKindAnnotation(elements: Iterable<Element>) {
-        elements
-            .filter { element ->
-                kindAnnotations.count { element.hasAnnotation(it) } > 1
-            }
-            .forEach {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Classes can only have one kind annotation",
-                    it
-                )
-            }
-    }
-
-    private fun validateParameterAnnotationsOnlyUsedWithKind(
-        elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>
-    ) {
-        paramAnnotations
-            .flatMap { annotation ->
-                elementsByAnnotation[annotation].map { annotation to it }
-            }
-            .filterNot { (_, param) ->
-                kindAnnotations.any {
-                    param
-                        // constructor
-                        .enclosingElement
-                        // class
-                        .enclosingElement
-                        .hasAnnotation(it)
-                }
-            }
-            .forEach { (annotation, param) ->
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "@${annotation.java.simpleName} can only used in a class which annotated with a kind annotation",
-                    param
-                )
-            }
     }
 
 }
