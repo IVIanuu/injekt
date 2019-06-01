@@ -23,4 +23,5 @@ import kotlin.reflect.KClass
  */
 interface Scope
 
+// todo rename
 annotation class ScopeAnnotation(val scope: KClass<out Scope>)
