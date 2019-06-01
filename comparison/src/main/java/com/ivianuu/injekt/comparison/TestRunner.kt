@@ -48,8 +48,8 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             ToothpickTest,
             KoinTest,
             KatanaTest,
-            InjektTest,
-            InjektCodegenTest
+            InjektCodegenTest,
+            InjektTest
         ),
         config
     )

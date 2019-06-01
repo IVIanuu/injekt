@@ -75,11 +75,6 @@ class Component internal constructor(
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
-        if (includeUnscoped) {
-            instance = unscopedInstances[key]
-            if (instance != null) return instance as Instance<T>
-        }
-
         for (dependency in dependencies) {
             instance = dependency.findInstance<T>(key, false)
             if (instance != null) return instance
@@ -166,6 +161,7 @@ fun component(
     modules.forEach { addModule(it) }
 
     Component.bindingsByScope[scope]?.forEach { addBinding(it, true) }
+    instances.putAll(Component.unscopedInstances)
 
     return Component(scope, bindings, instances, dependencies)
 }
