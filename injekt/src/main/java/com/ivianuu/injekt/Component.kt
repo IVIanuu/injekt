@@ -53,7 +53,7 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         val key = Key(type, name)
-        val instance = findInstance<T>(key, true)
+        val instance = findInstance<T>(key)
             ?: throw IllegalStateException("Couldn't find a binding for $key")
         return instance.get(context, parameters)
     }
@@ -67,16 +67,16 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T? {
         val key = Key(type, name)
-        val instance = findInstance<T>(key, true)
+        val instance = findInstance<T>(key)
         return instance?.get(context, parameters)
     }
 
-    private fun <T> findInstance(key: Key, includeUnscoped: Boolean): Instance<T>? {
+    private fun <T> findInstance(key: Key): Instance<T>? {
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
         for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key, false)
+            instance = dependency.findInstance<T>(key)
             if (instance != null) return instance
         }
 
