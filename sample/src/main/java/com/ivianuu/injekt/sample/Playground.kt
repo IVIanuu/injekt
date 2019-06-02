@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.BindingSet
-import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.SetName
+import com.ivianuu.injekt.*
 
 
 // kinds

@@ -52,16 +52,16 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         }
 
         if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
-            imports.add("provider.getProvider")
+            imports.add("getProvider")
         }
 
         descriptor.constructorParams
             .filter { it.mapName != null }
             .forEach {
                 when (it.kind) {
-                    ParamDescriptor.Kind.VALUE -> imports.add("multibinding.getMap")
-                    ParamDescriptor.Kind.LAZY -> imports.add("multibinding.getLazyMap")
-                    ParamDescriptor.Kind.PROVIDER -> imports.add("multibinding.getProviderMap")
+                    ParamDescriptor.Kind.VALUE -> imports.add("getMap")
+                    ParamDescriptor.Kind.LAZY -> imports.add("getLazyMap")
+                    ParamDescriptor.Kind.PROVIDER -> imports.add("getProviderMap")
                 }
             }
 
@@ -69,9 +69,9 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             .filter { it.setName != null }
             .forEach {
                 when (it.kind) {
-                    ParamDescriptor.Kind.VALUE -> imports.add("multibinding.getSet")
-                    ParamDescriptor.Kind.LAZY -> imports.add("multibinding.getLazySet")
-                    ParamDescriptor.Kind.PROVIDER -> imports.add("multibinding.getProviderSet")
+                    ParamDescriptor.Kind.VALUE -> imports.add("getSet")
+                    ParamDescriptor.Kind.LAZY -> imports.add("getLazySet")
+                    ParamDescriptor.Kind.PROVIDER -> imports.add("getProviderSet")
                 }
             }
 

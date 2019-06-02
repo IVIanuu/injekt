@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.multibinding.*
-import com.ivianuu.injekt.provider.Provider
 
 @KindRegistry([_AppService::class])
 private object dummy
