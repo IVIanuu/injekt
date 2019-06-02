@@ -16,12 +16,9 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.BindingSet
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.multibinding.BindingMap
-import com.ivianuu.injekt.multibinding.BindingSet
-import com.ivianuu.injekt.multibinding.MapName
-import com.ivianuu.injekt.multibinding.SetName
-import com.ivianuu.injekt.provider.Provider
+import com.ivianuu.injekt.SetName
 
 
 // kinds

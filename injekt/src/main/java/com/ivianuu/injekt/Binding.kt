@@ -164,3 +164,51 @@ infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Qualifier>): Binding<T>
     bindAlias(pair.first, pair.second)
     return this
 }
+
+/**
+ * Adds this binding into a map
+ */
+infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
+    attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<Any, MapBinding<K, V>>() }
+        .put(mapBinding.mapName, mapBinding)
+    return this
+}
+
+/**
+ * Adds this binding into a map
+ */
+fun <T : V, K, V> Binding<T>.bindIntoMap(
+    mapName: MapName<K, V>,
+    key: K
+): Binding<T> {
+    bindIntoMap(MapBinding(mapName, key))
+    return this
+}
+
+/**
+ * Adds this binding into a map
+ */
+infix fun <T : V, K, V> Binding<T>.bindIntoMap(
+    pair: Pair<MapName<K, V>, K>
+): Binding<T> {
+    bindIntoMap(MapBinding(pair.first, pair.second))
+    return this
+}
+
+/**
+ * Adds this binding into a set
+ */
+infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
+    attributes.getOrSet(KEY_SET_BINDINGS) {
+        mutableMapOf<SetName<V>, SetBinding<V>>()
+    }[setBinding.setName] = setBinding
+    return this
+}
+
+/**
+ * Adds this binding into a set
+ */
+infix fun <T : V, V> Binding<T>.bindIntoSet(setName: SetName<V>): Binding<T> {
+    bindIntoSet(SetBinding(setName))
+    return this
+}

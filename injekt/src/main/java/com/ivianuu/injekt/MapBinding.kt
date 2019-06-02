@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.multibinding
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
 /**
@@ -37,3 +36,4 @@ annotation class BindingMap(val mapName: KClass<out MapName<*, *>>)
  * Map binding
  */
 data class MapBinding<K, V>(val mapName: MapName<K, V>, val key: K)
+

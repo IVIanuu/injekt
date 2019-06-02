@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.multibinding
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.getOrSet
-
-/**
- * Adds this binding into a set
- */
-infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
-    attributes.getOrSet(KEY_SET_BINDINGS) {
-        mutableMapOf<SetName<V>, SetBinding<V>>()
-    }[setBinding.setName] = setBinding
-    return this
-}
+import kotlin.reflect.KClass
 
 /**
- * Adds this binding into a set
+ * Attribute key for [SetBinding]s
  */
-infix fun <T : V, V> Binding<T>.bindIntoSet(setName: SetName<V>): Binding<T> {
-    bindIntoSet(SetBinding(setName))
-    return this
-}
+const val KEY_SET_BINDINGS = "set_bindings"
+
+interface SetName<T> : Qualifier
+
+// todo find a better name
+@Target(AnnotationTarget.CLASS, AnnotationTarget.VALUE_PARAMETER)
+annotation class BindingSet(val setName: KClass<out SetName<*>>)
+
+/**
+ * Set binding
+ */
+data class SetBinding<T>(val setName: SetName<T>)

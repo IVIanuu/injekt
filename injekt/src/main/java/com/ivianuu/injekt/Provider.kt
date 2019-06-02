@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.multibinding
-
-import com.ivianuu.injekt.Qualifier
-import kotlin.reflect.KClass
+package com.ivianuu.injekt
 
 /**
- * Attribute key for [SetBinding]s
+ * Provides dependencies of kind [T]
  */
-const val KEY_SET_BINDINGS = "set_bindings"
-
-interface SetName<T> : Qualifier
-
-// todo find a better name
-@Target(AnnotationTarget.CLASS, AnnotationTarget.VALUE_PARAMETER)
-annotation class BindingSet(val setName: KClass<out SetName<*>>)
+interface Provider<T> {
+    /**
+     * Returns a potentially new value of [T] using [parameters]
+     */
+    fun get(parameters: ParametersDefinition? = null): T
+}
 
 /**
- * Set binding
+ * Returns a [Provider] which invokes the [provider] on [Provider.get]
  */
-data class SetBinding<T>(val setName: SetName<T>)
+fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
+    LambdaProvider(provider)
+
+private class LambdaProvider<T>(private val func: (ParametersDefinition?) -> T) :
+    Provider<T> {
+    override fun get(parameters: ParametersDefinition?): T = func(parameters)
+}

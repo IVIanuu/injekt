@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.provider
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.*
 import com.ivianuu.injekt.util.TestDep1
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals

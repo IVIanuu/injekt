@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.multibinding
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.module
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 

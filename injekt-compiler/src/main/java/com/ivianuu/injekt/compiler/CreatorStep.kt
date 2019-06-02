@@ -18,9 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.multibinding.BindingMap
-import com.ivianuu.injekt.multibinding.BindingSet
-import com.ivianuu.injekt.provider.Provider
 import com.ivianuu.processingx.*
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName

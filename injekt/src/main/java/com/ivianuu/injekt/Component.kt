@@ -215,3 +215,185 @@ fun <T> Component.injectOrNull(
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { getOrNull<T>(type, name, parameters) }
+
+/**
+ * Returns a [Provider] for [T] and [name]
+ * Each [Provider.get] call results in a potentially new value
+ */
+inline fun <reified T> Component.getProvider(
+    name: Qualifier? = null,
+    noinline defaultParameters: ParametersDefinition? = null
+): Provider<T> = getProvider(T::class, name, defaultParameters)
+
+/**
+ * Returns a [Provider] for [T] and [name]
+ * Each [Provider.get] call results in a potentially new value
+ */
+fun <T> Component.getProvider(
+    type: KClass<*>,
+    name: Qualifier? = null,
+    defaultParameters: ParametersDefinition? = null
+): Provider<T> = provider { parameters: ParametersDefinition? ->
+    get<T>(type, name, parameters ?: defaultParameters)
+}
+
+/**
+ * Returns a [Provider] for [T] and [name]
+ * Each [Provider.get] call results in a potentially new value
+ */
+inline fun <reified T> Component.injectProvider(
+    name: Qualifier? = null,
+    noinline defaultParameters: ParametersDefinition? = null
+): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
+
+/**
+ * Returns a [Provider] for [T] and [name]
+ * Each [Provider.get] call results in a potentially new value
+ */
+fun <T> Component.injectProvider(
+    type: KClass<*>,
+    name: Qualifier? = null,
+    defaultParameters: ParametersDefinition? = null
+): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
+    provider { parameters: ParametersDefinition? ->
+        get<T>(type, name, parameters ?: defaultParameters)
+    }
+}
+
+/**
+ * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
+ */
+fun <K, V> Component.getMap(
+    name: MapName<K, V>,
+    parameters: ParametersDefinition? = null
+): Map<K, V> {
+    return getMultiBindingMap(name).mapValues {
+        get<V>(it.value.type, it.value.name, parameters)
+    }
+}
+
+/**
+ * Returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
+ */
+fun <K, V> Component.getLazyMap(
+    name: MapName<K, V>,
+    parameters: ParametersDefinition? = null
+): Map<K, Lazy<V>> {
+    return getMultiBindingMap(name).mapValues {
+        lazy { get<V>(it.value.type, it.value.name, parameters) }
+    }
+}
+
+/**
+ * Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
+ */
+fun <K, V> Component.getProviderMap(
+    name: MapName<K, V>,
+    defaultParameters: ParametersDefinition? = null
+): Map<K, Provider<V>> {
+    return getMultiBindingMap(name).mapValues { (_, binding) ->
+        provider {
+            get<V>(
+                binding.type,
+                binding.name,
+                it ?: defaultParameters
+            )
+        }
+    }
+}
+
+/**
+ * Lazily returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
+ */
+fun <K, V> Component.injectMap(
+    name: MapName<K, V>,
+    parameters: ParametersDefinition? = null
+): Lazy<Map<K, V>> {
+    return lazy { getMap(name, parameters) }
+}
+
+/**
+ * Lazily returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
+ */
+fun <K, V> Component.injectLazyMap(
+    name: MapName<K, V>,
+    parameters: ParametersDefinition? = null
+): Lazy<Map<K, Lazy<V>>> =
+    lazy { getLazyMap(name, parameters) }
+
+/**
+ * Lazily returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
+ */
+fun <K, V> Component.injectProviderMap(
+    name: MapName<K, V>,
+    defaultParameters: ParametersDefinition? = null
+): Lazy<Map<K, Provider<V>>> =
+    lazy { getProviderMap(name, defaultParameters) }
+
+/**
+ * Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
+ */
+fun <T> Component.getSet(
+    name: SetName<T>,
+    parameters: ParametersDefinition? = null
+): Set<T> {
+    return getMultiBindingSet(name)
+        .map { get<T>(it.type, it.name, parameters) }
+        .toSet()
+}
+
+/**
+ * Returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
+ */
+fun <T> Component.getLazySet(
+    name: SetName<T>,
+    parameters: ParametersDefinition? = null
+): Set<Lazy<T>> {
+    return getMultiBindingSet(name).map {
+        lazy { get<T>(it.type, it.name, parameters) }
+    }.toSet()
+}
+
+/**
+ * Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
+ */
+fun <T> Component.getProviderSet(
+    name: SetName<T>,
+    defaultParameters: ParametersDefinition? = null
+): Set<Provider<T>> {
+    return getMultiBindingSet(name).map { binding ->
+        provider {
+            get<T>(
+                binding.type,
+                binding.name,
+                it ?: defaultParameters
+            )
+        }
+    }.toSet()
+}
+
+/**
+ * Lazily returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
+ */
+fun <T> Component.injectSet(
+    name: SetName<T>,
+    parameters: ParametersDefinition? = null
+): Lazy<Set<T>> = lazy(LazyThreadSafetyMode.NONE) { getSet(name, parameters) }
+
+/**
+ * Lazily returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
+ */
+fun <T> Component.injectLazySet(
+    name: SetName<T>,
+    parameters: ParametersDefinition? = null
+): Lazy<Set<Lazy<T>>> =
+    lazy { getLazySet(name, parameters) }
+
+/**
+ * Lazily returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
+ */
+fun <T> Component.injectProviderSet(
+    name: SetName<T>,
+    defaultParameters: ParametersDefinition? = null
+): Lazy<Set<Provider<T>>> =
+    lazy { getProviderSet(name, defaultParameters) }

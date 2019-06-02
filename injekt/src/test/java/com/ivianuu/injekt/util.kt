@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.multibinding
-
-import com.ivianuu.injekt.Qualifier
+package com.ivianuu.injekt
 
 object MapValues : MapName<String, String>
 object SetValues : SetName<String>
