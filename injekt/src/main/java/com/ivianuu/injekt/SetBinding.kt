@@ -16,15 +16,7 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-interface SetName<T> : Qualifier
-
-// todo find a better name
-@Target(AnnotationTarget.CLASS, AnnotationTarget.VALUE_PARAMETER)
-annotation class BindingSet(val setName: KClass<out SetName<*>>)
-
 /**
  * Set binding
  */
-data class SetBinding<T>(val setName: SetName<T>)
+data class SetBinding(val setName: Qualifier)

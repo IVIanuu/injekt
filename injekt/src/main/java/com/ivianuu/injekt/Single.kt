@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Kind for single instances
  */
@@ -33,13 +31,13 @@ inline fun <reified T> Module.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = single(T::class, name, override, definition)
+): Binding<T> = single(typeOf<T>(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]
  */
 fun <T> Module.single(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

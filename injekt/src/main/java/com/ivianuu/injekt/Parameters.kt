@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import java.util.*
+
 /**
  * Parameters which will be used for assisted injection
  */
@@ -23,7 +25,7 @@ package com.ivianuu.injekt
     /**
      * All values of this params
      */
-    val values: List<Any?>
+    val values: Array<Any?>
 ) {
 
     operator fun <T> component1(): T = get(0)
@@ -37,7 +39,18 @@ package com.ivianuu.injekt
      */
     operator fun <T> get(i: Int): T = values[i] as T
 
-    override fun toString(): String = values.toString()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Parameters) return false
+
+        if (!values.contentEquals(other.values)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = values.contentHashCode()
+
+    override fun toString(): String = Arrays.toString(values)
 
 }
 
@@ -54,14 +67,14 @@ typealias ParametersDefinition = () -> Parameters
 /**
  * Returns new [Parameters] which contains all [values]
  */
-fun parametersOf(vararg values: Any?): Parameters = Parameters(listOf(*values))
+fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 
 /**
  * Returns new [Parameters] which contains all [values]
  */
-fun parametersOf(values: Iterable<Any?>): Parameters = Parameters(values.toList())
+fun parametersOf(values: Iterable<Any?>): Parameters = Parameters(values.toList().toTypedArray())
 
-private val emptyParameters = Parameters(emptyList())
+private val emptyParameters = Parameters(emptyArray())
 
 /**
  * Returns empty [Parameters]

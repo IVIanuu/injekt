@@ -34,12 +34,7 @@ data class CreatorDescriptor(
 
 // todo make a sealed class
 data class ParamDescriptor(
-    val kind: Kind,
     val paramName: String,
     val name: ClassName?,
-    val paramIndex: Int,
-    val mapName: ClassName?,
-    val setName: ClassName?
-) {
-    enum class Kind { VALUE, LAZY, PROVIDER }
-}
+    val paramIndex: Int
+)

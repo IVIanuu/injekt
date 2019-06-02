@@ -30,32 +30,10 @@ class ProviderTest {
                 factory { TestDep1() }
             }
         ))
-        val getProvider = component.getProvider<TestDep1>()
+        val getProvider = component.get<Provider<TestDep1>>()
         val value1 = getProvider.get()
         val value2 = getProvider.get()
         assertNotEquals(value1, value2)
-    }
-
-    @Test
-    fun testProviderUsesDefaultParams() {
-        var usedParams: Parameters? = null
-
-        val component = component(modules = listOf(
-            module {
-                factory {
-                    usedParams = it
-                    TestDep1()
-                }
-            }
-        ))
-
-        val defaultParams = parametersOf("one", "two")
-
-        val getProvider = component.getProvider<TestDep1> { defaultParams }
-
-        getProvider.get()
-
-        assertEquals(defaultParams, usedParams)
     }
 
     @Test
@@ -73,36 +51,11 @@ class ProviderTest {
 
         val parameters = parametersOf("one", "two")
 
-        val getProvider = component.getProvider<TestDep1>()
+        val getProvider = component.get<Provider<TestDep1>>()
 
         getProvider.get { parameters }
 
         assertEquals(parameters, usedParams)
-    }
-
-    @Test
-    fun testProviderPrefersExplicitParams() {
-        var usedParams: Parameters? = null
-
-        val component = component(
-            modules = listOf(
-                module {
-                    factory {
-                        usedParams = it
-                        TestDep1()
-                    }
-                }
-            )
-        )
-
-        val defaultParams = parametersOf("default")
-        val explicitParams = parametersOf("explicit")
-
-        val getProvider = component.getProvider<TestDep1> { defaultParams }
-
-        getProvider.get { explicitParams }
-
-        assertEquals(explicitParams, usedParams)
     }
 
 }

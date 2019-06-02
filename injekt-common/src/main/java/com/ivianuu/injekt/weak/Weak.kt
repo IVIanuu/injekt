@@ -18,7 +18,6 @@ package com.ivianuu.injekt.weak
 
 import com.ivianuu.injekt.*
 import java.lang.ref.WeakReference
-import kotlin.reflect.KClass
 
 /**
  * Weak kind
@@ -35,13 +34,13 @@ inline fun <reified T> Module.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = weak(T::class, name, override, definition)
+): Binding<T> = weak(typeOf<T>(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be cached by a [WeakReference]
  */
 fun <T> Module.weak(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

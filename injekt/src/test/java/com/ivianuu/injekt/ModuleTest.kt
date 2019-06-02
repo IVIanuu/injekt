@@ -47,7 +47,7 @@ class ModuleTest {
             bind(overrideBinding)
         }
 
-        assertEquals(module.bindings[Key(String::class)], overrideBinding)
+        assertEquals(module.bindings[Key(typeOf<String>())], overrideBinding)
     }
 
     @Test(expected = IllegalStateException::class)

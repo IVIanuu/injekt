@@ -28,7 +28,6 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
-import javax.lang.model.type.DeclaredType
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
@@ -212,91 +211,10 @@ class CreatorStep(
                     return@createBindingDescriptor null
                 }
 
-                var bindingMapAnnotation = param.getAnnotationMirrorOrNull<BindingMap>()
-                if (bindingMapAnnotation == null) {
-                    bindingMapAnnotation = param.getAnnotatedAnnotations<BindingMap>()
-                        .firstOrNull()
-                        ?.annotationType
-                        ?.asElement()
-                        ?.getAnnotationMirror<BindingMap>()
-                }
-
-                val mapName = bindingMapAnnotation
-                    ?.getAsType("mapName")
-
-                var bindingSetAnnotation = param.getAnnotationMirrorOrNull<BindingSet>()
-                if (bindingSetAnnotation == null) {
-                    bindingSetAnnotation = param.getAnnotatedAnnotations<BindingSet>()
-                        .firstOrNull()
-                        ?.annotationType
-                        ?.asElement()
-                        ?.getAnnotationMirror<BindingSet>()
-                }
-
-                val setName = bindingSetAnnotation
-                    ?.getAsType("setName")
-
-                val typeForParamKind = when {
-                    mapName != null -> {
-                        val mapType = param.asType()
-
-                        messager.printMessage(
-                            Diagnostic.Kind.WARNING,
-                            "map type is $mapType ${mapType.javaClass}"
-                        )
-
-                        if (mapType is DeclaredType) {
-                            typeUtils.erasure(mapType.typeArguments[1])
-                        } else {
-                            // todo error
-                            null
-                        }
-                    }
-                    setName != null -> {
-                        val setType = param.asType()
-                        if (setType is DeclaredType) {
-                            typeUtils.erasure(setType.typeArguments[0])
-                        } else {
-                            // todo error
-                            null
-                        }
-                    }
-                    else -> typeUtils.erasure(param.asType())
-                }
-
-                if (typeForParamKind == null) {
-                    messager.printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "failed to parse type for ${param.asType()}", param
-                    )
-                    return@createBindingDescriptor null
-                }
-
-                val lazyType = elementUtils.getTypeElement(Lazy::class.java.name).asType()
-                val providerType =
-                    elementUtils.getTypeElement(Provider::class.java.name).asType()
-
-                val isRaw = param.hasAnnotation<Raw>()
-
-                val paramKind = when {
-                    !isRaw && typeUtils.isAssignable(
-                        lazyType,
-                        typeForParamKind
-                    ) -> ParamDescriptor.Kind.LAZY
-                    !isRaw && typeUtils.isAssignable(
-                        providerType,
-                        typeForParamKind
-                    ) -> ParamDescriptor.Kind.PROVIDER
-                    else -> ParamDescriptor.Kind.VALUE
-                }
-
                 ParamDescriptor(
-                    paramKind,
                     paramName,
                     nameName,
-                    paramIndex,
-                    mapName?.asTypeName() as? ClassName,
-                    setName?.asTypeName() as? ClassName
+                    paramIndex
                 )
             }
 

@@ -16,19 +16,14 @@
 
 package com.ivianuu.injekt.util
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Qualifier
-
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.*
 
 inline fun <reified T> Component.getBinding(
     name: Qualifier? = null
-): Binding<T> = getBinding(T::class, name)
+): Binding<T> = getBinding(typeOf(), name)
 
 fun <T> Component.getBinding(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null
 ): Binding<T> {
     val key = Key(type, name)

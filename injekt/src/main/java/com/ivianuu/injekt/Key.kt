@@ -16,15 +16,13 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * A key for a [Binding]
  */
-data class Key(val type: KClass<*>, val name: Qualifier? = null) {
+data class Key(val type: Type<*>, val name: Qualifier? = null) {
     override fun toString(): String {
         return "Key(" +
-                "type=${type.java.name}, " +
+                "type=$type, " +
                 "name=$name)"
     }
 }

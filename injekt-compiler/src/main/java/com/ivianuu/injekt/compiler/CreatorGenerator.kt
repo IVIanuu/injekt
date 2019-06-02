@@ -42,38 +42,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         val imports = mutableSetOf<String>()
 
         imports.add("binding")
-
-        if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.VALUE }) {
-            imports.add("get")
-        }
-
-        if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.LAZY }) {
-            imports.add("inject")
-        }
-
-        if (descriptor.constructorParams.any { it.kind == ParamDescriptor.Kind.PROVIDER }) {
-            imports.add("getProvider")
-        }
-
-        descriptor.constructorParams
-            .filter { it.mapName != null }
-            .forEach {
-                when (it.kind) {
-                    ParamDescriptor.Kind.VALUE -> imports.add("getMap")
-                    ParamDescriptor.Kind.LAZY -> imports.add("getLazyMap")
-                    ParamDescriptor.Kind.PROVIDER -> imports.add("getProviderMap")
-                }
-            }
-
-        descriptor.constructorParams
-            .filter { it.setName != null }
-            .forEach {
-                when (it.kind) {
-                    ParamDescriptor.Kind.VALUE -> imports.add("getSet")
-                    ParamDescriptor.Kind.LAZY -> imports.add("getLazySet")
-                    ParamDescriptor.Kind.PROVIDER -> imports.add("getProviderSet")
-                }
-            }
+        imports.add("get")
 
         return imports
     }
@@ -114,35 +83,11 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
                     param.paramIndex != -1 -> {
                         add("${param.paramName} = params.get(${param.paramIndex})")
                     }
-                    param.mapName != null -> {
-                        val keyword = when (param.kind) {
-                            ParamDescriptor.Kind.VALUE -> "getMap"
-                            ParamDescriptor.Kind.LAZY -> "getLazyMap"
-                            ParamDescriptor.Kind.PROVIDER -> "getProviderMap"
-                        }
-
-                        add("${param.paramName} = $keyword(%T)", param.mapName)
-                    }
-                    param.setName != null -> {
-                        val keyword = when (param.kind) {
-                            ParamDescriptor.Kind.VALUE -> "getSet"
-                            ParamDescriptor.Kind.LAZY -> "getLazySet"
-                            ParamDescriptor.Kind.PROVIDER -> "getProviderSet"
-                        }
-
-                        add("${param.paramName} = $keyword(%T)", param.setName)
-                    }
                     else -> {
-                        val keyword = when (param.kind) {
-                            ParamDescriptor.Kind.VALUE -> "get"
-                            ParamDescriptor.Kind.LAZY -> "inject"
-                            ParamDescriptor.Kind.PROVIDER -> "getProvider"
-                        }
-
                         if (param.name != null) {
-                            add("${param.paramName} = $keyword(%T)", param.name)
+                            add("${param.paramName} = get(%T)", param.name)
                         } else {
-                            add("${param.paramName} = $keyword()")
+                            add("${param.paramName} = get()")
                         }
                     }
                 }

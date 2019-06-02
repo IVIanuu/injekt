@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.Qualifier
 
 
 // kinds
 interface Command
 
-object Commands : MapName<String, Command>, SetName<Command>
+object Commands : Qualifier
 
 @Factory
 class MyDep(
@@ -36,12 +39,12 @@ class MyDep(
     private val commandProvider: Provider<Command>,
 
     // map
-    @BindingMap(Commands::class) private val commandsMap: Map<String, Command>,
-    @BindingMap(Commands::class) private val commandsMapLazy: Map<String, Lazy<Command>>,
-    @BindingMap(Commands::class) private val commandsMapProvider: Map<String, Provider<Command>>,
+    @Name(Commands::class) private val commandsMap: Map<String, Command>,
+    @Name(Commands::class) private val commandsMapLazy: Map<String, Lazy<Command>>,
+    @Name(Commands::class) private val commandsMapProvider: Map<String, Provider<Command>>,
 
     // set
-    @BindingSet(Commands::class) private val commandsSet: Set<Command>,
-    @BindingSet(Commands::class) private val commandsSetLazy: Set<Lazy<Command>>,
-    @BindingSet(Commands::class) private val commandsSetProvider: Set<Provider<Command>>
+    @Name(Commands::class) private val commandsSet: Set<Command>,
+    @Name(Commands::class) private val commandsSetLazy: Set<Lazy<Command>>,
+    @Name(Commands::class) private val commandsSetProvider: Set<Provider<Command>>
 )

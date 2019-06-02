@@ -31,21 +31,21 @@ class MapTest {
             }
         ))
 
-        val map = component.getMap(MapValues)
+        val map = component.get<Map<String, String>>(MapValues)
 
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
 
-        val lazyMap = component.getLazyMap(MapValues)
+        val lazyMap = component.get<Map<String, Lazy<String>>>(MapValues)
 
         assertEquals(3, lazyMap.size)
         assertEquals(lazyMap.getValue("key_one").value, "value_one")
         assertEquals(lazyMap.getValue("key_two").value, "value_two")
         assertEquals(lazyMap.getValue("key_three").value, "value_three")
 
-        val providerMap = component.getProviderMap(MapValues)
+        val providerMap = component.get<Map<String, Provider<String>>>(MapValues)
 
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("key_one").get(), "value_one")
@@ -62,7 +62,7 @@ class MapTest {
             }
         ))
 
-        assertEquals("value_two", component.getMap(MapValues)["key_one"])
+        assertEquals("value_two", component.get<Map<String, String>>(MapValues)["key_one"])
     }
 
 }

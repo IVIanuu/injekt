@@ -90,17 +90,17 @@ fun <T : Activity> T.activityModule(): Module = module {
     factory(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        constant(this@activityModule, type = LifecycleOwner::class) bindName ForActivity
+        constant(this@activityModule, type = typeOf<LifecycleOwner>()) bindName ForActivity
         factory { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        constant(this@activityModule, type = ViewModelStoreOwner::class) bindName ForActivity
+        constant(this@activityModule, type = typeOf<ViewModelStoreOwner>()) bindName ForActivity
         factory { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        constant(this@activityModule, type = SavedStateRegistryOwner::class) bindName ForActivity
+        constant(this@activityModule, type = typeOf<SavedStateRegistryOwner>()) bindName ForActivity
         factory { savedStateRegistry } bindName ForActivity
     }
 

@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Kind for factory instances
  */
@@ -34,13 +32,13 @@ inline fun <reified T> Module.factory(
     override: Boolean = false,
     unbounded: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = factory(T::class, name, override, unbounded, definition)
+): Binding<T> = factory(typeOf<T>(), name, override, unbounded, definition)
 
 /**
  * Adds a [Binding] which will be created on each request
  */
 fun <T> Module.factory(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     unbounded: Boolean = false,

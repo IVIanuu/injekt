@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * The actual dependency container which provides bindings
  */
@@ -26,8 +24,8 @@ class Component internal constructor(
     val bindings: Map<Key, Binding<*>>,
     val instances: Map<Key, Instance<*>>,
     val dependencies: Iterable<Component>,
-    internal val mapBindings: Map<MapName<*, *>, Map<Any?, Instance<*>>>,
-    internal val setBindings: Map<SetName<*>, Set<Instance<*>>>
+    internal val mapBindings: Map<Qualifier, Map<Any?, Instance<*>>>,
+    internal val setBindings: Map<Qualifier, Set<Instance<*>>>
 ) {
 
     /**
@@ -50,27 +48,70 @@ class Component internal constructor(
      * Returns the instance matching the [type] and [name]
      */
     fun <T> get(
-        type: KClass<*>,
+        type: Type<T>,
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        val key = Key(type, name)
-        val instance = findInstance<T>(key)
-            ?: throw IllegalStateException("Couldn't find a binding for $key")
-        return instance.get(context, parameters)
-    }
+        when (type.raw) {
+            Lazy::class -> {
+                val key = Key(type.parameters.first(), name)
+                val instance = findInstance<T>(key)
+                    ?: throw IllegalStateException("Couldn't find a binding for $key")
+                return lazy { instance.get(context, parameters) } as T
+            }
+            Map::class -> {
+                requireNotNull(name)
 
-    /**
-     * Returns the instance matching the [type] and [name] or null
-     */
-    fun <T> getOrNull(
-        type: KClass<*>,
-        name: Qualifier? = null,
-        parameters: ParametersDefinition? = null
-    ): T? {
-        val key = Key(type, name)
-        val instance = findInstance<T>(key)
-        return instance?.get(context, parameters)
+                val map = mapBindings[name]
+                    ?: return emptyMap<Any?, Any?>() as T
+
+                when (type.parameters[1].raw) {
+                    Lazy::class -> {
+                        return map.mapValues {
+                            lazy { it.value.get(context, parameters) }
+                        } as T
+                    }
+                    Provider::class -> {
+                        return map.mapValues { (_, instance) ->
+                            provider { instance.get(context, it) }
+                        } as T
+                    }
+                    else -> return map.mapValues { it.value.get(context, parameters) } as T
+                }
+            }
+            Provider::class -> {
+                val key = Key(type.parameters.first(), name)
+                val instance = findInstance<T>(key)
+                    ?: throw IllegalStateException("Couldn't find a binding for $key")
+                return provider { instance.get(context, it ?: parameters) } as T
+            }
+            Set::class -> {
+                requireNotNull(name)
+
+                val set = setBindings[name]
+                    ?: return emptySet<Any?>() as T
+
+                when (type.parameters.first().raw) {
+                    Lazy::class -> {
+                        return set.map {
+                            lazy { it.get(context, parameters) }
+                        }.toSet() as T
+                    }
+                    Provider::class -> {
+                        return set.map { instance ->
+                            provider { instance.get(context, it ?: parameters) }
+                        }.toSet() as T
+                    }
+                    else -> return set.map { it.get(context, parameters) }.toSet() as T
+                }
+            }
+            else -> {
+                val key = Key(type, name)
+                val instance = findInstance<T>(key)
+                    ?: throw IllegalStateException("Couldn't find a binding for $key")
+                return instance.get(context, parameters)
+            }
+        }
     }
 
     private fun <T> findInstance(key: Key): Instance<T>? {
@@ -127,13 +168,13 @@ fun component(
     val bindings = mutableMapOf<Key, Binding<*>>()
     val instances = mutableMapOf<Key, Instance<*>>()
     val mapBindings =
-        mutableMapOf<MapName<*, *>, MutableMap<Any?, Instance<*>>>()
+        mutableMapOf<Qualifier, MutableMap<Any?, Instance<*>>>()
     val setBindings =
-        mutableMapOf<SetName<*>, MutableSet<Instance<*>>>()
+        mutableMapOf<Qualifier, MutableSet<Instance<*>>>()
 
     dependencies.forEach {
-        mapBindings.putAll(it.mapBindings as Map<out MapName<*, *>, MutableMap<Any?, Instance<*>>>)
-        setBindings.putAll(it.setBindings as Map<out SetName<*>, MutableSet<Instance<*>>>)
+        mapBindings.putAll(it.mapBindings as Map<out Qualifier, MutableMap<Any?, Instance<*>>>)
+        setBindings.putAll(it.setBindings as Map<out Qualifier, MutableSet<Instance<*>>>)
     }
 
     // todo clean up
@@ -149,7 +190,7 @@ fun component(
                     || dependencyBindings.contains(key))
         ) {
             if (dropOverride) return
-            else error("Already declared binding for ${key}")
+            else error("Already declared binding for $key")
         }
 
         bindings[key] = binding
@@ -195,15 +236,7 @@ fun component(
 inline fun <reified T> Component.get(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(T::class, name, parameters)
-
-/**
- * Returns the instance matching the [type] and [name] or null
- */
-inline fun <reified T> Component.getOrNull(
-    name: Qualifier? = null,
-    noinline parameters: ParametersDefinition? = null
-): T? = getOrNull(T::class, name, parameters)
+): T = get(typeOf(), name, parameters)
 
 /**
  * Lazy version of [Component.get]
@@ -211,211 +244,13 @@ inline fun <reified T> Component.getOrNull(
 inline fun <reified T> Component.inject(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(T::class, name, parameters)
+): Lazy<T> = inject(typeOf<T>(), name, parameters)
 
 /**
  * Lazy version of [Component.get]
  */
 fun <T> Component.inject(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
-
-/**
- * Lazy version of [Component.getOrNull]
- */
-inline fun <reified T> Component.injectOrNull(
-    name: Qualifier? = null,
-    noinline parameters: ParametersDefinition? = null
-): Lazy<T?> = injectOrNull(T::class, name, parameters)
-
-/**
- * Lazy version of [Component.getOrNull]
- */
-fun <T> Component.injectOrNull(
-    type: KClass<*>,
-    name: Qualifier? = null,
-    parameters: ParametersDefinition? = null
-): Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { getOrNull<T>(type, name, parameters) }
-
-/**
- * Returns a [Provider] for [T] and [name]
- * Each [Provider.get] call results in a potentially new value
- */
-inline fun <reified T> Component.getProvider(
-    name: Qualifier? = null,
-    noinline defaultParameters: ParametersDefinition? = null
-): Provider<T> = getProvider(T::class, name, defaultParameters)
-
-/**
- * Returns a [Provider] for [T] and [name]
- * Each [Provider.get] call results in a potentially new value
- */
-fun <T> Component.getProvider(
-    type: KClass<*>,
-    name: Qualifier? = null,
-    defaultParameters: ParametersDefinition? = null
-): Provider<T> = provider { parameters: ParametersDefinition? ->
-    get<T>(type, name, parameters ?: defaultParameters)
-}
-
-/**
- * Returns a [Provider] for [T] and [name]
- * Each [Provider.get] call results in a potentially new value
- */
-inline fun <reified T> Component.injectProvider(
-    name: Qualifier? = null,
-    noinline defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = injectProvider(T::class, name, defaultParameters)
-
-/**
- * Returns a [Provider] for [T] and [name]
- * Each [Provider.get] call results in a potentially new value
- */
-fun <T> Component.injectProvider(
-    type: KClass<*>,
-    name: Qualifier? = null,
-    defaultParameters: ParametersDefinition? = null
-): Lazy<Provider<T>> = lazy(LazyThreadSafetyMode.NONE) {
-    provider { parameters: ParametersDefinition? ->
-        get<T>(type, name, parameters ?: defaultParameters)
-    }
-}
-
-/**
- * Returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
- */
-fun <K, V> Component.getMap(
-    name: MapName<K, V>,
-    parameters: ParametersDefinition? = null
-): Map<K, V> {
-    return mapBindings[name]
-        ?.mapValues { it.value.get(context, parameters) }
-            as? Map<K, V>
-        ?: emptyMap()
-}
-
-/**
- * Returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
- */
-fun <K, V> Component.getLazyMap(
-    name: MapName<K, V>,
-    parameters: ParametersDefinition? = null
-): Map<K, Lazy<V>> {
-    return mapBindings[name]
-        ?.mapValues {
-            lazy { it.value.get(context, parameters) }
-        }
-            as? Map<K, Lazy<V>>
-        ?: emptyMap()
-}
-
-/**
- * Returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
- */
-fun <K, V> Component.getProviderMap(
-    name: MapName<K, V>,
-    defaultParameters: ParametersDefinition? = null
-): Map<K, Provider<V>> {
-    return mapBindings[name]
-        ?.mapValues { (_, instance) ->
-            provider { instance.get(context, it ?: defaultParameters) }
-        } as? Map<K, Provider<V>>
-        ?: emptyMap()
-}
-
-/**
- * Lazily returns a multi bound [Map] for [K], [T] [name] and passes [parameters] to any of the entries
- */
-fun <K, V> Component.injectMap(
-    name: MapName<K, V>,
-    parameters: ParametersDefinition? = null
-): Lazy<Map<K, V>> {
-    return lazy { getMap(name, parameters) }
-}
-
-/**
- * Lazily returns multi bound [Map] of [Lazy]s for [K], [T] [name] and passes [parameters] to any of the entries
- */
-fun <K, V> Component.injectLazyMap(
-    name: MapName<K, V>,
-    parameters: ParametersDefinition? = null
-): Lazy<Map<K, Lazy<V>>> =
-    lazy { getLazyMap(name, parameters) }
-
-/**
- * Lazily returns a multi bound [Map] of [Provider]s for [K], [T] [name] and passes [defaultParameters] to each [Provider]
- */
-fun <K, V> Component.injectProviderMap(
-    name: MapName<K, V>,
-    defaultParameters: ParametersDefinition? = null
-): Lazy<Map<K, Provider<V>>> =
-    lazy { getProviderMap(name, defaultParameters) }
-
-/**
- * Returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
- */
-fun <T> Component.getSet(
-    name: SetName<T>,
-    parameters: ParametersDefinition? = null
-): Set<T> {
-    return setBindings[name]
-        ?.map { it.get(context, parameters) }
-        ?.toSet() as? Set<T>
-        ?: emptySet()
-}
-
-/**
- * Returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
- */
-fun <T> Component.getLazySet(
-    name: SetName<T>,
-    parameters: ParametersDefinition? = null
-): Set<Lazy<T>> {
-    return setBindings[name]
-        ?.map { lazy { it.get(context, parameters) } }
-        ?.toSet() as? Set<Lazy<T>>
-        ?: emptySet()
-}
-
-/**
- * Returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
- */
-fun <T> Component.getProviderSet(
-    name: SetName<T>,
-    defaultParameters: ParametersDefinition? = null
-): Set<Provider<T>> {
-    return setBindings[name]
-        ?.map { instance ->
-            provider { instance.get(context, it ?: defaultParameters) }
-        }
-        ?.toSet() as? Set<Provider<T>>
-        ?: emptySet()
-}
-
-/**
- * Lazily returns a multi bound [Set] for [T] [name] and passes [parameters] to any of the entries
- */
-fun <T> Component.injectSet(
-    name: SetName<T>,
-    parameters: ParametersDefinition? = null
-): Lazy<Set<T>> = lazy(LazyThreadSafetyMode.NONE) { getSet(name, parameters) }
-
-/**
- * Lazily returns multi bound [Set] of [Lazy]s for [T] [name] and passes [parameters] to any of the entries
- */
-fun <T> Component.injectLazySet(
-    name: SetName<T>,
-    parameters: ParametersDefinition? = null
-): Lazy<Set<Lazy<T>>> =
-    lazy { getLazySet(name, parameters) }
-
-/**
- * Lazily returns a multi bound [Set] of [Provider]s for [T] [name] and passes [defaultParameters] to each [Provider]
- */
-fun <T> Component.injectProviderSet(
-    name: SetName<T>,
-    defaultParameters: ParametersDefinition? = null
-): Lazy<Set<Provider<T>>> =
-    lazy { getProviderSet(name, defaultParameters) }

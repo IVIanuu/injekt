@@ -21,6 +21,7 @@ import com.ivianuu.injekt.util.TestDep1
 import com.ivianuu.injekt.util.TestDep2
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -199,4 +200,20 @@ class ComponentTest {
         )
     }
 
+    @Test
+    fun testTypeDistinction() {
+        val component = component(
+            modules = listOf(
+                module {
+                    single { listOf(1, 2, 3) }
+                    single { listOf("one", "two", "three") }
+                }
+            )
+        )
+
+        val ints = component.get<List<Int>>()
+        val strings = component.get<List<String>>()
+
+        assertNotSame(ints, strings)
+    }
 }

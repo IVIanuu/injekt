@@ -34,20 +34,18 @@ interface AppService {
 @Interceptors([AppServiceInterceptor::class, OtherAppServiceInterceptor::class])
 annotation class _AppService
 
-object AppServices : MapName<String, AppService>, SetName<AppService>
-
-@BindingMap(AppServices::class) annotation class AppServiceMap
+object AppServices : Qualifier
 
 @Factory
 class AppServiceStarter(
-    @AppServiceMap private val appServices: Map<String, Provider<AppService>>
+    @Name(AppServices::class) private val appServices: Map<String, Provider<AppService>>
 ) {
 
 }
 
 object AppServiceInterceptor : Interceptor<AppService> {
     override fun intercept(binding: Binding<AppService>) {
-        binding.bindIntoMap(AppServices, binding.type.java.name)
+        binding.bindIntoMap(AppServices, binding.type.raw.java.name)
     }
 }
 

@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * A module is a collection of [Binding]
  */
@@ -69,14 +67,14 @@ inline fun <reified T> Module.bind(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(kind, T::class, name, override, definition)
+): Binding<T> = bind(kind, typeOf<T>(), name, override, definition)
 
 /**
  * Adds a [Binding]
  */
 fun <T> Module.bind(
     kind: Kind,
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

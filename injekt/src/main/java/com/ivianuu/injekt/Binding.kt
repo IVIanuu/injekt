@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
  */
 class Binding<T> internal constructor(
     val kind: Kind,
-    val type: KClass<*>,
+    val type: Type<T>,
     val name: Qualifier?,
     val scope: Scope?,
     val override: Boolean,
@@ -35,12 +35,12 @@ class Binding<T> internal constructor(
     val attributes = attributesOf()
     val additionalKeys = mutableListOf<Key>()
 
-    val mapBindings = mutableMapOf<MapName<*, *>, MapBinding<*, *>>()
-    val setBindings = mutableMapOf<SetName<*>, SetBinding<*>>()
+    val mapBindings = mutableMapOf<Qualifier, MapBinding>()
+    val setBindings = mutableMapOf<Qualifier, SetBinding>()
 
     override fun toString(): String {
         return "$kind(" +
-                "type=${type.java.name}, " +
+                "type=$type, " +
                 "name=$name)"
     }
 
@@ -60,14 +60,14 @@ inline fun <reified T> binding(
     scope: Scope? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = binding(kind, T::class, name, scope, override, definition)
+): Binding<T> = binding(kind, typeOf<T>(), name, scope, override, definition)
 
 /**
  * Returns a new [Binding]
  */
 fun <T> binding(
     kind: Kind,
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     scope: Scope? = null,
     override: Boolean = false,
@@ -118,14 +118,28 @@ infix fun <T> Binding<T>.additionalKey(key: Key): Binding<T> {
  * Adds a additional binding for [T]
  */
 inline fun <reified T> Binding<*>.bindType() {
-    bindType(T::class)
+    bindType(typeOf<T>())
+}
+
+/**
+ * Adds a additional binding for [type]
+ */
+infix fun <T> Binding<T>.bindType(type: Type<*>): Binding<T> =
+    additionalKey(Key(type))
+
+/**
+ * Binds all of [types]
+ */
+fun <T> Binding<T>.bindTypes(vararg types: Type<*>): Binding<T> {
+    types.forEach { bindType(it) }
+    return this
 }
 
 /**
  * Adds a additional binding for [type]
  */
 infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> =
-    additionalKey(Key(type))
+    bindType(customTypeOf<Any?>(type))
 
 /**
  * Binds all of [types]
@@ -157,13 +171,13 @@ infix fun <T> Binding<T>.bindNames(names: Iterable<Qualifier>): Binding<T> {
 }
 
 inline fun <reified T> Binding<*>.bindAlias(name: Qualifier) {
-    bindAlias(T::class, name)
+    bindAlias(typeOf<T>(), name)
 }
 
-fun <T> Binding<T>.bindAlias(type: KClass<*>, name: Qualifier): Binding<T> =
+fun <T> Binding<T>.bindAlias(type: Type<*>, name: Qualifier): Binding<T> =
     additionalKey(Key(type, name))
 
-infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Qualifier>): Binding<T> {
+infix fun <T> Binding<T>.bindAlias(pair: Pair<Type<*>, Qualifier>): Binding<T> {
     bindAlias(pair.first, pair.second)
     return this
 }
@@ -171,7 +185,7 @@ infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Qualifier>): Binding<T>
 /**
  * Adds this binding into a map
  */
-infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
+infix fun <T> Binding<T>.bindIntoMap(mapBinding: MapBinding): Binding<T> {
     mapBindings[mapBinding.mapName] = mapBinding
     return this
 }
@@ -179,9 +193,9 @@ infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Bi
 /**
  * Adds this binding into a map
  */
-fun <T : V, K, V> Binding<T>.bindIntoMap(
-    mapName: MapName<K, V>,
-    key: K
+fun <T> Binding<T>.bindIntoMap(
+    mapName: Qualifier,
+    key: Any?
 ): Binding<T> {
     bindIntoMap(MapBinding(mapName, key))
     return this
@@ -191,7 +205,7 @@ fun <T : V, K, V> Binding<T>.bindIntoMap(
  * Adds this binding into a map
  */
 infix fun <T : V, K, V> Binding<T>.bindIntoMap(
-    pair: Pair<MapName<K, V>, K>
+    pair: Pair<Qualifier, K>
 ): Binding<T> {
     bindIntoMap(MapBinding(pair.first, pair.second))
     return this
@@ -200,7 +214,7 @@ infix fun <T : V, K, V> Binding<T>.bindIntoMap(
 /**
  * Adds this binding into a set
  */
-infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
+infix fun <T> Binding<T>.bindIntoSet(setBinding: SetBinding): Binding<T> {
     setBindings[setBinding.setName] = setBinding
     return this
 }
@@ -208,7 +222,7 @@ infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<
 /**
  * Adds this binding into a set
  */
-infix fun <T : V, V> Binding<T>.bindIntoSet(setName: SetName<V>): Binding<T> {
+infix fun <T> Binding<T>.bindIntoSet(setName: Qualifier): Binding<T> {
     bindIntoSet(SetBinding(setName))
     return this
 }

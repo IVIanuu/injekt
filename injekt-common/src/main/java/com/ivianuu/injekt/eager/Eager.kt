@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.eager
 
 import com.ivianuu.injekt.*
-import kotlin.reflect.KClass
 
 /**
  * Eager kind
@@ -34,13 +33,13 @@ inline fun <reified T> Module.eager(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = eager(T::class, name, override, definition)
+): Binding<T> = eager(typeOf<T>(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start
  */
 fun <T> Module.eager(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

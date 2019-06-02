@@ -18,7 +18,6 @@ package com.ivianuu.injekt.bridge
 
 import com.ivianuu.injekt.*
 import java.util.*
-import kotlin.reflect.KClass
 
 object BridgeKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = BridgeInstance(binding)
@@ -32,14 +31,14 @@ object BridgeKind : Kind() {
 inline fun <reified T> Module.bridge(
     name: Qualifier? = null,
     noinline block: (Binding<T>.() -> Unit)? = null
-): Binding<T> = bridge(T::class, name, block)
+): Binding<T> = bridge(typeOf(), name, block)
 
 /**
  * Acts as an bridge for an existing [Binding]
  * This allows to add alias bindings and so on to existing bindings
  */
 fun <T> Module.bridge(
-    type: KClass<*>,
+    type: Type<T>,
     name: Qualifier? = null,
     block: (Binding<T>.() -> Unit)? = null
 ): Binding<T> {

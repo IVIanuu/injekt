@@ -16,18 +16,7 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-/**
- * Map name
- */
-interface MapName<K, V> : Qualifier
-
-// todo find a better name
-@Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.VALUE_PARAMETER)
-annotation class BindingMap(val mapName: KClass<out MapName<*, *>>)
-
 /**
  * Map binding
  */
-data class MapBinding<K, V>(val mapName: MapName<K, V>, val key: K)
+data class MapBinding(val mapName: Qualifier, val key: Any?)

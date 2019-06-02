@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.android
 
+// todo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import com.ivianuu.injekt.*
-import kotlin.reflect.KClass
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
@@ -30,13 +30,13 @@ inline fun <reified T : ViewModel> Module.viewModel(
     viewModelStoreName: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = viewModel(T::class, name, viewModelStoreName, override, definition)
+): Binding<T> = viewModel(typeOf<T>(), name, viewModelStoreName, override, definition)
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
  */
 fun <T : ViewModel> Module.viewModel(
-    type: KClass<T>,
+    type: Type<T>,
     name: Qualifier? = null,
     viewModelStoreName: Qualifier? = null,
     override: Boolean = false,
@@ -51,7 +51,7 @@ fun <T : ViewModel> Module.viewModel(
     )
 
 private class ViewModelDefinition<T : ViewModel>(
-    private val type: KClass<T>,
+    private val type: Type<T>,
     private val key: String?,
     private val viewModelStoreName: Qualifier?,
     private val definition: Definition<T>
@@ -62,9 +62,9 @@ private class ViewModelDefinition<T : ViewModel>(
         val factory = Factory(context, parameters, definition)
         val provider = ViewModelProvider(store, factory)
         return@with if (key != null) {
-            provider.get(key, type.java)
+            provider.get(key, type.raw.java as Class<T>)
         } else {
-            provider.get(type.java)
+            provider.get(type.raw.java as Class<T>)
         }
     }
 
