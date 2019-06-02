@@ -195,6 +195,14 @@ fun component(
 
         bindings[key] = binding
         instances[key] = instance
+    }
+
+    fun addBinding(binding: Binding<*>, dropOverride: Boolean) {
+        val instance = binding.kind.createInstance(binding)
+        addBindingByKey(binding.key, binding, instance, dropOverride)
+        binding.additionalKeys.forEach {
+            addBindingByKey(it, binding, instance, dropOverride)
+        }
 
         binding.mapBindings.forEach { (name, mapBinding) ->
             val map = mapBindings.getOrPut(name) { mutableMapOf() }
@@ -206,14 +214,6 @@ fun component(
             val set = setBindings.getOrPut(name) { mutableSetOf() }
             // todo check overrides
             set.add(instance)
-        }
-    }
-
-    fun addBinding(binding: Binding<*>, dropOverride: Boolean) {
-        val instance = binding.kind.createInstance(binding)
-        addBindingByKey(binding.key, binding, instance, dropOverride)
-        binding.additionalKeys.forEach {
-            addBindingByKey(it, binding, instance, dropOverride)
         }
     }
 
