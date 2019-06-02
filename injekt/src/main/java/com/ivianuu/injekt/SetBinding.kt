@@ -18,11 +18,6 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-/**
- * Attribute key for [SetBinding]s
- */
-const val KEY_SET_BINDINGS = "set_bindings"
-
 interface SetName<T> : Qualifier
 
 // todo find a better name

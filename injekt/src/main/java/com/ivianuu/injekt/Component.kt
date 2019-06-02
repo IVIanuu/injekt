@@ -25,7 +25,9 @@ class Component internal constructor(
     val scope: Scope?,
     val bindings: Map<Key, Binding<*>>,
     val instances: Map<Key, Instance<*>>,
-    val dependencies: Iterable<Component>
+    val dependencies: Iterable<Component>,
+    internal val mapBindings: Map<MapName<*, *>, Map<Any?, Instance<*>>>,
+    internal val setBindings: Map<SetName<*>, Set<Instance<*>>>
 ) {
 
     /**
@@ -124,6 +126,15 @@ fun component(
 
     val bindings = mutableMapOf<Key, Binding<*>>()
     val instances = mutableMapOf<Key, Instance<*>>()
+    val mapBindings =
+        mutableMapOf<MapName<*, *>, MutableMap<Any?, Instance<*>>>()
+    val setBindings =
+        mutableMapOf<SetName<*>, MutableSet<Instance<*>>>()
+
+    dependencies.forEach {
+        mapBindings.putAll(it.mapBindings as Map<out MapName<*, *>, MutableMap<Any?, Instance<*>>>)
+        setBindings.putAll(it.setBindings as Map<out SetName<*>, MutableSet<Instance<*>>>)
+    }
 
     // todo clean up
 
@@ -143,6 +154,18 @@ fun component(
 
         bindings[key] = binding
         instances[key] = instance
+
+        binding.mapBindings.forEach { (name, mapBinding) ->
+            val map = mapBindings.getOrPut(name) { mutableMapOf() }
+            // todo check overrides
+            map[mapBinding.key] = instance
+        }
+
+        binding.setBindings.forEach { (name, setBinding) ->
+            val set = setBindings.getOrPut(name) { mutableSetOf() }
+            // todo check overrides
+            set.add(instance)
+        }
     }
 
     fun addBinding(binding: Binding<*>, dropOverride: Boolean) {
@@ -163,7 +186,7 @@ fun component(
     Component.bindingsByScope[scope]?.forEach { addBinding(it, true) }
     instances.putAll(Component.unscopedInstances)
 
-    return Component(scope, bindings, instances, dependencies)
+    return Component(scope, bindings, instances, dependencies, mapBindings, setBindings)
 }
 
 /**
@@ -267,9 +290,10 @@ fun <K, V> Component.getMap(
     name: MapName<K, V>,
     parameters: ParametersDefinition? = null
 ): Map<K, V> {
-    return getMultiBindingMap(name).mapValues {
-        get<V>(it.value.type, it.value.name, parameters)
-    }
+    return mapBindings[name]
+        ?.mapValues { it.value.get(context, parameters) }
+            as? Map<K, V>
+        ?: emptyMap()
 }
 
 /**
@@ -279,9 +303,12 @@ fun <K, V> Component.getLazyMap(
     name: MapName<K, V>,
     parameters: ParametersDefinition? = null
 ): Map<K, Lazy<V>> {
-    return getMultiBindingMap(name).mapValues {
-        lazy { get<V>(it.value.type, it.value.name, parameters) }
-    }
+    return mapBindings[name]
+        ?.mapValues {
+            lazy { it.value.get(context, parameters) }
+        }
+            as? Map<K, Lazy<V>>
+        ?: emptyMap()
 }
 
 /**
@@ -291,15 +318,11 @@ fun <K, V> Component.getProviderMap(
     name: MapName<K, V>,
     defaultParameters: ParametersDefinition? = null
 ): Map<K, Provider<V>> {
-    return getMultiBindingMap(name).mapValues { (_, binding) ->
-        provider {
-            get<V>(
-                binding.type,
-                binding.name,
-                it ?: defaultParameters
-            )
-        }
-    }
+    return mapBindings[name]
+        ?.mapValues { (_, instance) ->
+            provider { instance.get(context, it ?: defaultParameters) }
+        } as? Map<K, Provider<V>>
+        ?: emptyMap()
 }
 
 /**
@@ -337,9 +360,10 @@ fun <T> Component.getSet(
     name: SetName<T>,
     parameters: ParametersDefinition? = null
 ): Set<T> {
-    return getMultiBindingSet(name)
-        .map { get<T>(it.type, it.name, parameters) }
-        .toSet()
+    return setBindings[name]
+        ?.map { it.get(context, parameters) }
+        ?.toSet() as? Set<T>
+        ?: emptySet()
 }
 
 /**
@@ -349,9 +373,10 @@ fun <T> Component.getLazySet(
     name: SetName<T>,
     parameters: ParametersDefinition? = null
 ): Set<Lazy<T>> {
-    return getMultiBindingSet(name).map {
-        lazy { get<T>(it.type, it.name, parameters) }
-    }.toSet()
+    return setBindings[name]
+        ?.map { lazy { it.get(context, parameters) } }
+        ?.toSet() as? Set<Lazy<T>>
+        ?: emptySet()
 }
 
 /**
@@ -361,15 +386,12 @@ fun <T> Component.getProviderSet(
     name: SetName<T>,
     defaultParameters: ParametersDefinition? = null
 ): Set<Provider<T>> {
-    return getMultiBindingSet(name).map { binding ->
-        provider {
-            get<T>(
-                binding.type,
-                binding.name,
-                it ?: defaultParameters
-            )
+    return setBindings[name]
+        ?.map { instance ->
+            provider { instance.get(context, it ?: defaultParameters) }
         }
-    }.toSet()
+        ?.toSet() as? Set<Provider<T>>
+        ?: emptySet()
 }
 
 /**

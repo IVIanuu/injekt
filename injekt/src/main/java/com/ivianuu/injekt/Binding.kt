@@ -35,6 +35,9 @@ class Binding<T> internal constructor(
     val attributes = attributesOf()
     val additionalKeys = mutableListOf<Key>()
 
+    val mapBindings = mutableMapOf<MapName<*, *>, MapBinding<*, *>>()
+    val setBindings = mutableMapOf<SetName<*>, SetBinding<*>>()
+
     override fun toString(): String {
         return "$kind(" +
                 "type=${type.java.name}, " +
@@ -169,8 +172,7 @@ infix fun <T> Binding<T>.bindAlias(pair: Pair<KClass<*>, Qualifier>): Binding<T>
  * Adds this binding into a map
  */
 infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
-    attributes.getOrSet(KEY_MAP_BINDINGS) { mutableMapOf<Any, MapBinding<K, V>>() }
-        .put(mapBinding.mapName, mapBinding)
+    mapBindings[mapBinding.mapName] = mapBinding
     return this
 }
 
@@ -199,9 +201,7 @@ infix fun <T : V, K, V> Binding<T>.bindIntoMap(
  * Adds this binding into a set
  */
 infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
-    attributes.getOrSet(KEY_SET_BINDINGS) {
-        mutableMapOf<SetName<V>, SetBinding<V>>()
-    }[setBinding.setName] = setBinding
+    setBindings[setBinding.setName] = setBinding
     return this
 }
 

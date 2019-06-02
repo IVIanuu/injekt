@@ -25,23 +25,3 @@ internal fun Component.collectBindings(
     dependencies.forEach { it.collectBindings(bindings) }
     bindings.addAll(this.bindings.values)
 }
-
-internal fun <K, V> Component.getMultiBindingMap(mapName: MapName<K, V>): Map<K, Binding<V>> {
-    return getAllBindings()
-        .mapNotNull { binding ->
-            binding.attributes.getOrNull<Map<MapName<*, *>, MapBinding<*, *>>>(KEY_MAP_BINDINGS)
-                ?.get(mapName)?.let { binding to it }
-        }
-        .associateBy { it.second.key }
-        .mapValues { it.value.first } as Map<K, Binding<V>>
-}
-
-internal fun <T> Component.getMultiBindingSet(setName: SetName<T>): Set<Binding<T>> {
-    return getAllBindings()
-        .mapNotNull { binding ->
-            binding.attributes.getOrNull<Map<SetName<*>, SetBinding<*>>>(KEY_SET_BINDINGS)
-                ?.get(setName)?.let { binding }
-        }
-        .distinctBy { it.key }
-        .toSet() as Set<Binding<T>>
-}

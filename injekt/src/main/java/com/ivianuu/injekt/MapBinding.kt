@@ -19,11 +19,6 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * Attribute key for [MapBinding]s
- */
-const val KEY_MAP_BINDINGS = "map_bindings"
-
-/**
  * Map name
  */
 interface MapName<K, V> : Qualifier
@@ -36,4 +31,3 @@ annotation class BindingMap(val mapName: KClass<out MapName<*, *>>)
  * Map binding
  */
 data class MapBinding<K, V>(val mapName: MapName<K, V>, val key: K)
-
