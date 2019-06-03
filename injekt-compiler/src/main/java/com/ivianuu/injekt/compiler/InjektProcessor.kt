@@ -16,9 +16,18 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.google.auto.service.AutoService
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.ivianuu.processingx.steps.StepProcessor
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType.ISOLATING
+import javax.annotation.processing.Processor
+import javax.lang.model.SourceVersion
 
+@AutoService(Processor::class)
+@IncrementalAnnotationProcessor(ISOLATING)
 class InjektProcessor : StepProcessor() {
     override fun initSteps(): Set<ProcessingStep> = setOf(CreatorStep())
+    override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
 }

@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev-36"
+    const val version = "${Build.versionName}-dev-37"
 }
 
 object Versions {
@@ -46,7 +46,7 @@ object Versions {
     const val kodein = "6.1.0"
     const val koin = "2.0.0-rc-2"
     const val mavenGradle = "2.1"
-    const val processingX = "0.0.1-dev-2"
+    const val processingX = "0.0.1-dev-3"
     const val toothpick = "2.1.0"
 }
 
