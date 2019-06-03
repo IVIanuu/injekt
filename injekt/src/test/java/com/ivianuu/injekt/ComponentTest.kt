@@ -27,6 +27,8 @@ import org.junit.Test
 
 class ComponentTest {
 
+    private object Named : Qualifier
+
     @Test
     fun testGet() {
         val typed = TestDep1()
@@ -36,7 +38,7 @@ class ComponentTest {
             modules = listOf(
                 module {
                     factory { typed }
-                    single(named("named")) { named }
+                    single(Named) { named }
                 }
             )
         )
@@ -44,7 +46,7 @@ class ComponentTest {
         val typedGet = component.get<TestDep1>()
         assertEquals(typed, typedGet)
 
-        val namedGet = component.get<TestDep1>(named("named"))
+        val namedGet = component.get<TestDep1>(Named)
         assertEquals(named, namedGet)
     }
 

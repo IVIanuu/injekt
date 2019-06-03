@@ -22,13 +22,15 @@ import org.junit.Test
 
 class BridgeTest {
 
+    private object Original : Qualifier
+
     @Test
     fun testDelegatesToOriginal() {
         val component = component(
             modules = listOf(
                 module {
-                    factory(named("original_name")) { "original_value" }
-                    bridge<String>(named("original_name")) bindType CharSequence::class
+                    factory(Original) { "original_value" }
+                    bridge<String>(Original) bindType CharSequence::class
                 }
             )
         )

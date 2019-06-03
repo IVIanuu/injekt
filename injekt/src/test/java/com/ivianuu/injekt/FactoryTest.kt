@@ -39,6 +39,9 @@ class FactoryTest {
         assertFalse(value1 === value2)
     }
 
+    private object Bound : Qualifier
+    private object Unbounded : Qualifier
+
     @Test
     fun testContextUsage() {
         lateinit var rootComponent: Component
@@ -47,11 +50,11 @@ class FactoryTest {
         rootComponent = component(
             modules = listOf(
                 module {
-                    factory(named("bound"), unbounded = false) {
+                    factory(Bound, unbounded = false) {
                         assertEquals(rootComponent, component)
                         "bound"
                     }
-                    factory(named("unbounded"), unbounded = true) {
+                    factory(Unbounded, unbounded = true) {
                         assertEquals(nestedComponent, component)
                         "unbounded"
                     }
@@ -61,8 +64,8 @@ class FactoryTest {
 
         nestedComponent = component(dependencies = listOf(rootComponent))
 
-        nestedComponent.get<String>(named("bound"))
-        nestedComponent.get<String>(named("unbounded"))
+        nestedComponent.get<String>(Bound)
+        nestedComponent.get<String>(Unbounded)
     }
 
 }
