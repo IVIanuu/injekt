@@ -16,13 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class KindAnnotation(val kind: KClass<out Kind>)
-
-annotation class KindRegistry(val kindAnnotations: Array<KClass<*>>)
-
 /**
  * Provides [Instance]s for [Binding]s
  */

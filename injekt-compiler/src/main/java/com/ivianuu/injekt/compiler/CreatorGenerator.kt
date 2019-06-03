@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Creator
-import com.ivianuu.injekt.Interceptor
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 
@@ -47,7 +46,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         return imports
     }
 
-    private fun creator() = TypeSpec.objectBuilder(descriptor.creatorName)
+    private fun creator() = TypeSpec.classBuilder(descriptor.creatorName)
         .addSuperinterface(
             Creator::class.asClassName().plusParameter(descriptor.target)
         )
@@ -105,21 +104,6 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         .unindent()
         .addStatement(")")
         .add("\n")
-        .apply {
-            // todo the cast is dirty
-            descriptor.interceptors.forEach {
-                addStatement(
-                    "(%T as %T<%T>).intercept(binding)",
-                    it,
-                    Interceptor::class.asClassName(),
-                    descriptor.target
-                )
-            }
-
-            if (descriptor.interceptors.isNotEmpty()) {
-                add("\n")
-            }
-        }
         .addStatement("return binding")
         .build()
 }

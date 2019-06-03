@@ -46,7 +46,6 @@ fun <T> Module.multi(
 ): Binding<T> = bind(MultiKind, type, name, override, definition)
 
 @Target(AnnotationTarget.CLASS)
-@KindAnnotation(MultiKind::class)
 annotation class Multi
 
 private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {

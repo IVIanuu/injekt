@@ -47,7 +47,6 @@ fun <T> Module.weak(
 ): Binding<T> = bind(WeakKind, type, name, override, definition)
 
 @Target(AnnotationTarget.CLASS)
-@KindAnnotation(WeakKind::class)
 annotation class Weak
 
 private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() {

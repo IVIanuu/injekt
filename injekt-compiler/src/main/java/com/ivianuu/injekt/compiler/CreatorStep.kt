@@ -17,13 +17,14 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Param
+import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.processingx.*
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -31,24 +32,14 @@ import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
-class CreatorStep(
-    private val kindCollector: KindCollector
-) : ProcessingStep() {
+class CreatorStep : ProcessingStep() {
 
-    lateinit var roundEnv: RoundEnvironment
-
-    override fun annotations() = setOf(Bind::class) + kindAnnotations
+    override fun annotations() =
+        Kind.values().map { it.annotation }.toSet()
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
-        val kindsWithoutBind = kindAnnotations
+        annotations()
             .flatMap { elementsByAnnotation[it] }
-            .filterNot { it.hasAnnotation<Bind>() }
-
-        val dynamicKinds = kindCollector.kinds
-            .flatMap { roundEnv.getElementsAnnotatedWith(it) }
-            .filterNot { it.hasAnnotation<Bind>() }
-
-        (elementsByAnnotation[Bind::class] + kindsWithoutBind + dynamicKinds)
             .filterIsInstance<TypeElement>()
             .mapNotNull { createBindingDescriptor(it) }
             .map { CreatorGenerator(it) }
@@ -59,12 +50,11 @@ class CreatorStep(
     }
 
     private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
-        var kindAnnotation = element.getAnnotationMirrorOrNull<KindAnnotation>()
-
         val kindAnnotations =
-            element.getAnnotatedAnnotations<KindAnnotation>()
+            Kind.values()
+                .mapNotNull { element.getAnnotationMirrorOrNull(it.annotation) }
 
-        if (kindAnnotation != null && kindAnnotations.isNotEmpty()) {
+        if (kindAnnotations.size > 1) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Can only have 1 kind annotation",
@@ -73,34 +63,14 @@ class CreatorStep(
             return null
         }
 
-        if (kindAnnotation == null) {
-            when {
-                kindAnnotations.size > 1 -> {
-                    messager.printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Can only have 1 kind annotation",
-                        element
-                    )
-                    return null
-                }
-                kindAnnotations.isEmpty() -> {
-                    messager.printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Must have a kind annotation",
-                        element
-                    )
-                    return null
-                }
-            }
+        val kindAnnotation = kindAnnotations.first()
 
-            kindAnnotation = kindAnnotations.first()
-                .annotationType
-                .asElement()
-                .getAnnotationMirror<KindAnnotation>()
-        }
-
-        val kindName = kindAnnotation.getAsType("kind")
-            .asTypeName() as ClassName
+        val kindName = kindAnnotation
+            .annotationType
+            .asElement()
+            .toString()
+            .let { type -> Kind.values().first { it.annotation.java.name == type } }
+            .impl
 
         var scopeAnnotation = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
 
@@ -130,11 +100,6 @@ class CreatorStep(
                 ?.annotationType
                 ?.asElement()
                 ?.getAnnotationMirror<ScopeAnnotation>()
-        }
-
-        if (scopeAnnotation == null) {
-            scopeAnnotation = kindAnnotation.annotationType.asElement()
-                .getAnnotationMirrorOrNull<ScopeAnnotation>()
         }
 
         val scopeName = scopeAnnotation?.getAsType("scope")
@@ -214,29 +179,12 @@ class CreatorStep(
                 )
             }
 
-        val interceptors = mutableListOf<ClassName>()
-
-        element.getAnnotationMirrorOrNull<Interceptors>()
-            ?.getAsTypeList("interceptors")
-            ?.map { it.asTypeName() as ClassName }
-            ?.forEach { interceptors.add(it) }
-
-        element.getAnnotatedAnnotations<Interceptors>()
-            .flatMap {
-                it.annotationType.asElement()
-                    .getAnnotationMirror<Interceptors>()
-                    .getAsTypeList("interceptors")
-            }
-            .map { it.asTypeName() as ClassName }
-            .forEach { interceptors.add(it) }
-
         return CreatorDescriptor(
             targetName,
             creatorName,
             kindName,
             scopeName,
-            constructorParams,
-            interceptors
+            constructorParams
         )
     }
 

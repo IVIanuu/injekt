@@ -18,18 +18,12 @@ package com.ivianuu.injekt.compiler
 
 import com.squareup.kotlinpoet.ClassName
 
-data class MultiCreatorDescriptor(
-    val multiCreatorName: ClassName,
-    val creatorNames: Set<ClassName>
-)
-
 data class CreatorDescriptor(
     val target: ClassName,
     val creatorName: ClassName,
     val kind: ClassName,
     val scope: ClassName?,
-    val constructorParams: List<ParamDescriptor>,
-    val interceptors: List<ClassName>
+    val constructorParams: List<ParamDescriptor>
 )
 
 // todo make a sealed class

@@ -46,7 +46,6 @@ fun <T> Module.eager(
 ): Binding<T> = bind(EagerKind, type, name, override, definition)
 
 @Target(AnnotationTarget.CLASS)
-@KindAnnotation(EagerKind::class)
 annotation class Eager
 
 private object UNINITIALIZED

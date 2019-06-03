@@ -22,7 +22,7 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scope: Scope?,
     val bindings: Map<Key, Binding<*>>,
-    val instances: Map<Key, Instance<*>>,
+    val instances: MutableMap<Key, Instance<*>>,
     val dependencies: Iterable<Component>,
     internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
     internal val setBindings: Map<Key, Set<Instance<*>>>
@@ -55,7 +55,7 @@ class Component internal constructor(
         when (type.raw) {
             Lazy::class -> {
                 val key = Key(type.parameters.first(), name)
-                val instance = findInstance<T>(key)
+                val instance = findInstance<T>(key, true)
                     ?: throw IllegalStateException("Couldn't find a binding for $key")
                 return lazy { instance.get(parameters) } as T
             }
@@ -105,7 +105,7 @@ class Component internal constructor(
             }
             Provider::class -> {
                 val key = Key(type.parameters.first(), name)
-                val instance = findInstance<T>(key)
+                val instance = findInstance<T>(key, true)
                     ?: throw IllegalStateException("Couldn't find a binding for $key")
                 return provider { instance.get(it ?: parameters) } as T
             }
@@ -152,50 +152,53 @@ class Component internal constructor(
             }
             else -> {
                 val key = Key(type, name)
-                val instance = findInstance<T>(key)
+                val instance = findInstance<T>(key, true)
                     ?: throw IllegalStateException("Couldn't find a binding for $key")
                 return instance.get(parameters)
             }
         }
     }
 
-    private fun <T> findInstance(key: Key): Instance<T>? {
+    private fun <T> findInstance(key: Key, includeGlobalPool: Boolean): Instance<T>? {
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
         for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key)
+            instance = dependency.findInstance<T>(key, false)
             if (instance != null) return instance
+        }
+
+        if (includeGlobalPool) {
+            val binding = GlobalPool.get<T>(key)
+            if (binding != null) {
+                val component = findComponentForScope(scope)
+                    ?: error("Couldn't find component for $scope")
+                return component.addInstance(binding)
+            }
         }
 
         return null
     }
 
-    companion object {
-        internal val bindingsByScope = mutableMapOf<Scope, MutableSet<Binding<*>>>()
-
-        internal val unscopedBindings = mutableSetOf<Binding<*>>()
-        internal val unscopedInstances = mutableMapOf<Key, Instance<*>>()
-
-        init {
-            FastServiceLoader.load(MultiCreator::class.java, javaClass.classLoader)
-                .flatMap { it.create() }
-                .forEach { binding ->
-                    if (binding.scope != null) {
-                        bindingsByScope.getOrPut(binding.scope) { mutableSetOf() }
-                            .add(binding)
-                    } else {
-                        unscopedBindings.add(binding)
-                        val instance = binding.kind.createInstance(binding)
-                        // todo check overrides
-                        unscopedInstances[binding.key] = instance
-                        binding.additionalKeys.forEach {
-                            unscopedInstances[it] = instance
-                        }
-                    }
-                }
-        }
+    private fun <T> addInstance(binding: Binding<T>): Instance<T> {
+        val instance = binding.kind.createInstance(binding)
+        instances[binding.key] = instance
+        instance.context = context
+        instance.attached()
+        return instance
     }
+
+    private fun findComponentForScope(scope: Any?): Component? {
+        if (scope == null) return this
+        if (this.scope == scope) return this
+        for (dependency in dependencies) {
+            dependency.findComponentForScope(scope)
+                ?.let { return@findComponentForScope it }
+        }
+
+        return null
+    }
+
 }
 
 /**
@@ -268,9 +271,6 @@ fun component(
     }
 
     modules.forEach { addModule(it) }
-
-    Component.bindingsByScope[scope]?.forEach { addBinding(it, true) }
-    instances.putAll(Component.unscopedInstances)
 
     return Component(scope, bindings, instances, dependencies, mapBindings, setBindings)
 }

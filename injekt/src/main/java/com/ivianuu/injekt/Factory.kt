@@ -44,7 +44,6 @@ fun <T> Module.factory(
 ): Binding<T> = bind(FactoryKind, type, name, override, definition)
 
 @Target(AnnotationTarget.CLASS)
-@KindAnnotation(FactoryKind::class)
 annotation class Factory
 
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {

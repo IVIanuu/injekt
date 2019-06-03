@@ -22,8 +22,3 @@ package com.ivianuu.injekt
 interface Creator<T> {
     fun create(): Binding<T>
 }
-
-// todo rename
-interface MultiCreator {
-    fun create(): List<Binding<*>>
-}

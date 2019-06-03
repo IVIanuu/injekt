@@ -32,16 +32,12 @@ class App : Application(), InjektTrait {
         )
     }
 
-    private val appServiceStarter by inject<AppServiceStarter>()
-
     override fun onCreate() {
         InjektPlugins.logger = AndroidLogger()
 
         d { "Injected app dependency ${get<AppDependency>()}" }
 
         super.onCreate()
-
-        appServiceStarter.startServices()
     }
 }
 

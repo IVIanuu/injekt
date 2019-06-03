@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.comparison
 
-import com.ivianuu.injekt.Bind
 import com.ivianuu.injekt.Factory
 import javax.inject.Inject
 
@@ -114,9 +113,9 @@ import javax.inject.Inject
 @Factory class Fib92 @Inject constructor(val fibM1: Fib91, val fibM2: Fib90)
 @Factory class Fib93 @Inject constructor(val fibM1: Fib92, val fibM2: Fib91)
 @Factory class Fib94 @Inject constructor(val fibM1: Fib93, val fibM2: Fib92)
-@Bind @Factory class Fib95 @Inject constructor(val fibM1: Fib94, val fibM2: Fib93)
-@Bind @Factory class Fib96 @Inject constructor(val fibM1: Fib95, val fibM2: Fib94)
-@Bind @Factory class Fib97 @Inject constructor(val fibM1: Fib96, val fibM2: Fib95)
-@Bind @Factory class Fib98 @Inject constructor(val fibM1: Fib97, val fibM2: Fib96)
-@Bind @Factory class Fib99 @Inject constructor(val fibM1: Fib98, val fibM2: Fib97)
-@Bind @Factory class Fib100 @Inject constructor(val fibM1: Fib99, val fibM2: Fib98)
+@Factory class Fib95 @Inject constructor(val fibM1: Fib94, val fibM2: Fib93)
+@Factory class Fib96 @Inject constructor(val fibM1: Fib95, val fibM2: Fib94)
+@Factory class Fib97 @Inject constructor(val fibM1: Fib96, val fibM2: Fib95)
+@Factory class Fib98 @Inject constructor(val fibM1: Fib97, val fibM2: Fib96)
+@Factory class Fib99 @Inject constructor(val fibM1: Fib98, val fibM2: Fib97)
+@Factory class Fib100 @Inject constructor(val fibM1: Fib99, val fibM2: Fib98)
