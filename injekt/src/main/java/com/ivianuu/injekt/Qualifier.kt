@@ -20,10 +20,3 @@ package com.ivianuu.injekt
  * Name marker
  */
 interface Qualifier
-
-/**
- * String name
- */
-data class StringName(val name: String) : Qualifier
-
-fun named(name: String) = StringName(name)

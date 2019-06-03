@@ -48,12 +48,14 @@ fun <T> Module.bridge(
     return bind<T>(
         BridgeKind,
         type,
-        named(UUID.randomUUID().toString())
+        UUIDName()
     ) { component.get(type, name) { it } }.apply {
         attribute(ORIGINAL_KEY, Key(type, name))
         block?.invoke(this)
     }
 }
+
+private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
 
 const val ORIGINAL_KEY = "bridge_original_key"
 
