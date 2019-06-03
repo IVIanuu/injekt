@@ -218,4 +218,22 @@ class ComponentTest {
 
         assertNotSame(ints, strings)
     }
+
+    @Test
+    fun testNullableDistinction() {
+        val component = component(
+            modules = listOf(
+                module {
+                    factory<String> { "string" }
+                    factory<String?> { "nullable string" }
+                }
+            )
+        )
+
+        val string = component.get<String>()
+        assertEquals("string", string)
+        val nullableString = component.get<String?>()
+        assertEquals("nullable string", nullableString)
+    }
+
 }

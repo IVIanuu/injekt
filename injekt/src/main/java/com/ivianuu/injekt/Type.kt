@@ -19,10 +19,12 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
-// todo support nullable
-
+/**
+ * Type
+ */
 class Type<T> internal constructor(
     val raw: KClass<*>,
+    val isNullable: Boolean,
     val parameters: Array<Type<*>>
 ) {
 
@@ -31,6 +33,7 @@ class Type<T> internal constructor(
         if (other !is Type<*>) return false
 
         if (raw != other.raw) return false
+        if (isNullable != other.isNullable) return false
         if (!parameters.contentEquals(other.parameters)) return false
 
         return true
@@ -38,6 +41,7 @@ class Type<T> internal constructor(
 
     override fun hashCode(): Int {
         var result = raw.hashCode()
+        result = 31 * result + isNullable.hashCode()
         result = 31 * result + parameters.contentHashCode()
         return result
     }
@@ -53,7 +57,7 @@ class Type<T> internal constructor(
             ""
         }
 
-        return "${raw.java.name}$params"
+        return "${raw.java.name}${if (isNullable) "?" else ""}$params"
     }
 
 }
@@ -63,13 +67,17 @@ inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
 @PublishedApi
 internal fun <T> KType.asType(): Type<T> =
-    Type<T>(classifier as KClass<*>, arguments.map { it.type!!.asType<Any?>() }.toTypedArray())
-
-inline fun <reified T> customTypeOf(vararg parameters: Type<*>): Type<T> =
-    customTypeOf(T::class, *parameters)
+    Type<T>(
+        classifier as KClass<*>,
+        isMarkedNullable,
+        arguments.map { it.type!!.asType<Any?>() }.toTypedArray()
+    )
 
 fun <T> customTypeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
-    Type<T>(raw, parameters as Array<Type<*>>)
+    customTypeOf(raw, false, *parameters)
+
+fun <T> customTypeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
+    Type<T>(raw, isNullable, parameters as Array<Type<*>>)
 
 inline fun <reified T> lazyTypeOf(): Type<Lazy<T>> =
     customTypeOf(Lazy::class, typeOf<T>())
