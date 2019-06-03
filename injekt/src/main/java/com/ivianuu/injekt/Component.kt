@@ -32,8 +32,22 @@ class Component internal constructor(
 
     init {
         InjektPlugins.logger?.let { logger ->
-            instances.forEach {
-                logger.info("Register binding ${it.value.binding}")
+            logger.info("Initialize component $scope")
+
+            dependencies.forEach {
+                logger.info("Register dependency Component(${it.scope})")
+            }
+
+            bindings.forEach {
+                logger.info("Register binding ${it.value}")
+            }
+
+            mapBindings.forEach {
+                logger.info("Register map binding ${it.key} ${it.value.mapValues { it.value.binding }}")
+            }
+
+            setBindings.forEach {
+                logger.info("Register set binding ${it.key} ${it.value.map { it.binding }}")
             }
         }
         instances
