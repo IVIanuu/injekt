@@ -225,6 +225,8 @@ fun component(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
+    // todo clean up the whole function
+
     val dependencyBindings = dependencies
         .map { it.getAllBindings() }
         .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
@@ -256,8 +258,6 @@ fun component(
                     as Map<out Key, MutableMap<Key, Instance<*>>>
         )
     }
-
-    // todo clean up
 
     fun addBindingByKey(
         key: Key,
