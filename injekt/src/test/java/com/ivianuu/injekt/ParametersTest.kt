@@ -22,15 +22,6 @@ import org.junit.Test
 class ParametersTest {
 
     @Test
-    fun testSize() {
-        val myString = "empty"
-        val myInt = 42
-        val params = parametersOf(myString, myInt)
-
-        assertEquals(2, params.size)
-    }
-
-    @Test
     fun testGetParams() {
         val myString = "empty"
         val myInt = 42
@@ -40,5 +31,12 @@ class ParametersTest {
         assertEquals(myString, s)
         assertEquals(myInt, i)
     }
+
+    @Test
+    fun testSize() {
+        val params = parametersOf(1, 2, 3)
+        assertEquals(3, params.size)
+    }
+
 
 }
