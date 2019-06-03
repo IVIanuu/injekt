@@ -63,6 +63,11 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         when (type.raw) {
+            Component::class -> {
+                if (name == null || name == scope) {
+                    return this as T
+                }
+            }
             Lazy::class -> {
                 val key = Key(type.parameters.first(), name)
                 findInstance<T>(key, true)

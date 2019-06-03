@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 /**
  * Scope marker
  */
-interface Scope
+interface Scope : Qualifier
 
 open class NamedScope(val name: String) : Scope {
     override fun equals(other: Any?): Boolean {
