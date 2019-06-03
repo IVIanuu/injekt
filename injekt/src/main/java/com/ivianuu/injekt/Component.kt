@@ -68,6 +68,7 @@ class Component internal constructor(
                             typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
+                        // todo throw error if empty
                         val map = mapBindings[mapKey]
                             ?: return emptyMap<Any?, Any?>() as T
 
@@ -82,6 +83,7 @@ class Component internal constructor(
                             typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
+                        // todo throw error if empty
                         val map = mapBindings[mapKey]
                             ?: return emptyMap<Any?, Any?>() as T
 
@@ -96,6 +98,7 @@ class Component internal constructor(
                             typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
+                        // todo throw error if empty
                         val map = mapBindings[mapKey]
                             ?: return emptyMap<Any?, Any?>() as T
 
@@ -117,6 +120,7 @@ class Component internal constructor(
                             typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
+                        // todo throw error if empty
                         val set = setBindings[setKey]
                             ?: return emptySet<Any?>() as T
 
@@ -130,6 +134,8 @@ class Component internal constructor(
                             typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
+
+                        // todo throw error if empty
                         val set = setBindings[setKey]
                             ?: return emptySet<Any?>() as T
 
@@ -143,6 +149,7 @@ class Component internal constructor(
                             typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
+                        // todo throw error if empty
                         val set = setBindings[setKey]
                             ?: return emptySet<Any?>() as T
 
