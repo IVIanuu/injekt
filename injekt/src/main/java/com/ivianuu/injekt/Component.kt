@@ -228,11 +228,15 @@ fun component(
     val mapBindings =
         mutableMapOf<Key, MutableMap<Any?, Instance<*>>>()
     val setBindings =
-        mutableMapOf<Key, MutableSet<Instance<*>>>()
+        mutableMapOf<Key, MutableMap<Key, Instance<*>>>()
 
     dependencies.forEach {
         mapBindings.putAll(it.mapBindings as Map<out Key, MutableMap<Any?, Instance<*>>>)
-        setBindings.putAll(it.setBindings as Map<out Key, MutableSet<Instance<*>>>)
+        setBindings.putAll(
+            it.setBindings
+                .mapValues { it.value.associateBy { it.binding.key } }
+                    as Map<out Key, MutableMap<Key, Instance<*>>>
+        )
     }
 
     // todo clean up
@@ -260,22 +264,33 @@ fun component(
             addBindingByKey(it, binding, instance)
         }
 
-        binding.mapBindings.forEach { (key, mapBinding) ->
-            val map = mapBindings.getOrPut(key) { mutableMapOf() }
-            // todo check overrides
+        binding.mapBindings.forEach { (mapKey, mapBinding) ->
+            val map = mapBindings.getOrPut(mapKey) { mutableMapOf() }
+
+            val oldValue = map[mapBinding.mapKey]
+            if (oldValue != null && !mapBinding.override) {
+                error("Already contains ${mapBinding.mapKey}")
+            }
+
             map[mapBinding.key] = instance
         }
 
-        binding.setBindings.forEach { (key, setBinding) ->
-            val set = setBindings.getOrPut(key) { mutableSetOf() }
-            // todo check overrides
-            set.add(instance)
+        binding.setBindings.forEach { (setKey, setBinding) ->
+            val map = setBindings.getOrPut(setKey) { mutableMapOf() }
+
+            val oldValue = map[binding.key]
+
+            if (oldValue != null && !setBinding.override) {
+                error("Already contains ${binding.key}")
+            }
+
+            map[binding.key] = instance
         }
     }
 
     fun addModule(module: Module) {
         module.mapBindings.forEach { mapBindings.getOrPut(it) { mutableMapOf() } }
-        module.setBindings.forEach { setBindings.getOrPut(it) { mutableSetOf() } }
+        module.setBindings.forEach { setBindings.getOrPut(it) { mutableMapOf() } }
 
         module.bindings.forEach { addBinding(it.value) }
         module.includes.forEach { addModule(it) }
@@ -283,7 +298,9 @@ fun component(
 
     modules.forEach { addModule(it) }
 
-    return Component(scope, bindings, instances, dependencies, mapBindings, setBindings)
+    return Component(scope, bindings, instances, dependencies, mapBindings,
+        setBindings.mapValues { it.value.values.toSet() }
+    )
 }
 
 /**

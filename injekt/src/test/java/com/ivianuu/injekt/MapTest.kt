@@ -74,16 +74,31 @@ class MapTest {
 
     // todo test nested
 
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnIllegalOverride() {
+        component(
+            modules = listOf(
+                module {
+                    factory { "value" }.bindIntoMap("key")
+                    factory { "overridden_value" }.bindIntoMap("key")
+                }
+            )
+        )
+    }
+
     @Test
-    fun testOverride() {
+    fun testOverridesLegalOverride() {
         val component = component(modules = listOf(
             module {
-                factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
-                factory(NameTwo) { "value_two" } bindIntoMap mapBinding("key_one")
+                factory(NameOne) { "value" }.bindIntoMap("key")
+                factory(NameTwo) { "overridden_value" }.bindIntoMap("key", override = true)
             }
         ))
 
-        assertEquals("value_two", component.get<Map<String, String>>()["key_one"])
+        assertEquals(
+            "overridden_value",
+            component.get<Map<String, String>>()["key"]
+        )
     }
 
 }

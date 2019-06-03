@@ -76,4 +76,28 @@ class SetTest {
 
     // todo test nested
 
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnIllegalOverride() {
+        component(
+            modules = listOf(
+                module {
+                    factory { "value" }.bindIntoSet()
+                    factory { "overridden_value" }.bindIntoSet()
+                }
+            )
+        )
+    }
+
+    @Test
+    fun testOverridesLegalOverride() {
+        val component = component(modules = listOf(
+            module {
+                factory { "value" }.bindIntoSet()
+                factory { "overridden_value" }.bindIntoSet()
+            }
+        ))
+
+        assertEquals("overridden_value", component.get<Set<String>>().first())
+    }
+
 }
