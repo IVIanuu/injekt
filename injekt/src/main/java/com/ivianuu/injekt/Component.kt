@@ -24,8 +24,8 @@ class Component internal constructor(
     val bindings: Map<Key, Binding<*>>,
     val instances: Map<Key, Instance<*>>,
     val dependencies: Iterable<Component>,
-    internal val mapBindings: Map<Qualifier, Map<Any?, Instance<*>>>,
-    internal val setBindings: Map<Qualifier, Set<Instance<*>>>
+    internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
+    internal val setBindings: Map<Key, Set<Instance<*>>>
 ) {
 
     /**
@@ -60,23 +60,47 @@ class Component internal constructor(
                 return lazy { instance.get(context, parameters) } as T
             }
             Map::class -> {
-                requireNotNull(name)
-
-                val map = mapBindings[name]
-                    ?: return emptyMap<Any?, Any?>() as T
-
                 when (type.parameters[1].raw) {
                     Lazy::class -> {
+                        val mapKeyType = type.parameters[0]
+                        val mapValueType = type.parameters[1].parameters[0]
+                        val mapKey = Key(
+                            customTypeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
+                        )
+
+                        val map = mapBindings[mapKey]
+                            ?: return emptyMap<Any?, Any?>() as T
+
                         return map.mapValues {
                             lazy { it.value.get(context, parameters) }
                         } as T
                     }
                     Provider::class -> {
+                        val mapKeyType = type.parameters[0]
+                        val mapValueType = type.parameters[1].parameters[0]
+                        val mapKey = Key(
+                            customTypeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
+                        )
+
+                        val map = mapBindings[mapKey]
+                            ?: return emptyMap<Any?, Any?>() as T
+
                         return map.mapValues { (_, instance) ->
                             provider { instance.get(context, it) }
                         } as T
                     }
-                    else -> return map.mapValues { it.value.get(context, parameters) } as T
+                    else -> {
+                        val mapKeyType = type.parameters[0]
+                        val mapValueType = type.parameters[1]
+                        val mapKey = Key(
+                            customTypeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
+                        )
+
+                        val map = mapBindings[mapKey]
+                            ?: return emptyMap<Any?, Any?>() as T
+
+                        return map.mapValues { it.value.get(context, parameters) } as T
+                    }
                 }
             }
             Provider::class -> {
@@ -86,23 +110,44 @@ class Component internal constructor(
                 return provider { instance.get(context, it ?: parameters) } as T
             }
             Set::class -> {
-                requireNotNull(name)
-
-                val set = setBindings[name]
-                    ?: return emptySet<Any?>() as T
-
                 when (type.parameters.first().raw) {
                     Lazy::class -> {
+                        val setValueType = type.parameters[0].parameters[0]
+                        val setKey = Key(
+                            customTypeOf<Set<Any?>>(Set::class, setValueType)
+                        )
+
+                        val set = setBindings[setKey]
+                            ?: return emptySet<Any?>() as T
+
                         return set.map {
                             lazy { it.get(context, parameters) }
                         }.toSet() as T
                     }
                     Provider::class -> {
+                        val setValueType = type.parameters[0].parameters[0]
+                        val setKey = Key(
+                            customTypeOf<Set<Any?>>(Set::class, setValueType)
+                        )
+
+                        val set = setBindings[setKey]
+                            ?: return emptySet<Any?>() as T
+
                         return set.map { instance ->
                             provider { instance.get(context, it ?: parameters) }
                         }.toSet() as T
                     }
-                    else -> return set.map { it.get(context, parameters) }.toSet() as T
+                    else -> {
+                        val setValueType = type.parameters[0]
+                        val setKey = Key(
+                            customTypeOf<Set<Any?>>(Set::class, setValueType)
+                        )
+
+                        val set = setBindings[setKey]
+                            ?: return emptySet<Any?>() as T
+
+                        return set.map { it.get(context, parameters) }.toSet() as T
+                    }
                 }
             }
             else -> {
@@ -168,13 +213,13 @@ fun component(
     val bindings = mutableMapOf<Key, Binding<*>>()
     val instances = mutableMapOf<Key, Instance<*>>()
     val mapBindings =
-        mutableMapOf<Qualifier, MutableMap<Any?, Instance<*>>>()
+        mutableMapOf<Key, MutableMap<Any?, Instance<*>>>()
     val setBindings =
-        mutableMapOf<Qualifier, MutableSet<Instance<*>>>()
+        mutableMapOf<Key, MutableSet<Instance<*>>>()
 
     dependencies.forEach {
-        mapBindings.putAll(it.mapBindings as Map<out Qualifier, MutableMap<Any?, Instance<*>>>)
-        setBindings.putAll(it.setBindings as Map<out Qualifier, MutableSet<Instance<*>>>)
+        mapBindings.putAll(it.mapBindings as Map<out Key, MutableMap<Any?, Instance<*>>>)
+        setBindings.putAll(it.setBindings as Map<out Key, MutableSet<Instance<*>>>)
     }
 
     // todo clean up
@@ -204,14 +249,14 @@ fun component(
             addBindingByKey(it, binding, instance, dropOverride)
         }
 
-        binding.mapBindings.forEach { (name, mapBinding) ->
-            val map = mapBindings.getOrPut(name) { mutableMapOf() }
+        binding.mapBindings.forEach { (key, mapBinding) ->
+            val map = mapBindings.getOrPut(key) { mutableMapOf() }
             // todo check overrides
             map[mapBinding.key] = instance
         }
 
-        binding.setBindings.forEach { (name, setBinding) ->
-            val set = setBindings.getOrPut(name) { mutableSetOf() }
+        binding.setBindings.forEach { (key, setBinding) ->
+            val set = setBindings.getOrPut(key) { mutableSetOf() }
             // todo check overrides
             set.add(instance)
         }

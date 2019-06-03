@@ -19,4 +19,20 @@ package com.ivianuu.injekt
 /**
  * Map binding
  */
-data class MapBinding(val mapName: Qualifier, val key: Any?)
+data class MapBinding<K, V>(
+    val key: K,
+    val keyType: Type<K>,
+    val valueType: Type<V>,
+    val mapName: Qualifier?,
+    val override: Boolean
+) {
+    val mapKey = Key(customTypeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
+}
+
+inline fun <reified K, reified V> mapBinding(
+    key: K,
+    keyType: Type<K> = typeOf(),
+    valueType: Type<V> = typeOf(),
+    mapName: Qualifier? = null,
+    override: Boolean = false
+): MapBinding<K, V> = MapBinding(key, keyType, valueType, mapName, override)

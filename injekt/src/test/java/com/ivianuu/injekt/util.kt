@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt
 
-object MapValues : Qualifier
-object SetValues : Qualifier
-
 object NameOne : Qualifier
 object NameTwo : Qualifier
 object NameThree : Qualifier

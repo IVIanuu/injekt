@@ -19,4 +19,16 @@ package com.ivianuu.injekt
 /**
  * Set binding
  */
-data class SetBinding(val setName: Qualifier)
+data class SetBinding<T>(
+    val setType: Type<T>,
+    val setName: Qualifier?,
+    val override: Boolean
+) {
+    val setKey = Key(customTypeOf<Set<T>>(Set::class, setType), setName)
+}
+
+inline fun <reified T> setBinding(
+    setType: Type<T> = typeOf(),
+    setName: Qualifier? = null,
+    override: Boolean = false
+): SetBinding<T> = SetBinding(setType, setName, override)

@@ -35,8 +35,8 @@ class Binding<T> internal constructor(
     val attributes = attributesOf()
     val additionalKeys = mutableListOf<Key>()
 
-    val mapBindings = mutableMapOf<Qualifier, MapBinding>()
-    val setBindings = mutableMapOf<Qualifier, SetBinding>()
+    val mapBindings = mutableMapOf<Key, MapBinding<*, *>>()
+    val setBindings = mutableMapOf<Key, SetBinding<*>>()
 
     override fun toString(): String {
         return "$kind(" +
@@ -185,44 +185,41 @@ infix fun <T> Binding<T>.bindAlias(pair: Pair<Type<*>, Qualifier>): Binding<T> {
 /**
  * Adds this binding into a map
  */
-infix fun <T> Binding<T>.bindIntoMap(mapBinding: MapBinding): Binding<T> {
-    mapBindings[mapBinding.mapName] = mapBinding
+infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
+    mapBindings[mapBinding.mapKey] = mapBinding
     return this
 }
 
 /**
  * Adds this binding into a map
  */
-fun <T> Binding<T>.bindIntoMap(
-    mapName: Qualifier,
-    key: Any?
+inline fun <reified T : V, reified K, reified V> Binding<T>.bindIntoMap(
+    key: K,
+    keyType: Type<K> = typeOf(),
+    valueType: Type<V> = typeOf(),
+    mapName: Qualifier? = null,
+    override: Boolean = false
 ): Binding<T> {
-    bindIntoMap(MapBinding(mapName, key))
-    return this
-}
-
-/**
- * Adds this binding into a map
- */
-infix fun <T : V, K, V> Binding<T>.bindIntoMap(
-    pair: Pair<Qualifier, K>
-): Binding<T> {
-    bindIntoMap(MapBinding(pair.first, pair.second))
+    bindIntoMap(mapBinding(key, keyType, valueType, mapName, override))
     return this
 }
 
 /**
  * Adds this binding into a set
  */
-infix fun <T> Binding<T>.bindIntoSet(setBinding: SetBinding): Binding<T> {
-    setBindings[setBinding.setName] = setBinding
+infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
+    setBindings[setBinding.setKey] = setBinding
     return this
 }
 
 /**
  * Adds this binding into a set
  */
-infix fun <T> Binding<T>.bindIntoSet(setName: Qualifier): Binding<T> {
-    bindIntoSet(SetBinding(setName))
+inline fun <reified T : V, reified V> Binding<T>.bindIntoSet(
+    setType: Type<T> = typeOf(),
+    setName: Qualifier? = null,
+    override: Boolean = false
+): Binding<T> {
+    bindIntoSet(setBinding(setType, setName, override))
     return this
 }

@@ -22,30 +22,30 @@ import org.junit.Test
 class MapTest {
 
     @Test
-    fun testMapMultiBinding() {
+    fun testMapBinding() {
         val component = component(modules = listOf(
             module {
-                factory(NameOne) { "value_one" } bindIntoMap (MapValues to "key_one")
-                factory(NameTwo) { "value_two" } bindIntoMap (MapValues to "key_two")
-                factory(NameThree) { "value_three" } bindIntoMap (MapValues to "key_three")
+                factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
+                factory(NameTwo) { "value_two" } bindIntoMap mapBinding("key_two")
+                factory(NameThree) { "value_three" } bindIntoMap mapBinding("key_three")
             }
         ))
 
-        val map = component.get<Map<String, String>>(MapValues)
+        val map = component.get<Map<String, String>>()
 
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
 
-        val lazyMap = component.get<Map<String, Lazy<String>>>(MapValues)
+        val lazyMap = component.get<Map<String, Lazy<String>>>()
 
         assertEquals(3, lazyMap.size)
         assertEquals(lazyMap.getValue("key_one").value, "value_one")
         assertEquals(lazyMap.getValue("key_two").value, "value_two")
         assertEquals(lazyMap.getValue("key_three").value, "value_three")
 
-        val providerMap = component.get<Map<String, Provider<String>>>(MapValues)
+        val providerMap = component.get<Map<String, Provider<String>>>()
 
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("key_one").get(), "value_one")
@@ -57,12 +57,12 @@ class MapTest {
     fun testOverride() {
         val component = component(modules = listOf(
             module {
-                factory(NameOne) { "value_one" } bindIntoMap (MapValues to "key_one")
-                factory(NameTwo) { "value_two" } bindIntoMap (MapValues to "key_one")
+                factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
+                factory(NameTwo) { "value_two" } bindIntoMap mapBinding("key_one")
             }
         ))
 
-        assertEquals("value_two", component.get<Map<String, String>>(MapValues)["key_one"])
+        assertEquals("value_two", component.get<Map<String, String>>()["key_one"])
     }
 
 }
