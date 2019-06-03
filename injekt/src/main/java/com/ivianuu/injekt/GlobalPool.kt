@@ -37,8 +37,7 @@ internal object GlobalPool {
     }
 
     private fun findCreator(type: KClass<*>) = try {
-        val creatorName = type.java.name
-            .replace("\$", "_") + "__Creator"
+        val creatorName = type.java.name + "__Creator"
         val creatorType = Class.forName(creatorName)
         val creator = creatorType.newInstance() as Creator<*>
         creator.create()
