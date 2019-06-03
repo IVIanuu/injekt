@@ -26,22 +26,34 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Fragment scope
  */
-object FragmentScope : Scope
+@ScopeAnnotation(FragmentScope.Companion::class)
+annotation class FragmentScope {
+    companion object : Scope
+}
 
 /**
  * Child fragment scope
  */
-object ChildFragmentScope : Scope
+@ScopeAnnotation(ChildFragmentScope.Companion::class)
+annotation class ChildFragmentScope {
+    companion object : Scope
+}
 
 /**
  * Fragment name
  */
-object ForFragment : Qualifier
+@Name(ForFragment.Companion::class)
+annotation class ForFragment {
+    companion object : Qualifier
+}
 
 /**
  * Child fragment name
  */
-object ForChildFragment : Qualifier
+@Name(ForChildFragment.Companion::class)
+annotation class ForChildFragment {
+    companion object : Qualifier
+}
 
 /**
  * Returns a [Component] with convenient configurations

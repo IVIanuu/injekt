@@ -23,12 +23,18 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Content provider scope
  */
-object ContentProviderScope : Scope
+@ScopeAnnotation(ContentProviderScope.Companion::class)
+annotation class ContentProviderScope {
+    companion object : Scope
+}
 
 /**
  * Content provider name
  */
-object ForContentProvider : Qualifier
+@Name(ForContentProvider.Companion::class)
+annotation class ForContentProvider {
+    companion object : Qualifier
+}
 
 /**
  * Returns a [Component] with convenient configurations

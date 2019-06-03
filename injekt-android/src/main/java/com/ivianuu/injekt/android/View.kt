@@ -24,22 +24,34 @@ import com.ivianuu.injekt.constant.constant
 /**
  * View scope
  */
-object ViewScope : Scope
+@ScopeAnnotation(ViewScope.Companion::class)
+annotation class ViewScope {
+    companion object : Scope
+}
 
 /**
  * Child view scope
  */
-object ChildViewScope : Scope
+@ScopeAnnotation(ChildViewScope.Companion::class)
+annotation class ChildViewScope {
+    companion object : Scope
+}
 
 /**
  * View name
  */
-object ForView : Qualifier
+@Name(ForView.Companion::class)
+annotation class ForView {
+    companion object : Qualifier
+}
 
 /**
  * Child view name
  */
-object ForChildView : Qualifier
+@Name(ForChildView.Companion::class)
+annotation class ForChildView {
+    companion object : Qualifier
+}
 
 /**
  * Returns a [Component] with convenient configurations

@@ -25,7 +25,10 @@ import com.ivianuu.injekt.Qualifier
 // kinds
 interface Command
 
-object Commands : Qualifier
+@Name(Commands.Companion::class)
+annotation class Commands {
+    companion object : Qualifier
+}
 
 @Factory
 class MyDep(
@@ -39,12 +42,12 @@ class MyDep(
     private val commandProvider: Provider<Command>,
 
     // map
-    @Name(Commands::class) private val commandsMap: Map<String, Command>,
-    @Name(Commands::class) private val commandsMapLazy: Map<String, Lazy<Command>>,
-    @Name(Commands::class) private val commandsMapProvider: Map<String, Provider<Command>>,
+    @Commands private val commandsMap: Map<String, Command>,
+    @Commands private val commandsMapLazy: Map<String, Lazy<Command>>,
+    @Commands private val commandsMapProvider: Map<String, Provider<Command>>,
 
     // set
-    @Name(Commands::class) private val commandsSet: Set<Command>,
-    @Name(Commands::class) private val commandsSetLazy: Set<Lazy<Command>>,
-    @Name(Commands::class) private val commandsSetProvider: Set<Provider<Command>>
+    @Commands private val commandsSet: Set<Command>,
+    @Commands private val commandsSetLazy: Set<Lazy<Command>>,
+    @Commands private val commandsSetProvider: Set<Provider<Command>>
 )

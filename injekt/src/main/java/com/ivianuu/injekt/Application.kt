@@ -19,9 +19,15 @@ package com.ivianuu.injekt
 /**
  * Application scope
  */
-object ApplicationScope : Scope
+@ScopeAnnotation(ApplicationScope.Companion::class)
+annotation class ApplicationScope {
+    companion object : Scope
+}
 
 /**
  * Application name
  */
-object ForApplication : Qualifier
+@Name(ForApplication.Companion::class)
+annotation class ForApplication {
+    companion object : Qualifier
+}

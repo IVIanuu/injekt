@@ -30,7 +30,7 @@ interface AppService {
 }
 
 @KindAnnotation(FactoryKind::class)
-@ScopeAnnotation(ApplicationScope::class)
+@ApplicationScope
 @Interceptors([AppServiceInterceptor::class, OtherAppServiceInterceptor::class])
 annotation class _AppService
 

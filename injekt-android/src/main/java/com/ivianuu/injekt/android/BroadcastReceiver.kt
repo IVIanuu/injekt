@@ -24,12 +24,18 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Receiver scope
  */
-object ReceiverScope : Scope
+@ScopeAnnotation(ReceiverScope.Companion::class)
+annotation class ReceiverScope {
+    companion object : Scope
+}
 
 /**
  * Receiver name
  */
-object ForReceiver
+@Name(ForReceiver.Companion::class)
+annotation class ForReceiver {
+    companion object : Qualifier
+}
 
 /**
  * Returns a [Component] with convenient configurations

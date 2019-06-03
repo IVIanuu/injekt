@@ -30,12 +30,18 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Activity scope
  */
-object ActivityScope : Scope
+@ScopeAnnotation(ActivityScope.Companion::class)
+annotation class ActivityScope {
+    companion object : Scope
+}
 
 /**
  * Activity name
  */
-object ForActivity : Qualifier
+@Name(ForActivity.Companion::class)
+annotation class ForActivity {
+    companion object : Qualifier
+}
 
 /**
  * Returns a [Component] with convenient configurations

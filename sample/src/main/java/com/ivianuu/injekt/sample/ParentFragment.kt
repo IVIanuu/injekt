@@ -58,7 +58,7 @@ class ParentFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single @ScopeAnnotation(FragmentScope::class)
+@Single @FragmentScope
 class ParentFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

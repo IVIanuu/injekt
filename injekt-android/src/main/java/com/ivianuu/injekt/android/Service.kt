@@ -24,12 +24,18 @@ import com.ivianuu.injekt.constant.constant
 /**
  * Service scope
  */
-object ServiceScope : Scope
+@ScopeAnnotation(ServiceScope.Companion::class)
+annotation class ServiceScope {
+    companion object : Scope
+}
 
 /**
  * Service name
  */
-object ForService : Qualifier
+@Name(ForService.Companion::class)
+annotation class ForService {
+    companion object : Qualifier
+}
 
 /**
  * Returns a [Component] with convenient configurations

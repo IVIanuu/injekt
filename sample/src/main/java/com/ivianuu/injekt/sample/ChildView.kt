@@ -48,7 +48,7 @@ class ChildView @JvmOverloads constructor(
     }
 }
 
-@Single @ScopeAnnotation(ChildViewScope::class)
+@Single @ChildViewScope
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,
