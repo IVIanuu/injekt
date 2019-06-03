@@ -46,7 +46,6 @@ fun <T : ViewModel> Module.viewModel(
         type,
         name,
         override,
-        false,
         ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
     )
 

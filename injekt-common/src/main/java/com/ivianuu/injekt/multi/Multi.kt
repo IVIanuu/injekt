@@ -53,7 +53,7 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
     private val values = mutableMapOf<Int, T>()
 
-    override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
+    override fun get(parameters: ParametersDefinition?): T {
         requireNotNull(parameters) { "Parameters cannot be null" }
 
         val params = parameters()
@@ -64,7 +64,7 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
 
         return if (value == null && !values.containsKey(key)) {
             InjektPlugins.logger?.info("Create multi instance for params $params $binding")
-            value = create(attachedContext!!, parameters)
+            value = create(parameters)
             values[key] = value
             value
         } else {

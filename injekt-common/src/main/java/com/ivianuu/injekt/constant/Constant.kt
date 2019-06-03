@@ -42,7 +42,8 @@ private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T
     private val instance by lazy(LazyThreadSafetyMode.NONE) {
         binding.definition(noContext, emptyParameters())
     }
-    override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
+
+    override fun get(parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Return constant $binding")
         return instance
     }

@@ -26,6 +26,3 @@ annotation class Param
 
 @Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.CLASS)
 annotation class Name(val name: KClass<out Qualifier>)
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Raw

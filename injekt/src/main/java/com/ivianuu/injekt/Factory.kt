@@ -30,9 +30,8 @@ object FactoryKind : Kind() {
 inline fun <reified T> Module.factory(
     name: Qualifier? = null,
     override: Boolean = false,
-    unbounded: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = factory(typeOf<T>(), name, override, unbounded, definition)
+): Binding<T> = factory(typeOf<T>(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created on each request
@@ -41,31 +40,18 @@ fun <T> Module.factory(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
-    unbounded: Boolean = false,
     definition: Definition<T>
 ): Binding<T> = bind(FactoryKind, type, name, override, definition)
-    .also { it.attribute(KEY_UNBOUNDED, unbounded) }
-
-// todo remove unbounded in favor of unscoped bindings
 
 @Target(AnnotationTarget.CLASS)
 @KindAnnotation(FactoryKind::class)
 annotation class Factory
 
-const val KEY_UNBOUNDED = "unbounded"
-
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
-    private val unbounded: Boolean by lazy(LazyThreadSafetyMode.NONE) {
-        binding.attributes.getOrNull<Boolean>(KEY_UNBOUNDED) ?: false
-    }
-
-    override fun get(requestingContext: DefinitionContext, parameters: ParametersDefinition?): T {
+    override fun get(parameters: ParametersDefinition?): T {
         InjektPlugins.logger?.info("Create instance $binding")
-        return create(
-            if (unbounded) requestingContext else attachedContext ?: requestingContext,
-            parameters
-        )
+        return create(parameters)
     }
 
 }

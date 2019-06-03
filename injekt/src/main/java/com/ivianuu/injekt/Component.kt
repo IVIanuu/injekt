@@ -40,7 +40,7 @@ class Component internal constructor(
             }
         }
         instances
-            .onEach { it.value.attachedContext = context }
+            .onEach { it.value.context = context }
             .forEach { it.value.attached() }
     }
 
@@ -57,7 +57,7 @@ class Component internal constructor(
                 val key = Key(type.parameters.first(), name)
                 val instance = findInstance<T>(key)
                     ?: throw IllegalStateException("Couldn't find a binding for $key")
-                return lazy { instance.get(context, parameters) } as T
+                return lazy { instance.get(parameters) } as T
             }
             Map::class -> {
                 when (type.parameters[1].raw) {
@@ -72,7 +72,7 @@ class Component internal constructor(
                             ?: return emptyMap<Any?, Any?>() as T
 
                         return map.mapValues {
-                            lazy { it.value.get(context, parameters) }
+                            lazy { it.value.get(parameters) }
                         } as T
                     }
                     Provider::class -> {
@@ -86,7 +86,7 @@ class Component internal constructor(
                             ?: return emptyMap<Any?, Any?>() as T
 
                         return map.mapValues { (_, instance) ->
-                            provider { instance.get(context, it) }
+                            provider { instance.get(it) }
                         } as T
                     }
                     else -> {
@@ -99,7 +99,7 @@ class Component internal constructor(
                         val map = mapBindings[mapKey]
                             ?: return emptyMap<Any?, Any?>() as T
 
-                        return map.mapValues { it.value.get(context, parameters) } as T
+                        return map.mapValues { it.value.get(parameters) } as T
                     }
                 }
             }
@@ -107,7 +107,7 @@ class Component internal constructor(
                 val key = Key(type.parameters.first(), name)
                 val instance = findInstance<T>(key)
                     ?: throw IllegalStateException("Couldn't find a binding for $key")
-                return provider { instance.get(context, it ?: parameters) } as T
+                return provider { instance.get(it ?: parameters) } as T
             }
             Set::class -> {
                 when (type.parameters.first().raw) {
@@ -121,7 +121,7 @@ class Component internal constructor(
                             ?: return emptySet<Any?>() as T
 
                         return set.map {
-                            lazy { it.get(context, parameters) }
+                            lazy { it.get(parameters) }
                         }.toSet() as T
                     }
                     Provider::class -> {
@@ -134,7 +134,7 @@ class Component internal constructor(
                             ?: return emptySet<Any?>() as T
 
                         return set.map { instance ->
-                            provider { instance.get(context, it ?: parameters) }
+                            provider { instance.get(it ?: parameters) }
                         }.toSet() as T
                     }
                     else -> {
@@ -146,7 +146,7 @@ class Component internal constructor(
                         val set = setBindings[setKey]
                             ?: return emptySet<Any?>() as T
 
-                        return set.map { it.get(context, parameters) }.toSet() as T
+                        return set.map { it.get(parameters) }.toSet() as T
                     }
                 }
             }
@@ -154,7 +154,7 @@ class Component internal constructor(
                 val key = Key(type, name)
                 val instance = findInstance<T>(key)
                     ?: throw IllegalStateException("Couldn't find a binding for $key")
-                return instance.get(context, parameters)
+                return instance.get(parameters)
             }
         }
     }
