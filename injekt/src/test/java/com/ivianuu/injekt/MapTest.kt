@@ -21,12 +21,10 @@ import org.junit.Test
 
 class MapTest {
 
-    object NoScope : Scope
-
     @Test
     fun testMapBinding() {
         val component = component(
-            NoScope, modules = listOf(
+            modules = listOf(
             module {
                 factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
                 factory(NameTwo) { "value_two" } bindIntoMap mapBinding("key_two")
