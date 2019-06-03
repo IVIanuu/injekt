@@ -161,9 +161,9 @@ class CreatorStep : ProcessingStep() {
                         ?.getAsType("name")
                 }
 
-                val nameName = nameType?.asTypeName() as? ClassName
+                val qualifierName = nameType?.asTypeName() as? ClassName
 
-                if (paramIndex != -1 && nameName != null) {
+                if (paramIndex != -1 && qualifierName != null) {
                     messager.printMessage(
                         Diagnostic.Kind.ERROR,
                         "Only one of @Param or @Name can be annotated per parameter",
@@ -172,11 +172,11 @@ class CreatorStep : ProcessingStep() {
                     return@createBindingDescriptor null
                 }
 
-                ParamDescriptor(
-                    paramName,
-                    nameName,
-                    paramIndex
-                )
+                if (paramIndex != -1) {
+                    ParamDescriptor.Parameter(paramName, paramIndex)
+                } else {
+                    ParamDescriptor.Dependency(paramName, qualifierName)
+                }
             }
 
         return CreatorDescriptor(

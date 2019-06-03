@@ -26,9 +26,16 @@ data class CreatorDescriptor(
     val constructorParams: List<ParamDescriptor>
 )
 
-// todo make a sealed class
-data class ParamDescriptor(
-    val paramName: String,
-    val name: ClassName?,
-    val paramIndex: Int
-)
+sealed class ParamDescriptor {
+    abstract val paramName: String
+
+    data class Parameter(
+        override val paramName: String,
+        val index: Int
+    ) : ParamDescriptor()
+
+    data class Dependency(
+        override val paramName: String,
+        val qualifierName: ClassName?
+    ) : ParamDescriptor()
+}

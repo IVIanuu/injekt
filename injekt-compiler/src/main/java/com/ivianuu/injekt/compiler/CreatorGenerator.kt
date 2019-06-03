@@ -68,7 +68,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         }
         .add("definition = { ")
         .apply {
-            if (descriptor.constructorParams.any { it.paramIndex != -1 }) {
+            if (descriptor.constructorParams.any { it is ParamDescriptor.Parameter }) {
                 add("params -> ")
             }
         }
@@ -78,13 +78,13 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         .indent()
         .apply {
             descriptor.constructorParams.forEachIndexed { i, param ->
-                when {
-                    param.paramIndex != -1 -> {
-                        add("${param.paramName} = params.get(${param.paramIndex})")
+                when (param) {
+                    is ParamDescriptor.Parameter -> {
+                        add("${param.paramName} = params.get(${param.index})")
                     }
-                    else -> {
-                        if (param.name != null) {
-                            add("${param.paramName} = get(%T)", param.name)
+                    is ParamDescriptor.Dependency -> {
+                        if (param.qualifierName != null) {
+                            add("${param.paramName} = get(%T)", param.qualifierName)
                         } else {
                             add("${param.paramName} = get()")
                         }
