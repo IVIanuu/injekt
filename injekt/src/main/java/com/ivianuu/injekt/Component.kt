@@ -217,9 +217,19 @@ fun component(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
-    val dependencyBindings = dependencies
+    val dependencyBindingsList = dependencies
         .flatMap { it.getAllBindings() }
-        .associateBy { it.key }
+
+    val dependencyBindings = mutableMapOf<Key, Binding<*>>()
+    dependencyBindingsList.forEach { binding ->
+        val oldBinding = dependencyBindings[binding.key]
+        // todo better error message
+        if (oldBinding != null && !binding.override) {
+            error("Already declared binding for ${binding.key}")
+        }
+
+        dependencyBindings[binding.key] = binding
+    }
 
     val bindings = mutableMapOf<Key, Binding<*>>()
     val instances = mutableMapOf<Key, Instance<*>>()
