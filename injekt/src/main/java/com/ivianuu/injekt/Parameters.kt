@@ -26,7 +26,7 @@ import java.util.*
     /**
      * Number of contained elements
      */
-    val Parameters.size: Int get() = values.size
+    val size: Int get() = values.size
 
     /**
      * Returns the element [i]
