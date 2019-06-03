@@ -26,7 +26,7 @@ import com.ivianuu.injekt.constant.constant
  */
 @ScopeAnnotation(ViewScope.Companion::class)
 annotation class ViewScope {
-    companion object : Scope
+    companion object : NamedScope("ViewScope")
 }
 
 /**
@@ -34,7 +34,7 @@ annotation class ViewScope {
  */
 @ScopeAnnotation(ChildViewScope.Companion::class)
 annotation class ChildViewScope {
-    companion object : Scope
+    companion object : NamedScope("ChildViewScope")
 }
 
 /**

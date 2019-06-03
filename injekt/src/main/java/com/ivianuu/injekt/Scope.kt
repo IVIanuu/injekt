@@ -23,5 +23,21 @@ import kotlin.reflect.KClass
  */
 interface Scope
 
+open class NamedScope(val name: String) : Scope {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is NamedScope) return false
+
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = name.hashCode()
+
+    override fun toString(): String = name
+
+}
+
 // todo rename
 annotation class ScopeAnnotation(val scope: KClass<out Scope>)

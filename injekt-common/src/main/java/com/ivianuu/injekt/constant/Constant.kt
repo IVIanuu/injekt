@@ -42,7 +42,7 @@ private class ConstantInstance<T>(override val binding: Binding<T>) : Instance<T
     }
 
     override fun get(parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("Return constant $binding")
+        InjektPlugins.logger?.info("${context.component.scopeName()} Return constant $binding")
         return instance
     }
 }

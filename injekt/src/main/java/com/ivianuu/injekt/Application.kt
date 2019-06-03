@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 @ScopeAnnotation(ApplicationScope.Companion::class)
 annotation class ApplicationScope {
-    companion object : Scope
+    companion object : NamedScope("ApplicationScope")
 }
 
 /**

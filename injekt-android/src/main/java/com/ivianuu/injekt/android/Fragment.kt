@@ -28,7 +28,7 @@ import com.ivianuu.injekt.constant.constant
  */
 @ScopeAnnotation(FragmentScope.Companion::class)
 annotation class FragmentScope {
-    companion object : Scope
+    companion object : NamedScope("FragmentScope")
 }
 
 /**
@@ -36,7 +36,7 @@ annotation class FragmentScope {
  */
 @ScopeAnnotation(ChildFragmentScope.Companion::class)
 annotation class ChildFragmentScope {
-    companion object : Scope
+    companion object : NamedScope("ChildFragmentScope")
 }
 
 /**

@@ -57,18 +57,18 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
-            InjektPlugins.logger?.info("Return existing eager instance $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing eager instance $binding")
             return value as T
         }
 
         synchronized(this) {
             value = _value
             if (value !== UNINITIALIZED) {
-                InjektPlugins.logger?.info("Return existing eager instance $binding")
+                InjektPlugins.logger?.info("${context.component.scopeName()} Return existing eager instance $binding")
                 return@get value as T
             }
 
-            InjektPlugins.logger?.info("Initialize eager instance $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Initialize eager instance $binding")
             value = create(parameters)
             _value = value
             return@get value as T

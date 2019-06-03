@@ -25,7 +25,7 @@ import com.ivianuu.injekt.constant.constant
  */
 @ScopeAnnotation(ContentProviderScope.Companion::class)
 annotation class ContentProviderScope {
-    companion object : Scope
+    companion object : NamedScope("ContentProviderScope")
 }
 
 /**

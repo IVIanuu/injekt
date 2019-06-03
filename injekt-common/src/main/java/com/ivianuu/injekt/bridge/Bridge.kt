@@ -66,7 +66,7 @@ private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>(
     }
 
     override fun get(parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("Bridge to $originalKey")
+        InjektPlugins.logger?.info("${context.component.scopeName()} Bridge to $originalKey")
         return create(parameters)
     }
 }

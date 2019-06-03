@@ -26,7 +26,7 @@ import com.ivianuu.injekt.constant.constant
  */
 @ScopeAnnotation(ServiceScope.Companion::class)
 annotation class ServiceScope {
-    companion object : Scope
+    companion object : NamedScope("ServiceScope")
 }
 
 /**

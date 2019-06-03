@@ -57,10 +57,10 @@ private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() 
         val value = _value?.get()
 
         return if (value != null) {
-            InjektPlugins.logger?.info("Return existing weak instance $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing weak instance $binding")
             value
         } else {
-            InjektPlugins.logger?.info("Create weak instance $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Create weak instance $binding")
             create(parameters).also { _value = WeakReference(it) }
         }
     }

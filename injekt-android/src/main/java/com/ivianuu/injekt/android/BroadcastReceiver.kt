@@ -26,7 +26,7 @@ import com.ivianuu.injekt.constant.constant
  */
 @ScopeAnnotation(ReceiverScope.Companion::class)
 annotation class ReceiverScope {
-    companion object : Scope
+    companion object : NamedScope("ReceiverScope")
 }
 
 /**

@@ -31,22 +31,22 @@ class Component internal constructor(
 
     init {
         InjektPlugins.logger?.let { logger ->
-            logger.info("Initialize component $scope")
+            logger.info("${scopeName()} initialize")
 
             dependencies.forEach {
-                logger.info("Register dependency Component(${it.scope})")
+                logger.info("${scopeName()} Register dependency ${it.scopeName()}")
             }
 
             instances.forEach {
-                logger.info("Register binding ${it.value.binding}")
+                logger.info("${scopeName()} Register binding ${it.value.binding}")
             }
 
             mapBindings.forEach {
-                logger.info("Register map binding ${it.key} ${it.value.mapValues { it.value.binding }}")
+                logger.info("${scopeName()} Register map binding ${it.key} ${it.value.mapValues { it.value.binding }}")
             }
 
             setBindings.forEach {
-                logger.info("Register set binding ${it.key} ${it.value.map { it.binding }}")
+                logger.info("${scopeName()} Register set binding ${it.key} ${it.value.map { it.binding }}")
             }
         }
         instances
@@ -356,3 +356,5 @@ fun <T> Component.inject(
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
+
+fun Component.scopeName() = scope?.toString() ?: "Unscoped"

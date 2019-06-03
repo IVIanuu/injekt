@@ -32,7 +32,7 @@ import com.ivianuu.injekt.constant.constant
  */
 @ScopeAnnotation(ActivityScope.Companion::class)
 annotation class ActivityScope {
-    companion object : Scope
+    companion object : NamedScope("ActivityScope")
 }
 
 /**

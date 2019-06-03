@@ -49,7 +49,7 @@ annotation class Factory
 private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     override fun get(parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("Create instance $binding")
+        InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
         return create(parameters)
     }
 

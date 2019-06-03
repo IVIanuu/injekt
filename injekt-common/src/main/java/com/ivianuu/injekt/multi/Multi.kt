@@ -62,12 +62,12 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
         var value = values[key]
 
         return if (value == null && !values.containsKey(key)) {
-            InjektPlugins.logger?.info("Create multi instance for params $params $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Create multi instance for params $params $binding")
             value = create(parameters)
             values[key] = value
             value
         } else {
-            InjektPlugins.logger?.info("Return existing multi instance for params $params $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing multi instance for params $params $binding")
             value as T
         }
     }

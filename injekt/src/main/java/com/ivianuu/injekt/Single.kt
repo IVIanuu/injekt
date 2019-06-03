@@ -55,18 +55,18 @@ private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>(
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
-            InjektPlugins.logger?.info("Return existing instance $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
             return value as T
         }
 
         synchronized(this) {
             value = _value
             if (value !== UNINITIALIZED) {
-                InjektPlugins.logger?.info("Return existing instance $binding")
+                InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
                 return@get value as T
             }
 
-            InjektPlugins.logger?.info("Create instance $binding")
+            InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
             value = create(parameters)
             _value = value
             return@get value as T

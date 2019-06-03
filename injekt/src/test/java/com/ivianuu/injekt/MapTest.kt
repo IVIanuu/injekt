@@ -23,7 +23,10 @@ class MapTest {
 
     @Test
     fun testMapBinding() {
+        InjektPlugins.logger = PrintLogger()
+
         val component = component(
+            ApplicationScope,
             modules = listOf(
             module {
                 factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
