@@ -60,7 +60,8 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         .build()
 
     private fun createBody() = CodeBlock.builder()
-        .addStatement("val binding = binding(")
+        .add("return binding(")
+        .add("\n")
         .indent()
         .addStatement("kind = %T,", descriptor.kind)
         .apply {
@@ -98,12 +99,13 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
         }
         .unindent()
         .add("\n")
-        .addStatement(")")
-        .unindent()
-        .addStatement("}")
-        .unindent()
-        .addStatement(")")
+        .add(")")
         .add("\n")
-        .addStatement("return binding")
+        .unindent()
+        .add("}")
+        .add("\n")
+        .unindent()
+        .add(")")
+        .add("\n")
         .build()
 }
