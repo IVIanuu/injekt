@@ -21,23 +21,23 @@ import java.util.*
 /**
  * Parameters which will be used for assisted injection
  */
-/* inline*/ class Parameters(
+/* inline*/ class Parameters(private val values: Array<Any?>) {
+
     /**
-     * All values of this params
+     * Number of contained elements
      */
-    val values: Array<Any?>
-) {
+    val Parameters.size: Int get() = values.size
+
+    /**
+     * Returns the element [i]
+     */
+    operator fun <T> get(i: Int): T = values[i] as T
 
     operator fun <T> component1(): T = get(0)
     operator fun <T> component2(): T = get(1)
     operator fun <T> component3(): T = get(2)
     operator fun <T> component4(): T = get(3)
     operator fun <T> component5(): T = get(4)
-
-    /**
-     * Returns the element [i]
-     */
-    operator fun <T> get(i: Int): T = values[i] as T
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -53,11 +53,6 @@ import java.util.*
     override fun toString(): String = Arrays.toString(values)
 
 }
-
-/**
- * Number of contained elements
- */
-val Parameters.size: Int get() = values.size
 
 /**
  * Defines [Parameters]

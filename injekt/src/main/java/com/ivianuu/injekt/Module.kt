@@ -21,29 +21,16 @@ package com.ivianuu.injekt
  */
 class Module internal constructor() {
 
-    /**
-     * All bindings of this module
-     */
-    val bindings: Map<Key, Binding<*>> get() = _bindings
-    private val _bindings = mutableMapOf<Key, Binding<*>>()
-
-    /**
-     * The modules which are included in this one
-     */
-    val includes: Set<Module> get() = _includes
-    private val _includes = mutableSetOf<Module>()
-
-    val mapBindings: Set<Key> get() = _mapBindings
-    private val _mapBindings = mutableSetOf<Key>()
-
-    val setBindings: Set<Key> get() = _setBindings
-    private val _setBindings = mutableSetOf<Key>()
+    internal val bindings = mutableMapOf<Key, Binding<*>>()
+    internal val includes = mutableSetOf<Module>()
+    internal val mapBindings = mutableSetOf<Key>()
+    internal val setBindings = mutableSetOf<Key>()
 
     /**
      * Adds the [binding]
      */
     fun bind(binding: Binding<*>) {
-        if (_bindings.put(binding.key, binding) != null && !binding.override) {
+        if (bindings.put(binding.key, binding) != null && !binding.override) {
             error("Already declared binding for ${binding.key}")
         }
     }
@@ -52,7 +39,7 @@ class Module internal constructor() {
      * Adds the [module]
      */
     fun include(module: Module) {
-        _includes.add(module)
+        includes.add(module)
     }
 
     /**
@@ -63,7 +50,7 @@ class Module internal constructor() {
         valueType: Type<V>,
         mapName: Qualifier? = null
     ) {
-        _mapBindings.add(
+        mapBindings.add(
             Key(typeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
         )
     }
@@ -75,7 +62,7 @@ class Module internal constructor() {
         elementType: Type<T>,
         setName: Qualifier? = null
     ) {
-        _setBindings.add(
+        setBindings.add(
             Key(typeOf<Set<T>>(Set::class, elementType), setName)
         )
     }

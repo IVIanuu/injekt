@@ -21,17 +21,14 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     val scope: Scope?,
-    val bindings: Map<Key, Binding<*>>,
-    val instances: MutableMap<Key, Instance<*>>,
-    val dependencies: Iterable<Component>,
-    val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
-    val setBindings: Map<Key, Set<Instance<*>>>
+    internal val bindings: Map<Key, Binding<*>>,
+    internal val instances: MutableMap<Key, Instance<*>>,
+    internal val dependencies: Iterable<Component>,
+    internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
+    internal val setBindings: Map<Key, Set<Instance<*>>>
 ) {
 
-    /**
-     * The definition context of this component
-     */
-    val context = DefinitionContext(this)
+    private val context = DefinitionContext(this)
 
     init {
         InjektPlugins.logger?.let { logger ->
