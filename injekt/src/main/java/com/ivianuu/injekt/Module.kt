@@ -33,6 +33,12 @@ class Module internal constructor() {
     val includes: Set<Module> get() = _includes
     private val _includes = mutableSetOf<Module>()
 
+    val mapBindings: Set<Key> get() = _mapBindings
+    private val _mapBindings = mutableSetOf<Key>()
+
+    val setBindings: Set<Key> get() = _setBindings
+    private val _setBindings = mutableSetOf<Key>()
+
     /**
      * Adds the [binding]
      */
@@ -47,6 +53,31 @@ class Module internal constructor() {
      */
     fun include(module: Module) {
         _includes.add(module)
+    }
+
+    /**
+     * Declares an empty map binding
+     */
+    fun <K, V> mapBinding(
+        keyType: Type<K>,
+        valueType: Type<V>,
+        mapName: Qualifier? = null
+    ) {
+        _mapBindings.add(
+            Key(typeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
+        )
+    }
+
+    /**
+     * Declares an empty set binding
+     */
+    fun <T> setBinding(
+        elementType: Type<T>,
+        setName: Qualifier? = null
+    ) {
+        _setBindings.add(
+            Key(typeOf<Set<T>>(Set::class, elementType), setName)
+        )
     }
 
 }
@@ -82,4 +113,18 @@ fun <T> Module.bind(
     val binding = binding(kind, type, name, null, override, definition)
     bind(binding)
     return binding
+}
+
+/**
+ * Declares an empty map binding
+ */
+inline fun <reified K, reified V> Module.mapBinding(mapName: Qualifier? = null) {
+    mapBinding<K, V>(typeOf(), typeOf(), mapName)
+}
+
+/**
+ * Declares an empty set binding
+ */
+inline fun <reified T> Module.setBinding(setName: Qualifier? = null) {
+    setBinding<T>(typeOf(), setName)
 }

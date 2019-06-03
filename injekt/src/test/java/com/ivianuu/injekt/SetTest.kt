@@ -55,4 +55,25 @@ class SetTest {
         assertEquals("value_three", providerSet.toList()[2].get())
     }
 
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnNonDeclaredSetBinding() {
+        val component = component()
+        component.get<Set<String>>()
+    }
+
+    @Test
+    fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
+        val component = component(
+            modules = listOf(
+                module {
+                    setBinding<String>()
+                }
+            )
+        )
+
+        assertEquals(0, component.get<Set<String>>().size)
+    }
+
+    // todo test nested
+
 }

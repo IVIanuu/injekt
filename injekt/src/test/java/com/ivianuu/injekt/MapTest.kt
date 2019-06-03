@@ -53,6 +53,27 @@ class MapTest {
         assertEquals(providerMap.getValue("key_three").get(), "value_three")
     }
 
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnNonDeclaredMapBinding() {
+        val component = component()
+        component.get<Map<String, Int>>()
+    }
+
+    @Test
+    fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
+        val component = component(
+            modules = listOf(
+                module {
+                    mapBinding<String, Int>()
+                }
+            )
+        )
+
+        assertEquals(0, component.get<Map<String, Int>>().size)
+    }
+
+    // todo test nested
+
     @Test
     fun testOverride() {
         val component = component(modules = listOf(

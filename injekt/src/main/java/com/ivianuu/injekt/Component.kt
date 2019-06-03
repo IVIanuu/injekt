@@ -55,9 +55,10 @@ class Component internal constructor(
         when (type.raw) {
             Lazy::class -> {
                 val key = Key(type.parameters.first(), name)
-                val instance = findInstance<T>(key, true)
-                    ?: throw IllegalStateException("Couldn't find a binding for $key")
-                return lazy { instance.get(parameters) } as T
+                findInstance<T>(key, true)
+                    ?.let {
+                        return@get lazy { it.get(parameters) } as T
+                    }
             }
             Map::class -> {
                 when (type.parameters[1].raw) {
@@ -68,13 +69,11 @@ class Component internal constructor(
                             typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
-                        // todo throw error if empty
-                        val map = mapBindings[mapKey]
-                            ?: return emptyMap<Any?, Any?>() as T
-
-                        return map.mapValues {
-                            lazy { it.value.get(parameters) }
-                        } as T
+                        mapBindings[mapKey]
+                            ?.mapValues {
+                                lazy { it.value.get(parameters) }
+                            }
+                            ?.let { return@get it as T }
                     }
                     Provider::class -> {
                         val mapKeyType = type.parameters[0]
@@ -83,13 +82,11 @@ class Component internal constructor(
                             typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
-                        // todo throw error if empty
-                        val map = mapBindings[mapKey]
-                            ?: return emptyMap<Any?, Any?>() as T
-
-                        return map.mapValues { (_, instance) ->
-                            provider { instance.get(it) }
-                        } as T
+                        mapBindings[mapKey]
+                            ?.mapValues { (_, instance) ->
+                                provider { instance.get(it) }
+                            }
+                            ?.let { return@get it as T }
                     }
                     else -> {
                         val mapKeyType = type.parameters[0]
@@ -98,19 +95,18 @@ class Component internal constructor(
                             typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
-                        // todo throw error if empty
-                        val map = mapBindings[mapKey]
-                            ?: return emptyMap<Any?, Any?>() as T
-
-                        return map.mapValues { it.value.get(parameters) } as T
+                        mapBindings[mapKey]
+                            ?.mapValues { it.value.get(parameters) }
+                            ?.let { return@get it as T }
                     }
                 }
             }
             Provider::class -> {
                 val key = Key(type.parameters.first(), name)
-                val instance = findInstance<T>(key, true)
-                    ?: throw IllegalStateException("Couldn't find a binding for $key")
-                return provider { instance.get(it ?: parameters) } as T
+                findInstance<T>(key, true)
+                    ?.let { instance ->
+                        return@get provider { instance.get(it ?: parameters) } as T
+                    }
             }
             Set::class -> {
                 when (type.parameters.first().raw) {
@@ -120,13 +116,10 @@ class Component internal constructor(
                             typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
-                        // todo throw error if empty
-                        val set = setBindings[setKey]
-                            ?: return emptySet<Any?>() as T
-
-                        return set.map {
-                            lazy { it.get(parameters) }
-                        }.toSet() as T
+                        setBindings[setKey]
+                            ?.map { lazy { it.get(parameters) } }
+                            ?.toSet()
+                            ?.let { return@get it as T }
                     }
                     Provider::class -> {
                         val setValueType = type.parameters[0].parameters[0]
@@ -134,14 +127,12 @@ class Component internal constructor(
                             typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
-
-                        // todo throw error if empty
-                        val set = setBindings[setKey]
-                            ?: return emptySet<Any?>() as T
-
-                        return set.map { instance ->
-                            provider { instance.get(it ?: parameters) }
-                        }.toSet() as T
+                        setBindings[setKey]
+                            ?.map { instance ->
+                                provider { instance.get(it ?: parameters) }
+                            }
+                            ?.toSet()
+                            ?.let { return@get it as T }
                     }
                     else -> {
                         val setValueType = type.parameters[0]
@@ -149,21 +140,22 @@ class Component internal constructor(
                             typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
-                        // todo throw error if empty
-                        val set = setBindings[setKey]
-                            ?: return emptySet<Any?>() as T
-
-                        return set.map { it.get(parameters) }.toSet() as T
+                        setBindings[setKey]
+                            ?.map { it.get(parameters) }
+                            ?.toSet()
+                            ?.let { return@get it as T }
                     }
                 }
             }
             else -> {
                 val key = Key(type, name)
-                val instance = findInstance<T>(key, true)
-                    ?: throw IllegalStateException("Couldn't find a binding for $key")
-                return instance.get(parameters)
+                findInstance<T>(key, true)
+                    ?.let { return@get it.get(parameters) }
             }
         }
+
+        // todo clean up
+        throw IllegalStateException("Couldn't find a binding for ${Key(type, name)}")
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -282,6 +274,9 @@ fun component(
     }
 
     fun addModule(module: Module) {
+        module.mapBindings.forEach { mapBindings.getOrPut(it) { mutableMapOf() } }
+        module.setBindings.forEach { setBindings.getOrPut(it) { mutableSetOf() } }
+
         module.bindings.forEach { addBinding(it.value) }
         module.includes.forEach { addModule(it) }
     }
