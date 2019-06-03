@@ -67,7 +67,7 @@ inline fun <reified T> Module.bind(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = bind(kind, typeOf<T>(), name, override, definition)
+): Binding<T> = bind(kind, typeOf(), name, override, definition)
 
 /**
  * Adds a [Binding]

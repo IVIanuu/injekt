@@ -77,7 +77,7 @@ fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
     typeOf(raw, false, *parameters)
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
-    Type<T>(raw, isNullable, parameters as Array<Type<*>>)
+    Type(raw, isNullable, parameters as Array<Type<*>>)
 
 inline fun <reified T> lazyTypeOf(): Type<Lazy<T>> =
     typeOf(Lazy::class, typeOf<T>())

@@ -34,7 +34,7 @@ inline fun <reified T> Module.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = weak(typeOf<T>(), name, override, definition)
+): Binding<T> = weak(typeOf(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be cached by a [WeakReference]

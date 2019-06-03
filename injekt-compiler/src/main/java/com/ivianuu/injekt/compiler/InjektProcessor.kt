@@ -20,7 +20,6 @@ import com.google.auto.service.AutoService
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.ivianuu.processingx.steps.StepProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType.ISOLATING
 import javax.annotation.processing.Processor
 import javax.lang.model.SourceVersion

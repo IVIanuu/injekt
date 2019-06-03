@@ -33,7 +33,7 @@ inline fun <reified T> Module.eager(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = eager(typeOf<T>(), name, override, definition)
+): Binding<T> = eager(typeOf(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component] and initialized on start

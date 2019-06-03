@@ -60,7 +60,7 @@ inline fun <reified T> binding(
     scope: Scope? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = binding(kind, typeOf<T>(), name, scope, override, definition)
+): Binding<T> = binding(kind, typeOf(), name, scope, override, definition)
 
 /**
  * Returns a new [Binding]

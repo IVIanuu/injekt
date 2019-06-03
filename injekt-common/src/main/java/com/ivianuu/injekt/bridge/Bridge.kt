@@ -45,7 +45,7 @@ fun <T> Module.bridge(
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    return bind<T>(
+    return bind(
         BridgeKind,
         type,
         UUIDName()

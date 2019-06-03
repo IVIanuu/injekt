@@ -19,7 +19,6 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ActivityScope
 import com.ivianuu.injekt.android.activityComponent

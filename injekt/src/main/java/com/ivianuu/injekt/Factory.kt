@@ -31,7 +31,7 @@ inline fun <reified T> Module.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = factory(typeOf<T>(), name, override, definition)
+): Binding<T> = factory(typeOf(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created on each request

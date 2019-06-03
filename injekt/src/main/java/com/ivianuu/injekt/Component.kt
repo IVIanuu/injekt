@@ -166,6 +166,7 @@ class Component internal constructor(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun <T> findInstance(key: Key, includeGlobalPool: Boolean): Instance<T>? {
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
@@ -283,7 +284,7 @@ fun component(
 }
 
 /**
- * Returns the instance matching the [type] and [name]
+ * Returns the instance matching [T] and [name]
  */
 inline fun <reified T> Component.get(
     name: Qualifier? = null,
@@ -296,7 +297,7 @@ inline fun <reified T> Component.get(
 inline fun <reified T> Component.inject(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(typeOf<T>(), name, parameters)
+): Lazy<T> = inject(typeOf(), name, parameters)
 
 /**
  * Lazy version of [Component.get]
@@ -305,4 +306,4 @@ fun <T> Component.inject(
     type: Type<T>,
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }

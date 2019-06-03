@@ -50,7 +50,6 @@ package com.ivianuu.injekt
 /**
  * Returns the value for [key]
  */
-@Suppress("UNCHECKED_CAST")
 operator fun <T> Attributes.get(key: String): T =
     getOrNull<T>(key) ?: error("Couldn't get attribute for $key")
 

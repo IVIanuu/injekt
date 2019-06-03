@@ -33,7 +33,7 @@ inline fun <reified T> Module.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = multi(typeOf<T>(), name, override, definition)
+): Binding<T> = multi(typeOf(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]

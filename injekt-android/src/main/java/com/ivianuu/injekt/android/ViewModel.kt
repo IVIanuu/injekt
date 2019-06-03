@@ -29,7 +29,7 @@ inline fun <reified T : ViewModel> Module.viewModel(
     viewModelStoreName: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = viewModel(typeOf<T>(), name, viewModelStoreName, override, definition)
+): Binding<T> = viewModel(typeOf(), name, viewModelStoreName, override, definition)
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]

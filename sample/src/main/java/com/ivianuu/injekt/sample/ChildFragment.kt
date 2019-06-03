@@ -22,7 +22,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ChildFragmentScope
 import com.ivianuu.injekt.android.childFragmentComponent

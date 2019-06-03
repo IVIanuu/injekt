@@ -31,7 +31,7 @@ inline fun <reified T> Module.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = single(typeOf<T>(), name, override, definition)
+): Binding<T> = single(typeOf(), name, override, definition)
 
 /**
  * Adds a [Binding] which will be created once per [Component]

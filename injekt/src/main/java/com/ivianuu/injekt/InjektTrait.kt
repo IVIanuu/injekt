@@ -30,7 +30,7 @@ interface InjektTrait {
 inline fun <reified T> InjektTrait.get(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(typeOf<T>(), name, parameters)
+): T = get(typeOf(), name, parameters)
 
 /** Calls trough [Component.get] */
 fun <T> InjektTrait.get(
@@ -43,11 +43,11 @@ fun <T> InjektTrait.get(
 inline fun <reified T> InjektTrait.inject(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(typeOf<T>(), name, parameters)
+): Lazy<T> = inject(typeOf(), name, parameters)
 
 /** Calls trough [Component.inject] */
 fun <T> InjektTrait.inject(
     type: Type<T>,
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get<T>(type, name, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }
