@@ -168,17 +168,17 @@ class CreatorStep(
                     -1
                 }
 
-                var nameType = element.getAnnotationMirrorOrNull<Name>()
+                var nameType = param.getAnnotationMirrorOrNull<Name>()
                     ?.getAsType("name")
 
                 val nameAnnotations =
-                    element.getAnnotatedAnnotations<Name>()
+                    param.getAnnotatedAnnotations<Name>()
 
                 if (nameType != null && nameAnnotations.isNotEmpty()) {
                     messager.printMessage(
                         Diagnostic.Kind.ERROR,
                         "Can only have 1 name annotation",
-                        element
+                        param
                     )
                     return@createBindingDescriptor null
                 }
@@ -188,7 +188,7 @@ class CreatorStep(
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
                             "Can only have 1 name annotation",
-                            element
+                            param
                         )
                         return@createBindingDescriptor null
                     }
