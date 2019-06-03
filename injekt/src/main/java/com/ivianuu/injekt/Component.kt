@@ -300,6 +300,16 @@ fun component(
     )
 }
 
+internal fun Component.getAllBindings(): List<Binding<*>> =
+    mutableListOf<Binding<*>>().also { collectBindings(it) }
+
+internal fun Component.collectBindings(
+    bindings: MutableList<Binding<*>>
+) {
+    dependencies.forEach { it.collectBindings(bindings) }
+    bindings.addAll(this.bindings.values)
+}
+
 /**
  * Returns the instance matching [T] and [name]
  */

@@ -16,7 +16,12 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * Name marker
  */
 interface Qualifier
+
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.CLASS)
+annotation class Name(val name: KClass<out Qualifier>)

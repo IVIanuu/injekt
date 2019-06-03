@@ -75,3 +75,6 @@ private val emptyParameters = Parameters(emptyArray())
  * Returns empty [Parameters]
  */
 fun emptyParameters(): Parameters = emptyParameters
+
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Param
