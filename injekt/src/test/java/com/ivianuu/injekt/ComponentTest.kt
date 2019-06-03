@@ -114,18 +114,7 @@ class ComponentTest {
         val binding = binding(FactoryKind) { "value" }
         val module = module { bind(binding) }
         val component = component(modules = listOf(module))
-        assertTrue(component.bindings.values.contains(binding))
-    }
-
-    @Test
-    fun testAddBinding() {
-        val binding = binding(FactoryKind) { "value" }
-        val component = component(
-            modules = listOf(
-                module { bind(binding) }
-            )
-        )
-        assertTrue(component.bindings.containsValue(binding))
+        assertTrue(component.instances.values.map { it.binding }.contains(binding))
     }
 
     @Test
@@ -200,6 +189,27 @@ class ComponentTest {
                 }
             )
         )
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsIfDependenciesOverrideEachOther() {
+        val dependency1 = component(
+            modules = listOf(
+                module {
+                    factory { "value_1" }
+                }
+            )
+        )
+
+        val dependency2 = component(
+            modules = listOf(
+                module {
+                    factory { "value_2" }
+                }
+            )
+        )
+
+        component(dependencies = listOf(dependency1, dependency2))
     }
 
     @Test

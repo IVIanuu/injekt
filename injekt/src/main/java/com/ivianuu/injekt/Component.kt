@@ -21,7 +21,6 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     val scope: Scope?,
-    internal val bindings: Map<Key, Binding<*>>,
     internal val instances: MutableMap<Key, Instance<*>>,
     internal val dependencies: Iterable<Component>,
     internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
@@ -38,8 +37,8 @@ class Component internal constructor(
                 logger.info("Register dependency Component(${it.scope})")
             }
 
-            bindings.forEach {
-                logger.info("Register binding ${it.value}")
+            instances.forEach {
+                logger.info("Register binding ${it.value.binding}")
             }
 
             mapBindings.forEach {
@@ -226,19 +225,21 @@ fun component(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
-    val dependencyBindingsList = dependencies
-        .flatMap { it.getAllBindings() }
+    val dependencyBindings = dependencies
+        .map { it.getAllBindings() }
+        .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
+            current.forEach { (key, binding) ->
+                val oldBinding = acc[key]
+                // todo better error message
+                if (oldBinding != null && !binding.override) {
+                    error("Already declared binding for $key")
+                }
 
-    val dependencyBindings = mutableMapOf<Key, Binding<*>>()
-    dependencyBindingsList.forEach { binding ->
-        val oldBinding = dependencyBindings[binding.key]
-        // todo better error message
-        if (oldBinding != null && !binding.override) {
-            error("Already declared binding for ${binding.key}")
+                acc[key] = binding
+            }
+
+            return@fold acc
         }
-
-        dependencyBindings[binding.key] = binding
-    }
 
     val bindings = mutableMapOf<Key, Binding<*>>()
     val instances = mutableMapOf<Key, Instance<*>>()
@@ -315,19 +316,20 @@ fun component(
 
     modules.forEach { addModule(it) }
 
-    return Component(scope, bindings, instances, dependencies, mapBindings,
+    return Component(
+        scope, instances, dependencies, mapBindings,
         setBindings.mapValues { it.value.values.toSet() }
     )
 }
 
-internal fun Component.getAllBindings(): List<Binding<*>> =
-    mutableListOf<Binding<*>>().also { collectBindings(it) }
+internal fun Component.getAllBindings(): Map<Key, Binding<*>> =
+    mutableMapOf<Key, Binding<*>>().also { collectBindings(it) }
 
 internal fun Component.collectBindings(
-    bindings: MutableList<Binding<*>>
+    bindings: MutableMap<Key, Binding<*>>
 ) {
     dependencies.forEach { it.collectBindings(bindings) }
-    bindings.addAll(this.bindings.values)
+    bindings.putAll(this.instances.mapValues { it.value.binding })
 }
 
 /**

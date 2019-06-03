@@ -27,6 +27,6 @@ fun <T> Component.getBinding(
     name: Qualifier? = null
 ): Binding<T> {
     val key = Key(type, name)
-    return bindings.values.firstOrNull { it.key == key } as? Binding<T>
+    return instances.entries.firstOrNull { it.key == key }?.value?.binding as? Binding<T>
         ?: error("binding not found")
 }
