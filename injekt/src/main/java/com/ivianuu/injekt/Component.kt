@@ -24,8 +24,8 @@ class Component internal constructor(
     val bindings: Map<Key, Binding<*>>,
     val instances: MutableMap<Key, Instance<*>>,
     val dependencies: Iterable<Component>,
-    internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
-    internal val setBindings: Map<Key, Set<Instance<*>>>
+    val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
+    val setBindings: Map<Key, Set<Instance<*>>>
 ) {
 
     /**
@@ -238,26 +238,24 @@ fun component(
     fun addBindingByKey(
         key: Key,
         binding: Binding<*>,
-        instance: Instance<*>,
-        dropOverride: Boolean
+        instance: Instance<*>
     ) {
         if (!binding.override &&
             (bindings.contains(key)
                     || dependencyBindings.contains(key))
         ) {
-            if (dropOverride) return
-            else error("Already declared binding for $key")
+            error("Already declared binding for $key")
         }
 
         bindings[key] = binding
         instances[key] = instance
     }
 
-    fun addBinding(binding: Binding<*>, dropOverride: Boolean) {
+    fun addBinding(binding: Binding<*>) {
         val instance = binding.kind.createInstance(binding)
-        addBindingByKey(binding.key, binding, instance, dropOverride)
+        addBindingByKey(binding.key, binding, instance)
         binding.additionalKeys.forEach {
-            addBindingByKey(it, binding, instance, dropOverride)
+            addBindingByKey(it, binding, instance)
         }
 
         binding.mapBindings.forEach { (key, mapBinding) ->
@@ -274,7 +272,7 @@ fun component(
     }
 
     fun addModule(module: Module) {
-        module.bindings.forEach { addBinding(it.value, false) }
+        module.bindings.forEach { addBinding(it.value) }
         module.includes.forEach { addModule(it) }
     }
 
