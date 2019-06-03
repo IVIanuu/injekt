@@ -139,7 +139,7 @@ fun <T> Binding<T>.bindTypes(vararg types: Type<*>): Binding<T> {
  * Adds a additional binding for [type]
  */
 infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> =
-    bindType(customTypeOf<Any?>(type))
+    bindType(typeOf<Any?>(type))
 
 /**
  * Binds all of [types]

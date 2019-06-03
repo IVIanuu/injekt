@@ -65,7 +65,7 @@ class Component internal constructor(
                         val mapKeyType = type.parameters[0]
                         val mapValueType = type.parameters[1].parameters[0]
                         val mapKey = Key(
-                            customTypeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
+                            typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
                         val map = mapBindings[mapKey]
@@ -79,7 +79,7 @@ class Component internal constructor(
                         val mapKeyType = type.parameters[0]
                         val mapValueType = type.parameters[1].parameters[0]
                         val mapKey = Key(
-                            customTypeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
+                            typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
                         val map = mapBindings[mapKey]
@@ -93,7 +93,7 @@ class Component internal constructor(
                         val mapKeyType = type.parameters[0]
                         val mapValueType = type.parameters[1]
                         val mapKey = Key(
-                            customTypeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
+                            typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType)
                         )
 
                         val map = mapBindings[mapKey]
@@ -114,7 +114,7 @@ class Component internal constructor(
                     Lazy::class -> {
                         val setValueType = type.parameters[0].parameters[0]
                         val setKey = Key(
-                            customTypeOf<Set<Any?>>(Set::class, setValueType)
+                            typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
                         val set = setBindings[setKey]
@@ -127,7 +127,7 @@ class Component internal constructor(
                     Provider::class -> {
                         val setValueType = type.parameters[0].parameters[0]
                         val setKey = Key(
-                            customTypeOf<Set<Any?>>(Set::class, setValueType)
+                            typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
                         val set = setBindings[setKey]
@@ -140,7 +140,7 @@ class Component internal constructor(
                     else -> {
                         val setValueType = type.parameters[0]
                         val setKey = Key(
-                            customTypeOf<Set<Any?>>(Set::class, setValueType)
+                            typeOf<Set<Any?>>(Set::class, setValueType)
                         )
 
                         val set = setBindings[setKey]

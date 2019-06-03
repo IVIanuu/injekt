@@ -73,23 +73,27 @@ internal fun <T> KType.asType(): Type<T> =
         arguments.map { it.type!!.asType<Any?>() }.toTypedArray()
     )
 
-fun <T> customTypeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
-    customTypeOf(raw, false, *parameters)
+fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
+    typeOf(raw, false, *parameters)
 
-fun <T> customTypeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
+fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
     Type<T>(raw, isNullable, parameters as Array<Type<*>>)
 
 inline fun <reified T> lazyTypeOf(): Type<Lazy<T>> =
-    customTypeOf(Lazy::class, typeOf<T>())
+    typeOf(Lazy::class, typeOf<T>())
 
 inline fun <reified T> listTypeOf(): Type<List<T>> =
-    customTypeOf(List::class, typeOf<T>())
+    typeOf(List::class, typeOf<T>())
 
 inline fun <reified K, reified V> mapTypeOf(): Type<Map<K, V>> =
-    customTypeOf(Map::class, typeOf<K>(), typeOf<V>())
+    typeOf(
+        Map::class,
+        typeOf<K>(),
+        typeOf<V>()
+    )
 
 inline fun <reified T> providerTypeOf(): Type<Provider<T>> =
-    customTypeOf(Provider::class, typeOf<T>())
+    typeOf(Provider::class, typeOf<T>())
 
 inline fun <reified T> setTypeOf(): Type<Set<T>> =
-    customTypeOf(Set::class, typeOf<T>())
+    typeOf(Set::class, typeOf<T>())

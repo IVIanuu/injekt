@@ -26,7 +26,7 @@ data class MapBinding<K, V>(
     val mapName: Qualifier?,
     val override: Boolean
 ) {
-    val mapKey = Key(customTypeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
+    val mapKey = Key(typeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
 }
 
 inline fun <reified K, reified V> mapBinding(
