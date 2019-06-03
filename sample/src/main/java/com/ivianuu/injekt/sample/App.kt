@@ -26,7 +26,13 @@ import com.ivianuu.injekt.android.applicationComponent
  */
 class App : Application(), InjektTrait {
 
-    override val component by lazy { applicationComponent() }
+    override val component by lazy {
+        applicationComponent(
+            modules = listOf(appModule)
+        )
+    }
+
+    private val appServiceStarter by inject<AppServiceStarter>()
 
     override fun onCreate() {
         InjektPlugins.logger = AndroidLogger()
@@ -34,7 +40,18 @@ class App : Application(), InjektTrait {
         d { "Injected app dependency ${get<AppDependency>()}" }
 
         super.onCreate()
+
+        appServiceStarter.startServices()
     }
+}
+
+@Name(PackageName.Companion::class)
+annotation class PackageName {
+    companion object : Qualifier
+}
+
+val appModule = module {
+    factory<String>(PackageName) { get<App>().packageName }
 }
 
 @Single @ApplicationScope

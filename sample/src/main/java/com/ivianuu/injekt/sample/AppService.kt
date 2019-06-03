@@ -18,8 +18,8 @@ package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.*
 
-@KindRegistry([_AppService::class])
-private object dummy
+@Interceptors([AppServiceInterceptor::class])
+annotation class AsAppService
 
 /**
  * @author Manuel Wrage (IVIanuu)
@@ -29,32 +29,37 @@ interface AppService {
     }
 }
 
-@KindAnnotation(FactoryKind::class)
-@ApplicationScope
-@Interceptors([AppServiceInterceptor::class, OtherAppServiceInterceptor::class])
-annotation class _AppService
-
-@Factory
+@Single @ApplicationScope
 class AppServiceStarter(
     private val appServices: Map<String, Provider<AppService>>
 ) {
+
+    fun startServices() {
+        d { "starting services $appServices" }
+        appServices
+            .mapValues { it.value.get() }
+            .forEach { (key, service) ->
+                d { "starting service for key $key -> $service" }
+            }
+    }
 
 }
 
 object AppServiceInterceptor : Interceptor<AppService> {
     override fun intercept(binding: Binding<AppService>) {
-        binding.bindIntoMap(binding.type.raw.java.name)
+        binding.bindIntoMap<AppService, String, AppService>(binding.type.raw.java.name)
     }
 }
 
-object OtherAppServiceInterceptor : Interceptor<AppService> {
-    override fun intercept(binding: Binding<AppService>) {
-        binding.bindIntoSet()
+@Single @ApplicationScope @AsAppService
+class MyFirstAppService(private val app: App) : AppService {
+    override fun start() {
+        super.start()
     }
 }
 
-@_AppService
-class MyAppService : AppService {
+@Single @ApplicationScope @AsAppService
+class MySecondAppService(@PackageName private val packageName: String) : AppService {
     override fun start() {
         super.start()
     }
