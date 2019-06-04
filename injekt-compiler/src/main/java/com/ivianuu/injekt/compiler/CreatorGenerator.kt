@@ -39,7 +39,7 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             .addType(creator())
             .build()
 
-    private fun imports() = mutableSetOf("binding", "find")
+    private fun imports() = mutableSetOf("binding", "get")
 
     private fun creator() = TypeSpec.classBuilder(descriptor.creatorName)
         .addSuperinterface(
@@ -76,13 +76,13 @@ class CreatorGenerator(private val descriptor: CreatorDescriptor) {
             descriptor.constructorParams.forEachIndexed { i, param ->
                 when (param) {
                     is ParamDescriptor.Parameter -> {
-                        add("${param.paramName} = params.find(${param.index})")
+                        add("${param.paramName} = params.get(${param.index})")
                     }
                     is ParamDescriptor.Dependency -> {
                         if (param.qualifierName != null) {
-                            add("${param.paramName} = find(%T)", param.qualifierName)
+                            add("${param.paramName} = get(%T)", param.qualifierName)
                         } else {
-                            add("${param.paramName} = find()")
+                            add("${param.paramName} = get()")
                         }
                     }
                 }
