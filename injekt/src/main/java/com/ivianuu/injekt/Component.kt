@@ -261,7 +261,7 @@ fun component(
             kind = FactoryKind,
             override = true,
             definition = {
-                map.mapValues { lazy { it.value.get() } }
+                map.mapValues { lazy(LazyThreadSafetyMode.NONE) { it.value.get() } }
             }
         )
 
@@ -303,7 +303,7 @@ fun component(
             override = true,
             definition = {
                 map.values
-                    .map { lazy { it.get() } }
+                    .map { lazy(LazyThreadSafetyMode.NONE) { it.get() } }
                     .toSet()
             }
         )
