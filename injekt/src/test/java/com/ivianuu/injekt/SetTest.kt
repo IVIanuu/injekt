@@ -23,15 +23,15 @@ class SetTest {
 
     @Test
     fun testSetBinding() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     factory(NameOne) { "value_one" }.bindIntoSet()
                     factory(NameTwo) { "value_two" }.bindIntoSet()
                     factory(NameThree) { "value_three" }.bindIntoSet()
                 }
             )
-        )
+        }
 
         val set = component.get<Set<String>>()
 
@@ -63,13 +63,13 @@ class SetTest {
 
     @Test
     fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
-                    setBinding<String>()
+                    bindSet<String>()
                 }
             )
-        )
+        }
 
         assertEquals(0, component.get<Set<String>>().size)
     }
@@ -78,26 +78,28 @@ class SetTest {
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnIllegalOverride() {
-        component(
-            modules = listOf(
+        component {
+            modules(
                 module {
                     factory { "value" }.bindIntoSet()
                     factory { "overridden_value" }.bindIntoSet()
                 }
             )
-        )
+        }
     }
 
-    @Test
+    /*@Test
     fun testOverridesLegalOverride() {
-        val component = component(modules = listOf(
-            module {
-                factory { "value" }.bindIntoSet()
-                factory { "overridden_value" }.bindIntoSet()
-            }
-        ))
+        val component = component {
+            modules(
+                module {
+                    factory { "value" }.bindIntoSet()
+                    factory { "overridden_value" }.bindIntoSet()
+                }
+            )
+        }
 
         assertEquals("overridden_value", component.get<Set<String>>().first())
-    }
+    }*/
 
 }

@@ -30,13 +30,13 @@ class MultiTest {
 
     @Test
     fun testMultiValues() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     multi { (value: Int) -> MultiValue(value) }
                 }
             )
-        )
+        }
 
         val firstValueOne = component.get<MultiValue> { parametersOf(1) }
         val secondValueOne = component.get<MultiValue> { parametersOf(1) }
@@ -50,11 +50,13 @@ class MultiTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun testThrowsOnNullParams() {
-        val component = component(modules = listOf(
-            module {
-                multi { (value: Int) -> MultiValue(value) }
-            }
-        ))
+        val component = component {
+            modules(
+                module {
+                    multi { (value: Int) -> MultiValue(value) }
+                }
+            )
+        }
 
         component.get<MultiValue>()
     }

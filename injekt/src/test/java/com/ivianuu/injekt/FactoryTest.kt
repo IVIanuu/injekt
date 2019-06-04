@@ -24,13 +24,13 @@ class FactoryTest {
 
     @Test
     fun testFactoryCreatesNew() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     factory { TestDep1() }
                 }
             )
-        )
+        }
 
         val value1 = component.get<TestDep1>()
         val value2 = component.get<TestDep1>()

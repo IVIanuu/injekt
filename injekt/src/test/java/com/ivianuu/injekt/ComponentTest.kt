@@ -34,14 +34,14 @@ class ComponentTest {
         val typed = TestDep1()
         val named = TestDep1()
 
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     factory { typed }
                     single(Named) { named }
                 }
             )
-        )
+        }
 
         val typedGet = component.get<TestDep1>()
         assertEquals(typed, typedGet)
@@ -52,22 +52,23 @@ class ComponentTest {
 
     @Test
     fun testGetNested() {
-        val dependency = component(
-            modules = listOf(
+        val dependency = component {
+            modules(
                 module {
                     factory { TestDep1() }
                 }
             )
-        )
+        }
 
-        val component = component(
-            modules = listOf(
+
+        val component = component {
+            modules(
                 module {
                     factory { TestDep2(get()) }
                 }
-            ),
-            dependencies = listOf(dependency)
-        )
+            )
+            dependencies(dependency)
+        }
 
         component.get<TestDep2>()
     }
@@ -82,8 +83,8 @@ class ComponentTest {
     fun testLazy() {
         var called = false
 
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     factory {
                         called = true
@@ -91,7 +92,7 @@ class ComponentTest {
                     }
                 }
             )
-        )
+        }
 
         assertFalse(called)
 
@@ -136,21 +137,21 @@ class ComponentTest {
 
     @Test
     fun testExplicitOverrideInNestedComponents() {
-        val parentComponent = component(
-            modules = listOf(
+        val parentComponent = component {
+            modules(
                 module {
                     factory { "my_value" }
                 }
             )
-        )
+        }
 
-        val childComponent = component(
-            modules = listOf(
+        val childComponent = component {
+            modules(
                 module {
                     factory(override = true) { "my_overridden_value" }
                 }
             )
-        )
+        }
 
         assertEquals("my_value", parentComponent.get<String>())
         assertEquals("my_overridden_value", childComponent.get<String>())
@@ -166,62 +167,60 @@ class ComponentTest {
             factory { "my_overridden_value" }
         }
 
-        component(
-            modules = listOf(module1, module2)
-        )
+        component(modules = listOf(module1, module2))
     }
 
     @Test(expected = IllegalStateException::class)
     fun testDisallowsNestedImplicitOverride() {
-        val rootComponent = component(
-            modules = listOf(
+        val rootComponent = component {
+            modules(
                 module {
                     factory { "my_value" }
                 }
             )
-        )
+        }
 
-        component(
-            dependencies = listOf(rootComponent),
-            modules = listOf(
+        component {
+            dependencies(rootComponent)
+            modules(
                 module {
-                    factory { "my_overridden_value" }
+                    factory { "my_overriden_value" }
                 }
             )
-        )
+        }
     }
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfDependenciesOverrideEachOther() {
-        val dependency1 = component(
-            modules = listOf(
+        val dependency1 = component {
+            modules(
                 module {
                     factory { "value_1" }
                 }
             )
-        )
+        }
 
-        val dependency2 = component(
-            modules = listOf(
+        val dependency2 = component {
+            modules(
                 module {
                     factory { "value_2" }
                 }
             )
-        )
+        }
 
         component(dependencies = listOf(dependency1, dependency2))
     }
 
     @Test
     fun testTypeDistinction() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     single { listOf(1, 2, 3) }
                     single { listOf("one", "two", "three") }
                 }
             )
-        )
+        }
 
         val ints = component.get<List<Int>>()
         val strings = component.get<List<String>>()
@@ -231,14 +230,14 @@ class ComponentTest {
 
     @Test
     fun testNullableDistinction() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     factory<String> { "string" }
                     factory<String?> { "nullable string" }
                 }
             )
-        )
+        }
 
         val string = component.get<String>()
         assertEquals("string", string)

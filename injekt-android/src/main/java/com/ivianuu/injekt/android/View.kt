@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
@@ -29,6 +30,7 @@ import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
@@ -53,6 +55,13 @@ annotation class ForChildView {
     companion object : Qualifier
 }
 
+fun <T : View> T.viewComponent(block: ComponentBuilder.() -> Unit): Component = component {
+    scope = ViewScope
+    getClosestComponentOrNull()?.let { dependencies(it) }
+    modules(viewModule())
+    block()
+}
+
 fun <T : View> T.viewComponent(
     scope: Scope? = ViewScope,
     modules: Iterable<Module> = emptyList(),
@@ -62,6 +71,13 @@ fun <T : View> T.viewComponent(
     { viewModule() },
     { getClosestComponentOrNull() }
 )
+
+fun <T : View> T.childViewComponent(block: ComponentBuilder.() -> Unit): Component = component {
+    scope = ChildViewScope
+    getClosestComponentOrNull()?.let { dependencies(it) }
+    modules(childViewModule())
+    block()
+}
 
 fun <T : View> T.childViewComponent(
     scope: Scope? = ChildViewScope,

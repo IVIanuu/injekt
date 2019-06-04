@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.module
 
@@ -38,6 +40,14 @@ annotation class ContentProviderScope {
 annotation class ForContentProvider {
     companion object : Qualifier
 }
+
+fun <T : ContentProvider> T.contentProviderComponent(block: ComponentBuilder.() -> Unit): Component =
+    component {
+        scope = ContentProviderScope
+        getClosestComponentOrNull()?.let { dependencies(it) }
+        modules(contentProviderModule())
+        block()
+    }
 
 fun <T : ContentProvider> T.contentProviderComponent(
     scope: Scope? = ContentProviderScope,

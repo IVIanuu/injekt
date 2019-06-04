@@ -25,6 +25,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
@@ -35,6 +36,7 @@ import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
@@ -48,6 +50,13 @@ annotation class ActivityScope {
 @Name(ForActivity.Companion::class)
 annotation class ForActivity {
     companion object : Qualifier
+}
+
+fun <T : Activity> T.activityComponent(block: ComponentBuilder.() -> Unit): Component = component {
+    scope = ActivityScope
+    getClosestComponentOrNull()?.let { dependencies(it) }
+    modules(activityModule())
+    block()
 }
 
 fun <T : Activity> T.activityComponent(

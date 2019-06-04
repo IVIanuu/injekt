@@ -25,11 +25,13 @@ class ProviderTest {
 
     @Test
     fun testProviderNotReturnsSameValue() {
-        val component = component(modules = listOf(
-            module {
-                factory { TestDep1() }
-            }
-        ))
+        val component = component {
+            modules(
+                module {
+                    factory { TestDep1() }
+                }
+            )
+        }
         val getProvider = component.get<Provider<TestDep1>>()
         val value1 = getProvider.get()
         val value2 = getProvider.get()
@@ -40,14 +42,16 @@ class ProviderTest {
     fun testProviderUsesExplicitParams() {
         var usedParams: Parameters? = null
 
-        val component = component(modules = listOf(
-            module {
-                factory {
-                    usedParams = it
-                    TestDep1()
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
                 }
-            }
-        ))
+            )
+        }
 
         val parameters = parametersOf("one", "two")
 

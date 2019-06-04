@@ -29,22 +29,26 @@ class EagerTest {
     fun testCreatesOnInit() {
         var called = false
 
-        component(modules = listOf(
-            module {
-                eager { called = true }
-            }
-        ))
+        component {
+            modules(
+                module {
+                    eager { called = true }
+                }
+            )
+        }
 
         assertTrue(called)
     }
 
     @Test
     fun testCreatesOnlyOnce() {
-        val component = component(modules = listOf(
-            module {
-                eager { TestDep1() }
-            }
-        ))
+        val component = component {
+            modules(
+                module {
+                    eager { TestDep1() }
+                }
+            )
+        }
 
         val value1 = component.get<TestDep1>()
         val value2 = component.get<TestDep1>()

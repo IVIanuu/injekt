@@ -31,14 +31,14 @@ class BridgeTest {
 
     @Test
     fun testDelegatesToOriginal() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
                     factory(Original) { "original_value" }
                     bridge<String>(Original) bindType CharSequence::class
                 }
             )
-        )
+        }
 
         assertEquals("original_value", component.get<CharSequence>())
     }

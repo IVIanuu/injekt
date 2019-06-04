@@ -20,6 +20,7 @@ import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
@@ -27,10 +28,18 @@ import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindTypes
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
+
+fun <T : Application> T.applicationComponent(block: ComponentBuilder.() -> Unit): Component =
+    component {
+        scope = ApplicationScope
+        modules(applicationModule())
+        block()
+    }
 
 fun <T : Application> T.applicationComponent(
     scope: Scope? = ApplicationScope,

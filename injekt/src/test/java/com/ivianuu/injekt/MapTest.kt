@@ -25,15 +25,15 @@ class MapTest {
     fun testMapBinding() {
         InjektPlugins.logger = PrintLogger()
 
-        val component = component(
-            ApplicationScope,
-            modules = listOf(
-            module {
-                factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
-                factory(NameTwo) { "value_two" } bindIntoMap mapBinding("key_two")
-                factory(NameThree) { "value_three" } bindIntoMap mapBinding("key_three")
-            }
-        ))
+        val component = component {
+            modules(
+                module {
+                    factory(NameOne) { "value_one" } bindIntoMap mapBinding("key_one")
+                    factory(NameTwo) { "value_two" } bindIntoMap mapBinding("key_two")
+                    factory(NameThree) { "value_three" } bindIntoMap mapBinding("key_three")
+                }
+            )
+        }
 
         val map = component.get<Map<String, String>>()
 
@@ -65,13 +65,13 @@ class MapTest {
 
     @Test
     fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
-        val component = component(
-            modules = listOf(
+        val component = component {
+            modules(
                 module {
-                    mapBinding<String, Int>()
+                    bindMap<String, Int>()
                 }
             )
-        )
+        }
 
         assertEquals(0, component.get<Map<String, Int>>().size)
     }
@@ -80,24 +80,24 @@ class MapTest {
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnIllegalOverride() {
-        component(
-            modules = listOf(
-                module {
-                    factory { "value" }.bindIntoMap("key")
-                    factory { "overridden_value" }.bindIntoMap("key")
-                }
-            )
-        )
+        component {
+            module {
+                factory { "value" }.bindIntoMap("key")
+                factory { "overridden_value" }.bindIntoMap("key")
+            }
+        }
     }
 
     @Test
     fun testOverridesLegalOverride() {
-        val component = component(modules = listOf(
-            module {
-                factory(NameOne) { "value" }.bindIntoMap("key")
-                factory(NameTwo) { "overridden_value" }.bindIntoMap("key", override = true)
-            }
-        ))
+        val component = component {
+            modules(
+                module {
+                    factory(NameOne) { "value" }.bindIntoMap("key")
+                    factory(NameTwo) { "overridden_value" }.bindIntoMap("key", override = true)
+                }
+            )
+        }
 
         assertEquals(
             "overridden_value",

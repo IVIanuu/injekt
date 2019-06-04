@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
-class Module internal constructor() {
+class Module @PublishedApi internal constructor() {
 
     internal val bindings = mutableMapOf<Key, Binding<*>>()
     internal val includes = mutableSetOf<Module>()
@@ -36,7 +36,7 @@ class Module internal constructor() {
         includes.add(module)
     }
 
-    fun <K, V> mapBinding(
+    fun <K, V> bindMap(
         keyType: Type<K>,
         valueType: Type<V>,
         mapName: Qualifier? = null
@@ -46,7 +46,7 @@ class Module internal constructor() {
         )
     }
 
-    fun <T> setBinding(
+    fun <T> bindSet(
         elementType: Type<T>,
         setName: Qualifier? = null
     ) {
@@ -57,10 +57,7 @@ class Module internal constructor() {
 
 }
 
-fun module(block: (Module.() -> Unit)? = null): Module {
-    return Module()
-        .apply { block?.invoke(this) }
-}
+inline fun module(block: Module.() -> Unit): Module = Module().apply(block)
 
 inline fun <reified T> Module.bind(
     kind: Kind,
@@ -81,10 +78,10 @@ fun <T> Module.bind(
     return binding
 }
 
-inline fun <reified K, reified V> Module.mapBinding(mapName: Qualifier? = null) {
-    mapBinding<K, V>(typeOf(), typeOf(), mapName)
+inline fun <reified K, reified V> Module.bindMap(mapName: Qualifier? = null) {
+    bindMap<K, V>(typeOf(), typeOf(), mapName)
 }
 
-inline fun <reified T> Module.setBinding(setName: Qualifier? = null) {
-    setBinding<T>(typeOf(), setName)
+inline fun <reified T> Module.bindSet(setName: Qualifier? = null) {
+    bindSet<T>(typeOf(), setName)
 }

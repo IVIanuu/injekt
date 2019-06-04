@@ -25,7 +25,7 @@ class AttributesTest {
 
     @Test
     fun testGetAndSet() {
-        val attrs = attributesOf()
+        val attrs = Attributes()
 
         assertFalse(attrs.contains("key"))
 
@@ -39,14 +39,14 @@ class AttributesTest {
 
     @Test
     fun testGetIfNotSet() {
-        val attrs = attributesOf()
+        val attrs = Attributes()
         assertFalse(attrs.contains("key"))
         assertTrue(attrs.getOrNull<String>("key") == null)
     }
 
     @Test
     fun testOverridesValues() {
-        val attrs = attributesOf()
+        val attrs = Attributes()
 
         attrs["key"] = "value1"
         attrs["key"] = "value2"
