@@ -52,9 +52,3 @@ inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
 
 inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T =
     getOrNull<T>(key) ?: defaultValue()
-
-fun attributesOf(): Attributes =
-    Attributes(mutableMapOf())
-
-fun attributesOf(vararg pairs: Pair<String, Any?>): Attributes =
-    Attributes(mutableMapOf(*pairs))

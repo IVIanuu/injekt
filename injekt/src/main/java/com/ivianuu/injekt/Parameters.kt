@@ -54,7 +54,7 @@ fun parametersOf(): Parameters = Parameters(emptyArray())
 
 fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 
-fun parametersOf(values: Iterable<Any?>): Parameters = Parameters(values.toList().toTypedArray())
+fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArray())
 
 private val emptyParameters = Parameters(emptyArray())
 fun emptyParameters(): Parameters = emptyParameters
