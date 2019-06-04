@@ -42,12 +42,12 @@ class Component internal constructor(
                 logger.info("${scopeName()} Register binding ${it.value.binding}")
             }
 
-            mapBindings.forEach {
-                logger.info("${scopeName()} Register map binding ${it.key} ${it.value.mapValues { it.value.binding }}")
+            mapBindings.forEach { (key, map) ->
+                logger.info("${scopeName()} Register map binding $key ${map.mapValues { it.value.binding }}")
             }
 
-            setBindings.forEach {
-                logger.info("${scopeName()} Register set binding ${it.key} ${it.value.map { it.binding }}")
+            setBindings.forEach { (key, set) ->
+                logger.info("${scopeName()} Register set binding $key ${set.map { it.binding }}")
             }
         }
         instances
@@ -257,12 +257,13 @@ fun component(
     val setBindings =
         mutableMapOf<Key, MutableMap<Key, Instance<*>>>()
 
-    dependencies.forEach {
-        mapBindings.putAll(it.mapBindings as Map<out Key, MutableMap<Any?, Instance<*>>>)
+    dependencies.forEach { dependency ->
+        mapBindings.putAll(dependency.mapBindings as Map<out Key, MutableMap<Any?, Instance<*>>>)
         setBindings.putAll(
-            it.setBindings
-                .mapValues { it.value.associateBy { it.binding.key } }
-                    as Map<out Key, MutableMap<Key, Instance<*>>>
+            dependency.setBindings
+                .mapValues { (_, set) ->
+                    set.associateBy { it.binding.key }
+                } as Map<out Key, MutableMap<Key, Instance<*>>>
         )
     }
 

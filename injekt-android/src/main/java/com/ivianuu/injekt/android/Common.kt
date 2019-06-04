@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 
