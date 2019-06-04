@@ -63,27 +63,28 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        when (type.raw) {
-            Lazy::class -> {
-                val key = Key(type.parameters.first(), name)
-                findInstance<T>(key, true)
-                    ?.let {
-                        return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
-                    }
-            }
-            Provider::class -> {
-                val key = Key(type.parameters.first(), name)
-                findInstance<T>(key, true)
-                    ?.let { instance ->
-                        return@get provider { instance.get(it) } as T
-                    }
-            }
-            else -> {
-                val key = Key(type, name)
-                findInstance<T>(key, true)
-                    ?.let { return@get it.get(parameters) }
+        if (type.parameters.size == 1) {
+            when (type.raw) {
+                Lazy::class -> {
+                    val key = Key(type.parameters.first(), name)
+                    findInstance<T>(key, true)
+                        ?.let {
+                            return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
+                        }
+                }
+                Provider::class -> {
+                    val key = Key(type.parameters.first(), name)
+                    findInstance<T>(key, true)
+                        ?.let { instance ->
+                            return@get provider { instance.get(it) } as T
+                        }
+                }
             }
         }
+
+        val key = Key(type, name)
+        findInstance<T>(key, true)
+            ?.let { return@get it.get(parameters) }
 
         // todo clean up
         throw IllegalStateException("Couldn't find a binding for ${Key(type, name)}")
