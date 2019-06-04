@@ -79,8 +79,13 @@ internal fun <T> KType.asType(): Type<T> {
     )
 }
 
+fun <T> typeOf(raw: KClass<*>): Type<T> = Type(raw, false, emptyArray())
+
 fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
     Type(raw, false, parameters)
+
+fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> =
+    Type(raw, isNullable, emptyArray())
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
     Type(raw, isNullable, parameters)
