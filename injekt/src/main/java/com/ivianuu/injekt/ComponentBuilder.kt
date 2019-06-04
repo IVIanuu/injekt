@@ -78,16 +78,32 @@ fun component(
 ): Component {
     // todo clean up the whole function
 
+    val dependencyScopes = mutableSetOf<Scope>()
+
+    dependencies.forEach {
+        if (it.scope != null) {
+            if (!dependencyScopes.add(it.scope)) {
+                error("Duplicated scope ${it.scope}")
+            }
+        }
+    }
+
+    check(scope == null || !dependencyScopes.contains(scope)) {
+        "Duplicated scope $scope"
+    }
+
+    check(scope == null || dependencyScopes.isEmpty()) {
+        "Must have a scope if a dependency has a scope"
+    }
+
     val dependencyBindings = dependencies
         .map { it.getAllBindings() }
         .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
             current.forEach { (key, binding) ->
                 val oldBinding = acc[key]
-                // todo better error message
-                if (oldBinding != null && !binding.override) {
-                    error("Already declared binding for $key")
+                check(oldBinding == null || binding.override) {
+                    "Already declared binding for $key"
                 }
-
                 acc[key] = binding
             }
 
