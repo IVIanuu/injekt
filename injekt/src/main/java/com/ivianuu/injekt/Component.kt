@@ -76,7 +76,7 @@ class Component internal constructor(
                 val key = Key(type.parameters.first(), name)
                 findInstance<T>(key, true)
                     ?.let { instance ->
-                        return@get provider { instance.get(it ?: parameters) } as T
+                        return@get provider { instance.get(it) } as T
                     }
             }
             else -> {
