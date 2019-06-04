@@ -74,7 +74,7 @@ class Component internal constructor(
                 val key = Key(type.parameters.first(), name)
                 findInstance<T>(key, true)
                     ?.let {
-                        return@get lazy { it.get(parameters) } as T
+                        return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
                     }
             }
             Map::class -> {
