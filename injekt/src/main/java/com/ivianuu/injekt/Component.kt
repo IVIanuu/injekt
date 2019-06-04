@@ -238,9 +238,7 @@ fun component(
         kind = SingleKind,
         override = true,
         definition = { this.component }
-    ).apply {
-        if (scope != null) bindName(scope)
-    }
+    ).apply { if (scope != null) bindName(scope) }
     addBinding(componentBinding)
 
     // maps
