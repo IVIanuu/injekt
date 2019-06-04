@@ -63,7 +63,7 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        // todo add those at component init
+        // todo add those at component init?
         when (type.raw) {
             Component::class -> {
                 if (name == null || name == scope) {
