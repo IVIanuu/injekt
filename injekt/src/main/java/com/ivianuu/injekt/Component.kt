@@ -100,7 +100,7 @@ class Component internal constructor(
             if (instance != null) return instance
         }
 
-        if (includeGlobalPool && key.name != null) {
+        if (includeGlobalPool && key.name == null) {
             val binding = GlobalPool.get<T>(key)
             if (binding != null) {
                 val component = findComponentForScope(scope)
