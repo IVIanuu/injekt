@@ -18,8 +18,17 @@ package com.ivianuu.injekt.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.NamedScope
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.module
 
 @ScopeAnnotation(ReceiverScope.Companion::class)
 annotation class ReceiverScope {

@@ -19,7 +19,16 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Definition
+import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.typeOf
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]

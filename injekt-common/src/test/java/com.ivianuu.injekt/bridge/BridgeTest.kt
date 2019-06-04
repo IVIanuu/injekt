@@ -16,7 +16,12 @@
 
 package com.ivianuu.injekt.bridge
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.module
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

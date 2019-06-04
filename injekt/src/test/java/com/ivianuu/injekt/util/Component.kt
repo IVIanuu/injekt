@@ -16,7 +16,12 @@
 
 package com.ivianuu.injekt.util
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.typeOf
 
 inline fun <reified T> Component.getBinding(
     name: Qualifier? = null

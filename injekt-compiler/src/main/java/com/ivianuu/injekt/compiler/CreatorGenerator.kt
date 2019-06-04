@@ -18,8 +18,13 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Creator
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asClassName
 
 class CreatorGenerator(private val descriptor: CreatorDescriptor) {
 

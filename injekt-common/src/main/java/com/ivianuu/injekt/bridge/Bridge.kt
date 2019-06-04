@@ -16,7 +16,21 @@
 
 package com.ivianuu.injekt.bridge
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.InjektPlugins
+import com.ivianuu.injekt.Instance
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Kind
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.attribute
+import com.ivianuu.injekt.bind
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.logger
+import com.ivianuu.injekt.scopeName
+import com.ivianuu.injekt.typeOf
 import java.util.*
 
 /**
