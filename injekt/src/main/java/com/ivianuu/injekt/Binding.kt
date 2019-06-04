@@ -29,7 +29,7 @@ class Binding<T> internal constructor(
 
     val key = Key(type, name)
 
-    val attributes = attributesOf()
+    val attributes = Attributes()
     val additionalKeys = mutableListOf<Key>()
 
     val mapBindings = mutableMapOf<Key, MapBinding<*, *>>()

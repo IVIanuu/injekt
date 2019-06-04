@@ -25,7 +25,7 @@ import kotlin.reflect.KType
 class Type<T> internal constructor(
     val raw: KClass<*>,
     val isNullable: Boolean,
-    val parameters: Array<Type<*>>
+    val parameters: Array<out Type<*>>
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -66,18 +66,24 @@ class Type<T> internal constructor(
 inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
 @PublishedApi
-internal fun <T> KType.asType(): Type<T> =
-    Type<T>(
+internal fun <T> KType.asType(): Type<T> {
+    val parameters = arrayOfNulls<Type<*>>(arguments.size)
+    arguments.forEachIndexed { i, kType ->
+        parameters[i] = kType.type!!.asType<Any?>()
+    }
+
+    return Type<T>(
         classifier as KClass<*>,
         isMarkedNullable,
-        arguments.map { it.type!!.asType<Any?>() }.toTypedArray()
+        parameters as Array<out Type<*>>
     )
+}
 
 fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
-    typeOf(raw, false, *parameters)
+    Type(raw, false, parameters)
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
-    Type(raw, isNullable, parameters as Array<Type<*>>)
+    Type(raw, isNullable, parameters)
 
 inline fun <reified T> lazyTypeOf(): Type<Lazy<T>> =
     typeOf(Lazy::class, typeOf<T>())
