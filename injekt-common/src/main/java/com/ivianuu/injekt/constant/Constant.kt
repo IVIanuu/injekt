@@ -19,16 +19,13 @@ package com.ivianuu.injekt.constant
 import com.ivianuu.injekt.*
 
 /**
- * Constant instance kind
+ * This kind creates no new instances but using a existing one
  */
 object ConstantKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = ConstantInstance(binding)
     override fun toString(): String = "Constant"
 }
 
-/**
- * Adds a [Binding] which already exists
- */
 fun <T : Any> Module.constant(
     instance: T,
     type: Type<T> = typeOf(instance::class),

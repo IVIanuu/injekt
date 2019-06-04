@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt
 
-/**
- * Map binding
- */
 data class MapBinding<K, V>(
     val key: K,
     val keyType: Type<K>,

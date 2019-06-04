@@ -25,9 +25,6 @@ import com.ivianuu.injekt.android.ViewScope
 import com.ivianuu.injekt.android.viewComponent
 import com.ivianuu.injekt.get
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class ParentView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null, defStyleAttr: Int = 0

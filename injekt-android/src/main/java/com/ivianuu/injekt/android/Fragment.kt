@@ -23,41 +23,26 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-/**
- * Fragment scope
- */
 @ScopeAnnotation(FragmentScope.Companion::class)
 annotation class FragmentScope {
     companion object : NamedScope("FragmentScope")
 }
 
-/**
- * Child fragment scope
- */
 @ScopeAnnotation(ChildFragmentScope.Companion::class)
 annotation class ChildFragmentScope {
     companion object : NamedScope("ChildFragmentScope")
 }
 
-/**
- * Fragment name
- */
 @Name(ForFragment.Companion::class)
 annotation class ForFragment {
     companion object : Qualifier
 }
 
-/**
- * Child fragment name
- */
 @Name(ForChildFragment.Companion::class)
 annotation class ForChildFragment {
     companion object : Qualifier
 }
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : Fragment> T.fragmentComponent(
     scope: Scope? = FragmentScope,
     modules: Iterable<Module> = emptyList(),
@@ -68,9 +53,6 @@ fun <T : Fragment> T.fragmentComponent(
     { getClosestComponentOrNull() }
 )
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : Fragment> T.childFragmentComponent(
     scope: Scope? = ChildFragmentScope,
     modules: Iterable<Module> = emptyList(),
@@ -81,68 +63,37 @@ fun <T : Fragment> T.childFragmentComponent(
     { getClosestComponentOrNull() }
 )
 
-/**
- * Returns the closest [Component] or null
- */
 fun Fragment.getClosestComponentOrNull(): Component? {
     return getParentFragmentComponentOrNull()
         ?: getActivityComponentOrNull()
         ?: getApplicationComponentOrNull()
 }
 
-/**
- * Returns the closest [Component]
- */
 fun Fragment.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close component found for $this")
 
-/**
- * Returns the [Component] of the parent fragment or null
- */
 fun Fragment.getParentFragmentComponentOrNull(): Component? =
     (parentFragment as? InjektTrait)?.component
 
-/**
- * Returns the [Component] of the parent fragment or throws
- */
 fun Fragment.getParentFragmentComponent(): Component =
     getParentFragmentComponentOrNull() ?: error("No parent fragment component found for $this")
 
-/**
- * Returns the [Component] of the activity or null
- */
 fun Fragment.getActivityComponentOrNull(): Component? =
     (activity as? InjektTrait)?.component
 
-/**
- * Returns the [Component] of the activity or throws
- */
 fun Fragment.getActivityComponent(): Component =
     getActivityComponentOrNull() ?: error("No activity component found for $this")
 
-/**
- * Returns the [Component] of the application or null
- */
 fun Fragment.getApplicationComponentOrNull(): Component? =
     (activity?.application as? InjektTrait)?.component
 
-/**
- * Returns the [Component] of the application or throws
- */
 fun Fragment.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
-
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : Fragment> T.fragmentModule(): Module = module {
     include(internalFragmentModule(ForFragment))
 }
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : Fragment> T.childFragmentModule(): Module = module {
     include(internalFragmentModule(ForChildFragment))
 }

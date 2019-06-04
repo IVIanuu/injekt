@@ -21,41 +21,23 @@ package com.ivianuu.injekt
  */
 /* inline */class Attributes(private val _entries: MutableMap<String, Any?> = mutableMapOf()) {
 
-    /**
-     * All entries
-     */
     val entries: Map<String, Any?> get() = _entries
 
-    /**
-     * Whether or not contains a value for [key]
-     */
     fun contains(key: String): Boolean = _entries.contains(key)
 
-    /**
-     * Sets the value for [key] to [value]
-     */
     operator fun <T> set(key: String, value: T) {
         _entries[key] = value as Any
     }
 
-    /**
-     * Returns the value for [key] or null
-     */
     fun <T> getOrNull(key: String): T? = _entries[key] as? T
 
     override fun toString(): String = entries.toString()
 
 }
 
-/**
- * Returns the value for [key]
- */
 operator fun <T> Attributes.get(key: String): T =
     getOrNull<T>(key) ?: error("Couldn't get attribute for $key")
 
-/**
- * Returns the value for [key] if present or returns and sets [defaultValue]
- */
 inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
     val value = getOrNull<T>(key)
 
@@ -68,14 +50,8 @@ inline fun <T> Attributes.getOrSet(key: String, defaultValue: () -> T): T {
     return value
 }
 
-/**
- * Returns the value for [key] if present or the [defaultValue]
- */
 inline fun <T> Attributes.getOrDefault(key: String, defaultValue: () -> T): T =
     getOrNull<T>(key) ?: defaultValue()
 
-/**
- * Returns new [Attributes] which contains all [pairs]
- */
 fun attributesOf(vararg pairs: Pair<String, Any?>): Attributes =
     Attributes(mutableMapOf(*pairs))

@@ -21,41 +21,26 @@ import android.view.View
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-/**
- * View scope
- */
 @ScopeAnnotation(ViewScope.Companion::class)
 annotation class ViewScope {
     companion object : NamedScope("ViewScope")
 }
 
-/**
- * Child view scope
- */
 @ScopeAnnotation(ChildViewScope.Companion::class)
 annotation class ChildViewScope {
     companion object : NamedScope("ChildViewScope")
 }
 
-/**
- * View name
- */
 @Name(ForView.Companion::class)
 annotation class ForView {
     companion object : Qualifier
 }
 
-/**
- * Child view name
- */
 @Name(ForChildView.Companion::class)
 annotation class ForChildView {
     companion object : Qualifier
 }
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : View> T.viewComponent(
     scope: Scope? = ViewScope,
     modules: Iterable<Module> = emptyList(),
@@ -66,9 +51,6 @@ fun <T : View> T.viewComponent(
     { getClosestComponentOrNull() }
 )
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : View> T.childViewComponent(
     scope: Scope? = ChildViewScope,
     modules: Iterable<Module> = emptyList(),
@@ -79,36 +61,21 @@ fun <T : View> T.childViewComponent(
     { getClosestComponentOrNull() }
 )
 
-/**
- * Returns the closest [Component] or null
- */
 fun View.getClosestComponentOrNull(): Component? {
     return getParentViewComponentOrNull()
         ?: getContextComponentOrNull()
         ?: getApplicationComponentOrNull()
 }
 
-/**
- * Returns the closest [Component]
- */
 fun View.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close component found for $this")
 
-/**
- * Returns the [Component] of the parent view or null
- */
 fun View.getParentViewComponentOrNull(): Component? =
     (parent as? InjektTrait)?.component
 
-/**
- * Returns the [Component] of the parent view or throws
- */
 fun View.getParentViewComponent(): Component =
     getParentViewComponentOrNull() ?: error("No parent view component found for $this")
 
-/**
- * Returns the [Component] of the context or null
- */
 fun View.getContextComponentOrNull(): Component? {
     var parentContext = context
     while (parentContext != null) {
@@ -121,34 +88,19 @@ fun View.getContextComponentOrNull(): Component? {
     return null
 }
 
-/**
- * Returns the [Component] of the context or throws
- */
 fun View.getContextComponent(): Component =
     getContextComponentOrNull() ?: error("No context component found for $this")
 
-/**
- * Returns the [Component] of the activity or null
- */
 fun View.getApplicationComponentOrNull(): Component? =
     (context.applicationContext as? InjektTrait)?.component
 
-/**
- * Returns the [Component] of the activity or throws
- */
 fun View.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : View> T.viewModule(): Module = module {
     include(internalViewModule(ForView))
 }
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : View> T.childViewModule(): Module = module {
     include(internalViewModule(ForChildView))
 }

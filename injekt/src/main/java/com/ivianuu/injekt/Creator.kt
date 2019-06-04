@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt
 
-/**
- * Used by the compiler
- */
 interface Creator<T> {
     fun create(): Binding<T>
 }

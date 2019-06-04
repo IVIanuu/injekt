@@ -16,17 +16,11 @@
 
 package com.ivianuu.injekt
 
-/**
- * Application scope
- */
 @ScopeAnnotation(ApplicationScope.Companion::class)
 annotation class ApplicationScope {
     companion object : NamedScope("ApplicationScope")
 }
 
-/**
- * Application name
- */
 @Name(ForApplication.Companion::class)
 annotation class ForApplication {
     companion object : Qualifier

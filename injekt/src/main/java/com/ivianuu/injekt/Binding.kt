@@ -18,9 +18,6 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-/**
- * Represents a dependency binding.
- */
 class Binding<T> internal constructor(
     val kind: Kind,
     val type: Type<T>,
@@ -47,13 +44,10 @@ class Binding<T> internal constructor(
 }
 
 /**
- * Defines a [Binding]
+ * Will called when ever a new instance is needed
  */
 typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
 
-/**
- * Returns a new [Binding]
- */
 inline fun <reified T> binding(
     kind: Kind,
     name: Qualifier? = null,
@@ -62,9 +56,6 @@ inline fun <reified T> binding(
     noinline definition: Definition<T>
 ): Binding<T> = binding(kind, typeOf(), name, scope, override, definition)
 
-/**
- * Returns a new [Binding]
- */
 fun <T> binding(
     kind: Kind,
     type: Type<T>,
@@ -114,44 +105,26 @@ infix fun <T> Binding<T>.additionalKey(key: Key): Binding<T> {
     return this
 }
 
-/**
- * Adds a additional binding for [T]
- */
 inline fun <reified T> Binding<*>.bindType() {
     bindType(typeOf<T>())
 }
 
-/**
- * Adds a additional binding for [type]
- */
 infix fun <T> Binding<T>.bindType(type: Type<*>): Binding<T> =
     additionalKey(Key(type))
 
-/**
- * Binds all of [types]
- */
 fun <T> Binding<T>.bindTypes(vararg types: Type<*>): Binding<T> {
     types.forEach { bindType(it) }
     return this
 }
 
-/**
- * Adds a additional binding for [type]
- */
 infix fun <T> Binding<T>.bindType(type: KClass<*>): Binding<T> =
     bindType(typeOf<Any?>(type))
 
-/**
- * Binds all of [types]
- */
 fun <T> Binding<T>.bindTypes(vararg types: KClass<*>): Binding<T> {
     types.forEach { bindType(it) }
     return this
 }
 
-/**
- * Binds all of [types]
- */
 infix fun <T> Binding<T>.bindTypes(types: Iterable<KClass<*>>): Binding<T> {
     types.forEach { bindTypes(it) }
     return this
@@ -182,17 +155,11 @@ infix fun <T> Binding<T>.bindAlias(pair: Pair<Type<*>, Qualifier>): Binding<T> {
     return this
 }
 
-/**
- * Adds this binding into a map
- */
 infix fun <T : V, K, V> Binding<T>.bindIntoMap(mapBinding: MapBinding<K, V>): Binding<T> {
     mapBindings[mapBinding.mapKey] = mapBinding
     return this
 }
 
-/**
- * Adds this binding into a map
- */
 inline fun <reified T : V, reified K, reified V> Binding<T>.bindIntoMap(
     key: K,
     keyType: Type<K> = typeOf(),
@@ -204,17 +171,11 @@ inline fun <reified T : V, reified K, reified V> Binding<T>.bindIntoMap(
     return this
 }
 
-/**
- * Adds this binding into a set
- */
 infix fun <T : V, V> Binding<T>.bindIntoSet(setBinding: SetBinding<V>): Binding<T> {
     setBindings[setBinding.setKey] = setBinding
     return this
 }
 
-/**
- * Adds this binding into a set
- */
 inline fun <reified T : V, reified V> Binding<T>.bindIntoSet(
     setType: Type<T> = typeOf(),
     setName: Qualifier? = null,

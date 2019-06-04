@@ -23,9 +23,6 @@ import com.ivianuu.injekt.Qualifier
 
 import com.ivianuu.injekt.single
 
-/**
- * Declare [SharedPreferences] using [sharedPreferencesName] and [sharedPreferencesMode]
- */
 fun Module.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,

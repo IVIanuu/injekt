@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt
 
-/**
- * A key for a [Binding]
- */
 data class Key(val type: Type<*>, val name: Qualifier? = null) {
     override fun toString(): String {
         return "Key(" +

@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt
 
-/**
- * Set binding
- */
 data class SetBinding<T>(
     val setType: Type<T>,
     val setName: Qualifier?,

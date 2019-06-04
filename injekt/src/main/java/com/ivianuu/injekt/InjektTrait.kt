@@ -20,32 +20,25 @@ package com.ivianuu.injekt
  * Holds a [Component] and allows for shorter syntax
  */
 interface InjektTrait {
-    /**
-     * The [Component] of this class
-     */
     val component: Component
 }
 
-/** Calls trough [Component.get] */
 inline fun <reified T> InjektTrait.get(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
 
-/** Calls trough [Component.get] */
 fun <T> InjektTrait.get(
     type: Type<T>,
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): T = component.get(type, name, parameters)
 
-/** Calls trough [Component.inject] */
 inline fun <reified T> InjektTrait.inject(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(typeOf(), name, parameters)
 
-/** Calls trough [Component.inject] */
 fun <T> InjektTrait.inject(
     type: Type<T>,
     name: Qualifier? = null,

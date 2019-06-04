@@ -17,18 +17,12 @@
 package com.ivianuu.injekt
 
 /**
- * Provides dependencies of kind [T]
+ * Provides instances of [T]
  */
 interface Provider<T> {
-    /**
-     * Returns a potentially new value of [T] using [parameters]
-     */
     fun get(parameters: ParametersDefinition? = null): T
 }
 
-/**
- * Returns a [Provider] which invokes the [provider] on [Provider.get]
- */
 fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
     LambdaProvider(provider)
 

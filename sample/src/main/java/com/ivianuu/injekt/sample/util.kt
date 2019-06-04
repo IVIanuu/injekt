@@ -25,9 +25,6 @@ inline fun Any.d(m: () -> String) {
     Log.d(javaClass.simpleName, m())
 }
 
-/**
- * Used to allow fragment views to depend on the fragment component
- */
 class InjektTraitContextWrapper(
     base: Context,
     injektTrait: InjektTrait

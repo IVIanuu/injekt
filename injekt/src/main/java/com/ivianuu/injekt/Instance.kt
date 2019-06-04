@@ -17,19 +17,14 @@
 package com.ivianuu.injekt
 
 /**
- * Creates/holds the actual instance for [Binding]s
+ * Holder for instances of [Binding]s
+ * It can just create a new instance of the dependencies or perform caching in some form
  */
 abstract class Instance<T> {
 
-    /**
-     * Context of this instance
-     */
     lateinit var context: DefinitionContext
         internal set
 
-    /**
-     * The binding of this instance
-     */
     abstract val binding: Binding<T>
 
     /**
@@ -38,7 +33,7 @@ abstract class Instance<T> {
     abstract fun get(parameters: ParametersDefinition? = null): T
 
     /**
-     * Creates the value for this instance
+     * Creates the value using [parameters]
      */
     protected fun create(parameters: ParametersDefinition?): T {
         return try {
@@ -51,9 +46,6 @@ abstract class Instance<T> {
         }
     }
 
-    /**
-     * Used by the eager kind to instantiate value
-     */
     open fun attached() {
     }
 }

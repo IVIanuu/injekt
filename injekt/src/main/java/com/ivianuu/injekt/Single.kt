@@ -17,25 +17,19 @@
 package com.ivianuu.injekt
 
 /**
- * Kind for single instances
+ * Creates instances once per [Component]
  */
 object SingleKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = SingleInstance(binding)
     override fun toString(): String = "Single"
 }
 
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
 inline fun <reified T> Module.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = single(typeOf(), name, override, definition)
 
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
 fun <T> Module.single(
     type: Type<T>,
     name: Qualifier? = null,
@@ -45,8 +39,6 @@ fun <T> Module.single(
 
 @Target(AnnotationTarget.CLASS)
 annotation class Single
-
-private object UNINITIALIZED
 
 private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
@@ -72,5 +64,7 @@ private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>(
             return@get value as T
         }
     }
+
+    private companion object UNINITIALIZED
 
 }

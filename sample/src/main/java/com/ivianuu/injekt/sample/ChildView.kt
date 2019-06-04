@@ -25,9 +25,6 @@ import com.ivianuu.injekt.android.ChildViewScope
 import com.ivianuu.injekt.android.childViewComponent
 import com.ivianuu.injekt.get
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class ChildView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null, defStyleAttr: Int = 0

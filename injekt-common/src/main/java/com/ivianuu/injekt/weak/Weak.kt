@@ -20,25 +20,20 @@ import com.ivianuu.injekt.*
 import java.lang.ref.WeakReference
 
 /**
- * Weak kind
+ * This caches the value via a [WeakReference] and creates it again
+ * if the reference was garbage collected
  */
 object WeakKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = WeakInstance(binding)
     override fun toString() = "Weak"
 }
 
-/**
- * Adds a [Binding] which will be cached by a [WeakReference]
- */
 inline fun <reified T> Module.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = weak(typeOf(), name, override, definition)
 
-/**
- * Adds a [Binding] which will be cached by a [WeakReference]
- */
 fun <T> Module.weak(
     type: Type<T>,
     name: Qualifier? = null,

@@ -19,25 +19,20 @@ package com.ivianuu.injekt.eager
 import com.ivianuu.injekt.*
 
 /**
- * Eager kind
+ * This kind creates the value once per [Component]
+ * and will be initialized on start
  */
 object EagerKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = EagerInstance(binding)
     override fun toString(): String = "Eager"
 }
 
-/**
- * Adds a [Binding] which will be created once per [Component] and initialized on start
- */
 inline fun <reified T> Module.eager(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = eager(typeOf(), name, override, definition)
 
-/**
- * Adds a [Binding] which will be created once per [Component] and initialized on start
- */
 fun <T> Module.eager(
     type: Type<T>,
     name: Qualifier? = null,
@@ -47,8 +42,6 @@ fun <T> Module.eager(
 
 @Target(AnnotationTarget.CLASS)
 annotation class Eager
-
-private object UNINITIALIZED
 
 private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
@@ -79,4 +72,6 @@ private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>()
         super.attached()
         get(null)
     }
+
+    private companion object UNINITIALIZED
 }

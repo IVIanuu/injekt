@@ -21,25 +21,16 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-/**
- * Receiver scope
- */
 @ScopeAnnotation(ReceiverScope.Companion::class)
 annotation class ReceiverScope {
     companion object : NamedScope("ReceiverScope")
 }
 
-/**
- * Receiver name
- */
 @Name(ForReceiver.Companion::class)
 annotation class ForReceiver {
     companion object : Qualifier
 }
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     scope: Scope? = ReceiverScope,
@@ -51,33 +42,18 @@ fun <T : BroadcastReceiver> T.receiverComponent(
     { getClosestComponentOrNull(context) }
 )
 
-/**
- * Returns the closest [Component] or null
- */
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
     getApplicationComponentOrNull(context)
 
-/**
- * Returns the closest [Component]
- */
 fun BroadcastReceiver.getClosestComponent(context: Context): Component =
     getClosestComponentOrNull(context) ?: error("No close component found for $this")
 
-/**
- * Returns the parent [Component] if available or null
- */
 fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component? =
     (context.applicationContext as? InjektTrait)?.component
 
-/**
- * Returns the parent [Component] or throws
- */
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : BroadcastReceiver> T.receiverModule(): Module = module {
     constant(this@receiverModule) bindType BroadcastReceiver::class
 }

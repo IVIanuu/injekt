@@ -27,9 +27,6 @@ import com.ivianuu.injekt.android.ChildFragmentScope
 import com.ivianuu.injekt.android.childFragmentComponent
 import com.ivianuu.injekt.get
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class ChildFragment : Fragment(), InjektTrait {
 
     override val component by lazy { childFragmentComponent() }

@@ -18,9 +18,6 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-/**
- * Scope marker
- */
 interface Scope : Qualifier
 
 open class NamedScope(val name: String) : Scope {

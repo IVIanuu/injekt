@@ -19,18 +19,12 @@ package com.ivianuu.injekt
 import java.util.*
 
 /**
- * Parameters which will be used for assisted injection
+ * Parameters which can be used to pass things like an id
  */
 /* inline*/ class Parameters(private val values: Array<Any?>) {
 
-    /**
-     * Number of contained elements
-     */
     val size: Int get() = values.size
 
-    /**
-     * Returns the element [i]
-     */
     operator fun <T> get(i: Int): T = values[i] as T
 
     operator fun <T> component1(): T = get(0)
@@ -54,26 +48,14 @@ import java.util.*
 
 }
 
-/**
- * Defines [Parameters]
- */
 typealias ParametersDefinition = () -> Parameters
 
-/**
- * Returns new [Parameters] which contains all [values]
- */
 fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 
-/**
- * Returns new [Parameters] which contains all [values]
- */
 fun parametersOf(values: Iterable<Any?>): Parameters = Parameters(values.toList().toTypedArray())
 
 private val emptyParameters = Parameters(emptyArray())
 
-/**
- * Returns empty [Parameters]
- */
 fun emptyParameters(): Parameters = emptyParameters
 
 @Target(AnnotationTarget.VALUE_PARAMETER)

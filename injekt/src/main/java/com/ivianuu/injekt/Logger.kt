@@ -16,28 +16,14 @@
 
 package com.ivianuu.injekt
 
-/**
- * Logger
- */
 interface Logger {
-    /**
-     * Logs a debug message
-     */
+
     fun debug(msg: String)
 
-    /**
-     * Logs a info message
-     */
     fun info(msg: String)
 
-    /**
-     * Logs a warning message
-     */
     fun warn(msg: String)
 
-    /**
-     * Logs a error message
-     */
     fun error(msg: String)
 }
 

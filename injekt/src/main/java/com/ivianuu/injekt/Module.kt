@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * A module is a collection of [Binding]
+ * A module is a collection of [Binding]s to drive [Component]s
  */
 class Module internal constructor() {
 
@@ -26,25 +26,16 @@ class Module internal constructor() {
     internal val mapBindings = mutableSetOf<Key>()
     internal val setBindings = mutableSetOf<Key>()
 
-    /**
-     * Adds the [binding]
-     */
     fun bind(binding: Binding<*>) {
         if (bindings.put(binding.key, binding) != null && !binding.override) {
             error("Already declared binding for ${binding.key}")
         }
     }
 
-    /**
-     * Adds the [module]
-     */
     fun include(module: Module) {
         includes.add(module)
     }
 
-    /**
-     * Declares an empty map binding
-     */
     fun <K, V> mapBinding(
         keyType: Type<K>,
         valueType: Type<V>,
@@ -55,9 +46,6 @@ class Module internal constructor() {
         )
     }
 
-    /**
-     * Declares an empty set binding
-     */
     fun <T> setBinding(
         elementType: Type<T>,
         setName: Qualifier? = null
@@ -69,17 +57,11 @@ class Module internal constructor() {
 
 }
 
-/**
- * Returns a new [Module] configured by [block]
- */
 fun module(block: (Module.() -> Unit)? = null): Module {
     return Module()
         .apply { block?.invoke(this) }
 }
 
-/**
- * Adds a [Binding]
- */
 inline fun <reified T> Module.bind(
     kind: Kind,
     name: Qualifier? = null,
@@ -87,9 +69,6 @@ inline fun <reified T> Module.bind(
     noinline definition: Definition<T>
 ): Binding<T> = bind(kind, typeOf(), name, override, definition)
 
-/**
- * Adds a [Binding]
- */
 fun <T> Module.bind(
     kind: Kind,
     type: Type<T>,
@@ -102,16 +81,10 @@ fun <T> Module.bind(
     return binding
 }
 
-/**
- * Declares an empty map binding
- */
 inline fun <reified K, reified V> Module.mapBinding(mapName: Qualifier? = null) {
     mapBinding<K, V>(typeOf(), typeOf(), mapName)
 }
 
-/**
- * Declares an empty set binding
- */
 inline fun <reified T> Module.setBinding(setName: Qualifier? = null) {
     setBinding<T>(typeOf(), setName)
 }

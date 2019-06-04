@@ -19,25 +19,19 @@ package com.ivianuu.injekt.multi
 import com.ivianuu.injekt.*
 
 /**
- * Kind for multi instances
+ * This kind creates a values and distinct's them by the hash of the passed [Parameters]
  */
 object MultiKind : Kind() {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = MultiInstance(binding)
     override fun toString(): String = "Multi"
 }
 
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
 inline fun <reified T> Module.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): Binding<T> = multi(typeOf(), name, override, definition)
 
-/**
- * Adds a [Binding] which will be created once per [Component]
- */
 fun <T> Module.multi(
     type: Type<T>,
     name: Qualifier? = null,

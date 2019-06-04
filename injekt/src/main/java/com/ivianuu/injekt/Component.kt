@@ -18,6 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * The actual dependency container which provides bindings
+ * Dependencies can be requested by calling either [get] or [inject]
  */
 class Component internal constructor(
     val scope: Scope?,
@@ -338,25 +339,16 @@ internal fun Component.collectBindings(
     bindings.putAll(this.instances.mapValues { it.value.binding })
 }
 
-/**
- * Returns the instance matching [T] and [name]
- */
 inline fun <reified T> Component.get(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
 
-/**
- * Lazy version of [Component.get]
- */
 inline fun <reified T> Component.inject(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(typeOf(), name, parameters)
 
-/**
- * Lazy version of [Component.get]
- */
 fun <T> Component.inject(
     type: Type<T>,
     name: Qualifier? = null,

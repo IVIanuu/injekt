@@ -21,9 +21,6 @@ import android.content.Context
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : Application> T.applicationComponent(
     scope: Scope? = ApplicationScope,
     modules: Iterable<Module> = emptyList(),
@@ -34,9 +31,6 @@ fun <T : Application> T.applicationComponent(
     { null }
 )
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : Application> T.applicationModule(): Module = module {
     constant(this@applicationModule).apply {
         bindTypes(Application::class, Context::class)

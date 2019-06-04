@@ -20,25 +20,16 @@ import android.content.ContentProvider
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-/**
- * Content provider scope
- */
 @ScopeAnnotation(ContentProviderScope.Companion::class)
 annotation class ContentProviderScope {
     companion object : NamedScope("ContentProviderScope")
 }
 
-/**
- * Content provider name
- */
 @Name(ForContentProvider.Companion::class)
 annotation class ForContentProvider {
     companion object : Qualifier
 }
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : ContentProvider> T.contentProviderComponent(
     scope: Scope? = ContentProviderScope,
     modules: Iterable<Module> = emptyList(),
@@ -49,33 +40,18 @@ fun <T : ContentProvider> T.contentProviderComponent(
     { getClosestComponentOrNull() }
 )
 
-/**
- * Returns the closest [Component] or null
- */
 fun ContentProvider.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
 
-/**
- * Returns the closest [Component]
- */
 fun ContentProvider.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close component found for $this")
 
-/**
- * Returns the parent [Component] if available or null
- */
 fun ContentProvider.getApplicationComponentOrNull(): Component? =
     (context?.applicationContext as? InjektTrait)?.component
 
-/**
- * Returns the parent [Component] or throws
- */
 fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
     constant(this@contentProviderModule) bindType ContentProvider::class
 }

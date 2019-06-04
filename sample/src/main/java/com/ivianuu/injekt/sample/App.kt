@@ -21,9 +21,6 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 class App : Application(), InjektTrait {
 
     override val component by lazy {

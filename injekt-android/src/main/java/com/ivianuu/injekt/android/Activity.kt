@@ -27,25 +27,16 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.constant.constant
 
-/**
- * Activity scope
- */
 @ScopeAnnotation(ActivityScope.Companion::class)
 annotation class ActivityScope {
     companion object : NamedScope("ActivityScope")
 }
 
-/**
- * Activity name
- */
 @Name(ForActivity.Companion::class)
 annotation class ForActivity {
     companion object : Qualifier
 }
 
-/**
- * Returns a [Component] with convenient configurations
- */
 fun <T : Activity> T.activityComponent(
     scope: Scope? = ActivityScope,
     modules: Iterable<Module> = emptyList(),
@@ -56,32 +47,17 @@ fun <T : Activity> T.activityComponent(
     { getClosestComponentOrNull() }
 )
 
-/**
- * Returns the closest [Component] or null
- */
 fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
 
-/**
- * Returns the closest [Component]
- */
 fun Activity.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close component found for $this")
 
-/**
- * Returns the application [Component] or null
- */
 fun Activity.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
-/**
- * Returns the parent [Component] or throws
- */
 fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
-/**
- * Returns a [Module] with convenient bindings
- */
 fun <T : Activity> T.activityModule(): Module = module {
     constant(this@activityModule, override = true).apply {
         bindType<Activity>()
