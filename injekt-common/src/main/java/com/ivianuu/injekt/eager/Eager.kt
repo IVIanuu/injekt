@@ -53,9 +53,6 @@ fun <T> Module.eager(
     definition: Definition<T>
 ): Binding<T> = bind(EagerKind, type, name, override, definition)
 
-@Target(AnnotationTarget.CLASS)
-annotation class Eager
-
 private class EagerInstance<T>(override val binding: Binding<T>) : Instance<T>() {
 
     private var _value: Any? = UNINITIALIZED

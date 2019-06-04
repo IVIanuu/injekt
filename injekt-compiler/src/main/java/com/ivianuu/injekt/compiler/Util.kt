@@ -21,8 +21,6 @@ import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.FactoryKind
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.SingleKind
-import com.ivianuu.injekt.eager.Eager
-import com.ivianuu.injekt.eager.EagerKind
 import com.ivianuu.injekt.multi.Multi
 import com.ivianuu.injekt.multi.MultiKind
 import com.ivianuu.injekt.weak.WeakKind
@@ -39,7 +37,6 @@ enum class Kind(
     val annotation: KClass<out Annotation>,
     val impl: ClassName
 ) {
-    EAGER(Eager::class, EagerKind::class.asClassName()),
     FACTORY(Factory::class, FactoryKind::class.asClassName()),
     MULTI(Multi::class, MultiKind::class.asClassName()),
     SINGLE(Single::class, SingleKind::class.asClassName()),
