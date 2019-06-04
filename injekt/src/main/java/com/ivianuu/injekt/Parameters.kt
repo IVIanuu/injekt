@@ -50,12 +50,13 @@ import java.util.*
 
 typealias ParametersDefinition = () -> Parameters
 
+fun parametersOf(): Parameters = Parameters(emptyArray())
+
 fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 
 fun parametersOf(values: Iterable<Any?>): Parameters = Parameters(values.toList().toTypedArray())
 
 private val emptyParameters = Parameters(emptyArray())
-
 fun emptyParameters(): Parameters = emptyParameters
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
