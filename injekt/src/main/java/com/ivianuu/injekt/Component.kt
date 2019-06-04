@@ -63,7 +63,6 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        // todo add those at component init?
         when (type.raw) {
             Lazy::class -> {
                 val key = Key(type.parameters.first(), name)

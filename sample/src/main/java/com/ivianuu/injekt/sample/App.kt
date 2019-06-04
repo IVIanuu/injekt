@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.android.context
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
@@ -53,7 +54,7 @@ annotation class PackageName {
 }
 
 val appModule = module {
-    factory<String>(PackageName) { get<App>().packageName }
+    factory<String>(PackageName) { context().packageName }
 }
 
 @Single @ApplicationScope
