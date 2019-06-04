@@ -26,28 +26,28 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" }.bindIntoSet()
-                    factory(NameTwo) { "value_two" }.bindIntoSet()
-                    factory(NameThree) { "value_three" }.bindIntoSet()
+                    factory(NameOne) { "value_one" }.bindIntoSet(setName = Values)
+                    factory(NameTwo) { "value_two" }.bindIntoSet(setName = Values)
+                    factory(NameThree) { "value_three" }.bindIntoSet(setName = Values)
                 }
             )
         }
 
-        val set = component.get<Set<String>>()
+        val set = component.get<Set<String>>(Values)
 
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val lazySet = component.get<Set<Lazy<String>>>()
+        val lazySet = component.get<Set<Lazy<String>>>(Values)
 
         assertEquals(3, lazySet.size)
         assertEquals("value_one", lazySet.toList()[0].value)
         assertEquals("value_two", lazySet.toList()[1].value)
         assertEquals("value_three", lazySet.toList()[2].value)
 
-        val providerSet = component.get<Set<Provider<String>>>()
+        val providerSet = component.get<Set<Provider<String>>>(Values)
 
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0].get())

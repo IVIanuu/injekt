@@ -16,10 +16,10 @@
 
 package com.ivianuu.injekt.eager
 
+import com.ivianuu.injekt.TestDep1
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.util.TestDep1
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 

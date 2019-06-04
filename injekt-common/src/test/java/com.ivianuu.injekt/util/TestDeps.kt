@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt.util
 
+import com.ivianuu.injekt.TestDep1
+import com.ivianuu.injekt.TestDep2
+
 class TestDep1
 class TestDep2(val dep1: TestDep1)
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)

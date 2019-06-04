@@ -17,8 +17,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.util.TestDep1
-import com.ivianuu.injekt.util.TestDep2
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertNotSame

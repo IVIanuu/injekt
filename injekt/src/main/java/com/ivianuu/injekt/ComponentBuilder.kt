@@ -197,8 +197,9 @@ fun component(
         val keyType = key.type.parameters[0]
         val valueType = key.type.parameters[1]
         val instanceBinding = binding(
-            type = typeOf(Map::class, keyType, valueType),
             kind = FactoryKind,
+            type = typeOf(Map::class, keyType, valueType),
+            name = key.name,
             override = true,
             definition = { map.mapValues { it.value.get() } }
         )
@@ -206,8 +207,9 @@ fun component(
         addBinding(instanceBinding)
 
         val lazyBinding = binding(
-            type = typeOf(Map::class, keyType, typeOf<Any?>(Lazy::class, valueType)),
             kind = FactoryKind,
+            type = typeOf(Map::class, keyType, typeOf<Any?>(Lazy::class, valueType)),
+            name = key.name,
             override = true,
             definition = {
                 map.mapValues { lazy(LazyThreadSafetyMode.NONE) { it.value.get() } }
@@ -217,8 +219,9 @@ fun component(
         addBinding(lazyBinding)
 
         val providerBinding = binding(
-            type = typeOf(Map::class, keyType, typeOf<Any?>(Provider::class, valueType)),
             kind = FactoryKind,
+            type = typeOf(Map::class, keyType, typeOf<Any?>(Provider::class, valueType)),
+            name = key.name,
             override = true,
             definition = {
                 map.mapValues { entry ->
@@ -234,8 +237,9 @@ fun component(
     setBindings.forEach { (key, map) ->
         val valueType = key.type.parameters[0]
         val instanceBinding = binding(
-            type = typeOf(Set::class, valueType),
             kind = FactoryKind,
+            type = typeOf(Set::class, valueType),
+            name = key.name,
             override = true,
             definition = {
                 map.values
@@ -247,8 +251,9 @@ fun component(
         addBinding(instanceBinding)
 
         val lazyBinding = binding(
-            type = typeOf(Set::class, typeOf<Any?>(Lazy::class, valueType)),
             kind = FactoryKind,
+            type = typeOf(Set::class, typeOf<Any?>(Lazy::class, valueType)),
+            name = key.name,
             override = true,
             definition = {
                 map.values
@@ -260,8 +265,9 @@ fun component(
         addBinding(lazyBinding)
 
         val providerBinding = binding(
-            type = typeOf(Set::class, typeOf<Any?>(Provider::class, valueType)),
             kind = FactoryKind,
+            type = typeOf(Set::class, typeOf<Any?>(Provider::class, valueType)),
+            name = key.name,
             override = true,
             definition = {
                 map.values

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.util.TestDep1
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 

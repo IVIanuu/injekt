@@ -19,3 +19,23 @@ package com.ivianuu.injekt
 object NameOne : Qualifier
 object NameTwo : Qualifier
 object NameThree : Qualifier
+
+object Values : Qualifier
+
+inline fun <reified T> Component.getBinding(
+    name: Qualifier? = null
+): Binding<T> = getBinding(typeOf(), name)
+
+fun <T> Component.getBinding(
+    type: Type<T>,
+    name: Qualifier? = null
+): Binding<T> {
+    val key = Key(type, name)
+    return instances.entries.firstOrNull { it.key == key }?.value?.binding as? Binding<T>
+        ?: error("binding not found")
+}
+
+
+class TestDep1
+class TestDep2(val dep1: TestDep1)
+class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
