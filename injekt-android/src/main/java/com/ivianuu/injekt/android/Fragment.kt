@@ -27,7 +27,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -57,40 +56,21 @@ annotation class ForChildFragment {
     companion object : Qualifier
 }
 
-fun <T : Fragment> T.fragmentComponent(block: ComponentBuilder.() -> Unit): Component = component {
+fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    component {
     scope = FragmentScope
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(fragmentModule())
-    block()
-}
+        block?.invoke(this)
+    }
 
-fun <T : Fragment> T.fragmentComponent(
-    scope: Scope? = FragmentScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { fragmentModule() },
-    { getClosestComponentOrNull() }
-)
-
-fun <T : Fragment> T.childFragmentComponent(block: ComponentBuilder.() -> Unit): Component =
+fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
         scope = ChildFragmentScope
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
-        block()
+        block?.invoke(this)
     }
-
-fun <T : Fragment> T.childFragmentComponent(
-    scope: Scope? = ChildFragmentScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { childFragmentModule() },
-    { getClosestComponentOrNull() }
-)
 
 fun Fragment.getClosestComponentOrNull(): Component? {
     return getParentFragmentComponentOrNull()

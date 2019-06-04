@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.util
-
-import com.ivianuu.injekt.TestDep1
-import com.ivianuu.injekt.TestDep2
+package com.ivianuu.injekt
 
 class TestDep1
 class TestDep2(val dep1: TestDep1)

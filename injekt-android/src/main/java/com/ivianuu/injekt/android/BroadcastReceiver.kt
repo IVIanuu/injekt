@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
@@ -44,24 +43,13 @@ annotation class ForReceiver {
 
 fun <T : BroadcastReceiver> BroadcastReceiver.receiverComponent(
     context: Context,
-    block: ComponentBuilder.() -> Unit
+    block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
     scope = ReceiverScope
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule(context))
-    block()
+    block?.invoke(this)
 }
-
-fun <T : BroadcastReceiver> T.receiverComponent(
-    context: Context,
-    scope: Scope? = ReceiverScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { receiverModule(context) },
-    { getClosestComponentOrNull(context) }
-)
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
     getApplicationComponentOrNull(context)

@@ -22,6 +22,8 @@ object NameThree : Qualifier
 
 object Values : Qualifier
 
+object TestScope : Scope
+
 inline fun <reified T> Component.getBinding(
     name: Qualifier? = null
 ): Binding<T> = getBinding(typeOf(), name)

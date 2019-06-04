@@ -54,7 +54,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
     }
 
     @PublishedApi
-    internal fun build(): Component = component(
+    internal fun build(): Component = createComponent(
         scope = scope,
         modules = modules,
         dependencies = dependencies
@@ -65,13 +65,11 @@ class ComponentBuilder @PublishedApi internal constructor() {
 /**
  * Constructs a new [Component] which will configured [block]
  */
-inline fun component(block: ComponentBuilder.() -> Unit): Component =
+inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()
 
-/**
- * Constructs a new [Component] which will be driven by all of [dependencies] and [modules]
- */
-fun component(
+@PublishedApi
+internal fun createComponent(
     scope: Scope? = null,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
@@ -92,7 +90,7 @@ fun component(
         "Duplicated scope $scope"
     }
 
-    check(scope == null || dependencyScopes.isEmpty()) {
+    check(scope != null || dependencyScopes.isEmpty()) {
         "Must have a scope if a dependency has a scope"
     }
 

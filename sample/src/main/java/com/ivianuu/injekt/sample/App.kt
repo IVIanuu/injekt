@@ -34,9 +34,7 @@ import com.ivianuu.injekt.module
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        applicationComponent(
-            modules = listOf(appModule)
-        )
+        applicationComponent { modules(appModule) }
     }
 
     override fun onCreate() {

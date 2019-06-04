@@ -24,7 +24,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
@@ -41,23 +40,13 @@ annotation class ForContentProvider {
     companion object : Qualifier
 }
 
-fun <T : ContentProvider> T.contentProviderComponent(block: ComponentBuilder.() -> Unit): Component =
+fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
         scope = ContentProviderScope
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(contentProviderModule())
-        block()
+        block?.invoke(this)
     }
-
-fun <T : ContentProvider> T.contentProviderComponent(
-    scope: Scope? = ContentProviderScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { contentProviderModule() },
-    { getClosestComponentOrNull() }
-)
 
 fun ContentProvider.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

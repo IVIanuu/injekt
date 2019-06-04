@@ -101,22 +101,6 @@ class ComponentTest {
     }
 
     @Test
-    fun testAddDependency() {
-        val dependency = component()
-        val component = component(dependencies = listOf(dependency))
-
-        assertTrue(component.dependencies.contains(dependency))
-    }
-
-    @Test
-    fun testAddModule() {
-        val binding = binding(FactoryKind) { "value" }
-        val module = module { bind(binding) }
-        val component = component(modules = listOf(module))
-        assertTrue(component.instances.values.map { it.binding }.contains(binding))
-    }
-
-    @Test
     fun testExplicitOverride() {
         val module1 = module {
             factory { "my_value" }
@@ -126,9 +110,7 @@ class ComponentTest {
             factory(override = true) { "my_overridden_value" }
         }
 
-        val component = component(
-            modules = listOf(module1, module2)
-        )
+        val component = component { modules(module1, module2) }
 
         assertEquals("my_overridden_value", component.get<String>())
     }
@@ -165,7 +147,7 @@ class ComponentTest {
             factory { "my_overridden_value" }
         }
 
-        component(modules = listOf(module1, module2))
+        component { modules(module1, module2) }
     }
 
     @Test(expected = IllegalStateException::class)
@@ -206,7 +188,7 @@ class ComponentTest {
             )
         }
 
-        component(dependencies = listOf(dependency1, dependency2))
+        component { dependencies(dependency1, dependency2) }
     }
 
     @Test
@@ -243,4 +225,40 @@ class ComponentTest {
         assertEquals("nullable string", nullableString)
     }
 
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
+        val dependency = component {
+            scope = ApplicationScope
+        }
+
+        component { dependencies(dependency) }
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsWhenOverridingScope() {
+        val dependency = component {
+            scope = ApplicationScope
+        }
+
+        component {
+            scope = ApplicationScope
+            dependencies(dependency)
+        }
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnDependenciesWithSameScope() {
+        val dependency1 = component {
+            scope = ApplicationScope
+        }
+
+        val dependency2 = component {
+            scope = ApplicationScope
+        }
+
+        component {
+            scope = TestScope
+            dependencies(dependency1, dependency2)
+        }
+    }
 }

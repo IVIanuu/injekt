@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -45,22 +44,13 @@ annotation class ForService {
     companion object : Qualifier
 }
 
-fun <T : Service> T.serviceComponent(block: ComponentBuilder.() -> Unit): Component = component {
+fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    component {
     scope = ServiceScope
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(serviceModule())
-    block()
+        block?.invoke(this)
 }
-
-fun <T : Service> T.serviceComponent(
-    scope: Scope? = ServiceScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { serviceModule() },
-    { getClosestComponentOrNull() }
-)
 
 fun Service.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

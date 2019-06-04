@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -55,39 +54,21 @@ annotation class ForChildView {
     companion object : Qualifier
 }
 
-fun <T : View> T.viewComponent(block: ComponentBuilder.() -> Unit): Component = component {
+fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    component {
     scope = ViewScope
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(viewModule())
-    block()
-}
+        block?.invoke(this)
+    }
 
-fun <T : View> T.viewComponent(
-    scope: Scope? = ViewScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { viewModule() },
-    { getClosestComponentOrNull() }
-)
-
-fun <T : View> T.childViewComponent(block: ComponentBuilder.() -> Unit): Component = component {
+fun <T : View> T.childViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    component {
     scope = ChildViewScope
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(childViewModule())
-    block()
+        block?.invoke(this)
 }
-
-fun <T : View> T.childViewComponent(
-    scope: Scope? = ChildViewScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { childViewModule() },
-    { getClosestComponentOrNull() }
-)
 
 fun View.getClosestComponentOrNull(): Component? {
     return getParentViewComponentOrNull()

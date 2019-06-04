@@ -32,7 +32,7 @@ object InjektTest : InjectionTest {
     }
 
     override fun setup() {
-        component = component(modules = listOf(injektModule))
+        component = component { modules(injektModule) }
     }
 
     override fun inject() {

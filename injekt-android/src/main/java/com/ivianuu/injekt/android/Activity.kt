@@ -31,7 +31,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeAnnotation
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -52,22 +51,14 @@ annotation class ForActivity {
     companion object : Qualifier
 }
 
-fun <T : Activity> T.activityComponent(block: ComponentBuilder.() -> Unit): Component = component {
+fun <T : Activity> T.activityComponent(
+    block: (ComponentBuilder.() -> Unit)? = null
+): Component = component {
     scope = ActivityScope
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
-    block()
+    block?.invoke(this)
 }
-
-fun <T : Activity> T.activityComponent(
-    scope: Scope? = ActivityScope,
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component = androidComponent(
-    scope, modules, dependencies,
-    { activityModule() },
-    { getClosestComponentOrNull() }
-)
 
 fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
