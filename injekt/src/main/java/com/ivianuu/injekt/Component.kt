@@ -63,15 +63,9 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
+        // check if we need a lazy or a provider
         if (type.parameters.size == 1) {
             when (type.raw) {
-                Lazy::class -> {
-                    val key = Key(type.parameters.first(), name)
-                    findInstance<T>(key, true)
-                        ?.let {
-                            return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
-                        }
-                }
                 Provider::class -> {
                     val key = Key(type.parameters.first(), name)
                     findInstance<T>(key, true)
@@ -79,9 +73,17 @@ class Component internal constructor(
                             return@get provider { instance.get(it) } as T
                         }
                 }
+                Lazy::class -> {
+                    val key = Key(type.parameters.first(), name)
+                    findInstance<T>(key, true)
+                        ?.let {
+                            return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
+                        }
+                }
             }
         }
 
+        // just try to resolve the dependency
         val key = Key(type, name)
         findInstance<T>(key, true)
             ?.let { return@get it.get(parameters) }
@@ -91,7 +93,7 @@ class Component internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findInstance(key: Key, includeGlobalPool: Boolean): Instance<T>? {
+    private fun <T> findInstance(key: Key, lookupJit: Boolean): Instance<T>? {
         var instance = instances[key]
         if (instance != null) return instance as Instance<T>
 
@@ -100,19 +102,19 @@ class Component internal constructor(
             if (instance != null) return instance
         }
 
-        if (includeGlobalPool && key.name == null) {
-            val binding = GlobalPool.get<T>(key)
-            if (binding != null) {
+        if (lookupJit && key.name == null) {
+            val jitBinding = JustInTimeBindings.find<T>(key)
+            if (jitBinding != null) {
                 val component = findComponentForScope(scope)
                     ?: error("Couldn't find component for $scope")
-                return component.addInstance(binding)
+                return component.addJitBinding(jitBinding)
             }
         }
 
         return null
     }
 
-    private fun <T> addInstance(binding: Binding<T>): Instance<T> {
+    private fun <T> addJitBinding(binding: Binding<T>): Instance<T> {
         val instance = binding.kind.createInstance(binding)
         instances[binding.key] = instance
         instance.context = context

@@ -18,11 +18,11 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-internal object GlobalPool {
+internal object JustInTimeBindings {
 
     private val bindings = mutableMapOf<Key, Binding<*>>()
 
-    fun <T> get(key: Key): Binding<T>? {
+    fun <T> find(key: Key): Binding<T>? {
         var binding = bindings[key]
 
         if (binding == null) {
