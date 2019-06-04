@@ -65,11 +65,6 @@ class Component internal constructor(
     ): T {
         // todo add those at component init?
         when (type.raw) {
-            Component::class -> {
-                if (name == null || name == scope) {
-                    return this as T
-                }
-            }
             Lazy::class -> {
                 val key = Key(type.parameters.first(), name)
                 findInstance<T>(key, true)
@@ -77,98 +72,12 @@ class Component internal constructor(
                         return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
                     }
             }
-            Map::class -> {
-                when (type.parameters[1].raw) {
-                    Lazy::class -> {
-                        val mapKeyType = type.parameters[0]
-                        val mapValueType = type.parameters[1].parameters[0]
-                        val mapKey = Key(
-                            typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType),
-                            name
-                        )
-
-                        mapBindings[mapKey]
-                            ?.mapValues {
-                                lazy { it.value.get(parameters) }
-                            }
-                            ?.let { return@get it as T }
-                    }
-                    Provider::class -> {
-                        val mapKeyType = type.parameters[0]
-                        val mapValueType = type.parameters[1].parameters[0]
-                        val mapKey = Key(
-                            typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType),
-                            name
-                        )
-
-                        mapBindings[mapKey]
-                            ?.mapValues { (_, instance) ->
-                                provider { instance.get(it) }
-                            }
-                            ?.let { return@get it as T }
-                    }
-                    else -> {
-                        val mapKeyType = type.parameters[0]
-                        val mapValueType = type.parameters[1]
-                        val mapKey = Key(
-                            typeOf<Map<Any?, Any?>>(Map::class, mapKeyType, mapValueType),
-                            name
-                        )
-
-                        mapBindings[mapKey]
-                            ?.mapValues { it.value.get(parameters) }
-                            ?.let { return@get it as T }
-                    }
-                }
-            }
             Provider::class -> {
                 val key = Key(type.parameters.first(), name)
                 findInstance<T>(key, true)
                     ?.let { instance ->
                         return@get provider { instance.get(it ?: parameters) } as T
                     }
-            }
-            Set::class -> {
-                when (type.parameters.first().raw) {
-                    Lazy::class -> {
-                        val setValueType = type.parameters[0].parameters[0]
-                        val setKey = Key(
-                            typeOf<Set<Any?>>(Set::class, setValueType),
-                            name
-                        )
-
-                        setBindings[setKey]
-                            ?.map { lazy { it.get(parameters) } }
-                            ?.toSet()
-                            ?.let { return@get it as T }
-                    }
-                    Provider::class -> {
-                        val setValueType = type.parameters[0].parameters[0]
-                        val setKey = Key(
-                            typeOf<Set<Any?>>(Set::class, setValueType),
-                            name
-                        )
-
-                        setBindings[setKey]
-                            ?.map { instance ->
-                                provider { instance.get(it ?: parameters) }
-                            }
-                            ?.toSet()
-                            ?.let { return@get it as T }
-                    }
-                    else -> {
-                        val setValueType = type.parameters[0]
-                        val setKey = Key(
-                            typeOf<Set<Any?>>(Set::class, setValueType),
-                            name
-                        )
-
-                        setBindings[setKey]
-                            ?.map { it.get(parameters) }
-                            ?.toSet()
-                            ?.let { return@get it as T }
-                    }
-                }
             }
             else -> {
                 val key = Key(type, name)
@@ -323,6 +232,99 @@ fun component(
     }
 
     modules.forEach { addModule(it) }
+
+    // component binding
+    val componentBinding = binding(
+        kind = SingleKind,
+        override = true,
+        definition = { this.component }
+    ).apply {
+        if (scope != null) bindName(scope)
+    }
+    addBinding(componentBinding)
+
+    // maps
+    mapBindings.forEach { (key, map) ->
+        val keyType = key.type.parameters[0]
+        val valueType = key.type.parameters[1]
+        val instanceBinding = binding(
+            type = typeOf(Map::class, keyType, valueType),
+            kind = FactoryKind,
+            override = true,
+            definition = { map.mapValues { it.value.get() } }
+        )
+
+        addBinding(instanceBinding)
+
+        val lazyBinding = binding(
+            type = typeOf(Map::class, keyType, typeOf<Any?>(Lazy::class, valueType)),
+            kind = FactoryKind,
+            override = true,
+            definition = {
+                map.mapValues { lazy { it.value.get() } }
+            }
+        )
+
+        addBinding(lazyBinding)
+
+        val providerBinding = binding(
+            type = typeOf(Map::class, keyType, typeOf<Any?>(Provider::class, valueType)),
+            kind = FactoryKind,
+            override = true,
+            definition = {
+                map.mapValues { entry ->
+                    provider { entry.value.get(it) }
+                }
+            }
+        )
+
+        addBinding(providerBinding)
+    }
+
+    // sets
+    setBindings.forEach { (key, map) ->
+        val valueType = key.type.parameters[0]
+        val instanceBinding = binding(
+            type = typeOf(Set::class, valueType),
+            kind = FactoryKind,
+            override = true,
+            definition = {
+                map.values
+                    .map { it.get() }
+                    .toSet()
+            }
+        )
+
+        addBinding(instanceBinding)
+
+        val lazyBinding = binding(
+            type = typeOf(Set::class, typeOf<Any?>(Lazy::class, valueType)),
+            kind = FactoryKind,
+            override = true,
+            definition = {
+                map.values
+                    .map { lazy { it.get() } }
+                    .toSet()
+            }
+        )
+
+        addBinding(lazyBinding)
+
+        val providerBinding = binding(
+            type = typeOf(Set::class, typeOf<Any?>(Provider::class, valueType)),
+            kind = FactoryKind,
+            override = true,
+            definition = {
+                map.values
+                    .map { instance ->
+                        provider { instance.get(it) }
+                    }
+                    .toSet()
+            }
+        )
+
+        addBinding(providerBinding)
+    }
 
     return Component(
         scope, instances, dependencies, mapBindings,
