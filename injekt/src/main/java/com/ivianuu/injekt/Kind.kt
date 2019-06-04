@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Provides [Instance]s for [Binding]s
+ * Creates [Instance]s for [Binding] and acts as visual representation in logs
  */
 abstract class Kind {
     /**

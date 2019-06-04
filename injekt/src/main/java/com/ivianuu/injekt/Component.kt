@@ -225,7 +225,7 @@ class Component internal constructor(
 }
 
 /**
- * Returns a new [Component] composed by all of [modules] and [dependencies]
+ * Constructs a new [Component] which will be driven by all of [dependencies] and [modules]
  */
 fun component(
     scope: Scope? = null,

@@ -23,28 +23,18 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 
 class CreatorGenerator(private val descriptor: CreatorDescriptor) {
 
-    fun generate(): FileSpec {
-        val file =
-            FileSpec.builder(descriptor.creatorName.packageName, descriptor.creatorName.simpleName)
+    fun generate() =
+        FileSpec.builder(descriptor.creatorName.packageName, descriptor.creatorName.simpleName)
+            .apply {
+                val imports = imports()
+                if (imports.isNotEmpty()) {
+                    addImport("com.ivianuu.injekt", *imports().toTypedArray())
+                }
+            }
+            .addType(creator())
+            .build()
 
-        val imports = imports()
-        if (imports.isNotEmpty()) {
-            file.addImport("com.ivianuu.injekt", *imports().toTypedArray())
-        }
-
-        file.addType(creator())
-
-        return file.build()
-    }
-
-    private fun imports(): Set<String> {
-        val imports = mutableSetOf<String>()
-
-        imports.add("binding")
-        imports.add("get")
-
-        return imports
-    }
+    private fun imports() = mutableSetOf("binding", "get")
 
     private fun creator() = TypeSpec.classBuilder(descriptor.creatorName)
         .addSuperinterface(
