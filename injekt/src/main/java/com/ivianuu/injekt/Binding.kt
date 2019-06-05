@@ -29,7 +29,6 @@ class Binding<T> internal constructor(
 
     val key = Key(type, name)
 
-    val attributes = Attributes()
     val additionalKeys = mutableListOf<Key>()
 
     val mapBindings = mutableMapOf<Key, MapBinding<*, *>>()
@@ -64,31 +63,6 @@ fun <T> binding(
     override: Boolean = false,
     definition: Definition<T>
 ): Binding<T> = Binding(kind, type, name, scope, override, definition)
-
-infix fun <T> Binding<T>.attributes(attributes: Attributes): Binding<T> {
-    attributes.entries.forEach { this.attributes[it.key] = it.value }
-    return this
-}
-
-infix fun <T> Binding<T>.attributes(attributes: Map<String, Any?>): Binding<T> {
-    attributes.forEach { this.attributes[it.key] = it.value }
-    return this
-}
-
-fun <T> Binding<T>.attributes(vararg attributes: Pair<String, Any?>): Binding<T> {
-    attributes.forEach { this.attributes[it.first] = it.second }
-    return this
-}
-
-fun <T> Binding<T>.attribute(key: String, value: Any?): Binding<T> {
-    attributes[key] = value
-    return this
-}
-
-infix fun <T> Binding<T>.attribute(pair: Pair<String, Any?>): Binding<T> {
-    attributes[pair.first] = pair.second
-    return this
-}
 
 fun <T> Binding<T>.additionalKeys(vararg keys: Key): Binding<T> {
     additionalKeys.addAll(keys)
