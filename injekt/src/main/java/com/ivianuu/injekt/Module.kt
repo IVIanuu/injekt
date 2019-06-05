@@ -20,47 +20,14 @@ package com.ivianuu.injekt
  * A module is a collection of [Binding]s to drive [Component]s
  */
 interface Module {
-    val bindings: Map<Key, Binding<*>>
+    val bindings: Map<Key, Binding<*>> get() = emptyMap()
+    val mapBindings: Map<Key, Map<Any?, Binding<*>>> get() = emptyMap()
+    val setBindings: Map<Key, Set<Binding<*>>> get() = emptyMap()
 }
 
-private class SimpleModule(override val bindings: Map<Key, Binding<*>>) : Module
+internal class SimpleModule(
+    override val bindings: Map<Key, Binding<*>> = emptyMap(),
+    override val mapBindings: Map<Key, Map<Any?, Binding<*>>> = emptyMap(),
+    override val setBindings: Map<Key, Set<Binding<*>>> = emptyMap()
+) : Module
 
-class ModuleBuilder {
-    private val bindings = mutableMapOf<Key, Binding<*>>()
-
-    fun <T> add(
-        binding: Binding<T>,
-        key: Key,
-        override: Boolean = false
-    ): BindingContext<T> {
-        if (bindings.put(key, binding) != null && !override) {
-            error("Already declared binding for $key")
-        }
-
-        return BindingContext(binding, key, override, this)
-    }
-
-    fun include(module: Module) {
-        module.bindings.forEach { add(it.value, it.key) }
-    }
-
-    fun build(): Module = module(bindings)
-}
-
-fun module(bindings: Map<Key, Binding<*>>): Module = SimpleModule(bindings)
-
-inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
-    .apply(block).build()
-
-inline fun <reified T> ModuleBuilder.add(
-    binding: Binding<T>,
-    name: Qualifier? = null,
-    override: Boolean = false
-): BindingContext<T> = add(binding, typeOf(), name, override)
-
-fun <T> ModuleBuilder.add(
-    binding: Binding<T>,
-    type: Type<T>,
-    name: Qualifier? = null,
-    override: Boolean = false
-): BindingContext<T> = add(binding, keyOf(type, name), override)
