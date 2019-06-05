@@ -17,19 +17,13 @@
 package com.ivianuu.injekt.bridge
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.attribute
 import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.logger
-import com.ivianuu.injekt.scopeName
 import com.ivianuu.injekt.typeOf
 import java.util.*
 
@@ -61,23 +55,12 @@ fun <T> Module.bridge(
         type,
         UUIDName()
     ) { component.get(type, name) { it } }.apply {
-        attribute(ORIGINAL_KEY, Key(type, name))
         block?.invoke(this)
     }
 }
 
 private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
 
-const val ORIGINAL_KEY = "bridge_original_key"
-
 private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-
-    private val originalKey by lazy(LazyThreadSafetyMode.NONE) {
-        binding.attributes.get<Key>(ORIGINAL_KEY)
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("${context.component.scopeName()} Bridge to $originalKey")
-        return create(parameters)
-    }
+    override fun get(parameters: ParametersDefinition?): T = create(parameters)
 }
