@@ -117,18 +117,30 @@ internal fun createComponent(
         }
 
         module.mapBindings.forEach { (mapKey, map) ->
-            map.forEach { (entryKey, entryValueBinding) ->
-                val thisMap = mapBindings.getOrPut(mapKey) { mutableMapOf() }
-                // todo override handling
-                thisMap[entryKey] = entryValueBinding
+            if (map.isNotEmpty()) {
+                map.forEach { (entryKey, entryValueBinding) ->
+                    val thisMap = mapBindings.getOrPut(mapKey) {
+                        mutableMapOf()
+                    }
+                    // todo override handling
+                    thisMap[entryKey] = entryValueBinding
+                }
+            } else {
+                // ensure that the empty map exists
+                mapBindings.getOrPut(mapKey) { mutableMapOf() }
             }
         }
 
         module.setBindings.forEach { (setKey, set) ->
-            set.forEach { elementBinding ->
-                val thisSet = setBindings.getOrPut(setKey) { mutableSetOf() }
-                // todo override handling
-                thisSet.add(elementBinding)
+            if (set.isNotEmpty()) {
+                set.forEach { elementBinding ->
+                    val thisSet = setBindings.getOrPut(setKey) { mutableSetOf() }
+                    // todo override handling
+                    thisSet.add(elementBinding)
+                }
+            } else {
+                // ensure that the empty set exists
+                setBindings.getOrPut(setKey) { mutableSetOf() }
             }
         }
     }

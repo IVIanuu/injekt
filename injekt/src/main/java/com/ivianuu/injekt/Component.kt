@@ -31,7 +31,7 @@ class Component internal constructor(
     private val linker = RealLinker(this) // todo move to constructor
 
     init {
-        bindings.forEach { (key, binding) -> binding.link(linker) }
+        bindings.forEach { (_, binding) -> binding.link(linker) }
         bindings.values
             .filterIsInstance<AttachAware>()
             .forEach { it.attached() }
@@ -48,9 +48,6 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        println("get for type $type and name $name")
-        println("params size ${type.parameters.size}")
-
         when (type.parameters.size) {
             2 -> {
                 when (type.raw) {

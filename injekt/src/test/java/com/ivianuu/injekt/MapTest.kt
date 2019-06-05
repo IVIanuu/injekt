@@ -72,7 +72,7 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    mapBinding<String, Int>()
+                    bindMap<String, Int>()
                 }
             )
         }

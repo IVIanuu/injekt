@@ -49,12 +49,12 @@ class ModuleBuilder {
     }
 
     // todo rename
-    fun mapBinding(mapKey: Key) {
+    fun bindMap(mapKey: Key) {
         mapBindings.getOrPut(mapKey) { mutableMapOf() }
     }
 
     // todo rename
-    fun setBinding(setKey: Key) {
+    fun bindSet(setKey: Key) {
         setBindings.getOrPut(setKey) { mutableSetOf() }
     }
 
@@ -109,29 +109,29 @@ fun <T> ModuleBuilder.add(
     override: Boolean = false
 ): BindingContext<T> = add(binding, keyOf(type, name), override)
 
-inline fun <reified K, reified V> ModuleBuilder.mapBinding(
+inline fun <reified K, reified V> ModuleBuilder.bindMap(
     mapName: Qualifier? = null
 ) {
-    mapBinding<K, V>(typeOf(), typeOf(), mapName)
+    bindMap<K, V>(typeOf(), typeOf(), mapName)
 }
 
-fun <K, V> ModuleBuilder.mapBinding(
+fun <K, V> ModuleBuilder.bindMap(
     mapKeyType: Type<K>,
     mapValueType: Type<V>,
     mapName: Qualifier? = null
 ) {
-    mapBinding(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
+    bindMap(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
 }
 
-inline fun <reified E> ModuleBuilder.setBinding(setName: Qualifier? = null) {
-    setBinding<E>(typeOf(), setName)
+inline fun <reified E> ModuleBuilder.bindSet(setName: Qualifier? = null) {
+    bindSet<E>(typeOf(), setName)
 }
 
-fun <E> ModuleBuilder.setBinding(
+fun <E> ModuleBuilder.bindSet(
     setElementType: Type<E>,
     setName: Qualifier? = null
 ) {
-    setBinding(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
+    bindSet(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
 }
 
 inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
@@ -140,7 +140,7 @@ inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
     mapName: Qualifier? = null,
     override: Boolean = false
 ) {
-    addBindingIntoMap<K, V>(typeOf(), typeOf(), entryKey, entryValueBinding, mapName, override)
+    addBindingIntoMap(typeOf(), typeOf(), entryKey, entryValueBinding, mapName, override)
 }
 
 fun <K, V> ModuleBuilder.addBindingIntoMap(

@@ -66,7 +66,7 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    setBinding<String>()
+                    bindSet<String>()
                 }
             )
         }
