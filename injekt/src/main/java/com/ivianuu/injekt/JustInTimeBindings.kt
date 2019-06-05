@@ -38,7 +38,7 @@ internal object JustInTimeBindings {
             }
         }
 
-        return factory as BindingFactory<T>
+        return factory as? BindingFactory<T>
     }
 
     private fun findFactory(type: KClass<*>) = try {
