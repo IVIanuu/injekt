@@ -16,40 +16,42 @@
 
 package com.ivianuu.injekt.bridge
 
-/**
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.DefinitionContext
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.typeOf
 import java.util.*
 
-inline fun <reified T> Module.bridge(
-name: Qualifier? = null,
-noinline block: (Binding<T>.() -> Unit)? = null
-): Binding<T> = bridge(typeOf(), name, block)
+inline fun <reified T> ModuleBuilder.bridge(
+    name: Qualifier? = null,
+    noinline block: (Binding<T>.() -> Unit)? = null
+) = bridge(typeOf(), name, block)
 
-fun <T> Module.bridge(
-type: Type<T>,
-name: Qualifier? = null,
-block: (Binding<T>.() -> Unit)? = null
-): Binding<T> {
-// we create a additional binding because we have no reference to the original one
-// we use a unique id here to make sure that the binding does not collide with any user config
-// this binding acts as bridge and just calls trough the original implementation
-return bind(
-BridgeKind,
-type,
-UUIDName()
-) { component.get(type, name) { it } }.apply {
-block?.invoke(this)
-}
+fun <T> ModuleBuilder.bridge(
+    type: Type<T>,
+    name: Qualifier? = null,
+    block: (Binding<T>.() -> Unit)? = null
+) {
+    // we create a additional binding because we have no reference to the original one
+    // we use a unique id here to make sure that the binding does not collide with any user config
+    // this binding acts as bridge and just calls trough the original implementation
+    bind(keyOf(type, UUIDName()), BridgeBinding(type, name))
 }
 
 private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
 
-private class BridgeInstance<T>(private val instance: Instance<T>) : Instance<T> {
-override fun get(parameters: ParametersDefinition?): T = instance.get(parameters)
-}*/
+private class BridgeBinding<T>(
+    private val originalType: Type<T>,
+    private val originalName: Qualifier?
+) : Binding<T> {
+    private lateinit var originalBinding: Binding<T>
+    override fun link(linker: Linker) {
+        originalBinding = linker.get(originalType, originalName)
+    }
+
+    override fun get(parameters: ParametersDefinition?): T = originalBinding(parameters)
+}

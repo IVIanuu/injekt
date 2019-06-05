@@ -16,67 +16,58 @@
 
 package com.ivianuu.injekt.multi
 
-/**
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.DefinitionContext
-import com.ivianuu.injekt.DefinitionInstance
-import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.DefinitionBinding
+import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.typeOf
 import kotlin.collections.set
 
-/**
- * This kind creates a values and distinct's them by the hash of the passed [Parameters]
-*/
-object MultiKind : Kind {
-override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
-MultiInstance(DefinitionInstance(context, binding))
-override fun toString(): String = "Multi"
-}
+inline fun <reified T> ModuleBuilder.multi(
+    name: Qualifier? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+) = multi(typeOf(), name, override, definition)
 
-inline fun <reified T> Module.multi(
-name: Qualifier? = null,
-override: Boolean = false,
-noinline definition: Definition<T>
-): Binding<T> = multi(typeOf(), name, override, definition)
-
-fun <T> Module.multi(
-type: Type<T>,
-name: Qualifier? = null,
-override: Boolean = false,
-definition: Definition<T>
-): Binding<T> = bind(MultiKind, type, name, override, definition)
+fun <T> ModuleBuilder.multi(
+    type: Type<T>,
+    name: Qualifier? = null,
+    override: Boolean = false,
+    definition: Definition<T>
+) = bind(keyOf(type, name), MultiBinding(DefinitionBinding(definition)), override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Multi
 
-private class MultiInstance<T>(private val instance: Instance<T>) : Instance<T> {
+private class MultiBinding<T>(private val binding: Binding<T>) : Binding<T> {
 
-private val values = mutableMapOf<Int, T>()
+    private val values = mutableMapOf<Int, T>()
 
-override fun get(parameters: ParametersDefinition?): T {
-requireNotNull(parameters) { "Parameters cannot be null" }
+    override fun link(linker: Linker) {
+        binding.link(linker)
+    }
 
-val params = parameters()
+    override fun get(parameters: ParametersDefinition?): T {
+        requireNotNull(parameters) { "Parameters cannot be null" }
 
-val key = params.hashCode()
+        val params = parameters()
 
-var value = values[key]
+        val key = params.hashCode()
 
-return if (value == null && !values.containsKey(key)) {
-// todo InjektPlugins.logger?.info("${context.component.scopeName()} Create multi instance for params $params $binding")
-value = instance.get(parameters)
-values[key] = value
-value
-} else {
-// todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing multi instance for params $params $binding")
-value as T
+        var value = values[key]
+
+        return if (value == null && !values.containsKey(key)) {
+            value = binding.get(parameters)
+            values[key] = value
+            value
+        } else {
+            value as T
+        }
+    }
+
 }
-}
-
-}*/

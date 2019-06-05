@@ -20,6 +20,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.android.ActivityScope
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
@@ -42,7 +43,7 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Single// @ActivityScope
+@Single @ActivityScope
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

@@ -26,40 +26,17 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
-    private val context = DefinitionContext(this)
+    private val linker = RealLinker(this) // todo move to constructor
 
     init {
-        /* // todo InjektPlugins.logger?.let { logger ->
-            logger.info("${scopeName()} initialize")
-
-            dependencies.forEach {
-                logger.info("${scopeName()} Register dependency ${it.scopeName()}")
-            }
-
-            instances.forEach {
-                logger.info("${scopeName()} Register binding ${it.value.binding}")
-            }
-
-            mapBindings.forEach { (key, map) ->
-                logger.info("${scopeName()} Register map binding $key ${map.mapValues { it.value.binding }}")
-            }
-
-            setBindings.forEach { (key, set) ->
-                logger.info("${scopeName()} Register set binding $key ${set.map { it.binding }}")
-            }
-        }*/
-
-        bindings.forEach { (key, binding) ->
-            binding.link(context)
-        }
-
+        bindings.forEach { (key, binding) -> binding.link(linker) }
         bindings.values
             .filterIsInstance<AttachAware>()
             .forEach { it.attached() }
     }
 
-    inline fun <reified T> getBinding(name: Qualifier? = null): Binding<T> =
-        findBinding<T>(keyOf<T>(name), true) ?: error("couldn't find binding")
+    internal fun <T> getBinding(type: Type<T>, name: Qualifier? = null): Binding<T> =
+        findBinding(keyOf(type, name), true) ?: error("couldn't find binding")
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -125,7 +102,7 @@ class Component internal constructor(
 
     private fun <T> addJitBinding(key: Key, binding: Binding<T>) {
         bindings[key] = binding
-        binding.link(context)
+        binding.link(linker)
         (binding as? AttachAware)?.attached()
     }
 
@@ -158,4 +135,4 @@ fun <T> Component.inject(
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
 
-fun Component.scopeName() = scope?.toString() ?: "Unscoped"
+// todo remove fun Component.scopeName() = scope?.toString() ?: "Unscoped"

@@ -21,6 +21,7 @@ import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.android.ChildViewScope
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
@@ -43,7 +44,7 @@ class ChildView @JvmOverloads constructor(
     }
 }
 
-@Single// @ChildViewScope
+@Single @ChildViewScope
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,

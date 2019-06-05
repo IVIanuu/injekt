@@ -16,61 +16,42 @@
 
 package com.ivianuu.injekt.weak
 
-/**
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.DefinitionContext
-import com.ivianuu.injekt.DefinitionInstance
-import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.DefinitionBinding
+import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.typeOf
 import java.lang.ref.WeakReference
 
-/**
- * This caches the value via a [WeakReference] and creates it again
- * if the reference was garbage collected
-*/
-object WeakKind : Kind {
-override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
-WeakInstance(DefinitionInstance(context, binding))
-override fun toString() = "Weak"
-}
+inline fun <reified T> ModuleBuilder.weak(
+    name: Qualifier? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+) = weak(typeOf(), name, override, definition)
 
-inline fun <reified T> Module.weak(
-name: Qualifier? = null,
-override: Boolean = false,
-noinline definition: Definition<T>
-): Binding<T> = weak(typeOf(), name, override, definition)
-
-fun <T> Module.weak(
-type: Type<T>,
-name: Qualifier? = null,
-override: Boolean = false,
-definition: Definition<T>
-): Binding<T> = bind(WeakKind, type, name, override, definition)
+fun <T> ModuleBuilder.weak(
+    type: Type<T>,
+    name: Qualifier? = null,
+    override: Boolean = false,
+    definition: Definition<T>
+) = bind(keyOf(type, name), WeakBinding(DefinitionBinding(definition)), override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Weak
 
-private class WeakInstance<T>(
-private val instance: Instance<T>
-) : Instance<T> {
+private class WeakBinding<T>(private val binding: Binding<T>) : Binding<T> {
+    private var _value: WeakReference<T>? = null
 
-private var _value: WeakReference<T>? = null
+    override fun link(linker: Linker) {
+        binding.link(linker)
+    }
 
-override fun get(parameters: ParametersDefinition?): T {
-val value = _value?.get()
-
-return if (value != null) {
-// todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing weak instance $binding")
-value
-} else {
-// todo InjektPlugins.logger?.info("${context.component.scopeName()} Create weak instance $binding")
-instance.get(parameters).also { _value = WeakReference(it) }
+    override fun get(parameters: ParametersDefinition?): T {
+        return _value?.get() ?: binding(parameters).also { _value = WeakReference(it) }
+    }
 }
-}
-
-}*/

@@ -17,35 +17,13 @@
 package com.ivianuu.injekt
 
 interface Binding<T> {
-    fun link(context: DefinitionContext) {
+    fun link(linker: Linker) {
     }
 
     fun get(parameters: ParametersDefinition? = null): T
 
-    operator fun <T> Binding<T>.invoke(): T = get()
+    operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
 }
-
-class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
-    private lateinit var context: DefinitionContext
-    override fun link(context: DefinitionContext) {
-        this.context = context
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
-        return try {
-            definition.invoke(context, parameters?.invoke() ?: emptyParameters())
-        } catch (e: Exception) {
-            throw IllegalStateException("Couldn't instantiate", e) // todo
-        }
-    }
-
-}
-
-/**
- * Will called when ever a new instance is needed
- */
-typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
-
 
 // todo remove
 interface AttachAware {

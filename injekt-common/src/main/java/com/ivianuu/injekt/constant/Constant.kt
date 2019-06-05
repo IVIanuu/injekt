@@ -16,40 +16,21 @@
 
 package com.ivianuu.injekt.constant
 
-/**
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.DefinitionContext
-import com.ivianuu.injekt.DefinitionInstance
-import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.typeOf
 
-/**
- * This kind creates no new instances but using a existing one
-*/
-object ConstantKind : Kind {
-override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
-ConstantInstance(DefinitionInstance(context, binding))
-override fun toString(): String = "Constant"
-}
+fun <T : Any> ModuleBuilder.constant(
+    instance: T,
+    type: Type<T> = typeOf(instance::class),
+    name: Qualifier? = null,
+    override: Boolean = false
+) = bind(keyOf(type, name), ConstantBinding(instance), override)
 
-fun <T : Any> Module.constant(
-instance: T,
-type: Type<T> = typeOf(instance::class),
-name: Qualifier? = null,
-override: Boolean = false
-): Binding<T> = bind(ConstantKind, type, name, override) { instance }
-
-private class ConstantInstance<T>(private val instance: Instance<T>) : Instance<T> {
-private val value by lazy(LazyThreadSafetyMode.NONE) {
-instance.get()
+private class ConstantBinding<T>(private val instance: T) : Binding<T> {
+    override fun get(parameters: ParametersDefinition?): T = instance
 }
-
-override fun get(parameters: ParametersDefinition?): T {
-// todo InjektPlugins.logger?.info("${context.component.scopeName()} Return constant $binding")
-return value
-}
-}*/

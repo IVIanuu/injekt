@@ -37,26 +37,23 @@ annotation class Single
 class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: Any? = UNINITIALIZED
 
-    override fun link(context: DefinitionContext) {
-        binding.link(context)
+    override fun link(linker: Linker) {
+        binding.link(linker)
     }
 
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
-            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
             return value as T
         }
 
         synchronized(this) {
             value = _value
             if (value !== UNINITIALIZED) {
-                // todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
                 return@get value as T
             }
 
-            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
-            value = binding.get(parameters)
+            value = binding(parameters)
             _value = value
             return@get value as T
         }

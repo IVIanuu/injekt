@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt
 
-import android.content.Context
-import com.ivianuu.injekt.ModuleBuilder
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.single
-
-fun ModuleBuilder.sharedPreferences(
-    sharedPreferencesName: String,
-    sharedPreferencesMode: Int = Context.MODE_PRIVATE,
-    name: Qualifier? = null
-) {
-    single(name) {
-        application().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
-    }
+/**
+ * @author Manuel Wrage (IVIanuu)
+ */
+interface Linker {
+    fun <T> get(type: Type<T>, name: Qualifier? = null): Binding<T>
 }
+
+internal class RealLinker(private val component: Component) : Linker {
+    override fun <T> get(type: Type<T>, name: Qualifier?): Binding<T> =
+        component.getBinding(type, name)
+}
+
+inline fun <reified T> Linker.get(name: Qualifier? = null): Binding<T> =
+    get(typeOf(), name)

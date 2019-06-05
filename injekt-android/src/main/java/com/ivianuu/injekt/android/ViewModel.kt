@@ -24,6 +24,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
@@ -34,7 +35,7 @@ import com.ivianuu.injekt.typeOf
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
 */
-inline fun <reified T : ViewModel> Module.viewModel(
+inline fun <reified T : ViewModel> ModuleBuilder.viewModel(
 name: Qualifier? = null,
 viewModelStoreName: Qualifier? = null,
 override: Boolean = false,
@@ -44,7 +45,7 @@ noinline definition: Definition<T>
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
 */
-fun <T : ViewModel> Module.viewModel(
+fun <T : ViewModel> ModuleBuilder.viewModel(
 type: Type<T>,
 name: Qualifier? = null,
 viewModelStoreName: Qualifier? = null,
@@ -57,6 +58,15 @@ name,
 override,
 ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
 )
+
+private class ViewModelBinding<T : ViewModel>(
+private val type: Type<T>,
+private val key: String?,
+private val viewModelStoreName: Qualifier?,
+private val definition: Definition<T>
+) : Binding<T> {
+
+}
 
 private class ViewModelDefinition<T : ViewModel>(
 private val type: Type<T>,

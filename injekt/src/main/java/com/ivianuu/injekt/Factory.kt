@@ -37,5 +37,22 @@ fun <T> ModuleBuilder.factory(
     definition: Definition<T>
 ) = bind(keyOf(type, name), DefinitionBinding(definition), override)
 
+inline fun <reified T> ModuleBuilder.factoryState(
+    name: Qualifier? = null,
+    override: Boolean = false,
+    noinline block: StatefulDefinitionBuilder<T>.() -> Unit
+) = factoryState(typeOf(), name, override, block)
+
+fun <T> ModuleBuilder.factoryState(
+    type: Type<T>,
+    name: Qualifier? = null,
+    override: Boolean = false,
+    block: StatefulDefinitionBuilder<T>.() -> Unit
+) = bind(
+    keyOf(type, name),
+    StatefulDefinitionBinding(StatefulDefinitionBuilder<T>().apply(block)),
+    override
+)
+
 @Target(AnnotationTarget.CLASS)
 annotation class Factory

@@ -19,8 +19,15 @@ package com.ivianuu.injekt
 /**
  * Environment for [Definition]s
  */
-class DefinitionContext(override val component: Component) : InjektTrait {
-    inline fun <reified T> getBinding(
-        name: Qualifier? = null
-    ): Binding<T> = component.getBinding(name)
+class DefinitionContext(private val linker: Linker) {
+    fun <T> get(
+        type: Type<T>,
+        name: Qualifier? = null,
+        parameters: ParametersDefinition? = null
+    ): T = linker.get(type, name).get(parameters)
 }
+
+inline fun <reified T> DefinitionContext.get(
+    name: Qualifier? = null,
+    noinline parameters: ParametersDefinition? = null
+): T = get(typeOf(), name, parameters)

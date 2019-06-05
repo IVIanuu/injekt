@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.bridge
+package com.ivianuu.injekt.comparison.injektoptimizeddsl
 
-import com.ivianuu.injekt.Qualifier
-
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.InjectionTest
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.module
-import org.junit.Assert.assertEquals
-import org.junit.Test
 
-class BridgeTest {
+object InjektOptimizedDslTest : InjectionTest {
+    override val name = "Injekt Optimized Dsl"
 
-    private object Original : Qualifier
+    private var component: Component? = null
 
-    @Test
-    fun testDelegatesToOriginal() {
-        val component = component {
-            modules(
-                module {
-                    factory(Original) { "original_value" }
-                    bridge<String>(Original) bindType CharSequence::class
-                }
-            )
-        }
+    override fun moduleCreation() {
+        createModule()
+    }
 
-        assertEquals("original_value", component.get<CharSequence>())
+    override fun setup() {
+        component = component { modules(injektOptimizedDslModule) }
+    }
+
+    override fun inject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun shutdown() {
+        component = null
     }
 
 }

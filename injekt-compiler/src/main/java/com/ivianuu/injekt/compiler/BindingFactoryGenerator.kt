@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
-import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Scope
 import com.squareup.kotlinpoet.CodeBlock
@@ -93,14 +93,14 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .addFunction(
             FunSpec.builder("link")
                 .addModifiers(KModifier.OVERRIDE)
-                .addParameter("context", DefinitionContext::class.asClassName())
+                .addParameter("linker", Linker::class.asClassName())
                 .addCode(
                     CodeBlock.builder()
                         .apply {
                             descriptor.constructorParams
                                 .filterIsInstance<ParamDescriptor.Dependency>()
                                 .forEach { param ->
-                                    addStatement("${param.paramName}Binding = context.getBinding()")
+                                    addStatement("${param.paramName}Binding = linker.get()")
                                 }
                         }
                         .build()
