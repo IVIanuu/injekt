@@ -110,6 +110,36 @@ internal fun createComponent(
     val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
     val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
 
+    dependencies.forEach { dependency ->
+        dependency.mapBindings.forEach { (mapKey, map) ->
+            if (map.isNotEmpty()) {
+                map.forEach { (entryKey, entryValueBinding) ->
+                    val thisMap = mapBindings.getOrPut(mapKey) {
+                        mutableMapOf()
+                    }
+                    // todo override handling
+                    thisMap[entryKey] = entryValueBinding
+                }
+            } else {
+                // ensure that the empty map exists
+                mapBindings.getOrPut(mapKey) { mutableMapOf() }
+            }
+        }
+
+        dependency.setBindings.forEach { (setKey, set) ->
+            if (set.isNotEmpty()) {
+                set.forEach { elementBinding ->
+                    val thisSet = setBindings.getOrPut(setKey) { mutableSetOf() }
+                    // todo override handling
+                    thisSet.add(elementBinding)
+                }
+            } else {
+                // ensure that the empty set exists
+                setBindings.getOrPut(setKey) { mutableSetOf() }
+            }
+        }
+    }
+
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
             // todo override handling
@@ -143,6 +173,40 @@ internal fun createComponent(
                 setBindings.getOrPut(setKey) { mutableSetOf() }
             }
         }
+    }
+
+    mapBindings.forEach { (mapKey, map) ->
+        bindings[mapKey] = MapBinding(map as Map<Any?, Binding<Any?>>)
+        val lazyMapKey = keyOf(
+            typeOf<Any?>(
+                Map::class, mapKey.type.parameters[0],
+                typeOf<Any?>(Lazy::class, mapKey.type.parameters[1])
+            ),
+            mapKey.name
+        )
+        bindings[lazyMapKey] = LazyMapBinding(map as Map<Any?, Binding<Any?>>)
+        val providerMapKey = keyOf(
+            typeOf<Any?>(
+                Map::class, mapKey.type.parameters[0],
+                typeOf<Any?>(Provider::class, mapKey.type.parameters[1])
+            ),
+            mapKey.name
+        )
+        bindings[providerMapKey] = ProviderMapBinding(map as Map<Any?, Binding<Any?>>)
+    }
+
+    setBindings.forEach { (setKey, set) ->
+        bindings[setKey] = SetBinding(set as Set<Binding<Any?>>)
+        val lazySetKey = keyOf(
+            typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),
+            setKey.name
+        )
+        bindings[lazySetKey] = LazySetBinding(set as Set<Binding<Any?>>)
+        val providerSetKey = keyOf(
+            typeOf<Any?>(Set::class, typeOf<Any?>(Provider::class, setKey.type.parameters[0])),
+            setKey.name
+        )
+        bindings[providerSetKey] = ProviderSetBinding(set as Set<Binding<Any?>>)
     }
 
     return Component(scope, bindings, mapBindings, setBindings, dependencies)

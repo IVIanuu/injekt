@@ -48,137 +48,15 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        when (type.parameters.size) {
-            2 -> {
-                when (type.raw) {
-                    Map::class -> {
-                        val keyType = type.parameters[0]
-                        val valueType = type.parameters[1]
-
-                        when (valueType.raw) {
-                            Provider::class -> {
-                                val mapKey = keyOf(
-                                    typeOf<Any?>(Map::class, keyType, valueType.parameters[0]),
-                                    name
-                                )
-
-                                val map = mapBindings[mapKey]
-                                if (map != null) {
-                                    return map
-                                        .mapValues { (_, binding) ->
-                                            provider { binding.get(it) }
-                                        } as T
-                                }
-                            }
-                            Lazy::class -> {
-                                val mapKey = keyOf(
-                                    typeOf<Any?>(Map::class, keyType, valueType.parameters[0]),
-                                    name
-                                )
-
-                                val map = mapBindings[mapKey]
-                                if (map != null) {
-                                    return map
-                                        .mapValues { (_, binding) ->
-                                            lazy(LazyThreadSafetyMode.NONE) { binding.get() }
-                                        } as T
-                                }
-                            }
-                            else -> {
-                                val mapKey = keyOf(
-                                    typeOf<Any?>(Map::class, keyType, valueType),
-                                    name
-                                )
-
-                                val map = mapBindings[mapKey]
-                                if (map != null) {
-                                    return map
-                                        .mapValues { it.value.get() } as T
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            1 -> {
-                when (type.raw) {
-                    Provider::class -> {
-                        val key = keyOf(type.parameters.first(), name)
-                        findBinding<T>(key, true)
-                            ?.let { instance ->
-                                return@get provider { instance.get(it) } as T
-                            }
-                    }
-                    Lazy::class -> {
-                        val key = keyOf(type.parameters.first(), name)
-                        findBinding<T>(key, true)
-                            ?.let {
-                                return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
-                            }
-                    }
-                    Set::class -> {
-                        val elementType = type.parameters[0]
-
-                        when (elementType.raw) {
-                            Provider::class -> {
-                                val setKey = keyOf(
-                                    typeOf<Any?>(Set::class, elementType.parameters[0]),
-                                    name
-                                )
-
-                                val set = setBindings[setKey]
-                                if (set != null) {
-                                    return set
-                                        .map { binding -> provider { binding.get(it) } }
-                                        .toSet() as T
-                                }
-                            }
-                            Lazy::class -> {
-                                val setKey = keyOf(
-                                    typeOf<Any?>(Set::class, elementType.parameters[0]),
-                                    name
-                                )
-
-                                val set = setBindings[setKey]
-                                if (set != null) {
-                                    return set
-                                        .map {
-                                            lazy(LazyThreadSafetyMode.NONE) { it.get() }
-                                        }
-                                        .toSet() as T
-                                }
-                            }
-                            else -> {
-                                val setKey = keyOf(
-                                    typeOf<Any?>(Set::class, elementType),
-                                    name
-                                )
-
-                                val set = setBindings[setKey]
-                                if (set != null) {
-                                    return set
-                                        .map { it.get() }
-                                        .toSet() as T
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // just try to resolve the dependency
         val key = keyOf(type, name)
-        findBinding<T>(key, true)
-            ?.let { return@get it.get(parameters) }
-
-        // todo clean up
-        throw IllegalStateException("Couldn't find a binding for ${keyOf(type, name)}")
+        val binding = findBinding<T>(key, true)
+            ?: error("Couldn't find a binding for ${keyOf(type, name)}")
+        return binding.get(parameters)
     }
 
     @Suppress("UNCHECKED_CAST")
     @PublishedApi
-    internal fun <T> findBinding(key: Key, lookupJit: Boolean): Binding<T>? {
+    internal fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
         var binding = bindings[key]
         if (binding != null) return binding as Binding<T>
 
@@ -187,7 +65,24 @@ class Component internal constructor(
             if (binding != null) return binding
         }
 
-        if (lookupJit && key.name == null) {
+        if (fullLookup && key.type.parameters.size == 1) {
+            when (key.type.raw) {
+                Provider::class -> {
+                    val realKey = keyOf(key.type.parameters.first(), key.name)
+                    binding = ProviderBinding<T>(realKey)
+                    addJitBinding(key, binding)
+                    return binding as Binding<T>
+                }
+                Lazy::class -> {
+                    val realKey = keyOf(key.type.parameters.first(), key.name)
+                    binding = LazyBinding<T>(realKey)
+                    addJitBinding(key, binding)
+                    return binding as Binding<T>
+                }
+            }
+        }
+
+        if (fullLookup && key.name == null) {
             val bindingFactory = JustInTimeBindings.find<T>(key)
             if (bindingFactory != null) {
                 val component = findComponentForScope(bindingFactory.scope)
