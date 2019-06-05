@@ -24,7 +24,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 import java.lang.ref.WeakReference
 
@@ -32,14 +32,14 @@ inline fun <reified T> ModuleBuilder.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = weak(typeOf(), name, override, definition)
+): Binding<T> = weak(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.weak(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-) = bind(keyOf(type, name), WeakBinding(DefinitionBinding(definition)), override)
+): Binding<T> = add(WeakBinding(DefinitionBinding(definition)), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Weak

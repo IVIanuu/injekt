@@ -26,21 +26,22 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.SingleBinding
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 
 inline fun <reified T> ModuleBuilder.eager(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = eager(typeOf(), name, override, definition)
+): Binding<T> = eager(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.eager(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-) = bind(keyOf(type, name), EagerBinding(SingleBinding(DefinitionBinding(definition))), override)
+): Binding<T> =
+    add(EagerBinding(SingleBinding(DefinitionBinding(definition))), type, name, override)
 
 private class EagerBinding<T>(private val binding: Binding<T>) : Binding<T>, AttachAware {
 

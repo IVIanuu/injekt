@@ -21,7 +21,7 @@ data class SetBinding<T>(
     val setName: Qualifier?,
     val override: Boolean
 ) {
-    val setKey = Key(typeOf<Set<T>>(Set::class, setType), setName)
+    val setKey = keyOf(typeOf<Set<T>>(Set::class, setType), setName)
 }
 
 inline fun <reified T> setBinding(

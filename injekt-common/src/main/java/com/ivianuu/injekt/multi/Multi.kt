@@ -24,7 +24,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 import kotlin.collections.set
 
@@ -32,14 +32,14 @@ inline fun <reified T> ModuleBuilder.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = multi(typeOf(), name, override, definition)
+): Binding<T> = multi(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.multi(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-) = bind(keyOf(type, name), MultiBinding(DefinitionBinding(definition)), override)
+): Binding<T> = add(MultiBinding(DefinitionBinding(definition)), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Multi

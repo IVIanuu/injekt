@@ -16,41 +16,42 @@
 
 package com.ivianuu.injekt
 
-// todo return types
-
 inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     binding: Binding<T>
-) = bind(keyOf(typeOf<T>(), name), binding, override)
+): Binding<T> = add(binding, typeOf(), name, override)
 
 inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = factory(typeOf(), name, override, definition)
+): Binding<T> = factory(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.factory(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-) = bind(keyOf(type, name), DefinitionBinding(definition), override)
+): Binding<T> = add(
+    DefinitionBinding(definition), type, name, override
+)
 
 inline fun <reified T> ModuleBuilder.factoryState(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline block: StatefulDefinitionBuilder<T>.() -> Unit
-) = factoryState(typeOf(), name, override, block)
+): Binding<T> = factoryState(typeOf(), name, override, block)
 
 fun <T> ModuleBuilder.factoryState(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     block: StatefulDefinitionBuilder<T>.() -> Unit
-) = bind(
-    keyOf(type, name),
+): Binding<T> = add(
     StatefulDefinitionBinding(StatefulDefinitionBuilder<T>().apply(block)),
+    type,
+    name,
     override
 )
 

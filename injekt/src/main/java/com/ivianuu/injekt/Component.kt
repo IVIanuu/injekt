@@ -50,14 +50,14 @@ class Component internal constructor(
         if (type.parameters.size == 1) {
             when (type.raw) {
                 Provider::class -> {
-                    val key = Key(type.parameters.first(), name)
+                    val key = keyOf(type.parameters.first(), name)
                     findBinding<T>(key, true)
                         ?.let { instance ->
                             return@get provider { instance.get(it) } as T
                         }
                 }
                 Lazy::class -> {
-                    val key = Key(type.parameters.first(), name)
+                    val key = keyOf(type.parameters.first(), name)
                     findBinding<T>(key, true)
                         ?.let {
                             return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
@@ -67,12 +67,12 @@ class Component internal constructor(
         }
 
         // just try to resolve the dependency
-        val key = Key(type, name)
+        val key = keyOf(type, name)
         findBinding<T>(key, true)
             ?.let { return@get it.get(parameters) }
 
         // todo clean up
-        throw IllegalStateException("Couldn't find a binding for ${Key(type, name)}")
+        throw IllegalStateException("Couldn't find a binding for ${keyOf(type, name)}")
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -134,5 +134,3 @@ fun <T> Component.inject(
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
-
-// todo remove fun Component.scopeName() = scope?.toString() ?: "Unscoped"

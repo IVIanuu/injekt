@@ -16,23 +16,31 @@
 
 package com.ivianuu.injekt
 
-// todo return types
-
 inline fun <reified T> ModuleBuilder.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-) = single(typeOf(), name, override, definition)
+): Binding<T> = single(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.single(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-) = bind(keyOf(type, name), SingleBinding(DefinitionBinding(definition)), override)
+): Binding<T> = add(
+    DefinitionBinding(definition).asSingleBinding(),
+    type,
+    name,
+    override
+)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Single
+
+fun <T> Binding<T>.asSingleBinding(): SingleBinding<T> {
+    return if (this is SingleBinding) this
+    else SingleBinding(this)
+}
 
 class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: Any? = UNINITIALIZED

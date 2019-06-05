@@ -22,7 +22,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 import java.util.*
 
@@ -35,11 +35,13 @@ fun <T> ModuleBuilder.bridge(
     type: Type<T>,
     name: Qualifier? = null,
     block: (Binding<T>.() -> Unit)? = null
-) {
+): Binding<T> {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    bind(keyOf(type, UUIDName()), BridgeBinding(type, name))
+    return add(BridgeBinding(type, name), type, name).apply {
+        block?.invoke(this)
+    }
 }
 
 private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
