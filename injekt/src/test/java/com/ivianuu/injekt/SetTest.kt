@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
-/**
+import junit.framework.Assert.assertEquals
+import org.junit.Test
+
 class SetTest {
 
     @Test
@@ -64,7 +66,7 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    bindSet<String>()
+                    setBinding<String>()
                 }
             )
         }
@@ -100,4 +102,4 @@ class SetTest {
         assertEquals("overridden_value", component.get<Set<String>>().first())
     }*/
 
-} */
+}

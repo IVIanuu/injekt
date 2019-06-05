@@ -92,3 +92,34 @@ infix fun <T> BindingContext<T>.bindNames(names: Iterable<Qualifier>): BindingCo
     names.forEach { bindName(it) }
     return this
 }
+
+inline fun <T : V, reified K, reified V> BindingContext<T>.bindIntoMap(
+    entryKey: K,
+    mapName: Qualifier? = null,
+    override: Boolean = false
+): BindingContext<T> = bindIntoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
+
+fun <T : V, K, V> BindingContext<T>.bindIntoMap(
+    mapKeyType: Type<K>,
+    mapValueType: Type<V>,
+    entryKey: K,
+    mapName: Qualifier? = null,
+    override: Boolean = false
+): BindingContext<T> {
+    moduleBuilder.addBindingIntoMap(mapKeyType, mapValueType, entryKey, binding, mapName, override)
+    return this
+}
+
+inline fun <T : E, reified E> BindingContext<T>.bindIntoSet(
+    setName: Qualifier? = null,
+    override: Boolean = false
+): BindingContext<T> = bindIntoSet(typeOf<E>(), setName, override)
+
+fun <T : E, E> BindingContext<T>.bindIntoSet(
+    setElementType: Type<E>,
+    setName: Qualifier? = null,
+    override: Boolean = false
+): BindingContext<T> {
+    moduleBuilder.addBindingIntoSet(setElementType, binding, setName, override)
+    return this
+}

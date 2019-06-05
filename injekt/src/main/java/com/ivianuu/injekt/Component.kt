@@ -23,6 +23,8 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scope: Scope?,
     internal val bindings: MutableMap<Key, Binding<*>>,
+    internal val mapBindings: Map<Key, Map<Any?, Binding<*>>>,
+    internal val setBindings: Map<Key, Set<Binding<*>>>,
     internal val dependencies: Iterable<Component>
 ) {
 
@@ -46,22 +48,124 @@ class Component internal constructor(
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
-        // check if we need a lazy or a provider
-        if (type.parameters.size == 1) {
-            when (type.raw) {
-                Provider::class -> {
-                    val key = keyOf(type.parameters.first(), name)
-                    findBinding<T>(key, true)
-                        ?.let { instance ->
-                            return@get provider { instance.get(it) } as T
+        println("get for type $type and name $name")
+        println("params size ${type.parameters.size}")
+
+        when (type.parameters.size) {
+            2 -> {
+                when (type.raw) {
+                    Map::class -> {
+                        val keyType = type.parameters[0]
+                        val valueType = type.parameters[1]
+
+                        when (valueType.raw) {
+                            Provider::class -> {
+                                val mapKey = keyOf(
+                                    typeOf<Any?>(Map::class, keyType, valueType.parameters[0]),
+                                    name
+                                )
+
+                                val map = mapBindings[mapKey]
+                                if (map != null) {
+                                    return map
+                                        .mapValues { (_, binding) ->
+                                            provider { binding.get(it) }
+                                        } as T
+                                }
+                            }
+                            Lazy::class -> {
+                                val mapKey = keyOf(
+                                    typeOf<Any?>(Map::class, keyType, valueType.parameters[0]),
+                                    name
+                                )
+
+                                val map = mapBindings[mapKey]
+                                if (map != null) {
+                                    return map
+                                        .mapValues { (_, binding) ->
+                                            lazy(LazyThreadSafetyMode.NONE) { binding.get() }
+                                        } as T
+                                }
+                            }
+                            else -> {
+                                val mapKey = keyOf(
+                                    typeOf<Any?>(Map::class, keyType, valueType),
+                                    name
+                                )
+
+                                val map = mapBindings[mapKey]
+                                if (map != null) {
+                                    return map
+                                        .mapValues { it.value.get() } as T
+                                }
+                            }
                         }
+                    }
                 }
-                Lazy::class -> {
-                    val key = keyOf(type.parameters.first(), name)
-                    findBinding<T>(key, true)
-                        ?.let {
-                            return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
+            }
+            1 -> {
+                when (type.raw) {
+                    Provider::class -> {
+                        val key = keyOf(type.parameters.first(), name)
+                        findBinding<T>(key, true)
+                            ?.let { instance ->
+                                return@get provider { instance.get(it) } as T
+                            }
+                    }
+                    Lazy::class -> {
+                        val key = keyOf(type.parameters.first(), name)
+                        findBinding<T>(key, true)
+                            ?.let {
+                                return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
+                            }
+                    }
+                    Set::class -> {
+                        val elementType = type.parameters[0]
+
+                        when (elementType.raw) {
+                            Provider::class -> {
+                                val setKey = keyOf(
+                                    typeOf<Any?>(Set::class, elementType.parameters[0]),
+                                    name
+                                )
+
+                                val set = setBindings[setKey]
+                                if (set != null) {
+                                    return set
+                                        .map { binding -> provider { binding.get(it) } }
+                                        .toSet() as T
+                                }
+                            }
+                            Lazy::class -> {
+                                val setKey = keyOf(
+                                    typeOf<Any?>(Set::class, elementType.parameters[0]),
+                                    name
+                                )
+
+                                val set = setBindings[setKey]
+                                if (set != null) {
+                                    return set
+                                        .map {
+                                            lazy(LazyThreadSafetyMode.NONE) { it.get() }
+                                        }
+                                        .toSet() as T
+                                }
+                            }
+                            else -> {
+                                val setKey = keyOf(
+                                    typeOf<Any?>(Set::class, elementType),
+                                    name
+                                )
+
+                                val set = setBindings[setKey]
+                                if (set != null) {
+                                    return set
+                                        .map { it.get() }
+                                        .toSet() as T
+                                }
+                            }
                         }
+                    }
                 }
             }
         }

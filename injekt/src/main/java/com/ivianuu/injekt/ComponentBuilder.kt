@@ -107,15 +107,33 @@ internal fun createComponent(
         }
 
     val bindings = mutableMapOf<Key, Binding<*>>()
+    val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
+    val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
 
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
             // todo override handling
             bindings[key] = binding
         }
+
+        module.mapBindings.forEach { (mapKey, map) ->
+            map.forEach { (entryKey, entryValueBinding) ->
+                val thisMap = mapBindings.getOrPut(mapKey) { mutableMapOf() }
+                // todo override handling
+                thisMap[entryKey] = entryValueBinding
+            }
+        }
+
+        module.setBindings.forEach { (setKey, set) ->
+            set.forEach { elementBinding ->
+                val thisSet = setBindings.getOrPut(setKey) { mutableSetOf() }
+                // todo override handling
+                thisSet.add(elementBinding)
+            }
+        }
     }
 
-    return Component(scope, bindings, dependencies)
+    return Component(scope, bindings, mapBindings, setBindings, dependencies)
 }
 
 internal fun Component.getAllBindingKeys(): Set<Key> =

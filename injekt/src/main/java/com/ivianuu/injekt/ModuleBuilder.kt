@@ -75,10 +75,11 @@ class ModuleBuilder {
 
     fun addBindingIntoSet(
         setKey: Key,
-        elementBinding: Binding<*>
+        elementBinding: Binding<*>,
+        override: Boolean = false
     ) {
         val set = setBindings.getOrPut(setKey) { mutableSetOf() }
-        if (!set.add(elementBinding)) {
+        if (!set.add(elementBinding) && !override) {
             error("Already added $elementBinding to set $setKey")
         }
     }
@@ -122,13 +123,52 @@ fun <K, V> ModuleBuilder.mapBinding(
     mapBinding(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
 }
 
-inline fun <reified T> ModuleBuilder.setBinding(setName: Qualifier? = null) {
-    setBinding<T>(typeOf(), setName)
+inline fun <reified E> ModuleBuilder.setBinding(setName: Qualifier? = null) {
+    setBinding<E>(typeOf(), setName)
 }
 
-fun <T> ModuleBuilder.setBinding(
-    setType: Type<T>,
+fun <E> ModuleBuilder.setBinding(
+    setElementType: Type<E>,
     setName: Qualifier? = null
 ) {
-    setBinding(keyOf(typeOf<Any?>(Set::class, setType), setName))
+    setBinding(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
+}
+
+inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
+    entryKey: K,
+    entryValueBinding: Binding<out V>,
+    mapName: Qualifier? = null,
+    override: Boolean = false
+) {
+    addBindingIntoMap<K, V>(typeOf(), typeOf(), entryKey, entryValueBinding, mapName, override)
+}
+
+fun <K, V> ModuleBuilder.addBindingIntoMap(
+    mapKeyType: Type<K>,
+    mapValueType: Type<V>,
+    entryKey: K,
+    entryValueBinding: Binding<out V>,
+    mapName: Qualifier? = null,
+    override: Boolean = false
+) {
+    val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
+    addBindingIntoMap(mapKey, entryKey, entryValueBinding, override)
+}
+
+inline fun <reified E> ModuleBuilder.addBindingIntoSet(
+    elementBinding: Binding<out E>,
+    setName: Qualifier? = null,
+    override: Boolean = false
+) {
+    addBindingIntoSet<E>(typeOf(), elementBinding, setName, override)
+}
+
+fun <E> ModuleBuilder.addBindingIntoSet(
+    setElementType: Type<E>,
+    elementBinding: Binding<out E>,
+    setName: Qualifier? = null,
+    override: Boolean = false
+) {
+    val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
+    addBindingIntoSet(setKey, elementBinding, override)
 }
