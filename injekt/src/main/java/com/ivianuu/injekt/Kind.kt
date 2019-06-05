@@ -18,12 +18,11 @@ package com.ivianuu.injekt
 
 /**
  * Creates [Instance]s for [Binding] and acts as visual representation in logs
+ * Implementations should override toString
  */
-abstract class Kind {
+interface Kind {
     /**
      * Returns a new [Instance] for the [binding]
      */
-    abstract fun <T> createInstance(binding: Binding<T>): Instance<T>
-
-    override fun toString(): String = "Unknown"
+    fun <T> createInstance(binding: Binding<T>): Instance<T>
 }

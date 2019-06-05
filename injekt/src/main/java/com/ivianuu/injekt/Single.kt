@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Creates instances once per [Component]
  */
-object SingleKind : Kind() {
+object SingleKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = SingleInstance(binding)
     override fun toString(): String = "Single"
 }

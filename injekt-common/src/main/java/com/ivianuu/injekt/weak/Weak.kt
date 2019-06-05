@@ -35,7 +35,7 @@ import java.lang.ref.WeakReference
  * This caches the value via a [WeakReference] and creates it again
  * if the reference was garbage collected
  */
-object WeakKind : Kind() {
+object WeakKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = WeakInstance(binding)
     override fun toString() = "Weak"
 }

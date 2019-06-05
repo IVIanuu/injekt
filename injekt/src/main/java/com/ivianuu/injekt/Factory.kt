@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Creates a new instance each time a dependency get's requested
  */
-object FactoryKind : Kind() {
+object FactoryKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = FactoryInstance(binding)
     override fun toString(): String = "Factory"
 }

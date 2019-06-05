@@ -35,7 +35,7 @@ import com.ivianuu.injekt.typeOf
  * This kind creates the value once per [Component]
  * and will be initialized on start
  */
-object EagerKind : Kind() {
+object EagerKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = EagerInstance(binding)
     override fun toString(): String = "Eager"
 }

@@ -35,7 +35,7 @@ import kotlin.collections.set
 /**
  * This kind creates a values and distinct's them by the hash of the passed [Parameters]
  */
-object MultiKind : Kind() {
+object MultiKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = MultiInstance(binding)
     override fun toString(): String = "Multi"
 }

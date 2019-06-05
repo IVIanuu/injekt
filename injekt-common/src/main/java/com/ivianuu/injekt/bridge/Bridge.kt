@@ -38,7 +38,7 @@ import java.util.*
  * It delegates every request to the provided binding key
  * This allows to add alias bindings and so on to existing bindings
  */
-object BridgeKind : Kind() {
+object BridgeKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = BridgeInstance(binding)
     override fun toString(): String = "Bridge"
 }

@@ -33,7 +33,7 @@ import com.ivianuu.injekt.typeOf
 /**
  * This kind creates no new instances but using a existing one
  */
-object ConstantKind : Kind() {
+object ConstantKind : Kind {
     override fun <T> createInstance(binding: Binding<T>): Instance<T> = ConstantInstance(binding)
     override fun toString(): String = "Constant"
 }
