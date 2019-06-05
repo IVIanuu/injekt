@@ -42,6 +42,18 @@ enum class TimeUnit {
     NANOS, MILLIS
 }
 
+fun runInjektTests(config: Config = defaultConfig) {
+    runInjectionTests(
+        listOf(
+            InjektCodegenTest,
+            InjektTest,
+            InjektOptimizedTest,
+            InjektOptimizedDslTest
+        ),
+        config
+    )
+}
+
 fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(

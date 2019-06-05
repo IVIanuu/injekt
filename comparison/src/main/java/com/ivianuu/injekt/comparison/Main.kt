@@ -17,7 +17,8 @@
 package com.ivianuu.injekt.comparison
 
 fun main() {
-    runAllInjectionTests()
+    runInjektTests()
+    //runAllInjectionTests()
     //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektTest)
     // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
 }
