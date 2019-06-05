@@ -18,6 +18,7 @@ package com.ivianuu.injekt.eager
 
 import com.ivianuu.injekt.AttachAware
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionBinding
 import com.ivianuu.injekt.Linker
@@ -33,14 +34,14 @@ inline fun <reified T> ModuleBuilder.eager(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = eager(typeOf(), name, override, definition)
+): BindingContext<T> = eager(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.eager(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> =
+): BindingContext<T> =
     add(EagerBinding(SingleBinding(DefinitionBinding(definition))), type, name, override)
 
 private class EagerBinding<T>(private val binding: Binding<T>) : Binding<T>, AttachAware {

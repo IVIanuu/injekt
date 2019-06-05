@@ -24,12 +24,13 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.FragmentScope
+import com.ivianuu.injekt.android.fragmentComponent
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
 class ParentFragment : Fragment(), InjektTrait {
 
-    override val component by lazy { component() }
+    override val component by lazy { fragmentComponent() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         d { "Injected app dependency ${get<AppDependency>()}" }

@@ -17,6 +17,9 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
@@ -25,8 +28,12 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.bindAlias
+import com.ivianuu.injekt.bindName
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
 
 @ScopeAnnotation(FragmentScope.Companion::class)
@@ -101,7 +108,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
 }
 
 private fun <T : Fragment> T.internalFragmentModule(name: Qualifier) = module {
-    constant(this@internalFragmentModule, override = true)/*.apply {
+    constant(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()
@@ -118,5 +125,4 @@ private fun <T : Fragment> T.internalFragmentModule(name: Qualifier) = module {
     factory(override = true) { viewModelStore } bindName name
     factory(override = true) { savedStateRegistry } bindName name
     factory(override = true) { childFragmentManager } bindName name
-*/
 }

@@ -20,14 +20,14 @@ inline fun <reified T> ModuleBuilder.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = single(typeOf(), name, override, definition)
+): BindingContext<T> = single(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.single(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = add(
+): BindingContext<T> = add(
     DefinitionBinding(definition).asSingleBinding(),
     type,
     name,

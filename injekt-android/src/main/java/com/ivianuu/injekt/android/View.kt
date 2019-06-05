@@ -26,8 +26,12 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.bindAlias
+import com.ivianuu.injekt.bindName
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
 
 @ScopeAnnotation(ViewScope.Companion::class)
@@ -111,12 +115,12 @@ fun <T : View> T.childViewModule(): Module = module {
 }
 
 private fun <T : View> T.internalViewModule(name: Qualifier) = module {
-    constant(this@internalViewModule, override = true)/*.apply {
+    constant(this@internalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)
     }
 
     factory(override = true) { context } bindName name
     factory(override = true) { resources } bindName name
-*/
+
 }

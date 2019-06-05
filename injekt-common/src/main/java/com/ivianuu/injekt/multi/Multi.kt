@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.multi
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionBinding
 import com.ivianuu.injekt.Linker
@@ -32,14 +33,14 @@ inline fun <reified T> ModuleBuilder.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = multi(typeOf(), name, override, definition)
+): BindingContext<T> = multi(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.multi(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = add(MultiBinding(DefinitionBinding(definition)), type, name, override)
+): BindingContext<T> = add(MultiBinding(DefinitionBinding(definition)), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Multi

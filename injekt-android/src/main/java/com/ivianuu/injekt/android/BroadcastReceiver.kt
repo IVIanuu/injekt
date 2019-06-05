@@ -26,6 +26,8 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.bindClass
+import com.ivianuu.injekt.bindType
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
@@ -64,5 +66,5 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
 fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    constant(this@receiverModule)// todo bindType BroadcastReceiver::class
+    constant(this@receiverModule) bindClass BroadcastReceiver::class
 }

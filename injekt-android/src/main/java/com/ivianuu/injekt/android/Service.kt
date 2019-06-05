@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
+import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
@@ -25,8 +26,12 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.bindAlias
+import com.ivianuu.injekt.bindName
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
 
 @ScopeAnnotation(ServiceScope.Companion::class)
@@ -59,12 +64,11 @@ fun Service.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : Service> T.serviceModule(): Module = module {
-    constant(this@serviceModule, override = true)/*.apply {
+    constant(this@serviceModule, override = true).apply {
         bindType<Service>()
         bindAlias<Context>(ForService)
         bindType<Context>()
     }
 
     factory(override = true) { resources } bindName ForService
-*/
 }

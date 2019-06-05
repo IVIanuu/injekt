@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.weak
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionBinding
 import com.ivianuu.injekt.Linker
@@ -32,14 +33,14 @@ inline fun <reified T> ModuleBuilder.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = weak(typeOf(), name, override, definition)
+): BindingContext<T> = weak(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.weak(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = add(WeakBinding(DefinitionBinding(definition)), type, name, override)
+): BindingContext<T> = add(WeakBinding(DefinitionBinding(definition)), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Weak

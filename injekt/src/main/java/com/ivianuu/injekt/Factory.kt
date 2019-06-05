@@ -20,20 +20,20 @@ inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     binding: Binding<T>
-): Binding<T> = add(binding, typeOf(), name, override)
+): BindingContext<T> = add(binding, typeOf(), name, override)
 
 inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = factory(typeOf(), name, override, definition)
+): BindingContext<T> = factory(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.factory(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = add(
+): BindingContext<T> = add(
     DefinitionBinding(definition), type, name, override
 )
 
@@ -41,14 +41,14 @@ inline fun <reified T> ModuleBuilder.factoryState(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline block: StatefulDefinitionBuilder<T>.() -> Unit
-): Binding<T> = factoryState(typeOf(), name, override, block)
+): BindingContext<T> = factoryState(typeOf(), name, override, block)
 
 fun <T> ModuleBuilder.factoryState(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     block: StatefulDefinitionBuilder<T>.() -> Unit
-): Binding<T> = add(
+): BindingContext<T> = add(
     StatefulDefinitionBinding(StatefulDefinitionBuilder<T>().apply(block)),
     type,
     name,

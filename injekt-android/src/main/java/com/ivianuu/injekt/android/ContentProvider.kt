@@ -25,6 +25,8 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.NamedScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.bindClass
+import com.ivianuu.injekt.bindType
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
@@ -61,5 +63,5 @@ fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    constant(this@contentProviderModule)// todo bindType ContentProvider::class
+    constant(this@contentProviderModule) bindClass ContentProvider::class
 }

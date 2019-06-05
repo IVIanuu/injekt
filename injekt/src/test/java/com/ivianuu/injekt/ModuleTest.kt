@@ -27,7 +27,7 @@ override fun link(context: DefinitionContext) {
 }
 override fun get(parameters: ParametersDefinition?): String = "hello"
 }
-val module = module { bind(keyOf<String>(), binding) }
+val module = module { bindAlias(keyOf<String>(), binding) }
         assertTrue(module.bindings.values.contains(binding))
     }
 
@@ -45,8 +45,8 @@ val module = module { bind(keyOf<String>(), binding) }
         )
 
         val module = module {
-            bind(firstBinding)
-            bind(overrideBinding)
+            bindAlias(firstBinding)
+            bindAlias(overrideBinding)
         }
 
         assertEquals(module.bindings[Key(typeOf<String>())], overrideBinding)
@@ -65,8 +65,8 @@ val module = module { bind(keyOf<String>(), binding) }
         )
 
         module {
-            bind(firstBinding)
-            bind(overrideBinding)
+            bindAlias(firstBinding)
+            bindAlias(overrideBinding)
         }
     }
 

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.bridge
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
@@ -28,18 +29,18 @@ import java.util.*
 
 inline fun <reified T> ModuleBuilder.bridge(
     name: Qualifier? = null,
-    noinline block: (Binding<T>.() -> Unit)? = null
-) = bridge(typeOf(), name, block)
+    noinline block: (BindingContext<T>.() -> Unit)? = null
+): BindingContext<T> = bridge(typeOf(), name, block)
 
 fun <T> ModuleBuilder.bridge(
     type: Type<T>,
     name: Qualifier? = null,
-    block: (Binding<T>.() -> Unit)? = null
-): Binding<T> {
+    block: (BindingContext<T>.() -> Unit)? = null
+): BindingContext<T> {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    return add(BridgeBinding(type, name), type, name).apply {
+    return add(BridgeBinding(type, name), type, UUIDName()).apply {
         block?.invoke(this)
     }
 }

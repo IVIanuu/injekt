@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.AndroidLogger
+import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.android.context
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
@@ -35,7 +36,9 @@ import com.ivianuu.injekt.module
 
 class App : Application(), InjektTrait {
 
-    override val component by lazy { component() }
+    override val component by lazy {
+        applicationComponent { modules(appModule) }
+    }
 
     override fun onCreate() {
         InjektPlugins.logger = AndroidLogger()

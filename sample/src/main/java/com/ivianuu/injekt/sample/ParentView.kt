@@ -22,6 +22,7 @@ import android.widget.FrameLayout
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ViewScope
+import com.ivianuu.injekt.android.viewComponent
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
@@ -30,7 +31,7 @@ class ParentView @JvmOverloads constructor(
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
-    override val component by lazy { component() }
+    override val component by lazy { viewComponent() }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
