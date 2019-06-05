@@ -94,22 +94,19 @@ internal fun createComponent(
         "Must have a scope if a dependency has a scope"
     }
 
-    val dependencyBindings = dependencies
-        .map { it.getAllBindings() }
-        .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
-            current.forEach { (key, binding) ->
-                val oldBinding = acc[key]
-                check(oldBinding == null || binding.override) {
+    val dependencyBindingKeys = dependencies
+        .map { it.getAllBindingKeys() }
+        .fold(mutableSetOf<Key>()) { acc, current ->
+            current.forEach { key ->
+                check(acc.add(key)) {
                     "Already declared binding for $key"
                 }
-                acc[key] = binding
             }
 
             return@fold acc
         }
 
     val bindings = mutableMapOf<Key, Binding<*>>()
-    val instances = mutableMapOf<Key, Instance<*>>()
     val mapBindings =
         mutableMapOf<Key, MutableMap<Any?, Instance<*>>>()
     val setBindings =
@@ -117,38 +114,29 @@ internal fun createComponent(
 
     dependencies.forEach { dependency ->
         mapBindings.putAll(dependency.mapBindings as Map<out Key, MutableMap<Any?, Instance<*>>>)
-        setBindings.putAll(
-            dependency.setBindings
-                .mapValues { (_, set) ->
-                    set.associateBy { it.binding.key }
-                } as Map<out Key, MutableMap<Key, Instance<*>>>
-        )
+        setBindings.putAll(dependency.setBindings as Map<out Key, MutableMap<Key, Instance<*>>>)
     }
 
     fun addBindingByKey(
         key: Key,
-        binding: Binding<*>,
-        instance: Instance<*>
+        binding: Binding<*>
     ) {
         if (!binding.override &&
             (bindings.contains(key)
-                    || dependencyBindings.contains(key))
+                    || dependencyBindingKeys.contains(key))
         ) {
             error("Already declared binding for $key")
         }
 
         bindings[key] = binding
-        instances[key] = instance
     }
 
     fun addBinding(binding: Binding<*>) {
-        val instance = binding.kind.createInstance(binding)
-        addBindingByKey(binding.key, binding, instance)
-        binding.additionalKeys.forEach {
-            addBindingByKey(it, binding, instance)
-        }
+        addBindingByKey(binding.key, binding)
+        binding.additionalKeys.forEach { addBindingByKey(it, binding) }
 
-        binding.mapBindings.forEach { (mapKey, mapBinding) ->
+        // todo
+        /*binding.mapBindings.forEach { (mapKey, mapBinding) ->
             val map = mapBindings.getOrPut(mapKey) { mutableMapOf() }
 
             val oldValue = map[mapBinding.mapKey]
@@ -169,7 +157,7 @@ internal fun createComponent(
             }
 
             map[binding.key] = instance
-        }
+        }*/
     }
 
     fun addModule(module: Module) {
@@ -280,17 +268,16 @@ internal fun createComponent(
     }
 
     return Component(
-        scope, instances, dependencies, mapBindings,
-        setBindings.mapValues { it.value.values.toSet() }
+        scope, bindings, dependencies, mapBindings, setBindings
     )
 }
 
-internal fun Component.getAllBindings(): Map<Key, Binding<*>> =
-    mutableMapOf<Key, Binding<*>>().also { collectBindings(it) }
+internal fun Component.getAllBindingKeys(): Set<Key> =
+    mutableSetOf<Key>().also { collectBindingKeys(it) }
 
-internal fun Component.collectBindings(
-    bindings: MutableMap<Key, Binding<*>>
+internal fun Component.collectBindingKeys(
+    keys: MutableSet<Key>
 ) {
-    dependencies.forEach { it.collectBindings(bindings) }
-    bindings.putAll(this.instances.mapValues { it.value.binding })
+    dependencies.forEach { it.collectBindingKeys(keys) }
+    keys.addAll(this.instances.keys)
 }

@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.bridge
 
 import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.DefinitionInstance
 import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
@@ -33,7 +35,8 @@ import java.util.*
  * This allows to add alias bindings and so on to existing bindings
  */
 object BridgeKind : Kind {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = BridgeInstance(binding)
+    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
+        BridgeInstance(DefinitionInstance(context, binding))
     override fun toString(): String = "Bridge"
 }
 
@@ -61,6 +64,6 @@ fun <T> Module.bridge(
 
 private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
 
-private class BridgeInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-    override fun get(parameters: ParametersDefinition?): T = create(parameters)
+private class BridgeInstance<T>(private val instance: Instance<T>) : Instance<T> {
+    override fun get(parameters: ParametersDefinition?): T = instance.get(parameters)
 }

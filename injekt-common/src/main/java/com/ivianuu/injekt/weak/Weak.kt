@@ -18,7 +18,8 @@ package com.ivianuu.injekt.weak
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.InjektPlugins
+import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.DefinitionInstance
 import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
@@ -26,8 +27,6 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.logger
-import com.ivianuu.injekt.scopeName
 import com.ivianuu.injekt.typeOf
 import java.lang.ref.WeakReference
 
@@ -36,7 +35,8 @@ import java.lang.ref.WeakReference
  * if the reference was garbage collected
  */
 object WeakKind : Kind {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = WeakInstance(binding)
+    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
+        WeakInstance(DefinitionInstance(context, binding))
     override fun toString() = "Weak"
 }
 
@@ -56,7 +56,9 @@ fun <T> Module.weak(
 @Target(AnnotationTarget.CLASS)
 annotation class Weak
 
-private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+private class WeakInstance<T>(
+    private val instance: Instance<T>
+) : Instance<T> {
 
     private var _value: WeakReference<T>? = null
 
@@ -64,11 +66,11 @@ private class WeakInstance<T>(override val binding: Binding<T>) : Instance<T>() 
         val value = _value?.get()
 
         return if (value != null) {
-            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing weak instance $binding")
+            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing weak instance $binding")
             value
         } else {
-            InjektPlugins.logger?.info("${context.component.scopeName()} Create weak instance $binding")
-            create(parameters).also { _value = WeakReference(it) }
+            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Create weak instance $binding")
+            instance.get(parameters).also { _value = WeakReference(it) }
         }
     }
 

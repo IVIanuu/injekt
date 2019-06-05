@@ -18,7 +18,8 @@ package com.ivianuu.injekt.multi
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.InjektPlugins
+import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.DefinitionInstance
 import com.ivianuu.injekt.Instance
 import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
@@ -27,8 +28,6 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.logger
-import com.ivianuu.injekt.scopeName
 import com.ivianuu.injekt.typeOf
 import kotlin.collections.set
 
@@ -36,7 +35,8 @@ import kotlin.collections.set
  * This kind creates a values and distinct's them by the hash of the passed [Parameters]
  */
 object MultiKind : Kind {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = MultiInstance(binding)
+    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
+        MultiInstance(DefinitionInstance(context, binding))
     override fun toString(): String = "Multi"
 }
 
@@ -56,7 +56,7 @@ fun <T> Module.multi(
 @Target(AnnotationTarget.CLASS)
 annotation class Multi
 
-private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+private class MultiInstance<T>(private val instance: Instance<T>) : Instance<T> {
 
     private val values = mutableMapOf<Int, T>()
 
@@ -70,12 +70,12 @@ private class MultiInstance<T>(override val binding: Binding<T>) : Instance<T>()
         var value = values[key]
 
         return if (value == null && !values.containsKey(key)) {
-            InjektPlugins.logger?.info("${context.component.scopeName()} Create multi instance for params $params $binding")
-            value = create(parameters)
+            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Create multi instance for params $params $binding")
+            value = instance.get(parameters)
             values[key] = value
             value
         } else {
-            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing multi instance for params $params $binding")
+            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing multi instance for params $params $binding")
             value as T
         }
     }

@@ -20,7 +20,8 @@ package com.ivianuu.injekt
  * Creates instances once per [Component]
  */
 object SingleKind : Kind {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = SingleInstance(binding)
+    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
+        SingleInstance(DefinitionInstance(context, binding))
     override fun toString(): String = "Single"
 }
 
@@ -40,26 +41,28 @@ fun <T> Module.single(
 @Target(AnnotationTarget.CLASS)
 annotation class Single
 
-private class SingleInstance<T>(override val binding: Binding<T>) : Instance<T>() {
+private class SingleInstance<T>(
+    private val instance: Instance<T>
+) : Instance<T> {
 
     private var _value: Any? = UNINITIALIZED
 
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
-            InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
+            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
             return value as T
         }
 
         synchronized(this) {
             value = _value
             if (value !== UNINITIALIZED) {
-                InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
+                // todo InjektPlugins.logger?.info("${context.component.scopeName()} Return existing instance $binding")
                 return@get value as T
             }
 
-            InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
-            value = create(parameters)
+            // todo InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
+            value = instance.get(parameters)
             _value = value
             return@get value as T
         }

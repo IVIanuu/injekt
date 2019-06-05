@@ -24,5 +24,5 @@ interface Kind {
     /**
      * Returns a new [Instance] for the [binding]
      */
-    fun <T> createInstance(binding: Binding<T>): Instance<T>
+    fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T>
 }

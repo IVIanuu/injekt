@@ -22,16 +22,17 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     val scope: Scope?,
-    internal val instances: MutableMap<Key, Instance<*>>,
+    bindings: Map<Key, Binding<*>>,
     internal val dependencies: Iterable<Component>,
     internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
-    internal val setBindings: Map<Key, Set<Instance<*>>>
+    internal val setBindings: Map<Key, Map<Key, Instance<*>>>
 ) {
 
     private val context = DefinitionContext(this)
+    internal val instances = mutableMapOf<Key, Instance<*>>()
 
     init {
-        InjektPlugins.logger?.let { logger ->
+        /* // todo InjektPlugins.logger?.let { logger ->
             logger.info("${scopeName()} initialize")
 
             dependencies.forEach {
@@ -49,10 +50,16 @@ class Component internal constructor(
             setBindings.forEach { (key, set) ->
                 logger.info("${scopeName()} Register set binding $key ${set.map { it.binding }}")
             }
+        }*/
+
+        bindings.forEach { (key, binding) ->
+            val instance = binding.kind.createInstance(context, binding)
+            instances[key] = instance
         }
-        instances
-            .onEach { it.value.context = context }
-            .forEach { it.value.attached() }
+
+        instances.values
+            .filterIsInstance<AttachAware>()
+            .forEach { it.attached() }
     }
 
     /**
@@ -115,10 +122,9 @@ class Component internal constructor(
     }
 
     private fun <T> addJitBinding(binding: Binding<T>): Instance<T> {
-        val instance = binding.kind.createInstance(binding)
+        val instance = binding.kind.createInstance(context, binding)
         instances[binding.key] = instance
-        instance.context = context
-        instance.attached()
+        (instance as? AttachAware)?.attached()
         return instance
     }
 

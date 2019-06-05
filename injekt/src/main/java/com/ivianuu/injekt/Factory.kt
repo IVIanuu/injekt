@@ -20,7 +20,9 @@ package com.ivianuu.injekt
  * Creates a new instance each time a dependency get's requested
  */
 object FactoryKind : Kind {
-    override fun <T> createInstance(binding: Binding<T>): Instance<T> = FactoryInstance(binding)
+    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
+        DefinitionInstance(context, binding)
+
     override fun toString(): String = "Factory"
 }
 
@@ -39,12 +41,3 @@ fun <T> Module.factory(
 
 @Target(AnnotationTarget.CLASS)
 annotation class Factory
-
-private class FactoryInstance<T>(override val binding: Binding<T>) : Instance<T>() {
-
-    override fun get(parameters: ParametersDefinition?): T {
-        InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
-        return create(parameters)
-    }
-
-}

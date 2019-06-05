@@ -20,22 +20,25 @@ package com.ivianuu.injekt
  * Holder for instances of [Binding]s
  * It can just create a new instance of the dependencies or perform caching in some form
  */
-abstract class Instance<T> {
-
-    lateinit var context: DefinitionContext
-        internal set
-
-    abstract val binding: Binding<T>
+interface Instance<T> {
 
     /**
      * Returns the value for this instance
      */
-    abstract fun get(parameters: ParametersDefinition? = null): T
+    fun get(parameters: ParametersDefinition? = null): T
 
-    /**
-     * Creates the value using [parameters]
-     */
-    protected fun create(parameters: ParametersDefinition?): T {
+}
+
+// todo remove
+interface AttachAware {
+    fun attached()
+}
+
+class DefinitionInstance<T>(
+    private val context: DefinitionContext,
+    private val binding: Binding<T>
+) : Instance<T> {
+    override fun get(parameters: ParametersDefinition?): T {
         return try {
             binding.definition.invoke(
                 context,
@@ -44,8 +47,5 @@ abstract class Instance<T> {
         } catch (e: Exception) {
             throw IllegalStateException("Couldn't instantiate $binding", e)
         }
-    }
-
-    open fun attached() {
     }
 }
