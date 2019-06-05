@@ -22,14 +22,11 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     val scope: Scope?,
-    bindings: Map<Key, Binding<*>>,
-    internal val dependencies: Iterable<Component>,
-    internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
-    internal val setBindings: Map<Key, Map<Key, Instance<*>>>
+    internal val bindings: MutableMap<Key, Binding<*>>,
+    internal val dependencies: Iterable<Component>
 ) {
 
     private val context = DefinitionContext(this)
-    internal val instances = mutableMapOf<Key, Instance<*>>()
 
     init {
         /* // todo InjektPlugins.logger?.let { logger ->
@@ -53,14 +50,16 @@ class Component internal constructor(
         }*/
 
         bindings.forEach { (key, binding) ->
-            val instance = binding.kind.createInstance(context, binding)
-            instances[key] = instance
+            binding.link(context)
         }
 
-        instances.values
+        bindings.values
             .filterIsInstance<AttachAware>()
             .forEach { it.attached() }
     }
+
+    inline fun <reified T> getBinding(name: Qualifier? = null): Binding<T> =
+        findBinding<T>(keyOf<T>(name), true) ?: error("couldn't find binding")
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -75,14 +74,14 @@ class Component internal constructor(
             when (type.raw) {
                 Provider::class -> {
                     val key = Key(type.parameters.first(), name)
-                    findInstance<T>(key, true)
+                    findBinding<T>(key, true)
                         ?.let { instance ->
                             return@get provider { instance.get(it) } as T
                         }
                 }
                 Lazy::class -> {
                     val key = Key(type.parameters.first(), name)
-                    findInstance<T>(key, true)
+                    findBinding<T>(key, true)
                         ?.let {
                             return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
                         }
@@ -92,7 +91,7 @@ class Component internal constructor(
 
         // just try to resolve the dependency
         val key = Key(type, name)
-        findInstance<T>(key, true)
+        findBinding<T>(key, true)
             ?.let { return@get it.get(parameters) }
 
         // todo clean up
@@ -100,32 +99,34 @@ class Component internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findInstance(key: Key, lookupJit: Boolean): Instance<T>? {
-        var instance = instances[key]
-        if (instance != null) return instance as Instance<T>
+    @PublishedApi
+    internal fun <T> findBinding(key: Key, lookupJit: Boolean): Binding<T>? {
+        var binding = bindings[key]
+        if (binding != null) return binding as Binding<T>
 
         for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key, false)
-            if (instance != null) return instance
+            binding = dependency.findBinding<T>(key, false)
+            if (binding != null) return binding
         }
 
         if (lookupJit && key.name == null) {
-            val jitBinding = JustInTimeBindings.find<T>(key)
-            if (jitBinding != null) {
-                val component = findComponentForScope(scope)
+            val bindingFactory = JustInTimeBindings.find<T>(key)
+            if (bindingFactory != null) {
+                val component = findComponentForScope(bindingFactory.scope)
                     ?: error("Couldn't find component for $scope")
-                return component.addJitBinding(jitBinding)
+                binding = bindingFactory.create()
+                component.addJitBinding(key, binding)
+                return binding
             }
         }
 
         return null
     }
 
-    private fun <T> addJitBinding(binding: Binding<T>): Instance<T> {
-        val instance = binding.kind.createInstance(context, binding)
-        instances[binding.key] = instance
-        (instance as? AttachAware)?.attached()
-        return instance
+    private fun <T> addJitBinding(key: Key, binding: Binding<T>) {
+        bindings[key] = binding
+        binding.link(context)
+        (binding as? AttachAware)?.attached()
     }
 
     private fun findComponentForScope(scope: Any?): Component? {

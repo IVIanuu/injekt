@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.Component
@@ -33,36 +34,36 @@ import com.ivianuu.injekt.module
 
 @ScopeAnnotation(ReceiverScope.Companion::class)
 annotation class ReceiverScope {
-    companion object : NamedScope("ReceiverScope")
+companion object : NamedScope("ReceiverScope")
 }
 
 @Name(ForReceiver.Companion::class)
 annotation class ForReceiver {
-    companion object : Qualifier
+companion object : Qualifier
 }
 
 fun <T : BroadcastReceiver> BroadcastReceiver.receiverComponent(
-    context: Context,
-    block: (ComponentBuilder.() -> Unit)? = null
+context: Context,
+block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scope = ReceiverScope
-    getClosestComponentOrNull(context)?.let { dependencies(it) }
-    modules(receiverModule(context))
-    block?.invoke(this)
+scope = ReceiverScope
+getClosestComponentOrNull(context)?.let { dependencies(it) }
+modules(receiverModule(context))
+block?.invoke(this)
 }
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
-    getApplicationComponentOrNull(context)
+getApplicationComponentOrNull(context)
 
 fun BroadcastReceiver.getClosestComponent(context: Context): Component =
-    getClosestComponentOrNull(context) ?: error("No close component found for $this")
+getClosestComponentOrNull(context) ?: error("No close component found for $this")
 
 fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component? =
-    (context.applicationContext as? InjektTrait)?.component
+(context.applicationContext as? InjektTrait)?.component
 
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
-    getApplicationComponentOrNull(context) ?: error("No application component found for $this")
+getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
 fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    constant(this@receiverModule) bindType BroadcastReceiver::class
-}
+constant(this@receiverModule) bindType BroadcastReceiver::class
+}*/

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.app.Service
 import android.content.Context
 import com.ivianuu.injekt.Component
@@ -36,39 +37,39 @@ import com.ivianuu.injekt.module
 
 @ScopeAnnotation(ServiceScope.Companion::class)
 annotation class ServiceScope {
-    companion object : NamedScope("ServiceScope")
+companion object : NamedScope("ServiceScope")
 }
 
 @Name(ForService.Companion::class)
 annotation class ForService {
-    companion object : Qualifier
+companion object : Qualifier
 }
 
 fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
-    scope = ServiceScope
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(serviceModule())
-        block?.invoke(this)
+component {
+scope = ServiceScope
+getClosestComponentOrNull()?.let { dependencies(it) }
+modules(serviceModule())
+block?.invoke(this)
 }
 
 fun Service.getClosestComponentOrNull(): Component? =
-    getApplicationComponentOrNull()
+getApplicationComponentOrNull()
 
 fun Service.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+getClosestComponentOrNull() ?: error("No close component found for $this")
 
 fun Service.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
 fun Service.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : Service> T.serviceModule(): Module = module {
-    constant(this@serviceModule, override = true).apply {
-        bindType<Service>()
-        bindAlias<Context>(ForService)
-        bindType<Context>()
-    }
-
-    factory(override = true) { resources } bindName ForService
+constant(this@serviceModule, override = true).apply {
+bindType<Service>()
+bindAlias<Context>(ForService)
+bindType<Context>()
 }
+
+factory(override = true) { resources } bindName ForService
+}*/

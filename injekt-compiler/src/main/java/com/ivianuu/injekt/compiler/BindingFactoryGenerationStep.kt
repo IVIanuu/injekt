@@ -39,45 +39,35 @@ import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
-class CreatorStep : ProcessingStep() {
+class BindingFactoryGenerationStep : ProcessingStep() {
 
-    override fun annotations() =
-        Kind.values().map { it.annotation }.toSet()
+    override fun annotations() = bindingAnnotations
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
         annotations()
             .flatMap { elementsByAnnotation[it] }
             .filterIsInstance<TypeElement>()
-            .mapNotNull { createBindingDescriptor(it) }
-            .map { CreatorGenerator(it) }
+            .mapNotNull { createDescriptor(it) }
+            .map { BindingFactoryGenerator(it) }
             .map { it.generate() }
             .forEach { it.writeTo(filer) }
 
         return emptySet()
     }
 
-    private fun createBindingDescriptor(element: TypeElement): CreatorDescriptor? {
-        val kindAnnotations =
-            Kind.values()
-                .mapNotNull { element.getAnnotationMirrorOrNull(it.annotation) }
+    private fun createDescriptor(element: TypeElement): BindingFactoryDescriptor? {
+        val bindingAnnotations =
+            bindingAnnotations
+                .mapNotNull { element.getAnnotationMirrorOrNull(it) }
 
-        if (kindAnnotations.size > 1) {
+        if (bindingAnnotations.size > 1) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
-                "Can only have 1 kind annotation",
+                "Can only have 1 binding annotation",
                 element
             )
             return null
         }
-
-        val kindAnnotation = kindAnnotations.first()
-
-        val kindName = kindAnnotation
-            .annotationType
-            .asElement()
-            .toString()
-            .let { type -> Kind.values().first { it.annotation.java.name == type } }
-            .impl
 
         var scopeAnnotation = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
 
@@ -118,7 +108,7 @@ class CreatorStep : ProcessingStep() {
 
         val creatorName = ClassName(
             targetName.packageName,
-            element.simpleName.toString() + "__Creator"
+            element.simpleName.toString() + "Factory"
         )
 
         val constructorParams = element.enclosedElements
@@ -148,7 +138,7 @@ class CreatorStep : ProcessingStep() {
                         "Can only have 1 name annotation",
                         param
                     )
-                    return@createBindingDescriptor null
+                    return@createDescriptor null
                 }
 
                 if (nameType == null) {
@@ -158,7 +148,7 @@ class CreatorStep : ProcessingStep() {
                             "Can only have 1 name annotation",
                             param
                         )
-                        return@createBindingDescriptor null
+                        return@createDescriptor null
                     }
 
                     nameType = nameAnnotations.firstOrNull()
@@ -176,20 +166,21 @@ class CreatorStep : ProcessingStep() {
                         "Only one of @Param or @Name can be annotated per parameter",
                         param
                     )
-                    return@createBindingDescriptor null
+                    return@createDescriptor null
                 }
+
+                val paramType = param.asType().asTypeName().javaToKotlinType()
 
                 if (paramIndex != -1) {
                     ParamDescriptor.Parameter(paramName, paramIndex)
                 } else {
-                    ParamDescriptor.Dependency(paramName, qualifierName)
+                    ParamDescriptor.Dependency(paramName, paramType, qualifierName)
                 }
             }
 
-        return CreatorDescriptor(
+        return BindingFactoryDescriptor(
             targetName,
             creatorName,
-            kindName,
             scopeName,
             constructorParams
         )

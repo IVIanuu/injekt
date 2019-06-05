@@ -16,54 +16,40 @@
 
 package com.ivianuu.injekt.bridge
 
+/**
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.DefinitionContext
-import com.ivianuu.injekt.DefinitionInstance
-import com.ivianuu.injekt.Instance
-import com.ivianuu.injekt.Kind
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 import java.util.*
 
-/**
- * Acts as an bridge for an existing [Binding]
- * It delegates every request to the provided binding key
- * This allows to add alias bindings and so on to existing bindings
- */
-object BridgeKind : Kind {
-    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
-        BridgeInstance(DefinitionInstance(context, binding))
-    override fun toString(): String = "Bridge"
-}
-
 inline fun <reified T> Module.bridge(
-    name: Qualifier? = null,
-    noinline block: (Binding<T>.() -> Unit)? = null
+name: Qualifier? = null,
+noinline block: (Binding<T>.() -> Unit)? = null
 ): Binding<T> = bridge(typeOf(), name, block)
 
 fun <T> Module.bridge(
-    type: Type<T>,
-    name: Qualifier? = null,
-    block: (Binding<T>.() -> Unit)? = null
+type: Type<T>,
+name: Qualifier? = null,
+block: (Binding<T>.() -> Unit)? = null
 ): Binding<T> {
-    // we create a additional binding because we have no reference to the original one
-    // we use a unique id here to make sure that the binding does not collide with any user config
-    // this binding acts as bridge and just calls trough the original implementation
-    return bind(
-        BridgeKind,
-        type,
-        UUIDName()
-    ) { component.get(type, name) { it } }.apply {
-        block?.invoke(this)
-    }
+// we create a additional binding because we have no reference to the original one
+// we use a unique id here to make sure that the binding does not collide with any user config
+// this binding acts as bridge and just calls trough the original implementation
+return bind(
+BridgeKind,
+type,
+UUIDName()
+) { component.get(type, name) { it } }.apply {
+block?.invoke(this)
+}
 }
 
 private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
 
 private class BridgeInstance<T>(private val instance: Instance<T>) : Instance<T> {
-    override fun get(parameters: ParametersDefinition?): T = instance.get(parameters)
-}
+override fun get(parameters: ParametersDefinition?): T = instance.get(parameters)
+}*/

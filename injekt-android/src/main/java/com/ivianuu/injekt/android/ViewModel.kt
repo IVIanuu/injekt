@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -32,55 +33,55 @@ import com.ivianuu.injekt.typeOf
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
- */
+*/
 inline fun <reified T : ViewModel> Module.viewModel(
-    name: Qualifier? = null,
-    viewModelStoreName: Qualifier? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>
+name: Qualifier? = null,
+viewModelStoreName: Qualifier? = null,
+override: Boolean = false,
+noinline definition: Definition<T>
 ): Binding<T> = viewModel(typeOf(), name, viewModelStoreName, override, definition)
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
- */
+*/
 fun <T : ViewModel> Module.viewModel(
-    type: Type<T>,
-    name: Qualifier? = null,
-    viewModelStoreName: Qualifier? = null,
-    override: Boolean = false,
-    definition: Definition<T>
+type: Type<T>,
+name: Qualifier? = null,
+viewModelStoreName: Qualifier? = null,
+override: Boolean = false,
+definition: Definition<T>
 ): Binding<T> =
-    factory(
-        type,
-        name,
-        override,
-        ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
-    )
+factory(
+type,
+name,
+override,
+ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
+)
 
 private class ViewModelDefinition<T : ViewModel>(
-    private val type: Type<T>,
-    private val key: String?,
-    private val viewModelStoreName: Qualifier?,
-    private val definition: Definition<T>
+private val type: Type<T>,
+private val key: String?,
+private val viewModelStoreName: Qualifier?,
+private val definition: Definition<T>
 ) : (DefinitionContext, Parameters) -> T {
-    override fun invoke(context: DefinitionContext, parameters: Parameters): T = with(context) {
-        val store = get<ViewModelStore>(viewModelStoreName)
+override fun invoke(context: DefinitionContext, parameters: Parameters): T = with(context) {
+val store = get<ViewModelStore>(viewModelStoreName)
 
-        val factory = Factory(context, parameters, definition)
-        val provider = ViewModelProvider(store, factory)
-        return@with if (key != null) {
-            provider.get(key, type.raw.java as Class<T>)
-        } else {
-            provider.get(type.raw.java as Class<T>)
-        }
-    }
-
-    private class Factory<T : ViewModel>(
-        private val context: DefinitionContext,
-        private val parameters: Parameters,
-        private val definition: Definition<T>
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-            definition(context, parameters) as T
-    }
+val factory = Factory(context, parameters, definition)
+val provider = ViewModelProvider(store, factory)
+return@with if (key != null) {
+provider.get(key, type.raw.java as Class<T>)
+} else {
+provider.get(type.raw.java as Class<T>)
 }
+}
+
+private class Factory<T : ViewModel>(
+private val context: DefinitionContext,
+private val parameters: Parameters,
+private val definition: Definition<T>
+) : ViewModelProvider.Factory {
+override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+definition(context, parameters) as T
+}
+}*/

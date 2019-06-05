@@ -16,102 +16,101 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertEquals
-import org.junit.Test
 
+/**
 class MapTest {
 
-    @Test
-    fun testMapBinding() {
-        InjektPlugins.logger = PrintLogger()
+@Test
+fun testMapBinding() {
+InjektPlugins.logger = PrintLogger()
 
-        val component = component {
-            modules(
-                module {
-                    factory(NameOne) { "value_one" } bindIntoMap mapBinding(
-                        "key_one",
-                        mapName = Values
-                    )
-                    factory(NameTwo) { "value_two" } bindIntoMap mapBinding(
-                        "key_two",
-                        mapName = Values
-                    )
-                    factory(NameThree) { "value_three" } bindIntoMap mapBinding(
-                        "key_three",
-                        mapName = Values
-                    )
-                }
-            )
-        }
-
-        val map = component.get<Map<String, String>>(Values)
-
-        assertEquals(3, map.size)
-        assertEquals(map["key_one"], "value_one")
-        assertEquals(map["key_two"], "value_two")
-        assertEquals(map["key_three"], "value_three")
-
-        val lazyMap = component.get<Map<String, Lazy<String>>>(Values)
-
-        assertEquals(3, lazyMap.size)
-        assertEquals(lazyMap.getValue("key_one").value, "value_one")
-        assertEquals(lazyMap.getValue("key_two").value, "value_two")
-        assertEquals(lazyMap.getValue("key_three").value, "value_three")
-
-        val providerMap = component.get<Map<String, Provider<String>>>(Values)
-
-        assertEquals(3, providerMap.size)
-        assertEquals(providerMap.getValue("key_one").get(), "value_one")
-        assertEquals(providerMap.getValue("key_two").get(), "value_two")
-        assertEquals(providerMap.getValue("key_three").get(), "value_three")
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testThrowsOnNonDeclaredMapBinding() {
-        val component = component()
-        component.get<Map<String, Int>>()
-    }
-
-    @Test
-    fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
-        val component = component {
-            modules(
-                module {
-                    bindMap<String, Int>()
-                }
-            )
-        }
-
-        assertEquals(0, component.get<Map<String, Int>>().size)
-    }
-
-    // todo test nested
-
-    @Test(expected = IllegalStateException::class)
-    fun testThrowsOnIllegalOverride() {
-        component {
-            module {
-                factory { "value" }.bindIntoMap("key")
-                factory { "overridden_value" }.bindIntoMap("key")
-            }
-        }
-    }
-
-    @Test
-    fun testOverridesLegalOverride() {
-        val component = component {
-            modules(
-                module {
-                    factory(NameOne) { "value" }.bindIntoMap("key")
-                    factory(NameTwo) { "overridden_value" }.bindIntoMap("key", override = true)
-                }
-            )
-        }
-
-        assertEquals(
-            "overridden_value",
-            component.get<Map<String, String>>()["key"]
-        )
-    }
-
+val component = component {
+modules(
+module {
+factory(NameOne) { "value_one" } bindIntoMap mapBinding(
+"key_one",
+mapName = Values
+)
+factory(NameTwo) { "value_two" } bindIntoMap mapBinding(
+"key_two",
+mapName = Values
+)
+factory(NameThree) { "value_three" } bindIntoMap mapBinding(
+"key_three",
+mapName = Values
+)
 }
+)
+}
+
+val map = component.get<Map<String, String>>(Values)
+
+assertEquals(3, map.size)
+assertEquals(map["key_one"], "value_one")
+assertEquals(map["key_two"], "value_two")
+assertEquals(map["key_three"], "value_three")
+
+val lazyMap = component.get<Map<String, Lazy<String>>>(Values)
+
+assertEquals(3, lazyMap.size)
+assertEquals(lazyMap.getValue("key_one").value, "value_one")
+assertEquals(lazyMap.getValue("key_two").value, "value_two")
+assertEquals(lazyMap.getValue("key_three").value, "value_three")
+
+val providerMap = component.get<Map<String, Provider<String>>>(Values)
+
+assertEquals(3, providerMap.size)
+assertEquals(providerMap.getValue("key_one").get(), "value_one")
+assertEquals(providerMap.getValue("key_two").get(), "value_two")
+assertEquals(providerMap.getValue("key_three").get(), "value_three")
+}
+
+@Test(expected = IllegalStateException::class)
+fun testThrowsOnNonDeclaredMapBinding() {
+val component = component()
+component.get<Map<String, Int>>()
+}
+
+@Test
+fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
+val component = component {
+modules(
+module {
+bindMap<String, Int>()
+}
+)
+}
+
+assertEquals(0, component.get<Map<String, Int>>().size)
+}
+
+// todo test nested
+
+@Test(expected = IllegalStateException::class)
+fun testThrowsOnIllegalOverride() {
+component {
+module {
+factory { "value" }.bindIntoMap("key")
+factory { "overridden_value" }.bindIntoMap("key")
+}
+}
+}
+
+@Test
+fun testOverridesLegalOverride() {
+val component = component {
+modules(
+module {
+factory(NameOne) { "value" }.bindIntoMap("key")
+factory(NameTwo) { "overridden_value" }.bindIntoMap("key", override = true)
+}
+)
+}
+
+assertEquals(
+"overridden_value",
+component.get<Map<String, String>>()["key"]
+)
+}
+
+}*/

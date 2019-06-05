@@ -18,31 +18,33 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
+interface BindingFactory<T> {
+    val scope: Scope?
+    fun create(): Binding<T>
+}
+
 internal object JustInTimeBindings {
 
-    private val bindings = mutableMapOf<Key, Binding<*>>()
+    private val factories = mutableMapOf<Key, BindingFactory<*>>()
 
-    fun <T> find(key: Key): Binding<T>? {
-        var binding = bindings[key]
+    fun <T> find(key: Key): BindingFactory<T>? {
+        var factory = factories[key]
 
-        if (binding == null) {
-            binding = findCreator(key.type.raw)
+        if (factory == null) {
+            factory = findFactory(key.type.raw)
 
-            if (binding != null) {
-                bindings[key] = binding
+            if (factory != null) {
+                factories[key] = factory
             }
         }
 
-        return binding as? Binding<T>
+        return factory as BindingFactory<T>
     }
 
-    private fun findCreator(type: KClass<*>) = try {
-        val creatorName = type.java.name + "__Creator"
-        val creatorType = Class.forName(creatorName)
-        val creator = creatorType.newInstance() as Creator<*>
-        creator.create()
+    private fun findFactory(type: KClass<*>) = try {
+        val bindingClass = Class.forName(type.java.name + "Factory")
+        bindingClass.newInstance() as BindingFactory<*>
     } catch (e: Exception) {
-        e.printStackTrace()
         null
     }
 }

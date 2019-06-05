@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
@@ -32,34 +33,34 @@ import com.ivianuu.injekt.module
 
 @ScopeAnnotation(ContentProviderScope.Companion::class)
 annotation class ContentProviderScope {
-    companion object : NamedScope("ContentProviderScope")
+companion object : NamedScope("ContentProviderScope")
 }
 
 @Name(ForContentProvider.Companion::class)
 annotation class ForContentProvider {
-    companion object : Qualifier
+companion object : Qualifier
 }
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
-        scope = ContentProviderScope
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(contentProviderModule())
-        block?.invoke(this)
-    }
+component {
+scope = ContentProviderScope
+getClosestComponentOrNull()?.let { dependencies(it) }
+modules(contentProviderModule())
+block?.invoke(this)
+}
 
 fun ContentProvider.getClosestComponentOrNull(): Component? =
-    getApplicationComponentOrNull()
+getApplicationComponentOrNull()
 
 fun ContentProvider.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+getClosestComponentOrNull() ?: error("No close component found for $this")
 
 fun ContentProvider.getApplicationComponentOrNull(): Component? =
-    (context?.applicationContext as? InjektTrait)?.component
+(context?.applicationContext as? InjektTrait)?.component
 
 fun ContentProvider.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    constant(this@contentProviderModule) bindType ContentProvider::class
-}
+constant(this@contentProviderModule) bindType ContentProvider::class
+}*/

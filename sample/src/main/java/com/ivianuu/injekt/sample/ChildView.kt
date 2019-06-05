@@ -21,8 +21,7 @@ import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.android.ChildViewScope
-import com.ivianuu.injekt.android.childViewComponent
+import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
 class ChildView @JvmOverloads constructor(
@@ -30,7 +29,7 @@ class ChildView @JvmOverloads constructor(
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), InjektTrait {
 
-    override val component by lazy { childViewComponent() }
+    override val component by lazy { component() }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -44,7 +43,7 @@ class ChildView @JvmOverloads constructor(
     }
 }
 
-@Single @ChildViewScope
+@Single// @ChildViewScope
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,

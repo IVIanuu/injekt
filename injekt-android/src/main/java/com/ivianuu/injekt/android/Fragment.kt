@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -38,91 +39,91 @@ import com.ivianuu.injekt.module
 
 @ScopeAnnotation(FragmentScope.Companion::class)
 annotation class FragmentScope {
-    companion object : NamedScope("FragmentScope")
+companion object : NamedScope("FragmentScope")
 }
 
 @ScopeAnnotation(ChildFragmentScope.Companion::class)
 annotation class ChildFragmentScope {
-    companion object : NamedScope("ChildFragmentScope")
+companion object : NamedScope("ChildFragmentScope")
 }
 
 @Name(ForFragment.Companion::class)
 annotation class ForFragment {
-    companion object : Qualifier
+companion object : Qualifier
 }
 
 @Name(ForChildFragment.Companion::class)
 annotation class ForChildFragment {
-    companion object : Qualifier
+companion object : Qualifier
 }
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
-    scope = FragmentScope
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(fragmentModule())
-        block?.invoke(this)
-    }
+component {
+scope = FragmentScope
+getClosestComponentOrNull()?.let { dependencies(it) }
+modules(fragmentModule())
+block?.invoke(this)
+}
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
-        scope = ChildFragmentScope
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(childFragmentModule())
-        block?.invoke(this)
-    }
+component {
+scope = ChildFragmentScope
+getClosestComponentOrNull()?.let { dependencies(it) }
+modules(childFragmentModule())
+block?.invoke(this)
+}
 
 fun Fragment.getClosestComponentOrNull(): Component? {
-    return getParentFragmentComponentOrNull()
-        ?: getActivityComponentOrNull()
-        ?: getApplicationComponentOrNull()
+return getParentFragmentComponentOrNull()
+?: getActivityComponentOrNull()
+?: getApplicationComponentOrNull()
 }
 
 fun Fragment.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+getClosestComponentOrNull() ?: error("No close component found for $this")
 
 fun Fragment.getParentFragmentComponentOrNull(): Component? =
-    (parentFragment as? InjektTrait)?.component
+(parentFragment as? InjektTrait)?.component
 
 fun Fragment.getParentFragmentComponent(): Component =
-    getParentFragmentComponentOrNull() ?: error("No parent fragment component found for $this")
+getParentFragmentComponentOrNull() ?: error("No parent fragment component found for $this")
 
 fun Fragment.getActivityComponentOrNull(): Component? =
-    (activity as? InjektTrait)?.component
+(activity as? InjektTrait)?.component
 
 fun Fragment.getActivityComponent(): Component =
-    getActivityComponentOrNull() ?: error("No activity component found for $this")
+getActivityComponentOrNull() ?: error("No activity component found for $this")
 
 fun Fragment.getApplicationComponentOrNull(): Component? =
-    (activity?.application as? InjektTrait)?.component
+(activity?.application as? InjektTrait)?.component
 
 fun Fragment.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : Fragment> T.fragmentModule(): Module = module {
-    include(internalFragmentModule(ForFragment))
+include(internalFragmentModule(ForFragment))
 }
 
 fun <T : Fragment> T.childFragmentModule(): Module = module {
-    include(internalFragmentModule(ForChildFragment))
+include(internalFragmentModule(ForChildFragment))
 }
 
 private fun <T : Fragment> T.internalFragmentModule(name: Qualifier) = module {
-    constant(this@internalFragmentModule, override = true).apply {
-        bindType<Fragment>()
-        bindAlias<Fragment>(name)
-        bindType<LifecycleOwner>()
-        bindAlias<LifecycleOwner>(name)
-        bindType<ViewModelStoreOwner>()
-        bindAlias<ViewModelStoreOwner>(name)
-        bindType<SavedStateRegistryOwner>()
-        bindAlias<SavedStateRegistryOwner>(name)
-    }
-
-    factory(override = true) { requireContext() } bindName name
-    factory(override = true) { resources } bindName name
-    factory(override = true) { lifecycle } bindName name
-    factory(override = true) { viewModelStore } bindName name
-    factory(override = true) { savedStateRegistry } bindName name
-    factory(override = true) { childFragmentManager } bindName name
+constant(this@internalFragmentModule, override = true).apply {
+bindType<Fragment>()
+bindAlias<Fragment>(name)
+bindType<LifecycleOwner>()
+bindAlias<LifecycleOwner>(name)
+bindType<ViewModelStoreOwner>()
+bindAlias<ViewModelStoreOwner>(name)
+bindType<SavedStateRegistryOwner>()
+bindAlias<SavedStateRegistryOwner>(name)
 }
+
+factory(override = true) { requireContext() } bindName name
+factory(override = true) { resources } bindName name
+factory(override = true) { lifecycle } bindName name
+factory(override = true) { viewModelStore } bindName name
+factory(override = true) { savedStateRegistry } bindName name
+factory(override = true) { childFragmentManager } bindName name
+}*/

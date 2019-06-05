@@ -19,4 +19,8 @@ package com.ivianuu.injekt
 /**
  * Environment for [Definition]s
  */
-class DefinitionContext(override val component: Component) : InjektTrait
+class DefinitionContext(override val component: Component) : InjektTrait {
+    inline fun <reified T> getBinding(
+        name: Qualifier? = null
+    ): Binding<T> = component.getBinding(name)
+}

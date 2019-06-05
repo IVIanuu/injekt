@@ -19,69 +19,29 @@ package com.ivianuu.injekt
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
-class Module @PublishedApi internal constructor() {
+interface Module {
+    val bindings: Map<Key, Binding<*>>
+}
 
-    internal val bindings = mutableMapOf<Key, Binding<*>>()
-    internal val includes = mutableSetOf<Module>()
-    internal val mapBindings = mutableSetOf<Key>()
-    internal val setBindings = mutableSetOf<Key>()
+class SimpleModule(override val bindings: Map<Key, Binding<*>>) : Module
 
-    fun bind(binding: Binding<*>) {
-        if (bindings.put(binding.key, binding) != null && !binding.override) {
-            error("Already declared binding for ${binding.key}")
+class ModuleBuilder {
+    private val bindings = mutableMapOf<Key, Binding<*>>()
+
+    fun bind(key: Key, binding: Binding<*>, override: Boolean = false) {
+        if (bindings.put(key, binding) != null && !override) {
+            error("Already declared binding for $key")
         }
     }
 
     fun include(module: Module) {
-        includes.add(module)
+        module.bindings.forEach { bind(it.key, it.value) }
     }
 
-    fun <K, V> bindMap(
-        keyType: Type<K>,
-        valueType: Type<V>,
-        mapName: Qualifier? = null
-    ) {
-        mapBindings.add(
-            Key(typeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
-        )
-    }
-
-    fun <T> bindSet(
-        elementType: Type<T>,
-        setName: Qualifier? = null
-    ) {
-        setBindings.add(
-            Key(typeOf<Set<T>>(Set::class, elementType), setName)
-        )
-    }
-
+    fun build(): Module = SimpleModule(bindings)
 }
 
-inline fun module(block: Module.() -> Unit): Module = Module().apply(block)
+inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
+    .apply(block).build()
 
-inline fun <reified T> Module.bind(
-    kind: Kind,
-    name: Qualifier? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>
-): Binding<T> = bind(kind, typeOf(), name, override, definition)
-
-fun <T> Module.bind(
-    kind: Kind,
-    type: Type<T>,
-    name: Qualifier? = null,
-    override: Boolean = false,
-    definition: Definition<T>
-): Binding<T> {
-    val binding = binding(kind, type, name, null, override, definition)
-    bind(binding)
-    return binding
-}
-
-inline fun <reified K, reified V> Module.bindMap(mapName: Qualifier? = null) {
-    bindMap<K, V>(typeOf(), typeOf(), mapName)
-}
-
-inline fun <reified T> Module.bindSet(setName: Qualifier? = null) {
-    bindSet<T>(typeOf(), setName)
-}
+// todo convenient extensions

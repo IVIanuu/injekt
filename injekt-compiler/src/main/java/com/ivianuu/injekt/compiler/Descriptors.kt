@@ -17,11 +17,11 @@
 package com.ivianuu.injekt.compiler
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeName
 
-data class CreatorDescriptor(
+data class BindingFactoryDescriptor(
     val target: ClassName,
     val creatorName: ClassName,
-    val kind: ClassName,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
 )
@@ -36,6 +36,7 @@ sealed class ParamDescriptor {
 
     data class Dependency(
         override val paramName: String,
+        val paramType: TypeName,
         val qualifierName: ClassName?
     ) : ParamDescriptor()
 }

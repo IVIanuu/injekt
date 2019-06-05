@@ -16,36 +16,30 @@
 
 package com.ivianuu.injekt
 
-/**
- * Creates instances once per [Component]
- */
-object SingleKind : Kind {
-    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
-        SingleInstance(DefinitionInstance(context, binding))
-    override fun toString(): String = "Single"
-}
+// todo return types
 
-inline fun <reified T> Module.single(
+inline fun <reified T> ModuleBuilder.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = single(typeOf(), name, override, definition)
+) = single(typeOf(), name, override, definition)
 
-fun <T> Module.single(
+fun <T> ModuleBuilder.single(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = bind(SingleKind, type, name, override, definition)
+) = bind(keyOf(type, name), SingleBinding(DefinitionBinding(definition)), override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Single
 
-private class SingleInstance<T>(
-    private val instance: Instance<T>
-) : Instance<T> {
-
+class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: Any? = UNINITIALIZED
+
+    override fun link(context: DefinitionContext) {
+        binding.link(context)
+    }
 
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
@@ -62,7 +56,7 @@ private class SingleInstance<T>(
             }
 
             // todo InjektPlugins.logger?.info("${context.component.scopeName()} Create instance $binding")
-            value = instance.get(parameters)
+            value = binding.get(parameters)
             _value = value
             return@get value as T
         }

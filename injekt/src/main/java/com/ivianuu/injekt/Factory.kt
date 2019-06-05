@@ -16,28 +16,26 @@
 
 package com.ivianuu.injekt
 
-/**
- * Creates a new instance each time a dependency get's requested
- */
-object FactoryKind : Kind {
-    override fun <T> createInstance(context: DefinitionContext, binding: Binding<T>): Instance<T> =
-        DefinitionInstance(context, binding)
+// todo return types
 
-    override fun toString(): String = "Factory"
-}
+inline fun <reified T> ModuleBuilder.factory(
+    name: Qualifier? = null,
+    override: Boolean = false,
+    binding: Binding<T>
+) = bind(keyOf(typeOf<T>(), name), binding, override)
 
-inline fun <reified T> Module.factory(
+inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): Binding<T> = factory(typeOf(), name, override, definition)
+) = factory(typeOf(), name, override, definition)
 
-fun <T> Module.factory(
+fun <T> ModuleBuilder.factory(
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> = bind(FactoryKind, type, name, override, definition)
+) = bind(keyOf(type, name), DefinitionBinding(definition), override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Factory

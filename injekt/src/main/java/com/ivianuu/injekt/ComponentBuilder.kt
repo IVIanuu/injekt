@@ -107,169 +107,15 @@ internal fun createComponent(
         }
 
     val bindings = mutableMapOf<Key, Binding<*>>()
-    val mapBindings =
-        mutableMapOf<Key, MutableMap<Any?, Instance<*>>>()
-    val setBindings =
-        mutableMapOf<Key, MutableMap<Key, Instance<*>>>()
 
-    dependencies.forEach { dependency ->
-        mapBindings.putAll(dependency.mapBindings as Map<out Key, MutableMap<Any?, Instance<*>>>)
-        setBindings.putAll(dependency.setBindings as Map<out Key, MutableMap<Key, Instance<*>>>)
-    }
-
-    fun addBindingByKey(
-        key: Key,
-        binding: Binding<*>
-    ) {
-        if (!binding.override &&
-            (bindings.contains(key)
-                    || dependencyBindingKeys.contains(key))
-        ) {
-            error("Already declared binding for $key")
+    modules.forEach { module ->
+        module.bindings.forEach { (key, binding) ->
+            // todo override handling
+            bindings[key] = binding
         }
-
-        bindings[key] = binding
     }
 
-    fun addBinding(binding: Binding<*>) {
-        addBindingByKey(binding.key, binding)
-        binding.additionalKeys.forEach { addBindingByKey(it, binding) }
-
-        // todo
-        /*binding.mapBindings.forEach { (mapKey, mapBinding) ->
-            val map = mapBindings.getOrPut(mapKey) { mutableMapOf() }
-
-            val oldValue = map[mapBinding.mapKey]
-            if (oldValue != null && !mapBinding.override) {
-                error("Already contains ${mapBinding.mapKey}")
-            }
-
-            map[mapBinding.key] = instance
-        }
-
-        binding.setBindings.forEach { (setKey, setBinding) ->
-            val map = setBindings.getOrPut(setKey) { mutableMapOf() }
-
-            val oldValue = map[binding.key]
-
-            if (oldValue != null && !setBinding.override) {
-                error("Already contains ${binding.key}")
-            }
-
-            map[binding.key] = instance
-        }*/
-    }
-
-    fun addModule(module: Module) {
-        module.mapBindings.forEach { mapBindings.getOrPut(it) { mutableMapOf() } }
-        module.setBindings.forEach { setBindings.getOrPut(it) { mutableMapOf() } }
-
-        module.bindings.forEach { addBinding(it.value) }
-        module.includes.forEach { addModule(it) }
-    }
-
-    modules.forEach { addModule(it) }
-
-    // component binding
-    val componentBinding = binding(
-        kind = SingleKind,
-        override = true,
-        definition = { this.component }
-    ).apply { if (scope != null) bindName(scope) }
-    addBinding(componentBinding)
-
-    // maps
-    mapBindings.forEach { (key, map) ->
-        val keyType = key.type.parameters[0]
-        val valueType = key.type.parameters[1]
-        val instanceBinding = binding(
-            kind = FactoryKind,
-            type = typeOf(Map::class, keyType, valueType),
-            name = key.name,
-            override = true,
-            definition = { map.mapValues { it.value.get() } }
-        )
-
-        addBinding(instanceBinding)
-
-        val lazyBinding = binding(
-            kind = FactoryKind,
-            type = typeOf(Map::class, keyType, typeOf<Any?>(Lazy::class, valueType)),
-            name = key.name,
-            override = true,
-            definition = {
-                map.mapValues { lazy(LazyThreadSafetyMode.NONE) { it.value.get() } }
-            }
-        )
-
-        addBinding(lazyBinding)
-
-        val providerBinding = binding(
-            kind = FactoryKind,
-            type = typeOf(Map::class, keyType, typeOf<Any?>(Provider::class, valueType)),
-            name = key.name,
-            override = true,
-            definition = {
-                map.mapValues { entry ->
-                    provider { entry.value.get(it) }
-                }
-            }
-        )
-
-        addBinding(providerBinding)
-    }
-
-    // sets
-    setBindings.forEach { (key, map) ->
-        val valueType = key.type.parameters[0]
-        val instanceBinding = binding(
-            kind = FactoryKind,
-            type = typeOf(Set::class, valueType),
-            name = key.name,
-            override = true,
-            definition = {
-                map.values
-                    .map { it.get() }
-                    .toSet()
-            }
-        )
-
-        addBinding(instanceBinding)
-
-        val lazyBinding = binding(
-            kind = FactoryKind,
-            type = typeOf(Set::class, typeOf<Any?>(Lazy::class, valueType)),
-            name = key.name,
-            override = true,
-            definition = {
-                map.values
-                    .map { lazy(LazyThreadSafetyMode.NONE) { it.get() } }
-                    .toSet()
-            }
-        )
-
-        addBinding(lazyBinding)
-
-        val providerBinding = binding(
-            kind = FactoryKind,
-            type = typeOf(Set::class, typeOf<Any?>(Provider::class, valueType)),
-            name = key.name,
-            override = true,
-            definition = {
-                map.values
-                    .map { instance ->
-                        provider { instance.get(it) }
-                    }
-                    .toSet()
-            }
-        )
-
-        addBinding(providerBinding)
-    }
-
-    return Component(
-        scope, bindings, dependencies, mapBindings, setBindings
-    )
+    return Component(scope, bindings, dependencies)
 }
 
 internal fun Component.getAllBindingKeys(): Set<Key> =
@@ -279,5 +125,5 @@ internal fun Component.collectBindingKeys(
     keys: MutableSet<Key>
 ) {
     dependencies.forEach { it.collectBindingKeys(keys) }
-    keys.addAll(this.instances.keys)
+    keys.addAll(this.bindings.keys)
 }

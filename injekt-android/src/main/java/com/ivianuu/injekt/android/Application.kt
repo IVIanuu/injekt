@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.ApplicationScope
@@ -34,21 +35,21 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 
 fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
-        scope = ApplicationScope
-        modules(applicationModule())
-        block?.invoke(this)
-    }
+component {
+scope = ApplicationScope
+modules(applicationModule())
+block?.invoke(this)
+}
 
 fun <T : Application> T.applicationModule(): Module = module {
-    constant(this@applicationModule).apply {
-        bindTypes(Application::class, Context::class)
-        bindAlias<Context>(ForApplication)
-    }
+constant(this@applicationModule).apply {
+bindTypes(Application::class, Context::class)
+bindAlias<Context>(ForApplication)
+}
 
-    factory { resources } bindName ForApplication
+factory { resources } bindName ForApplication
 }
 
 fun DefinitionContext.application(): Application = get()
 
-fun DefinitionContext.context(): Context = get()
+fun DefinitionContext.context(): Context = get()*/
