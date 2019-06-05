@@ -33,9 +33,7 @@ fun <T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(
-    DefinitionBinding(definition), type, name, override
-)
+): BindingContext<T> = add(UnlinkedDefinitionBinding(definition), type, name, override)
 
 inline fun <reified T> ModuleBuilder.factoryState(
     name: Qualifier? = null,
@@ -49,7 +47,7 @@ fun <T> ModuleBuilder.factoryState(
     override: Boolean = false,
     block: StatefulDefinitionBuilder<T>.() -> Unit
 ): BindingContext<T> = add(
-    StatefulDefinitionBinding(StatefulDefinitionBuilder<T>().apply(block)),
+    UnlinkedStatefulDefinitionBinding(block),
     type,
     name,
     override

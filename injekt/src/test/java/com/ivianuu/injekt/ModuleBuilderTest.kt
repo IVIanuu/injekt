@@ -16,18 +16,17 @@
 
 package com.ivianuu.injekt
 
-/**
+class ModuleBuilderTest {
 
-class ModuleTest {
-
+    /**
     @Test
     fun testBind() {
-val binding = object : Binding<String> {
-override fun link(context: DefinitionContext) {
-}
-override fun get(parameters: ParametersDefinition?): String = "hello"
-}
-val module = module { bindAlias(keyOf<String>(), binding) }
+    val binding = object : Binding<String> {
+    override fun link(context: DefinitionContext) {
+    }
+    override fun get(parameters: ParametersDefinition?): String = "hello"
+    }
+    val module = module { bindAlias(keyOf<String>(), binding) }
         assertTrue(module.bindings.values.contains(binding))
     }
 
@@ -68,6 +67,6 @@ val module = module { bindAlias(keyOf<String>(), binding) }
             bindAlias(firstBinding)
             bindAlias(overrideBinding)
         }
-    }
+    }*/
 
-}*/
+}

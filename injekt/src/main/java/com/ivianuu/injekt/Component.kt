@@ -16,13 +16,27 @@
 
 package com.ivianuu.injekt
 
+class BindingHolder<T>(
+    var binding: Binding<T>
+) {
+    private var linked = binding is LinkedBinding
+
+    fun linked(linker: Linker): LinkedBinding<T> {
+        if (!linked) {
+            linked = true
+            binding = binding.link(linker)
+        }
+        return binding as LinkedBinding<T>
+    }
+}
+
 /**
  * The actual dependency container which provides bindings
  * Dependencies can be requested by calling either [get] or [inject]
  */
 class Component internal constructor(
     val scope: Scope?,
-    internal val bindings: MutableMap<Key, Binding<*>>,
+    internal val bindings: MutableMap<Key, BindingHolder<*>>,
     internal val mapBindings: Map<Key, Map<Any?, Binding<*>>>,
     internal val setBindings: Map<Key, Set<Binding<*>>>,
     internal val dependencies: Iterable<Component>
@@ -31,14 +45,14 @@ class Component internal constructor(
     private val linker = RealLinker(this) // todo move to constructor
 
     init {
-        bindings.forEach { (_, binding) -> binding.link(linker) }
+        bindings.forEach { it.value.linked(linker) }
         bindings.values
             .filterIsInstance<AttachAware>()
             .forEach { it.attached() }
     }
 
-    internal fun <T> getBinding(type: Type<T>, name: Qualifier? = null): Binding<T> =
-        findBinding(keyOf(type, name), true) ?: error("couldn't find binding")
+    internal fun <T> getBinding(key: Key): Binding<T> =
+        findBinding(key, true) ?: error("couldn't find binding")
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -49,7 +63,7 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T {
         when (type.parameters.size) {
-            2 -> {
+            /*2 -> {
                 when (type.raw) {
                     Map::class -> {
                         val keyType = type.parameters[0]
@@ -99,25 +113,25 @@ class Component internal constructor(
                         }
                     }
                 }
-            }
+            }*/
             1 -> {
                 when (type.raw) {
                     Provider::class -> {
                         val key = keyOf(type.parameters.first(), name)
-                        findBinding<T>(key, true)
+                        findLinkedBinding<T>(key, true)
                             ?.let { instance ->
                                 return@get provider { instance.get(it) } as T
                             }
                     }
                     Lazy::class -> {
                         val key = keyOf(type.parameters.first(), name)
-                        findBinding<T>(key, true)
+                        findLinkedBinding<T>(key, true)
                             ?.let {
                                 return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
                             }
                     }
                     Set::class -> {
-                        val elementType = type.parameters[0]
+                        /*val elementType = type.parameters[0]
 
                         when (elementType.raw) {
                             Provider::class -> {
@@ -161,7 +175,7 @@ class Component internal constructor(
                                         .toSet() as T
                                 }
                             }
-                        }
+                        }*/
                     }
                 }
             }
@@ -169,7 +183,7 @@ class Component internal constructor(
 
         // just try to resolve the dependency
         val key = keyOf(type, name)
-        findBinding<T>(key, true)
+        findLinkedBinding<T>(key, true)
             ?.let { return@get it.get(parameters) }
 
         // todo clean up
@@ -177,9 +191,34 @@ class Component internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    @PublishedApi
-    internal fun <T> findBinding(key: Key, lookupJit: Boolean): Binding<T>? {
-        var binding = bindings[key]
+    private fun <T> findLinkedBinding(key: Key, lookupJit: Boolean): LinkedBinding<T>? {
+        var holder = bindings[key]
+        if (holder != null) return holder.linked(linker) as LinkedBinding<T>
+
+        var binding: Binding<T>?
+
+        for (dependency in dependencies) {
+            binding = dependency.findLinkedBinding<T>(key, false)
+            if (binding != null) return binding
+        }
+
+        if (lookupJit && key.name == null) {
+            val bindingFactory = JustInTimeBindings.find<T>(key)
+            if (bindingFactory != null) {
+                val component = findComponentForScope(bindingFactory.scope)
+                    ?: error("Couldn't find component for $scope")
+                binding = bindingFactory.create().link(linker)
+                component.addJitBinding(key, binding)
+                return binding as LinkedBinding<T>
+            }
+        }
+
+        return null
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> findBinding(key: Key, lookupJit: Boolean): Binding<T>? {
+        var binding = bindings[key]?.binding
         if (binding != null) return binding as Binding<T>
 
         for (dependency in dependencies) {
@@ -202,8 +241,7 @@ class Component internal constructor(
     }
 
     private fun <T> addJitBinding(key: Key, binding: Binding<T>) {
-        bindings[key] = binding
-        binding.link(linker)
+        bindings[key] = BindingHolder(binding)
         (binding as? AttachAware)?.attached()
     }
 

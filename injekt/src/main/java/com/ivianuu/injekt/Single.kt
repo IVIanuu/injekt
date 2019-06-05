@@ -28,7 +28,7 @@ fun <T> ModuleBuilder.single(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = add(
-    DefinitionBinding(definition).asSingleBinding(),
+    UnlinkedDefinitionBinding(definition).asSingleBinding(),
     type,
     name,
     override
@@ -37,17 +37,22 @@ fun <T> ModuleBuilder.single(
 @Target(AnnotationTarget.CLASS)
 annotation class Single
 
-fun <T> Binding<T>.asSingleBinding(): SingleBinding<T> {
-    return if (this is SingleBinding) this
-    else SingleBinding(this)
+fun <T> Binding<T>.asSingleBinding(): Binding<T> {
+    if (this is UnlinkedSingleBinding) return this
+    if (this is LinkedSingleBinding) return this
+    return when (this) {
+        is LinkedBinding -> LinkedSingleBinding(this)
+        is UnlinkedBinding -> UnlinkedSingleBinding(this)
+    }
 }
 
-class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
-    private var _value: Any? = UNINITIALIZED
+class UnlinkedSingleBinding<T>(private val binding: UnlinkedBinding<T>) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedSingleBinding(binding.link(linker))
+}
 
-    override fun link(linker: Linker) {
-        binding.link(linker)
-    }
+class LinkedSingleBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
+    private var _value: Any? = UNINITIALIZED
 
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
@@ -67,6 +72,6 @@ class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
         }
     }
 
-    private companion object UNINITIALIZED
+    private object UNINITIALIZED
 
 }

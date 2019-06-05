@@ -19,12 +19,14 @@ package com.ivianuu.injekt.weak
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.DefinitionBinding
+import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.UnlinkedBinding
+import com.ivianuu.injekt.UnlinkedDefinitionBinding
 import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 import java.lang.ref.WeakReference
@@ -40,19 +42,29 @@ fun <T> ModuleBuilder.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(WeakBinding(DefinitionBinding(definition)), type, name, override)
+): BindingContext<T> =
+    add(UnlinkedDefinitionBinding(definition).asWeakBinding(), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Weak
 
-private class WeakBinding<T>(private val binding: Binding<T>) : Binding<T> {
+fun <T> Binding<T>.asWeakBinding(): Binding<T> {
+    if (this is UnlinkedWeakBinding) return this
+    if (this is LinkedWeakBinding) return this
+    return when (this) {
+        is LinkedBinding -> LinkedWeakBinding(this)
+        is UnlinkedBinding -> UnlinkedWeakBinding(this)
+    }
+}
+
+private class UnlinkedWeakBinding<T>(private val binding: UnlinkedBinding<T>) :
+    UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedWeakBinding(binding.link(linker))
+}
+
+private class LinkedWeakBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
     private var _value: WeakReference<T>? = null
-
-    override fun link(linker: Linker) {
-        binding.link(linker)
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
-        return _value?.get() ?: binding(parameters).also { _value = WeakReference(it) }
-    }
+    override fun get(parameters: ParametersDefinition?): T =
+        _value?.get() ?: binding(parameters).also { _value = WeakReference(it) }
 }

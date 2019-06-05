@@ -16,13 +16,17 @@
 
 package com.ivianuu.injekt
 
-interface Binding<T> {
-    fun link(linker: Linker) {
-    }
+sealed class Binding<T> {
+    abstract fun link(linker: Linker): LinkedBinding<T>
+}
 
-    fun get(parameters: ParametersDefinition? = null): T
+abstract class UnlinkedBinding<T> : Binding<T>()
 
+abstract class LinkedBinding<T> : Binding<T>() {
+    abstract fun get(parameters: ParametersDefinition? = null): T
     operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
+
+    final override fun link(linker: Linker): LinkedBinding<T> = this
 }
 
 // todo remove

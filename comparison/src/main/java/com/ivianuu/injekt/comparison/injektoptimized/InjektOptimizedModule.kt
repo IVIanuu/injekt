@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt.comparison.injektoptimized
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Linker
-import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.comparison.Fib1
 import com.ivianuu.injekt.comparison.Fib10
 import com.ivianuu.injekt.comparison.Fib100
@@ -119,997 +116,502 @@ import com.ivianuu.injekt.comparison.Fib96
 import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.factoryState
 import com.ivianuu.injekt.module
 
 val injektOptimizedModule = createModule()
 
 fun createModule() = module {
-    factory(binding = object : Binding<Fib1> {
-        override fun get(parameters: ParametersDefinition?) = Fib1()
-    })
-    factory(binding = object : Binding<Fib2> {
-        override fun get(parameters: ParametersDefinition?) = Fib2()
-    })
-    factory(binding = object : Binding<Fib3> {
-        private lateinit var fib2Binding: Binding<Fib2>
-        private lateinit var fib1Binding: Binding<Fib1>
-        override fun link(linker: Linker) {
-            fib2Binding = linker.get()
-            fib1Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib3(fib2Binding(), fib1Binding())
-    })
-    factory(binding = object : Binding<Fib4> {
-        private lateinit var fib3Binding: Binding<Fib3>
-        private lateinit var fib2Binding: Binding<Fib2>
-        override fun link(linker: Linker) {
-            fib3Binding = linker.get()
-            fib2Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib4(fib3Binding(), fib2Binding())
-    })
-    factory(binding = object : Binding<Fib5> {
-        private lateinit var fib4Binding: Binding<Fib4>
-        private lateinit var fib3Binding: Binding<Fib3>
-        override fun link(linker: Linker) {
-            fib4Binding = linker.get()
-            fib3Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib5(fib4Binding(), fib3Binding())
-    })
-    factory(binding = object : Binding<Fib6> {
-        private lateinit var fib5Binding: Binding<Fib5>
-        private lateinit var fib4Binding: Binding<Fib4>
-        override fun link(linker: Linker) {
-            fib5Binding = linker.get()
-            fib4Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib6(fib5Binding(), fib4Binding())
-    })
-    factory(binding = object : Binding<Fib7> {
-        private lateinit var fib6Binding: Binding<Fib6>
-        private lateinit var fib5Binding: Binding<Fib5>
-        override fun link(linker: Linker) {
-            fib6Binding = linker.get()
-            fib5Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib7(fib6Binding(), fib5Binding())
-    })
-    factory(binding = object : Binding<Fib8> {
-        private lateinit var fib7Binding: Binding<Fib7>
-        private lateinit var fib6Binding: Binding<Fib6>
-        override fun link(linker: Linker) {
-            fib7Binding = linker.get()
-            fib6Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib8(fib7Binding(), fib6Binding())
-    })
-    factory(binding = object : Binding<Fib9> {
-        private lateinit var fib8Binding: Binding<Fib8>
-        private lateinit var fib7Binding: Binding<Fib7>
-        override fun link(linker: Linker) {
-            fib8Binding = linker.get()
-            fib7Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib9(fib8Binding(), fib7Binding())
-    })
-    factory(binding = object : Binding<Fib10> {
-        private lateinit var fib9Binding: Binding<Fib9>
-        private lateinit var fib8Binding: Binding<Fib8>
-        override fun link(linker: Linker) {
-            fib9Binding = linker.get()
-            fib8Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib10(fib9Binding(), fib8Binding())
-    })
-    factory(binding = object : Binding<Fib11> {
-        private lateinit var fib10Binding: Binding<Fib10>
-        private lateinit var fib9Binding: Binding<Fib9>
-        override fun link(linker: Linker) {
-            fib10Binding = linker.get()
-            fib9Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib11(fib10Binding(), fib9Binding())
-    })
-    factory(binding = object : Binding<Fib12> {
-        private lateinit var fib11Binding: Binding<Fib11>
-        private lateinit var fib10Binding: Binding<Fib10>
-        override fun link(linker: Linker) {
-            fib11Binding = linker.get()
-            fib10Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib12(fib11Binding(), fib10Binding())
-    })
-    factory(binding = object : Binding<Fib13> {
-        private lateinit var fib12Binding: Binding<Fib12>
-        private lateinit var fib11Binding: Binding<Fib11>
-        override fun link(linker: Linker) {
-            fib12Binding = linker.get()
-            fib11Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib13(fib12Binding(), fib11Binding())
-    })
-    factory(binding = object : Binding<Fib14> {
-        private lateinit var fib13Binding: Binding<Fib13>
-        private lateinit var fib12Binding: Binding<Fib12>
-        override fun link(linker: Linker) {
-            fib13Binding = linker.get()
-            fib12Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib14(fib13Binding(), fib12Binding())
-    })
-    factory(binding = object : Binding<Fib15> {
-        private lateinit var fib14Binding: Binding<Fib14>
-        private lateinit var fib13Binding: Binding<Fib13>
-        override fun link(linker: Linker) {
-            fib14Binding = linker.get()
-            fib13Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib15(fib14Binding(), fib13Binding())
-    })
-    factory(binding = object : Binding<Fib16> {
-        private lateinit var fib15Binding: Binding<Fib15>
-        private lateinit var fib14Binding: Binding<Fib14>
-        override fun link(linker: Linker) {
-            fib15Binding = linker.get()
-            fib14Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib16(fib15Binding(), fib14Binding())
-    })
-    factory(binding = object : Binding<Fib17> {
-        private lateinit var fib16Binding: Binding<Fib16>
-        private lateinit var fib15Binding: Binding<Fib15>
-        override fun link(linker: Linker) {
-            fib16Binding = linker.get()
-            fib15Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib17(fib16Binding(), fib15Binding())
-    })
-    factory(binding = object : Binding<Fib18> {
-        private lateinit var fib17Binding: Binding<Fib17>
-        private lateinit var fib16Binding: Binding<Fib16>
-        override fun link(linker: Linker) {
-            fib17Binding = linker.get()
-            fib16Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib18(fib17Binding(), fib16Binding())
-    })
-    factory(binding = object : Binding<Fib19> {
-        private lateinit var fib18Binding: Binding<Fib18>
-        private lateinit var fib17Binding: Binding<Fib17>
-        override fun link(linker: Linker) {
-            fib18Binding = linker.get()
-            fib17Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib19(fib18Binding(), fib17Binding())
-    })
-    factory(binding = object : Binding<Fib20> {
-        private lateinit var fib19Binding: Binding<Fib19>
-        private lateinit var fib18Binding: Binding<Fib18>
-        override fun link(linker: Linker) {
-            fib19Binding = linker.get()
-            fib18Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib20(fib19Binding(), fib18Binding())
-    })
-    factory(binding = object : Binding<Fib21> {
-        private lateinit var fib20Binding: Binding<Fib20>
-        private lateinit var fib19Binding: Binding<Fib19>
-        override fun link(linker: Linker) {
-            fib20Binding = linker.get()
-            fib19Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib21(fib20Binding(), fib19Binding())
-    })
-    factory(binding = object : Binding<Fib22> {
-        private lateinit var fib21Binding: Binding<Fib21>
-        private lateinit var fib20Binding: Binding<Fib20>
-        override fun link(linker: Linker) {
-            fib21Binding = linker.get()
-            fib20Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib22(fib21Binding(), fib20Binding())
-    })
-    factory(binding = object : Binding<Fib23> {
-        private lateinit var fib22Binding: Binding<Fib22>
-        private lateinit var fib21Binding: Binding<Fib21>
-        override fun link(linker: Linker) {
-            fib22Binding = linker.get()
-            fib21Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib23(fib22Binding(), fib21Binding())
-    })
-    factory(binding = object : Binding<Fib24> {
-        private lateinit var fib23Binding: Binding<Fib23>
-        private lateinit var fib22Binding: Binding<Fib22>
-        override fun link(linker: Linker) {
-            fib23Binding = linker.get()
-            fib22Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib24(fib23Binding(), fib22Binding())
-    })
-    factory(binding = object : Binding<Fib25> {
-        private lateinit var fib24Binding: Binding<Fib24>
-        private lateinit var fib23Binding: Binding<Fib23>
-        override fun link(linker: Linker) {
-            fib24Binding = linker.get()
-            fib23Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib25(fib24Binding(), fib23Binding())
-    })
-    factory(binding = object : Binding<Fib26> {
-        private lateinit var fib25Binding: Binding<Fib25>
-        private lateinit var fib24Binding: Binding<Fib24>
-        override fun link(linker: Linker) {
-            fib25Binding = linker.get()
-            fib24Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib26(fib25Binding(), fib24Binding())
-    })
-    factory(binding = object : Binding<Fib27> {
-        private lateinit var fib26Binding: Binding<Fib26>
-        private lateinit var fib25Binding: Binding<Fib25>
-        override fun link(linker: Linker) {
-            fib26Binding = linker.get()
-            fib25Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib27(fib26Binding(), fib25Binding())
-    })
-    factory(binding = object : Binding<Fib28> {
-        private lateinit var fib27Binding: Binding<Fib27>
-        private lateinit var fib26Binding: Binding<Fib26>
-        override fun link(linker: Linker) {
-            fib27Binding = linker.get()
-            fib26Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib28(fib27Binding(), fib26Binding())
-    })
-    factory(binding = object : Binding<Fib29> {
-        private lateinit var fib28Binding: Binding<Fib28>
-        private lateinit var fib27Binding: Binding<Fib27>
-        override fun link(linker: Linker) {
-            fib28Binding = linker.get()
-            fib27Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib29(fib28Binding(), fib27Binding())
-    })
-    factory(binding = object : Binding<Fib30> {
-        private lateinit var fib29Binding: Binding<Fib29>
-        private lateinit var fib28Binding: Binding<Fib28>
-        override fun link(linker: Linker) {
-            fib29Binding = linker.get()
-            fib28Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib30(fib29Binding(), fib28Binding())
-    })
-    factory(binding = object : Binding<Fib31> {
-        private lateinit var fib30Binding: Binding<Fib30>
-        private lateinit var fib29Binding: Binding<Fib29>
-        override fun link(linker: Linker) {
-            fib30Binding = linker.get()
-            fib29Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib31(fib30Binding(), fib29Binding())
-    })
-    factory(binding = object : Binding<Fib32> {
-        private lateinit var fib31Binding: Binding<Fib31>
-        private lateinit var fib30Binding: Binding<Fib30>
-        override fun link(linker: Linker) {
-            fib31Binding = linker.get()
-            fib30Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib32(fib31Binding(), fib30Binding())
-    })
-    factory(binding = object : Binding<Fib33> {
-        private lateinit var fib32Binding: Binding<Fib32>
-        private lateinit var fib31Binding: Binding<Fib31>
-        override fun link(linker: Linker) {
-            fib32Binding = linker.get()
-            fib31Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib33(fib32Binding(), fib31Binding())
-    })
-    factory(binding = object : Binding<Fib34> {
-        private lateinit var fib33Binding: Binding<Fib33>
-        private lateinit var fib32Binding: Binding<Fib32>
-        override fun link(linker: Linker) {
-            fib33Binding = linker.get()
-            fib32Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib34(fib33Binding(), fib32Binding())
-    })
-    factory(binding = object : Binding<Fib35> {
-        private lateinit var fib34Binding: Binding<Fib34>
-        private lateinit var fib33Binding: Binding<Fib33>
-        override fun link(linker: Linker) {
-            fib34Binding = linker.get()
-            fib33Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib35(fib34Binding(), fib33Binding())
-    })
-    factory(binding = object : Binding<Fib36> {
-        private lateinit var fib35Binding: Binding<Fib35>
-        private lateinit var fib34Binding: Binding<Fib34>
-        override fun link(linker: Linker) {
-            fib35Binding = linker.get()
-            fib34Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib36(fib35Binding(), fib34Binding())
-    })
-    factory(binding = object : Binding<Fib37> {
-        private lateinit var fib36Binding: Binding<Fib36>
-        private lateinit var fib35Binding: Binding<Fib35>
-        override fun link(linker: Linker) {
-            fib36Binding = linker.get()
-            fib35Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib37(fib36Binding(), fib35Binding())
-    })
-    factory(binding = object : Binding<Fib38> {
-        private lateinit var fib37Binding: Binding<Fib37>
-        private lateinit var fib36Binding: Binding<Fib36>
-        override fun link(linker: Linker) {
-            fib37Binding = linker.get()
-            fib36Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib38(fib37Binding(), fib36Binding())
-    })
-    factory(binding = object : Binding<Fib39> {
-        private lateinit var fib38Binding: Binding<Fib38>
-        private lateinit var fib37Binding: Binding<Fib37>
-        override fun link(linker: Linker) {
-            fib38Binding = linker.get()
-            fib37Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib39(fib38Binding(), fib37Binding())
-    })
-    factory(binding = object : Binding<Fib40> {
-        private lateinit var fib39Binding: Binding<Fib39>
-        private lateinit var fib38Binding: Binding<Fib38>
-        override fun link(linker: Linker) {
-            fib39Binding = linker.get()
-            fib38Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib40(fib39Binding(), fib38Binding())
-    })
-    factory(binding = object : Binding<Fib41> {
-        private lateinit var fib40Binding: Binding<Fib40>
-        private lateinit var fib39Binding: Binding<Fib39>
-        override fun link(linker: Linker) {
-            fib40Binding = linker.get()
-            fib39Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib41(fib40Binding(), fib39Binding())
-    })
-    factory(binding = object : Binding<Fib42> {
-        private lateinit var fib41Binding: Binding<Fib41>
-        private lateinit var fib40Binding: Binding<Fib40>
-        override fun link(linker: Linker) {
-            fib41Binding = linker.get()
-            fib40Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib42(fib41Binding(), fib40Binding())
-    })
-    factory(binding = object : Binding<Fib43> {
-        private lateinit var fib42Binding: Binding<Fib42>
-        private lateinit var fib41Binding: Binding<Fib41>
-        override fun link(linker: Linker) {
-            fib42Binding = linker.get()
-            fib41Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib43(fib42Binding(), fib41Binding())
-    })
-    factory(binding = object : Binding<Fib44> {
-        private lateinit var fib43Binding: Binding<Fib43>
-        private lateinit var fib42Binding: Binding<Fib42>
-        override fun link(linker: Linker) {
-            fib43Binding = linker.get()
-            fib42Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib44(fib43Binding(), fib42Binding())
-    })
-    factory(binding = object : Binding<Fib45> {
-        private lateinit var fib44Binding: Binding<Fib44>
-        private lateinit var fib43Binding: Binding<Fib43>
-        override fun link(linker: Linker) {
-            fib44Binding = linker.get()
-            fib43Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib45(fib44Binding(), fib43Binding())
-    })
-    factory(binding = object : Binding<Fib46> {
-        private lateinit var fib45Binding: Binding<Fib45>
-        private lateinit var fib44Binding: Binding<Fib44>
-        override fun link(linker: Linker) {
-            fib45Binding = linker.get()
-            fib44Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib46(fib45Binding(), fib44Binding())
-    })
-    factory(binding = object : Binding<Fib47> {
-        private lateinit var fib46Binding: Binding<Fib46>
-        private lateinit var fib45Binding: Binding<Fib45>
-        override fun link(linker: Linker) {
-            fib46Binding = linker.get()
-            fib45Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib47(fib46Binding(), fib45Binding())
-    })
-    factory(binding = object : Binding<Fib48> {
-        private lateinit var fib47Binding: Binding<Fib47>
-        private lateinit var fib46Binding: Binding<Fib46>
-        override fun link(linker: Linker) {
-            fib47Binding = linker.get()
-            fib46Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib48(fib47Binding(), fib46Binding())
-    })
-    factory(binding = object : Binding<Fib49> {
-        private lateinit var fib48Binding: Binding<Fib48>
-        private lateinit var fib47Binding: Binding<Fib47>
-        override fun link(linker: Linker) {
-            fib48Binding = linker.get()
-            fib47Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib49(fib48Binding(), fib47Binding())
-    })
-    factory(binding = object : Binding<Fib50> {
-        private lateinit var fib49Binding: Binding<Fib49>
-        private lateinit var fib48Binding: Binding<Fib48>
-        override fun link(linker: Linker) {
-            fib49Binding = linker.get()
-            fib48Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib50(fib49Binding(), fib48Binding())
-    })
-    factory(binding = object : Binding<Fib51> {
-        private lateinit var fib50Binding: Binding<Fib50>
-        private lateinit var fib49Binding: Binding<Fib49>
-        override fun link(linker: Linker) {
-            fib50Binding = linker.get()
-            fib49Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib51(fib50Binding(), fib49Binding())
-    })
-    factory(binding = object : Binding<Fib52> {
-        private lateinit var fib51Binding: Binding<Fib51>
-        private lateinit var fib50Binding: Binding<Fib50>
-        override fun link(linker: Linker) {
-            fib51Binding = linker.get()
-            fib50Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib52(fib51Binding(), fib50Binding())
-    })
-    factory(binding = object : Binding<Fib53> {
-        private lateinit var fib52Binding: Binding<Fib52>
-        private lateinit var fib51Binding: Binding<Fib51>
-        override fun link(linker: Linker) {
-            fib52Binding = linker.get()
-            fib51Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib53(fib52Binding(), fib51Binding())
-    })
-    factory(binding = object : Binding<Fib54> {
-        private lateinit var fib53Binding: Binding<Fib53>
-        private lateinit var fib52Binding: Binding<Fib52>
-        override fun link(linker: Linker) {
-            fib53Binding = linker.get()
-            fib52Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib54(fib53Binding(), fib52Binding())
-    })
-    factory(binding = object : Binding<Fib55> {
-        private lateinit var fib54Binding: Binding<Fib54>
-        private lateinit var fib53Binding: Binding<Fib53>
-        override fun link(linker: Linker) {
-            fib54Binding = linker.get()
-            fib53Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib55(fib54Binding(), fib53Binding())
-    })
-    factory(binding = object : Binding<Fib56> {
-        private lateinit var fib55Binding: Binding<Fib55>
-        private lateinit var fib54Binding: Binding<Fib54>
-        override fun link(linker: Linker) {
-            fib55Binding = linker.get()
-            fib54Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib56(fib55Binding(), fib54Binding())
-    })
-    factory(binding = object : Binding<Fib57> {
-        private lateinit var fib56Binding: Binding<Fib56>
-        private lateinit var fib55Binding: Binding<Fib55>
-        override fun link(linker: Linker) {
-            fib56Binding = linker.get()
-            fib55Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib57(fib56Binding(), fib55Binding())
-    })
-    factory(binding = object : Binding<Fib58> {
-        private lateinit var fib57Binding: Binding<Fib57>
-        private lateinit var fib56Binding: Binding<Fib56>
-        override fun link(linker: Linker) {
-            fib57Binding = linker.get()
-            fib56Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib58(fib57Binding(), fib56Binding())
-    })
-    factory(binding = object : Binding<Fib59> {
-        private lateinit var fib58Binding: Binding<Fib58>
-        private lateinit var fib57Binding: Binding<Fib57>
-        override fun link(linker: Linker) {
-            fib58Binding = linker.get()
-            fib57Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib59(fib58Binding(), fib57Binding())
-    })
-    factory(binding = object : Binding<Fib60> {
-        private lateinit var fib59Binding: Binding<Fib59>
-        private lateinit var fib58Binding: Binding<Fib58>
-        override fun link(linker: Linker) {
-            fib59Binding = linker.get()
-            fib58Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib60(fib59Binding(), fib58Binding())
-    })
-    factory(binding = object : Binding<Fib61> {
-        private lateinit var fib60Binding: Binding<Fib60>
-        private lateinit var fib59Binding: Binding<Fib59>
-        override fun link(linker: Linker) {
-            fib60Binding = linker.get()
-            fib59Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib61(fib60Binding(), fib59Binding())
-    })
-    factory(binding = object : Binding<Fib62> {
-        private lateinit var fib61Binding: Binding<Fib61>
-        private lateinit var fib60Binding: Binding<Fib60>
-        override fun link(linker: Linker) {
-            fib61Binding = linker.get()
-            fib60Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib62(fib61Binding(), fib60Binding())
-    })
-    factory(binding = object : Binding<Fib63> {
-        private lateinit var fib62Binding: Binding<Fib62>
-        private lateinit var fib61Binding: Binding<Fib61>
-        override fun link(linker: Linker) {
-            fib62Binding = linker.get()
-            fib61Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib63(fib62Binding(), fib61Binding())
-    })
-    factory(binding = object : Binding<Fib64> {
-        private lateinit var fib63Binding: Binding<Fib63>
-        private lateinit var fib62Binding: Binding<Fib62>
-        override fun link(linker: Linker) {
-            fib63Binding = linker.get()
-            fib62Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib64(fib63Binding(), fib62Binding())
-    })
-    factory(binding = object : Binding<Fib65> {
-        private lateinit var fib64Binding: Binding<Fib64>
-        private lateinit var fib63Binding: Binding<Fib63>
-        override fun link(linker: Linker) {
-            fib64Binding = linker.get()
-            fib63Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib65(fib64Binding(), fib63Binding())
-    })
-    factory(binding = object : Binding<Fib66> {
-        private lateinit var fib65Binding: Binding<Fib65>
-        private lateinit var fib64Binding: Binding<Fib64>
-        override fun link(linker: Linker) {
-            fib65Binding = linker.get()
-            fib64Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib66(fib65Binding(), fib64Binding())
-    })
-    factory(binding = object : Binding<Fib67> {
-        private lateinit var fib66Binding: Binding<Fib66>
-        private lateinit var fib65Binding: Binding<Fib65>
-        override fun link(linker: Linker) {
-            fib66Binding = linker.get()
-            fib65Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib67(fib66Binding(), fib65Binding())
-    })
-    factory(binding = object : Binding<Fib68> {
-        private lateinit var fib67Binding: Binding<Fib67>
-        private lateinit var fib66Binding: Binding<Fib66>
-        override fun link(linker: Linker) {
-            fib67Binding = linker.get()
-            fib66Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib68(fib67Binding(), fib66Binding())
-    })
-    factory(binding = object : Binding<Fib69> {
-        private lateinit var fib68Binding: Binding<Fib68>
-        private lateinit var fib67Binding: Binding<Fib67>
-        override fun link(linker: Linker) {
-            fib68Binding = linker.get()
-            fib67Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib69(fib68Binding(), fib67Binding())
-    })
-    factory(binding = object : Binding<Fib70> {
-        private lateinit var fib69Binding: Binding<Fib69>
-        private lateinit var fib68Binding: Binding<Fib68>
-        override fun link(linker: Linker) {
-            fib69Binding = linker.get()
-            fib68Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib70(fib69Binding(), fib68Binding())
-    })
-    factory(binding = object : Binding<Fib71> {
-        private lateinit var fib70Binding: Binding<Fib70>
-        private lateinit var fib69Binding: Binding<Fib69>
-        override fun link(linker: Linker) {
-            fib70Binding = linker.get()
-            fib69Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib71(fib70Binding(), fib69Binding())
-    })
-    factory(binding = object : Binding<Fib72> {
-        private lateinit var fib71Binding: Binding<Fib71>
-        private lateinit var fib70Binding: Binding<Fib70>
-        override fun link(linker: Linker) {
-            fib71Binding = linker.get()
-            fib70Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib72(fib71Binding(), fib70Binding())
-    })
-    factory(binding = object : Binding<Fib73> {
-        private lateinit var fib72Binding: Binding<Fib72>
-        private lateinit var fib71Binding: Binding<Fib71>
-        override fun link(linker: Linker) {
-            fib72Binding = linker.get()
-            fib71Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib73(fib72Binding(), fib71Binding())
-    })
-    factory(binding = object : Binding<Fib74> {
-        private lateinit var fib73Binding: Binding<Fib73>
-        private lateinit var fib72Binding: Binding<Fib72>
-        override fun link(linker: Linker) {
-            fib73Binding = linker.get()
-            fib72Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib74(fib73Binding(), fib72Binding())
-    })
-    factory(binding = object : Binding<Fib75> {
-        private lateinit var fib74Binding: Binding<Fib74>
-        private lateinit var fib73Binding: Binding<Fib73>
-        override fun link(linker: Linker) {
-            fib74Binding = linker.get()
-            fib73Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib75(fib74Binding(), fib73Binding())
-    })
-    factory(binding = object : Binding<Fib76> {
-        private lateinit var fib75Binding: Binding<Fib75>
-        private lateinit var fib74Binding: Binding<Fib74>
-        override fun link(linker: Linker) {
-            fib75Binding = linker.get()
-            fib74Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib76(fib75Binding(), fib74Binding())
-    })
-    factory(binding = object : Binding<Fib77> {
-        private lateinit var fib76Binding: Binding<Fib76>
-        private lateinit var fib75Binding: Binding<Fib75>
-        override fun link(linker: Linker) {
-            fib76Binding = linker.get()
-            fib75Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib77(fib76Binding(), fib75Binding())
-    })
-    factory(binding = object : Binding<Fib78> {
-        private lateinit var fib77Binding: Binding<Fib77>
-        private lateinit var fib76Binding: Binding<Fib76>
-        override fun link(linker: Linker) {
-            fib77Binding = linker.get()
-            fib76Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib78(fib77Binding(), fib76Binding())
-    })
-    factory(binding = object : Binding<Fib79> {
-        private lateinit var fib78Binding: Binding<Fib78>
-        private lateinit var fib77Binding: Binding<Fib77>
-        override fun link(linker: Linker) {
-            fib78Binding = linker.get()
-            fib77Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib79(fib78Binding(), fib77Binding())
-    })
-    factory(binding = object : Binding<Fib80> {
-        private lateinit var fib79Binding: Binding<Fib79>
-        private lateinit var fib78Binding: Binding<Fib78>
-        override fun link(linker: Linker) {
-            fib79Binding = linker.get()
-            fib78Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib80(fib79Binding(), fib78Binding())
-    })
-    factory(binding = object : Binding<Fib81> {
-        private lateinit var fib80Binding: Binding<Fib80>
-        private lateinit var fib79Binding: Binding<Fib79>
-        override fun link(linker: Linker) {
-            fib80Binding = linker.get()
-            fib79Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib81(fib80Binding(), fib79Binding())
-    })
-    factory(binding = object : Binding<Fib82> {
-        private lateinit var fib81Binding: Binding<Fib81>
-        private lateinit var fib80Binding: Binding<Fib80>
-        override fun link(linker: Linker) {
-            fib81Binding = linker.get()
-            fib80Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib82(fib81Binding(), fib80Binding())
-    })
-    factory(binding = object : Binding<Fib83> {
-        private lateinit var fib82Binding: Binding<Fib82>
-        private lateinit var fib81Binding: Binding<Fib81>
-        override fun link(linker: Linker) {
-            fib82Binding = linker.get()
-            fib81Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib83(fib82Binding(), fib81Binding())
-    })
-    factory(binding = object : Binding<Fib84> {
-        private lateinit var fib83Binding: Binding<Fib83>
-        private lateinit var fib82Binding: Binding<Fib82>
-        override fun link(linker: Linker) {
-            fib83Binding = linker.get()
-            fib82Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib84(fib83Binding(), fib82Binding())
-    })
-    factory(binding = object : Binding<Fib85> {
-        private lateinit var fib84Binding: Binding<Fib84>
-        private lateinit var fib83Binding: Binding<Fib83>
-        override fun link(linker: Linker) {
-            fib84Binding = linker.get()
-            fib83Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib85(fib84Binding(), fib83Binding())
-    })
-    factory(binding = object : Binding<Fib86> {
-        private lateinit var fib85Binding: Binding<Fib85>
-        private lateinit var fib84Binding: Binding<Fib84>
-        override fun link(linker: Linker) {
-            fib85Binding = linker.get()
-            fib84Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib86(fib85Binding(), fib84Binding())
-    })
-    factory(binding = object : Binding<Fib87> {
-        private lateinit var fib86Binding: Binding<Fib86>
-        private lateinit var fib85Binding: Binding<Fib85>
-        override fun link(linker: Linker) {
-            fib86Binding = linker.get()
-            fib85Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib87(fib86Binding(), fib85Binding())
-    })
-    factory(binding = object : Binding<Fib88> {
-        private lateinit var fib87Binding: Binding<Fib87>
-        private lateinit var fib86Binding: Binding<Fib86>
-        override fun link(linker: Linker) {
-            fib87Binding = linker.get()
-            fib86Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib88(fib87Binding(), fib86Binding())
-    })
-    factory(binding = object : Binding<Fib89> {
-        private lateinit var fib88Binding: Binding<Fib88>
-        private lateinit var fib87Binding: Binding<Fib87>
-        override fun link(linker: Linker) {
-            fib88Binding = linker.get()
-            fib87Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib89(fib88Binding(), fib87Binding())
-    })
-    factory(binding = object : Binding<Fib90> {
-        private lateinit var fib89Binding: Binding<Fib89>
-        private lateinit var fib88Binding: Binding<Fib88>
-        override fun link(linker: Linker) {
-            fib89Binding = linker.get()
-            fib88Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib90(fib89Binding(), fib88Binding())
-    })
-    factory(binding = object : Binding<Fib91> {
-        private lateinit var fib90Binding: Binding<Fib90>
-        private lateinit var fib89Binding: Binding<Fib89>
-        override fun link(linker: Linker) {
-            fib90Binding = linker.get()
-            fib89Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib91(fib90Binding(), fib89Binding())
-    })
-    factory(binding = object : Binding<Fib92> {
-        private lateinit var fib91Binding: Binding<Fib91>
-        private lateinit var fib90Binding: Binding<Fib90>
-        override fun link(linker: Linker) {
-            fib91Binding = linker.get()
-            fib90Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib92(fib91Binding(), fib90Binding())
-    })
-    factory(binding = object : Binding<Fib93> {
-        private lateinit var fib92Binding: Binding<Fib92>
-        private lateinit var fib91Binding: Binding<Fib91>
-        override fun link(linker: Linker) {
-            fib92Binding = linker.get()
-            fib91Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib93(fib92Binding(), fib91Binding())
-    })
-    factory(binding = object : Binding<Fib94> {
-        private lateinit var fib93Binding: Binding<Fib93>
-        private lateinit var fib92Binding: Binding<Fib92>
-        override fun link(linker: Linker) {
-            fib93Binding = linker.get()
-            fib92Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib94(fib93Binding(), fib92Binding())
-    })
-    factory(binding = object : Binding<Fib95> {
-        private lateinit var fib94Binding: Binding<Fib94>
-        private lateinit var fib93Binding: Binding<Fib93>
-        override fun link(linker: Linker) {
-            fib94Binding = linker.get()
-            fib93Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib95(fib94Binding(), fib93Binding())
-    })
-    factory(binding = object : Binding<Fib96> {
-        private lateinit var fib95Binding: Binding<Fib95>
-        private lateinit var fib94Binding: Binding<Fib94>
-        override fun link(linker: Linker) {
-            fib95Binding = linker.get()
-            fib94Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib96(fib95Binding(), fib94Binding())
-    })
-    factory(binding = object : Binding<Fib97> {
-        private lateinit var fib96Binding: Binding<Fib96>
-        private lateinit var fib95Binding: Binding<Fib95>
-        override fun link(linker: Linker) {
-            fib96Binding = linker.get()
-            fib95Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib97(fib96Binding(), fib95Binding())
-    })
-    factory(binding = object : Binding<Fib98> {
-        private lateinit var fib97Binding: Binding<Fib97>
-        private lateinit var fib96Binding: Binding<Fib96>
-        override fun link(linker: Linker) {
-            fib97Binding = linker.get()
-            fib96Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib98(fib97Binding(), fib96Binding())
-    })
-    factory(binding = object : Binding<Fib99> {
-        private lateinit var fib98Binding: Binding<Fib98>
-        private lateinit var fib97Binding: Binding<Fib97>
-        override fun link(linker: Linker) {
-            fib98Binding = linker.get()
-            fib97Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib99(fib98Binding(), fib97Binding())
-    })
-    factory(binding = object : Binding<Fib100> {
-        private lateinit var fib99Binding: Binding<Fib99>
-        private lateinit var fib98Binding: Binding<Fib98>
-        override fun link(linker: Linker) {
-            fib99Binding = linker.get()
-            fib98Binding = linker.get()
-        }
-
-        override fun get(parameters: ParametersDefinition?) = Fib100(fib99Binding(), fib98Binding())
-    })
+    factoryState<Fib1> { definition { Fib1() } }
+    factoryState<Fib2> { definition { Fib2() } }
+    factoryState<Fib3> {
+        val fib2Binding by link<Fib2>()
+        val fib1Binding by link<Fib1>()
+        definition { Fib3(fib2Binding(), fib1Binding()) }
+    }
+    factoryState<Fib4> {
+        val fib3Binding by link<Fib3>()
+        val fib2Binding by link<Fib2>()
+        definition { Fib4(fib3Binding(), fib2Binding()) }
+    }
+    factoryState<Fib5> {
+        val fib4Binding by link<Fib4>()
+        val fib3Binding by link<Fib3>()
+        definition { Fib5(fib4Binding(), fib3Binding()) }
+    }
+    factoryState<Fib6> {
+        val fib5Binding by link<Fib5>()
+        val fib4Binding by link<Fib4>()
+        definition { Fib6(fib5Binding(), fib4Binding()) }
+    }
+    factoryState<Fib7> {
+        val fib6Binding by link<Fib6>()
+        val fib5Binding by link<Fib5>()
+        definition { Fib7(fib6Binding(), fib5Binding()) }
+    }
+    factoryState<Fib8> {
+        val fib7Binding by link<Fib7>()
+        val fib6Binding by link<Fib6>()
+        definition { Fib8(fib7Binding(), fib6Binding()) }
+    }
+    factoryState<Fib9> {
+        val fib8Binding by link<Fib8>()
+        val fib7Binding by link<Fib7>()
+        definition { Fib9(fib8Binding(), fib7Binding()) }
+    }
+    factoryState<Fib10> {
+        val fib9Binding by link<Fib9>()
+        val fib8Binding by link<Fib8>()
+        definition { Fib10(fib9Binding(), fib8Binding()) }
+    }
+    factoryState<Fib11> {
+        val fib10Binding by link<Fib10>()
+        val fib9Binding by link<Fib9>()
+        definition { Fib11(fib10Binding(), fib9Binding()) }
+    }
+    factoryState<Fib12> {
+        val fib11Binding by link<Fib11>()
+        val fib10Binding by link<Fib10>()
+        definition { Fib12(fib11Binding(), fib10Binding()) }
+    }
+    factoryState<Fib13> {
+        val fib12Binding by link<Fib12>()
+        val fib11Binding by link<Fib11>()
+        definition { Fib13(fib12Binding(), fib11Binding()) }
+    }
+    factoryState<Fib14> {
+        val fib13Binding by link<Fib13>()
+        val fib12Binding by link<Fib12>()
+        definition { Fib14(fib13Binding(), fib12Binding()) }
+    }
+    factoryState<Fib15> {
+        val fib14Binding by link<Fib14>()
+        val fib13Binding by link<Fib13>()
+        definition { Fib15(fib14Binding(), fib13Binding()) }
+    }
+    factoryState<Fib16> {
+        val fib15Binding by link<Fib15>()
+        val fib14Binding by link<Fib14>()
+        definition { Fib16(fib15Binding(), fib14Binding()) }
+    }
+    factoryState<Fib17> {
+        val fib16Binding by link<Fib16>()
+        val fib15Binding by link<Fib15>()
+        definition { Fib17(fib16Binding(), fib15Binding()) }
+    }
+    factoryState<Fib18> {
+        val fib17Binding by link<Fib17>()
+        val fib16Binding by link<Fib16>()
+        definition { Fib18(fib17Binding(), fib16Binding()) }
+    }
+    factoryState<Fib19> {
+        val fib18Binding by link<Fib18>()
+        val fib17Binding by link<Fib17>()
+        definition { Fib19(fib18Binding(), fib17Binding()) }
+    }
+    factoryState<Fib20> {
+        val fib19Binding by link<Fib19>()
+        val fib18Binding by link<Fib18>()
+        definition { Fib20(fib19Binding(), fib18Binding()) }
+    }
+    factoryState<Fib21> {
+        val fib20Binding by link<Fib20>()
+        val fib19Binding by link<Fib19>()
+        definition { Fib21(fib20Binding(), fib19Binding()) }
+    }
+    factoryState<Fib22> {
+        val fib21Binding by link<Fib21>()
+        val fib20Binding by link<Fib20>()
+        definition { Fib22(fib21Binding(), fib20Binding()) }
+    }
+    factoryState<Fib23> {
+        val fib22Binding by link<Fib22>()
+        val fib21Binding by link<Fib21>()
+        definition { Fib23(fib22Binding(), fib21Binding()) }
+    }
+    factoryState<Fib24> {
+        val fib23Binding by link<Fib23>()
+        val fib22Binding by link<Fib22>()
+        definition { Fib24(fib23Binding(), fib22Binding()) }
+    }
+    factoryState<Fib25> {
+        val fib24Binding by link<Fib24>()
+        val fib23Binding by link<Fib23>()
+        definition { Fib25(fib24Binding(), fib23Binding()) }
+    }
+    factoryState<Fib26> {
+        val fib25Binding by link<Fib25>()
+        val fib24Binding by link<Fib24>()
+        definition { Fib26(fib25Binding(), fib24Binding()) }
+    }
+    factoryState<Fib27> {
+        val fib26Binding by link<Fib26>()
+        val fib25Binding by link<Fib25>()
+        definition { Fib27(fib26Binding(), fib25Binding()) }
+    }
+    factoryState<Fib28> {
+        val fib27Binding by link<Fib27>()
+        val fib26Binding by link<Fib26>()
+        definition { Fib28(fib27Binding(), fib26Binding()) }
+    }
+    factoryState<Fib29> {
+        val fib28Binding by link<Fib28>()
+        val fib27Binding by link<Fib27>()
+        definition { Fib29(fib28Binding(), fib27Binding()) }
+    }
+    factoryState<Fib30> {
+        val fib29Binding by link<Fib29>()
+        val fib28Binding by link<Fib28>()
+        definition { Fib30(fib29Binding(), fib28Binding()) }
+    }
+    factoryState<Fib31> {
+        val fib30Binding by link<Fib30>()
+        val fib29Binding by link<Fib29>()
+        definition { Fib31(fib30Binding(), fib29Binding()) }
+    }
+    factoryState<Fib32> {
+        val fib31Binding by link<Fib31>()
+        val fib30Binding by link<Fib30>()
+        definition { Fib32(fib31Binding(), fib30Binding()) }
+    }
+    factoryState<Fib33> {
+        val fib32Binding by link<Fib32>()
+        val fib31Binding by link<Fib31>()
+        definition { Fib33(fib32Binding(), fib31Binding()) }
+    }
+    factoryState<Fib34> {
+        val fib33Binding by link<Fib33>()
+        val fib32Binding by link<Fib32>()
+        definition { Fib34(fib33Binding(), fib32Binding()) }
+    }
+    factoryState<Fib35> {
+        val fib34Binding by link<Fib34>()
+        val fib33Binding by link<Fib33>()
+        definition { Fib35(fib34Binding(), fib33Binding()) }
+    }
+    factoryState<Fib36> {
+        val fib35Binding by link<Fib35>()
+        val fib34Binding by link<Fib34>()
+        definition { Fib36(fib35Binding(), fib34Binding()) }
+    }
+    factoryState<Fib37> {
+        val fib36Binding by link<Fib36>()
+        val fib35Binding by link<Fib35>()
+        definition { Fib37(fib36Binding(), fib35Binding()) }
+    }
+    factoryState<Fib38> {
+        val fib37Binding by link<Fib37>()
+        val fib36Binding by link<Fib36>()
+        definition { Fib38(fib37Binding(), fib36Binding()) }
+    }
+    factoryState<Fib39> {
+        val fib38Binding by link<Fib38>()
+        val fib37Binding by link<Fib37>()
+        definition { Fib39(fib38Binding(), fib37Binding()) }
+    }
+    factoryState<Fib40> {
+        val fib39Binding by link<Fib39>()
+        val fib38Binding by link<Fib38>()
+        definition { Fib40(fib39Binding(), fib38Binding()) }
+    }
+    factoryState<Fib41> {
+        val fib40Binding by link<Fib40>()
+        val fib39Binding by link<Fib39>()
+        definition { Fib41(fib40Binding(), fib39Binding()) }
+    }
+    factoryState<Fib42> {
+        val fib41Binding by link<Fib41>()
+        val fib40Binding by link<Fib40>()
+        definition { Fib42(fib41Binding(), fib40Binding()) }
+    }
+    factoryState<Fib43> {
+        val fib42Binding by link<Fib42>()
+        val fib41Binding by link<Fib41>()
+        definition { Fib43(fib42Binding(), fib41Binding()) }
+    }
+    factoryState<Fib44> {
+        val fib43Binding by link<Fib43>()
+        val fib42Binding by link<Fib42>()
+        definition { Fib44(fib43Binding(), fib42Binding()) }
+    }
+    factoryState<Fib45> {
+        val fib44Binding by link<Fib44>()
+        val fib43Binding by link<Fib43>()
+        definition { Fib45(fib44Binding(), fib43Binding()) }
+    }
+    factoryState<Fib46> {
+        val fib45Binding by link<Fib45>()
+        val fib44Binding by link<Fib44>()
+        definition { Fib46(fib45Binding(), fib44Binding()) }
+    }
+    factoryState<Fib47> {
+        val fib46Binding by link<Fib46>()
+        val fib45Binding by link<Fib45>()
+        definition { Fib47(fib46Binding(), fib45Binding()) }
+    }
+    factoryState<Fib48> {
+        val fib47Binding by link<Fib47>()
+        val fib46Binding by link<Fib46>()
+        definition { Fib48(fib47Binding(), fib46Binding()) }
+    }
+    factoryState<Fib49> {
+        val fib48Binding by link<Fib48>()
+        val fib47Binding by link<Fib47>()
+        definition { Fib49(fib48Binding(), fib47Binding()) }
+    }
+    factoryState<Fib50> {
+        val fib49Binding by link<Fib49>()
+        val fib48Binding by link<Fib48>()
+        definition { Fib50(fib49Binding(), fib48Binding()) }
+    }
+    factoryState<Fib51> {
+        val fib50Binding by link<Fib50>()
+        val fib49Binding by link<Fib49>()
+        definition { Fib51(fib50Binding(), fib49Binding()) }
+    }
+    factoryState<Fib52> {
+        val fib51Binding by link<Fib51>()
+        val fib50Binding by link<Fib50>()
+        definition { Fib52(fib51Binding(), fib50Binding()) }
+    }
+    factoryState<Fib53> {
+        val fib52Binding by link<Fib52>()
+        val fib51Binding by link<Fib51>()
+        definition { Fib53(fib52Binding(), fib51Binding()) }
+    }
+    factoryState<Fib54> {
+        val fib53Binding by link<Fib53>()
+        val fib52Binding by link<Fib52>()
+        definition { Fib54(fib53Binding(), fib52Binding()) }
+    }
+    factoryState<Fib55> {
+        val fib54Binding by link<Fib54>()
+        val fib53Binding by link<Fib53>()
+        definition { Fib55(fib54Binding(), fib53Binding()) }
+    }
+    factoryState<Fib56> {
+        val fib55Binding by link<Fib55>()
+        val fib54Binding by link<Fib54>()
+        definition { Fib56(fib55Binding(), fib54Binding()) }
+    }
+    factoryState<Fib57> {
+        val fib56Binding by link<Fib56>()
+        val fib55Binding by link<Fib55>()
+        definition { Fib57(fib56Binding(), fib55Binding()) }
+    }
+    factoryState<Fib58> {
+        val fib57Binding by link<Fib57>()
+        val fib56Binding by link<Fib56>()
+        definition { Fib58(fib57Binding(), fib56Binding()) }
+    }
+    factoryState<Fib59> {
+        val fib58Binding by link<Fib58>()
+        val fib57Binding by link<Fib57>()
+        definition { Fib59(fib58Binding(), fib57Binding()) }
+    }
+    factoryState<Fib60> {
+        val fib59Binding by link<Fib59>()
+        val fib58Binding by link<Fib58>()
+        definition { Fib60(fib59Binding(), fib58Binding()) }
+    }
+    factoryState<Fib61> {
+        val fib60Binding by link<Fib60>()
+        val fib59Binding by link<Fib59>()
+        definition { Fib61(fib60Binding(), fib59Binding()) }
+    }
+    factoryState<Fib62> {
+        val fib61Binding by link<Fib61>()
+        val fib60Binding by link<Fib60>()
+        definition { Fib62(fib61Binding(), fib60Binding()) }
+    }
+    factoryState<Fib63> {
+        val fib62Binding by link<Fib62>()
+        val fib61Binding by link<Fib61>()
+        definition { Fib63(fib62Binding(), fib61Binding()) }
+    }
+    factoryState<Fib64> {
+        val fib63Binding by link<Fib63>()
+        val fib62Binding by link<Fib62>()
+        definition { Fib64(fib63Binding(), fib62Binding()) }
+    }
+    factoryState<Fib65> {
+        val fib64Binding by link<Fib64>()
+        val fib63Binding by link<Fib63>()
+        definition { Fib65(fib64Binding(), fib63Binding()) }
+    }
+    factoryState<Fib66> {
+        val fib65Binding by link<Fib65>()
+        val fib64Binding by link<Fib64>()
+        definition { Fib66(fib65Binding(), fib64Binding()) }
+    }
+    factoryState<Fib67> {
+        val fib66Binding by link<Fib66>()
+        val fib65Binding by link<Fib65>()
+        definition { Fib67(fib66Binding(), fib65Binding()) }
+    }
+    factoryState<Fib68> {
+        val fib67Binding by link<Fib67>()
+        val fib66Binding by link<Fib66>()
+        definition { Fib68(fib67Binding(), fib66Binding()) }
+    }
+    factoryState<Fib69> {
+        val fib68Binding by link<Fib68>()
+        val fib67Binding by link<Fib67>()
+        definition { Fib69(fib68Binding(), fib67Binding()) }
+    }
+    factoryState<Fib70> {
+        val fib69Binding by link<Fib69>()
+        val fib68Binding by link<Fib68>()
+        definition { Fib70(fib69Binding(), fib68Binding()) }
+    }
+    factoryState<Fib71> {
+        val fib70Binding by link<Fib70>()
+        val fib69Binding by link<Fib69>()
+        definition { Fib71(fib70Binding(), fib69Binding()) }
+    }
+    factoryState<Fib72> {
+        val fib71Binding by link<Fib71>()
+        val fib70Binding by link<Fib70>()
+        definition { Fib72(fib71Binding(), fib70Binding()) }
+    }
+    factoryState<Fib73> {
+        val fib72Binding by link<Fib72>()
+        val fib71Binding by link<Fib71>()
+        definition { Fib73(fib72Binding(), fib71Binding()) }
+    }
+    factoryState<Fib74> {
+        val fib73Binding by link<Fib73>()
+        val fib72Binding by link<Fib72>()
+        definition { Fib74(fib73Binding(), fib72Binding()) }
+    }
+    factoryState<Fib75> {
+        val fib74Binding by link<Fib74>()
+        val fib73Binding by link<Fib73>()
+        definition { Fib75(fib74Binding(), fib73Binding()) }
+    }
+    factoryState<Fib76> {
+        val fib75Binding by link<Fib75>()
+        val fib74Binding by link<Fib74>()
+        definition { Fib76(fib75Binding(), fib74Binding()) }
+    }
+    factoryState<Fib77> {
+        val fib76Binding by link<Fib76>()
+        val fib75Binding by link<Fib75>()
+        definition { Fib77(fib76Binding(), fib75Binding()) }
+    }
+    factoryState<Fib78> {
+        val fib77Binding by link<Fib77>()
+        val fib76Binding by link<Fib76>()
+        definition { Fib78(fib77Binding(), fib76Binding()) }
+    }
+    factoryState<Fib79> {
+        val fib78Binding by link<Fib78>()
+        val fib77Binding by link<Fib77>()
+        definition { Fib79(fib78Binding(), fib77Binding()) }
+    }
+    factoryState<Fib80> {
+        val fib79Binding by link<Fib79>()
+        val fib78Binding by link<Fib78>()
+        definition { Fib80(fib79Binding(), fib78Binding()) }
+    }
+    factoryState<Fib81> {
+        val fib80Binding by link<Fib80>()
+        val fib79Binding by link<Fib79>()
+        definition { Fib81(fib80Binding(), fib79Binding()) }
+    }
+    factoryState<Fib82> {
+        val fib81Binding by link<Fib81>()
+        val fib80Binding by link<Fib80>()
+        definition { Fib82(fib81Binding(), fib80Binding()) }
+    }
+    factoryState<Fib83> {
+        val fib82Binding by link<Fib82>()
+        val fib81Binding by link<Fib81>()
+        definition { Fib83(fib82Binding(), fib81Binding()) }
+    }
+    factoryState<Fib84> {
+        val fib83Binding by link<Fib83>()
+        val fib82Binding by link<Fib82>()
+        definition { Fib84(fib83Binding(), fib82Binding()) }
+    }
+    factoryState<Fib85> {
+        val fib84Binding by link<Fib84>()
+        val fib83Binding by link<Fib83>()
+        definition { Fib85(fib84Binding(), fib83Binding()) }
+    }
+    factoryState<Fib86> {
+        val fib85Binding by link<Fib85>()
+        val fib84Binding by link<Fib84>()
+        definition { Fib86(fib85Binding(), fib84Binding()) }
+    }
+    factoryState<Fib87> {
+        val fib86Binding by link<Fib86>()
+        val fib85Binding by link<Fib85>()
+        definition { Fib87(fib86Binding(), fib85Binding()) }
+    }
+    factoryState<Fib88> {
+        val fib87Binding by link<Fib87>()
+        val fib86Binding by link<Fib86>()
+        definition { Fib88(fib87Binding(), fib86Binding()) }
+    }
+    factoryState<Fib89> {
+        val fib88Binding by link<Fib88>()
+        val fib87Binding by link<Fib87>()
+        definition { Fib89(fib88Binding(), fib87Binding()) }
+    }
+    factoryState<Fib90> {
+        val fib89Binding by link<Fib89>()
+        val fib88Binding by link<Fib88>()
+        definition { Fib90(fib89Binding(), fib88Binding()) }
+    }
+    factoryState<Fib91> {
+        val fib90Binding by link<Fib90>()
+        val fib89Binding by link<Fib89>()
+        definition { Fib91(fib90Binding(), fib89Binding()) }
+    }
+    factoryState<Fib92> {
+        val fib91Binding by link<Fib91>()
+        val fib90Binding by link<Fib90>()
+        definition { Fib92(fib91Binding(), fib90Binding()) }
+    }
+    factoryState<Fib93> {
+        val fib92Binding by link<Fib92>()
+        val fib91Binding by link<Fib91>()
+        definition { Fib93(fib92Binding(), fib91Binding()) }
+    }
+    factoryState<Fib94> {
+        val fib93Binding by link<Fib93>()
+        val fib92Binding by link<Fib92>()
+        definition { Fib94(fib93Binding(), fib92Binding()) }
+    }
+    factoryState<Fib95> {
+        val fib94Binding by link<Fib94>()
+        val fib93Binding by link<Fib93>()
+        definition { Fib95(fib94Binding(), fib93Binding()) }
+    }
+    factoryState<Fib96> {
+        val fib95Binding by link<Fib95>()
+        val fib94Binding by link<Fib94>()
+        definition { Fib96(fib95Binding(), fib94Binding()) }
+    }
+    factoryState<Fib97> {
+        val fib96Binding by link<Fib96>()
+        val fib95Binding by link<Fib95>()
+        definition { Fib97(fib96Binding(), fib95Binding()) }
+    }
+    factoryState<Fib98> {
+        val fib97Binding by link<Fib97>()
+        val fib96Binding by link<Fib96>()
+        definition { Fib98(fib97Binding(), fib96Binding()) }
+    }
+    factoryState<Fib99> {
+        val fib98Binding by link<Fib98>()
+        val fib97Binding by link<Fib97>()
+        definition { Fib99(fib98Binding(), fib97Binding()) }
+    }
+    factoryState<Fib100> {
+        val fib99Binding by link<Fib99>()
+        val fib98Binding by link<Fib98>()
+        definition { Fib100(fib99Binding(), fib98Binding()) }
+    }
 }

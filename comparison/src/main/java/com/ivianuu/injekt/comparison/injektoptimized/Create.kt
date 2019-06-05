@@ -31,13 +31,9 @@ private fun factoryBlock(n: Int): String {
     val binding1 = n - 1
     val binding2 = n - 2
 
-    return "factory(binding = object : Binding<Fib$n> {\n" +
-            "        private lateinit var fib${binding1}Binding: Binding<Fib$binding1>\n" +
-            "        private lateinit var fib${binding2}Binding: Binding<Fib$binding2>\n" +
-            "        override fun link(context: DefinitionContext) {\n" +
-            "            fib${binding1}Binding = context.getBinding()\n" +
-            "            fib${binding2}Binding = context.getBinding()\n" +
-            "        }\n" +
-            "        override fun get(parameters: ParametersDefinition?) = Fib$n(fib${binding1}Binding(), fib${binding2}Binding())\n" +
-            "    })"
+    return " factoryState<Fib$n> {\n" +
+            "        val fib${binding1}Binding by link<Fib$binding1>()\n" +
+            "        val fib${binding2}Binding by link<Fib$binding2>()\n" +
+            "        definition { Fib$n(fib${binding1}Binding(), fib${binding2}Binding()) }\n" +
+            "    }"
 }

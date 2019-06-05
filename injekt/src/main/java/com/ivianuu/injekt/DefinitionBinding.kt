@@ -16,50 +16,20 @@
 
 package com.ivianuu.injekt
 
-class StatefulDefinitionBuilder<T> {
-
-    @PublishedApi internal lateinit var linker: Linker
-    internal lateinit var definition: (Parameters) -> T
-
-    inline fun <reified T> link(name: Qualifier? = null): Lazy<Binding<T>> =
-        link(typeOf(), name)
-
-    fun <T> link(type: Type<T>, name: Qualifier? = null): Lazy<Binding<T>> =
-        lazy(LazyThreadSafetyMode.NONE) { linker.get(type, name) }
-
-    fun definition(definition: (Parameters) -> T) {
-        this.definition = definition
-    }
-
+class UnlinkedDefinitionBinding<T>(private val definition: Definition<T>) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedDefinitionBinding(DefinitionContext(linker), definition)
 }
 
-class StatefulDefinitionBinding<T>(private val builder: StatefulDefinitionBuilder<T>) : Binding<T> {
-    init {
-        builder.definition
+class LinkedDefinitionBinding<T>(
+    private val context: DefinitionContext,
+    private val definition: Definition<T>
+) : LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?): T = try {
+        definition.invoke(context, parameters?.invoke() ?: emptyParameters())
+    } catch (e: Exception) {
+        throw IllegalStateException("Couldn't instantiate", e) // todo
     }
-
-    override fun link(linker: Linker) {
-        builder.linker = linker
-    }
-
-    override fun get(parameters: ParametersDefinition?): T =
-        builder.definition(parameters?.invoke() ?: emptyParameters())
-}
-
-class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
-    private lateinit var linker: Linker
-    override fun link(linker: Linker) {
-        this.linker = linker
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
-        return try {
-            definition.invoke(DefinitionContext(linker), parameters?.invoke() ?: emptyParameters())
-        } catch (e: Exception) {
-            throw IllegalStateException("Couldn't instantiate", e) // todo
-        }
-    }
-
 }
 
 /**

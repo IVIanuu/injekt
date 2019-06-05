@@ -16,17 +16,16 @@
 
 package com.ivianuu.injekt
 
-/**
- * @author Manuel Wrage (IVIanuu)
- */
 interface Linker {
-    fun <T> get(type: Type<T>, name: Qualifier? = null): Binding<T>
+    fun <T> get(type: Type<T>, name: Qualifier? = null): LinkedBinding<T>
 }
 
 internal class RealLinker(private val component: Component) : Linker {
-    override fun <T> get(type: Type<T>, name: Qualifier?): Binding<T> =
-        component.getBinding(type, name)
+    override fun <T> get(type: Type<T>, name: Qualifier?): LinkedBinding<T> {
+        val key = Key(type, name)
+        return component.getBinding<T>(key).link(this)
+    }
 }
 
-inline fun <reified T> Linker.get(name: Qualifier? = null): Binding<T> =
+inline fun <reified T> Linker.get(name: Qualifier? = null): LinkedBinding<T> =
     get(typeOf(), name)

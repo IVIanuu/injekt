@@ -106,14 +106,14 @@ internal fun createComponent(
             return@fold acc
         }
 
-    val bindings = mutableMapOf<Key, Binding<*>>()
+    val bindings = mutableMapOf<Key, BindingHolder<*>>()
     val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
     val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
 
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
             // todo override handling
-            bindings[key] = binding
+            bindings[key] = BindingHolder(binding)
         }
 
         module.mapBindings.forEach { (mapKey, map) ->

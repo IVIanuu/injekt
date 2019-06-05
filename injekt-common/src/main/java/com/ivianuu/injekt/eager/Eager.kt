@@ -16,18 +16,21 @@
 
 package com.ivianuu.injekt.eager
 
-import com.ivianuu.injekt.AttachAware
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.DefinitionBinding
+import com.ivianuu.injekt.LinkedBinding
+import com.ivianuu.injekt.LinkedSingleBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.SingleBinding
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.UnlinkedBinding
+import com.ivianuu.injekt.UnlinkedDefinitionBinding
+import com.ivianuu.injekt.UnlinkedSingleBinding
 import com.ivianuu.injekt.add
+import com.ivianuu.injekt.asSingleBinding
 import com.ivianuu.injekt.typeOf
 
 inline fun <reified T> ModuleBuilder.eager(
@@ -42,18 +45,31 @@ fun <T> ModuleBuilder.eager(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> =
-    add(EagerBinding(SingleBinding(DefinitionBinding(definition))), type, name, override)
+    add(UnlinkedDefinitionBinding(definition).asEagerBinding(), type, name, override)
 
-private class EagerBinding<T>(private val binding: Binding<T>) : Binding<T>, AttachAware {
 
-    override fun link(linker: Linker) {
-        binding.link(linker)
+fun <T> Binding<T>.asEagerBinding(): Binding<T> {
+    if (this is UnlinkedEagerBinding) return this
+    if (this is LinkedEagerBinding) return this
+    return when (this) {
+        is LinkedBinding -> LinkedEagerBinding(
+            if (this is LinkedSingleBinding) this
+            else asSingleBinding() as LinkedSingleBinding
+        )
+        is UnlinkedBinding -> UnlinkedEagerBinding(
+            if (this is UnlinkedSingleBinding) this
+            else asSingleBinding() as UnlinkedSingleBinding
+        )
     }
+}
 
-    override fun get(parameters: ParametersDefinition?) = binding.get(parameters)
+private class UnlinkedEagerBinding<T>(private val binding: UnlinkedSingleBinding<T>) :
+    UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedEagerBinding(binding.link(linker) as LinkedSingleBinding<T>)
+}
 
-    override fun attached() {
-        get(null)
-    }
-
+private class LinkedEagerBinding<T>(private val binding: LinkedSingleBinding<T>) :
+    LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?): T = binding.get(parameters)
 }

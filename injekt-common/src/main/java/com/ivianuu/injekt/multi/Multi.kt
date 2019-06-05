@@ -19,12 +19,14 @@ package com.ivianuu.injekt.multi
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
-import com.ivianuu.injekt.DefinitionBinding
+import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.UnlinkedBinding
+import com.ivianuu.injekt.UnlinkedDefinitionBinding
 import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 import kotlin.collections.set
@@ -40,18 +42,29 @@ fun <T> ModuleBuilder.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(MultiBinding(DefinitionBinding(definition)), type, name, override)
+): BindingContext<T> =
+    add(UnlinkedDefinitionBinding(definition).asMultiBinding(), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Multi
 
-private class MultiBinding<T>(private val binding: Binding<T>) : Binding<T> {
-
-    private val values = mutableMapOf<Int, T>()
-
-    override fun link(linker: Linker) {
-        binding.link(linker)
+fun <T> Binding<T>.asMultiBinding(): Binding<T> {
+    if (this is UnlinkedMultiBinding) return this
+    if (this is LinkedMultiBinding) return this
+    return when (this) {
+        is LinkedBinding -> LinkedMultiBinding(this)
+        is UnlinkedBinding -> UnlinkedMultiBinding(this)
     }
+}
+
+private class UnlinkedMultiBinding<T>(private val binding: UnlinkedBinding<T>) :
+    UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedMultiBinding(binding.link(linker))
+}
+
+private class LinkedMultiBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
+    private val values = mutableMapOf<Int, T>()
 
     override fun get(parameters: ParametersDefinition?): T {
         requireNotNull(parameters) { "Parameters cannot be null" }
@@ -70,5 +83,4 @@ private class MultiBinding<T>(private val binding: Binding<T>) : Binding<T> {
             value as T
         }
     }
-
 }

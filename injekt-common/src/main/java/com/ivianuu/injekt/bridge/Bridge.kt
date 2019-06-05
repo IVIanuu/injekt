@@ -16,13 +16,14 @@
 
 package com.ivianuu.injekt.bridge
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.UnlinkedBinding
 import com.ivianuu.injekt.add
 import com.ivianuu.injekt.typeOf
 import java.util.*
@@ -40,21 +41,23 @@ fun <T> ModuleBuilder.bridge(
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    return add(BridgeBinding(type, name), type, UUIDName()).apply {
+    return add(UnlinkedBridgeBinding(type, name), type, UUIDName()).apply {
         block?.invoke(this)
     }
 }
 
 private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
 
-private class BridgeBinding<T>(
+private class UnlinkedBridgeBinding<T>(
     private val originalType: Type<T>,
     private val originalName: Qualifier?
-) : Binding<T> {
-    private lateinit var originalBinding: Binding<T>
-    override fun link(linker: Linker) {
-        originalBinding = linker.get(originalType, originalName)
-    }
+) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedBridgeBinding(linker.get(originalType, originalName))
+}
 
+private class LinkedBridgeBinding<T>(
+    private val originalBinding: LinkedBinding<T>
+) : LinkedBinding<T>() {
     override fun get(parameters: ParametersDefinition?): T = originalBinding(parameters)
 }
