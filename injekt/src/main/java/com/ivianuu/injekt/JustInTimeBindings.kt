@@ -19,7 +19,8 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 interface BindingFactory<T> {
-    val scope: KClass<out Annotation>?
+    val scope: KClass<out Annotation>? get() = null
+    val isSingle: Boolean get() = false
     fun create(): Binding<T>
 }
 

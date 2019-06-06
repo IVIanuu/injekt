@@ -91,6 +91,9 @@ class Component internal constructor(
                 val component = findComponentForScope(bindingFactory.scope)
                     ?: error("Couldn't find component for $scope")
                 binding = bindingFactory.create()
+                if (bindingFactory.isSingle) {
+                    binding = binding.asSingle()
+                }
                 component.addBinding(key, binding)
                 return binding
             }

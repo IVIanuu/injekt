@@ -46,9 +46,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             .addType(bindingFactory())
             .build()
 
-    private fun imports() = mutableSetOf("getBinding").apply {
-        if (descriptor.isSingle) add("asSingle")
-    }
+    private fun imports() = setOf("getBinding")
 
     private fun bindingFactory() = TypeSpec.classBuilder(descriptor.factoryName)
         .addSuperinterface(
@@ -63,15 +61,32 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                 KModifier.OVERRIDE
             )
                 .apply {
-                    if (descriptor.scope != null) {
-                        getter(
-                            FunSpec.getterBuilder()
-                                .addCode("return %T::class", descriptor.scope)
-                                .build()
-                        )
-                    } else {
-                        initializer("null")
-                    }
+                    getter(
+                        FunSpec.getterBuilder()
+                            .apply {
+                                if (descriptor.scope != null) {
+                                    addCode("return %T::class", descriptor.scope)
+                                } else {
+                                    addCode("return null")
+                                }
+                            }
+                            .build()
+                    )
+                }
+                .build()
+        )
+        .addProperty(
+            PropertySpec.builder(
+                "isSingle",
+                Boolean::class,
+                KModifier.OVERRIDE
+            )
+                .apply {
+                    getter(
+                        FunSpec.getterBuilder()
+                            .addCode("return ${descriptor.isSingle}")
+                            .build()
+                    )
                 }
                 .build()
         )
@@ -79,13 +94,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             FunSpec.builder("create")
                 .addModifiers(KModifier.OVERRIDE)
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                .apply {
-                    if (descriptor.isSingle) {
-                        addCode("return BindingImpl().asSingle()")
-                    } else {
-                        addCode("return BindingImpl()")
-                    }
-                }
+                .addCode("return BindingImpl()")
                 .build()
         )
         .addType(bindingImpl())
