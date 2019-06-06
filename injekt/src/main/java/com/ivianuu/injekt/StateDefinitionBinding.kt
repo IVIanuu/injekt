@@ -53,7 +53,7 @@ fun <T> stateDefinitionBinding(block: StateDefinitionFactory.() -> StateDefiniti
     return StateDefinitionBinding(definition, factory.links)
 }
 
-private class StateDefinitionBinding<T> internal constructor(
+private class StateDefinitionBinding<T>(
     private val definition: StateDefinition<T>,
     private val links: List<Link<*>>
 ) : Binding<T> {

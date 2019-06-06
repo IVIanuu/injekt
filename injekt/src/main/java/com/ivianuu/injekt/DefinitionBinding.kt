@@ -21,7 +21,7 @@ typealias Definition<T> = Component.(Parameters) -> T
 fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
     DefinitionBinding(definition)
 
-private class DefinitionBinding<T> internal constructor(
+private class DefinitionBinding<T>(
     private val definition: Definition<T>
 ) : Binding<T> {
     private lateinit var component: Component
