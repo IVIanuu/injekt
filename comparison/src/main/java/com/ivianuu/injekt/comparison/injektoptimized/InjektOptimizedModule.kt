@@ -1,0 +1,125 @@
+/*
+ * Copyright 2018 Manuel Wrage
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.ivianuu.injekt.comparison.injektoptimized
+
+import com.ivianuu.injekt.bind
+import com.ivianuu.injekt.module
+
+val injektOptimizedModule = createModule()
+
+fun createModule() = module {
+    bind(Fib1Binding())
+    bind(Fib2Binding())
+    bind(Fib3Binding())
+    bind(Fib4Binding())
+    bind(Fib5Binding())
+    bind(Fib6Binding())
+    bind(Fib7Binding())
+    bind(Fib8Binding())
+    bind(Fib9Binding())
+    bind(Fib10Binding())
+    bind(Fib11Binding())
+    bind(Fib12Binding())
+    bind(Fib13Binding())
+    bind(Fib14Binding())
+    bind(Fib15Binding())
+    bind(Fib16Binding())
+    bind(Fib17Binding())
+    bind(Fib18Binding())
+    bind(Fib19Binding())
+    bind(Fib20Binding())
+    bind(Fib21Binding())
+    bind(Fib22Binding())
+    bind(Fib23Binding())
+    bind(Fib24Binding())
+    bind(Fib25Binding())
+    bind(Fib26Binding())
+    bind(Fib27Binding())
+    bind(Fib28Binding())
+    bind(Fib29Binding())
+    bind(Fib30Binding())
+    bind(Fib31Binding())
+    bind(Fib32Binding())
+    bind(Fib33Binding())
+    bind(Fib34Binding())
+    bind(Fib35Binding())
+    bind(Fib36Binding())
+    bind(Fib37Binding())
+    bind(Fib38Binding())
+    bind(Fib39Binding())
+    bind(Fib40Binding())
+    bind(Fib41Binding())
+    bind(Fib42Binding())
+    bind(Fib43Binding())
+    bind(Fib44Binding())
+    bind(Fib45Binding())
+    bind(Fib46Binding())
+    bind(Fib47Binding())
+    bind(Fib48Binding())
+    bind(Fib49Binding())
+    bind(Fib50Binding())
+    bind(Fib51Binding())
+    bind(Fib52Binding())
+    bind(Fib53Binding())
+    bind(Fib54Binding())
+    bind(Fib55Binding())
+    bind(Fib56Binding())
+    bind(Fib57Binding())
+    bind(Fib58Binding())
+    bind(Fib59Binding())
+    bind(Fib60Binding())
+    bind(Fib61Binding())
+    bind(Fib62Binding())
+    bind(Fib63Binding())
+    bind(Fib64Binding())
+    bind(Fib65Binding())
+    bind(Fib66Binding())
+    bind(Fib67Binding())
+    bind(Fib68Binding())
+    bind(Fib69Binding())
+    bind(Fib70Binding())
+    bind(Fib71Binding())
+    bind(Fib72Binding())
+    bind(Fib73Binding())
+    bind(Fib74Binding())
+    bind(Fib75Binding())
+    bind(Fib76Binding())
+    bind(Fib77Binding())
+    bind(Fib78Binding())
+    bind(Fib79Binding())
+    bind(Fib80Binding())
+    bind(Fib81Binding())
+    bind(Fib82Binding())
+    bind(Fib83Binding())
+    bind(Fib84Binding())
+    bind(Fib85Binding())
+    bind(Fib86Binding())
+    bind(Fib87Binding())
+    bind(Fib88Binding())
+    bind(Fib89Binding())
+    bind(Fib90Binding())
+    bind(Fib91Binding())
+    bind(Fib92Binding())
+    bind(Fib93Binding())
+    bind(Fib94Binding())
+    bind(Fib95Binding())
+    bind(Fib96Binding())
+    bind(Fib97Binding())
+    bind(Fib98Binding())
+    bind(Fib99Binding())
+    bind(Fib100Binding())
+}

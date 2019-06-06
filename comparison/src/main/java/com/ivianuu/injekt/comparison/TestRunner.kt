@@ -19,6 +19,8 @@ package com.ivianuu.injekt.comparison
 import com.ivianuu.injekt.comparison.dagger2.DaggerTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
+import com.ivianuu.injekt.comparison.injektoptimized.InjektOptimizedTest
+import com.ivianuu.injekt.comparison.injektoptimizeddsl.InjektOptimizedDslTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
@@ -43,8 +45,10 @@ enum class TimeUnit {
 fun runInjektTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
+            InjektTest,
             InjektCodegenTest,
-            InjektTest
+            InjektOptimizedDslTest,
+            InjektOptimizedTest
         ),
         config
     )
@@ -58,8 +62,8 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             ToothpickTest,
             KoinTest,
             KatanaTest,
-            InjektCodegenTest,
-            InjektTest
+            //InjektCodegenTest,
+            InjektOptimizedTest
         ),
         config
     )

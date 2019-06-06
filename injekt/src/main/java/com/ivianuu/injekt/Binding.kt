@@ -17,9 +17,14 @@
 package com.ivianuu.injekt
 
 interface Binding<T> {
+    /**
+     * Can be used to retrieve [Binding] dependencies via [Component.getBinding]
+     * For optimizing performance
+     */
     fun attach(component: Component) {
     }
 
     fun get(parameters: ParametersDefinition? = null): T
+
     operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
 }
