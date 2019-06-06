@@ -16,19 +16,45 @@
 
 package com.ivianuu.injekt
 
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
+
 class StatefulDefinitionBuilder<T> {
 
-    @PublishedApi internal lateinit var linker: Linker
+    private val links = mutableListOf<Link<*>>()
+
     internal lateinit var definition: (Parameters) -> T
 
-    inline fun <reified T> link(name: Qualifier? = null): Lazy<Binding<T>> =
+    inline fun <reified T> link(name: Qualifier? = null): Link<T> =
         link(typeOf(), name)
 
-    fun <T> link(type: Type<T>, name: Qualifier? = null): Lazy<Binding<T>> =
-        lazy(LazyThreadSafetyMode.NONE) { linker.get(type, name) }
+    fun <T> link(type: Type<T>, name: Qualifier? = null): Link<T> {
+        val link = Link(type, name)
+        links.add(link)
+        return link
+    }
 
     fun definition(definition: (Parameters) -> T) {
         this.definition = definition
+    }
+
+    internal fun link(linker: Linker) {
+        links.forEach { it.link(linker) }
+    }
+
+    class Link<T>(
+        private val type: Type<T>,
+        private val name: Qualifier? = null
+    ) : ReadOnlyProperty<Nothing?, Binding<T>> {
+
+        private lateinit var binding: Binding<T>
+
+        fun link(linker: Linker) {
+            binding = linker.get(type, name)
+        }
+
+        override fun getValue(thisRef: Nothing?, property: KProperty<*>) =
+            binding
     }
 
 }
@@ -39,7 +65,7 @@ class StatefulDefinitionBinding<T>(private val builder: StatefulDefinitionBuilde
     }
 
     override fun link(linker: Linker) {
-        builder.linker = linker
+        builder.link(linker)
     }
 
     override fun get(parameters: ParametersDefinition?): T =
