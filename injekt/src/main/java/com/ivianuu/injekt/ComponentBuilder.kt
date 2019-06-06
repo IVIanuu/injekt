@@ -111,19 +111,23 @@ internal fun createComponent(
             return@fold acc
         }
 
-    val bindings = mutableMapOf<Key, Binding<*>>()
-    val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
-    val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
+    val bindings = mutableMapOf<Key, BindingContribution<*>>()
+    val mapBindings = mutableMapOf<Key, MutableMap<Any?, MapContribution<*, *>>>()
+    val setBindings = mutableMapOf<Key, MutableSet<SetContribution<*>>>()
 
     dependencies.forEach { dependency ->
         dependency.mapBindings.forEach { (mapKey, map) ->
             if (map.isNotEmpty()) {
-                map.forEach { (entryKey, entryValueBinding) ->
+                map.forEach { (entryKey, contribution) ->
                     val thisMap = mapBindings.getOrPut(mapKey) {
                         mutableMapOf()
                     }
-                    // todo override handling
-                    thisMap[entryKey] = entryValueBinding
+
+                    if (thisMap.contains(entryKey) && !contribution.override) {
+                        error("Already declared $entryKey in map $mapKey")
+                    }
+
+                    thisMap[entryKey] = contribution
                 }
             } else {
                 // ensure that the empty map exists
@@ -133,10 +137,16 @@ internal fun createComponent(
 
         dependency.setBindings.forEach { (setKey, set) ->
             if (set.isNotEmpty()) {
-                set.forEach { elementBinding ->
+                set.forEach { contribution ->
                     val thisSet = setBindings.getOrPut(setKey) { mutableSetOf() }
-                    // todo override handling
-                    thisSet.add(elementBinding)
+                    if (thisSet.any { it.binding == contribution.binding }
+                        && !contribution.override) {
+                        error("Already declared ${contribution.binding} in set $setKey")
+                    }
+
+                    thisSet.removeAll { it.binding == contribution.binding }
+
+                    thisSet.add(contribution)
                 }
             } else {
                 // ensure that the empty set exists
@@ -157,12 +167,16 @@ internal fun createComponent(
 
         module.mapBindings.forEach { (mapKey, map) ->
             if (map.isNotEmpty()) {
-                map.forEach { (entryKey, entryValueBinding) ->
+                map.forEach { (entryKey, contribution) ->
                     val thisMap = mapBindings.getOrPut(mapKey) {
                         mutableMapOf()
                     }
-                    // todo override handling
-                    thisMap[entryKey] = entryValueBinding
+
+                    if (thisMap.contains(entryKey) && !contribution.override) {
+                        error("Already declared $entryKey in $mapKey")
+                    }
+
+                    thisMap[entryKey] = contribution
                 }
             } else {
                 // ensure that the empty map exists
@@ -172,10 +186,16 @@ internal fun createComponent(
 
         module.setBindings.forEach { (setKey, set) ->
             if (set.isNotEmpty()) {
-                set.forEach { elementBinding ->
+                set.forEach { contribution ->
                     val thisSet = setBindings.getOrPut(setKey) { mutableSetOf() }
-                    // todo override handling
-                    thisSet.add(elementBinding)
+                    if (thisSet.any { it.binding == contribution.binding }
+                        && !contribution.override) {
+                        error("Already declared ${contribution.binding} in set $setKey")
+                    }
+
+                    thisSet.removeAll { it.binding == contribution.binding }
+
+                    thisSet.add(contribution)
                 }
             } else {
                 // ensure that the empty set exists
@@ -184,8 +204,12 @@ internal fun createComponent(
         }
     }
 
-    /*mapBindings.forEach { (mapKey, map) ->
-        bindings[mapKey] = MapBinding(map as Map<Any?, Binding<Any?>>)
+    mapBindings.forEach { (mapKey, map) ->
+        bindings[mapKey] = BindingContribution(
+            MapBinding(map as Map<Any?, MapContribution<Any?, Any?>>),
+            mapKey,
+            false
+        )
         val lazyMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -193,7 +217,11 @@ internal fun createComponent(
             ),
             mapKey.name
         )
-        bindings[lazyMapKey] = LazyMapBinding(map as Map<Any?, Binding<Any?>>)
+        bindings[lazyMapKey] = BindingContribution(
+            LazyMapBinding(map as Map<Any?, MapContribution<Any?, Any?>>),
+            lazyMapKey,
+            false
+        )
         val providerMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -201,22 +229,35 @@ internal fun createComponent(
             ),
             mapKey.name
         )
-        bindings[providerMapKey] = ProviderMapBinding(map as Map<Any?, Binding<Any?>>)
+        bindings[providerMapKey] = BindingContribution(
+            ProviderMapBinding(map as Map<Any?, MapContribution<Any?, Any?>>),
+            providerMapKey,
+            false
+        )
     }
 
     setBindings.forEach { (setKey, set) ->
-        bindings[setKey] = SetBinding(set as Set<Binding<Any?>>)
+        bindings[setKey] =
+            BindingContribution(SetBinding(set as Set<SetContribution<Any?>>), setKey, false)
         val lazySetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),
             setKey.name
         )
-        bindings[lazySetKey] = LazySetBinding(set as Set<Binding<Any?>>)
+        bindings[lazySetKey] = BindingContribution(
+            LazySetBinding(set as Set<SetContribution<Any?>>),
+            lazySetKey,
+            false
+        )
         val providerSetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Provider::class, setKey.type.parameters[0])),
             setKey.name
         )
-        bindings[providerSetKey] = ProviderSetBinding(set as Set<Binding<Any?>>)
-    }*/
+        bindings[providerSetKey] = BindingContribution(
+            ProviderSetBinding(set as Set<SetContribution<Any?>>),
+            providerSetKey,
+            false
+        )
+    }
 
     return Component(scope, bindings, mapBindings, setBindings, dependencies)
 }

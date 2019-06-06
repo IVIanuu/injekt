@@ -47,24 +47,16 @@ class Link<T>(
 
 typealias Definition<T> = (Parameters) -> T
 
-fun <T> DefinitionBinding(
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false,
-    block: StateDefinitionFactory.() -> Definition<T>
-): Binding<T> {
+fun <T> DefinitionBinding(block: StateDefinitionFactory.() -> Definition<T>): Binding<T> {
     val factory = StateDefinitionFactory()
     val definition = factory.block()
-    return DefinitionBinding(definition, factory.links, type, name, override)
+    return DefinitionBinding(definition, factory.links)
 }
 
 private class DefinitionBinding<T> internal constructor(
     private val definition: Definition<T>,
-    private val links: List<Link<*>>,
-    type: Type<T>,
-    name: Any?,
-    override: Boolean
-) : Binding<T>(type, name, override) {
+    private val links: List<Link<*>>
+) : Binding<T> {
     override fun attach(component: Component) {
         links.forEach { it.attach(component) }
     }

@@ -20,6 +20,8 @@ import kotlin.reflect.KClass
 
 data class BindingContext<T>(
     val binding: Binding<T>,
+    val key: Key,
+    val override: Boolean,
     val moduleBuilder: ModuleBuilder
 )
 
@@ -77,7 +79,7 @@ infix fun <T> BindingContext<T>.bindClasses(classes: Iterable<KClass<*>>): Bindi
 }
 
 infix fun <T> BindingContext<T>.bindName(name: Any): BindingContext<T> {
-    bindAlias(binding.type, name)
+    bindAlias(key.type, name)
     return this
 }
 

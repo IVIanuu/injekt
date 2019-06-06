@@ -16,22 +16,16 @@
 
 package com.ivianuu.injekt
 
-abstract class Binding<T>(
-    val type: Type<T>,
-    val name: Any? = null,
-    val override: Boolean = false
-) {
-
-    val key = keyOf(type, name)
+interface Binding<T> {
 
     /**
      * Can be used to retrieve [Binding] dependencies via [Component.getBinding]
      * For optimizing performance
      */
-    open fun attach(component: Component) {
+    fun attach(component: Component) {
     }
 
-    abstract fun get(parameters: ParametersDefinition? = null): T
+    fun get(parameters: ParametersDefinition? = null): T
 
     operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
 }

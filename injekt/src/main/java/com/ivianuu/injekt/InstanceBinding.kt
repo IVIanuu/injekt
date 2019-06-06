@@ -21,13 +21,8 @@ fun <T> ModuleBuilder.instance(
     type: Type<T> = typeOf((instance as Any)::class),
     name: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bind(InstanceBinding(instance, type, name, override))
+): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)
 
-internal class InstanceBinding<T>(
-    private val instance: T,
-    type: Type<T>,
-    name: Any?,
-    override: Boolean
-) : Binding<T>(type, name, override) {
+internal class InstanceBinding<T>(private val instance: T) : Binding<T> {
     override fun get(parameters: ParametersDefinition?): T = instance
 }

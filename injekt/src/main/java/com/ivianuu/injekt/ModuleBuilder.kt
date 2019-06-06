@@ -18,28 +18,30 @@ package com.ivianuu.injekt
 
 class ModuleBuilder {
 
-    private val bindings = mutableMapOf<Key, Binding<*>>()
-    private val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
-    private val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
+    private val bindings = mutableMapOf<Key, BindingContribution<*>>()
+    private val mapBindings = mutableMapOf<Key, MutableMap<Any?, MapContribution<*, *>>>()
+    private val setBindings = mutableMapOf<Key, MutableSet<SetContribution<*>>>()
 
-    fun <T> bind(binding: Binding<T>): BindingContext<T> {
-        if (bindings.put(binding.key, binding) != null && !binding.override) {
+    fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
+        if (bindings.contains(key) && !override) {
             error("Already declared binding for $binding.key")
         }
 
-        return BindingContext(binding, this)
+        bindings[key] = BindingContribution(binding, key, override)
+
+        return BindingContext(binding, key, override, this)
     }
 
     fun include(module: Module) {
-        module.bindings.forEach { bind(it.value) }
+        module.bindings.forEach { bind(it.value.binding, it.value.key, it.value.override) }
         module.mapBindings.forEach { (mapKey, map) ->
-            map.forEach { (entryKey, entryValueBinding) ->
-                addBindingIntoMap(mapKey, entryKey, entryValueBinding)
+            map.forEach { (entryKey, contribution) ->
+                addBindingIntoMap(mapKey, entryKey, contribution.binding, contribution.override)
             }
         }
         module.setBindings.forEach { (setKey, set) ->
-            set.forEach { elementBinding ->
-                addBindingIntoSet(setKey, elementBinding)
+            set.forEach { contribution ->
+                addBindingIntoSet(setKey, contribution.binding, contribution.override)
             }
         }
     }
@@ -66,7 +68,7 @@ class ModuleBuilder {
             error("Already added value for $entryKey in map $mapKey")
         }
 
-        map[entryKey] = entryValueBinding
+        map[entryKey] = MapContribution(entryValueBinding, entryKey, override)
     }
 
     fun addBindingIntoSet(
@@ -75,22 +77,38 @@ class ModuleBuilder {
         override: Boolean = false
     ) {
         val set = setBindings.getOrPut(setKey) { mutableSetOf() }
-        if (!set.add(elementBinding) && !override) {
+        if (set.any { it.binding == elementBinding } && !override) {
             error("Already added $elementBinding to set $setKey")
         }
+
+        set.removeAll { it.binding == elementBinding }
+        set.add(SetContribution(elementBinding, override))
     }
 
     fun build(): Module = module(bindings, mapBindings, setBindings)
 }
 
 fun module(
-    bindings: Map<Key, Binding<*>> = emptyMap(),
-    mapBindings: Map<Key, Map<Any?, Binding<*>>>,
-    setBindings: Map<Key, Set<Binding<*>>>
+    bindings: Map<Key, BindingContribution<*>> = emptyMap(),
+    mapBindings: Map<Key, Map<*, MapContribution<*, *>>>,
+    setBindings: Map<Key, Set<SetContribution<*>>>
 ): Module = DefaultModule(bindings, mapBindings, setBindings)
 
 inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
     .apply(block).build()
+
+inline fun <reified T> ModuleBuilder.bind(
+    binding: Binding<T>,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(binding, typeOf(), name, override)
+
+fun <T> ModuleBuilder.bind(
+    binding: Binding<T>,
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(binding, keyOf(type, name), override)
 
 inline fun <reified K, reified V> ModuleBuilder.bindMap(
     mapName: Any? = null

@@ -16,18 +16,35 @@
 
 package com.ivianuu.injekt
 
+data class BindingContribution<T> internal constructor(
+    val binding: Binding<T>,
+    val key: Key,
+    val override: Boolean
+)
+
+data class MapContribution<K, V> internal constructor(
+    val binding: Binding<out V>,
+    val entryMapKey: K,
+    val override: Boolean
+)
+
+data class SetContribution<E> internal constructor(
+    val binding: Binding<out E>,
+    val override: Boolean
+)
+
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
 interface Module {
-    val bindings: Map<Key, Binding<*>> get() = emptyMap()
-    val mapBindings: Map<Key, Map<Any?, Binding<*>>> get() = emptyMap()
-    val setBindings: Map<Key, Set<Binding<*>>> get() = emptyMap()
+    val bindings: Map<Key, BindingContribution<*>> get() = emptyMap()
+    val mapBindings: Map<Key, Map<*, MapContribution<*, *>>> get() = emptyMap()
+    val setBindings: Map<Key, Set<SetContribution<*>>> get() = emptyMap()
 }
 
 internal class DefaultModule(
-    override val bindings: Map<Key, Binding<*>> = emptyMap(),
-    override val mapBindings: Map<Key, Map<Any?, Binding<*>>> = emptyMap(),
-    override val setBindings: Map<Key, Set<Binding<*>>> = emptyMap()
+    override val bindings: Map<Key, BindingContribution<*>> = emptyMap(),
+    override val mapBindings: Map<Key, Map<*, MapContribution<*, *>>> = emptyMap(),
+    override val setBindings: Map<Key, Set<SetContribution<*>>> = emptyMap()
 ) : Module
 

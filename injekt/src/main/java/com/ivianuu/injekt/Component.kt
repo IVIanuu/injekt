@@ -24,14 +24,14 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(
     val scope: KClass<out Annotation>?,
-    internal val bindings: MutableMap<Key, Binding<*>>,
-    internal val mapBindings: Map<Key, Map<Any?, Binding<*>>>,
-    internal val setBindings: Map<Key, Set<Binding<*>>>,
+    internal val bindings: MutableMap<Key, BindingContribution<*>>,
+    internal val mapBindings: Map<Key, Map<Any?, MapContribution<*, *>>>,
+    internal val setBindings: Map<Key, Set<SetContribution<*>>>,
     internal val dependencies: Iterable<Component>
 ) {
 
     init {
-        bindings.forEach { it.value.attach(this) }
+        bindings.forEach { it.value.binding.attach(this) }
     }
 
     /**
@@ -55,7 +55,7 @@ class Component internal constructor(
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
-        var binding = bindings[key]
+        var binding = bindings[key]?.binding
         if (binding != null) return binding as Binding<T>
 
         for (dependency in dependencies) {
@@ -96,7 +96,7 @@ class Component internal constructor(
 
     private fun addBinding(key: Key, binding: Binding<*>) {
         binding.attach(this)
-        bindings[key] = binding
+        bindings[key] = BindingContribution(binding, key, false)
     }
 
     private fun findComponentForScope(scope: Any?): Component? {
