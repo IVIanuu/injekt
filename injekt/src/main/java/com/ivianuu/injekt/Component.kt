@@ -26,7 +26,7 @@ class Component internal constructor(
     val scope: KClass<out Annotation>?,
     internal val bindings: MutableMap<Key, BindingContribution<*>>,
     internal val mapBindings: MapBindings?,
-    internal val setBindings: Map<Key, Set<SetContribution<*>>>,
+    internal val setBindings: SetBindings?,
     internal val dependencies: Iterable<Component>
 ) {
 

@@ -34,22 +34,22 @@ internal class ProviderMapBinding<K, V>(private val bindings: Map<K, Binding<V>>
         .mapValues { (_, binding) -> provider { binding.get(it) } }
 }
 
-internal class SetBinding<T>(private val bindings: Set<SetContribution<T>>) : Binding<Set<T>> {
-    override fun get(parameters: ParametersDefinition?): Set<T> = bindings
-        .map { it.binding.get() }
+internal class SetBinding<E>(private val bindings: Set<Binding<E>>) : Binding<Set<E>> {
+    override fun get(parameters: ParametersDefinition?): Set<E> = bindings
+        .map { it.get() }
         .toSet()
 }
 
-internal class LazySetBinding<T>(private val bindings: Set<SetContribution<T>>) :
-    Binding<Set<Lazy<T>>> {
-    override fun get(parameters: ParametersDefinition?): Set<Lazy<T>> = bindings
-        .map { lazy(LazyThreadSafetyMode.NONE) { it.binding.get() } }
+internal class LazySetBinding<E>(private val bindings: Set<Binding<E>>) :
+    Binding<Set<Lazy<E>>> {
+    override fun get(parameters: ParametersDefinition?): Set<Lazy<E>> = bindings
+        .map { lazy(LazyThreadSafetyMode.NONE) { it.get() } }
         .toSet()
 }
 
-internal class ProviderSetBinding<T>(private val bindings: Set<SetContribution<T>>) :
-    Binding<Set<Provider<T>>> {
-    override fun get(parameters: ParametersDefinition?): Set<Provider<T>> = bindings
-        .map { contribution -> provider { contribution.binding.get(it) } }
+internal class ProviderSetBinding<E>(private val bindings: Set<Binding<E>>) :
+    Binding<Set<Provider<E>>> {
+    override fun get(parameters: ParametersDefinition?): Set<Provider<E>> = bindings
+        .map { binding -> provider { binding.get(it) } }
         .toSet()
 }

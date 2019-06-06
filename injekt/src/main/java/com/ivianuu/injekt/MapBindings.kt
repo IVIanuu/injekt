@@ -37,7 +37,7 @@ class MapBindings {
 
     fun getAll(): Map<Key, BindingMap<*, *>> = maps
 
-    class BindingMap<K, V>(private val mapKey: Key) {
+    class BindingMap<K, V> internal constructor(private val mapKey: Key) {
         private val map = mutableMapOf<K, Entry<V>>()
 
         fun putAll(other: BindingMap<K, V>) {

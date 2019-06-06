@@ -106,7 +106,12 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
     mapName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    moduleBuilder.addBindingIntoMap(mapKeyType, mapValueType, entryKey, binding, mapName, override)
+    moduleBuilder.addBindingIntoMap(
+        keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName),
+        entryKey,
+        binding,
+        override
+    )
     return this
 }
 
@@ -120,6 +125,11 @@ fun <T : E, E> BindingContext<T>.bindIntoSet(
     setName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    moduleBuilder.addBindingIntoSet(setElementType, binding, setName, override)
+    moduleBuilder.addBindingIntoSet(
+        keyOf(typeOf<Any?>(Set::class, setElementType), setName),
+        key,
+        binding,
+        override
+    )
     return this
 }

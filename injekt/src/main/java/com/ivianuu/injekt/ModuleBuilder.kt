@@ -19,8 +19,8 @@ package com.ivianuu.injekt
 class ModuleBuilder {
 
     private val bindings = mutableMapOf<Key, BindingContribution<*>>()
-    private val mapBindings = MapBindings() // todo maybe lazy create
-    private val setBindings = mutableMapOf<Key, MutableSet<SetContribution<*>>>()
+    private val mapBindings = MapBindings() // todo lazy create
+    private val setBindings = SetBindings() // todo lazy create
 
     fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
         if (bindings.contains(key) && !override) {
@@ -35,11 +35,7 @@ class ModuleBuilder {
     fun include(module: Module) {
         module.bindings.forEach { bind(it.value.binding, it.value.key, it.value.override) }
         module.mapBindings?.let { mapBindings.putAll(it) }
-        module.setBindings.forEach { (setKey, set) ->
-            set.forEach { contribution ->
-                addBindingIntoSet(setKey, contribution.binding, contribution.override)
-            }
-        }
+        module.setBindings?.let { setBindings.putAll(it) }
     }
 
     // todo rename
@@ -49,7 +45,7 @@ class ModuleBuilder {
 
     // todo rename
     fun bindSet(setKey: Key) {
-        setBindings.getOrPut(setKey) { mutableSetOf() }
+        setBindings.putIfAbsent(setKey)
     }
 
     fun addBindingIntoMap(
@@ -64,16 +60,12 @@ class ModuleBuilder {
 
     fun addBindingIntoSet(
         setKey: Key,
+        elementKey: Key,
         elementBinding: Binding<*>,
         override: Boolean = false
     ) {
-        val set = setBindings.getOrPut(setKey) { mutableSetOf() }
-        if (set.any { it.binding == elementBinding } && !override) {
-            error("Already added $elementBinding to set $setKey")
-        }
-
-        set.removeAll { it.binding == elementBinding }
-        set.add(SetContribution(elementBinding, override))
+        setBindings.get<Any?>(setKey)
+            .put(elementKey, elementBinding as Binding<Any?>, override)
     }
 
     fun build(): Module = module(bindings, mapBindings, setBindings)
@@ -82,7 +74,7 @@ class ModuleBuilder {
 fun module(
     bindings: Map<Key, BindingContribution<*>> = emptyMap(),
     mapBindings: MapBindings?,
-    setBindings: Map<Key, Set<SetContribution<*>>>
+    setBindings: SetBindings?
 ): Module = DefaultModule(bindings, mapBindings, setBindings)
 
 inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
@@ -124,43 +116,4 @@ fun <E> ModuleBuilder.bindSet(
     setName: Any? = null
 ) {
     bindSet(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
-}
-
-inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
-    entryKey: K,
-    entryValueBinding: Binding<out V>,
-    mapName: Any? = null,
-    override: Boolean = false
-) {
-    addBindingIntoMap(typeOf(), typeOf(), entryKey, entryValueBinding, mapName, override)
-}
-
-fun <K, V> ModuleBuilder.addBindingIntoMap(
-    mapKeyType: Type<K>,
-    mapValueType: Type<V>,
-    entryKey: K,
-    entryValueBinding: Binding<out V>,
-    mapName: Any? = null,
-    override: Boolean = false
-) {
-    val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
-    addBindingIntoMap(mapKey, entryKey, entryValueBinding, override)
-}
-
-inline fun <reified E> ModuleBuilder.addBindingIntoSet(
-    elementBinding: Binding<out E>,
-    setName: Any? = null,
-    override: Boolean = false
-) {
-    addBindingIntoSet<E>(typeOf(), elementBinding, setName, override)
-}
-
-fun <E> ModuleBuilder.addBindingIntoSet(
-    setElementType: Type<E>,
-    elementBinding: Binding<out E>,
-    setName: Any? = null,
-    override: Boolean = false
-) {
-    val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
-    addBindingIntoSet(setKey, elementBinding, override)
 }
