@@ -109,10 +109,10 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
     moduleBuilder.bindIntoMap(
         mapKeyType = mapKeyType,
         mapValueType = mapValueType,
-        entryKey = entryKey,
         entryValueType = key.type as Type<out V>,
-        entryValueName = key.name,
+        entryKey = entryKey,
         mapName = mapName,
+        entryValueName = key.name,
         override = override
     )
     return this
@@ -128,11 +128,11 @@ fun <T : E, E> BindingContext<T>.bindIntoSet(
     setName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    moduleBuilder.addBindingIntoSet(
+    moduleBuilder.bindIntoSet(
         setElementType = setElementType,
-        elementKey = key,
-        elementBinding = binding,
+        elementType = key.type as Type<out E>,
         setName = setName,
+        elementName = key.name,
         override = override
     )
     return this

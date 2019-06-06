@@ -88,18 +88,23 @@ class SetTest {
         }
     }
 
-    /*@Test
+    @Test
     fun testOverridesLegalOverride() {
-        val component = component {
+        val originalValueComponent = component {
+            modules(
+                module { factory { "value" }.bindIntoSet() }
+            )
+        }
+        val overriddenValueComponent = component {
+            dependencies(originalValueComponent)
             modules(
                 module {
-                    factory { "value" }.bindIntoSet()
-                    factory { "overridden_value" }.bindIntoSet()
+                    factory(override = true) { "overridden_value" }.bindIntoSet(override = true)
                 }
             )
         }
 
-        assertEquals("overridden_value", component.get<Set<String>>().first())
-    }*/
+        assertEquals("overridden_value", overriddenValueComponent.get<Set<String>>().first())
+    }
 
 }

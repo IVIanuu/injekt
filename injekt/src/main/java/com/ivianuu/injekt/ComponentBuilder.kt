@@ -163,8 +163,6 @@ internal fun createComponent(
 
     setBindings?.getAll()?.forEach { (setKey, set) ->
         val setKeys = set.getBindingSet()
-            .map { it.key }
-            .toSet()
         bindings[setKey] = SetBinding<Any?>(setKeys)
         val lazySetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),

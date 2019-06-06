@@ -27,7 +27,6 @@ class ModuleBuilder {
             error("Already declared binding for $binding.key")
         }
 
-        binding.key = key
         binding.override = override
 
         bindings[key] = binding
@@ -63,10 +62,10 @@ class ModuleBuilder {
     fun <K, V> bindIntoMap(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
-        entryKey: K,
         entryValueType: Type<out V>,
-        entryValueName: Any? = null,
+        entryKey: K,
         mapName: Any? = null,
+        entryValueName: Any? = null,
         override: Boolean = false
     ) {
         val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
@@ -74,16 +73,16 @@ class ModuleBuilder {
             .put(entryKey, keyOf(entryValueType, entryValueName), override)
     }
 
-    fun <E> addBindingIntoSet(
+    fun <E> bindIntoSet(
         setElementType: Type<E>,
-        elementKey: Key,
-        elementBinding: Binding<out E>,
+        elementType: Type<out E>,
         setName: Any? = null,
+        elementName: Any? = null,
         override: Boolean = false
     ) {
         val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
         nonNullSetBindings().get<E>(setKey)
-            .put(elementKey, elementBinding, override)
+            .put(keyOf(elementType, elementName), override)
     }
 
     fun build(): Module = module(bindings, mapBindings, setBindings)
@@ -132,7 +131,7 @@ inline fun <reified K, reified V, reified E : V> ModuleBuilder.bindIntoMap(
 ) {
     bindIntoMap(
         typeOf(), typeOf<V>(),
-        entryKey, typeOf<E>(), entryName, mapName, override
+        typeOf<E>(), entryKey, mapName, entryName, override
     )
 }
 
@@ -140,11 +139,10 @@ inline fun <reified E> ModuleBuilder.bindSet(setName: Any? = null) {
     bindSet<E>(typeOf(), setName)
 }
 
-inline fun <reified E> ModuleBuilder.addBindingIntoSet(
-    elementKey: Key,
-    elementBinding: Binding<out E>,
+inline fun <reified E, reified V : E> ModuleBuilder.bindIntoSet(
     setName: Any? = null,
+    elementName: Any? = null,
     override: Boolean = false
 ) {
-    addBindingIntoSet<E>(typeOf(), elementKey, elementBinding, setName, override)
+    bindIntoSet(typeOf<E>(), typeOf<V>(), setName, elementName, override)
 }

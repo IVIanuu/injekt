@@ -18,7 +18,6 @@ package com.ivianuu.injekt
 
 abstract class Binding<T> : Provider<T> {
 
-    lateinit var key: Key
     var override = false
 
     /**

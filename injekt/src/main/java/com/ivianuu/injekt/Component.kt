@@ -100,7 +100,6 @@ class Component internal constructor(
     }
 
     private fun addBinding(key: Key, binding: Binding<*>) {
-        binding.key = key
         bindings[key] = binding
         binding.attach(this)
         attachedBindings[key] = binding

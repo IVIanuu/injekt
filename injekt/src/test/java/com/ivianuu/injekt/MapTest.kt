@@ -30,11 +30,11 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "value_one" }
-                        .bindIntoMap<String, String, String>("key_one", mapName = Values)
+                        .bindIntoMap("key_one", mapName = Values)
                     factory(NameTwo) { "value_two" }
-                        .bindIntoMap<String, String, String>("key_two", mapName = Values)
+                        .bindIntoMap("key_two", mapName = Values)
                     factory(NameThree) { "value_three" }
-                        .bindIntoMap<String, String, String>("key_three", mapName = Values)
+                        .bindIntoMap("key_three", mapName = Values)
                 }
             )
         }
@@ -86,8 +86,8 @@ class MapTest {
     fun testThrowsOnIllegalOverride() {
         component {
             module {
-                factory { "value" }.bindIntoMap<String, String, String>("key")
-                factory { "overridden_value" }.bindIntoMap<String, String, String>("key")
+                factory { "value" }.bindIntoMap("key")
+                factory { "overridden_value" }.bindIntoMap("key")
             }
         }
     }
@@ -97,11 +97,10 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value" }.bindIntoMap<String, String, String>("key")
-                    factory(NameTwo) { "overridden_value" }.bindIntoMap<String, String, String>(
-                        "key",
-                        override = true
-                    )
+                    factory(NameOne) { "value" }
+                        .bindIntoMap("key")
+                    factory(NameTwo) { "overridden_value" }
+                        .bindIntoMap("key", override = true)
                 }
             )
         }
