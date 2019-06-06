@@ -40,11 +40,10 @@ private class BridgeBinding<T>(
     private val originalType: Type<T>,
     private val originalName: Any?
 ) : Binding<T> {
-    private lateinit var component: Component
+    private lateinit var originalBinding: Binding<T>
     override fun attach(component: Component) {
-        this.component = component
+        originalBinding = component.getBinding(originalType, originalName)
     }
 
-    override fun get(parameters: ParametersDefinition?): T =
-        component.get(originalType, originalName)
+    override fun get(parameters: ParametersDefinition?): T = originalBinding.get(parameters)
 }
