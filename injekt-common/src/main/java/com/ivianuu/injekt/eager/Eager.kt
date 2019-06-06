@@ -21,7 +21,8 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionBinding
-import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.DefinitionContext
+
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
@@ -44,16 +45,24 @@ fun <T> ModuleBuilder.eager(
 ): BindingContext<T> =
     add(EagerBinding(SingleBinding(DefinitionBinding(definition))), type, name, override)
 
-private class EagerBinding<T>(private val binding: Binding<T>) : Binding<T>, AttachAware {
-
-    override fun link(linker: Linker) {
-        binding.link(linker)
+fun <T> Binding<T>.asEagerBinding(): EagerBinding<T> {
+    return when {
+        this is EagerBinding -> this
+        this is SingleBinding -> EagerBinding(this)
+        else -> EagerBinding(SingleBinding(this))
     }
+}
 
-    override fun get(parameters: ParametersDefinition?) = binding.get(parameters)
+@Target(AnnotationTarget.CLASS)
+annotation class Eager
 
-    override fun attached() {
-        get(null)
+class EagerBinding<T>(private val binding: Binding<T>) : Binding<T>, AttachAware {
+
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?) =
+        binding.get(context, parameters)
+
+    override fun attached(context: DefinitionContext) {
+        get(context)
     }
 
 }

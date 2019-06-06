@@ -17,15 +17,12 @@
 package com.ivianuu.injekt
 
 interface Binding<T> {
-    fun link(linker: Linker) {
-    }
-
-    fun get(parameters: ParametersDefinition? = null): T
-
-    operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
+    fun get(context: DefinitionContext, parameters: ParametersDefinition? = null): T
+    operator fun invoke(context: DefinitionContext, parameters: ParametersDefinition? = null): T =
+        get(context, parameters)
 }
 
 // todo remove
 interface AttachAware {
-    fun attached()
+    fun attached(context: DefinitionContext)
 }

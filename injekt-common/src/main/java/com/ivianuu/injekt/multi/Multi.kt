@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionBinding
-import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
@@ -45,15 +45,16 @@ fun <T> ModuleBuilder.multi(
 @Target(AnnotationTarget.CLASS)
 annotation class Multi
 
-private class MultiBinding<T>(private val binding: Binding<T>) : Binding<T> {
+fun <T> Binding<T>.asMultiBinding(): MultiBinding<T> {
+    return if (this is MultiBinding) this
+    else MultiBinding(this)
+}
+
+class MultiBinding<T>(private val binding: Binding<T>) : Binding<T> {
 
     private val values = mutableMapOf<Int, T>()
 
-    override fun link(linker: Linker) {
-        binding.link(linker)
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
         requireNotNull(parameters) { "Parameters cannot be null" }
 
         val params = parameters()
@@ -63,7 +64,7 @@ private class MultiBinding<T>(private val binding: Binding<T>) : Binding<T> {
         var value = values[key]
 
         return if (value == null && !values.containsKey(key)) {
-            value = binding.get(parameters)
+            value = binding.get(context, parameters)
             values[key] = value
             value
         } else {

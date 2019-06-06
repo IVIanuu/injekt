@@ -28,18 +28,13 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
-    private val linker = RealLinker(this) // todo move to constructor
-
-    private val linkedBindings = mutableMapOf<Key, Binding<*>>()
+    private val context = DefinitionContext(this)
 
     init {
         bindings.values
             .filterIsInstance<AttachAware>()
-            .forEach { it.attached() }
+            .forEach { it.attached(context) }
     }
-
-    internal fun <T> getBinding(type: Type<T>, name: Qualifier? = null): Binding<T> =
-        findBinding(keyOf(type, name), true) ?: error("couldn't find binding")
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -52,27 +47,20 @@ class Component internal constructor(
         val key = keyOf(type, name)
         val binding = findBinding<T>(key, true)
             ?: error("Couldn't find a binding for $key")
-        return binding.get(parameters)
+        return binding.get(context, parameters)
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
-        var binding = linkedBindings[key]
+        var binding = bindings[key]
         if (binding != null) return binding as Binding<T>
-
-        binding = bindings[key]
-        if (binding != null) {
-            binding.link(linker)
-            linkedBindings[key] = binding
-            return binding as Binding<T>
-        }
 
         for (dependency in dependencies) {
             binding = dependency.findBinding<T>(key, false)
             if (binding != null) return binding
         }
 
-        if (fullLookup && key.type.parameters.size == 1) {
+        /*if (fullLookup && key.type.parameters.size == 1) {
             when (key.type.raw) {
                 Provider::class -> {
                     val realKey = keyOf(key.type.parameters.first(), key.name)
@@ -87,7 +75,7 @@ class Component internal constructor(
                     return binding as Binding<T>
                 }
             }
-        }
+        }*/
 
         if (fullLookup && key.name == null) {
             val bindingFactory = JustInTimeBindings.find<T>(key)
@@ -105,9 +93,7 @@ class Component internal constructor(
 
     private fun <T> addJitBinding(key: Key, binding: Binding<T>) {
         bindings[key] = binding
-        binding.link(linker)
-        linkedBindings[key] = binding
-        (binding as? AttachAware)?.attached()
+        (binding as? AttachAware)?.attached(context)
     }
 
     private fun findComponentForScope(scope: Any?): Component? {

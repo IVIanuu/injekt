@@ -45,11 +45,7 @@ fun <T> Binding<T>.asSingleBinding(): SingleBinding<T> {
 class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: Any? = UNINITIALIZED
 
-    override fun link(linker: Linker) {
-        binding.link(linker)
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
             return value as T
@@ -61,7 +57,7 @@ class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
                 return@get value as T
             }
 
-            value = binding(parameters)
+            value = binding(context, parameters)
             _value = value
             return@get value as T
         }

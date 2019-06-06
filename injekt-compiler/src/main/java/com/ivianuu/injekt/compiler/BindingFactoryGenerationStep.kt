@@ -69,6 +69,9 @@ class BindingFactoryGenerationStep : ProcessingStep() {
             return null
         }
 
+        val kind = SpecialKind.values()
+            .firstOrNull { element.hasAnnotation(it.annotation) }
+
         var scopeAnnotation = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
 
         val scopeAnnotations =
@@ -181,6 +184,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
         return BindingFactoryDescriptor(
             targetName,
             creatorName,
+            kind,
             scopeName,
             constructorParams
         )

@@ -175,7 +175,7 @@ internal fun createComponent(
         }
     }
 
-    mapBindings.forEach { (mapKey, map) ->
+    /*mapBindings.forEach { (mapKey, map) ->
         bindings[mapKey] = MapBinding(map as Map<Any?, Binding<Any?>>)
         val lazyMapKey = keyOf(
             typeOf<Any?>(
@@ -207,7 +207,7 @@ internal fun createComponent(
             setKey.name
         )
         bindings[providerSetKey] = ProviderSetBinding(set as Set<Binding<Any?>>)
-    }
+    }*/
 
     return Component(scope, bindings, mapBindings, setBindings, dependencies)
 }

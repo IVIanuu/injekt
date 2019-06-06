@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Definition
 import com.ivianuu.injekt.DefinitionBinding
-import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
@@ -42,17 +42,17 @@ fun <T> ModuleBuilder.weak(
     definition: Definition<T>
 ): BindingContext<T> = add(WeakBinding(DefinitionBinding(definition)), type, name, override)
 
+fun <T> Binding<T>.asWeakBinding(): WeakBinding<T> {
+    return if (this is WeakBinding) this
+    else WeakBinding(this)
+}
+
 @Target(AnnotationTarget.CLASS)
 annotation class Weak
 
-private class WeakBinding<T>(private val binding: Binding<T>) : Binding<T> {
+class WeakBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: WeakReference<T>? = null
-
-    override fun link(linker: Linker) {
-        binding.link(linker)
-    }
-
-    override fun get(parameters: ParametersDefinition?): T {
-        return _value?.get() ?: binding(parameters).also { _value = WeakReference(it) }
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
+        return _value?.get() ?: binding(context, parameters).also { _value = WeakReference(it) }
     }
 }

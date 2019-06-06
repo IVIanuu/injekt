@@ -18,7 +18,8 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
-import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.DefinitionContext
+
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Scope
 import com.squareup.kotlinpoet.CodeBlock
@@ -30,12 +31,11 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.asTypeName
 
 class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) {
 
     fun generate() =
-        FileSpec.builder(descriptor.creatorName.packageName, descriptor.creatorName.simpleName)
+        FileSpec.builder(descriptor.factoryName.packageName, descriptor.factoryName.simpleName)
             .apply {
                 val imports = imports()
                 if (imports.isNotEmpty()) {
@@ -45,9 +45,19 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             .addType(bindingFactory())
             .build()
 
-    private fun imports() = setOf("get")
+    private fun imports() = mutableSetOf("get").apply {
+        descriptor.kind?.let {
+            add(
+                it.functionPackage.replace(
+                    "com.ivianuu.injekt", ""
+                )
+                    .let { if (it.startsWith(".")) it.replaceFirst(".", "") else it }
+                        + "." + it.functionName
+            )
+        }
+    }
 
-    private fun bindingFactory() = TypeSpec.classBuilder(descriptor.creatorName)
+    private fun bindingFactory() = TypeSpec.classBuilder(descriptor.factoryName)
         .addSuperinterface(
             BindingFactory::class.asClassName().plusParameter(descriptor.target)
         )
@@ -57,14 +67,30 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                 Scope::class.asClassName().copy(nullable = true),
                 KModifier.OVERRIDE
             )
-                .initializer("null")
+                .apply {
+                    if (descriptor.scope != null) {
+                        getter(
+                            FunSpec.getterBuilder()
+                                .addCode("return %T", descriptor.scope)
+                                .build()
+                        )
+                    } else {
+                        initializer("null")
+                    }
+                }
                 .build()
         )
         .addFunction(
             FunSpec.builder("create")
                 .addModifiers(KModifier.OVERRIDE)
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                .addCode("return BindingImpl()")
+                .apply {
+                    if (descriptor.kind != null) {
+                        addCode("return BindingImpl().${descriptor.kind.functionName}()")
+                    } else {
+                        addCode("return BindingImpl()")
+                    }
+                }
                 .build()
         )
         .addType(bindingImpl())
@@ -75,41 +101,10 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .addSuperinterface(
             Binding::class.asClassName().plusParameter(descriptor.target)
         )
-        .apply {
-            descriptor.constructorParams
-                .filterIsInstance<ParamDescriptor.Dependency>()
-                .forEach { param ->
-                    addProperty(
-                        PropertySpec.builder(
-                            param.paramName + "Binding",
-                            Binding::class.asTypeName().plusParameter(param.paramType)
-                        )
-                            .addModifiers(KModifier.PRIVATE, KModifier.LATEINIT)
-                            .mutable()
-                            .build()
-                    )
-                }
-        }
-        .addFunction(
-            FunSpec.builder("link")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter("linker", Linker::class.asClassName())
-                .addCode(
-                    CodeBlock.builder()
-                        .apply {
-                            descriptor.constructorParams
-                                .filterIsInstance<ParamDescriptor.Dependency>()
-                                .forEach { param ->
-                                    addStatement("${param.paramName}Binding = linker.get()")
-                                }
-                        }
-                        .build()
-                )
-                .build()
-        )
         .addFunction(
             FunSpec.builder("get")
                 .addModifiers(KModifier.OVERRIDE)
+                .addParameter("context", DefinitionContext::class)
                 .addParameter(
                     "parameters",
                     LambdaTypeName.get(
@@ -137,7 +132,11 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                         add("${param.paramName} = params!!.get(${param.index})")
                     }
                     is ParamDescriptor.Dependency -> {
-                        add("${param.paramName} = ${param.paramName}Binding()")
+                        if (param.qualifierName != null) {
+                            add("${param.paramName} = context.get(%T)", param.qualifierName)
+                        } else {
+                            add("${param.paramName} = context.get()")
+                        }
                     }
                 }
 

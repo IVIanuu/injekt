@@ -18,12 +18,14 @@ package com.ivianuu.injekt.bridge
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingContext
-import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.DefinitionContext
+
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.add
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.typeOf
 import java.util.*
 
@@ -51,10 +53,6 @@ private class BridgeBinding<T>(
     private val originalType: Type<T>,
     private val originalName: Qualifier?
 ) : Binding<T> {
-    private lateinit var originalBinding: Binding<T>
-    override fun link(linker: Linker) {
-        originalBinding = linker.get(originalType, originalName)
-    }
-
-    override fun get(parameters: ParametersDefinition?): T = originalBinding(parameters)
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
+        context.get(originalType, originalName)
 }

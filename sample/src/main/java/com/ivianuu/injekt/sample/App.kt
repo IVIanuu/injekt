@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import android.content.Context
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InjektTrait
@@ -27,9 +26,7 @@ import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.android.context
-import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.factoryState
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
@@ -56,11 +53,6 @@ annotation class PackageName {
 
 val appModule = module {
     factory<String>(PackageName) { context().packageName }
-
-    factoryState<String>(PackageName) {
-        val context by link<Context>()
-        definition { context().packageName }
-    }
 }
 
 @Single @ApplicationScope
