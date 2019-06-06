@@ -38,28 +38,28 @@ class MapBindings {
     fun getAll(): Map<Key, BindingMap<*, *>> = maps
 
     class BindingMap<K, V> internal constructor(private val mapKey: Key) {
-        private val map = mutableMapOf<K, Entry<V>>()
+        private val map = mutableMapOf<K, Entry>()
 
         fun putAll(other: BindingMap<K, V>) {
             other.map.forEach { (key, entry) -> put(key, entry) }
         }
 
-        fun put(key: K, binding: Binding<out V>, override: Boolean) {
-            put(key, Entry(binding, override))
+        fun put(entryKey: K, entryValueKey: Key, override: Boolean) {
+            put(entryKey, Entry(entryValueKey, override))
         }
 
-        private fun put(key: K, entry: Entry<V>) {
-            if (map.contains(key) && !entry.override) {
-                error("Already declared $key in map $mapKey")
+        private fun put(entryKey: K, entry: Entry) {
+            if (map.contains(entryKey) && !entry.override) {
+                error("Already declared $entryKey in map $mapKey")
             }
 
-            map[key] = entry
+            map[entryKey] = entry
         }
 
-        fun getBindingMap(): Map<K, Binding<out V>> = map.mapValues { it.value.binding }
+        fun getBindingMap(): Map<K, Key> = map.mapValues { it.value.entryValueKey }
 
-        private class Entry<V>(
-            val binding: Binding<out V>,
+        private class Entry(
+            val entryValueKey: Key,
             val override: Boolean
         )
     }

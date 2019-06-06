@@ -141,8 +141,7 @@ internal fun createComponent(
     }
 
     mapBindings?.getAll()?.forEach { (mapKey, map) ->
-        val bindingKeys = map.getBindingMap()
-            .mapValues { it.value.key }
+        val bindingKeys = map.getBindingMap() as Map<Any?, Key>
         bindings[mapKey] = MapBinding<Any?, Any?>(bindingKeys)
         val lazyMapKey = keyOf(
             typeOf<Any?>(
