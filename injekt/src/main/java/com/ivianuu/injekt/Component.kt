@@ -46,11 +46,12 @@ class Component internal constructor(
     /**
      * Returns the [Binding] matching [type] and [name]
      */
-    fun <T> getBinding(type: Type<T>, name: Any? = null): Binding<T> {
-        val key = keyOf(type, name)
-        return findBinding(key, true)
+    fun <T> getBinding(type: Type<T>, name: Any? = null): Binding<T> =
+        getBinding(keyOf(type, name))
+
+    fun <T> getBinding(key: Key): Binding<T> =
+        findBinding(key, true)
             ?: error("Couldn't find a binding for $key")
-    }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
@@ -62,22 +63,22 @@ class Component internal constructor(
             if (binding != null) return binding
         }
 
-        /*if (fullLookup && key.type.parameters.size == 1) {
+        if (fullLookup && key.type.parameters.size == 1) {
             when (key.type.raw) {
                 Provider::class -> {
                     val realKey = keyOf(key.type.parameters.first(), key.name)
                     binding = ProviderBinding<T>(realKey)
-                    addJitBinding(key, binding)
+                    addBinding(key, binding)
                     return binding as Binding<T>
                 }
                 Lazy::class -> {
                     val realKey = keyOf(key.type.parameters.first(), key.name)
                     binding = LazyBinding<T>(realKey)
-                    addJitBinding(key, binding)
+                    addBinding(key, binding)
                     return binding as Binding<T>
                 }
             }
-        }*/
+        }
 
         if (fullLookup && key.name == null) {
             val bindingFactory = JustInTimeBindings.find<T>(key)
@@ -85,13 +86,17 @@ class Component internal constructor(
                 val component = findComponentForScope(bindingFactory.scope)
                     ?: error("Couldn't find component for $scope")
                 binding = bindingFactory.create()
-                binding.attach(this)
-                component.bindings[key] = binding
+                component.addBinding(key, binding)
                 return binding
             }
         }
 
         return null
+    }
+
+    private fun addBinding(key: Key, binding: Binding<*>) {
+        binding.attach(this)
+        bindings[key] = binding
     }
 
     private fun findComponentForScope(scope: Any?): Component? {

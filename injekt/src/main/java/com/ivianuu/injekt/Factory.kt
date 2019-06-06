@@ -27,9 +27,7 @@ fun <T> ModuleBuilder.factory(
     name: Any? = null,
     override: Boolean = false,
     block: StateDefinitionFactory.() -> Definition<T>
-): BindingContext<T> = bind(
-    DefinitionBinding(block), type, name, override
-)
+): BindingContext<T> = bind(DefinitionBinding(type, name, override, block))
 
 @Target(AnnotationTarget.CLASS)
 annotation class Factory

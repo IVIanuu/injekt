@@ -35,8 +35,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory { typed }
-                    single(Named) { named }
+                    factory { definition { typed } }
+                    single(Named) { definition { named } }
                 }
             )
         }
@@ -53,7 +53,7 @@ class ComponentTest {
         val dependency = component {
             modules(
                 module {
-                    factory { TestDep1() }
+                    factory { definition { TestDep1() } }
                 }
             )
         }
@@ -62,7 +62,10 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory { TestDep2(get()) }
+                    factory {
+                        val testDep1 = link<TestDep1>()
+                        definition { TestDep2(testDep1()) }
+                    }
                 }
             )
             dependencies(dependency)
@@ -85,8 +88,10 @@ class ComponentTest {
             modules(
                 module {
                     factory {
-                        called = true
-                        TestDep1()
+                        definition {
+                            called = true
+                            TestDep1()
+                        }
                     }
                 }
             )
@@ -103,11 +108,11 @@ class ComponentTest {
     @Test
     fun testExplicitOverride() {
         val module1 = module {
-            factory { "my_value" }
+            factory { definition { "my_value" } }
         }
 
         val module2 = module {
-            factory(override = true) { "my_overridden_value" }
+            factory(override = true) { definition { "my_overridden_value" } }
         }
 
         val component = component { modules(module1, module2) }
@@ -120,7 +125,7 @@ class ComponentTest {
         val parentComponent = component {
             modules(
                 module {
-                    factory { "my_value" }
+                    factory { definition { "my_value" } }
                 }
             )
         }
@@ -128,7 +133,7 @@ class ComponentTest {
         val childComponent = component {
             modules(
                 module {
-                    factory(override = true) { "my_overridden_value" }
+                    factory(override = true) { definition { "my_overridden_value" } }
                 }
             )
         }
@@ -140,11 +145,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testDisallowsImplicitOverride() {
         val module1 = module {
-            factory { "my_value" }
+            factory { definition { "my_value" } }
         }
 
         val module2 = module {
-            factory { "my_overridden_value" }
+            factory { definition { "my_overridden_value" } }
         }
 
         component { modules(module1, module2) }
@@ -155,7 +160,7 @@ class ComponentTest {
         val rootComponent = component {
             modules(
                 module {
-                    factory { "my_value" }
+                    factory { definition { "my_value" } }
                 }
             )
         }
@@ -164,7 +169,7 @@ class ComponentTest {
             dependencies(rootComponent)
             modules(
                 module {
-                    factory { "my_overriden_value" }
+                    factory { definition { "my_overriden_value" } }
                 }
             )
         }
@@ -175,7 +180,7 @@ class ComponentTest {
         val dependency1 = component {
             modules(
                 module {
-                    factory { "value_1" }
+                    factory { definition { "value_1" } }
                 }
             )
         }
@@ -183,7 +188,7 @@ class ComponentTest {
         val dependency2 = component {
             modules(
                 module {
-                    factory { "value_2" }
+                    factory { definition { "value_2" } }
                 }
             )
         }
@@ -196,8 +201,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    single { listOf(1, 2, 3) }
-                    single { listOf("one", "two", "three") }
+                    single { definition { listOf(1, 2, 3) } }
+                    single { definition { listOf("one", "two", "three") } }
                 }
             )
         }
@@ -213,8 +218,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory<String> { "string" }
-                    factory<String?> { "nullable string" }
+                    factory<String> { definition { "string" } }
+                    factory<String?> { definition { "nullable string" } }
                 }
             )
         }

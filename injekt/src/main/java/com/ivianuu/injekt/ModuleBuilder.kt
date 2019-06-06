@@ -22,20 +22,16 @@ class ModuleBuilder {
     private val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
     private val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
 
-    fun <T> bind(
-        binding: Binding<T>,
-        key: Key,
-        override: Boolean = false
-    ): BindingContext<T> {
-        if (bindings.put(key, binding) != null && !override) {
-            error("Already declared binding for $key")
+    fun <T> bind(binding: Binding<T>): BindingContext<T> {
+        if (bindings.put(binding.key, binding) != null && !binding.override) {
+            error("Already declared binding for $binding.key")
         }
 
-        return BindingContext(binding, key, override, this)
+        return BindingContext(binding, this)
     }
 
     fun include(module: Module) {
-        module.bindings.forEach { bind(it.value, it.key) }
+        module.bindings.forEach { bind(it.value) }
         module.mapBindings.forEach { (mapKey, map) ->
             map.forEach { (entryKey, entryValueBinding) ->
                 addBindingIntoMap(mapKey, entryKey, entryValueBinding)
@@ -95,19 +91,6 @@ fun module(
 
 inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
     .apply(block).build()
-
-inline fun <reified T> ModuleBuilder.bind(
-    binding: Binding<T>,
-    name: Any? = null,
-    override: Boolean = false
-): BindingContext<T> = bind(binding, typeOf<T>(), name, override)
-
-fun <T> ModuleBuilder.bind(
-    binding: Binding<T>,
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false
-): BindingContext<T> = bind(binding, keyOf(type, name), override)
 
 inline fun <reified K, reified V> ModuleBuilder.bindMap(
     mapName: Any? = null

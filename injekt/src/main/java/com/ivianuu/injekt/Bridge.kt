@@ -33,13 +33,14 @@ fun <T> ModuleBuilder.withBinding(
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    bind(BridgeBinding(type, name), type, UUID.randomUUID().toString()).block()
+    bind(BridgeBinding(type, name, UUID.randomUUID().toString())).block()
 }
 
 private class BridgeBinding<T>(
     private val originalType: Type<T>,
-    private val originalName: Any?
-) : Binding<T> {
+    private val originalName: Any?,
+    name: Any?
+) : Binding<T>(originalType, name) {
     private lateinit var originalBinding: Binding<T>
     override fun attach(component: Component) {
         originalBinding = component.getBinding(originalType, originalName)

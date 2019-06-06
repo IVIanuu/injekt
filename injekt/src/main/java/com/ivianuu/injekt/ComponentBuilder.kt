@@ -81,8 +81,6 @@ internal fun createComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
-    // todo clean up the whole function
-
     val dependencyScopes = mutableSetOf<KClass<out Annotation>>()
 
     dependencies.forEach {
@@ -149,7 +147,11 @@ internal fun createComponent(
 
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
-            // todo override handling
+            if ((bindings.contains(key)
+                        || dependencyBindingKeys.contains(key)) && !binding.override
+            ) {
+                error("Already declared key $key")
+            }
             bindings[key] = binding
         }
 

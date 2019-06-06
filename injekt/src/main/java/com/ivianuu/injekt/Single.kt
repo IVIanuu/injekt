@@ -28,18 +28,20 @@ fun <T> ModuleBuilder.single(
     override: Boolean = false,
     block: StateDefinitionFactory.() -> Definition<T>
 ): BindingContext<T> = bind(
-    DefinitionBinding(block).asSingle(), type, name, override
+    DefinitionBinding(type, name, override, block).asSingle()
 )
 
 @Target(AnnotationTarget.CLASS)
 annotation class Single
 
-fun <T> Binding<T>.asSingle(): SingleBinding<T> {
+fun <T> Binding<T>.asSingle(): Binding<T> {
     return if (this is SingleBinding) this
     else SingleBinding(this)
 }
 
-class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
+internal class SingleBinding<T>(
+    private val binding: Binding<T>
+) : Binding<T>(binding.type, binding.name, binding.override) {
     private var _value: Any? = UNINITIALIZED
 
     override fun attach(component: Component) {

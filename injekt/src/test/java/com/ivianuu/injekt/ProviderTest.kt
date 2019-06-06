@@ -27,7 +27,7 @@ class ProviderTest {
         val component = component {
             modules(
                 module {
-                    factory { TestDep1() }
+                    factory { definition { TestDep1() } }
                 }
             )
         }
@@ -38,15 +38,17 @@ class ProviderTest {
     }
 
     @Test
-    fun testProviderUsesExplicitParams() {
+    fun testProviderPassesParams() {
         var usedParams: Parameters? = null
 
         val component = component {
             modules(
                 module {
                     factory {
-                        usedParams = it
-                        TestDep1()
+                        definition {
+                            usedParams = it
+                            TestDep1()
+                        }
                     }
                 }
             )
