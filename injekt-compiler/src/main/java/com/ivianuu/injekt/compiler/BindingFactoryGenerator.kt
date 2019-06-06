@@ -30,6 +30,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
 import kotlin.reflect.KClass
 
 class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) {
@@ -45,7 +46,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             .addType(bindingFactory())
             .build()
 
-    private fun imports() = mutableSetOf("get").apply {
+    private fun imports() = mutableSetOf("getBinding").apply {
         if (descriptor.isSingle) add("asSingle")
     }
 
@@ -95,10 +96,48 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .addSuperinterface(
             Binding::class.asClassName().plusParameter(descriptor.target)
         )
+        .apply {
+            descriptor.constructorParams
+                .filterIsInstance<ParamDescriptor.Dependency>()
+                .forEach { param ->
+                    addProperty(
+                        PropertySpec.builder(
+                            param.paramName + "Binding",
+                            Binding::class.asTypeName().plusParameter(param.paramType)
+                        )
+                            .addModifiers(KModifier.PRIVATE, KModifier.LATEINIT)
+                            .mutable()
+                            .build()
+                    )
+                }
+        }
+        .addFunction(
+            FunSpec.builder("attach")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("component", Component::class)
+                .addCode(
+                    CodeBlock.builder()
+                        .apply {
+                            descriptor.constructorParams
+                                .filterIsInstance<ParamDescriptor.Dependency>()
+                                .forEach { param ->
+                                    if (param.qualifierName != null) {
+                                        addStatement(
+                                            "${param.paramName}Binding = component.getBinding(%T)",
+                                            param.qualifierName
+                                        )
+                                    } else {
+                                        addStatement("${param.paramName}Binding = component.getBinding()")
+                                    }
+                                }
+                        }
+                        .build()
+                )
+                .build()
+        )
         .addFunction(
             FunSpec.builder("get")
                 .addModifiers(KModifier.OVERRIDE)
-                .addParameter("component", Component::class)
                 .addParameter(
                     "parameters",
                     LambdaTypeName.get(
@@ -126,11 +165,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                         add("${param.paramName} = params!!.get(${param.index})")
                     }
                     is ParamDescriptor.Dependency -> {
-                        if (param.qualifierName != null) {
-                            add("${param.paramName} = component.get(%T)", param.qualifierName)
-                        } else {
-                            add("${param.paramName} = component.get()")
-                        }
+                        add("${param.paramName} = ${param.paramName}Binding()")
                     }
                 }
 

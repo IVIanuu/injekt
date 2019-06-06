@@ -30,6 +30,10 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
+    init {
+        bindings.forEach { it.value.attach(this) }
+    }
+
     /**
      * Returns the instance matching the [type] and [name]
      */
@@ -37,11 +41,15 @@ class Component internal constructor(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): T {
+    ): T = getBinding(type, name).get(parameters)
+
+    /**
+     * Returns the [Binding] matching [type] and [name]
+     */
+    fun <T> getBinding(type: Type<T>, name: Any? = null): Binding<T> {
         val key = keyOf(type, name)
-        val binding = findBinding<T>(key, true)
+        return findBinding(key, true)
             ?: error("Couldn't find a binding for $key")
-        return binding.get(this, parameters)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -77,6 +85,7 @@ class Component internal constructor(
                 val component = findComponentForScope(bindingFactory.scope)
                     ?: error("Couldn't find component for $scope")
                 binding = bindingFactory.create()
+                binding.attach(this)
                 component.bindings[key] = binding
                 return binding
             }
@@ -102,6 +111,9 @@ inline fun <reified T> Component.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
+
+inline fun <reified T> Component.getBinding(name: Any? = null): Binding<T> =
+    getBinding(typeOf(), name)
 
 inline fun <reified T> Component.inject(
     name: Any? = null,

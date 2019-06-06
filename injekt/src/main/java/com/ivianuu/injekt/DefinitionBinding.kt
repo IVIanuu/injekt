@@ -17,7 +17,12 @@
 package com.ivianuu.injekt
 
 class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
-    override fun get(component: Component, parameters: ParametersDefinition?): T {
+    private lateinit var component: Component
+    override fun attach(component: Component) {
+        this.component = component
+    }
+
+    override fun get(parameters: ParametersDefinition?): T {
         return try {
             definition.invoke(component, parameters?.invoke() ?: emptyParameters())
         } catch (e: Exception) {
