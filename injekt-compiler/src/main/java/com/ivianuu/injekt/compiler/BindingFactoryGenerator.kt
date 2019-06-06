@@ -111,30 +111,34 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                     )
                 }
         }
-        .addFunction(
-            FunSpec.builder("attach")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter("component", Component::class)
-                .addCode(
-                    CodeBlock.builder()
-                        .apply {
-                            descriptor.constructorParams
-                                .filterIsInstance<ParamDescriptor.Dependency>()
-                                .forEach { param ->
-                                    if (param.qualifierName != null) {
-                                        addStatement(
-                                            "${param.paramName}Binding = component.getBinding(%T)",
-                                            param.qualifierName
-                                        )
-                                    } else {
-                                        addStatement("${param.paramName}Binding = component.getBinding()")
-                                    }
+        .apply {
+            if (descriptor.constructorParams.isNotEmpty()) {
+                addFunction(
+                    FunSpec.builder("attach")
+                        .addModifiers(KModifier.OVERRIDE)
+                        .addParameter("component", Component::class)
+                        .addCode(
+                            CodeBlock.builder()
+                                .apply {
+                                    descriptor.constructorParams
+                                        .filterIsInstance<ParamDescriptor.Dependency>()
+                                        .forEach { param ->
+                                            if (param.qualifierName != null) {
+                                                addStatement(
+                                                    "${param.paramName}Binding = component.getBinding(%T)",
+                                                    param.qualifierName
+                                                )
+                                            } else {
+                                                addStatement("${param.paramName}Binding = component.getBinding()")
+                                            }
+                                        }
                                 }
-                        }
+                                .build()
+                        )
                         .build()
                 )
-                .build()
-        )
+            }
+        }
         .addFunction(
             FunSpec.builder("get")
                 .addModifiers(KModifier.OVERRIDE)
