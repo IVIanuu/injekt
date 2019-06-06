@@ -16,16 +16,23 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertFalse
 import org.junit.Test
 
 class TypeTest {
 
     @Test
+    fun testParameterDistinction() {
+        val listOfInts = typeOf<List<Int>>()
+        val listOfStrings = typeOf<List<String>>()
+        assertFalse(listOfInts == listOfStrings)
+    }
+
+    @Test
     fun testNullableDistinction() {
         val stringType = typeOf<String>()
         val nullableStringType = typeOf<String?>()
-        assertNotSame(stringType, nullableStringType)
+        assertFalse(stringType == nullableStringType)
     }
 
 }
