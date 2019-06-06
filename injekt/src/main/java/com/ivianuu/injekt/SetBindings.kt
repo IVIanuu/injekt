@@ -45,7 +45,7 @@ class SetBindings {
             other.map.forEach { (key, override) -> put(key, override) }
         }
 
-        private fun put(elementKey: Key, override: Boolean) {
+        fun put(elementKey: Key, override: Boolean) {
             if (map.contains(elementKey) && !override) {
                 error("Already declared $elementKey in set $setKey")
             }

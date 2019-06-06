@@ -35,7 +35,7 @@ import com.ivianuu.injekt.typeOf
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
 */
-inline fun <reified T : ViewModel> ModuleBuilder.viewModel(
+inline fun <reified T : ViewModel> Module.viewModel(
 name: Any? = null,
 viewModelStoreName: Any? = null,
 override: Boolean = false,
@@ -45,7 +45,7 @@ noinline definition: Definition<T>
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
 */
-fun <T : ViewModel> ModuleBuilder.viewModel(
+fun <T : ViewModel> Module.viewModel(
 type: Type<T>,
 name: Any? = null,
 viewModelStoreName: Any? = null,

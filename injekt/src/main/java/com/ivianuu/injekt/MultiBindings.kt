@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 internal abstract class AbsMapBinding<K, V, M : Map<K, *>>(private val keysByKey: Map<K, Key>) :
     Binding<M>() {
-    lateinit var bindingsByKey: Map<K, Binding<out V>>
+    protected lateinit var bindingsByKey: Map<K, Binding<out V>>
     final override fun attach(component: Component) {
         bindingsByKey = keysByKey
             .mapValues { component.getBinding<V>(it.value) }
@@ -48,7 +48,7 @@ internal class ProviderMapBinding<K, V>(keysByKey: Map<K, Key>) :
 }
 
 internal abstract class AbsSetBinding<E, S : Set<*>>(private val keys: Set<Key>) : Binding<S>() {
-    lateinit var bindings: Set<Binding<out E>>
+    protected lateinit var bindings: Set<Binding<out E>>
     final override fun attach(component: Component) {
         bindings = keys.map { component.getBinding<E>(it) }.toSet()
     }

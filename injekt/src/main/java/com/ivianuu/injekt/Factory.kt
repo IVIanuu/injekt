@@ -16,26 +16,26 @@
 
 package com.ivianuu.injekt
 
-inline fun <reified T> ModuleBuilder.factory(
+inline fun <reified T> Module.factory(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = factory(typeOf(), name, override, definition)
 
-fun <T> ModuleBuilder.factory(
+fun <T> Module.factory(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = bind(definitionBinding(definition), type, name, override)
 
-inline fun <reified T> ModuleBuilder.factoryWithState(
+inline fun <reified T> Module.factoryWithState(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
 ): BindingContext<T> = factoryWithState(typeOf(), name, override, definition)
 
-fun <T> ModuleBuilder.factoryWithState(
+fun <T> Module.factoryWithState(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,

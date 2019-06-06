@@ -19,15 +19,130 @@ package com.ivianuu.injekt
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
-interface Module {
-    val bindings: Map<Key, Binding<*>> get() = emptyMap()
-    val mapBindings: MapBindings?
-    val setBindings: SetBindings?
+class Module @PublishedApi internal constructor() {
+
+    internal val bindings = hashMapOf<Key, Binding<*>>()
+    internal var mapBindings: MapBindings? = null
+        private set
+    internal var setBindings: SetBindings? = null
+        private set
+
+    fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
+        if (bindings.contains(key) && !override) {
+            error("Already declared binding for $binding.key")
+        }
+
+        binding.override = override
+
+        bindings[key] = binding
+
+        return BindingContext(binding, key, override, this)
+    }
+
+    fun include(module: Module) {
+        module.bindings.forEach { bind(it.value, it.key, it.value.override) }
+        module.mapBindings?.let { nonNullMapBindings().putAll(it) }
+        module.setBindings?.let { nonNullSetBindings().putAll(it) }
+    }
+
+    // todo rename
+    fun <K, V> bindMap(
+        mapKeyType: Type<K>,
+        mapValueType: Type<V>,
+        mapName: Any? = null
+    ) {
+        val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
+        nonNullMapBindings().putIfAbsent(mapKey)
+    }
+
+    fun <K, V> bindIntoMap(
+        mapKeyType: Type<K>,
+        mapValueType: Type<V>,
+        entryValueType: Type<out V>,
+        entryKey: K,
+        mapName: Any? = null,
+        entryValueName: Any? = null,
+        override: Boolean = false
+    ) {
+        val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
+        nonNullMapBindings().get<K, V>(mapKey)
+            .put(entryKey, keyOf(entryValueType, entryValueName), override)
+    }
+
+    // todo rename
+    fun <E> bindSet(
+        setElementType: Type<E>,
+        setName: Any? = null
+    ) {
+        val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
+        nonNullSetBindings().putIfAbsent(setKey)
+    }
+
+    fun <E> bindIntoSet(
+        setElementType: Type<E>,
+        elementType: Type<out E>,
+        setName: Any? = null,
+        elementName: Any? = null,
+        override: Boolean = false
+    ) {
+        val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
+        nonNullSetBindings().get<E>(setKey)
+            .put(keyOf(elementType, elementName), override)
+    }
+
+    private fun nonNullMapBindings(): MapBindings =
+        mapBindings ?: MapBindings().also { mapBindings = it }
+
+    private fun nonNullSetBindings(): SetBindings =
+        setBindings ?: SetBindings().also { setBindings = it }
+
+
 }
 
-internal class DefaultModule(
-    override val bindings: Map<Key, Binding<*>>,
-    override val mapBindings: MapBindings?,
-    override val setBindings: SetBindings?
-) : Module
+inline fun module(block: Module.() -> Unit): Module = Module().apply(block)
 
+inline fun <reified T> Module.bind(
+    binding: Binding<T>,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(binding, typeOf(), name, override)
+
+fun <T> Module.bind(
+    binding: Binding<T>,
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(binding, com.ivianuu.injekt.keyOf(type, name), override)
+
+inline fun <reified K, reified V> Module.bindMap(
+    mapName: Any? = null
+) {
+    bindMap<K, V>(typeOf(), typeOf(), mapName)
+}
+
+inline fun <reified K, reified V, reified E : V> Module.bindIntoMap(
+    entryKey: K,
+    mapName: Any? = null,
+    entryName: Any? = null,
+    override: Boolean = false
+) {
+    bindIntoMap(
+        typeOf(), typeOf<V>(),
+        typeOf<E>(), entryKey, mapName, entryName, override
+    )
+}
+
+inline fun <reified E> Module.bindSet(setName: Any? = null) {
+    bindSet<E>(typeOf(), setName)
+}
+
+inline fun <reified E, reified V : E> Module.bindIntoSet(
+    setName: Any? = null,
+    elementName: Any? = null,
+    override: Boolean = false
+) {
+    bindIntoSet(
+        typeOf<E>(),
+        typeOf<V>(), setName, elementName, override
+    )
+}

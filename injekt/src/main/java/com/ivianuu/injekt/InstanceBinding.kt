@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-fun <T> ModuleBuilder.instance(
+fun <T> Module.instance(
     instance: T,
     type: Type<T> = typeOf((instance as Any)::class),
     name: Any? = null,

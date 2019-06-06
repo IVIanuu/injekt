@@ -18,14 +18,14 @@ package com.ivianuu.injekt
 
 import java.util.*
 
-inline fun <reified T> ModuleBuilder.withBinding(
+inline fun <reified T> Module.withBinding(
     name: Any? = null,
     noinline block: BindingContext<T>.() -> Unit
 ) {
     withBinding(typeOf(), name, block)
 }
 
-fun <T> ModuleBuilder.withBinding(
+fun <T> Module.withBinding(
     type: Type<T>,
     name: Any? = null,
     block: BindingContext<T>.() -> Unit

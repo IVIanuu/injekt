@@ -22,7 +22,7 @@ data class BindingContext<T>(
     val binding: Binding<T>,
     val key: Key,
     val override: Boolean,
-    val moduleBuilder: ModuleBuilder
+    val module: Module
 )
 
 inline fun <reified T> BindingContext<*>.bindAlias(
@@ -37,7 +37,7 @@ fun BindingContext<*>.bindAlias(
     name: Any? = null,
     override: Boolean = false
 ) {
-    moduleBuilder.instance(binding as Binding<Any?>, type as Type<Any?>, name, override)
+    module.bind(binding as Binding<Any?>, type as Type<Any?>, name, override)
 }
 
 inline fun <reified T> BindingContext<*>.bindType() {
@@ -106,7 +106,7 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
     mapName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    moduleBuilder.bindIntoMap(
+    module.bindIntoMap(
         mapKeyType = mapKeyType,
         mapValueType = mapValueType,
         entryValueType = key.type as Type<out V>,
@@ -128,7 +128,7 @@ fun <T : E, E> BindingContext<T>.bindIntoSet(
     setName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    moduleBuilder.bindIntoSet(
+    module.bindIntoSet(
         setElementType = setElementType,
         elementType = key.type as Type<out E>,
         setName = setName,

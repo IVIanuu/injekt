@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt
 
-inline fun <reified T> ModuleBuilder.single(
+inline fun <reified T> Module.single(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = single(typeOf(), name, override, definition)
 
-fun <T> ModuleBuilder.single(
+fun <T> Module.single(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
@@ -31,13 +31,13 @@ fun <T> ModuleBuilder.single(
     definitionBinding(definition).asSingle(), type, name, override
 )
 
-inline fun <reified T> ModuleBuilder.singleWithState(
+inline fun <reified T> Module.singleWithState(
     name: Any? = null,
     override: Boolean = false,
     noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
 ): BindingContext<T> = singleWithState(typeOf(), name, override, definition)
 
-fun <T> ModuleBuilder.singleWithState(
+fun <T> Module.singleWithState(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
