@@ -25,7 +25,7 @@ import kotlin.reflect.KClass
 class Component internal constructor(
     val scope: KClass<out Annotation>?,
     internal val bindings: MutableMap<Key, BindingContribution<*>>,
-    internal val mapBindings: Map<Key, Map<Any?, MapContribution<*, *>>>,
+    internal val mapBindings: MapBindings?,
     internal val setBindings: Map<Key, Set<SetContribution<*>>>,
     internal val dependencies: Iterable<Component>
 ) {

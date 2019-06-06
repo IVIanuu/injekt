@@ -112,28 +112,11 @@ internal fun createComponent(
         }
 
     val bindings = mutableMapOf<Key, BindingContribution<*>>()
-    val mapBindings = mutableMapOf<Key, MutableMap<Any?, MapContribution<*, *>>>()
+    val mapBindings = MapBindings() // todo lazy init
     val setBindings = mutableMapOf<Key, MutableSet<SetContribution<*>>>()
 
     dependencies.forEach { dependency ->
-        dependency.mapBindings.forEach { (mapKey, map) ->
-            if (map.isNotEmpty()) {
-                map.forEach { (entryKey, contribution) ->
-                    val thisMap = mapBindings.getOrPut(mapKey) {
-                        mutableMapOf()
-                    }
-
-                    if (thisMap.contains(entryKey) && !contribution.override) {
-                        error("Already declared $entryKey in map $mapKey")
-                    }
-
-                    thisMap[entryKey] = contribution
-                }
-            } else {
-                // ensure that the empty map exists
-                mapBindings.getOrPut(mapKey) { mutableMapOf() }
-            }
-        }
+        dependency.mapBindings?.let { mapBindings.putAll(it) }
 
         dependency.setBindings.forEach { (setKey, set) ->
             if (set.isNotEmpty()) {
@@ -165,24 +148,7 @@ internal fun createComponent(
             bindings[key] = binding
         }
 
-        module.mapBindings.forEach { (mapKey, map) ->
-            if (map.isNotEmpty()) {
-                map.forEach { (entryKey, contribution) ->
-                    val thisMap = mapBindings.getOrPut(mapKey) {
-                        mutableMapOf()
-                    }
-
-                    if (thisMap.contains(entryKey) && !contribution.override) {
-                        error("Already declared $entryKey in $mapKey")
-                    }
-
-                    thisMap[entryKey] = contribution
-                }
-            } else {
-                // ensure that the empty map exists
-                mapBindings.getOrPut(mapKey) { mutableMapOf() }
-            }
-        }
+        module.mapBindings?.let { mapBindings.putAll(it) }
 
         module.setBindings.forEach { (setKey, set) ->
             if (set.isNotEmpty()) {
@@ -204,9 +170,9 @@ internal fun createComponent(
         }
     }
 
-    mapBindings.forEach { (mapKey, map) ->
+    mapBindings.getAll().forEach { (mapKey, map) ->
         bindings[mapKey] = BindingContribution(
-            MapBinding(map as Map<Any?, MapContribution<Any?, Any?>>),
+            MapBinding(map.getBindingMap() as Map<Any?, Binding<Any?>>),
             mapKey,
             false
         )
@@ -218,7 +184,7 @@ internal fun createComponent(
             mapKey.name
         )
         bindings[lazyMapKey] = BindingContribution(
-            LazyMapBinding(map as Map<Any?, MapContribution<Any?, Any?>>),
+            LazyMapBinding(map.getBindingMap() as Map<Any?, Binding<Any?>>),
             lazyMapKey,
             false
         )
@@ -230,7 +196,7 @@ internal fun createComponent(
             mapKey.name
         )
         bindings[providerMapKey] = BindingContribution(
-            ProviderMapBinding(map as Map<Any?, MapContribution<Any?, Any?>>),
+            ProviderMapBinding(map.getBindingMap() as Map<Any?, Binding<Any?>>),
             providerMapKey,
             false
         )

@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 class ModuleBuilder {
 
     private val bindings = mutableMapOf<Key, BindingContribution<*>>()
-    private val mapBindings = mutableMapOf<Key, MutableMap<Any?, MapContribution<*, *>>>()
+    private val mapBindings = MapBindings() // todo maybe lazy create
     private val setBindings = mutableMapOf<Key, MutableSet<SetContribution<*>>>()
 
     fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
@@ -34,11 +34,7 @@ class ModuleBuilder {
 
     fun include(module: Module) {
         module.bindings.forEach { bind(it.value.binding, it.value.key, it.value.override) }
-        module.mapBindings.forEach { (mapKey, map) ->
-            map.forEach { (entryKey, contribution) ->
-                addBindingIntoMap(mapKey, entryKey, contribution.binding, contribution.override)
-            }
-        }
+        module.mapBindings?.let { mapBindings.putAll(it) }
         module.setBindings.forEach { (setKey, set) ->
             set.forEach { contribution ->
                 addBindingIntoSet(setKey, contribution.binding, contribution.override)
@@ -48,7 +44,7 @@ class ModuleBuilder {
 
     // todo rename
     fun bindMap(mapKey: Key) {
-        mapBindings.getOrPut(mapKey) { mutableMapOf() }
+        mapBindings.putIfAbsent(mapKey)
     }
 
     // todo rename
@@ -62,13 +58,8 @@ class ModuleBuilder {
         entryValueBinding: Binding<*>,
         override: Boolean = false
     ) {
-        val map = mapBindings.getOrPut(mapKey) { mutableMapOf() }
-        val oldEntryValueBinding = map[entryKey]
-        if (oldEntryValueBinding != null && !override) {
-            error("Already added value for $entryKey in map $mapKey")
-        }
-
-        map[entryKey] = MapContribution(entryValueBinding, entryKey, override)
+        mapBindings.get<Any?, Any?>(mapKey)
+            .put(entryKey, entryValueBinding as Binding<Any?>, override)
     }
 
     fun addBindingIntoSet(
@@ -90,7 +81,7 @@ class ModuleBuilder {
 
 fun module(
     bindings: Map<Key, BindingContribution<*>> = emptyMap(),
-    mapBindings: Map<Key, Map<*, MapContribution<*, *>>>,
+    mapBindings: MapBindings?,
     setBindings: Map<Key, Set<SetContribution<*>>>
 ): Module = DefaultModule(bindings, mapBindings, setBindings)
 

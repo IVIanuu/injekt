@@ -16,22 +16,22 @@
 
 package com.ivianuu.injekt
 
-internal class MapBinding<K, V>(private val bindings: Map<K, MapContribution<K, V>>) :
+internal class MapBinding<K, V>(private val bindings: Map<K, Binding<V>>) :
     Binding<Map<K, V>> {
     override fun get(parameters: ParametersDefinition?): Map<K, V> = bindings
-        .mapValues { it.value.binding.get() }
+        .mapValues { it.value.get() }
 }
 
-internal class LazyMapBinding<K, V>(private val bindings: Map<K, MapContribution<K, V>>) :
+internal class LazyMapBinding<K, V>(private val bindings: Map<K, Binding<V>>) :
     Binding<Map<K, Lazy<V>>> {
     override fun get(parameters: ParametersDefinition?): Map<K, Lazy<V>> = bindings
-        .mapValues { (_, contribution) -> lazy { contribution.binding.get() } }
+        .mapValues { (_, binding) -> lazy { binding.get() } }
 }
 
-internal class ProviderMapBinding<K, V>(private val bindings: Map<K, MapContribution<K, V>>) :
+internal class ProviderMapBinding<K, V>(private val bindings: Map<K, Binding<V>>) :
     Binding<Map<K, Provider<V>>> {
     override fun get(parameters: ParametersDefinition?): Map<K, Provider<V>> = bindings
-        .mapValues { (_, contribution) -> provider { contribution.binding.get(it) } }
+        .mapValues { (_, binding) -> provider { binding.get(it) } }
 }
 
 internal class SetBinding<T>(private val bindings: Set<SetContribution<T>>) : Binding<Set<T>> {

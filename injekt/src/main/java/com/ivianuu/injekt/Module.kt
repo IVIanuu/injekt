@@ -22,12 +22,6 @@ data class BindingContribution<T> internal constructor(
     val override: Boolean
 )
 
-data class MapContribution<K, V> internal constructor(
-    val binding: Binding<out V>,
-    val entryMapKey: K,
-    val override: Boolean
-)
-
 data class SetContribution<E> internal constructor(
     val binding: Binding<out E>,
     val override: Boolean
@@ -38,13 +32,13 @@ data class SetContribution<E> internal constructor(
  */
 interface Module {
     val bindings: Map<Key, BindingContribution<*>> get() = emptyMap()
-    val mapBindings: Map<Key, Map<*, MapContribution<*, *>>> get() = emptyMap()
+    val mapBindings: MapBindings?
     val setBindings: Map<Key, Set<SetContribution<*>>> get() = emptyMap()
 }
 
 internal class DefaultModule(
-    override val bindings: Map<Key, BindingContribution<*>> = emptyMap(),
-    override val mapBindings: Map<Key, Map<*, MapContribution<*, *>>> = emptyMap(),
+    override val bindings: Map<Key, BindingContribution<*>>,
+    override val mapBindings: MapBindings?,
     override val setBindings: Map<Key, Set<SetContribution<*>>> = emptyMap()
 ) : Module
 
