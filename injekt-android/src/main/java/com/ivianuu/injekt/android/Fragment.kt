@@ -25,9 +25,9 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.NamedScope
+
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
@@ -35,16 +35,13 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.scope
 
-@ScopeAnnotation(FragmentScope.Companion::class)
-annotation class FragmentScope {
-    companion object : NamedScope("FragmentScope")
-}
+@Scope
+annotation class FragmentScope
 
-@ScopeAnnotation(ChildFragmentScope.Companion::class)
-annotation class ChildFragmentScope {
-    companion object : NamedScope("ChildFragmentScope")
-}
+@Scope
+annotation class ChildFragmentScope
 
 @Name(ForFragment.Companion::class)
 annotation class ForFragment {
@@ -58,7 +55,7 @@ annotation class ForChildFragment {
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope = FragmentScope
+        scope<FragmentScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(fragmentModule())
         block?.invoke(this)
@@ -66,7 +63,7 @@ fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = n
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope = ChildFragmentScope
+        scope<ChildViewScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
         block?.invoke(this)

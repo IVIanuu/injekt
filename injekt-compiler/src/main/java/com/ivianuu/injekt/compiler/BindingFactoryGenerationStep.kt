@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
-import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Scope
 import com.ivianuu.processingx.filer
 import com.ivianuu.processingx.getAnnotatedAnnotations
 import com.ivianuu.processingx.getAnnotationMirror
@@ -72,12 +72,10 @@ class BindingFactoryGenerationStep : ProcessingStep() {
         val kind = SpecialKind.values()
             .firstOrNull { element.hasAnnotation(it.annotation) }
 
-        var scopeAnnotation = element.getAnnotationMirrorOrNull<ScopeAnnotation>()
-
         val scopeAnnotations =
-            element.getAnnotatedAnnotations<ScopeAnnotation>()
+            element.getAnnotatedAnnotations<Scope>()
 
-        if (scopeAnnotation != null && scopeAnnotations.isNotEmpty()) {
+        if (scopeAnnotations.size > 1) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Can only have 1 scope annotation",
@@ -86,23 +84,10 @@ class BindingFactoryGenerationStep : ProcessingStep() {
             return null
         }
 
-        if (scopeAnnotation == null) {
-            if (scopeAnnotations.size > 1) {
-                messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Can only have 1 scope annotation",
-                    element
-                )
-                return null
-            }
-
-            scopeAnnotation = scopeAnnotations.firstOrNull()
-                ?.annotationType
-                ?.asElement()
-                ?.getAnnotationMirror<ScopeAnnotation>()
-        }
-
-        val scopeName = scopeAnnotation?.getAsType("scope")
+        val scopeName = scopeAnnotations.firstOrNull()
+            ?.annotationType
+            ?.asElement()
+            ?.asType()
             ?.asTypeName() as? ClassName
 
         var paramsIndex = -1

@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 class ComponentBuilder @PublishedApi internal constructor() {
 
-    var scope: Scope? = null
+    var scope: KClass<out Annotation>? = null
 
     private val modules = mutableListOf<Module>()
     private val dependencies = mutableListOf<Component>()
@@ -68,15 +70,20 @@ class ComponentBuilder @PublishedApi internal constructor() {
 inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()
 
+inline fun <reified T : Annotation> ComponentBuilder.scope(): ComponentBuilder {
+    scope = T::class
+    return this
+}
+
 @PublishedApi
 internal fun createComponent(
-    scope: Scope? = null,
+    scope: KClass<out Annotation>? = null,
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
     // todo clean up the whole function
 
-    val dependencyScopes = mutableSetOf<Scope>()
+    val dependencyScopes = mutableSetOf<KClass<out Annotation>>()
 
     dependencies.forEach {
         if (it.scope != null) {

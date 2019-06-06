@@ -16,12 +16,14 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * The actual dependency container which provides bindings
  * Dependencies can be requested by calling either [get] or [inject]
  */
 class Component internal constructor(
-    val scope: Scope?,
+    val scope: KClass<out Annotation>?,
     internal val bindings: MutableMap<Key, Binding<*>>,
     internal val mapBindings: Map<Key, Map<Any?, Binding<*>>>,
     internal val setBindings: Map<Key, Set<Binding<*>>>,

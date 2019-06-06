@@ -22,20 +22,18 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.NamedScope
+
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
-import com.ivianuu.injekt.bindType
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.scope
 
-@ScopeAnnotation(ContentProviderScope.Companion::class)
-annotation class ContentProviderScope {
-    companion object : NamedScope("ContentProviderScope")
-}
+@Scope
+annotation class ContentProviderScope
 
 @Name(ForContentProvider.Companion::class)
 annotation class ForContentProvider {
@@ -44,7 +42,7 @@ annotation class ForContentProvider {
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope = ContentProviderScope
+        scope<ContentProviderScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(contentProviderModule())
         block?.invoke(this)

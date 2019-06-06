@@ -23,20 +23,18 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.NamedScope
+
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
-import com.ivianuu.injekt.bindType
 
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.scope
 
-@ScopeAnnotation(ReceiverScope.Companion::class)
-annotation class ReceiverScope {
-    companion object : NamedScope("ReceiverScope")
-}
+@Scope
+annotation class ReceiverScope
 
 @Name(ForReceiver.Companion::class)
 annotation class ForReceiver {
@@ -47,7 +45,7 @@ fun <T : BroadcastReceiver> BroadcastReceiver.receiverComponent(
     context: Context,
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scope = ReceiverScope
+    scope<ReceiverScope>()
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule(context))
     block?.invoke(this)

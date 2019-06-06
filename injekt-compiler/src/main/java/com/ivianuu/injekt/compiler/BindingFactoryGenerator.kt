@@ -19,9 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
 import com.ivianuu.injekt.DefinitionContext
-
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Scope
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -30,7 +28,9 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
+import kotlin.reflect.KClass
 
 class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) {
 
@@ -64,14 +64,16 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .addProperty(
             PropertySpec.builder(
                 "scope",
-                Scope::class.asClassName().copy(nullable = true),
+                KClass::class.asClassName().plusParameter(
+                    WildcardTypeName.producerOf(Annotation::class)
+                ).copy(nullable = true),
                 KModifier.OVERRIDE
             )
                 .apply {
                     if (descriptor.scope != null) {
                         getter(
                             FunSpec.getterBuilder()
-                                .addCode("return %T", descriptor.scope)
+                                .addCode("return %T::class", descriptor.scope)
                                 .build()
                         )
                     } else {
