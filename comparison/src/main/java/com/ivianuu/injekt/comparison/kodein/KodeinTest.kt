@@ -36,7 +36,11 @@ object KodeinTest : InjectionTest {
         kodein = Kodein { import(kodeinModule) }
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        kodein!!.direct.instance<Fib8>()
+    }
+
+    override fun secondInject() {
         kodein!!.direct.instance<Fib8>()
     }
 

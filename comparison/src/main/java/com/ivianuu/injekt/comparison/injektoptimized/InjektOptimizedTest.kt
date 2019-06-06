@@ -35,7 +35,11 @@ object InjektOptimizedTest : InjectionTest {
         component = component { modules(injektOptimizedModule) }
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun secondInject() {
         component!!.get<Fib8>()
     }
 

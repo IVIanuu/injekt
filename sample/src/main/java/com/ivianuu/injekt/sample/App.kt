@@ -29,7 +29,6 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.single
-import com.ivianuu.injekt.singleWithState
 
 class App : Application(), InjektTrait {
 
@@ -53,11 +52,6 @@ annotation class PackageName {
 
 fun appModule() = module {
     single(PackageName) { get<Context>().packageName }
-
-    singleWithState(PackageName) {
-        val context = link<Context>()
-        definition { context().packageName }
-    }
 }
 
 @Single @ApplicationScope

@@ -34,7 +34,11 @@ object InjektCodegenTest : InjectionTest {
         component = component()
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun secondInject() {
         component!!.get<Fib8>()
     }
 

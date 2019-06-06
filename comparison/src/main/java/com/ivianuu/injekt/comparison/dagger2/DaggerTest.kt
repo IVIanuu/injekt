@@ -34,7 +34,11 @@ object DaggerTest : InjectionTest {
         component = DaggerDaggerComponent.create()
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        component!!.inject(this)
+    }
+
+    override fun secondInject() {
         component!!.inject(this)
     }
 

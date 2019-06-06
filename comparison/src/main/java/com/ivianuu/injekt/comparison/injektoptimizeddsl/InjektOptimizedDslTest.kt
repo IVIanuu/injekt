@@ -35,7 +35,11 @@ object InjektOptimizedDslTest : InjectionTest {
         component = component { modules(injektOptimizedDslModule) }
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun secondInject() {
         component!!.get<Fib8>()
     }
 
