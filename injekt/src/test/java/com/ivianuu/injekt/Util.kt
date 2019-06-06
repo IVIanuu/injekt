@@ -16,13 +16,14 @@
 
 package com.ivianuu.injekt
 
-object NameOne : Qualifier
-object NameTwo : Qualifier
-object NameThree : Qualifier
+object NameOne
+object NameTwo
+object NameThree
 
-object Values : Qualifier
+object Values
 
-object TestScope : Scope
+@Scope
+annotation class TestScope
 
 class TestDep1
 class TestDep2(val dep1: TestDep1)

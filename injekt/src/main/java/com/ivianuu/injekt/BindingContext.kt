@@ -26,7 +26,7 @@ data class BindingContext<T>(
 )
 
 inline fun <reified T> BindingContext<*>.bindAlias(
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false
 ) {
     bindAlias(typeOf<T>(), name, override)
@@ -34,7 +34,7 @@ inline fun <reified T> BindingContext<*>.bindAlias(
 
 fun BindingContext<*>.bindAlias(
     type: Type<*>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false
 ) {
     moduleBuilder.bind(binding as Binding<Any?>, type as Type<Any?>, name, override)
@@ -78,24 +78,24 @@ infix fun <T> BindingContext<T>.bindClasses(classes: Iterable<KClass<*>>): Bindi
     return this
 }
 
-infix fun <T> BindingContext<T>.bindName(name: Qualifier): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindName(name: Any): BindingContext<T> {
     bindAlias(key.type, name)
     return this
 }
 
-fun <T> BindingContext<T>.bindNames(vararg names: Qualifier): BindingContext<T> {
+fun <T> BindingContext<T>.bindNames(vararg names: Any): BindingContext<T> {
     names.forEach { bindName(it) }
     return this
 }
 
-infix fun <T> BindingContext<T>.bindNames(names: Iterable<Qualifier>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindNames(names: Iterable<Any>): BindingContext<T> {
     names.forEach { bindName(it) }
     return this
 }
 
 inline fun <T : V, reified K, reified V> BindingContext<T>.bindIntoMap(
     entryKey: K,
-    mapName: Qualifier? = null,
+    mapName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> = bindIntoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
 
@@ -103,7 +103,7 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
     mapKeyType: Type<K>,
     mapValueType: Type<V>,
     entryKey: K,
-    mapName: Qualifier? = null,
+    mapName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
     moduleBuilder.addBindingIntoMap(mapKeyType, mapValueType, entryKey, binding, mapName, override)
@@ -111,13 +111,13 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
 }
 
 inline fun <T : E, reified E> BindingContext<T>.bindIntoSet(
-    setName: Qualifier? = null,
+    setName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> = bindIntoSet(typeOf<E>(), setName, override)
 
 fun <T : E, E> BindingContext<T>.bindIntoSet(
     setElementType: Type<E>,
-    setName: Qualifier? = null,
+    setName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
     moduleBuilder.addBindingIntoSet(setElementType, binding, setName, override)

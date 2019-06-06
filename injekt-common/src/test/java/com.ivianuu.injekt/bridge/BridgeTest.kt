@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.bridge
 
-import com.ivianuu.injekt.Qualifier
 
+import com.ivianuu.injekt.bindClass
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
@@ -27,7 +27,7 @@ import org.junit.Test
 
 class BridgeTest {
 
-    private object Original : Qualifier
+    private object Original
 
     @Test
     fun testDelegatesToOriginal() {
@@ -35,7 +35,7 @@ class BridgeTest {
             modules(
                 module {
                     factory(Original) { "original_value" }
-                    bridge<String>(Original) bindType CharSequence::class
+                    bridge<String>(Original) bindClass CharSequence::class
                 }
             )
         }

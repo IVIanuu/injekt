@@ -43,7 +43,7 @@ class Component internal constructor(
      */
     fun <T> get(
         type: Type<T>,
-        name: Qualifier? = null,
+        name: Any? = null,
         parameters: ParametersDefinition? = null
     ): T {
         val key = keyOf(type, name)
@@ -112,17 +112,17 @@ class Component internal constructor(
 }
 
 inline fun <reified T> Component.get(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
 
 inline fun <reified T> Component.inject(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(typeOf(), name, parameters)
 
 fun <T> Component.inject(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }

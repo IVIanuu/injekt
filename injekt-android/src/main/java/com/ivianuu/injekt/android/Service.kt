@@ -24,7 +24,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -40,7 +40,7 @@ annotation class ServiceScope
 
 @Name(ForService.Companion::class)
 annotation class ForService {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =

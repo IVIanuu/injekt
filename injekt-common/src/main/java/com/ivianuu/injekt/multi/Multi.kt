@@ -23,21 +23,21 @@ import com.ivianuu.injekt.DefinitionBinding
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 import kotlin.collections.set
 
 inline fun <reified T> ModuleBuilder.multi(
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = multi(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.multi(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = bind(MultiBinding(DefinitionBinding(definition)), type, name, override)

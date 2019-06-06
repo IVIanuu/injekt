@@ -98,19 +98,19 @@ inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
 
 inline fun <reified T> ModuleBuilder.bind(
     binding: Binding<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false
 ): BindingContext<T> = bind(binding, typeOf(), name, override)
 
 fun <T> ModuleBuilder.bind(
     binding: Binding<T>,
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false
 ): BindingContext<T> = bind(binding, keyOf(type, name), override)
 
 inline fun <reified K, reified V> ModuleBuilder.bindMap(
-    mapName: Qualifier? = null
+    mapName: Any? = null
 ) {
     bindMap<K, V>(typeOf(), typeOf(), mapName)
 }
@@ -118,18 +118,18 @@ inline fun <reified K, reified V> ModuleBuilder.bindMap(
 fun <K, V> ModuleBuilder.bindMap(
     mapKeyType: Type<K>,
     mapValueType: Type<V>,
-    mapName: Qualifier? = null
+    mapName: Any? = null
 ) {
     bindMap(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
 }
 
-inline fun <reified E> ModuleBuilder.bindSet(setName: Qualifier? = null) {
+inline fun <reified E> ModuleBuilder.bindSet(setName: Any? = null) {
     bindSet<E>(typeOf(), setName)
 }
 
 fun <E> ModuleBuilder.bindSet(
     setElementType: Type<E>,
-    setName: Qualifier? = null
+    setName: Any? = null
 ) {
     bindSet(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
 }
@@ -137,7 +137,7 @@ fun <E> ModuleBuilder.bindSet(
 inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
     entryKey: K,
     entryValueBinding: Binding<out V>,
-    mapName: Qualifier? = null,
+    mapName: Any? = null,
     override: Boolean = false
 ) {
     addBindingIntoMap(typeOf(), typeOf(), entryKey, entryValueBinding, mapName, override)
@@ -148,7 +148,7 @@ fun <K, V> ModuleBuilder.addBindingIntoMap(
     mapValueType: Type<V>,
     entryKey: K,
     entryValueBinding: Binding<out V>,
-    mapName: Qualifier? = null,
+    mapName: Any? = null,
     override: Boolean = false
 ) {
     val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
@@ -157,7 +157,7 @@ fun <K, V> ModuleBuilder.addBindingIntoMap(
 
 inline fun <reified E> ModuleBuilder.addBindingIntoSet(
     elementBinding: Binding<out E>,
-    setName: Qualifier? = null,
+    setName: Any? = null,
     override: Boolean = false
 ) {
     addBindingIntoSet<E>(typeOf(), elementBinding, setName, override)
@@ -166,7 +166,7 @@ inline fun <reified E> ModuleBuilder.addBindingIntoSet(
 fun <E> ModuleBuilder.addBindingIntoSet(
     setElementType: Type<E>,
     elementBinding: Binding<out E>,
-    setName: Qualifier? = null,
+    setName: Any? = null,
     override: Boolean = false
 ) {
     val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)

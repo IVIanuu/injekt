@@ -24,23 +24,23 @@ interface InjektTrait {
 }
 
 inline fun <reified T> InjektTrait.get(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
 
 fun <T> InjektTrait.get(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     parameters: ParametersDefinition? = null
 ): T = component.get(type, name, parameters)
 
 inline fun <reified T> InjektTrait.inject(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(typeOf(), name, parameters)
 
 fun <T> InjektTrait.inject(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }

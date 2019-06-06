@@ -19,7 +19,7 @@ package com.ivianuu.injekt.sample
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Qualifier
+
 
 
 // kinds
@@ -27,7 +27,7 @@ interface Command
 
 @Name(Commands.Companion::class)
 annotation class Commands {
-    companion object : Qualifier
+    companion object
 }
 
 @Factory

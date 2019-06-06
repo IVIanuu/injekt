@@ -24,7 +24,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
 
@@ -38,7 +38,7 @@ annotation class ReceiverScope
 
 @Name(ForReceiver.Companion::class)
 annotation class ForReceiver {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : BroadcastReceiver> BroadcastReceiver.receiverComponent(

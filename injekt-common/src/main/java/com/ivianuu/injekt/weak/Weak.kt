@@ -23,21 +23,21 @@ import com.ivianuu.injekt.DefinitionBinding
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 import java.lang.ref.WeakReference
 
 inline fun <reified T> ModuleBuilder.weak(
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = weak(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.weak(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = bind(WeakBinding(DefinitionBinding(definition)), type, name, override)

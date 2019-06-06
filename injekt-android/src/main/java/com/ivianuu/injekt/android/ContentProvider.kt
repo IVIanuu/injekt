@@ -23,7 +23,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
 
@@ -37,7 +37,7 @@ annotation class ContentProviderScope
 
 @Name(ForContentProvider.Companion::class)
 annotation class ForContentProvider {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =

@@ -22,7 +22,7 @@ import com.ivianuu.injekt.DefinitionContext
 
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.get
@@ -30,13 +30,13 @@ import com.ivianuu.injekt.typeOf
 import java.util.*
 
 inline fun <reified T> ModuleBuilder.bridge(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline block: (BindingContext<T>.() -> Unit)? = null
 ): BindingContext<T> = bridge(typeOf(), name, block)
 
 fun <T> ModuleBuilder.bridge(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     block: (BindingContext<T>.() -> Unit)? = null
 ): BindingContext<T> {
     // we create a additional binding because we have no reference to the original one
@@ -47,11 +47,11 @@ fun <T> ModuleBuilder.bridge(
     }
 }
 
-private data class UUIDName(private val uuid: String = UUID.randomUUID().toString()) : Qualifier
+private data class UUIDName(private val uuid: String = UUID.randomUUID().toString())
 
 private class BridgeBinding<T>(
     private val originalType: Type<T>,
-    private val originalName: Qualifier?
+    private val originalName: Any?
 ) : Binding<T> {
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
         context.get(originalType, originalName)

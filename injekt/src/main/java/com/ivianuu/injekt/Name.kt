@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.playground
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.Param
-import com.ivianuu.injekt.Qualifier
+import kotlin.reflect.KClass
 
-object MyName : Qualifier
-
-@Factory
-class TestDep(
-    @Param val myValue: TestDep,
-    @Name(MyName::class) val myNamedValue: TestDep
-)
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.CLASS)
+annotation class Name(val name: KClass<*>)

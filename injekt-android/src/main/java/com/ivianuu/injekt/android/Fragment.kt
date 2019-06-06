@@ -26,7 +26,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -45,12 +45,12 @@ annotation class ChildFragmentScope
 
 @Name(ForFragment.Companion::class)
 annotation class ForFragment {
-    companion object : Qualifier
+    companion object
 }
 
 @Name(ForChildFragment.Companion::class)
 annotation class ForChildFragment {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
@@ -104,7 +104,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
     include(internalFragmentModule(ForChildFragment))
 }
 
-private fun <T : Fragment> T.internalFragmentModule(name: Qualifier) = module {
+private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
     constant(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)

@@ -24,7 +24,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
@@ -43,12 +43,12 @@ annotation class ChildViewScope
 
 @Name(ForView.Companion::class)
 annotation class ForView {
-    companion object : Qualifier
+    companion object
 }
 
 @Name(ForChildView.Companion::class)
 annotation class ForChildView {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
@@ -111,7 +111,7 @@ fun <T : View> T.childViewModule(): Module = module {
     include(internalViewModule(ForChildView))
 }
 
-private fun <T : View> T.internalViewModule(name: Qualifier) = module {
+private fun <T : View> T.internalViewModule(name: Any) = module {
     constant(this@internalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)

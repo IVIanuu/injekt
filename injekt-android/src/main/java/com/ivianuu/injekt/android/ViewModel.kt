@@ -26,7 +26,7 @@ import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
@@ -36,8 +36,8 @@ import com.ivianuu.injekt.typeOf
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
 */
 inline fun <reified T : ViewModel> ModuleBuilder.viewModel(
-name: Qualifier? = null,
-viewModelStoreName: Qualifier? = null,
+name: Any? = null,
+viewModelStoreName: Any? = null,
 override: Boolean = false,
 noinline definition: Definition<T>
 ): Binding<T> = viewModel(typeOf(), name, viewModelStoreName, override, definition)
@@ -47,8 +47,8 @@ noinline definition: Definition<T>
 */
 fun <T : ViewModel> ModuleBuilder.viewModel(
 type: Type<T>,
-name: Qualifier? = null,
-viewModelStoreName: Qualifier? = null,
+name: Any? = null,
+viewModelStoreName: Any? = null,
 override: Boolean = false,
 definition: Definition<T>
 ): Binding<T> =
@@ -62,7 +62,7 @@ ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
 private class ViewModelBinding<T : ViewModel>(
 private val type: Type<T>,
 private val key: String?,
-private val viewModelStoreName: Qualifier?,
+private val viewModelStoreName: Any?,
 private val definition: Definition<T>
 ) : Binding<T> {
 
@@ -71,7 +71,7 @@ private val definition: Definition<T>
 private class ViewModelDefinition<T : ViewModel>(
 private val type: Type<T>,
 private val key: String?,
-private val viewModelStoreName: Qualifier?,
+private val viewModelStoreName: Any?,
 private val definition: Definition<T>
 ) : (DefinitionContext, Parameters) -> T {
 override fun invoke(context: DefinitionContext, parameters: Parameters): T = with(context) {

@@ -25,7 +25,7 @@ import org.junit.Test
 
 class ComponentTest {
 
-    private object Named : Qualifier
+    private object Named
 
     @Test
     fun testGet() {
@@ -228,7 +228,7 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
         val dependency = component {
-            scope = ApplicationScope
+            scope<ApplicationScope>()
         }
 
         component { dependencies(dependency) }
@@ -237,11 +237,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val dependency = component {
-            scope = ApplicationScope
+            scope<ApplicationScope>()
         }
 
         component {
-            scope = ApplicationScope
+            scope<ApplicationScope>()
             dependencies(dependency)
         }
     }
@@ -249,15 +249,15 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnDependenciesWithSameScope() {
         val dependency1 = component {
-            scope = ApplicationScope
+            scope<ApplicationScope>()
         }
 
         val dependency2 = component {
-            scope = ApplicationScope
+            scope<ApplicationScope>()
         }
 
         component {
-            scope = TestScope
+            scope<TestScope>()
             dependencies(dependency1, dependency2)
         }
     }

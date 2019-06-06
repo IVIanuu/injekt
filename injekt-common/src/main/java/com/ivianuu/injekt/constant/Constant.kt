@@ -21,7 +21,7 @@ import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
@@ -29,7 +29,7 @@ import com.ivianuu.injekt.typeOf
 fun <T : Any> ModuleBuilder.constant(
     instance: T,
     type: Type<T> = typeOf(instance::class),
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false
 ): BindingContext<T> = bind(ConstantBinding(instance), type, name, override)
 

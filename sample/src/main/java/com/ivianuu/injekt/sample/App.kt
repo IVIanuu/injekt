@@ -21,7 +21,7 @@ import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
@@ -48,7 +48,7 @@ class App : Application(), InjektTrait {
 
 @Name(PackageName.Companion::class)
 annotation class PackageName {
-    companion object : Qualifier
+    companion object
 }
 
 fun appModule() = module {

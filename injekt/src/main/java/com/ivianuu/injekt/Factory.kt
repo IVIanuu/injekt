@@ -17,20 +17,20 @@
 package com.ivianuu.injekt
 
 inline fun <reified T> ModuleBuilder.factory(
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     binding: Binding<T>
 ): BindingContext<T> = bind(binding, typeOf(), name, override)
 
 inline fun <reified T> ModuleBuilder.factory(
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = factory(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.factory(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = bind(

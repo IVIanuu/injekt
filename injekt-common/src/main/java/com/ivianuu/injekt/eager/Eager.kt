@@ -25,21 +25,21 @@ import com.ivianuu.injekt.DefinitionContext
 
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.Qualifier
+
 import com.ivianuu.injekt.SingleBinding
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 
 inline fun <reified T> ModuleBuilder.eager(
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = eager(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.eager(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> =

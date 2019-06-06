@@ -21,5 +21,5 @@ annotation class ApplicationScope
 
 @Name(ForApplication.Companion::class)
 annotation class ForApplication {
-    companion object : Qualifier
+    companion object
 }
