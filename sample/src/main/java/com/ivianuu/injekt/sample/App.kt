@@ -25,10 +25,11 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.single
+import com.ivianuu.injekt.singleWithState
 
 class App : Application(), InjektTrait {
 
@@ -51,15 +52,12 @@ annotation class PackageName {
 }
 
 fun appModule() = module {
-    stateSingle {
-        val app = link<App>()
-        definition { AppDependency(app()) }
-    }
-    stateFactory(PackageName) {
+    single(PackageName) { get<Context>().packageName }
+
+    singleWithState(PackageName) {
         val context = link<Context>()
         definition { context().packageName }
     }
-    factory<String>(PackageName) { get<Context>().packageName }
 }
 
 @Single @ApplicationScope

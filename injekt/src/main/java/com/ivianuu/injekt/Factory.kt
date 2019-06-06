@@ -19,15 +19,28 @@ package com.ivianuu.injekt
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,
     override: Boolean = false,
-    noinline block: StateDefinitionFactory.() -> Definition<T>
-): BindingContext<T> = factory(typeOf(), name, override, block)
+    noinline definition: Definition<T>
+): BindingContext<T> = factory(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.factory(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
-    block: StateDefinitionFactory.() -> Definition<T>
-): BindingContext<T> = bind(definitionBinding(block), type, name, override)
+    definition: Definition<T>
+): BindingContext<T> = bind(definitionBinding(definition), type, name, override)
+
+inline fun <reified T> ModuleBuilder.factoryWithState(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = factoryWithState(typeOf(), name, override, definition)
+
+fun <T> ModuleBuilder.factoryWithState(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = bind(stateDefinitionBinding(definition), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Factory

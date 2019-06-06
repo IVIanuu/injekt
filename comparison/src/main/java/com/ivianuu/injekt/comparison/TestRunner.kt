@@ -62,7 +62,9 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             ToothpickTest,
             KoinTest,
             KatanaTest,
-            //InjektCodegenTest,
+            InjektTest,
+            InjektOptimizedTest,
+            InjektCodegenTest,
             InjektOptimizedDslTest
         ),
         config

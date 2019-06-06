@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.ModuleBuilder
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.single
 
 fun ModuleBuilder.sharedPreferences(
@@ -27,12 +28,9 @@ fun ModuleBuilder.sharedPreferences(
     name: Any? = null
 ) {
     single(name) {
-        val app = link<Application>()
-        definition {
-            app().getSharedPreferences(
-                sharedPreferencesName,
-                sharedPreferencesMode
-            )
-        }
+        get<Application>().getSharedPreferences(
+            sharedPreferencesName,
+            sharedPreferencesMode
+        )
     }
 }

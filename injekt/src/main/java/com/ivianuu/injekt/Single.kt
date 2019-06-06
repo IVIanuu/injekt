@@ -19,17 +19,30 @@ package com.ivianuu.injekt
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,
     override: Boolean = false,
-    noinline block: StateDefinitionFactory.() -> Definition<T>
-): BindingContext<T> = single(typeOf(), name, override, block)
+    noinline definition: Definition<T>
+): BindingContext<T> = single(typeOf(), name, override, definition)
 
 fun <T> ModuleBuilder.single(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
-    block: StateDefinitionFactory.() -> Definition<T>
+    definition: Definition<T>
 ): BindingContext<T> = bind(
-    definitionBinding(block).asSingle(), type, name, override
+    definitionBinding(definition).asSingle(), type, name, override
 )
+
+inline fun <reified T> ModuleBuilder.singleWithState(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = singleWithState(typeOf(), name, override, definition)
+
+fun <T> ModuleBuilder.singleWithState(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = bind(stateDefinitionBinding(definition).asSingle(), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Single
@@ -39,7 +52,7 @@ fun <T> Binding<T>.asSingle(): Binding<T> {
     else SingleBinding(this)
 }
 
-internal class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
+private class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: Any? = UNINITIALIZED
 
     override fun attach(component: Component) {

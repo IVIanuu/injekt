@@ -115,10 +115,10 @@ private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
         bindAlias<SavedStateRegistryOwner>(name)
     }
 
-    factory(override = true) { definition { requireContext() } } bindName name
-    factory(override = true) { definition { resources } } bindName name
-    factory(override = true) { definition { lifecycle } } bindName name
-    factory(override = true) { definition { viewModelStore } } bindName name
-    factory(override = true) { definition { savedStateRegistry } } bindName name
-    factory(override = true) { definition { childFragmentManager } } bindName name
+    factory(override = true) { requireContext() } bindName name
+    factory(override = true) { resources } bindName name
+    factory(override = true) { lifecycle } bindName name
+    factory(override = true) { viewModelStore } bindName name
+    factory(override = true) { savedStateRegistry } bindName name
+    factory(override = true) { childFragmentManager } bindName name
 }

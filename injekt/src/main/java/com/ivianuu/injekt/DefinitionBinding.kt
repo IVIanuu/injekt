@@ -16,51 +16,19 @@
 
 package com.ivianuu.injekt
 
-class StateDefinitionFactory {
-    internal val links = mutableListOf<Link<*>>()
+typealias Definition<T> = Component.(Parameters) -> T
 
-    inline fun <reified T> link(name: Any? = null): Link<T> =
-        link(typeOf(), name)
-
-    fun <T> link(type: Type<T>, name: Any? = null): Link<T> {
-        val link = Link(type, name)
-        links.add(link)
-        return link
-    }
-
-    fun <T> definition(definition: Definition<T>) = definition
-}
-
-class Link<T>(
-    private val type: Type<T>,
-    private val name: Any? = null
-) : () -> T {
-
-    private lateinit var binding: Binding<T>
-
-    internal fun attach(component: Component) {
-        binding = component.getBinding(type, name)
-    }
-
-    override fun invoke() = binding.get()
-}
-
-typealias Definition<T> = (Parameters) -> T
-
-fun <T> definitionBinding(block: StateDefinitionFactory.() -> Definition<T>): Binding<T> {
-    val factory = StateDefinitionFactory()
-    val definition = factory.block()
-    return DefinitionBinding(definition, factory.links)
-}
+fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
+    DefinitionBinding(definition)
 
 private class DefinitionBinding<T> internal constructor(
-    private val definition: Definition<T>,
-    private val links: List<Link<*>>
+    private val definition: Definition<T>
 ) : Binding<T> {
+    private lateinit var component: Component
     override fun attach(component: Component) {
-        links.forEach { it.attach(component) }
+        this.component = component
     }
 
     override fun get(parameters: ParametersDefinition?): T =
-        definition(parameters?.invoke() ?: emptyParameters())
+        definition(component, parameters?.invoke() ?: emptyParameters())
 }
