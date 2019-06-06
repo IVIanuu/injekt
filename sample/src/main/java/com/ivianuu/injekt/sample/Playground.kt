@@ -19,7 +19,10 @@ package com.ivianuu.injekt.sample
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Provider
-
+import com.ivianuu.injekt.bindIntoMap
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.module
+import com.ivianuu.injekt.typeOf
 
 
 // kinds
@@ -28,6 +31,14 @@ interface Command
 @Name(Commands.Companion::class)
 annotation class Commands {
     companion object
+}
+
+class CommandOne : Command
+class CommandTwo : Command
+
+val myModule = module {
+    factory { CommandOne() }
+        .bindIntoMap(typeOf<Command>(), CommandOne::class)
 }
 
 @Factory

@@ -45,7 +45,7 @@ class SetBindings {
             other.map.forEach { (key, entry) -> put(key, entry) }
         }
 
-        fun put(key: Key, binding: Binding<E>, override: Boolean) {
+        fun put(key: Key, binding: Binding<out E>, override: Boolean) {
             put(key, Entry(binding, override))
         }
 
@@ -57,12 +57,12 @@ class SetBindings {
             map[key] = entry
         }
 
-        fun getBindingSet(): Set<Binding<E>> = map.values
+        fun getBindingSet(): Set<Binding<out E>> = map.values
             .map { it.binding }
             .toSet()
 
         private class Entry<E>(
-            val binding: Binding<E>,
+            val binding: Binding<out E>,
             val override: Boolean
         )
     }

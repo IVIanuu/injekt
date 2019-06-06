@@ -93,11 +93,11 @@ infix fun <T> BindingContext<T>.bindNames(names: Iterable<Any>): BindingContext<
     return this
 }
 
-inline fun <T : V, reified K, reified V> BindingContext<T>.bindIntoMap(
+inline fun <reified T, reified K, reified V> BindingContext<T>.bindIntoMap(
     entryKey: K,
     mapName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bindIntoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
+): BindingContext<T> = bindIntoMap(typeOf(), typeOf(), entryKey, mapName, override)
 
 fun <T : V, K, V> BindingContext<T>.bindIntoMap(
     mapKeyType: Type<K>,
@@ -107,18 +107,20 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
     override: Boolean = false
 ): BindingContext<T> {
     moduleBuilder.addBindingIntoMap(
-        keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName),
-        entryKey,
-        binding,
-        override
+        mapKeyType = mapKeyType,
+        mapValueType = mapValueType,
+        entryKey = entryKey,
+        entryValueBinding = binding,
+        mapName = mapName,
+        override = override
     )
     return this
 }
 
-inline fun <T : E, reified E> BindingContext<T>.bindIntoSet(
+inline fun <reified T : E, reified E> BindingContext<T>.bindIntoSet(
     setName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bindIntoSet(typeOf<E>(), setName, override)
+): BindingContext<T> = bindIntoSet(typeOf(), setName, override)
 
 fun <T : E, E> BindingContext<T>.bindIntoSet(
     setElementType: Type<E>,
@@ -126,10 +128,11 @@ fun <T : E, E> BindingContext<T>.bindIntoSet(
     override: Boolean = false
 ): BindingContext<T> {
     moduleBuilder.addBindingIntoSet(
-        keyOf(typeOf<Any?>(Set::class, setElementType), setName),
-        key,
-        binding,
-        override
+        setElementType = setElementType,
+        elementKey = key,
+        elementBinding = binding,
+        setName = setName,
+        override = override
     )
     return this
 }

@@ -41,33 +41,47 @@ class ModuleBuilder {
     }
 
     // todo rename
-    fun bindMap(mapKey: Key) {
+    fun <K, V> bindMap(
+        mapKeyType: Type<K>,
+        mapValueType: Type<V>,
+        mapName: Any? = null
+    ) {
+        val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
         nonNullMapBindings().putIfAbsent(mapKey)
     }
 
     // todo rename
-    fun bindSet(setKey: Key) {
+    fun <E> bindSet(
+        setElementType: Type<E>,
+        setName: Any? = null
+    ) {
+        val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
         nonNullSetBindings().putIfAbsent(setKey)
     }
 
-    fun addBindingIntoMap(
-        mapKey: Key,
-        entryKey: Any?,
-        entryValueBinding: Binding<*>,
+    fun <K, V> addBindingIntoMap(
+        mapKeyType: Type<K>,
+        mapValueType: Type<V>,
+        entryKey: K,
+        entryValueBinding: Binding<out V>,
+        mapName: Any? = null,
         override: Boolean = false
     ) {
-        nonNullMapBindings().get<Any?, Any?>(mapKey)
-            .put(entryKey, entryValueBinding as Binding<Any?>, override)
+        val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
+        nonNullMapBindings().get<K, V>(mapKey)
+            .put(entryKey, entryValueBinding, override)
     }
 
-    fun addBindingIntoSet(
-        setKey: Key,
+    fun <E> addBindingIntoSet(
+        setElementType: Type<E>,
         elementKey: Key,
-        elementBinding: Binding<*>,
+        elementBinding: Binding<out E>,
+        setName: Any? = null,
         override: Boolean = false
     ) {
-        nonNullSetBindings().get<Any?>(setKey)
-            .put(elementKey, elementBinding as Binding<Any?>, override)
+        val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
+        nonNullSetBindings().get<E>(setKey)
+            .put(elementKey, elementBinding, override)
     }
 
     fun build(): Module = module(bindings, mapBindings, setBindings)
@@ -108,21 +122,27 @@ inline fun <reified K, reified V> ModuleBuilder.bindMap(
     bindMap<K, V>(typeOf(), typeOf(), mapName)
 }
 
-fun <K, V> ModuleBuilder.bindMap(
-    mapKeyType: Type<K>,
-    mapValueType: Type<V>,
-    mapName: Any? = null
-) {
-    bindMap(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
-}
-
 inline fun <reified E> ModuleBuilder.bindSet(setName: Any? = null) {
     bindSet<E>(typeOf(), setName)
 }
 
-fun <E> ModuleBuilder.bindSet(
-    setElementType: Type<E>,
-    setName: Any? = null
+inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
+    entryKey: K,
+    entryValueBinding: Binding<out V>,
+    mapName: Any? = null,
+    override: Boolean = false
 ) {
-    bindSet(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
+    addBindingIntoMap<K, V>(
+        typeOf(), typeOf(),
+        entryKey, entryValueBinding, mapName, override
+    )
+}
+
+inline fun <reified E> ModuleBuilder.addBindingIntoSet(
+    elementKey: Key,
+    elementBinding: Binding<out E>,
+    setName: Any? = null,
+    override: Boolean = false
+) {
+    addBindingIntoSet<E>(typeOf(), elementKey, elementBinding, setName, override)
 }
