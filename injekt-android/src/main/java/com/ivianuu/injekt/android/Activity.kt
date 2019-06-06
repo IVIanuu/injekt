@@ -79,24 +79,24 @@ fun <T : Activity> T.activityModule(): Module = module {
         (this@activityModule as? AppCompatActivity)?.let { bindType<AppCompatActivity>() }
     }
 
-    factory(override = true) { resources } bindName ForActivity
+    factory(override = true) { definition { resources } } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
         instance(this@activityModule, type = typeOf<LifecycleOwner>()) bindName ForActivity
-        factory { lifecycle } bindName ForActivity
+        factory { definition { lifecycle } } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
         instance(this@activityModule, type = typeOf<ViewModelStoreOwner>()) bindName ForActivity
-        factory { viewModelStore } bindName ForActivity
+        factory { definition { viewModelStore } } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
         instance(this@activityModule, type = typeOf<SavedStateRegistryOwner>()) bindName ForActivity
-        factory { savedStateRegistry } bindName ForActivity
+        factory { definition { savedStateRegistry } } bindName ForActivity
     }
 
     (this@activityModule as? FragmentActivity)?.let {
-        factory { supportFragmentManager } bindName ForActivity
+        factory { definition { supportFragmentManager } } bindName ForActivity
     }
 }

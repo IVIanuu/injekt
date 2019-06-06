@@ -45,5 +45,5 @@ fun <T : Application> T.applicationModule(): Module = module {
         bindAlias<Context>(ForApplication)
     }
 
-    factory { resources } bindName ForApplication
+    factory { definition { resources } } bindName ForApplication
 }

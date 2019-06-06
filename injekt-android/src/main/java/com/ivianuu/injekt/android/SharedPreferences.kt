@@ -18,36 +18,21 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
-import android.content.SharedPreferences
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ModuleBuilder
-import com.ivianuu.injekt.ParametersDefinition
-import com.ivianuu.injekt.asSingle
-import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.getBinding
+import com.ivianuu.injekt.single
 
 fun ModuleBuilder.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
     name: Any? = null
 ) {
-    bind(SharedPreferencesBinding(sharedPreferencesName, sharedPreferencesMode).asSingle(), name)
-}
-
-private class SharedPreferencesBinding(
-    private val sharedPreferencesName: String,
-    private val sharedPreferencesMode: Int
-) : Binding<SharedPreferences> {
-    private lateinit var appBinding: Binding<Application>
-    override fun attach(component: Component) {
-        appBinding = component.getBinding()
-    }
-
-    override fun get(parameters: ParametersDefinition?): SharedPreferences {
-        return appBinding().getSharedPreferences(
-            sharedPreferencesName,
-            sharedPreferencesMode
-        )
+    single(name) {
+        val app = link<Application>()
+        definition {
+            app().getSharedPreferences(
+                sharedPreferencesName,
+                sharedPreferencesMode
+            )
+        }
     }
 }
