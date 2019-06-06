@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.comparison
 
-import com.ivianuu.injekt.comparison.injekt.InjektTest
-import com.ivianuu.injekt.comparison.injektoptimizeddsl.InjektOptimizedDslTest
+import com.ivianuu.injekt.comparison.injektoptimized.InjektOptimizedTest
+import com.ivianuu.injekt.comparison.katana.KatanaTest
 
 fun main() {
     //runInjektTests()
     //runAllInjectionTests()
-    runInjectionTests(InjektTest, InjektOptimizedDslTest)
+    runInjectionTests(KatanaTest, InjektOptimizedTest)
     //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektTest)
     // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
 }
