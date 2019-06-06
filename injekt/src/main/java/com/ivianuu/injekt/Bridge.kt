@@ -18,25 +18,23 @@ package com.ivianuu.injekt
 
 import java.util.*
 
-inline fun <reified T> ModuleBuilder.bridge(
+inline fun <reified T> ModuleBuilder.withBinding(
     name: Any? = null,
-    noinline block: (BindingContext<T>.() -> Unit)? = null
-): BindingContext<T> = bridge(typeOf(), name, block)
+    noinline block: BindingContext<T>.() -> Unit
+) {
+    withBinding(typeOf(), name, block)
+}
 
-fun <T> ModuleBuilder.bridge(
+fun <T> ModuleBuilder.withBinding(
     type: Type<T>,
     name: Any? = null,
-    block: (BindingContext<T>.() -> Unit)? = null
-): BindingContext<T> {
+    block: BindingContext<T>.() -> Unit
+) {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    return bind(BridgeBinding(type, name), type, UUIDName()).apply {
-        block?.invoke(this)
-    }
+    bind(BridgeBinding(type, name), type, UUID.randomUUID().toString()).block()
 }
-
-private data class UUIDName(private val uuid: String = UUID.randomUUID().toString())
 
 private class BridgeBinding<T>(
     private val originalType: Type<T>,

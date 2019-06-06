@@ -24,7 +24,6 @@ class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
             throw IllegalStateException("Couldn't instantiate", e) // todo
         }
     }
-
 }
 
 /**
