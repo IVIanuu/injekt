@@ -27,10 +27,10 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Type
+
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.typeOf
+
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
@@ -40,13 +40,13 @@ name: Qualifier? = null,
 viewModelStoreName: Qualifier? = null,
 override: Boolean = false,
 noinline definition: Definition<T>
-): Binding<T> = viewModel(typeOf(), name, viewModelStoreName, override, definition)
+): Binding<T> = viewModel(T::class, name, viewModelStoreName, override, definition)
 
 /**
  * Declares a new [ViewModel] binding which will be scoped by the [ViewModelStore]
 */
 fun <T : ViewModel> ModuleBuilder.viewModel(
-type: Type<T>,
+type: KClass<*>,
 name: Qualifier? = null,
 viewModelStoreName: Qualifier? = null,
 override: Boolean = false,
@@ -60,7 +60,7 @@ ViewModelDefinition(type, name?.toString(), viewModelStoreName, definition)
 )
 
 private class ViewModelBinding<T : ViewModel>(
-private val type: Type<T>,
+private val type: KClass<*>,
 private val key: String?,
 private val viewModelStoreName: Qualifier?,
 private val definition: Definition<T>
@@ -69,7 +69,7 @@ private val definition: Definition<T>
 }
 
 private class ViewModelDefinition<T : ViewModel>(
-private val type: Type<T>,
+private val type: KClass<*>,
 private val key: String?,
 private val viewModelStoreName: Qualifier?,
 private val definition: Definition<T>

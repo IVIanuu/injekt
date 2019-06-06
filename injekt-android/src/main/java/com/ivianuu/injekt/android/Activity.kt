@@ -39,7 +39,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.typeOf
+
 
 @ScopeAnnotation(ActivityScope.Companion::class)
 annotation class ActivityScope {
@@ -80,22 +80,31 @@ fun <T : Activity> T.activityModule(): Module = module {
         (this@activityModule as? ComponentActivity)?.let { bindType<ComponentActivity>() }
         (this@activityModule as? FragmentActivity)?.let { bindType<ComponentActivity>() }
         (this@activityModule as? AppCompatActivity)?.let { bindType<AppCompatActivity>() }
+        (this@activityModule as? LifecycleOwner)?.let {
+            bindType<LifecycleOwner>()
+            bindAlias<LifecycleOwner>(ForActivity)
+        }
+        (this@activityModule as? ViewModelStoreOwner)?.let {
+            bindType<ViewModelStoreOwner>()
+            bindAlias<ViewModelStoreOwner>(ForActivity)
+        }
+        (this@activityModule as? SavedStateRegistryOwner)?.let {
+            bindType<SavedStateRegistryOwner>()
+            bindAlias<SavedStateRegistryOwner>(ForActivity)
+        }
     }
 
     factory(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        constant(this@activityModule, type = typeOf<LifecycleOwner>()) bindName ForActivity
         factory { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        constant(this@activityModule, type = typeOf<ViewModelStoreOwner>()) bindName ForActivity
         factory { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        constant(this@activityModule, type = typeOf<SavedStateRegistryOwner>()) bindName ForActivity
         factory { savedStateRegistry } bindName ForActivity
     }
 

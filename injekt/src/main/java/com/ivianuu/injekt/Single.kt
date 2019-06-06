@@ -16,14 +16,16 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 inline fun <reified T> ModuleBuilder.single(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = single(typeOf(), name, override, definition)
+): BindingContext<T> = single(T::class, name, override, definition)
 
 fun <T> ModuleBuilder.single(
-    type: Type<T>,
+    type: KClass<*>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

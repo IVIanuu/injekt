@@ -27,18 +27,19 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.SingleBinding
-import com.ivianuu.injekt.Type
+
 import com.ivianuu.injekt.add
-import com.ivianuu.injekt.typeOf
+import kotlin.reflect.KClass
+
 
 inline fun <reified T> ModuleBuilder.eager(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = eager(typeOf(), name, override, definition)
+): BindingContext<T> = eager(T::class, name, override, definition)
 
 fun <T> ModuleBuilder.eager(
-    type: Type<T>,
+    type: KClass<*>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

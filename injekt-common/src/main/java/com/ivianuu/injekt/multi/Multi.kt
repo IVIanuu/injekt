@@ -24,19 +24,20 @@ import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Type
+
 import com.ivianuu.injekt.add
-import com.ivianuu.injekt.typeOf
+
 import kotlin.collections.set
+import kotlin.reflect.KClass
 
 inline fun <reified T> ModuleBuilder.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = multi(typeOf(), name, override, definition)
+): BindingContext<T> = multi(T::class, name, override, definition)
 
 fun <T> ModuleBuilder.multi(
-    type: Type<T>,
+    type: KClass<*>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

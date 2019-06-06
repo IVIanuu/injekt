@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * The actual dependency container which provides bindings
  * Dependencies can be requested by calling either [get] or [inject]
@@ -40,7 +42,7 @@ class Component internal constructor(
      * Returns the instance matching the [type] and [name]
      */
     fun <T> get(
-        type: Type<T>,
+        type: KClass<*>,
         name: Qualifier? = null,
         parameters: ParametersDefinition? = null
     ): T {
@@ -112,15 +114,15 @@ class Component internal constructor(
 inline fun <reified T> Component.get(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(typeOf(), name, parameters)
+): T = get(T::class, name, parameters)
 
 inline fun <reified T> Component.inject(
     name: Qualifier? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(typeOf(), name, parameters)
+): Lazy<T> = inject(T::class, name, parameters)
 
 fun <T> Component.inject(
-    type: Type<T>,
+    type: KClass<*>,
     name: Qualifier? = null,
     parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get<T>(type, name, parameters) }

@@ -31,7 +31,7 @@ internal object JustInTimeBindings {
         var factory = factories[key]
 
         if (factory == null) {
-            factory = findFactory(key.type.raw)
+            factory = findFactory(key.type.kotlin)
 
             if (factory != null) {
                 factories[key] = factory

@@ -29,32 +29,32 @@ inline fun <reified T> BindingContext<*>.bindAlias(
     name: Qualifier? = null,
     override: Boolean = false
 ) {
-    bindAlias(typeOf<T>(), name, override)
+    bindAlias(T::class, name, override)
 }
 
 fun BindingContext<*>.bindAlias(
-    type: Type<*>,
+    type: KClass<*>,
     name: Qualifier? = null,
     override: Boolean = false
 ) {
-    moduleBuilder.add(binding as Binding<Any?>, type as Type<Any?>, name, override)
+    moduleBuilder.add(binding, type, name, override)
 }
 
 inline fun <reified T> BindingContext<*>.bindType() {
-    bindAlias(typeOf<T>())
+    bindAlias(T::class)
 }
 
-infix fun <T> BindingContext<T>.bindType(type: Type<*>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindType(type: KClass<*>): BindingContext<T> {
     bindAlias(type)
     return this
 }
 
-fun <T> BindingContext<T>.bindTypes(vararg types: Type<*>): BindingContext<T> {
+fun <T> BindingContext<T>.bindTypes(vararg types: KClass<*>): BindingContext<T> {
     types.forEach { bindType(it) }
     return this
 }
 
-infix fun <T> BindingContext<T>.bindTypes(types: Iterable<Type<*>>): BindingContext<T> {
+infix fun <T> BindingContext<T>.bindTypes(types: Iterable<KClass<*>>): BindingContext<T> {
     types.forEach { bindType(it) }
     return this
 }
@@ -64,7 +64,7 @@ inline fun <reified T> BindingContext<*>.bindClass() {
 }
 
 infix fun <T> BindingContext<T>.bindClass(clazz: KClass<*>): BindingContext<T> {
-    bindAlias(typeOf<Any?>(clazz))
+    bindAlias(clazz)
     return this
 }
 
@@ -79,7 +79,7 @@ infix fun <T> BindingContext<T>.bindClasses(classes: Iterable<KClass<*>>): Bindi
 }
 
 infix fun <T> BindingContext<T>.bindName(name: Qualifier): BindingContext<T> {
-    bindAlias(key.type, name)
+    bindAlias(key.type.kotlin, name)
     return this
 }
 
@@ -97,11 +97,11 @@ inline fun <T : V, reified K, reified V> BindingContext<T>.bindIntoMap(
     entryKey: K,
     mapName: Qualifier? = null,
     override: Boolean = false
-): BindingContext<T> = bindIntoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
+): BindingContext<T> = bindIntoMap(K::class, V::class, entryKey, mapName, override)
 
 fun <T : V, K, V> BindingContext<T>.bindIntoMap(
-    mapKeyType: Type<K>,
-    mapValueType: Type<V>,
+    mapKeyType: KClass<*>,
+    mapValueType: KClass<*>,
     entryKey: K,
     mapName: Qualifier? = null,
     override: Boolean = false
@@ -113,10 +113,10 @@ fun <T : V, K, V> BindingContext<T>.bindIntoMap(
 inline fun <T : E, reified E> BindingContext<T>.bindIntoSet(
     setName: Qualifier? = null,
     override: Boolean = false
-): BindingContext<T> = bindIntoSet(typeOf<E>(), setName, override)
+): BindingContext<T> = bindIntoSet(E::class, setName, override)
 
 fun <T : E, E> BindingContext<T>.bindIntoSet(
-    setElementType: Type<E>,
+    setElementType: KClass<*>,
     setName: Qualifier? = null,
     override: Boolean = false
 ): BindingContext<T> {

@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 class ModuleBuilder {
 
     private val bindings = mutableMapOf<Key, Binding<*>>()
@@ -100,11 +102,11 @@ inline fun <reified T> ModuleBuilder.add(
     binding: Binding<T>,
     name: Qualifier? = null,
     override: Boolean = false
-): BindingContext<T> = add(binding, typeOf(), name, override)
+): BindingContext<T> = add(binding, T::class, name, override)
 
 fun <T> ModuleBuilder.add(
     binding: Binding<T>,
-    type: Type<T>,
+    type: KClass<*>,
     name: Qualifier? = null,
     override: Boolean = false
 ): BindingContext<T> = add(binding, keyOf(type, name), override)
@@ -112,26 +114,26 @@ fun <T> ModuleBuilder.add(
 inline fun <reified K, reified V> ModuleBuilder.bindMap(
     mapName: Qualifier? = null
 ) {
-    bindMap<K, V>(typeOf(), typeOf(), mapName)
+    // bindMap<K, V>(T::class, T::class, mapName)
 }
 
 fun <K, V> ModuleBuilder.bindMap(
-    mapKeyType: Type<K>,
-    mapValueType: Type<V>,
+    mapKeyType: KClass<*>,
+    mapValueType: KClass<*>,
     mapName: Qualifier? = null
 ) {
-    bindMap(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
+    // bindMap(keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName))
 }
 
 inline fun <reified E> ModuleBuilder.bindSet(setName: Qualifier? = null) {
-    bindSet<E>(typeOf(), setName)
+    // bindSet<E>(T::class, setName)
 }
 
 fun <E> ModuleBuilder.bindSet(
-    setElementType: Type<E>,
+    setElementType: KClass<*>,
     setName: Qualifier? = null
 ) {
-    bindSet(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
+    // bindSet(keyOf(typeOf<Any?>(Set::class, setElementType), setName))
 }
 
 inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
@@ -140,19 +142,19 @@ inline fun <reified K, reified V> ModuleBuilder.addBindingIntoMap(
     mapName: Qualifier? = null,
     override: Boolean = false
 ) {
-    addBindingIntoMap(typeOf(), typeOf(), entryKey, entryValueBinding, mapName, override)
+    // addBindingIntoMap(T::class, T::class, entryKey, entryValueBinding, mapName, override)
 }
 
 fun <K, V> ModuleBuilder.addBindingIntoMap(
-    mapKeyType: Type<K>,
-    mapValueType: Type<V>,
+    mapKeyType: KClass<*>,
+    mapValueType: KClass<*>,
     entryKey: K,
     entryValueBinding: Binding<out V>,
     mapName: Qualifier? = null,
     override: Boolean = false
 ) {
-    val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
-    addBindingIntoMap(mapKey, entryKey, entryValueBinding, override)
+    // val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
+    // addBindingIntoMap(mapKey, entryKey, entryValueBinding, override)
 }
 
 inline fun <reified E> ModuleBuilder.addBindingIntoSet(
@@ -160,15 +162,15 @@ inline fun <reified E> ModuleBuilder.addBindingIntoSet(
     setName: Qualifier? = null,
     override: Boolean = false
 ) {
-    addBindingIntoSet<E>(typeOf(), elementBinding, setName, override)
+    // addBindingIntoSet<E>(T::class, elementBinding, setName, override)
 }
 
 fun <E> ModuleBuilder.addBindingIntoSet(
-    setElementType: Type<E>,
+    setElementType: KClass<*>,
     elementBinding: Binding<out E>,
     setName: Qualifier? = null,
     override: Boolean = false
 ) {
-    val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
-    addBindingIntoSet(setKey, elementBinding, override)
+    //  val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
+    // addBindingIntoSet(setKey, elementBinding, override)
 }

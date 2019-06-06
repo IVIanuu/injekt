@@ -22,13 +22,14 @@ import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Type
+
 import com.ivianuu.injekt.add
-import com.ivianuu.injekt.typeOf
+import kotlin.reflect.KClass
+
 
 fun <T : Any> ModuleBuilder.constant(
     instance: T,
-    type: Type<T> = typeOf(instance::class),
+    type: KClass<*> = instance::class,
     name: Qualifier? = null,
     override: Boolean = false
 ): BindingContext<T> = add(ConstantBinding(instance), type, name, override)

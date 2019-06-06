@@ -16,20 +16,22 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     binding: Binding<T>
-): BindingContext<T> = add(binding, typeOf(), name, override)
+): BindingContext<T> = add(binding, T::class, name, override)
 
 inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = factory(typeOf(), name, override, definition)
+): BindingContext<T> = factory(T::class, name, override, definition)
 
 fun <T> ModuleBuilder.factory(
-    type: Type<T>,
+    type: KClass<*>,
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>

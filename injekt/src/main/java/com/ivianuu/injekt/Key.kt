@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
-data class Key internal constructor(val type: Type<*>, val name: Qualifier? = null) {
+import kotlin.reflect.KClass
+
+data class Key internal constructor(val type: Class<*>, val name: Qualifier? = null) {
     override fun toString(): String {
         return "Key(" +
                 "type=$type, " +
@@ -24,6 +26,6 @@ data class Key internal constructor(val type: Type<*>, val name: Qualifier? = nu
     }
 }
 
-fun keyOf(type: Type<*>, name: Qualifier? = null): Key = Key(type, name)
+fun keyOf(type: KClass<*>, name: Qualifier? = null): Key = Key(type.java, name)
 
-inline fun <reified T> keyOf(name: Qualifier? = null): Key = keyOf(typeOf<T>(), name)
+inline fun <reified T> keyOf(name: Qualifier? = null): Key = keyOf(T::class, name)

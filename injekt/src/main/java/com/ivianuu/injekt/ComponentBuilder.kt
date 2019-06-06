@@ -106,7 +106,7 @@ internal fun createComponent(
             return@fold acc
         }
 
-    val bindings = mutableMapOf<Key, Binding<*>>()
+    val bindings = hashMapOf<Key, Binding<*>>()
     val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
     val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
 
