@@ -23,6 +23,6 @@ fun <T> ModuleBuilder.instance(
     override: Boolean = false
 ): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)
 
-internal class InstanceBinding<T>(private val instance: T) : Binding<T> {
+private class InstanceBinding<T>(private val instance: T) : Binding<T> {
     override fun get(parameters: ParametersDefinition?): T = instance
 }

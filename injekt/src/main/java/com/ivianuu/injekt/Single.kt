@@ -28,7 +28,7 @@ fun <T> ModuleBuilder.single(
     override: Boolean = false,
     block: StateDefinitionFactory.() -> Definition<T>
 ): BindingContext<T> = bind(
-    DefinitionBinding(block).asSingle(), type, name, override
+    definitionBinding(block).asSingle(), type, name, override
 )
 
 @Target(AnnotationTarget.CLASS)

@@ -47,7 +47,7 @@ class Link<T>(
 
 typealias Definition<T> = (Parameters) -> T
 
-fun <T> DefinitionBinding(block: StateDefinitionFactory.() -> Definition<T>): Binding<T> {
+fun <T> definitionBinding(block: StateDefinitionFactory.() -> Definition<T>): Binding<T> {
     val factory = StateDefinitionFactory()
     val definition = factory.block()
     return DefinitionBinding(definition, factory.links)

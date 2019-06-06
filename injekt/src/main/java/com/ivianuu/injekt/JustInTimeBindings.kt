@@ -32,10 +32,7 @@ internal object JustInTimeBindings {
 
         if (factory == null) {
             factory = findFactory(key.type.rawJava)
-
-            if (factory != null) {
-                factories[key] = factory
-            }
+            if (factory != null) factories[key] = factory
         }
 
         return factory as? BindingFactory<T>
