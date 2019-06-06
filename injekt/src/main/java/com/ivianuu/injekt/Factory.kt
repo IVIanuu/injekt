@@ -34,18 +34,16 @@ fun <T> ModuleBuilder.factory(
 inline fun <reified T> ModuleBuilder.stateFactory(
     name: Any? = null,
     override: Boolean = false,
-    noinline block: StatefulDefinitionBuilder<T>.() -> Unit
+    noinline block: StateDefinitionFactory.() -> StateDefinition<T>
 ): BindingContext<T> = stateFactory(typeOf(), name, override, block)
 
 fun <T> ModuleBuilder.stateFactory(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
-    block: StatefulDefinitionBuilder<T>.() -> Unit
+    block: StateDefinitionFactory.() -> StateDefinition<T>
 ): BindingContext<T> = bind(
-    StatefulDefinitionBinding(
-        StatefulDefinitionBuilder<T>().apply(block)
-    ), type, name, override
+    StatefulDefinitionBinding(block), type, name, override
 )
 
 @Target(AnnotationTarget.CLASS)

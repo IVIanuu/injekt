@@ -16,10 +16,8 @@
 
 package com.ivianuu.injekt
 
-class StatefulDefinitionBuilder<T> {
-
-    private val links = mutableListOf<Link<*>>()
-    private lateinit var definition: (Parameters) -> T
+class StateDefinitionFactory {
+    internal val links = mutableListOf<Link<*>>()
 
     inline fun <reified T> link(name: Any? = null): Link<T> =
         link(typeOf(), name)
@@ -30,16 +28,7 @@ class StatefulDefinitionBuilder<T> {
         return link
     }
 
-    fun definition(definition: (Parameters) -> T) {
-        this.definition = definition
-    }
-
-    internal fun attach(component: Component) {
-        links.forEach { it.attach(component) }
-    }
-
-    fun build(): (Parameters) -> T = definition
-
+    fun <T> definition(definition: StateDefinition<T>) = definition
 }
 
 class Link<T>(
@@ -56,12 +45,22 @@ class Link<T>(
     override fun invoke() = binding.get()
 }
 
-class StatefulDefinitionBinding<T>(
-    private val block: StatefulDefinitionBuilder<T>
+typealias StateDefinition<T> = (Parameters) -> T
+
+fun <T> StatefulDefinitionBinding(
+    block: StateDefinitionFactory.() -> StateDefinition<T>
+): StatefulDefinitionBinding<T> {
+    val environment = StateDefinitionFactory()
+    val definition = environment.block()
+    return StatefulDefinitionBinding(definition, environment.links)
+}
+
+class StatefulDefinitionBinding<T> internal constructor(
+    private val definition: StateDefinition<T>,
+    private val links: List<Link<*>>
 ) : Binding<T> {
-    private lateinit var definition: (Parameters) -> T
     override fun attach(component: Component) {
-        definition = StatefulDefinitionBuilder<T>().build()
+        links.forEach { it.attach(component) }
     }
 
     override fun get(parameters: ParametersDefinition?): T =
