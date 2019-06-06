@@ -16,58 +16,41 @@
 
 package com.ivianuu.injekt
 
-/**
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class ModuleTest {
 
     @Test
     fun testBind() {
-val binding = object : Binding<String> {
-override fun link(context: DefinitionContext) {
-}
-override fun get(parameters: ParametersDefinition?): String = "hello"
-}
-val module = module { bindAlias(keyOf<String>(), binding) }
+        val binding = definitionBinding { "value" }
+        val module = module { bind(binding) }
         assertTrue(module.bindings.values.contains(binding))
     }
 
     @Test
     fun testAllowsExplicitOverride() {
-        val firstBinding = binding(
-            kind = FactoryKind,
-            definition = { "my_value" }
-        )
-
-        val overrideBinding = binding(
-            kind = SingleKind,
-            override = true,
-            definition = { "my_overridden_value" }
-        )
+        val firstBinding = definitionBinding { "value" }
+        val overrideBinding = definitionBinding { "overridden_value" }
 
         val module = module {
-            bindAlias(firstBinding)
-            bindAlias(overrideBinding)
+            bind(firstBinding)
+            bind(overrideBinding, override = true)
         }
 
-        assertEquals(module.bindings[Key(typeOf<String>())], overrideBinding)
+        assertEquals(module.bindings[keyOf<String>()], overrideBinding)
     }
 
     @Test(expected = IllegalStateException::class)
     fun testDisallowsImplicitOverride() {
-        val firstBinding = binding(
-            kind = FactoryKind,
-            definition = { "my_value" }
-        )
-
-        val overrideBinding = binding(
-            kind = SingleKind,
-            definition = { "my_overridden_value" }
-        )
+        val firstBinding = definitionBinding { "value" }
+        val overrideBinding = definitionBinding { "overridden_value" }
 
         module {
-            bindAlias(firstBinding)
-            bindAlias(overrideBinding)
+            bind(firstBinding)
+            bind(overrideBinding, override = false)
         }
     }
 
-}*/
+}
