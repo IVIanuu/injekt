@@ -27,7 +27,7 @@ fun <T> ModuleBuilder.single(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(
+): BindingContext<T> = bind(
     DefinitionBinding(definition).asSingleBinding(),
     type,
     name,

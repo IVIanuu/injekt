@@ -28,7 +28,7 @@ import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.SingleBinding
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.add
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 
 inline fun <reified T> ModuleBuilder.eager(
@@ -43,7 +43,7 @@ fun <T> ModuleBuilder.eager(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> =
-    add(EagerBinding(SingleBinding(DefinitionBinding(definition))), type, name, override)
+    bind(EagerBinding(SingleBinding(DefinitionBinding(definition))), type, name, override)
 
 fun <T> Binding<T>.asEagerBinding(): EagerBinding<T> {
     return when {

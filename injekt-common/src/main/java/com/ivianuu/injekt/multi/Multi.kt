@@ -25,7 +25,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.add
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 import kotlin.collections.set
 
@@ -40,7 +40,7 @@ fun <T> ModuleBuilder.multi(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(MultiBinding(DefinitionBinding(definition)), type, name, override)
+): BindingContext<T> = bind(MultiBinding(DefinitionBinding(definition)), type, name, override)
 
 @Target(AnnotationTarget.CLASS)
 annotation class Multi

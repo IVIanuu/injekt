@@ -20,7 +20,7 @@ inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     binding: Binding<T>
-): BindingContext<T> = add(binding, typeOf(), name, override)
+): BindingContext<T> = bind(binding, typeOf(), name, override)
 
 inline fun <reified T> ModuleBuilder.factory(
     name: Qualifier? = null,
@@ -33,7 +33,7 @@ fun <T> ModuleBuilder.factory(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(
+): BindingContext<T> = bind(
     DefinitionBinding(definition), type, name, override
 )
 

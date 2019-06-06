@@ -25,7 +25,7 @@ interface Module {
     val setBindings: Map<Key, Set<Binding<*>>> get() = emptyMap()
 }
 
-internal class SimpleModule(
+internal class DefaultModule(
     override val bindings: Map<Key, Binding<*>> = emptyMap(),
     override val mapBindings: Map<Key, Map<Any?, Binding<*>>> = emptyMap(),
     override val setBindings: Map<Key, Set<Binding<*>>> = emptyMap()

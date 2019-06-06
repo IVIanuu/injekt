@@ -25,7 +25,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.add
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 import java.lang.ref.WeakReference
 
@@ -40,7 +40,7 @@ fun <T> ModuleBuilder.weak(
     name: Qualifier? = null,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = add(WeakBinding(DefinitionBinding(definition)), type, name, override)
+): BindingContext<T> = bind(WeakBinding(DefinitionBinding(definition)), type, name, override)
 
 fun <T> Binding<T>.asWeakBinding(): WeakBinding<T> {
     return if (this is WeakBinding) this

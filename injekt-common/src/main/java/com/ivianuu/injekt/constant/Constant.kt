@@ -23,7 +23,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.add
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.typeOf
 
 fun <T : Any> ModuleBuilder.constant(
@@ -31,7 +31,7 @@ fun <T : Any> ModuleBuilder.constant(
     type: Type<T> = typeOf(instance::class),
     name: Qualifier? = null,
     override: Boolean = false
-): BindingContext<T> = add(ConstantBinding(instance), type, name, override)
+): BindingContext<T> = bind(ConstantBinding(instance), type, name, override)
 
 private class ConstantBinding<T>(private val instance: T) : Binding<T> {
     override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T = instance

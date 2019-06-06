@@ -37,7 +37,7 @@ fun BindingContext<*>.bindAlias(
     name: Qualifier? = null,
     override: Boolean = false
 ) {
-    moduleBuilder.add(binding as Binding<Any?>, type as Type<Any?>, name, override)
+    moduleBuilder.bind(binding as Binding<Any?>, type as Type<Any?>, name, override)
 }
 
 inline fun <reified T> BindingContext<*>.bindType() {

@@ -34,7 +34,7 @@ import com.ivianuu.injekt.module
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        applicationComponent { modules(appModule) }
+        applicationComponent { modules(appModule()) }
     }
 
     override fun onCreate() {
@@ -51,7 +51,7 @@ annotation class PackageName {
     companion object : Qualifier
 }
 
-val appModule = module {
+fun appModule() = module {
     factory<String>(PackageName) { context().packageName }
 }
 

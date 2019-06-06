@@ -22,7 +22,7 @@ class ModuleBuilder {
     private val mapBindings = mutableMapOf<Key, MutableMap<Any?, Binding<*>>>()
     private val setBindings = mutableMapOf<Key, MutableSet<Binding<*>>>()
 
-    fun <T> add(
+    fun <T> bind(
         binding: Binding<T>,
         key: Key,
         override: Boolean = false
@@ -35,7 +35,7 @@ class ModuleBuilder {
     }
 
     fun include(module: Module) {
-        module.bindings.forEach { add(it.value, it.key) }
+        module.bindings.forEach { bind(it.value, it.key) }
         module.mapBindings.forEach { (mapKey, map) ->
             map.forEach { (entryKey, entryValueBinding) ->
                 addBindingIntoMap(mapKey, entryKey, entryValueBinding)
@@ -91,23 +91,23 @@ fun module(
     bindings: Map<Key, Binding<*>> = emptyMap(),
     mapBindings: Map<Key, Map<Any?, Binding<*>>>,
     setBindings: Map<Key, Set<Binding<*>>>
-): Module = SimpleModule(bindings, mapBindings, setBindings)
+): Module = DefaultModule(bindings, mapBindings, setBindings)
 
 inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()
     .apply(block).build()
 
-inline fun <reified T> ModuleBuilder.add(
+inline fun <reified T> ModuleBuilder.bind(
     binding: Binding<T>,
     name: Qualifier? = null,
     override: Boolean = false
-): BindingContext<T> = add(binding, typeOf(), name, override)
+): BindingContext<T> = bind(binding, typeOf(), name, override)
 
-fun <T> ModuleBuilder.add(
+fun <T> ModuleBuilder.bind(
     binding: Binding<T>,
     type: Type<T>,
     name: Qualifier? = null,
     override: Boolean = false
-): BindingContext<T> = add(binding, keyOf(type, name), override)
+): BindingContext<T> = bind(binding, keyOf(type, name), override)
 
 inline fun <reified K, reified V> ModuleBuilder.bindMap(
     mapName: Qualifier? = null

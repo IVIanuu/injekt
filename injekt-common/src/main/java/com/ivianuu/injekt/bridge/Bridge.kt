@@ -24,7 +24,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.ParametersDefinition
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.add
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.typeOf
 import java.util.*
@@ -42,7 +42,7 @@ fun <T> ModuleBuilder.bridge(
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as bridge and just calls trough the original implementation
-    return add(BridgeBinding(type, name), type, UUIDName()).apply {
+    return bind(BridgeBinding(type, name), type, UUIDName()).apply {
         block?.invoke(this)
     }
 }
