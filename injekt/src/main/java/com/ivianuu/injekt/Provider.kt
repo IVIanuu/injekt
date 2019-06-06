@@ -23,7 +23,7 @@ interface Provider<T> {
     fun get(parameters: ParametersDefinition? = null): T
 }
 
-fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
+internal fun <T> provider(provider: (parameters: ParametersDefinition?) -> T): Provider<T> =
     LambdaProvider(provider)
 
 private class LambdaProvider<T>(private val func: (ParametersDefinition?) -> T) :

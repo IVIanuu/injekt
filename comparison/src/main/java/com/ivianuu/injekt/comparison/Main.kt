@@ -16,9 +16,13 @@
 
 package com.ivianuu.injekt.comparison
 
+import com.ivianuu.injekt.comparison.injekt.InjektTest
+import com.ivianuu.injekt.comparison.injektoptimizeddsl.InjektOptimizedDslTest
+
 fun main() {
     //runInjektTests()
-    runAllInjectionTests()
+    //runAllInjectionTests()
+    runInjectionTests(InjektTest, InjektOptimizedDslTest)
     //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektTest)
     // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
 }
