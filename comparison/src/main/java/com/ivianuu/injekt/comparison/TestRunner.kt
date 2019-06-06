@@ -29,7 +29,7 @@ import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
 
 val defaultConfig = Config(
-    rounds = 100_000,
+    rounds = 1_000,
     timeUnit = TimeUnit.MILLIS
 )
 
@@ -98,7 +98,9 @@ fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultCo
 fun measure(test: InjectionTest): Timings {
     val moduleCreation = measureNanoTime { test.moduleCreation() }
     val setup = measureNanoTime { test.setup() }
-    val injection = measureNanoTime { test.inject() }
+    val injection = measureNanoTime {
+        (0..1_000).forEach { test.inject() }
+    }
     test.shutdown()
     return Timings(test.name, moduleCreation, setup, injection)
 }
