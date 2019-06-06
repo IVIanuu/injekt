@@ -20,6 +20,7 @@ import com.google.common.collect.SetMultimap
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Single
 import com.ivianuu.processingx.filer
 import com.ivianuu.processingx.getAnnotatedAnnotations
 import com.ivianuu.processingx.getAnnotationMirror
@@ -69,8 +70,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
             return null
         }
 
-        val kind = SpecialKind.values()
-            .firstOrNull { element.hasAnnotation(it.annotation) }
+        val isSingle = element.hasAnnotation<Single>()
 
         val scopeAnnotations =
             element.getAnnotatedAnnotations<Scope>()
@@ -169,7 +169,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
         return BindingFactoryDescriptor(
             targetName,
             creatorName,
-            kind,
+            isSingle,
             scopeName,
             constructorParams
         )

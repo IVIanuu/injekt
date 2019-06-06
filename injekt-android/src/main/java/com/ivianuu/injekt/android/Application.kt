@@ -28,7 +28,7 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindClasses
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.constant
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module

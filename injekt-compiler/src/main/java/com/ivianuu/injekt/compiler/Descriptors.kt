@@ -16,29 +16,13 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.eager.Eager
-import com.ivianuu.injekt.multi.Multi
-import com.ivianuu.injekt.weak.Weak
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
-import kotlin.reflect.KClass
-
-enum class SpecialKind(
-    val annotation: KClass<out Annotation>,
-    val functionPackage: String,
-    val functionName: String
-) {
-    EAGER(Eager::class, "com.ivianuu.injekt.eager", "asEagerBinding"),
-    MULTI(Multi::class, "com.ivianuu.injekt.multi", "asMultiBinding"),
-    SINGLE(Single::class, "com.ivianuu.injekt", "asSingleBinding"),
-    WEAK(Weak::class, "com.ivianuu.injekt.weak", "asWeakBinding")
-}
 
 data class BindingFactoryDescriptor(
     val target: ClassName,
     val factoryName: ClassName,
-    val kind: SpecialKind?,
+    val isSingle: Boolean,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
 )

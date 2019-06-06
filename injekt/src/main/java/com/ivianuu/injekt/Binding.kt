@@ -21,8 +21,3 @@ interface Binding<T> {
     operator fun invoke(context: DefinitionContext, parameters: ParametersDefinition? = null): T =
         get(context, parameters)
 }
-
-// todo remove
-interface AttachAware {
-    fun attached(context: DefinitionContext)
-}

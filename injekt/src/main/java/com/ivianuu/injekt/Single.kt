@@ -28,7 +28,7 @@ fun <T> ModuleBuilder.single(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = bind(
-    DefinitionBinding(definition).asSingleBinding(),
+    DefinitionBinding(definition).asSingle(),
     type,
     name,
     override
@@ -37,7 +37,7 @@ fun <T> ModuleBuilder.single(
 @Target(AnnotationTarget.CLASS)
 annotation class Single
 
-fun <T> Binding<T>.asSingleBinding(): SingleBinding<T> {
+fun <T> Binding<T>.asSingle(): SingleBinding<T> {
     return if (this is SingleBinding) this
     else SingleBinding(this)
 }

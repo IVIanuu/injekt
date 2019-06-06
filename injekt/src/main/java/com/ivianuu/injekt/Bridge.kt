@@ -14,19 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.bridge
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
-import com.ivianuu.injekt.DefinitionContext
-
-import com.ivianuu.injekt.ModuleBuilder
-import com.ivianuu.injekt.ParametersDefinition
-
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.typeOf
 import java.util.*
 
 inline fun <reified T> ModuleBuilder.bridge(

@@ -25,6 +25,5 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 
 dependencies {
     api(project(":injekt"))
-    api(project(":injekt-common"))
     api(Deps.androidxAppCompat)
 }

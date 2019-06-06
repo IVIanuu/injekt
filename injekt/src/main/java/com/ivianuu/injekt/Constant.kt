@@ -16,6 +16,13 @@
 
 package com.ivianuu.injekt
 
-class TestDep1
-class TestDep2(val dep1: TestDep1)
-class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
+fun <T : Any> ModuleBuilder.constant(
+    instance: T,
+    type: Type<T> = typeOf(instance::class),
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(ConstantBinding(instance), type, name, override)
+
+private class ConstantBinding<T>(private val instance: T) : Binding<T> {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T = instance
+}

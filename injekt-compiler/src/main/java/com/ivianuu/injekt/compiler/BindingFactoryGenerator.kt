@@ -46,15 +46,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             .build()
 
     private fun imports() = mutableSetOf("get").apply {
-        descriptor.kind?.let {
-            add(
-                it.functionPackage.replace(
-                    "com.ivianuu.injekt", ""
-                )
-                    .let { if (it.startsWith(".")) it.replaceFirst(".", "") else it }
-                        + "." + it.functionName
-            )
-        }
+        if (descriptor.isSingle) add("asSingle")
     }
 
     private fun bindingFactory() = TypeSpec.classBuilder(descriptor.factoryName)
@@ -87,8 +79,8 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                 .addModifiers(KModifier.OVERRIDE)
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
                 .apply {
-                    if (descriptor.kind != null) {
-                        addCode("return BindingImpl().${descriptor.kind.functionName}()")
+                    if (descriptor.isSingle) {
+                        addCode("return BindingImpl().asSingle()")
                     } else {
                         addCode("return BindingImpl()")
                     }

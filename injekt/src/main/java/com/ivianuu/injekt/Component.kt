@@ -32,12 +32,6 @@ class Component internal constructor(
 
     private val context = DefinitionContext(this)
 
-    init {
-        bindings.values
-            .filterIsInstance<AttachAware>()
-            .forEach { it.attached(context) }
-    }
-
     /**
      * Returns the instance matching the [type] and [name]
      */
@@ -85,17 +79,12 @@ class Component internal constructor(
                 val component = findComponentForScope(bindingFactory.scope)
                     ?: error("Couldn't find component for $scope")
                 binding = bindingFactory.create()
-                component.addJitBinding(key, binding)
+                component.bindings[key] = binding
                 return binding
             }
         }
 
         return null
-    }
-
-    private fun <T> addJitBinding(key: Key, binding: Binding<T>) {
-        bindings[key] = binding
-        (binding as? AttachAware)?.attached(context)
     }
 
     private fun findComponentForScope(scope: Any?): Component? {

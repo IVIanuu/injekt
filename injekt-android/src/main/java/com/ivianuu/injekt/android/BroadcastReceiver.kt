@@ -29,7 +29,7 @@ import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
 
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.constant
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
 
