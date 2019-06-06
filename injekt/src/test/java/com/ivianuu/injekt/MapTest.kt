@@ -29,12 +29,12 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { definition { "value_one" } }
-                        .bindIntoMap("key_one", mapName = Values)
-                    factory(NameTwo) { definition { "value_two" } }
-                        .bindIntoMap("key_two", mapName = Values)
-                    factory(NameThree) { definition { "value_three" } }
-                        .bindIntoMap("key_three", mapName = Values)
+                    factory(NameOne) { "value_one" }
+                        .bindIntoMap<String, String, String>("key_one", mapName = Values)
+                    factory(NameTwo) { "value_two" }
+                        .bindIntoMap<String, String, String>("key_two", mapName = Values)
+                    factory(NameThree) { "value_three" }
+                        .bindIntoMap<String, String, String>("key_three", mapName = Values)
                 }
             )
         }
@@ -86,8 +86,8 @@ class MapTest {
     fun testThrowsOnIllegalOverride() {
         component {
             module {
-                factory { definition { "value" } }.bindIntoMap("key")
-                factory { definition { "overridden_value" } }.bindIntoMap("key")
+                factory { "value" }.bindIntoMap<String, String, String>("key")
+                factory { "overridden_value" }.bindIntoMap<String, String, String>("key")
             }
         }
     }
@@ -97,8 +97,8 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { definition { "value" } }.bindIntoMap("key")
-                    factory(NameTwo) { definition { "overridden_value" } }.bindIntoMap(
+                    factory(NameOne) { "value" }.bindIntoMap<String, String, String>("key")
+                    factory(NameTwo) { "overridden_value" }.bindIntoMap<String, String, String>(
                         "key",
                         override = true
                     )

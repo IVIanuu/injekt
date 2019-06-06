@@ -26,7 +26,7 @@ class SingleTest {
         val component = component {
             modules(
                 module {
-                    single { definition { TestDep1() } }
+                    single { TestDep1() }
                 }
             )
         }

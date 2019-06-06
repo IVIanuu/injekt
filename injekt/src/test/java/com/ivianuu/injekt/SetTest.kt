@@ -26,9 +26,9 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { definition { "value_one" } }.bindIntoSet(setName = Values)
-                    factory(NameTwo) { definition { "value_two" } }.bindIntoSet(setName = Values)
-                    factory(NameThree) { definition { "value_three" } }.bindIntoSet(setName = Values)
+                    factory(NameOne) { "value_one" }.bindIntoSet(setName = Values)
+                    factory(NameTwo) { "value_two" }.bindIntoSet(setName = Values)
+                    factory(NameThree) { "value_three" }.bindIntoSet(setName = Values)
                 }
             )
         }
@@ -81,8 +81,8 @@ class SetTest {
         component {
             modules(
                 module {
-                    factory { definition { "value" } }.bindIntoSet()
-                    factory { definition { "overridden_value" } }.bindIntoSet()
+                    factory { "value" }.bindIntoSet()
+                    factory { "overridden_value" }.bindIntoSet()
                 }
             )
         }

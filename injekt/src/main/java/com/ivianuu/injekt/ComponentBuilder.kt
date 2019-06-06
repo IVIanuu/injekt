@@ -141,8 +141,9 @@ internal fun createComponent(
     }
 
     mapBindings?.getAll()?.forEach { (mapKey, map) ->
-        val allMapBindings = map.getBindingMap() as Map<Any?, Binding<Any?>>
-        bindings[mapKey] = MapBinding(allMapBindings)
+        val bindingKeys = map.getBindingMap()
+            .mapValues { it.value.key }
+        bindings[mapKey] = MapBinding<Any?, Any?>(bindingKeys)
         val lazyMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -150,7 +151,7 @@ internal fun createComponent(
             ),
             mapKey.name
         )
-        bindings[lazyMapKey] = LazyMapBinding(allMapBindings)
+        bindings[lazyMapKey] = LazyMapBinding<Any?, Any?>(bindingKeys)
         val providerMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -158,22 +159,24 @@ internal fun createComponent(
             ),
             mapKey.name
         )
-        bindings[providerMapKey] = ProviderMapBinding(allMapBindings)
+        bindings[providerMapKey] = ProviderMapBinding<Any?, Any?>(bindingKeys)
     }
 
     setBindings?.getAll()?.forEach { (setKey, set) ->
-        val allSetBindings = set.getBindingSet() as Set<Binding<Any?>>
-        bindings[setKey] = SetBinding(allSetBindings)
+        val setKeys = set.getBindingSet()
+            .map { it.key }
+            .toSet()
+        bindings[setKey] = SetBinding<Any?>(setKeys)
         val lazySetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),
             setKey.name
         )
-        bindings[lazySetKey] = LazySetBinding(allSetBindings)
+        bindings[lazySetKey] = LazySetBinding<Any?>(setKeys)
         val providerSetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Provider::class, setKey.type.parameters[0])),
             setKey.name
         )
-        bindings[providerSetKey] = ProviderSetBinding(allSetBindings)
+        bindings[providerSetKey] = ProviderSetBinding<Any?>(setKeys)
     }
 
     return Component(scope, bindings, mapBindings, setBindings, dependencies)

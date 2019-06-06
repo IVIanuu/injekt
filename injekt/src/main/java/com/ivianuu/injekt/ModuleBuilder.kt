@@ -27,6 +27,7 @@ class ModuleBuilder {
             error("Already declared binding for $binding.key")
         }
 
+        binding.key = key
         binding.override = override
 
         bindings[key] = binding
