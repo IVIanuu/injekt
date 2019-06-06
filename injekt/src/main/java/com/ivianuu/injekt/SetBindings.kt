@@ -39,29 +39,21 @@ class SetBindings {
 
     class BindingSet<E> internal constructor(private val setKey: Key) {
 
-        private val map = linkedMapOf<Key, Entry>()
+        private val map = linkedMapOf<Key, Boolean>()
 
         fun putAll(other: BindingSet<E>) {
-            other.map.forEach { (key, entry) -> put(key, entry) }
+            other.map.forEach { (key, override) -> put(key, override) }
         }
 
-        fun put(elementKey: Key, override: Boolean) {
-            put(elementKey, Entry(elementKey, override))
-        }
-
-        private fun put(elementKey: Key, entry: Entry) {
-            if (map.contains(elementKey) && !entry.override) {
+        private fun put(elementKey: Key, override: Boolean) {
+            if (map.contains(elementKey) && !override) {
                 error("Already declared $elementKey in set $setKey")
             }
 
-            map[elementKey] = entry
+            map[elementKey] = override
         }
 
         fun getBindingSet(): Set<Key> = map.keys
 
-        private class Entry(
-            val key: Key,
-            val override: Boolean
-        )
     }
 }
