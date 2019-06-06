@@ -19,8 +19,7 @@ package com.ivianuu.injekt
 class StatefulDefinitionBuilder<T> {
 
     private val links = mutableListOf<Link<*>>()
-
-    internal lateinit var definition: (Parameters) -> T
+    private lateinit var definition: (Parameters) -> T
 
     inline fun <reified T> link(name: Any? = null): Link<T> =
         link(typeOf(), name)
@@ -58,13 +57,11 @@ class Link<T>(
 }
 
 class StatefulDefinitionBinding<T>(
-    private val block: StatefulDefinitionBuilder<T>.() -> Unit
+    private val block: StatefulDefinitionBuilder<T>
 ) : Binding<T> {
     private lateinit var definition: (Parameters) -> T
     override fun attach(component: Component) {
-        definition = StatefulDefinitionBuilder<T>()
-            .apply(block)
-            .build()
+        definition = StatefulDefinitionBuilder<T>().build()
     }
 
     override fun get(parameters: ParametersDefinition?): T =

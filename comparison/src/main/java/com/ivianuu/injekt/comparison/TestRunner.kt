@@ -63,7 +63,7 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             KoinTest,
             KatanaTest,
             //InjektCodegenTest,
-            InjektOptimizedTest
+            InjektOptimizedDslTest
         ),
         config
     )
