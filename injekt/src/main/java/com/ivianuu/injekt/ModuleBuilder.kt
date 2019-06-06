@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 class ModuleBuilder {
 
-    private val bindings = mutableMapOf<Key, Binding<*>>()
+    private val bindings = hashMapOf<Key, Binding<*>>()
     private var mapBindings: MapBindings? = null
     private var setBindings: SetBindings? = null
 
@@ -97,8 +97,8 @@ class ModuleBuilder {
 
 fun module(
     bindings: Map<Key, Binding<*>> = emptyMap(),
-    mapBindings: MapBindings?,
-    setBindings: SetBindings?
+    mapBindings: MapBindings? = null,
+    setBindings: SetBindings? = null
 ): Module = DefaultModule(bindings, mapBindings, setBindings)
 
 inline fun module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder()

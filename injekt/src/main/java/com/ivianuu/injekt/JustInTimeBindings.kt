@@ -25,7 +25,7 @@ interface BindingFactory<T> {
 
 internal object JustInTimeBindings {
 
-    private val factories = mutableMapOf<Key, BindingFactory<*>>()
+    private val factories = hashMapOf<Key, BindingFactory<*>>()
 
     fun <T> find(key: Key): BindingFactory<T>? {
         var factory = factories[key]

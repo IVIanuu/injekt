@@ -30,7 +30,7 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
-    private val attachedBindings = mutableMapOf<Key, Binding<*>>()
+    private val attachedBindings = hashMapOf<Key, Binding<*>>()
 
     /**
      * Returns the instance matching the [type] and [name]

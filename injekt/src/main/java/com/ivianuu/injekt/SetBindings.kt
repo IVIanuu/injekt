@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 class SetBindings {
 
-    private val sets = mutableMapOf<Key, BindingSet<*>>()
+    private val sets = hashMapOf<Key, BindingSet<*>>()
 
     fun putAll(setBindings: SetBindings) {
         setBindings.sets.forEach { (setKey, set) ->
@@ -39,7 +39,7 @@ class SetBindings {
 
     class BindingSet<E> internal constructor(private val setKey: Key) {
 
-        private val map = mutableMapOf<Key, Entry>()
+        private val map = linkedMapOf<Key, Entry>()
 
         fun putAll(other: BindingSet<E>) {
             other.map.forEach { (key, entry) -> put(key, entry) }

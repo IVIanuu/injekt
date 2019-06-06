@@ -78,7 +78,7 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultConfig) {
     println("Running ${config.rounds} iterations. Please stand by...")
 
-    val timingsPerTest = mutableMapOf<String, MutableList<Timings>>()
+    val timingsPerTest = linkedMapOf<String, MutableList<Timings>>()
 
     repeat(config.rounds) {
         tests.forEach { test ->

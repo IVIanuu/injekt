@@ -81,7 +81,7 @@ internal fun createComponent(
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
-    val dependencyScopes = mutableSetOf<KClass<out Annotation>>()
+    val dependencyScopes = hashSetOf<KClass<out Annotation>>()
 
     dependencies.forEach {
         if (it.scope != null) {
@@ -101,7 +101,7 @@ internal fun createComponent(
 
     val dependencyBindingKeys = dependencies
         .map { it.getAllBindingKeys() }
-        .fold(mutableSetOf<Key>()) { acc, current ->
+        .fold(hashSetOf<Key>()) { acc, current ->
             current.forEach { key ->
                 check(acc.add(key)) {
                     "Already declared binding for $key"
@@ -111,7 +111,7 @@ internal fun createComponent(
             return@fold acc
         }
 
-    val bindings = mutableMapOf<Key, Binding<*>>()
+    val bindings = hashMapOf<Key, Binding<*>>()
 
     var mapBindings: MapBindings? = null
     var setBindings: SetBindings? = null
@@ -180,7 +180,7 @@ internal fun createComponent(
 }
 
 internal fun Component.getAllBindingKeys(): Set<Key> =
-    mutableSetOf<Key>().also { collectBindingKeys(it) }
+    hashSetOf<Key>().also { collectBindingKeys(it) }
 
 internal fun Component.collectBindingKeys(
     keys: MutableSet<Key>
