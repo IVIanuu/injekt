@@ -38,7 +38,6 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
-import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ActivityScope
@@ -74,25 +73,34 @@ fun <T : Activity> T.activityModule(): Module = module {
         bindAlias<Context>(ForActivity)
         bindType<Context>()
 
-        (this@activityModule as? ComponentActivity)?.let { bindType<ComponentActivity>() }
-        (this@activityModule as? FragmentActivity)?.let { bindType<ComponentActivity>() }
-        (this@activityModule as? AppCompatActivity)?.let { bindType<AppCompatActivity>() }
+        if (this@activityModule is ComponentActivity) bindType<ComponentActivity>()
+        if (this@activityModule is FragmentActivity) bindType<FragmentActivity>()
+        if (this@activityModule is AppCompatActivity) bindType<AppCompatActivity>()
+        if (this@activityModule is LifecycleOwner) {
+            bindType<LifecycleOwner>()
+            bindAlias<LifecycleOwner>(ForActivity)
+        }
+        if (this@activityModule is ViewModelStoreOwner) {
+            bindType<ViewModelStoreOwner>()
+            bindAlias<ViewModelStoreOwner>(ForActivity)
+        }
+        if (this@activityModule is SavedStateRegistryOwner) {
+            bindType<SavedStateRegistryOwner>()
+            bindAlias<SavedStateRegistryOwner>(ForActivity)
+        }
     }
 
     factory(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        instance(this@activityModule, type = typeOf<LifecycleOwner>()) bindName ForActivity
         factory { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        instance(this@activityModule, type = typeOf<ViewModelStoreOwner>()) bindName ForActivity
         factory { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        instance(this@activityModule, type = typeOf<SavedStateRegistryOwner>()) bindName ForActivity
         factory { savedStateRegistry } bindName ForActivity
     }
 
