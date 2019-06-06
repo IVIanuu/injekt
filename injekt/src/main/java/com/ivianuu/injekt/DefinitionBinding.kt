@@ -17,9 +17,9 @@
 package com.ivianuu.injekt
 
 class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
+    override fun get(component: Component, parameters: ParametersDefinition?): T {
         return try {
-            definition.invoke(context, parameters?.invoke() ?: emptyParameters())
+            definition.invoke(component, parameters?.invoke() ?: emptyParameters())
         } catch (e: Exception) {
             throw IllegalStateException("Couldn't instantiate", e) // todo
         }
@@ -29,4 +29,4 @@ class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
 /**
  * Will called when ever a new instance is needed
  */
-typealias Definition<T> = DefinitionContext.(parameters: Parameters) -> T
+typealias Definition<T> = Component.(parameters: Parameters) -> T

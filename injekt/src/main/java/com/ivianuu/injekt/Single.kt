@@ -45,7 +45,7 @@ fun <T> Binding<T>.asSingle(): SingleBinding<T> {
 class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
     private var _value: Any? = UNINITIALIZED
 
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T {
+    override fun get(component: Component, parameters: ParametersDefinition?): T {
         var value = _value
         if (value !== UNINITIALIZED) {
             return value as T
@@ -57,7 +57,7 @@ class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
                 return@get value as T
             }
 
-            value = binding(context, parameters)
+            value = binding(component, parameters)
             _value = value
             return@get value as T
         }

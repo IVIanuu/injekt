@@ -74,7 +74,7 @@ private val key: String?,
 private val viewModelStoreName: Any?,
 private val definition: Definition<T>
 ) : (DefinitionContext, Parameters) -> T {
-override fun invoke(context: DefinitionContext, parameters: Parameters): T = with(context) {
+override fun invoke(component: Component, parameters: Parameters): T = with(context) {
 val store = get<ViewModelStore>(viewModelStoreName)
 
 val factory = Factory(context, parameters, definition)

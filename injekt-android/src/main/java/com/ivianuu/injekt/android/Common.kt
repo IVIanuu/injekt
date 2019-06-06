@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.android
 
+import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.ModuleBuilder
+import com.ivianuu.injekt.get
 
 import com.ivianuu.injekt.single
 
@@ -27,6 +29,6 @@ fun ModuleBuilder.sharedPreferences(
     name: Any? = null
 ) {
     single(name) {
-        application().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
+        get<Application>().getSharedPreferences(sharedPreferencesName, sharedPreferencesMode)!!
     }
 }

@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 interface Binding<T> {
-    fun get(context: DefinitionContext, parameters: ParametersDefinition? = null): T
-    operator fun invoke(context: DefinitionContext, parameters: ParametersDefinition? = null): T =
-        get(context, parameters)
+    fun get(component: Component, parameters: ParametersDefinition? = null): T
+    operator fun invoke(component: Component, parameters: ParametersDefinition? = null): T =
+        get(component, parameters)
 }

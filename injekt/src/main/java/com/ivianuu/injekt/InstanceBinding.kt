@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 class InstanceBinding<T>(private val instance: T) : Binding<T> {
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
+    override fun get(component: Component, parameters: ParametersDefinition?): T =
         instance
 }
 

@@ -30,8 +30,6 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
-    private val context = DefinitionContext(this)
-
     /**
      * Returns the instance matching the [type] and [name]
      */
@@ -43,7 +41,7 @@ class Component internal constructor(
         val key = keyOf(type, name)
         val binding = findBinding<T>(key, true)
             ?: error("Couldn't find a binding for $key")
-        return binding.get(context, parameters)
+        return binding.get(this, parameters)
     }
 
     @Suppress("UNCHECKED_CAST")

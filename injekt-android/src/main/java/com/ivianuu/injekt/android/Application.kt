@@ -21,7 +21,6 @@ import android.content.Context
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.DefinitionContext
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.bindAlias
@@ -29,7 +28,6 @@ import com.ivianuu.injekt.bindClasses
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
@@ -49,7 +47,3 @@ fun <T : Application> T.applicationModule(): Module = module {
 
     factory { resources } bindName ForApplication
 }
-
-fun DefinitionContext.application(): Application = get()
-
-fun DefinitionContext.context(): Context = get()

@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
-import com.ivianuu.injekt.DefinitionContext
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Parameters
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -98,7 +98,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .addFunction(
             FunSpec.builder("get")
                 .addModifiers(KModifier.OVERRIDE)
-                .addParameter("context", DefinitionContext::class)
+                .addParameter("component", Component::class)
                 .addParameter(
                     "parameters",
                     LambdaTypeName.get(
@@ -127,9 +127,9 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                     }
                     is ParamDescriptor.Dependency -> {
                         if (param.qualifierName != null) {
-                            add("${param.paramName} = context.get(%T)", param.qualifierName)
+                            add("${param.paramName} = component.get(%T)", param.qualifierName)
                         } else {
-                            add("${param.paramName} = context.get()")
+                            add("${param.paramName} = component.get()")
                         }
                     }
                 }

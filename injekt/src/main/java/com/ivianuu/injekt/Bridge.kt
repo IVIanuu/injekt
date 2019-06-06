@@ -40,6 +40,6 @@ private class BridgeBinding<T>(
     private val originalType: Type<T>,
     private val originalName: Any?
 ) : Binding<T> {
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
-        context.get(originalType, originalName)
+    override fun get(component: Component, parameters: ParametersDefinition?): T =
+        component.get(originalType, originalName)
 }
