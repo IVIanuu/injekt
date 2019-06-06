@@ -16,15 +16,12 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
-import com.ivianuu.injekt.comparison.*
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 
 val injektModule = createModule()
 
 fun createModule() = module {
-    factory { Fib1() }
+    /*factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }
     factory { Fib4(get(), get()) }
@@ -123,5 +120,5 @@ fun createModule() = module {
     factory { Fib97(get(), get()) }
     factory { Fib98(get(), get()) }
     factory { Fib99(get(), get()) }
-    factory { Fib100(get(), get()) }
+    factory { Fib100(get(), get()) }*/
 }

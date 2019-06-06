@@ -29,7 +29,6 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.stateFactory
 
 class App : Application(), InjektTrait {
 
@@ -52,7 +51,11 @@ annotation class PackageName {
 }
 
 fun appModule() = module {
-    stateFactory<String>(PackageName) {
+    stateSingle {
+        val app = link<App>()
+        definition { AppDependency(app()) }
+    }
+    stateFactory(PackageName) {
         val context = link<Context>()
         definition { context().packageName }
     }

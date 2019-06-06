@@ -16,22 +16,53 @@
 
 package com.ivianuu.injekt
 
-class DefinitionBinding<T>(private val definition: Definition<T>) : Binding<T> {
-    private lateinit var component: Component
-    override fun attach(component: Component) {
-        this.component = component
+class StateDefinitionFactory {
+    internal val links = mutableListOf<Link<*>>()
+
+    inline fun <reified T> link(name: Any? = null): Link<T> =
+        link(typeOf(), name)
+
+    fun <T> link(type: Type<T>, name: Any? = null): Link<T> {
+        val link = Link(type, name)
+        links.add(link)
+        return link
     }
 
-    override fun get(parameters: ParametersDefinition?): T {
-        return try {
-            definition.invoke(component, parameters?.invoke() ?: emptyParameters())
-        } catch (e: Exception) {
-            throw IllegalStateException("Couldn't instantiate", e) // todo
-        }
-    }
+    fun <T> definition(definition: Definition<T>) = definition
 }
 
-/**
- * Will called when ever a new instance is needed
- */
-typealias Definition<T> = Component.(parameters: Parameters) -> T
+class Link<T>(
+    private val type: Type<T>,
+    private val name: Any? = null
+) : () -> T {
+
+    private lateinit var binding: Binding<T>
+
+    internal fun attach(component: Component) {
+        binding = component.getBinding(type, name)
+    }
+
+    override fun invoke() = binding.get()
+}
+
+typealias Definition<T> = (Parameters) -> T
+
+fun <T> DefinitionBinding(
+    block: StateDefinitionFactory.() -> Definition<T>
+): DefinitionBinding<T> {
+    val factory = StateDefinitionFactory()
+    val definition = factory.block()
+    return DefinitionBinding(definition, factory.links)
+}
+
+class DefinitionBinding<T> internal constructor(
+    private val definition: Definition<T>,
+    private val links: List<Link<*>>
+) : Binding<T> {
+    override fun attach(component: Component) {
+        links.forEach { it.attach(component) }
+    }
+
+    override fun get(parameters: ParametersDefinition?): T =
+        definition(parameters?.invoke() ?: emptyParameters())
+}

@@ -19,19 +19,16 @@ package com.ivianuu.injekt
 inline fun <reified T> ModuleBuilder.single(
     name: Any? = null,
     override: Boolean = false,
-    noinline definition: Definition<T>
-): BindingContext<T> = single(typeOf(), name, override, definition)
+    noinline block: StateDefinitionFactory.() -> Definition<T>
+): BindingContext<T> = single(typeOf(), name, override, block)
 
 fun <T> ModuleBuilder.single(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false,
-    definition: Definition<T>
+    block: StateDefinitionFactory.() -> Definition<T>
 ): BindingContext<T> = bind(
-    DefinitionBinding(definition).asSingle(),
-    type,
-    name,
-    override
+    DefinitionBinding(block).asSingle(), type, name, override
 )
 
 @Target(AnnotationTarget.CLASS)

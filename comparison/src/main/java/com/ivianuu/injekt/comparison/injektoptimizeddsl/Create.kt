@@ -28,12 +28,12 @@ fun create(): String = buildString {
 }
 
 private fun factoryBlock(n: Int): String {
-    val binding1 = n - 1
-    val binding2 = n - 2
+    val b1 = n - 1
+    val b2 = n - 2
 
-    return " factoryState<Fib$n> {\n" +
-            "        val fib${binding1}Binding by link<Fib$binding1>()\n" +
-            "        val fib${binding2}Binding by link<Fib$binding2>()\n" +
-            "        definition { Fib$n(fib${binding1}Binding(), fib${binding2}Binding()) }\n" +
+    return "factory { \n" +
+            "        val fib$b1 = link<Fib$b1>()\n" +
+            "        val fib$b2 = link<Fib$b2>()\n" +
+            "        definition { Fib$n(fib$b1(), fib$b2()) }\n" +
             "    }"
 }
