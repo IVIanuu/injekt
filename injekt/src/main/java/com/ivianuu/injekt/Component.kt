@@ -51,13 +51,12 @@ class Component internal constructor(
     ): T {
         val key = keyOf(type, name)
         val binding = findBinding<T>(key, true)
-            ?: error("Couldn't find a binding for ${keyOf(type, name)}")
+            ?: error("Couldn't find a binding for $key")
         return binding.get(parameters)
     }
 
     @Suppress("UNCHECKED_CAST")
-    @PublishedApi
-    internal fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
+    private fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
         var binding = linkedBindings[key]
         if (binding != null) return binding as Binding<T>
 
