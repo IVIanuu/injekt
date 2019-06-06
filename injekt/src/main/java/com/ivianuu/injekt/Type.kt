@@ -24,6 +24,7 @@ import kotlin.reflect.KType
  */
 class Type<T> internal constructor(
     val raw: KClass<*>,
+    val rawJava: Class<*>,
     val isNullable: Boolean,
     val parameters: Array<out Type<*>>
 ) {
@@ -32,7 +33,7 @@ class Type<T> internal constructor(
         if (this === other) return true
         if (other !is Type<*>) return false
 
-        if (raw != other.raw) return false
+        if (rawJava != other.rawJava) return false
         if (isNullable != other.isNullable) return false
         if (!parameters.contentEquals(other.parameters)) return false
 
@@ -40,7 +41,7 @@ class Type<T> internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = raw.hashCode()
+        var result = rawJava.hashCode()
         result = 31 * result + isNullable.hashCode()
         result = 31 * result + parameters.contentHashCode()
         return result
@@ -57,7 +58,7 @@ class Type<T> internal constructor(
             ""
         }
 
-        return "${raw.java.name}${if (isNullable) "?" else ""}$params"
+        return "${rawJava.name}${if (isNullable) "?" else ""}$params"
     }
 
 }
@@ -74,21 +75,22 @@ internal fun <T> KType.asType(): Type<T> {
 
     return Type<T>(
         classifier as KClass<*>,
+        (classifier as KClass<*>).java,
         isMarkedNullable,
         parameters as Array<out Type<*>>
     )
 }
 
-fun <T> typeOf(raw: KClass<*>): Type<T> = Type(raw, false, emptyArray())
+fun <T> typeOf(raw: KClass<*>): Type<T> = Type(raw, raw.java, false, emptyArray())
 
 fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
-    Type(raw, false, parameters)
+    Type(raw, raw.java, false, parameters)
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> =
-    Type(raw, isNullable, emptyArray())
+    Type(raw, raw.java, isNullable, emptyArray())
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
-    Type(raw, isNullable, parameters)
+    Type(raw, raw.java, isNullable, parameters)
 
 inline fun <reified T> lazyTypeOf(): Type<Lazy<T>> =
     typeOf(Lazy::class, typeOf<T>())

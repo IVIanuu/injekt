@@ -31,7 +31,7 @@ internal object JustInTimeBindings {
         var factory = factories[key]
 
         if (factory == null) {
-            factory = findFactory(key.type.raw)
+            factory = findFactory(key.type.rawJava)
 
             if (factory != null) {
                 factories[key] = factory
@@ -41,8 +41,8 @@ internal object JustInTimeBindings {
         return factory as? BindingFactory<T>
     }
 
-    private fun findFactory(type: KClass<*>) = try {
-        val bindingClass = Class.forName(type.java.name + "Factory")
+    private fun findFactory(type: Class<*>) = try {
+        val bindingClass = Class.forName(type.name + "Factory")
         bindingClass.newInstance() as BindingFactory<*>
     } catch (e: Exception) {
         null
