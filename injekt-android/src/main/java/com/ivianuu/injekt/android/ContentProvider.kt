@@ -16,19 +16,17 @@
 
 package com.ivianuu.injekt.android
 
+
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-
-
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
-
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
 
@@ -61,5 +59,5 @@ fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    constant(this@contentProviderModule) bindClass ContentProvider::class
+    instance(this@contentProviderModule) bindClass ContentProvider::class
 }

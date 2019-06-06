@@ -16,13 +16,14 @@
 
 package com.ivianuu.injekt
 
-fun <T : Any> ModuleBuilder.constant(
+class InstanceBinding<T>(private val instance: T) : Binding<T> {
+    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T =
+        instance
+}
+
+fun <T> ModuleBuilder.instance(
     instance: T,
-    type: Type<T> = typeOf(instance::class),
+    type: Type<T> = typeOf((instance as Any)::class),
     name: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bind(ConstantBinding(instance), type, name, override)
-
-private class ConstantBinding<T>(private val instance: T) : Binding<T> {
-    override fun get(context: DefinitionContext, parameters: ParametersDefinition?): T = instance
-}
+): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)

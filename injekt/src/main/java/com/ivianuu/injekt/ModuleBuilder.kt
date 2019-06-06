@@ -100,7 +100,7 @@ inline fun <reified T> ModuleBuilder.bind(
     binding: Binding<T>,
     name: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bind(binding, typeOf(), name, override)
+): BindingContext<T> = bind(binding, typeOf<T>(), name, override)
 
 fun <T> ModuleBuilder.bind(
     binding: Binding<T>,

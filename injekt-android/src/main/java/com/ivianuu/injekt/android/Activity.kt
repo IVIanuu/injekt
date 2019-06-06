@@ -29,14 +29,13 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.typeOf
@@ -70,7 +69,7 @@ fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : Activity> T.activityModule(): Module = module {
-    constant(this@activityModule, override = true).apply {
+    instance(this@activityModule, override = true).apply {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
         bindType<Context>()
@@ -83,17 +82,17 @@ fun <T : Activity> T.activityModule(): Module = module {
     factory(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        constant(this@activityModule, type = typeOf<LifecycleOwner>()) bindName ForActivity
+        instance(this@activityModule, type = typeOf<LifecycleOwner>()) bindName ForActivity
         factory { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        constant(this@activityModule, type = typeOf<ViewModelStoreOwner>()) bindName ForActivity
+        instance(this@activityModule, type = typeOf<ViewModelStoreOwner>()) bindName ForActivity
         factory { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        constant(this@activityModule, type = typeOf<SavedStateRegistryOwner>()) bindName ForActivity
+        instance(this@activityModule, type = typeOf<SavedStateRegistryOwner>()) bindName ForActivity
         factory { savedStateRegistry } bindName ForActivity
     }
 

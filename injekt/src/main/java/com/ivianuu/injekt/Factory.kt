@@ -19,12 +19,6 @@ package com.ivianuu.injekt
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,
     override: Boolean = false,
-    binding: Binding<T>
-): BindingContext<T> = bind(binding, typeOf(), name, override)
-
-inline fun <reified T> ModuleBuilder.factory(
-    name: Any? = null,
-    override: Boolean = false,
     noinline definition: Definition<T>
 ): BindingContext<T> = factory(typeOf(), name, override, definition)
 

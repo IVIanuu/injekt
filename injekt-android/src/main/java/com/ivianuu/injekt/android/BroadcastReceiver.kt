@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.Component
@@ -23,13 +24,10 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-
-
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindClass
-
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
 
@@ -64,5 +62,5 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
 fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    constant(this@receiverModule) bindClass BroadcastReceiver::class
+    instance(this@receiverModule) bindClass BroadcastReceiver::class
 }

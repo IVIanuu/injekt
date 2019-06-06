@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -25,15 +26,13 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-
-
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scope
 
@@ -105,7 +104,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
 }
 
 private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
-    constant(this@internalFragmentModule, override = true).apply {
+    instance(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()
