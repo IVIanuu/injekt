@@ -112,12 +112,18 @@ internal fun createComponent(
         }
 
     val bindings = mutableMapOf<Key, BindingContribution<*>>()
-    val mapBindings = MapBindings() // todo lazy init
-    val setBindings = SetBindings() // todo lazy init
+
+    var mapBindings: MapBindings? = null
+    var setBindings: SetBindings? = null
+    fun nonNullMapBindings(): MapBindings =
+        mapBindings ?: MapBindings().also { mapBindings = it }
+
+    fun nonNullSetBindings(): SetBindings =
+        setBindings ?: SetBindings().also { setBindings = it }
 
     dependencies.forEach { dependency ->
-        dependency.mapBindings?.let { mapBindings.putAll(it) }
-        dependency.setBindings?.let { setBindings.putAll(it) }
+        dependency.mapBindings?.let { nonNullMapBindings().putAll(it) }
+        dependency.setBindings?.let { nonNullSetBindings().putAll(it) }
     }
 
     modules.forEach { module ->
@@ -130,11 +136,11 @@ internal fun createComponent(
             bindings[key] = binding
         }
 
-        module.mapBindings?.let { mapBindings.putAll(it) }
-        module.setBindings?.let { setBindings.putAll(it) }
+        module.mapBindings?.let { nonNullMapBindings().putAll(it) }
+        module.setBindings?.let { nonNullSetBindings().putAll(it) }
     }
 
-    mapBindings.getAll().forEach { (mapKey, map) ->
+    mapBindings?.getAll()?.forEach { (mapKey, map) ->
         val allMapBindings = map.getBindingMap() as Map<Any?, Binding<Any?>>
         bindings[mapKey] = BindingContribution(
             MapBinding(allMapBindings),
@@ -167,7 +173,7 @@ internal fun createComponent(
         )
     }
 
-    setBindings.getAll().forEach { (setKey, set) ->
+    setBindings?.getAll()?.forEach { (setKey, set) ->
         val allSetBindings = set.getBindingSet() as Set<Binding<Any?>>
         bindings[setKey] =
             BindingContribution(SetBinding(allSetBindings), setKey, false)

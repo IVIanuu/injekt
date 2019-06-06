@@ -19,8 +19,8 @@ package com.ivianuu.injekt
 class ModuleBuilder {
 
     private val bindings = mutableMapOf<Key, BindingContribution<*>>()
-    private val mapBindings = MapBindings() // todo lazy create
-    private val setBindings = SetBindings() // todo lazy create
+    private var mapBindings: MapBindings? = null
+    private var setBindings: SetBindings? = null
 
     fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
         if (bindings.contains(key) && !override) {
@@ -34,18 +34,18 @@ class ModuleBuilder {
 
     fun include(module: Module) {
         module.bindings.forEach { bind(it.value.binding, it.value.key, it.value.override) }
-        module.mapBindings?.let { mapBindings.putAll(it) }
-        module.setBindings?.let { setBindings.putAll(it) }
+        module.mapBindings?.let { nonNullMapBindings().putAll(it) }
+        module.setBindings?.let { nonNullSetBindings().putAll(it) }
     }
 
     // todo rename
     fun bindMap(mapKey: Key) {
-        mapBindings.putIfAbsent(mapKey)
+        nonNullMapBindings().putIfAbsent(mapKey)
     }
 
     // todo rename
     fun bindSet(setKey: Key) {
-        setBindings.putIfAbsent(setKey)
+        nonNullSetBindings().putIfAbsent(setKey)
     }
 
     fun addBindingIntoMap(
@@ -54,7 +54,7 @@ class ModuleBuilder {
         entryValueBinding: Binding<*>,
         override: Boolean = false
     ) {
-        mapBindings.get<Any?, Any?>(mapKey)
+        nonNullMapBindings().get<Any?, Any?>(mapKey)
             .put(entryKey, entryValueBinding as Binding<Any?>, override)
     }
 
@@ -64,11 +64,18 @@ class ModuleBuilder {
         elementBinding: Binding<*>,
         override: Boolean = false
     ) {
-        setBindings.get<Any?>(setKey)
+        nonNullSetBindings().get<Any?>(setKey)
             .put(elementKey, elementBinding as Binding<Any?>, override)
     }
 
     fun build(): Module = module(bindings, mapBindings, setBindings)
+
+    private fun nonNullMapBindings(): MapBindings =
+        mapBindings ?: MapBindings().also { mapBindings = it }
+
+    private fun nonNullSetBindings(): SetBindings =
+        setBindings ?: SetBindings().also { setBindings = it }
+
 }
 
 fun module(
