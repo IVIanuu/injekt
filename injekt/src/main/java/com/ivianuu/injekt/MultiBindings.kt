@@ -17,38 +17,38 @@
 package com.ivianuu.injekt
 
 internal class MapBinding<K, V>(private val bindings: Map<K, Binding<V>>) :
-    Binding<Map<K, V>> {
+    Binding<Map<K, V>>() {
     override fun get(parameters: ParametersDefinition?): Map<K, V> = bindings
         .mapValues { it.value.get() }
 }
 
 internal class LazyMapBinding<K, V>(private val bindings: Map<K, Binding<V>>) :
-    Binding<Map<K, Lazy<V>>> {
+    Binding<Map<K, Lazy<V>>>() {
     override fun get(parameters: ParametersDefinition?): Map<K, Lazy<V>> = bindings
         .mapValues { (_, binding) -> lazy { binding.get() } }
 }
 
 internal class ProviderMapBinding<K, V>(private val bindings: Map<K, Binding<V>>) :
-    Binding<Map<K, Provider<V>>> {
+    Binding<Map<K, Provider<V>>>() {
     override fun get(parameters: ParametersDefinition?): Map<K, Provider<V>> = bindings
         .mapValues { (_, binding) -> provider { binding.get(it) } }
 }
 
-internal class SetBinding<E>(private val bindings: Set<Binding<E>>) : Binding<Set<E>> {
+internal class SetBinding<E>(private val bindings: Set<Binding<E>>) : Binding<Set<E>>() {
     override fun get(parameters: ParametersDefinition?): Set<E> = bindings
         .map { it.get() }
         .toSet()
 }
 
 internal class LazySetBinding<E>(private val bindings: Set<Binding<E>>) :
-    Binding<Set<Lazy<E>>> {
+    Binding<Set<Lazy<E>>>() {
     override fun get(parameters: ParametersDefinition?): Set<Lazy<E>> = bindings
         .map { lazy(LazyThreadSafetyMode.NONE) { it.get() } }
         .toSet()
 }
 
 internal class ProviderSetBinding<E>(private val bindings: Set<Binding<E>>) :
-    Binding<Set<Provider<E>>> {
+    Binding<Set<Provider<E>>>() {
     override fun get(parameters: ParametersDefinition?): Set<Provider<E>> = bindings
         .map { binding -> provider { binding.get(it) } }
         .toSet()

@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 internal class ProviderBinding<T>(
     private val bindingKey: Key
-) : Binding<Provider<T>> {
+) : Binding<Provider<T>>() {
     private lateinit var binding: Binding<T>
     override fun attach(component: Component) {
         binding = component.getBinding(bindingKey)
@@ -31,7 +31,7 @@ internal class ProviderBinding<T>(
 
 internal class LazyBinding<T>(
     private val bindingKey: Key
-) : Binding<Lazy<T>> {
+) : Binding<Lazy<T>>() {
     private lateinit var binding: Binding<T>
     override fun attach(component: Component) {
         binding = component.getBinding(bindingKey)

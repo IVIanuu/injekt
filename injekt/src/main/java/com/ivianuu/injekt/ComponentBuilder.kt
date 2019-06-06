@@ -111,7 +111,7 @@ internal fun createComponent(
             return@fold acc
         }
 
-    val bindings = mutableMapOf<Key, BindingContribution<*>>()
+    val bindings = mutableMapOf<Key, Binding<*>>()
 
     var mapBindings: MapBindings? = null
     var setBindings: SetBindings? = null
@@ -142,11 +142,7 @@ internal fun createComponent(
 
     mapBindings?.getAll()?.forEach { (mapKey, map) ->
         val allMapBindings = map.getBindingMap() as Map<Any?, Binding<Any?>>
-        bindings[mapKey] = BindingContribution(
-            MapBinding(allMapBindings),
-            mapKey,
-            false
-        )
+        bindings[mapKey] = MapBinding(allMapBindings)
         val lazyMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -154,11 +150,7 @@ internal fun createComponent(
             ),
             mapKey.name
         )
-        bindings[lazyMapKey] = BindingContribution(
-            LazyMapBinding(allMapBindings),
-            lazyMapKey,
-            false
-        )
+        bindings[lazyMapKey] = LazyMapBinding(allMapBindings)
         val providerMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -166,35 +158,22 @@ internal fun createComponent(
             ),
             mapKey.name
         )
-        bindings[providerMapKey] = BindingContribution(
-            ProviderMapBinding(allMapBindings),
-            providerMapKey,
-            false
-        )
+        bindings[providerMapKey] = ProviderMapBinding(allMapBindings)
     }
 
     setBindings?.getAll()?.forEach { (setKey, set) ->
         val allSetBindings = set.getBindingSet() as Set<Binding<Any?>>
-        bindings[setKey] =
-            BindingContribution(SetBinding(allSetBindings), setKey, false)
+        bindings[setKey] = SetBinding(allSetBindings)
         val lazySetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),
             setKey.name
         )
-        bindings[lazySetKey] = BindingContribution(
-            LazySetBinding(allSetBindings),
-            lazySetKey,
-            false
-        )
+        bindings[lazySetKey] = LazySetBinding(allSetBindings)
         val providerSetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Provider::class, setKey.type.parameters[0])),
             setKey.name
         )
-        bindings[providerSetKey] = BindingContribution(
-            ProviderSetBinding(allSetBindings),
-            providerSetKey,
-            false
-        )
+        bindings[providerSetKey] = ProviderSetBinding(allSetBindings)
     }
 
     return Component(scope, bindings, mapBindings, setBindings, dependencies)

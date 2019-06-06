@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 class ModuleBuilder {
 
-    private val bindings = mutableMapOf<Key, BindingContribution<*>>()
+    private val bindings = mutableMapOf<Key, Binding<*>>()
     private var mapBindings: MapBindings? = null
     private var setBindings: SetBindings? = null
 
@@ -27,13 +27,15 @@ class ModuleBuilder {
             error("Already declared binding for $binding.key")
         }
 
-        bindings[key] = BindingContribution(binding, key, override)
+        binding.override = override
+
+        bindings[key] = binding
 
         return BindingContext(binding, key, override, this)
     }
 
     fun include(module: Module) {
-        module.bindings.forEach { bind(it.value.binding, it.value.key, it.value.override) }
+        module.bindings.forEach { bind(it.value, it.key, it.value.override) }
         module.mapBindings?.let { nonNullMapBindings().putAll(it) }
         module.setBindings?.let { nonNullSetBindings().putAll(it) }
     }
@@ -79,7 +81,7 @@ class ModuleBuilder {
 }
 
 fun module(
-    bindings: Map<Key, BindingContribution<*>> = emptyMap(),
+    bindings: Map<Key, Binding<*>> = emptyMap(),
     mapBindings: MapBindings?,
     setBindings: SetBindings?
 ): Module = DefaultModule(bindings, mapBindings, setBindings)

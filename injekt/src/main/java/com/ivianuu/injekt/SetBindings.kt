@@ -38,6 +38,7 @@ class SetBindings {
     fun getAll(): Map<Key, BindingSet<*>> = sets
 
     class BindingSet<E> internal constructor(private val setKey: Key) {
+
         private val map = mutableMapOf<Key, Entry<E>>()
 
         fun putAll(other: BindingSet<E>) {

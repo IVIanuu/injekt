@@ -52,7 +52,7 @@ fun <T> Binding<T>.asSingle(): Binding<T> {
     else SingleBinding(this)
 }
 
-private class SingleBinding<T>(private val binding: Binding<T>) : Binding<T> {
+private class SingleBinding<T>(private val binding: Binding<T>) : Binding<T>() {
     private var _value: Any? = UNINITIALIZED
 
     override fun attach(component: Component) {

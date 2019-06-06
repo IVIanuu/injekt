@@ -93,7 +93,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
 
     private fun bindingImpl() = TypeSpec.classBuilder("BindingImpl")
         .addModifiers(KModifier.PRIVATE)
-        .addSuperinterface(
+        .superclass(
             Binding::class.asClassName().plusParameter(descriptor.target)
         )
         .apply {

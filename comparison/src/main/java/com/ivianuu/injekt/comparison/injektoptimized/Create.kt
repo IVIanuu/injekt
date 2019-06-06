@@ -31,7 +31,7 @@ private fun binding(n: Int): String {
     val b1 = n - 1
     val b2 = n - 2
 
-    return "class Fib${n}Binding : Binding<Fib${n}> {\n" +
+    return "class Fib${n}Binding : Binding<Fib${n}>() {\n" +
             "    private lateinit var fib${b1}Binding: Binding<Fib${b1}>\n" +
             "    private lateinit var fib${b2}Binding: Binding<Fib${b2}>\n" +
             "    override fun attach(component: Component) {\n" +

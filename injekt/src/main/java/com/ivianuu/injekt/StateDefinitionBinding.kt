@@ -56,7 +56,7 @@ fun <T> stateDefinitionBinding(block: StateDefinitionFactory.() -> StateDefiniti
 private class StateDefinitionBinding<T>(
     private val definition: StateDefinition<T>,
     private val links: List<Link<*>>
-) : Binding<T> {
+) : Binding<T>() {
     override fun attach(component: Component) {
         links.forEach { it.attach(component) }
     }
