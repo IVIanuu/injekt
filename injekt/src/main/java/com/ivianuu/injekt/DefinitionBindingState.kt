@@ -50,9 +50,9 @@ typealias StateDefinition<T> = (Parameters) -> T
 fun <T> StatefulDefinitionBinding(
     block: StateDefinitionFactory.() -> StateDefinition<T>
 ): StatefulDefinitionBinding<T> {
-    val environment = StateDefinitionFactory()
-    val definition = environment.block()
-    return StatefulDefinitionBinding(definition, environment.links)
+    val factory = StateDefinitionFactory()
+    val definition = factory.block()
+    return StatefulDefinitionBinding(definition, factory.links)
 }
 
 class StatefulDefinitionBinding<T> internal constructor(
