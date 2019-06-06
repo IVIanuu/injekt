@@ -30,8 +30,9 @@ class Component internal constructor(
 
     private val linker = RealLinker(this) // todo move to constructor
 
+    private val linkedBindings = mutableMapOf<Key, Binding<*>>()
+
     init {
-        bindings.forEach { (_, binding) -> binding.link(linker) }
         bindings.values
             .filterIsInstance<AttachAware>()
             .forEach { it.attached() }
@@ -57,8 +58,15 @@ class Component internal constructor(
     @Suppress("UNCHECKED_CAST")
     @PublishedApi
     internal fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
-        var binding = bindings[key]
+        var binding = linkedBindings[key]
         if (binding != null) return binding as Binding<T>
+
+        binding = bindings[key]
+        if (binding != null) {
+            binding.link(linker)
+            linkedBindings[key] = binding
+            return binding as Binding<T>
+        }
 
         for (dependency in dependencies) {
             binding = dependency.findBinding<T>(key, false)
@@ -99,6 +107,7 @@ class Component internal constructor(
     private fun <T> addJitBinding(key: Key, binding: Binding<T>) {
         bindings[key] = binding
         binding.link(linker)
+        linkedBindings[key] = binding
         (binding as? AttachAware)?.attached()
     }
 
