@@ -40,7 +40,9 @@ internal object JustInTimeBindings {
 
     private fun findFactory(type: Class<*>) = try {
         val bindingClass = Class.forName(type.name + "__Binding")
-        bindingClass.newInstance() as BindingFactory<*>
+        bindingClass.fields.first()
+            .also { it.isAccessible = true }
+            .get(null) as BindingFactory<*>
     } catch (e: Exception) {
         null
     }

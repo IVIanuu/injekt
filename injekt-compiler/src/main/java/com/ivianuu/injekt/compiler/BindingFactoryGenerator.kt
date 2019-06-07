@@ -42,7 +42,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             .addType(bindingFactory())
             .build()
 
-    private fun bindingFactory() = TypeSpec.classBuilder(descriptor.factoryName)
+    private fun bindingFactory() = TypeSpec.objectBuilder(descriptor.factoryName)
         .apply {
             if (descriptor.isInternal) addModifiers(KModifier.INTERNAL)
         }
@@ -78,7 +78,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
                 .apply {
                     if (descriptor.hasDependencies) {
-                        addStatement("return UnlinkedBindingImpl()")
+                        addStatement("return UnlinkedBindingImpl")
                     } else {
                         addStatement("return LinkedBindingImpl")
                     }
@@ -93,7 +93,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .addType(linkedBinding())
         .build()
 
-    private fun unlinkedBinding() = TypeSpec.classBuilder("UnlinkedBindingImpl")
+    private fun unlinkedBinding() = TypeSpec.objectBuilder("UnlinkedBindingImpl")
         .addModifiers(KModifier.PRIVATE)
         .superclass(
             UnlinkedBinding::class.asClassName().plusParameter(descriptor.target)
