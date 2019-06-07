@@ -31,7 +31,7 @@ private class KeyedProvider<T>(
 
     private var _binding: LinkedBinding<T>? = null
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun invoke(parameters: ParametersDefinition?): T {
         var binding = _binding
         if (binding == null) {
             binding = component.getBinding(key)

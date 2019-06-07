@@ -28,7 +28,7 @@ class Type<T> internal constructor(
     val parameters: Array<out Type<*>>
 ) {
 
-    private val rawJava = raw.java
+    val rawJava = raw.java
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -26,7 +26,8 @@ sealed class Binding<T> {
 
 abstract class UnlinkedBinding<T> : Binding<T>()
 
-abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
+abstract class LinkedBinding<T> : Binding<T>() {
     final override fun link(linker: Linker): LinkedBinding<T> = this
-    final override fun invoke(parameters: ParametersDefinition?): T = super.invoke(parameters)
+    operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
+    abstract fun get(parameters: ParametersDefinition? = null): T
 }
