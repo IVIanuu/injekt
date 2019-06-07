@@ -24,10 +24,11 @@ import kotlin.reflect.KType
  */
 class Type<T> internal constructor(
     val raw: KClass<*>,
-    val rawJava: Class<*>,
     val isNullable: Boolean,
     val parameters: Array<out Type<*>>
 ) {
+
+    private val rawJava = raw.java
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -75,19 +76,18 @@ internal fun <T> KType.asType(): Type<T> {
 
     return Type<T>(
         classifier as KClass<*>,
-        (classifier as KClass<*>).java,
         isMarkedNullable,
         parameters as Array<out Type<*>>
     )
 }
 
-fun <T> typeOf(raw: KClass<*>): Type<T> = Type(raw, raw.java, false, emptyArray())
+fun <T> typeOf(raw: KClass<*>): Type<T> = Type(raw, false, emptyArray())
 
 fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
-    Type(raw, raw.java, false, parameters)
+    Type(raw, false, parameters)
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> =
-    Type(raw, raw.java, isNullable, emptyArray())
+    Type(raw, isNullable, emptyArray())
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
-    Type(raw, raw.java, isNullable, parameters)
+    Type(raw, isNullable, parameters)
