@@ -139,7 +139,7 @@ internal fun createComponent(
 
     dependencies.forEach { dependency ->
         dependency.mapBindings?.let { nonNullMapBindings().putAll(it) }
-        dependency.setBindings?.let { nonNullSetBindings().putAll(it) }
+        dependency.setBindings?.let { nonNullSetBindings().addAll(it) }
     }
 
     modules.forEach { module ->
@@ -153,7 +153,7 @@ internal fun createComponent(
         }
 
         module.mapBindings?.let { nonNullMapBindings().putAll(it) }
-        module.setBindings?.let { nonNullSetBindings().putAll(it) }
+        module.setBindings?.let { nonNullSetBindings().addAll(it) }
     }
 
     mapBindings?.getAll()?.forEach { (mapKey, map) ->

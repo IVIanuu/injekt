@@ -26,9 +26,9 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    bind(NameOne) { "value_one" }.bindIntoSet(setName = Values)
-                    bind(NameTwo) { "value_two" }.bindIntoSet(setName = Values)
-                    bind(NameThree) { "value_three" }.bindIntoSet(setName = Values)
+                    bind(NameOne) { "value_one" }.intoSet(setName = Values)
+                    bind(NameTwo) { "value_two" }.intoSet(setName = Values)
+                    bind(NameThree) { "value_three" }.intoSet(setName = Values)
                 }
             )
         }
@@ -66,7 +66,7 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    bindSet<String>()
+                    set<String>()
                 }
             )
         }
@@ -81,8 +81,8 @@ class SetTest {
         component {
             modules(
                 module {
-                    bind { "value" }.bindIntoSet()
-                    bind { "overridden_value" }.bindIntoSet()
+                    bind { "value" }.intoSet()
+                    bind { "overridden_value" }.intoSet()
                 }
             )
         }
@@ -92,14 +92,14 @@ class SetTest {
     fun testOverridesLegalOverride() {
         val originalValueComponent = component {
             modules(
-                module { bind { "value" }.bindIntoSet() }
+                module { bind { "value" }.intoSet() }
             )
         }
         val overriddenValueComponent = component {
             dependencies(originalValueComponent)
             modules(
                 module {
-                    bind(override = true) { "overridden_value" }.bindIntoSet(override = true)
+                    bind(override = true) { "overridden_value" }.intoSet(override = true)
                 }
             )
         }

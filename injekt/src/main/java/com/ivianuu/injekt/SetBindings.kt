@@ -20,15 +20,11 @@ class SetBindings {
 
     private val sets = hashMapOf<Key, BindingSet<*>>()
 
-    fun putAll(setBindings: SetBindings) {
+    fun addAll(setBindings: SetBindings) {
         setBindings.sets.forEach { (setKey, set) ->
             val thisSet = get<Any?>(setKey)
-            thisSet.putAll(set as BindingSet<Any?>)
+            thisSet.addAll(set as BindingSet<Any?>)
         }
-    }
-
-    fun putIfAbsent(setKey: Key) {
-        sets.getOrPut(setKey) { BindingSet<Any?>(setKey) }
     }
 
     fun <E> get(setKey: Key): BindingSet<E> {
@@ -41,11 +37,26 @@ class SetBindings {
 
         private val map = linkedMapOf<Key, Boolean>()
 
-        fun putAll(other: BindingSet<E>) {
-            other.map.forEach { (key, override) -> put(key, override) }
+        fun addAll(other: BindingSet<E>) {
+            other.map.forEach { (key, override) -> add(key, override) }
         }
 
-        fun put(elementKey: Key, override: Boolean) {
+        inline fun <reified T : E> add(
+            elementName: Any? = null,
+            override: Boolean = false
+        ) {
+            add<T>(typeOf(), elementName, override)
+        }
+
+        fun <T : E> add(
+            elementType: Type<T>,
+            elementName: Any? = null,
+            override: Boolean = false
+        ) {
+            add(keyOf(elementType, elementName), override)
+        }
+
+        fun add(elementKey: Key, override: Boolean) {
             if (map.contains(elementKey) && !override) {
                 error("Already declared $elementKey in set $setKey")
             }

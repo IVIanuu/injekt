@@ -42,14 +42,7 @@ class Module @PublishedApi internal constructor() {
     fun include(module: Module) {
         module.bindings.forEach { bind(it.value, it.key, it.value.override) }
         module.mapBindings?.let { nonNullMapBindings().putAll(it) }
-        module.setBindings?.let { nonNullSetBindings().putAll(it) }
-    }
-
-    inline fun <reified K, reified V> map(
-        mapName: Any? = null,
-        noinline block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
-    ) {
-        map(typeOf(), typeOf(), mapName, block)
+        module.setBindings?.let { nonNullSetBindings().addAll(it) }
     }
 
     fun <K, V> map(
@@ -62,25 +55,13 @@ class Module @PublishedApi internal constructor() {
         nonNullMapBindings().get<K, V>(mapKey).apply { block?.invoke(this) }
     }
 
-    // todo rename
-    fun <E> bindSet(
+    fun <E> set(
         setElementType: Type<E>,
-        setName: Any? = null
-    ) {
-        val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
-        nonNullSetBindings().putIfAbsent(setKey)
-    }
-
-    fun <E> bindIntoSet(
-        setElementType: Type<E>,
-        elementType: Type<out E>,
         setName: Any? = null,
-        elementName: Any? = null,
-        override: Boolean = false
+        block: (SetBindings.BindingSet<E>.() -> Unit)? = null
     ) {
         val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
-        nonNullSetBindings().get<E>(setKey)
-            .put(keyOf(elementType, elementName), override)
+        nonNullSetBindings().get<E>(setKey).apply { block?.invoke(this) }
     }
 
     private fun nonNullMapBindings(): MapBindings =
@@ -145,17 +126,16 @@ fun <T> Module.bindWithState(
     return bind(binding, type, name, override)
 }
 
-inline fun <reified E> Module.bindSet(setName: Any? = null) {
-    bindSet<E>(typeOf(), setName)
+inline fun <reified K, reified V> Module.map(
+    mapName: Any? = null,
+    noinline block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
+) {
+    map(typeOf(), typeOf(), mapName, block)
 }
 
-inline fun <reified E, reified V : E> Module.bindIntoSet(
+inline fun <reified E> Module.set(
     setName: Any? = null,
-    elementName: Any? = null,
-    override: Boolean = false
+    noinline block: (SetBindings.BindingSet<E>.() -> Unit)? = null
 ) {
-    bindIntoSet(
-        typeOf<E>(),
-        typeOf<V>(), setName, elementName, override
-    )
+    set(typeOf(), setName, block)
 }

@@ -112,22 +112,18 @@ fun <T : V, K, V> BindingContext<T>.intoMap(
     return this
 }
 
-inline fun <reified T : E, reified E> BindingContext<T>.bindIntoSet(
+inline fun <reified T : E, reified E> BindingContext<T>.intoSet(
     setName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bindIntoSet(typeOf(), setName, override)
+): BindingContext<T> = intoSet(typeOf(), setName, override)
 
-fun <T : E, E> BindingContext<T>.bindIntoSet(
+fun <T : E, E> BindingContext<T>.intoSet(
     setElementType: Type<E>,
     setName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    module.bindIntoSet(
-        setElementType = setElementType,
-        elementType = key.type as Type<out E>,
-        setName = setName,
-        elementName = key.name,
-        override = override
-    )
+    module.set(setElementType, setName) {
+        add(key.type as Type<T>, key.name, override)
+    }
     return this
 }
