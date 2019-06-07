@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
  * Dependencies can be requested by calling either [get] or [inject]
  */
 class Component internal constructor(
-    val scope: KClass<out Annotation>?,
+    internal val scopes: Iterable<KClass<out Annotation>>,
     internal val bindings: MutableMap<Key, Binding<*>>,
     internal val mapBindings: MapBindings?,
     internal val setBindings: SetBindings?,
@@ -89,7 +89,7 @@ class Component internal constructor(
             val bindingFactory = JustInTimeBindings.find<T>(key)
             if (bindingFactory != null) {
                 val component = findComponentForScope(bindingFactory.scope)
-                    ?: error("Couldn't find component for $scope")
+                    ?: error("Couldn't find component for ${bindingFactory.scope}")
                 binding = bindingFactory.create()
                 if (bindingFactory.isSingle) {
                     binding = binding.asSingle()
@@ -110,7 +110,7 @@ class Component internal constructor(
 
     private fun findComponentForScope(scope: Any?): Component? {
         if (scope == null) return this
-        if (this.scope == scope) return this
+        if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
             dependency.findComponentForScope(scope)
                 ?.let { return@findComponentForScope it }

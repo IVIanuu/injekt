@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-
 import android.app.Service
 import android.content.Context
 import com.ivianuu.injekt.Component
@@ -32,7 +31,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 @Scope
 annotation class ServiceScope
@@ -44,7 +43,7 @@ annotation class ForService {
 
 fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<ServiceScope>()
+        scopes<ServiceScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(serviceModule())
         block?.invoke(this)

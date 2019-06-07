@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -34,7 +33,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 @Scope
 annotation class FragmentScope
@@ -54,7 +53,7 @@ annotation class ForChildFragment {
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<FragmentScope>()
+        scopes<FragmentScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(fragmentModule())
         block?.invoke(this)
@@ -62,7 +61,7 @@ fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = n
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<ChildViewScope>()
+        scopes<ChildViewScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
         block?.invoke(this)

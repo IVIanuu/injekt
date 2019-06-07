@@ -25,11 +25,12 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+
 import com.ivianuu.injekt.bindClass
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 @Scope
 annotation class ReceiverScope
@@ -43,7 +44,7 @@ fun <T : BroadcastReceiver> BroadcastReceiver.receiverComponent(
     context: Context,
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scope<ReceiverScope>()
+    scopes<ReceiverScope>()
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule(context))
     block?.invoke(this)

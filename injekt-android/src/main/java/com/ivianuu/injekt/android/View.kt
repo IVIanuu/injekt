@@ -25,6 +25,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
@@ -32,7 +33,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 @Scope
 annotation class ViewScope
@@ -52,7 +53,7 @@ annotation class ForChildView {
 
 fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<ViewScope>()
+        scopes<ViewScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(viewModule())
         block?.invoke(this)
@@ -60,7 +61,7 @@ fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Co
 
 fun <T : View> T.childViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<ChildViewScope>()
+        scopes<ChildViewScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childViewModule())
         block?.invoke(this)

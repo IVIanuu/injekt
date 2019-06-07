@@ -30,6 +30,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
@@ -37,7 +38,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 @Scope
 annotation class ActivityScope
@@ -50,7 +51,7 @@ annotation class ForActivity {
 fun <T : Activity> T.activityComponent(
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scope<ActivityScope>()
+    scopes<ActivityScope>()
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     block?.invoke(this)

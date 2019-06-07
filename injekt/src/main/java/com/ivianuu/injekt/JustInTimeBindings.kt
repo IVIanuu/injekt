@@ -20,7 +20,7 @@ import kotlin.reflect.KClass
 
 interface BindingFactory<T> {
     val scope: KClass<out Annotation>? get() = null
-    val isSingle: Boolean get() = false
+    val isSingle: Boolean get() = false // todo remove because non null scope means single
     fun create(): Binding<T>
 }
 

@@ -20,10 +20,24 @@ import kotlin.reflect.KClass
 
 class ComponentBuilder @PublishedApi internal constructor() {
 
-    var scope: KClass<out Annotation>? = null
-
+    private val scopes = mutableListOf<KClass<out Annotation>>()
     private val modules = mutableListOf<Module>()
     private val dependencies = mutableListOf<Component>()
+
+    fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
+        this.scopes.add(scope)
+        return this
+    }
+
+    fun scopes(vararg scopes: KClass<out Annotation>): ComponentBuilder {
+        this.scopes.addAll(scopes)
+        return this
+    }
+
+    fun scopes(scopes: Iterable<KClass<out Annotation>>): ComponentBuilder {
+        this.scopes.addAll(scopes)
+        return this
+    }
 
     fun dependencies(dependency: Component): ComponentBuilder {
         this.dependencies.add(dependency)
@@ -57,7 +71,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
     @PublishedApi
     internal fun build(): Component = createComponent(
-        scope = scope,
+        scopes = scopes,
         modules = modules,
         dependencies = dependencies
     )
@@ -70,32 +84,34 @@ class ComponentBuilder @PublishedApi internal constructor() {
 inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()
 
-inline fun <reified T : Annotation> ComponentBuilder.scope(): ComponentBuilder {
-    scope = T::class
+inline fun <reified T : Annotation> ComponentBuilder.scopes(): ComponentBuilder {
+    scopes(T::class)
     return this
 }
 
 @PublishedApi
 internal fun createComponent(
-    scope: KClass<out Annotation>? = null,
+    scopes: Collection<KClass<out Annotation>> = emptyList(),
     modules: Iterable<Module> = emptyList(),
     dependencies: Iterable<Component> = emptyList()
 ): Component {
     val dependencyScopes = hashSetOf<KClass<out Annotation>>()
 
-    dependencies.forEach {
-        if (it.scope != null) {
-            if (!dependencyScopes.add(it.scope)) {
-                error("Duplicated scope ${it.scope}")
+    dependencies
+        .flatMap { it.scopes }
+        .forEach {
+            if (!dependencyScopes.add(it)) {
+                error("Duplicated scope $it")
             }
+        }
+
+    scopes.forEach {
+        if (!dependencyScopes.add(it)) {
+            error("Duplicated scope $it")
         }
     }
 
-    check(scope == null || !dependencyScopes.contains(scope)) {
-        "Duplicated scope $scope"
-    }
-
-    check(scope != null || dependencyScopes.isEmpty()) {
+    check(scopes.isNotEmpty() || dependencyScopes.isEmpty()) {
         "Must have a scope if a dependency has a scope"
     }
 
@@ -176,7 +192,7 @@ internal fun createComponent(
         bindings[providerSetKey] = ProviderSetBinding<Any?>(setKeys)
     }
 
-    return Component(scope, bindings, mapBindings, setBindings, dependencies)
+    return Component(scopes, bindings, mapBindings, setBindings, dependencies)
 }
 
 internal fun Component.getAllBindingKeys(): Set<Key> =

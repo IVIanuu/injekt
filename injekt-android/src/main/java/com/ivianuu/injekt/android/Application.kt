@@ -30,11 +30,11 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<ApplicationScope>()
+        scopes<ApplicationScope>()
         modules(applicationModule())
         block?.invoke(this)
     }

@@ -28,7 +28,7 @@ import com.ivianuu.injekt.bindClass
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scopes
 
 @Scope
 annotation class ContentProviderScope
@@ -40,7 +40,7 @@ annotation class ForContentProvider {
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope<ContentProviderScope>()
+        scopes<ContentProviderScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(contentProviderModule())
         block?.invoke(this)
