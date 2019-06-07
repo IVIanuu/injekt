@@ -49,6 +49,9 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
     private fun imports() = setOf("getBinding")
 
     private fun bindingFactory() = TypeSpec.classBuilder(descriptor.factoryName)
+        .apply {
+            if (descriptor.isInternal) addModifiers(KModifier.INTERNAL)
+        }
         .addSuperinterface(
             BindingFactory::class.asClassName().plusParameter(descriptor.target)
         )

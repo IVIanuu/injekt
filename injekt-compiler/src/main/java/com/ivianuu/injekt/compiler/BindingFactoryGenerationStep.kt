@@ -33,6 +33,10 @@ import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.visibility
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -57,6 +61,32 @@ class BindingFactoryGenerationStep : ProcessingStep() {
     }
 
     private fun createDescriptor(element: TypeElement): BindingFactoryDescriptor? {
+        val classMetadata = element.kotlinMetadata as? KotlinClassMetadata
+
+        if (classMetadata == null) {
+            messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Must be a kotlin class",
+                element
+            )
+            return null
+        }
+
+        val visibility = classMetadata.data.classProto.visibility
+
+        if (visibility != ProtoBuf.Visibility.PUBLIC
+            && visibility != ProtoBuf.Visibility.INTERNAL
+        ) {
+            messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Must be a public or internal",
+                element
+            )
+            return null
+        }
+
+        val isInternal = classMetadata.data.classProto.visibility == ProtoBuf.Visibility.INTERNAL
+
         val scopeAnnotations =
             element.getAnnotatedAnnotations<Scope>()
 
@@ -79,7 +109,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
 
         val targetName = element.asClassName().javaToKotlinType() as ClassName
 
-        val creatorName = ClassName(
+        val factoryName = ClassName(
             targetName.packageName,
             element.simpleName.toString() + "__Binding"
         )
@@ -153,7 +183,8 @@ class BindingFactoryGenerationStep : ProcessingStep() {
 
         return BindingFactoryDescriptor(
             targetName,
-            creatorName,
+            factoryName,
+            isInternal,
             scopeName,
             constructorParams
         )

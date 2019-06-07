@@ -29,6 +29,9 @@ annotation class Commands {
 }
 
 @Inject
+internal class InternalDep
+
+@Inject
 class MyDep(
     // default
     private val command: Command,
