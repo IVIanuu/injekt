@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 class MapBindings {
 
     private val maps = hashMapOf<Key, BindingMap<*, *>>()
@@ -64,6 +66,18 @@ class MapBindings {
             override: Boolean = false
         ) {
             put(entryKey, Entry(entryValueKey, override))
+        }
+
+        infix fun K.to(key: Key) {
+            put(this, key)
+        }
+
+        infix fun K.to(type: Type<out V>) {
+            put(this, keyOf(type))
+        }
+
+        infix fun K.to(clazz: KClass<*>) {
+            put(this, keyOf(typeOf<Any?>(clazz)))
         }
 
         private fun put(entryKey: K, entry: Entry) {
