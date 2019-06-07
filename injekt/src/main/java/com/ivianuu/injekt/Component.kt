@@ -66,9 +66,7 @@ class Component internal constructor(
 
         binding = bindings[key]
         if (binding != null) {
-            val override = binding.override
-            binding = binding.link(linker)
-            binding.override = override
+            binding = binding.performLink(linker)
             linkedBindings[key] = binding
             return binding as LinkedBinding<T>
         }
@@ -96,8 +94,7 @@ class Component internal constructor(
 
     private fun <T> addBinding(key: Key, binding: Binding<T>): LinkedBinding<T> {
         bindings[key] = binding
-        val linkedBinding = binding.link(linker)
-        linkedBinding.override = binding.override
+        val linkedBinding = binding.performLink(linker)
         linkedBindings[key] = linkedBinding
         return linkedBinding
     }

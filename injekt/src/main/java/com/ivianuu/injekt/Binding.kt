@@ -22,12 +22,20 @@ sealed class Binding<T> {
 
     abstract fun link(linker: Linker): LinkedBinding<T>
 
+    internal open fun performLink(linker: Linker): LinkedBinding<T> {
+        val linked = link(linker)
+        linked.override = override
+        return linked
+    }
+
 }
 
 abstract class UnlinkedBinding<T> : Binding<T>()
 
 abstract class LinkedBinding<T> : Binding<T>() {
     final override fun link(linker: Linker): LinkedBinding<T> = this
+    override fun performLink(linker: Linker): LinkedBinding<T> = this
+
     operator fun invoke(parameters: ParametersDefinition? = null): T = get(parameters)
     abstract fun get(parameters: ParametersDefinition? = null): T
 }

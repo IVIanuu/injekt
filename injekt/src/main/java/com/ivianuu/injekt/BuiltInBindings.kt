@@ -64,7 +64,7 @@ internal class LinkedMapBinding<K, V>(private val bindingsByKey: Map<K, LinkedBi
 
 internal class UnlinkedSetBinding<E>(private val keys: Set<Key>) : UnlinkedBinding<Set<E>>() {
     override fun link(linker: Linker): LinkedBinding<Set<E>> =
-        LinkedSetBinding<E>(keys.map { linker.get<E>(it) }.toSet())
+        LinkedSetBinding(keys.map { linker.get<E>(it) }.toSet())
 }
 
 internal class LinkedSetBinding<E>(private val bindings: Set<LinkedBinding<out E>>) :
