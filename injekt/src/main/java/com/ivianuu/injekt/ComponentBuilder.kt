@@ -70,93 +70,88 @@ class ComponentBuilder @PublishedApi internal constructor() {
     }
 
     @PublishedApi
-    internal fun build(): Component = createComponent(
-        scopes = scopes,
-        modules = modules,
-        dependencies = dependencies
-    )
+    internal fun build(): Component {
+        checkScopes()
 
-}
+        val dependencyBindingKeys = dependencies
+            .map { it.getAllBindingKeys() }
+            .fold(hashSetOf<Key>()) { acc, current ->
+                current.forEach { key ->
+                    check(acc.add(key)) {
+                        "Already declared binding for $key"
+                    }
+                }
 
-/**
- * Constructs a new [Component] which will configured [block]
- */
-inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
-    ComponentBuilder().apply(block).build()
+                return@fold acc
+            }
 
-inline fun <reified T : Annotation> ComponentBuilder.scopes(): ComponentBuilder {
-    scopes(T::class)
-    return this
-}
+        val bindings = hashMapOf<Key, Binding<*>>()
 
-@PublishedApi
-internal fun createComponent(
-    scopes: Collection<KClass<out Annotation>> = emptyList(),
-    modules: Iterable<Module> = emptyList(),
-    dependencies: Iterable<Component> = emptyList()
-): Component {
-    val dependencyScopes = hashSetOf<KClass<out Annotation>>()
+        var mapBindings: MapBindings? = null
+        var setBindings: SetBindings? = null
+        fun nonNullMapBindings(): MapBindings =
+            mapBindings ?: MapBindings().also { mapBindings = it }
 
-    dependencies
-        .flatMap { it.scopes }
-        .forEach {
+        fun nonNullSetBindings(): SetBindings =
+            setBindings ?: SetBindings().also { setBindings = it }
+
+        dependencies.forEach { dependency ->
+            dependency.mapBindings?.let { nonNullMapBindings().putAll(it) }
+            dependency.setBindings?.let { nonNullSetBindings().addAll(it) }
+        }
+
+        modules.forEach { module ->
+            module.bindings.forEach { (key, binding) ->
+                if ((bindings.contains(key)
+                            || dependencyBindingKeys.contains(key)) && !binding.override
+                ) {
+                    error("Already declared key $key")
+                }
+                bindings[key] = binding
+            }
+
+            module.mapBindings?.let { nonNullMapBindings().putAll(it) }
+            module.setBindings?.let { nonNullSetBindings().addAll(it) }
+        }
+
+        mapBindings?.getAll()?.forEach { (mapKey, map) ->
+            includeMapBindings(bindings, mapKey, map)
+        }
+
+        setBindings?.getAll()?.forEach { (setKey, set) ->
+            includeSetBindings(bindings, setKey, set)
+        }
+
+        return Component(scopes, bindings, mapBindings, setBindings, dependencies)
+    }
+
+    private fun checkScopes() {
+        val dependencyScopes = hashSetOf<KClass<out Annotation>>()
+
+        dependencies
+            .flatMap { it.scopes }
+            .forEach {
+                if (!dependencyScopes.add(it)) {
+                    error("Duplicated scope $it")
+                }
+            }
+
+        scopes.forEach {
             if (!dependencyScopes.add(it)) {
                 error("Duplicated scope $it")
             }
         }
 
-    scopes.forEach {
-        if (!dependencyScopes.add(it)) {
-            error("Duplicated scope $it")
+        check(scopes.isNotEmpty() || dependencyScopes.isEmpty()) {
+            "Must have a scope if a dependency has a scope"
         }
     }
 
-    check(scopes.isNotEmpty() || dependencyScopes.isEmpty()) {
-        "Must have a scope if a dependency has a scope"
-    }
-
-    val dependencyBindingKeys = dependencies
-        .map { it.getAllBindingKeys() }
-        .fold(hashSetOf<Key>()) { acc, current ->
-            current.forEach { key ->
-                check(acc.add(key)) {
-                    "Already declared binding for $key"
-                }
-            }
-
-            return@fold acc
-        }
-
-    val bindings = hashMapOf<Key, Binding<*>>()
-
-    var mapBindings: MapBindings? = null
-    var setBindings: SetBindings? = null
-    fun nonNullMapBindings(): MapBindings =
-        mapBindings ?: MapBindings().also { mapBindings = it }
-
-    fun nonNullSetBindings(): SetBindings =
-        setBindings ?: SetBindings().also { setBindings = it }
-
-    dependencies.forEach { dependency ->
-        dependency.mapBindings?.let { nonNullMapBindings().putAll(it) }
-        dependency.setBindings?.let { nonNullSetBindings().addAll(it) }
-    }
-
-    modules.forEach { module ->
-        module.bindings.forEach { (key, binding) ->
-            if ((bindings.contains(key)
-                        || dependencyBindingKeys.contains(key)) && !binding.override
-            ) {
-                error("Already declared key $key")
-            }
-            bindings[key] = binding
-        }
-
-        module.mapBindings?.let { nonNullMapBindings().putAll(it) }
-        module.setBindings?.let { nonNullSetBindings().addAll(it) }
-    }
-
-    mapBindings?.getAll()?.forEach { (mapKey, map) ->
+    private fun includeMapBindings(
+        bindings: MutableMap<Key, Binding<*>>,
+        mapKey: Key,
+        map: MapBindings.BindingMap<*, *>
+    ) {
         val bindingKeys = map.getBindingMap() as Map<Any?, Key>
         bindings[mapKey] = UnlinkedMapBinding<Any?, Any?>(bindingKeys)
 
@@ -191,7 +186,11 @@ internal fun createComponent(
         bindings[providerMapKey] = UnlinkedMapBinding<Any?, Any?>(providerBindingKeys)
     }
 
-    setBindings?.getAll()?.forEach { (setKey, set) ->
+    private fun includeSetBindings(
+        bindings: MutableMap<Key, Binding<*>>,
+        setKey: Key,
+        set: SetBindings.BindingSet<*>
+    ) {
         val setKeys = set.getBindingSet()
         bindings[setKey] = UnlinkedSetBinding<Any?>(setKeys)
 
@@ -224,15 +223,23 @@ internal fun createComponent(
         bindings[providerSetKey] = UnlinkedSetBinding<Any?>(providerSetKeys)
     }
 
-    return Component(scopes, bindings, mapBindings, setBindings, dependencies)
+    private fun Component.getAllBindingKeys(): Set<Key> =
+        hashSetOf<Key>().also { collectBindingKeys(it) }
+
+    private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
+        dependencies.forEach { it.collectBindingKeys(keys) }
+        keys.addAll(this.bindings.keys)
+    }
+
 }
 
-internal fun Component.getAllBindingKeys(): Set<Key> =
-    hashSetOf<Key>().also { collectBindingKeys(it) }
+/**
+ * Constructs a new [Component] which will configured [block]
+ */
+inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
+    ComponentBuilder().apply(block).build()
 
-internal fun Component.collectBindingKeys(
-    keys: MutableSet<Key>
-) {
-    dependencies.forEach { it.collectBindingKeys(keys) }
-    keys.addAll(this.bindings.keys)
+inline fun <reified T : Annotation> ComponentBuilder.scopes(): ComponentBuilder {
+    scopes(T::class)
+    return this
 }
