@@ -61,7 +61,7 @@ fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = n
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ChildViewScope>()
+        scopes<ChildFragmentScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
         block?.invoke(this)

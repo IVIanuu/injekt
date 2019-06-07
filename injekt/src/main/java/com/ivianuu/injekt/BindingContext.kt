@@ -27,7 +27,7 @@ data class BindingContext<T>(
 
 inline fun <reified T> BindingContext<*>.bindAlias(
     name: Any? = null,
-    override: Boolean = false
+    override: Boolean = this.override
 ) {
     bindAlias(typeOf<T>(), name, override)
 }
@@ -35,7 +35,7 @@ inline fun <reified T> BindingContext<*>.bindAlias(
 fun BindingContext<*>.bindAlias(
     type: Type<*>,
     name: Any? = null,
-    override: Boolean = false
+    override: Boolean = this.override
 ) {
     module.bind(
         binding = binding as Binding<Any?>,

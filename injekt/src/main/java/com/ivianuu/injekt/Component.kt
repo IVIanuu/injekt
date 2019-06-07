@@ -97,11 +97,12 @@ class Component internal constructor(
     private fun <T> addBinding(key: Key, binding: Binding<T>): LinkedBinding<T> {
         bindings[key] = binding
         val linkedBinding = binding.link(linker)
+        linkedBinding.override = binding.override
         linkedBindings[key] = linkedBinding
         return linkedBinding
     }
 
-    private fun findComponentForScope(scope: Any?): Component? {
+    private fun findComponentForScope(scope: KClass<out Annotation>?): Component? {
         if (scope == null) return this
         if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
