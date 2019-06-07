@@ -179,8 +179,8 @@ private class BridgeBinding<T>(
     private val originalName: Any?
 ) : Binding<T>() {
     private lateinit var originalBinding: Binding<T>
-    override fun attach(component: Component) {
-        originalBinding = component.getBinding(originalType, originalName)
+    override fun link(linker: Linker) {
+        originalBinding = linker.get(originalType, originalName)
     }
 
     override fun get(parameters: ParametersDefinition?): T = originalBinding.get(parameters)

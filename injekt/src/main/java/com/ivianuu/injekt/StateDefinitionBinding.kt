@@ -38,8 +38,8 @@ class Link<T>(
 
     private lateinit var binding: Binding<T>
 
-    internal fun attach(component: Component) {
-        binding = component.getBinding(type, name)
+    internal fun link(linker: Linker) {
+        binding = linker.get(type, name)
     }
 
     override fun invoke() = binding.get()
@@ -57,8 +57,8 @@ private class StateDefinitionBinding<T>(
     private val definition: StateDefinition<T>,
     private val links: List<Link<*>>
 ) : Binding<T>() {
-    override fun attach(component: Component) {
-        links.forEach { it.attach(component) }
+    override fun link(linker: Linker) {
+        links.forEach { it.link(linker) }
     }
 
     override fun get(parameters: ParametersDefinition?): T =

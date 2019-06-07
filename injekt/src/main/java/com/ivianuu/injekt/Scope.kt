@@ -27,8 +27,8 @@ fun <T> Binding<T>.asScoped(): Binding<T> {
 private class ScopedBinding<T>(private val binding: Binding<T>) : Binding<T>() {
     private var _value: Any? = this
 
-    override fun attach(component: Component) {
-        binding.attach(component)
+    override fun link(linker: Linker) {
+        binding.link(linker)
     }
 
     override fun get(parameters: ParametersDefinition?): T {

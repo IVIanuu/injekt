@@ -18,8 +18,8 @@ package com.ivianuu.injekt
 
 internal class ProviderBinding<T>(private val bindingKey: Key) : Binding<Provider<T>>() {
     private lateinit var binding: Binding<T>
-    override fun attach(component: Component) {
-        binding = component.getBinding(bindingKey)
+    override fun link(linker: Linker) {
+        binding = linker.get(bindingKey)
     }
 
     override fun get(parameters: ParametersDefinition?): Provider<T> = provider {
@@ -29,8 +29,8 @@ internal class ProviderBinding<T>(private val bindingKey: Key) : Binding<Provide
 
 internal class LazyBinding<T>(private val bindingKey: Key) : Binding<Lazy<T>>() {
     private lateinit var binding: Binding<T>
-    override fun attach(component: Component) {
-        binding = component.getBinding(bindingKey)
+    override fun link(linker: Linker) {
+        binding = linker.get(bindingKey)
     }
 
     override fun get(parameters: ParametersDefinition?): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
@@ -41,9 +41,9 @@ internal class LazyBinding<T>(private val bindingKey: Key) : Binding<Lazy<T>>() 
 internal abstract class AbsMapBinding<K, V, M : Map<K, *>>(private val keysByKey: Map<K, Key>) :
     Binding<M>() {
     protected lateinit var bindingsByKey: Map<K, Binding<out V>>
-    final override fun attach(component: Component) {
+    final override fun link(linker: Linker) {
         bindingsByKey = keysByKey
-            .mapValues { component.getBinding<V>(it.value) }
+            .mapValues { linker.get<V>(it.value) }
     }
 }
 
@@ -71,8 +71,8 @@ internal class ProviderMapBinding<K, V>(keysByKey: Map<K, Key>) :
 
 internal abstract class AbsSetBinding<E, S : Set<*>>(private val keys: Set<Key>) : Binding<S>() {
     protected lateinit var bindings: Set<Binding<out E>>
-    final override fun attach(component: Component) {
-        bindings = keys.map { component.getBinding<E>(it) }.toSet()
+    final override fun link(linker: Linker) {
+        bindings = keys.map { linker.get<E>(it) }.toSet()
     }
 }
 

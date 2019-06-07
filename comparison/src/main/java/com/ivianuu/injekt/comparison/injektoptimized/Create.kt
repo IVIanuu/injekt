@@ -34,9 +34,9 @@ private fun binding(n: Int): String {
     return "class Fib${n}Binding : Binding<Fib${n}>() {\n" +
             "    private lateinit var fib${b1}Binding: Binding<Fib${b1}>\n" +
             "    private lateinit var fib${b2}Binding: Binding<Fib${b2}>\n" +
-            "    override fun attach(component: Component) {\n" +
-            "        fib${b1}Binding = component.getBinding()\n" +
-            "        fib${b2}Binding = component.getBinding()\n" +
+            "    override fun link(component: Component) {\n" +
+            "        fib${b1}Binding = component.get()\n" +
+            "        fib${b2}Binding = component.get()\n" +
             "    }\n" +
             "\n" +
             "    override fun get(parameters: ParametersDefinition?) = Fib${n}(fib${b1}Binding(), fib${b2}Binding())\n" +

@@ -21,10 +21,10 @@ abstract class Binding<T> : Provider<T> {
     var override = false
 
     /**
-     * Can be used to retrieve [Binding] dependencies via [Component.getBinding]
+     * Can be used to retrieve [Binding] dependencies via [Linker.get]
      * For optimizing performance
      */
-    open fun attach(component: Component) {
+    open fun link(linker: Linker) {
     }
 
 }

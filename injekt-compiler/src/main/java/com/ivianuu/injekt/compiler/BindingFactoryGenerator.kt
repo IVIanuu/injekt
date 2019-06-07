@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.Parameters
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -37,16 +37,8 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
 
     fun generate() =
         FileSpec.builder(descriptor.factoryName.packageName, descriptor.factoryName.simpleName)
-            .apply {
-                val imports = imports()
-                if (imports.isNotEmpty()) {
-                    addImport("com.ivianuu.injekt", *imports().toTypedArray())
-                }
-            }
             .addType(bindingFactory())
             .build()
-
-    private fun imports() = setOf("getBinding")
 
     private fun bindingFactory() = TypeSpec.classBuilder(descriptor.factoryName)
         .apply {
@@ -111,9 +103,9 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .apply {
             if (descriptor.constructorParams.isNotEmpty()) {
                 addFunction(
-                    FunSpec.builder("attach")
+                    FunSpec.builder("link")
                         .addModifiers(KModifier.OVERRIDE)
-                        .addParameter("component", Component::class)
+                        .addParameter("linker", Linker::class)
                         .addCode(
                             CodeBlock.builder()
                                 .apply {
@@ -122,11 +114,11 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                                         .forEach { param ->
                                             if (param.qualifierName != null) {
                                                 addStatement(
-                                                    "${param.paramName}Binding = component.getBinding(%T)",
+                                                    "${param.paramName}Binding = linker.get(%T)",
                                                     param.qualifierName
                                                 )
                                             } else {
-                                                addStatement("${param.paramName}Binding = component.getBinding()")
+                                                addStatement("${param.paramName}Binding = linker.get()")
                                             }
                                         }
                                 }

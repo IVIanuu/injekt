@@ -30,6 +30,7 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
+    private val linker = Linker(this)
     private val attachedBindings = hashMapOf<Key, Binding<*>>()
 
     /**
@@ -39,15 +40,9 @@ class Component internal constructor(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): T = getBinding(type, name).get(parameters)
+    ): T = getBinding<T>(keyOf(type, name)).get(parameters)
 
-    /**
-     * Returns the [Binding] matching [type] and [name]
-     */
-    fun <T> getBinding(type: Type<T>, name: Any? = null): Binding<T> =
-        getBinding(keyOf(type, name))
-
-    fun <T> getBinding(key: Key): Binding<T> =
+    internal fun <T> getBinding(key: Key): Binding<T> =
         findBinding(key, true)
             ?: error("Couldn't find a binding for $key")
 
@@ -58,7 +53,7 @@ class Component internal constructor(
 
         binding = bindings[key]
         if (binding != null) {
-            binding.attach(this)
+            binding.link(linker)
             attachedBindings[key] = binding
             return binding as Binding<T>
         }
@@ -104,7 +99,7 @@ class Component internal constructor(
 
     private fun addBinding(key: Key, binding: Binding<*>) {
         bindings[key] = binding
-        binding.attach(this)
+        binding.link(linker)
         attachedBindings[key] = binding
     }
 
@@ -125,9 +120,6 @@ inline fun <reified T> Component.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
-
-inline fun <reified T> Component.getBinding(name: Any? = null): Binding<T> =
-    getBinding(typeOf(), name)
 
 inline fun <reified T> Component.inject(
     name: Any? = null,

@@ -16,19 +16,14 @@
 
 package com.ivianuu.injekt
 
-typealias Definition<T> = Component.(Parameters) -> T
+class Linker(internal val component: Component) {
 
-fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
-    DefinitionBinding(definition)
+    inline fun <reified T> get(name: Any? = null): Binding<T> =
+        get(typeOf(), name)
 
-private class DefinitionBinding<T>(
-    private val definition: Definition<T>
-) : Binding<T>() {
-    private lateinit var component: Component
-    override fun link(linker: Linker) {
-        this.component = linker.component
-    }
+    fun <T> get(type: Type<T>, name: Any? = null): Binding<T> =
+        get(keyOf(type, name))
 
-    override fun get(parameters: ParametersDefinition?): T =
-        definition(component, parameters?.invoke() ?: emptyParameters())
+    fun <T> get(key: Key): Binding<T> = component.getBinding(key)
+
 }
