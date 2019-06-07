@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 sealed class Binding<T> {
 
     var override = false
+        internal set
 
     abstract fun link(linker: Linker): LinkedBinding<T>
 
