@@ -20,6 +20,10 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.map
+import com.ivianuu.injekt.module
+import kotlin.reflect.KClass
 
 // kinds
 interface Command
@@ -27,6 +31,18 @@ interface Command
 @Name(Commands.Companion::class)
 annotation class Commands {
     companion object
+}
+
+@Inject class CommandOne : Command
+@Inject class CommandTwo : Command
+@Inject class CommandThree : Command
+
+val commandsModule = module {
+    map<KClass<out Command>, Command> {
+        CommandOne::class to keyOf<CommandOne>()
+        CommandOne::class to keyOf<CommandOne>()
+        CommandTwo::class to keyOf<CommandTwo>()
+    }
 }
 
 @Inject
