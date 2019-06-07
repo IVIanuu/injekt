@@ -31,7 +31,6 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
 
@@ -103,7 +102,7 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
 }
 
 private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
-    instance(this@internalFragmentModule, override = true).apply {
+    bind(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()

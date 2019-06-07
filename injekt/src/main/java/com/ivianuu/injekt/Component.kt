@@ -33,7 +33,7 @@ class Component internal constructor(
     private val attachedBindings = hashMapOf<Key, Binding<*>>()
 
     /**
-     * Returns the instance matching the [type] and [name]
+     * Returns the bind matching the [type] and [name]
      */
     fun <T> get(
         type: Type<T>,

@@ -30,7 +30,6 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
 
@@ -111,7 +110,7 @@ fun <T : View> T.childViewModule(): Module = module {
 }
 
 private fun <T : View> T.internalViewModule(name: Any) = module {
-    instance(this@internalViewModule, override = true).apply {
+    bind(this@internalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)
     }

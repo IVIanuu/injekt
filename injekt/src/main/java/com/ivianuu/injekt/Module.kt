@@ -81,7 +81,7 @@ inline fun <reified T> Module.bind(
     binding: Binding<T>,
     name: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bind(binding, typeOf(), name, override)
+): BindingContext<T> = this.bind(binding, typeOf<T>(), name, override)
 
 fun <T> Module.bind(
     binding: Binding<T>,
@@ -172,7 +172,7 @@ private class BridgeBinding<T>(
     override fun get(parameters: ParametersDefinition?): T = originalBinding.get(parameters)
 }
 
-fun <T> Module.instance(
+fun <T> Module.bind(
     instance: T,
     type: Type<T> = typeOf((instance as Any)::class),
     name: Any? = null,

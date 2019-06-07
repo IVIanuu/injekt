@@ -35,7 +35,6 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
 
@@ -68,7 +67,7 @@ fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : Activity> T.activityModule(): Module = module {
-    instance(this@activityModule, override = true).apply {
+    bind(this@activityModule, override = true).apply {
         bindType<Activity>()
         bindAlias<Context>(ForActivity)
         bindType<Context>()
