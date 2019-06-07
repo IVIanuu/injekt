@@ -119,7 +119,7 @@ inline fun <reified T> Module.bind(
     scoped: Boolean = false,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = this@provide.bind(typeOf(), name, scoped, override, definition)
+): BindingContext<T> = bind(typeOf(), name, scoped, override, definition)
 
 fun <T> Module.bind(
     type: Type<T>,
