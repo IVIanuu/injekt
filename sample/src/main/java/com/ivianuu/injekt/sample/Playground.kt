@@ -18,6 +18,7 @@ package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
 
 // kinds
@@ -30,6 +31,12 @@ annotation class Commands {
 
 @Inject
 internal class InternalDep
+
+@Inject
+class EmptyConstructorDep
+
+@Inject
+class OnlyParamsConstructorDep(@Param param: String)
 
 @Inject
 class MyDep(

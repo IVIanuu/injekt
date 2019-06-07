@@ -25,12 +25,17 @@ data class BindingFactoryDescriptor(
     val isInternal: Boolean,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
-)
+) {
+    val hasDependencies
+        get() = constructorParams.any { it is ParamDescriptor.Dependency }
+    val hasDynamicParams
+        get() = constructorParams.any { it is ParamDescriptor.Dynamic }
+}
 
 sealed class ParamDescriptor {
     abstract val paramName: String
 
-    data class Parameter(
+    data class Dynamic(
         override val paramName: String,
         val index: Int
     ) : ParamDescriptor()

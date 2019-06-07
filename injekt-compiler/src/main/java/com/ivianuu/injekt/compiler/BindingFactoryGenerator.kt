@@ -76,10 +76,20 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             FunSpec.builder("create")
                 .addModifiers(KModifier.OVERRIDE)
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                .addStatement("return UnlinkedBindingImpl()")
+                .apply {
+                    if (descriptor.hasDependencies) {
+                        addStatement("return UnlinkedBindingImpl()")
+                    } else {
+                        addStatement("return LinkedBindingImpl")
+                    }
+                }
                 .build()
         )
-        .addType(unlinkedBinding())
+        .apply {
+            if (descriptor.hasDependencies) {
+                addType(unlinkedBinding())
+            }
+        }
         .addType(linkedBinding())
         .build()
 
@@ -105,46 +115,50 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                                     .joinToString(separator = ", ") { "linker.get()" }
                             )
                         }
-                        .add(")")
-                        .add("\n")
+                        .add(")\n")
                         .build()
                 )
                 .build()
         )
         .build()
 
-    private fun linkedBinding() = TypeSpec.classBuilder("LinkedBindingImpl")
+    private fun linkedBinding() =
+        (if (descriptor.hasDependencies) TypeSpec.classBuilder("LinkedBindingImpl")
+        else TypeSpec.objectBuilder("LinkedBindingImpl"))
         .addModifiers(KModifier.PRIVATE)
         .superclass(
             LinkedBinding::class.asClassName().plusParameter(descriptor.target)
         )
-        .primaryConstructor(
-            FunSpec.constructorBuilder()
-                .apply {
+            .apply {
+                if (descriptor.hasDependencies) {
+                    primaryConstructor(
+                        FunSpec.constructorBuilder()
+                            .apply {
+                                descriptor.constructorParams
+                                    .filterIsInstance<ParamDescriptor.Dependency>()
+                                    .forEach { param ->
+                                        addParameter(
+                                            param.paramName + "Binding",
+                                            LinkedBinding::class.asTypeName().plusParameter(param.paramType)
+                                        )
+                                    }
+                            }
+                            .build()
+                    )
+
                     descriptor.constructorParams
                         .filterIsInstance<ParamDescriptor.Dependency>()
                         .forEach { param ->
-                            addParameter(
-                                param.paramName + "Binding",
-                                LinkedBinding::class.asTypeName().plusParameter(param.paramType)
+                            addProperty(
+                                PropertySpec.builder(
+                                    param.paramName + "Binding",
+                                    LinkedBinding::class.asTypeName().plusParameter(param.paramType),
+                                    KModifier.PRIVATE
+                                )
+                                    .initializer(param.paramName + "Binding")
+                                    .build()
                             )
                         }
-                }
-                .build()
-        )
-        .apply {
-            descriptor.constructorParams
-                .filterIsInstance<ParamDescriptor.Dependency>()
-                .forEach { param ->
-                    addProperty(
-                        PropertySpec.builder(
-                            param.paramName + "Binding",
-                            LinkedBinding::class.asTypeName().plusParameter(param.paramType),
-                            KModifier.PRIVATE
-                        )
-                            .initializer(param.paramName + "Binding")
-                            .build()
-                    )
                 }
         }
         .addFunction(
@@ -164,8 +178,14 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
 
     private fun createBody() = CodeBlock.builder()
         .apply {
-            if (descriptor.constructorParams.any { it is ParamDescriptor.Parameter }) {
-                add("val params = parameters?.invoke()\n")
+            if (!descriptor.hasDependencies && !descriptor.hasDynamicParams) {
+                addStatement("return %T()", descriptor.target)
+                return@createBody build()
+            }
+        }
+        .apply {
+            if (descriptor.hasDynamicParams) {
+                addStatement("val params = parameters?.invoke()")
             }
         }
         .add("return %T(\n", descriptor.target)
@@ -173,7 +193,7 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .apply {
             descriptor.constructorParams.forEachIndexed { i, param ->
                 when (param) {
-                    is ParamDescriptor.Parameter -> {
+                    is ParamDescriptor.Dynamic -> {
                         add("${param.paramName} = params!!.get(${param.index})")
                     }
                     is ParamDescriptor.Dependency -> {

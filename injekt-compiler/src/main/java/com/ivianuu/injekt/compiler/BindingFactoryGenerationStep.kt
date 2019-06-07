@@ -175,7 +175,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
                 val paramType = param.asType().asTypeName().javaToKotlinType()
 
                 if (paramIndex != -1) {
-                    ParamDescriptor.Parameter(paramName, paramIndex)
+                    ParamDescriptor.Dynamic(paramName, paramIndex)
                 } else {
                     ParamDescriptor.Dependency(paramName, paramType, qualifierName)
                 }
