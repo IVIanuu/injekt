@@ -46,6 +46,17 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
         .apply {
             if (descriptor.isInternal) addModifiers(KModifier.INTERNAL)
         }
+        .apply {
+            if (descriptor.hasDependencies) {
+                superclass(
+                    UnlinkedBinding::class.asClassName().plusParameter(descriptor.target)
+                )
+            } else {
+                superclass(
+                    LinkedBinding::class.asClassName().plusParameter(descriptor.target)
+                )
+            }
+        }
         .addSuperinterface(
             BindingFactory::class.asClassName().plusParameter(descriptor.target)
         )
@@ -76,105 +87,105 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             FunSpec.builder("create")
                 .addModifiers(KModifier.OVERRIDE)
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                .apply {
-                    if (descriptor.hasDependencies) {
-                        addStatement("return UnlinkedBindingImpl")
-                    } else {
-                        addStatement("return LinkedBindingImpl")
-                    }
-                }
+                .addStatement("return this")
                 .build()
         )
         .apply {
             if (descriptor.hasDependencies) {
-                addType(unlinkedBinding())
-            }
-        }
-        .addType(linkedBinding())
-        .build()
-
-    private fun unlinkedBinding() = TypeSpec.objectBuilder("UnlinkedBindingImpl")
-        .addModifiers(KModifier.PRIVATE)
-        .superclass(
-            UnlinkedBinding::class.asClassName().plusParameter(descriptor.target)
-        )
-        .addFunction(
-            FunSpec.builder("link")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter("linker", Linker::class.asClassName())
-                .returns(
-                    LinkedBinding::class.asTypeName().plusParameter(descriptor.target)
-                )
-                .addCode(
-                    CodeBlock.builder()
-                        .add("return LinkedBindingImpl(\n")
-                        .apply {
-                            add(
-                                descriptor.constructorParams
-                                    .filterIsInstance<ParamDescriptor.Dependency>()
-                                    .joinToString(separator = ", ") { "linker.get()" }
-                            )
-                        }
-                        .add(")\n")
+                addFunction(
+                    FunSpec.builder("link")
+                        .addModifiers(KModifier.OVERRIDE)
+                        .addParameter("linker", Linker::class.asClassName())
+                        .returns(
+                            LinkedBinding::class.asTypeName().plusParameter(descriptor.target)
+                        )
+                        .addCode(
+                            CodeBlock.builder()
+                                .add("return Linked(\n")
+                                .apply {
+                                    add(
+                                        descriptor.constructorParams
+                                            .filterIsInstance<ParamDescriptor.Dependency>()
+                                            .joinToString(separator = ", ") { "linker.get()" }
+                                    )
+                                }
+                                .add(")\n")
+                                .build()
+                        )
                         .build()
                 )
-                .build()
-        )
+            } else {
+                addFunction(
+                    FunSpec.builder("get")
+                        .addModifiers(KModifier.OVERRIDE)
+                        .addParameter(
+                            "parameters",
+                            LambdaTypeName.get(
+                                returnType = Parameters::class.asClassName()
+                            ).copy(nullable = true)
+                        )
+                        .returns(descriptor.target)
+                        .addCode(createBody())
+                        .build()
+                )
+            }
+        }
+        .apply {
+            if (descriptor.hasDependencies) {
+                addType(linkedBinding())
+            }
+        }
         .build()
 
     private fun linkedBinding() =
-        (if (descriptor.hasDependencies) TypeSpec.classBuilder("LinkedBindingImpl")
-        else TypeSpec.objectBuilder("LinkedBindingImpl"))
-        .addModifiers(KModifier.PRIVATE)
-        .superclass(
-            LinkedBinding::class.asClassName().plusParameter(descriptor.target)
-        )
+        (if (descriptor.hasDependencies) TypeSpec.classBuilder("Linked")
+        else TypeSpec.objectBuilder("Linked"))
+            .addModifiers(KModifier.PRIVATE)
+            .superclass(LinkedBinding::class.asClassName().plusParameter(descriptor.target))
             .apply {
-                if (descriptor.hasDependencies) {
-                    primaryConstructor(
-                        FunSpec.constructorBuilder()
-                            .apply {
-                                descriptor.constructorParams
-                                    .filterIsInstance<ParamDescriptor.Dependency>()
-                                    .forEach { param ->
-                                        addParameter(
-                                            param.paramName + "Binding",
-                                            LinkedBinding::class.asTypeName().plusParameter(param.paramType)
-                                        )
-                                    }
-                            }
-                            .build()
-                    )
-
-                    descriptor.constructorParams
-                        .filterIsInstance<ParamDescriptor.Dependency>()
-                        .forEach { param ->
-                            addProperty(
-                                PropertySpec.builder(
-                                    param.paramName + "Binding",
-                                    LinkedBinding::class.asTypeName().plusParameter(param.paramType),
-                                    KModifier.PRIVATE
-                                )
-                                    .initializer(param.paramName + "Binding")
-                                    .build()
-                            )
+                primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .apply {
+                            descriptor.constructorParams
+                                .filterIsInstance<ParamDescriptor.Dependency>()
+                                .forEach { param ->
+                                    addParameter(
+                                        param.paramName + "Binding",
+                                        LinkedBinding::class.asTypeName().plusParameter(param.paramType)
+                                    )
+                                }
                         }
-                }
-        }
-        .addFunction(
-            FunSpec.builder("get")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter(
-                    "parameters",
-                    LambdaTypeName.get(
-                        returnType = Parameters::class.asClassName()
-                    ).copy(nullable = true)
+                        .build()
                 )
-                .returns(descriptor.target)
-                .addCode(createBody())
-                .build()
-        )
-        .build()
+
+                descriptor.constructorParams
+                    .filterIsInstance<ParamDescriptor.Dependency>()
+                    .forEach { param ->
+                        addProperty(
+                            PropertySpec.builder(
+                                param.paramName + "Binding",
+                                LinkedBinding::class.asTypeName().plusParameter(param.paramType),
+                                KModifier.PRIVATE
+                            )
+                                .initializer(param.paramName + "Binding")
+                                .build()
+                        )
+                    }
+            }
+            .addFunction(
+                FunSpec.builder("get")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter(
+                        "parameters",
+                        LambdaTypeName.get(
+                            returnType = Parameters::class.asClassName()
+                        ).copy(nullable = true)
+                    )
+                    .returns(descriptor.target)
+                    .addCode(createBody())
+                    .build()
+            )
+            .build()
 
     private fun createBody() = CodeBlock.builder()
         .apply {
