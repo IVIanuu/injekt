@@ -29,11 +29,11 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    bind(NameOne) { "value_one" }
+                    factory(NameOne) { "value_one" }
                         .intoMap("key_one", mapName = Values)
-                    bind(NameTwo) { "value_two" }
+                    factory(NameTwo) { "value_two" }
                         .intoMap("key_two", mapName = Values)
-                    bind(NameThree) { "value_three" }
+                    factory(NameThree) { "value_three" }
                         .intoMap("key_three", mapName = Values)
                 }
             )
@@ -86,8 +86,8 @@ class MapTest {
     fun testThrowsOnIllegalOverride() {
         component {
             module {
-                bind { "value" }.intoMap("key")
-                bind { "overridden_value" }.intoMap("key")
+                factory { "value" }.intoMap("key")
+                factory { "overridden_value" }.intoMap("key")
             }
         }
     }
@@ -97,9 +97,9 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    bind(NameOne) { "value" }
+                    factory(NameOne) { "value" }
                         .intoMap("key")
-                    bind(NameTwo) { "overridden_value" }
+                    factory(NameTwo) { "overridden_value" }
                         .intoMap("key", override = true)
                 }
             )

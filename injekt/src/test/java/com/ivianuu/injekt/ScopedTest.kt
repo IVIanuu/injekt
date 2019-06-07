@@ -26,7 +26,7 @@ class ScopedTest {
         val component = component {
             modules(
                 module {
-                    bind(scoped = true) { TestDep1() }
+                    factory(scoped = true) { TestDep1() }
                 }
             )
         }

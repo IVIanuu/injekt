@@ -90,43 +90,57 @@ fun <T> Module.bind(
     override: Boolean = false
 ): BindingContext<T> = bind(binding, keyOf(type, name), override)
 
-inline fun <reified T> Module.bind(
+inline fun <reified T> Module.factory(
     name: Any? = null,
-    scoped: Boolean = false,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = bind(typeOf(), name, scoped, override, definition)
+): BindingContext<T> = factory(typeOf(), name, override, definition)
 
-fun <T> Module.bind(
+fun <T> Module.factory(
     type: Type<T>,
     name: Any? = null,
-    scoped: Boolean = false,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> {
-    var binding = definitionBinding(definition)
-    if (scoped) binding = binding.asScoped()
-    return bind(binding, type, name, override)
-}
+): BindingContext<T> = bind(definitionBinding(definition), type, name, override)
 
-inline fun <reified T> Module.bindWithState(
+inline fun <reified T> Module.factoryWithState(
     name: Any? = null,
-    scoped: Boolean = false,
     override: Boolean = false,
     noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = bindWithState(typeOf(), name, scoped, override, definition)
+): BindingContext<T> = factoryWithState(typeOf(), name, override, definition)
 
-fun <T> Module.bindWithState(
+fun <T> Module.factoryWithState(
     type: Type<T>,
     name: Any? = null,
-    scoped: Boolean = false,
     override: Boolean = false,
     definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> {
-    var binding = stateDefinitionBinding(definition)
-    if (scoped) binding = binding.asScoped()
-    return bind(binding, type, name, override)
-}
+): BindingContext<T> = bind(stateDefinitionBinding(definition), type, name, override)
+
+inline fun <reified T> Module.single(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = single(typeOf(), name, override, definition)
+
+fun <T> Module.single(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: Definition<T>
+): BindingContext<T> = bind(definitionBinding(definition).asScoped(), type, name, override)
+
+inline fun <reified T> Module.singleWithState(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = singleWithState(typeOf(), name, override, definition)
+
+fun <T> Module.singleWithState(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = bind(stateDefinitionBinding(definition).asScoped(), type, name, override)
 
 inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,
@@ -172,7 +186,7 @@ private class BridgeBinding<T>(
     override fun get(parameters: ParametersDefinition?): T = originalBinding.get(parameters)
 }
 
-fun <T> Module.bind(
+fun <T> Module.instance(
     instance: T,
     type: Type<T> = typeOf((instance as Any)::class),
     name: Any? = null,

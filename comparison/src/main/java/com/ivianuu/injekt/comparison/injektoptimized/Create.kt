@@ -48,7 +48,7 @@ private fun createModule(n: Int): String {
         append("fun createModule() = module {")
         for (i in 1..n) {
             append("\n")
-            append("bind(Fib${i}Binding())")
+            append("instance(Fib${i}Binding())")
         }
         append("\n}")
     }

@@ -25,7 +25,7 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.bind
+import com.ivianuu.injekt.factoryWithState
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
@@ -51,8 +51,9 @@ annotation class PackageName {
 }
 
 fun appModule() = module {
-    bind(PackageName, scoped = true) {
-        get<Context>().packageName
+    factoryWithState(PackageName) {
+        val context = link<Context>()
+        definition { context().packageName }
     }
 }
 

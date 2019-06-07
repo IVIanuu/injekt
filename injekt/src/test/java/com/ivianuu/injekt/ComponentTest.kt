@@ -35,8 +35,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    bind { typed }
-                    bind(Named) { named }
+                    factory { typed }
+                    factory(Named) { named }
                 }
             )
         }
@@ -53,7 +53,7 @@ class ComponentTest {
         val dependency = component {
             modules(
                 module {
-                    bind { TestDep1() }
+                    factory { TestDep1() }
                 }
             )
         }
@@ -62,7 +62,7 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    bind { TestDep2(get()) }
+                    factory { TestDep2(get()) }
                 }
             )
             dependencies(dependency)
@@ -84,7 +84,7 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    bind {
+                    factory {
                         called = true
                         TestDep1()
                     }
@@ -103,11 +103,11 @@ class ComponentTest {
     @Test
     fun testExplicitOverride() {
         val module1 = module {
-            bind { "my_value" }
+            factory { "my_value" }
         }
 
         val module2 = module {
-            bind(override = true) { "my_overridden_value" }
+            factory(override = true) { "my_overridden_value" }
         }
 
         val component = component { modules(module1, module2) }
@@ -120,7 +120,7 @@ class ComponentTest {
         val parentComponent = component {
             modules(
                 module {
-                    bind { "my_value" }
+                    factory { "my_value" }
                 }
             )
         }
@@ -128,7 +128,7 @@ class ComponentTest {
         val childComponent = component {
             modules(
                 module {
-                    bind(override = true) { "my_overridden_value" }
+                    factory(override = true) { "my_overridden_value" }
                 }
             )
         }
@@ -140,11 +140,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testDisallowsImplicitOverride() {
         val module1 = module {
-            bind { "my_value" }
+            factory { "my_value" }
         }
 
         val module2 = module {
-            bind { "my_overridden_value" }
+            factory { "my_overridden_value" }
         }
 
         component { modules(module1, module2) }
@@ -155,7 +155,7 @@ class ComponentTest {
         val rootComponent = component {
             modules(
                 module {
-                    bind { "my_value" }
+                    factory { "my_value" }
                 }
             )
         }
@@ -164,7 +164,7 @@ class ComponentTest {
             dependencies(rootComponent)
             modules(
                 module {
-                    bind { "my_overriden_value" }
+                    factory { "my_overriden_value" }
                 }
             )
         }
@@ -175,7 +175,7 @@ class ComponentTest {
         val dependency1 = component {
             modules(
                 module {
-                    bind { "value_1" }
+                    factory { "value_1" }
                 }
             )
         }
@@ -183,7 +183,7 @@ class ComponentTest {
         val dependency2 = component {
             modules(
                 module {
-                    bind { "value_2" }
+                    factory { "value_2" }
                 }
             )
         }
@@ -196,8 +196,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    bind { listOf(1, 2, 3) }
-                    bind { listOf("one", "two", "three") }
+                    factory { listOf(1, 2, 3) }
+                    factory { listOf("one", "two", "three") }
                 }
             )
         }
@@ -213,8 +213,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    bind<String> { "string" }
-                    bind<String?> { "nullable string" }
+                    factory<String> { "string" }
+                    factory<String?> { "nullable string" }
                 }
             )
         }

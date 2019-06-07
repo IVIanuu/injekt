@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
-import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.comparison.Fib1
 import com.ivianuu.injekt.comparison.Fib10
 import com.ivianuu.injekt.comparison.Fib100
@@ -117,110 +116,111 @@ import com.ivianuu.injekt.comparison.Fib96
 import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 
 val injektModule = createModule()
 
 fun createModule() = module {
-    bind { Fib1() }
-    bind { Fib2() }
-    bind { Fib3(get(), get()) }
-    bind { Fib4(get(), get()) }
-    bind { Fib5(get(), get()) }
-    bind { Fib6(get(), get()) }
-    bind { Fib7(get(), get()) }
-    bind { Fib8(get(), get()) }
-    bind { Fib9(get(), get()) }
-    bind { Fib10(get(), get()) }
-    bind { Fib11(get(), get()) }
-    bind { Fib12(get(), get()) }
-    bind { Fib13(get(), get()) }
-    bind { Fib14(get(), get()) }
-    bind { Fib15(get(), get()) }
-    bind { Fib16(get(), get()) }
-    bind { Fib17(get(), get()) }
-    bind { Fib18(get(), get()) }
-    bind { Fib19(get(), get()) }
-    bind { Fib20(get(), get()) }
-    bind { Fib21(get(), get()) }
-    bind { Fib22(get(), get()) }
-    bind { Fib23(get(), get()) }
-    bind { Fib24(get(), get()) }
-    bind { Fib25(get(), get()) }
-    bind { Fib26(get(), get()) }
-    bind { Fib27(get(), get()) }
-    bind { Fib28(get(), get()) }
-    bind { Fib29(get(), get()) }
-    bind { Fib30(get(), get()) }
-    bind { Fib31(get(), get()) }
-    bind { Fib32(get(), get()) }
-    bind { Fib33(get(), get()) }
-    bind { Fib34(get(), get()) }
-    bind { Fib35(get(), get()) }
-    bind { Fib36(get(), get()) }
-    bind { Fib37(get(), get()) }
-    bind { Fib38(get(), get()) }
-    bind { Fib39(get(), get()) }
-    bind { Fib40(get(), get()) }
-    bind { Fib41(get(), get()) }
-    bind { Fib42(get(), get()) }
-    bind { Fib43(get(), get()) }
-    bind { Fib44(get(), get()) }
-    bind { Fib45(get(), get()) }
-    bind { Fib46(get(), get()) }
-    bind { Fib47(get(), get()) }
-    bind { Fib48(get(), get()) }
-    bind { Fib49(get(), get()) }
-    bind { Fib50(get(), get()) }
-    bind { Fib51(get(), get()) }
-    bind { Fib52(get(), get()) }
-    bind { Fib53(get(), get()) }
-    bind { Fib54(get(), get()) }
-    bind { Fib55(get(), get()) }
-    bind { Fib56(get(), get()) }
-    bind { Fib57(get(), get()) }
-    bind { Fib58(get(), get()) }
-    bind { Fib59(get(), get()) }
-    bind { Fib60(get(), get()) }
-    bind { Fib61(get(), get()) }
-    bind { Fib62(get(), get()) }
-    bind { Fib63(get(), get()) }
-    bind { Fib64(get(), get()) }
-    bind { Fib65(get(), get()) }
-    bind { Fib66(get(), get()) }
-    bind { Fib67(get(), get()) }
-    bind { Fib68(get(), get()) }
-    bind { Fib69(get(), get()) }
-    bind { Fib70(get(), get()) }
-    bind { Fib71(get(), get()) }
-    bind { Fib72(get(), get()) }
-    bind { Fib73(get(), get()) }
-    bind { Fib74(get(), get()) }
-    bind { Fib75(get(), get()) }
-    bind { Fib76(get(), get()) }
-    bind { Fib77(get(), get()) }
-    bind { Fib78(get(), get()) }
-    bind { Fib79(get(), get()) }
-    bind { Fib80(get(), get()) }
-    bind { Fib81(get(), get()) }
-    bind { Fib82(get(), get()) }
-    bind { Fib83(get(), get()) }
-    bind { Fib84(get(), get()) }
-    bind { Fib85(get(), get()) }
-    bind { Fib86(get(), get()) }
-    bind { Fib87(get(), get()) }
-    bind { Fib88(get(), get()) }
-    bind { Fib89(get(), get()) }
-    bind { Fib90(get(), get()) }
-    bind { Fib91(get(), get()) }
-    bind { Fib92(get(), get()) }
-    bind { Fib93(get(), get()) }
-    bind { Fib94(get(), get()) }
-    bind { Fib95(get(), get()) }
-    bind { Fib96(get(), get()) }
-    bind { Fib97(get(), get()) }
-    bind { Fib98(get(), get()) }
-    bind { Fib99(get(), get()) }
-    bind { Fib100(get(), get()) }
+    factory { Fib1() }
+    factory { Fib2() }
+    factory { Fib3(get(), get()) }
+    factory { Fib4(get(), get()) }
+    factory { Fib5(get(), get()) }
+    factory { Fib6(get(), get()) }
+    factory { Fib7(get(), get()) }
+    factory { Fib8(get(), get()) }
+    factory { Fib9(get(), get()) }
+    factory { Fib10(get(), get()) }
+    factory { Fib11(get(), get()) }
+    factory { Fib12(get(), get()) }
+    factory { Fib13(get(), get()) }
+    factory { Fib14(get(), get()) }
+    factory { Fib15(get(), get()) }
+    factory { Fib16(get(), get()) }
+    factory { Fib17(get(), get()) }
+    factory { Fib18(get(), get()) }
+    factory { Fib19(get(), get()) }
+    factory { Fib20(get(), get()) }
+    factory { Fib21(get(), get()) }
+    factory { Fib22(get(), get()) }
+    factory { Fib23(get(), get()) }
+    factory { Fib24(get(), get()) }
+    factory { Fib25(get(), get()) }
+    factory { Fib26(get(), get()) }
+    factory { Fib27(get(), get()) }
+    factory { Fib28(get(), get()) }
+    factory { Fib29(get(), get()) }
+    factory { Fib30(get(), get()) }
+    factory { Fib31(get(), get()) }
+    factory { Fib32(get(), get()) }
+    factory { Fib33(get(), get()) }
+    factory { Fib34(get(), get()) }
+    factory { Fib35(get(), get()) }
+    factory { Fib36(get(), get()) }
+    factory { Fib37(get(), get()) }
+    factory { Fib38(get(), get()) }
+    factory { Fib39(get(), get()) }
+    factory { Fib40(get(), get()) }
+    factory { Fib41(get(), get()) }
+    factory { Fib42(get(), get()) }
+    factory { Fib43(get(), get()) }
+    factory { Fib44(get(), get()) }
+    factory { Fib45(get(), get()) }
+    factory { Fib46(get(), get()) }
+    factory { Fib47(get(), get()) }
+    factory { Fib48(get(), get()) }
+    factory { Fib49(get(), get()) }
+    factory { Fib50(get(), get()) }
+    factory { Fib51(get(), get()) }
+    factory { Fib52(get(), get()) }
+    factory { Fib53(get(), get()) }
+    factory { Fib54(get(), get()) }
+    factory { Fib55(get(), get()) }
+    factory { Fib56(get(), get()) }
+    factory { Fib57(get(), get()) }
+    factory { Fib58(get(), get()) }
+    factory { Fib59(get(), get()) }
+    factory { Fib60(get(), get()) }
+    factory { Fib61(get(), get()) }
+    factory { Fib62(get(), get()) }
+    factory { Fib63(get(), get()) }
+    factory { Fib64(get(), get()) }
+    factory { Fib65(get(), get()) }
+    factory { Fib66(get(), get()) }
+    factory { Fib67(get(), get()) }
+    factory { Fib68(get(), get()) }
+    factory { Fib69(get(), get()) }
+    factory { Fib70(get(), get()) }
+    factory { Fib71(get(), get()) }
+    factory { Fib72(get(), get()) }
+    factory { Fib73(get(), get()) }
+    factory { Fib74(get(), get()) }
+    factory { Fib75(get(), get()) }
+    factory { Fib76(get(), get()) }
+    factory { Fib77(get(), get()) }
+    factory { Fib78(get(), get()) }
+    factory { Fib79(get(), get()) }
+    factory { Fib80(get(), get()) }
+    factory { Fib81(get(), get()) }
+    factory { Fib82(get(), get()) }
+    factory { Fib83(get(), get()) }
+    factory { Fib84(get(), get()) }
+    factory { Fib85(get(), get()) }
+    factory { Fib86(get(), get()) }
+    factory { Fib87(get(), get()) }
+    factory { Fib88(get(), get()) }
+    factory { Fib89(get(), get()) }
+    factory { Fib90(get(), get()) }
+    factory { Fib91(get(), get()) }
+    factory { Fib92(get(), get()) }
+    factory { Fib93(get(), get()) }
+    factory { Fib94(get(), get()) }
+    factory { Fib95(get(), get()) }
+    factory { Fib96(get(), get()) }
+    factory { Fib97(get(), get()) }
+    factory { Fib98(get(), get()) }
+    factory { Fib99(get(), get()) }
+    factory { Fib100(get(), get()) }
 }

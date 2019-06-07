@@ -24,9 +24,9 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.bindClass
 import com.ivianuu.injekt.component
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
 
@@ -59,5 +59,5 @@ fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    bind(this@contentProviderModule) bindClass ContentProvider::class
+    instance(this@contentProviderModule) bindClass ContentProvider::class
 }

@@ -27,7 +27,7 @@ class ProviderTest {
         val component = component {
             modules(
                 module {
-                    bind { TestDep1() }
+                    factory { TestDep1() }
                 }
             )
         }
@@ -44,7 +44,7 @@ class ProviderTest {
         val component = component {
             modules(
                 module {
-                    bind {
+                    factory {
                         usedParams = it
                         TestDep1()
                     }
