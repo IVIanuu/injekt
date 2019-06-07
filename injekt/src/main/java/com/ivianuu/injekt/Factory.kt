@@ -41,6 +41,3 @@ fun <T> Module.factoryWithState(
     override: Boolean = false,
     definition: StateDefinitionFactory.() -> StateDefinition<T>
 ): BindingContext<T> = bind(stateDefinitionBinding(definition), type, name, override)
-
-@Target(AnnotationTarget.CLASS)
-annotation class Factory

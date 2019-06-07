@@ -22,7 +22,6 @@ import com.squareup.kotlinpoet.TypeName
 data class BindingFactoryDescriptor(
     val target: ClassName,
     val factoryName: ClassName,
-    val isSingle: Boolean,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
 )

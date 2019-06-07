@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Provider
-
 
 // kinds
 interface Command
@@ -29,7 +28,7 @@ annotation class Commands {
     companion object
 }
 
-@Factory
+@Inject
 class MyDep(
     // default
     private val command: Command,

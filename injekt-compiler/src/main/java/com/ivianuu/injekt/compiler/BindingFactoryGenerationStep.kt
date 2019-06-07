@@ -17,11 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.common.collect.SetMultimap
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Scope
-
-import com.ivianuu.injekt.Single
 import com.ivianuu.processingx.filer
 import com.ivianuu.processingx.getAnnotatedAnnotations
 import com.ivianuu.processingx.getAnnotationMirror
@@ -43,7 +42,7 @@ import kotlin.reflect.KClass
 
 class BindingFactoryGenerationStep : ProcessingStep() {
 
-    override fun annotations() = bindingAnnotations
+    override fun annotations() = setOf(Inject::class)
 
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
         annotations()
@@ -58,21 +57,6 @@ class BindingFactoryGenerationStep : ProcessingStep() {
     }
 
     private fun createDescriptor(element: TypeElement): BindingFactoryDescriptor? {
-        val bindingAnnotations =
-            bindingAnnotations
-                .mapNotNull { element.getAnnotationMirrorOrNull(it) }
-
-        if (bindingAnnotations.size > 1) {
-            messager.printMessage(
-                Diagnostic.Kind.ERROR,
-                "Can only have 1 binding annotation",
-                element
-            )
-            return null
-        }
-
-        val isSingle = element.hasAnnotation<Single>()
-
         val scopeAnnotations =
             element.getAnnotatedAnnotations<Scope>()
 
@@ -170,7 +154,6 @@ class BindingFactoryGenerationStep : ProcessingStep() {
         return BindingFactoryDescriptor(
             targetName,
             creatorName,
-            isSingle,
             scopeName,
             constructorParams
         )

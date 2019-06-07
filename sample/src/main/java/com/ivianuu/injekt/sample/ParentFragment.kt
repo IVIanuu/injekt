@@ -21,11 +21,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.FragmentScope
 import com.ivianuu.injekt.android.fragmentComponent
-import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
 class ParentFragment : Fragment(), InjektTrait {
@@ -55,7 +54,7 @@ class ParentFragment : Fragment(), InjektTrait {
     }
 }
 
-@Single @FragmentScope
+@Inject @FragmentScope
 class ParentFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,

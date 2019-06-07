@@ -75,21 +75,6 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                 }
                 .build()
         )
-        .addProperty(
-            PropertySpec.builder(
-                "isSingle",
-                Boolean::class,
-                KModifier.OVERRIDE
-            )
-                .apply {
-                    getter(
-                        FunSpec.getterBuilder()
-                            .addCode("return ${descriptor.isSingle}")
-                            .build()
-                    )
-                }
-                .build()
-        )
         .addFunction(
             FunSpec.builder("create")
                 .addModifiers(KModifier.OVERRIDE)

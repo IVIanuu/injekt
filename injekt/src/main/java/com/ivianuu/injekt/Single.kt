@@ -44,9 +44,6 @@ fun <T> Module.singleWithState(
     definition: StateDefinitionFactory.() -> StateDefinition<T>
 ): BindingContext<T> = bind(stateDefinitionBinding(definition).asSingle(), type, name, override)
 
-@Target(AnnotationTarget.CLASS)
-annotation class Single
-
 fun <T> Binding<T>.asSingle(): Binding<T> {
     return if (this is SingleBinding) this
     else SingleBinding(this)
