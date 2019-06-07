@@ -37,3 +37,60 @@ internal class LazyBinding<T>(private val bindingKey: Key) : Binding<Lazy<T>>() 
         binding.get()
     }
 }
+
+internal abstract class AbsMapBinding<K, V, M : Map<K, *>>(private val keysByKey: Map<K, Key>) :
+    Binding<M>() {
+    protected lateinit var bindingsByKey: Map<K, Binding<out V>>
+    final override fun attach(component: Component) {
+        bindingsByKey = keysByKey
+            .mapValues { component.getBinding<V>(it.value) }
+    }
+}
+
+internal class MapBinding<K, V>(keysByKey: Map<K, Key>) :
+    AbsMapBinding<K, V, Map<K, V>>(keysByKey) {
+    override fun get(parameters: ParametersDefinition?): Map<K, V> = bindingsByKey
+        .mapValues { it.value.get() }
+}
+
+internal class LazyMapBinding<K, V>(keysByKey: Map<K, Key>) :
+    AbsMapBinding<K, V, Map<K, Lazy<V>>>(keysByKey) {
+    override fun get(parameters: ParametersDefinition?): Map<K, Lazy<V>> = bindingsByKey
+        .mapValues { (_, binding) ->
+            lazy(LazyThreadSafetyMode.NONE) { binding.get() }
+        }
+}
+
+internal class ProviderMapBinding<K, V>(keysByKey: Map<K, Key>) :
+    AbsMapBinding<K, V, Map<K, Provider<out V>>>(keysByKey) {
+    override fun get(parameters: ParametersDefinition?): Map<K, Provider<out V>> = bindingsByKey
+        .mapValues { (_, binding) ->
+            provider { binding.get(it) }
+        }
+}
+
+internal abstract class AbsSetBinding<E, S : Set<*>>(private val keys: Set<Key>) : Binding<S>() {
+    protected lateinit var bindings: Set<Binding<out E>>
+    final override fun attach(component: Component) {
+        bindings = keys.map { component.getBinding<E>(it) }.toSet()
+    }
+}
+
+internal class SetBinding<E>(keys: Set<Key>) : AbsSetBinding<E, Set<E>>(keys) {
+    override fun get(parameters: ParametersDefinition?): Set<E> = bindings
+        .map { it.get() }
+        .toSet()
+}
+
+internal class LazySetBinding<E>(keys: Set<Key>) : AbsSetBinding<E, Set<Lazy<E>>>(keys) {
+    override fun get(parameters: ParametersDefinition?): Set<Lazy<E>> = bindings
+        .map { binding -> lazy(LazyThreadSafetyMode.NONE) { binding.get() } }
+        .toSet()
+}
+
+internal class ProviderSetBinding<E>(keys: Set<Key>) :
+    AbsSetBinding<E, Set<Provider<out E>>>(keys) {
+    override fun get(parameters: ParametersDefinition?): Set<Provider<E>> = bindings
+        .map { binding -> provider { binding.get(it) } }
+        .toSet()
+}

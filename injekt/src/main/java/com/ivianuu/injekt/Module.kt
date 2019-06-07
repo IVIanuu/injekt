@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import java.util.*
+
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
@@ -138,4 +140,45 @@ inline fun <reified E> Module.set(
     noinline block: (SetBindings.BindingSet<E>.() -> Unit)? = null
 ) {
     set(typeOf(), setName, block)
+}
+
+inline fun <reified T> Module.withBinding(
+    name: Any? = null,
+    noinline block: BindingContext<T>.() -> Unit
+) {
+    withBinding(typeOf(), name, block)
+}
+
+fun <T> Module.withBinding(
+    type: Type<T>,
+    name: Any? = null,
+    block: BindingContext<T>.() -> Unit
+) {
+    // we create a additional binding because we have no reference to the original one
+    // we use a unique id here to make sure that the binding does not collide with any user config
+    // this binding acts as bridge and just calls trough the original implementation
+    bind(BridgeBinding(type, name), type, UUID.randomUUID().toString()).block()
+}
+
+private class BridgeBinding<T>(
+    private val originalType: Type<T>,
+    private val originalName: Any?
+) : Binding<T>() {
+    private lateinit var originalBinding: Binding<T>
+    override fun attach(component: Component) {
+        originalBinding = component.getBinding(originalType, originalName)
+    }
+
+    override fun get(parameters: ParametersDefinition?): T = originalBinding.get(parameters)
+}
+
+fun <T> Module.instance(
+    instance: T,
+    type: Type<T> = typeOf((instance as Any)::class),
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)
+
+private class InstanceBinding<T>(private val instance: T) : Binding<T>() {
+    override fun get(parameters: ParametersDefinition?): T = instance
 }

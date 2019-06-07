@@ -91,22 +91,3 @@ fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> =
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
     Type(raw, raw.java, isNullable, parameters)
-
-inline fun <reified T> lazyTypeOf(): Type<Lazy<T>> =
-    typeOf(Lazy::class, typeOf<T>())
-
-inline fun <reified T> listTypeOf(): Type<List<T>> =
-    typeOf(List::class, typeOf<T>())
-
-inline fun <reified K, reified V> mapTypeOf(): Type<Map<K, V>> =
-    typeOf(
-        Map::class,
-        typeOf<K>(),
-        typeOf<V>()
-    )
-
-inline fun <reified T> providerTypeOf(): Type<Provider<T>> =
-    typeOf(Provider::class, typeOf<T>())
-
-inline fun <reified T> setTypeOf(): Type<Set<T>> =
-    typeOf(Set::class, typeOf<T>())
