@@ -90,14 +90,26 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         .addCode(
                             CodeBlock.builder()
                                 .add("return Linked(\n")
+                                .indent()
                                 .apply {
-                                    add(
-                                        descriptor.constructorParams
-                                            .filterIsInstance<ParamDescriptor.Dependency>()
-                                            .joinToString(separator = ", ") { "linker.get()" }
-                                    )
+                                    descriptor.constructorParams
+                                        .filterIsInstance<ParamDescriptor.Dependency>()
+                                        .forEachIndexed { i, param ->
+                                            if (param.qualifierName != null) {
+                                                add(
+                                                    "${param.paramName}Binding = linker.get(%T)",
+                                                    param.qualifierName
+                                                )
+                                            } else {
+                                                add("${param.paramName}Binding = linker.get()")
+                                            }
+                                            if (i != descriptor.constructorParams.lastIndex) {
+                                                add(",\n")
+                                            }
+                                        }
                                 }
-                                .add(")\n")
+                                .unindent()
+                                .add("\n)\n")
                                 .build()
                         )
                         .build()
@@ -206,8 +218,6 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
             }
         }
         .unindent()
-        .add("\n")
-        .add(")")
-        .add("\n")
+        .add("\n)\n")
         .build()
 }
