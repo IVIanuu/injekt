@@ -31,9 +31,9 @@ class ProviderTest {
                 }
             )
         }
-        val getProvider = component.get<Provider<TestDep1>>()
-        val value1 = getProvider.get()
-        val value2 = getProvider.get()
+        val provider = component.get<Provider<TestDep1>>()
+        val value1 = provider()
+        val value2 = provider()
         assertNotEquals(value1, value2)
     }
 
@@ -54,9 +54,9 @@ class ProviderTest {
 
         val parameters = parametersOf("one", "two")
 
-        val getProvider = component.get<Provider<TestDep1>>()
+        val provider = component.get<Provider<TestDep1>>()
 
-        getProvider.get { parameters }
+        provider { parameters }
 
         assertEquals(parameters, usedParams)
     }

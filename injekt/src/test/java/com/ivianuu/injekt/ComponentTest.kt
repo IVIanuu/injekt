@@ -118,9 +118,9 @@ class ComponentTest {
 
         val depProvider = component.get<Provider<TestDep1>>()
         assertEquals(0, called)
-        depProvider.get()
+        depProvider()
         assertEquals(1, called)
-        depProvider.get()
+        depProvider()
         assertEquals(2, called)
     }
 

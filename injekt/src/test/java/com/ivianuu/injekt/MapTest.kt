@@ -56,9 +56,9 @@ class MapTest {
         val providerMap = component.get<Map<String, Provider<String>>>(Values)
 
         assertEquals(3, providerMap.size)
-        assertEquals(providerMap.getValue("key_one").get(), "value_one")
-        assertEquals(providerMap.getValue("key_two").get(), "value_two")
-        assertEquals(providerMap.getValue("key_three").get(), "value_three")
+        assertEquals(providerMap.getValue("key_one")(), "value_one")
+        assertEquals(providerMap.getValue("key_two")(), "value_two")
+        assertEquals(providerMap.getValue("key_three")(), "value_three")
     }
 
     @Test(expected = IllegalStateException::class)

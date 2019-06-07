@@ -50,9 +50,9 @@ class SetTest {
         val providerSet = component.get<Set<Provider<String>>>(Values)
 
         assertEquals(3, providerSet.size)
-        assertEquals("value_one", providerSet.toList()[0].get())
-        assertEquals("value_two", providerSet.toList()[1].get())
-        assertEquals("value_three", providerSet.toList()[2].get())
+        assertEquals("value_one", providerSet.toList()[0]())
+        assertEquals("value_two", providerSet.toList()[1]())
+        assertEquals("value_three", providerSet.toList()[2]())
     }
 
     @Test(expected = IllegalStateException::class)
