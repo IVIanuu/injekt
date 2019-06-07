@@ -228,7 +228,7 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
         val dependency = component {
-            scopes<ApplicationScope>()
+            scopes<TestScope>()
         }
 
         component { dependencies(dependency) }
@@ -237,11 +237,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val dependency = component {
-            scopes<ApplicationScope>()
+            scopes<TestScope>()
         }
 
         component {
-            scopes<ApplicationScope>()
+            scopes<TestScope>()
             dependencies(dependency)
         }
     }
@@ -249,15 +249,15 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnDependenciesWithSameScope() {
         val dependency1 = component {
-            scopes<ApplicationScope>()
+            scopes<TestScope>()
         }
 
         val dependency2 = component {
-            scopes<ApplicationScope>()
+            scopes<TestScope>()
         }
 
         component {
-            scopes<TestScope>()
+            scopes<OtherTestScope>()
             dependencies(dependency1, dependency2)
         }
     }

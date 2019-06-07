@@ -25,6 +25,9 @@ object Values
 @Scope
 annotation class TestScope
 
+@Scope
+annotation class OtherTestScope
+
 class TestDep1
 class TestDep2(val dep1: TestDep1)
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
