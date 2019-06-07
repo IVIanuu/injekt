@@ -16,33 +16,31 @@
 
 package com.ivianuu.injekt.android
 
+
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.NamedScope
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.ScopeAnnotation
-import com.ivianuu.injekt.bindType
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.bindClass
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant.constant
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.scopes
 
-@ScopeAnnotation(ContentProviderScope.Companion::class)
-annotation class ContentProviderScope {
-    companion object : NamedScope("ContentProviderScope")
-}
+@Scope
+annotation class ContentProviderScope
 
 @Name(ForContentProvider.Companion::class)
 annotation class ForContentProvider {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope = ContentProviderScope
+        scopes<ContentProviderScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(contentProviderModule())
         block?.invoke(this)
@@ -61,5 +59,5 @@ fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    constant(this@contentProviderModule) bindType ContentProvider::class
+    instance(this@contentProviderModule) bindClass ContentProvider::class
 }

@@ -25,48 +25,43 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.NamedScope
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.ScopeAnnotation
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.constant.constant
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.scopes
 
-@ScopeAnnotation(FragmentScope.Companion::class)
-annotation class FragmentScope {
-    companion object : NamedScope("FragmentScope")
-}
+@Scope
+annotation class FragmentScope
 
-@ScopeAnnotation(ChildFragmentScope.Companion::class)
-annotation class ChildFragmentScope {
-    companion object : NamedScope("ChildFragmentScope")
-}
+@Scope
+annotation class ChildFragmentScope
 
 @Name(ForFragment.Companion::class)
 annotation class ForFragment {
-    companion object : Qualifier
+    companion object
 }
 
 @Name(ForChildFragment.Companion::class)
 annotation class ForChildFragment {
-    companion object : Qualifier
+    companion object
 }
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-    scope = FragmentScope
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(fragmentModule())
+        scopes<FragmentScope>()
+        getClosestComponentOrNull()?.let { dependencies(it) }
+        modules(fragmentModule())
         block?.invoke(this)
     }
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scope = ChildFragmentScope
+        scopes<ChildViewScope>()
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
         block?.invoke(this)
@@ -107,8 +102,8 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
     include(internalFragmentModule(ForChildFragment))
 }
 
-private fun <T : Fragment> T.internalFragmentModule(name: Qualifier) = module {
-    constant(this@internalFragmentModule, override = true).apply {
+private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
+    instance(this@internalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()

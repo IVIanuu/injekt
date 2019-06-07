@@ -25,7 +25,7 @@ import org.junit.Test
 
 class ComponentTest {
 
-    private object Named : Qualifier
+    private object Named
 
     @Test
     fun testGet() {
@@ -36,7 +36,7 @@ class ComponentTest {
             modules(
                 module {
                     factory { typed }
-                    single(Named) { named }
+                    factory(Named) { named }
                 }
             )
         }
@@ -78,7 +78,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testLazy() {
+    fun testGetLazy() {
         var called = false
 
         val component = component {
@@ -94,10 +94,34 @@ class ComponentTest {
 
         assertFalse(called)
 
-        val depLazy = component.inject<TestDep1>()
+        val depLazy = component.get<Lazy<TestDep1>>()
         assertFalse(called)
         depLazy.value
         assertTrue(called)
+    }
+
+    @Test
+    fun testGetProvider() {
+        var called = 0
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        ++called
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        assertEquals(0, called)
+
+        val depProvider = component.get<Provider<TestDep1>>()
+        assertEquals(0, called)
+        depProvider.get()
+        assertEquals(1, called)
+        depProvider.get()
+        assertEquals(2, called)
     }
 
     @Test
@@ -196,8 +220,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    single { listOf(1, 2, 3) }
-                    single { listOf("one", "two", "three") }
+                    factory { listOf(1, 2, 3) }
+                    factory { listOf("one", "two", "three") }
                 }
             )
         }
@@ -228,7 +252,7 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
         val dependency = component {
-            scope = ApplicationScope
+            scopes<TestScope>()
         }
 
         component { dependencies(dependency) }
@@ -237,11 +261,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val dependency = component {
-            scope = ApplicationScope
+            scopes<TestScope>()
         }
 
         component {
-            scope = ApplicationScope
+            scopes<TestScope>()
             dependencies(dependency)
         }
     }
@@ -249,15 +273,15 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnDependenciesWithSameScope() {
         val dependency1 = component {
-            scope = ApplicationScope
+            scopes<TestScope>()
         }
 
         val dependency2 = component {
-            scope = ApplicationScope
+            scopes<TestScope>()
         }
 
         component {
-            scope = TestScope
+            scopes<OtherTestScope>()
             dependencies(dependency1, dependency2)
         }
     }

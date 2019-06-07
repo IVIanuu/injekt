@@ -16,72 +16,183 @@
 
 package com.ivianuu.injekt
 
+import java.util.*
+
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
 class Module @PublishedApi internal constructor() {
 
-    internal val bindings = mutableMapOf<Key, Binding<*>>()
-    internal val includes = mutableSetOf<Module>()
-    internal val mapBindings = mutableSetOf<Key>()
-    internal val setBindings = mutableSetOf<Key>()
+    internal val bindings = hashMapOf<Key, Binding<*>>()
+    internal var mapBindings: MapBindings? = null
+        private set
+    internal var setBindings: SetBindings? = null
+        private set
 
-    fun bind(binding: Binding<*>) {
-        if (bindings.put(binding.key, binding) != null && !binding.override) {
-            error("Already declared binding for ${binding.key}")
+    fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
+        if (bindings.contains(key) && !override) {
+            error("Already declared binding for $binding.key")
         }
+
+        binding.override = override
+
+        bindings[key] = binding
+
+        return BindingContext(binding, key, override, this)
     }
 
     fun include(module: Module) {
-        includes.add(module)
+        module.bindings.forEach { bind(it.value, it.key, it.value.override) }
+        module.mapBindings?.let { nonNullMapBindings().putAll(it) }
+        module.setBindings?.let { nonNullSetBindings().addAll(it) }
     }
 
-    fun <K, V> bindMap(
-        keyType: Type<K>,
-        valueType: Type<V>,
-        mapName: Qualifier? = null
+    fun <K, V> map(
+        mapKeyType: Type<K>,
+        mapValueType: Type<V>,
+        mapName: Any? = null,
+        block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
     ) {
-        mapBindings.add(
-            Key(typeOf<Map<K, V>>(Map::class, keyType, valueType), mapName)
-        )
+        val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
+        nonNullMapBindings().get<K, V>(mapKey).apply { block?.invoke(this) }
     }
 
-    fun <T> bindSet(
-        elementType: Type<T>,
-        setName: Qualifier? = null
+    fun <E> set(
+        setElementType: Type<E>,
+        setName: Any? = null,
+        block: (SetBindings.BindingSet<E>.() -> Unit)? = null
     ) {
-        setBindings.add(
-            Key(typeOf<Set<T>>(Set::class, elementType), setName)
-        )
+        val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
+        nonNullSetBindings().get<E>(setKey).apply { block?.invoke(this) }
     }
+
+    private fun nonNullMapBindings(): MapBindings =
+        mapBindings ?: MapBindings().also { mapBindings = it }
+
+    private fun nonNullSetBindings(): SetBindings =
+        setBindings ?: SetBindings().also { setBindings = it }
+
 
 }
 
 inline fun module(block: Module.() -> Unit): Module = Module().apply(block)
 
 inline fun <reified T> Module.bind(
-    kind: Kind,
-    name: Qualifier? = null,
-    override: Boolean = false,
-    noinline definition: Definition<T>
-): Binding<T> = bind(kind, typeOf(), name, override, definition)
+    binding: Binding<T>,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = this.bind(binding, typeOf<T>(), name, override)
 
 fun <T> Module.bind(
-    kind: Kind,
+    binding: Binding<T>,
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(binding, keyOf(type, name), override)
+
+inline fun <reified T> Module.factory(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = factory(typeOf(), name, override, definition)
+
+fun <T> Module.factory(
+    type: Type<T>,
+    name: Any? = null,
     override: Boolean = false,
     definition: Definition<T>
-): Binding<T> {
-    val binding = binding(kind, type, name, null, override, definition)
-    bind(binding)
-    return binding
+): BindingContext<T> = bind(definitionBinding(definition), type, name, override)
+
+inline fun <reified T> Module.factoryWithState(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = factoryWithState(typeOf(), name, override, definition)
+
+fun <T> Module.factoryWithState(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = bind(stateDefinitionBinding(definition), type, name, override)
+
+inline fun <reified T> Module.single(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = single(typeOf(), name, override, definition)
+
+fun <T> Module.single(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: Definition<T>
+): BindingContext<T> = bind(definitionBinding(definition).asScoped(), type, name, override)
+
+inline fun <reified T> Module.singleWithState(
+    name: Any? = null,
+    override: Boolean = false,
+    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = singleWithState(typeOf(), name, override, definition)
+
+fun <T> Module.singleWithState(
+    type: Type<T>,
+    name: Any? = null,
+    override: Boolean = false,
+    definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = bind(stateDefinitionBinding(definition).asScoped(), type, name, override)
+
+inline fun <reified K, reified V> Module.map(
+    mapName: Any? = null,
+    noinline block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
+) {
+    map(typeOf(), typeOf(), mapName, block)
 }
 
-inline fun <reified K, reified V> Module.bindMap(mapName: Qualifier? = null) {
-    bindMap<K, V>(typeOf(), typeOf(), mapName)
+inline fun <reified E> Module.set(
+    setName: Any? = null,
+    noinline block: (SetBindings.BindingSet<E>.() -> Unit)? = null
+) {
+    set(typeOf(), setName, block)
 }
 
-inline fun <reified T> Module.bindSet(setName: Qualifier? = null) {
-    bindSet<T>(typeOf(), setName)
+inline fun <reified T> Module.withBinding(
+    name: Any? = null,
+    noinline block: BindingContext<T>.() -> Unit
+) {
+    withBinding(typeOf(), name, block)
+}
+
+fun <T> Module.withBinding(
+    type: Type<T>,
+    name: Any? = null,
+    block: BindingContext<T>.() -> Unit
+) {
+    // we create a additional binding because we have no reference to the original one
+    // we use a unique id here to make sure that the binding does not collide with any user config
+    // this binding acts as bridge and just calls trough the original implementation
+    bind(UnlinkedBridgeBinding(type, name), type, UUID.randomUUID().toString()).block()
+}
+
+private class UnlinkedBridgeBinding<T>(
+    private val originalType: Type<T>,
+    private val originalName: Any?
+) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedBridgeBinding(linker.get(originalType, originalName))
+}
+
+private class LinkedBridgeBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?): T = binding.get(parameters)
+}
+
+fun <T> Module.instance(
+    instance: T,
+    type: Type<T> = typeOf((instance as Any)::class),
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)
+
+private class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?): T = instance
 }

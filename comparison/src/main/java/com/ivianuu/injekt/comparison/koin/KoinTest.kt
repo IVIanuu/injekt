@@ -35,7 +35,11 @@ object KoinTest : InjectionTest, KoinComponent {
         startKoin { modules(koinModule) }
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        get<Fib8>()
+    }
+
+    override fun secondInject() {
         get<Fib8>()
     }
 

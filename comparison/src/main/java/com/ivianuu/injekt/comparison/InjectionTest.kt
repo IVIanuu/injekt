@@ -24,7 +24,9 @@ interface InjectionTest {
 
     fun setup()
 
-    fun inject()
+    fun firstInject()
+
+    fun secondInject()
 
     fun shutdown()
 

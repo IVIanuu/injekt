@@ -17,16 +17,15 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.ApplicationScope
+import android.content.Context
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.AndroidLogger
+import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.android.context
-import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.factoryWithState
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
@@ -34,7 +33,7 @@ import com.ivianuu.injekt.module
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        applicationComponent { modules(appModule) }
+        applicationComponent { modules(appModule()) }
     }
 
     override fun onCreate() {
@@ -48,12 +47,15 @@ class App : Application(), InjektTrait {
 
 @Name(PackageName.Companion::class)
 annotation class PackageName {
-    companion object : Qualifier
+    companion object
 }
 
-val appModule = module {
-    factory<String>(PackageName) { context().packageName }
+fun appModule() = module {
+    factoryWithState(PackageName) {
+        val context = link<Context>()
+        definition { context().packageName }
+    }
 }
 
-@Single @ApplicationScope
+@Inject @ApplicationScope
 class AppDependency(val app: App)

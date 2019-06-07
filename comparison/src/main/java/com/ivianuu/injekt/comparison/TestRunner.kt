@@ -19,6 +19,8 @@ package com.ivianuu.injekt.comparison
 import com.ivianuu.injekt.comparison.dagger2.DaggerTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
+import com.ivianuu.injekt.comparison.injektoptimized.InjektOptimizedTest
+import com.ivianuu.injekt.comparison.injektoptimizeddsl.InjektOptimizedDslTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
@@ -40,6 +42,18 @@ enum class TimeUnit {
     NANOS, MILLIS
 }
 
+fun runInjektTests(config: Config = defaultConfig) {
+    runInjectionTests(
+        listOf(
+            InjektTest,
+            InjektCodegenTest,
+            InjektOptimizedDslTest,
+            InjektOptimizedTest
+        ),
+        config
+    )
+}
+
 fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
@@ -48,8 +62,10 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             ToothpickTest,
             KoinTest,
             KatanaTest,
+            InjektTest,
+            InjektOptimizedTest,
             InjektCodegenTest,
-            InjektTest
+            InjektOptimizedDslTest
         ),
         config
     )
@@ -62,11 +78,11 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultConfig) {
     println("Running ${config.rounds} iterations. Please stand by...")
 
-    val timingsPerTest = mutableMapOf<String, MutableList<Timings>>()
+    val timingsPerTest = linkedMapOf<String, MutableList<Timings>>()
 
     repeat(config.rounds) {
         tests.forEach { test ->
-            timingsPerTest.getOrPut(test.name) { mutableListOf() }
+            timingsPerTest.getOrPut(test.name) { arrayListOf() }
                 .add(measure(test))
         }
     }
@@ -82,49 +98,45 @@ fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultCo
 fun measure(test: InjectionTest): Timings {
     val moduleCreation = measureNanoTime { test.moduleCreation() }
     val setup = measureNanoTime { test.setup() }
-    val injection = measureNanoTime { test.inject() }
+    val firstInjection = measureNanoTime { test.firstInject() }
+    val secondInjection = measureNanoTime { test.secondInject() }
     test.shutdown()
-    return Timings(test.name, moduleCreation, setup, injection)
+    return Timings(test.name, moduleCreation, setup, firstInjection, secondInjection)
 }
 
 data class Timings(
     val injectorName: String,
     val moduleCreation: Long,
     val setup: Long,
-    val injection: Long
+    val firstInjection: Long,
+    val secondInjection: Long
 )
+
+data class Result(
+    val name: String,
+    val timings: Iterable<Long>
+) {
+    val average = timings.average()
+    val median = timings.median()
+    val min = timings.min()!!.toDouble()
+    val max = timings.max()!!.toDouble()
+}
 
 data class Results(
     val injectorName: String,
-    val moduleCreationAverage: Double,
-    val moduleCreationMedian: Double,
-    val moduleCreationMin: Double,
-    val moduleCreationMax: Double,
-    val setupAverage: Double,
-    val setupMedian: Double,
-    val setupMin: Double,
-    val setupMax: Double,
-    val injectionAverage: Double,
-    val injectionMedian: Double,
-    val injectionMin: Double,
-    val injectionMax: Double
+    val moduleCreation: Result,
+    val setup: Result,
+    val firstInjection: Result,
+    val secondInjection: Result
 )
 
 fun Iterable<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName, // todo dirty
-        moduleCreationAverage = map { it.moduleCreation }.average(),
-        moduleCreationMedian = map { it.moduleCreation }.median(),
-        moduleCreationMin = map { it.moduleCreation }.min()!!.toDouble(),
-        moduleCreationMax = map { it.moduleCreation }.max()!!.toDouble(),
-        setupAverage = map { it.setup }.average(),
-        setupMedian = map { it.setup }.median(),
-        setupMin = map { it.setup }.min()!!.toDouble(),
-        setupMax = map { it.setup }.max()!!.toDouble(),
-        injectionAverage = map { it.injection }.average(),
-        injectionMedian = map { it.injection }.median(),
-        injectionMin = map { it.injection }.min()!!.toDouble(),
-        injectionMax = map { it.injection }.max()!!.toDouble()
+        moduleCreation = Result("Module creation", map { it.moduleCreation }),
+        setup = Result("Setup", map { it.setup }),
+        firstInjection = Result("First injection", map { it.firstInjection }),
+        secondInjection = Result("Second injection", map { it.secondInjection })
     )
 }
 
@@ -135,17 +147,21 @@ fun Double.format(config: Config): String {
     }
 }
 
+fun Result.print(name: String, config: Config) {
+    println(
+        "$name | " +
+                "${average.format(config)} | " +
+                "${median.format(config)} | " +
+                "${min.format(config)} | " +
+                "${max.format(config)}"
+    )
+}
+
 fun Map<String, Results>.print(config: Config) {
     println("Module:")
     println("Library | Average | Median | Min | Max")
     forEach { (name, results) ->
-        println(
-            "$name | " +
-                    "${results.moduleCreationAverage.format(config)} | " +
-                    "${results.moduleCreationMedian.format(config)} | " +
-                    "${results.moduleCreationMin.format(config)} | " +
-                    "${results.moduleCreationMax.format(config)}"
-        )
+        results.setup.print(name, config)
     }
 
     println()
@@ -153,10 +169,10 @@ fun Map<String, Results>.print(config: Config) {
     println("Best:")
     println("Average | Median | Min | Max")
     println(
-        "${minBy { it.value.moduleCreationAverage }?.key} | " +
-                "${minBy { it.value.moduleCreationMedian }?.key} | " +
-                "${minBy { it.value.moduleCreationMin }?.key} | " +
-                "${maxBy { it.value.moduleCreationMax }?.key}"
+        "${minBy { it.value.moduleCreation.average }?.key} | " +
+                "${minBy { it.value.moduleCreation.median }?.key} | " +
+                "${minBy { it.value.moduleCreation.min }?.key} | " +
+                "${maxBy { it.value.moduleCreation.max }?.key}"
     )
 
     println()
@@ -164,13 +180,7 @@ fun Map<String, Results>.print(config: Config) {
     println("Setup:")
     println("Library | Average | Median | Min | Max")
     forEach { (name, results) ->
-        println(
-            "$name | " +
-                    "${results.setupAverage.format(config)} | " +
-                    "${results.setupMedian.format(config)} | " +
-                    "${results.setupMin.format(config)} | " +
-                    "${results.setupMax.format(config)}"
-        )
+        results.setup.print(name, config)
     }
 
     println()
@@ -178,24 +188,18 @@ fun Map<String, Results>.print(config: Config) {
     println("Best:")
     println("Average | Median | Min | Max")
     println(
-        "${minBy { it.value.setupAverage }?.key} | " +
-                "${minBy { it.value.setupMedian }?.key} | " +
-                "${minBy { it.value.setupMin }?.key} | " +
-                "${maxBy { it.value.setupMax }?.key}"
+        "${minBy { it.value.setup.average }?.key} | " +
+                "${minBy { it.value.setup.median }?.key} | " +
+                "${minBy { it.value.setup.min }?.key} | " +
+                "${maxBy { it.value.setup.max }?.key}"
     )
 
     println()
 
-    println("Injection:")
+    println("First injection")
     println("Library | Average | Median | Min | Max")
     forEach { (name, results) ->
-        println(
-            "$name | " +
-                    "${results.injectionAverage.format(config)} | " +
-                    "${results.injectionMedian.format(config)} | " +
-                    "${results.injectionMin.format(config)} | " +
-                    "${results.injectionMax.format(config)}"
-        )
+        results.firstInjection.print(name, config)
     }
 
     println()
@@ -203,10 +207,28 @@ fun Map<String, Results>.print(config: Config) {
     println("Best:")
     println("Average | Median | Min | Max")
     println(
-        "${minBy { it.value.injectionAverage }?.key} | " +
-                "${minBy { it.value.injectionMedian }?.key} | " +
-                "${minBy { it.value.injectionMin }?.key} | " +
-                "${maxBy { it.value.injectionMax }?.key}"
+        "${minBy { it.value.firstInjection.average }?.key} | " +
+                "${minBy { it.value.firstInjection.median }?.key} | " +
+                "${minBy { it.value.firstInjection.min }?.key} | " +
+                "${maxBy { it.value.firstInjection.max }?.key}"
     )
 
+    println()
+
+    println("Second injection")
+    println("Library | Average | Median | Min | Max")
+    forEach { (name, results) ->
+        results.secondInjection.print(name, config)
+    }
+
+    println()
+
+    println("Best:")
+    println("Average | Median | Min | Max")
+    println(
+        "${minBy { it.value.secondInjection.average }?.key} | " +
+                "${minBy { it.value.secondInjection.median }?.key} | " +
+                "${minBy { it.value.secondInjection.min }?.key} | " +
+                "${maxBy { it.value.secondInjection.max }?.key}"
+    )
 }

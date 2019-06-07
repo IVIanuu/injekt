@@ -17,25 +17,32 @@
 package com.ivianuu.injekt.compiler
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeName
 
-data class CreatorDescriptor(
+data class BindingFactoryDescriptor(
     val target: ClassName,
-    val creatorName: ClassName,
-    val kind: ClassName,
+    val factoryName: ClassName,
+    val isInternal: Boolean,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>
-)
+) {
+    val hasDependencies
+        get() = constructorParams.any { it is ParamDescriptor.Dependency }
+    val hasDynamicParams
+        get() = constructorParams.any { it is ParamDescriptor.Dynamic }
+}
 
 sealed class ParamDescriptor {
     abstract val paramName: String
 
-    data class Parameter(
+    data class Dynamic(
         override val paramName: String,
         val index: Int
     ) : ParamDescriptor()
 
     data class Dependency(
         override val paramName: String,
+        val paramType: TypeName,
         val qualifierName: ClassName?
     ) : ParamDescriptor()
 }

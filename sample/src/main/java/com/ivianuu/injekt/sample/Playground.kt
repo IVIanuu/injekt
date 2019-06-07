@@ -16,21 +16,29 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Qualifier
-
 
 // kinds
 interface Command
 
 @Name(Commands.Companion::class)
 annotation class Commands {
-    companion object : Qualifier
+    companion object
 }
 
-@Factory
+@Inject
+internal class InternalDep
+
+@Inject
+class EmptyConstructorDep
+
+@Inject
+class OnlyParamsConstructorDep(@Param param: String)
+
+@Inject
 class MyDep(
     // default
     private val command: Command,

@@ -27,6 +27,6 @@ import javax.lang.model.SourceVersion
 @AutoService(Processor::class)
 @IncrementalAnnotationProcessor(ISOLATING)
 class InjektProcessor : StepProcessor() {
-    override fun initSteps(): Set<ProcessingStep> = setOf(CreatorStep())
+    override fun initSteps(): Set<ProcessingStep> = setOf(BindingFactoryGenerationStep())
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
 }

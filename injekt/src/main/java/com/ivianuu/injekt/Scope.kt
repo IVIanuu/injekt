@@ -16,25 +16,35 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class Scope
 
-interface Scope : Qualifier
-
-open class NamedScope(val name: String) : Scope {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is NamedScope) return false
-
-        if (name != other.name) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = name.hashCode()
-
-    override fun toString(): String = name
-
+fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
+    is LinkedScopedBinding, is UnlinkedScopedBinding -> this
+    is LinkedBinding -> LinkedScopedBinding(this)
+    else -> UnlinkedScopedBinding(this)
 }
 
-// todo rename
-annotation class ScopeAnnotation(val scope: KClass<out Scope>)
+private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedScopedBinding(binding.link(linker))
+}
+
+private class LinkedScopedBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
+    private var _value: Any? = this
+
+    override fun get(parameters: ParametersDefinition?): T {
+        var value = _value
+        if (value === this) {
+            synchronized(this) {
+                value = _value
+                if (value === this) {
+                    _value = binding.get(parameters)
+                    value = _value
+                }
+            }
+        }
+
+        return value as T
+    }
+}

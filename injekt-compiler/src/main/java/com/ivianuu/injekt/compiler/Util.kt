@@ -16,32 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.google.j2objc.annotations.Weak
-import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.FactoryKind
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.SingleKind
-import com.ivianuu.injekt.multi.Multi
-import com.ivianuu.injekt.multi.MultiKind
-import com.ivianuu.injekt.weak.WeakKind
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.asClassName
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
 import javax.lang.model.element.Element
-import kotlin.reflect.KClass
-
-enum class Kind(
-    val annotation: KClass<out Annotation>,
-    val impl: ClassName
-) {
-    FACTORY(Factory::class, FactoryKind::class.asClassName()),
-    MULTI(Multi::class, MultiKind::class.asClassName()),
-    SINGLE(Single::class, SingleKind::class.asClassName()),
-    WEAK(Weak::class, WeakKind::class.asClassName())
-}
 
 val Element.isObject: Boolean
     get() {

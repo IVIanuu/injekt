@@ -26,9 +26,9 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" }.bindIntoSet(setName = Values)
-                    factory(NameTwo) { "value_two" }.bindIntoSet(setName = Values)
-                    factory(NameThree) { "value_three" }.bindIntoSet(setName = Values)
+                    factory(NameOne) { "value_one" }.intoSet(setName = Values)
+                    factory(NameTwo) { "value_two" }.intoSet(setName = Values)
+                    factory(NameThree) { "value_three" }.intoSet(setName = Values)
                 }
             )
         }
@@ -66,7 +66,7 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    bindSet<String>()
+                    set<String>()
                 }
             )
         }
@@ -81,25 +81,30 @@ class SetTest {
         component {
             modules(
                 module {
-                    factory { "value" }.bindIntoSet()
-                    factory { "overridden_value" }.bindIntoSet()
+                    factory { "value" }.intoSet()
+                    factory { "overridden_value" }.intoSet()
                 }
             )
         }
     }
 
-    /*@Test
+    @Test
     fun testOverridesLegalOverride() {
-        val component = component {
+        val originalValueComponent = component {
+            modules(
+                module { factory { "value" }.intoSet() }
+            )
+        }
+        val overriddenValueComponent = component {
+            dependencies(originalValueComponent)
             modules(
                 module {
-                    factory { "value" }.bindIntoSet()
-                    factory { "overridden_value" }.bindIntoSet()
+                    factory(override = true) { "overridden_value" }.intoSet(override = true)
                 }
             )
         }
 
-        assertEquals("overridden_value", component.get<Set<String>>().first())
-    }*/
+        assertEquals("overridden_value", overriddenValueComponent.get<Set<String>>().first())
+    }
 
 }

@@ -16,115 +16,94 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * The actual dependency container which provides bindings
  * Dependencies can be requested by calling either [get] or [inject]
  */
 class Component internal constructor(
-    val scope: Scope?,
-    internal val instances: MutableMap<Key, Instance<*>>,
-    internal val dependencies: Iterable<Component>,
-    internal val mapBindings: Map<Key, Map<Any?, Instance<*>>>,
-    internal val setBindings: Map<Key, Set<Instance<*>>>
+    internal val scopes: Iterable<KClass<out Annotation>>,
+    internal val bindings: MutableMap<Key, Binding<*>>,
+    internal val mapBindings: MapBindings?,
+    internal val setBindings: SetBindings?,
+    internal val dependencies: Iterable<Component>
 ) {
 
-    private val context = DefinitionContext(this)
-
-    init {
-        InjektPlugins.logger?.let { logger ->
-            logger.info("${scopeName()} initialize")
-
-            dependencies.forEach {
-                logger.info("${scopeName()} Register dependency ${it.scopeName()}")
-            }
-
-            instances.forEach {
-                logger.info("${scopeName()} Register binding ${it.value.binding}")
-            }
-
-            mapBindings.forEach { (key, map) ->
-                logger.info("${scopeName()} Register map binding $key ${map.mapValues { it.value.binding }}")
-            }
-
-            setBindings.forEach { (key, set) ->
-                logger.info("${scopeName()} Register set binding $key ${set.map { it.binding }}")
-            }
-        }
-        instances
-            .onEach { it.value.context = context }
-            .forEach { it.value.attached() }
-    }
+    private val linker = Linker(this)
+    private val linkedBindings = hashMapOf<Key, LinkedBinding<*>>()
 
     /**
      * Returns the instance matching the [type] and [name]
      */
     fun <T> get(
         type: Type<T>,
-        name: Qualifier? = null,
+        name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): T {
-        // check if we need a lazy or a provider
-        if (type.parameters.size == 1) {
-            when (type.raw) {
+    ): T = getBinding<T>(keyOf(type, name)).get(parameters)
+
+    internal fun <T> getBinding(key: Key): LinkedBinding<T> =
+        findBinding(key, true)
+            ?: error("Couldn't find a binding for $key")
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> findBinding(key: Key, fullLookup: Boolean): LinkedBinding<T>? {
+        if (key.type.parameters.size == 1) {
+            when (key.type.raw) {
                 Provider::class -> {
-                    val key = Key(type.parameters.first(), name)
-                    findInstance<T>(key, true)
-                        ?.let { instance ->
-                            return@get provider { instance.get(it) } as T
-                        }
+                    val realKey = keyOf(key.type.parameters.first(), key.name)
+                    return LinkedProviderBinding<Any?>(this, realKey) as LinkedBinding<T>
                 }
                 Lazy::class -> {
-                    val key = Key(type.parameters.first(), name)
-                    findInstance<T>(key, true)
-                        ?.let {
-                            return@get lazy(LazyThreadSafetyMode.NONE) { it.get(parameters) } as T
-                        }
+                    val realKey = keyOf(key.type.parameters.first(), key.name)
+                    return LinkedLazyBinding<Any?>(this, realKey) as LinkedBinding<T>
                 }
             }
         }
 
-        // just try to resolve the dependency
-        val key = Key(type, name)
-        findInstance<T>(key, true)
-            ?.let { return@get it.get(parameters) }
+        var binding: Binding<*>? = linkedBindings[key]
+        if (binding != null) return binding as LinkedBinding<T>
 
-        // todo clean up
-        throw IllegalStateException("Couldn't find a binding for ${Key(type, name)}")
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> findInstance(key: Key, lookupJit: Boolean): Instance<T>? {
-        var instance = instances[key]
-        if (instance != null) return instance as Instance<T>
-
-        for (dependency in dependencies) {
-            instance = dependency.findInstance<T>(key, false)
-            if (instance != null) return instance
+        binding = bindings[key]
+        if (binding != null) {
+            val override = binding.override
+            binding = binding.link(linker)
+            binding.override = override
+            linkedBindings[key] = binding
+            return binding as LinkedBinding<T>
         }
 
-        if (lookupJit && key.name == null) {
-            val jitBinding = JustInTimeBindings.find<T>(key)
-            if (jitBinding != null) {
-                val component = findComponentForScope(scope)
-                    ?: error("Couldn't find component for $scope")
-                return component.addJitBinding(jitBinding)
+        for (dependency in dependencies) {
+            binding = dependency.findBinding<T>(key, false)
+            if (binding != null) return binding
+        }
+
+        if (fullLookup && key.name == null) {
+            val bindingFactory = JustInTimeBindings.find<T>(key)
+            if (bindingFactory != null) {
+                val component = findComponentForScope(bindingFactory.scope)
+                    ?: error("Couldn't find component for ${bindingFactory.scope}")
+                binding = bindingFactory.create()
+                if (bindingFactory.scope != null) {
+                    binding = binding.asScoped()
+                }
+                return component.addBinding(key, binding)
             }
         }
 
         return null
     }
 
-    private fun <T> addJitBinding(binding: Binding<T>): Instance<T> {
-        val instance = binding.kind.createInstance(binding)
-        instances[binding.key] = instance
-        instance.context = context
-        instance.attached()
-        return instance
+    private fun <T> addBinding(key: Key, binding: Binding<T>): LinkedBinding<T> {
+        bindings[key] = binding
+        val linkedBinding = binding.link(linker)
+        linkedBindings[key] = linkedBinding
+        return linkedBinding
     }
 
     private fun findComponentForScope(scope: Any?): Component? {
         if (scope == null) return this
-        if (this.scope == scope) return this
+        if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
             dependency.findComponentForScope(scope)
                 ?.let { return@findComponentForScope it }
@@ -136,19 +115,17 @@ class Component internal constructor(
 }
 
 inline fun <reified T> Component.get(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
 
 inline fun <reified T> Component.inject(
-    name: Qualifier? = null,
+    name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): Lazy<T> = inject(typeOf(), name, parameters)
 
 fun <T> Component.inject(
     type: Type<T>,
-    name: Qualifier? = null,
+    name: Any? = null,
     parameters: ParametersDefinition? = null
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
-
-fun Component.scopeName() = scope?.toString() ?: "Unscoped"

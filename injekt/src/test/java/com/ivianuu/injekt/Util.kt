@@ -16,27 +16,17 @@
 
 package com.ivianuu.injekt
 
-object NameOne : Qualifier
-object NameTwo : Qualifier
-object NameThree : Qualifier
+object NameOne
+object NameTwo
+object NameThree
 
-object Values : Qualifier
+object Values
 
-object TestScope : Scope
+@Scope
+annotation class TestScope
 
-inline fun <reified T> Component.getBinding(
-    name: Qualifier? = null
-): Binding<T> = getBinding(typeOf(), name)
-
-fun <T> Component.getBinding(
-    type: Type<T>,
-    name: Qualifier? = null
-): Binding<T> {
-    val key = Key(type, name)
-    return instances.entries.firstOrNull { it.key == key }?.value?.binding as? Binding<T>
-        ?: error("binding not found")
-}
-
+@Scope
+annotation class OtherTestScope
 
 class TestDep1
 class TestDep2(val dep1: TestDep1)

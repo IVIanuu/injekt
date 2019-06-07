@@ -25,8 +25,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 
 dependencies {
     implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
-
     implementation(Deps.processingX)
     kapt(Deps.processingX)
 }

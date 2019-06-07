@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
+
 class MapTest {
 
     @Test
@@ -28,18 +29,12 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" } bindIntoMap mapBinding(
-                        "key_one",
-                        mapName = Values
-                    )
-                    factory(NameTwo) { "value_two" } bindIntoMap mapBinding(
-                        "key_two",
-                        mapName = Values
-                    )
-                    factory(NameThree) { "value_three" } bindIntoMap mapBinding(
-                        "key_three",
-                        mapName = Values
-                    )
+                    factory(NameOne) { "value_one" }
+                        .intoMap("key_one", mapName = Values)
+                    factory(NameTwo) { "value_two" }
+                        .intoMap("key_two", mapName = Values)
+                    factory(NameThree) { "value_three" }
+                        .intoMap("key_three", mapName = Values)
                 }
             )
         }
@@ -77,7 +72,7 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    bindMap<String, Int>()
+                    map<String, Int>()
                 }
             )
         }
@@ -85,14 +80,14 @@ class MapTest {
         assertEquals(0, component.get<Map<String, Int>>().size)
     }
 
-    // todo test nested
+// todo test nested
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnIllegalOverride() {
         component {
             module {
-                factory { "value" }.bindIntoMap("key")
-                factory { "overridden_value" }.bindIntoMap("key")
+                factory { "value" }.intoMap("key")
+                factory { "overridden_value" }.intoMap("key")
             }
         }
     }
@@ -102,8 +97,10 @@ class MapTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value" }.bindIntoMap("key")
-                    factory(NameTwo) { "overridden_value" }.bindIntoMap("key", override = true)
+                    factory(NameOne) { "value" }
+                        .intoMap("key")
+                    factory(NameTwo) { "overridden_value" }
+                        .intoMap("key", override = true)
                 }
             )
         }

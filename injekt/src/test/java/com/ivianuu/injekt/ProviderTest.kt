@@ -38,7 +38,7 @@ class ProviderTest {
     }
 
     @Test
-    fun testProviderUsesExplicitParams() {
+    fun testProviderPassesParams() {
         var usedParams: Parameters? = null
 
         val component = component {

@@ -36,7 +36,11 @@ object ToothpickTest : InjectionTest {
         scope = Toothpick.openScope(this)
     }
 
-    override fun inject() {
+    override fun firstInject() {
+        Toothpick.inject(this, scope)
+    }
+
+    override fun secondInject() {
         Toothpick.inject(this, scope)
     }
 
