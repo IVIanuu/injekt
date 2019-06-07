@@ -28,7 +28,7 @@ import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.Parameters
 
 import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.factory
+
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.typeOf
 
@@ -52,7 +52,7 @@ viewModelStoreName: Any? = null,
 override: Boolean = false,
 definition: Definition<T>
 ): Binding<T> =
-factory(
+provide(
 type,
 name,
 override,

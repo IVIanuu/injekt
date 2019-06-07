@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.Component

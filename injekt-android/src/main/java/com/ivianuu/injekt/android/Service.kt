@@ -28,9 +28,10 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
+
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.provide
 import com.ivianuu.injekt.scopes
 
 @Scope
@@ -67,5 +68,5 @@ fun <T : Service> T.serviceModule(): Module = module {
         bindType<Context>()
     }
 
-    factory(override = true) { resources } bindName ForService
+    provide(override = true) { resources } bindName ForService
 }

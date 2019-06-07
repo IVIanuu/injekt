@@ -16,28 +16,40 @@
 
 package com.ivianuu.injekt
 
-inline fun <reified T> Module.factory(
+inline fun <reified T> Module.provide(
     name: Any? = null,
+    scoped: Boolean = false,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = factory(typeOf(), name, override, definition)
+): BindingContext<T> = provide(typeOf(), name, scoped, override, definition)
 
-fun <T> Module.factory(
+fun <T> Module.provide(
     type: Type<T>,
     name: Any? = null,
+    scoped: Boolean = false,
     override: Boolean = false,
     definition: Definition<T>
-): BindingContext<T> = bind(definitionBinding(definition), type, name, override)
+): BindingContext<T> {
+    var binding = definitionBinding(definition)
+    if (scoped) binding = binding.asScoped()
+    return bind(binding, type, name, override)
+}
 
-inline fun <reified T> Module.factoryWithState(
+inline fun <reified T> Module.provideWithState(
     name: Any? = null,
+    scoped: Boolean = false,
     override: Boolean = false,
     noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = factoryWithState(typeOf(), name, override, definition)
+): BindingContext<T> = provideWithState(typeOf(), name, scoped, override, definition)
 
-fun <T> Module.factoryWithState(
+fun <T> Module.provideWithState(
     type: Type<T>,
     name: Any? = null,
+    scoped: Boolean = false,
     override: Boolean = false,
     definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = bind(stateDefinitionBinding(definition), type, name, override)
+): BindingContext<T> {
+    var binding = stateDefinitionBinding(definition)
+    if (scoped) binding = binding.asScoped()
+    return bind(binding, type, name, override)
+}

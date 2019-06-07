@@ -35,7 +35,7 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory { typed }
+                    provide { typed }
                     single(Named) { named }
                 }
             )
@@ -53,7 +53,7 @@ class ComponentTest {
         val dependency = component {
             modules(
                 module {
-                    factory { TestDep1() }
+                    provide { TestDep1() }
                 }
             )
         }
@@ -62,7 +62,7 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory { TestDep2(get()) }
+                    provide { TestDep2(get()) }
                 }
             )
             dependencies(dependency)
@@ -84,7 +84,7 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory {
+                    provide {
                         called = true
                         TestDep1()
                     }
@@ -103,11 +103,11 @@ class ComponentTest {
     @Test
     fun testExplicitOverride() {
         val module1 = module {
-            factory { "my_value" }
+            provide { "my_value" }
         }
 
         val module2 = module {
-            factory(override = true) { "my_overridden_value" }
+            provide(override = true) { "my_overridden_value" }
         }
 
         val component = component { modules(module1, module2) }
@@ -120,7 +120,7 @@ class ComponentTest {
         val parentComponent = component {
             modules(
                 module {
-                    factory { "my_value" }
+                    provide { "my_value" }
                 }
             )
         }
@@ -128,7 +128,7 @@ class ComponentTest {
         val childComponent = component {
             modules(
                 module {
-                    factory(override = true) { "my_overridden_value" }
+                    provide(override = true) { "my_overridden_value" }
                 }
             )
         }
@@ -140,11 +140,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testDisallowsImplicitOverride() {
         val module1 = module {
-            factory { "my_value" }
+            provide { "my_value" }
         }
 
         val module2 = module {
-            factory { "my_overridden_value" }
+            provide { "my_overridden_value" }
         }
 
         component { modules(module1, module2) }
@@ -155,7 +155,7 @@ class ComponentTest {
         val rootComponent = component {
             modules(
                 module {
-                    factory { "my_value" }
+                    provide { "my_value" }
                 }
             )
         }
@@ -164,7 +164,7 @@ class ComponentTest {
             dependencies(rootComponent)
             modules(
                 module {
-                    factory { "my_overriden_value" }
+                    provide { "my_overriden_value" }
                 }
             )
         }
@@ -175,7 +175,7 @@ class ComponentTest {
         val dependency1 = component {
             modules(
                 module {
-                    factory { "value_1" }
+                    provide { "value_1" }
                 }
             )
         }
@@ -183,7 +183,7 @@ class ComponentTest {
         val dependency2 = component {
             modules(
                 module {
-                    factory { "value_2" }
+                    provide { "value_2" }
                 }
             )
         }
@@ -213,8 +213,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory<String> { "string" }
-                    factory<String?> { "nullable string" }
+                    provide<String> { "string" }
+                    provide<String?> { "nullable string" }
                 }
             )
         }

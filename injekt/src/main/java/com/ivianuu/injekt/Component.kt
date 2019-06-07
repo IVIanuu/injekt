@@ -92,7 +92,7 @@ class Component internal constructor(
                     ?: error("Couldn't find component for ${bindingFactory.scope}")
                 binding = bindingFactory.create()
                 if (bindingFactory.scope != null) {
-                    binding = binding.asSingle()
+                    binding = binding.asScoped()
                 }
                 component.addBinding(key, binding)
                 return binding

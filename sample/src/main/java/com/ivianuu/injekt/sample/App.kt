@@ -28,8 +28,7 @@ import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.single
-
+import com.ivianuu.injekt.provide
 
 class App : Application(), InjektTrait {
 
@@ -52,7 +51,9 @@ annotation class PackageName {
 }
 
 fun appModule() = module {
-    single(PackageName) { get<Context>().packageName }
+    provide(PackageName, scoped = true) {
+        get<Context>().packageName
+    }
 }
 
 @Inject @ApplicationScope

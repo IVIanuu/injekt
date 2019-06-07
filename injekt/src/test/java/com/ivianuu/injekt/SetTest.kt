@@ -26,9 +26,9 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" }.bindIntoSet(setName = Values)
-                    factory(NameTwo) { "value_two" }.bindIntoSet(setName = Values)
-                    factory(NameThree) { "value_three" }.bindIntoSet(setName = Values)
+                    provide(NameOne) { "value_one" }.bindIntoSet(setName = Values)
+                    provide(NameTwo) { "value_two" }.bindIntoSet(setName = Values)
+                    provide(NameThree) { "value_three" }.bindIntoSet(setName = Values)
                 }
             )
         }
@@ -81,8 +81,8 @@ class SetTest {
         component {
             modules(
                 module {
-                    factory { "value" }.bindIntoSet()
-                    factory { "overridden_value" }.bindIntoSet()
+                    provide { "value" }.bindIntoSet()
+                    provide { "overridden_value" }.bindIntoSet()
                 }
             )
         }
@@ -92,14 +92,14 @@ class SetTest {
     fun testOverridesLegalOverride() {
         val originalValueComponent = component {
             modules(
-                module { factory { "value" }.bindIntoSet() }
+                module { provide { "value" }.bindIntoSet() }
             )
         }
         val overriddenValueComponent = component {
             dependencies(originalValueComponent)
             modules(
                 module {
-                    factory(override = true) { "overridden_value" }.bindIntoSet(override = true)
+                    provide(override = true) { "overridden_value" }.bindIntoSet(override = true)
                 }
             )
         }

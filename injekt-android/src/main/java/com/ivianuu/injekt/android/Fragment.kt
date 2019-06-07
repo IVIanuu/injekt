@@ -30,9 +30,10 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
+
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.provide
 import com.ivianuu.injekt.scopes
 
 @Scope
@@ -114,10 +115,10 @@ private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
         bindAlias<SavedStateRegistryOwner>(name)
     }
 
-    factory(override = true) { requireContext() } bindName name
-    factory(override = true) { resources } bindName name
-    factory(override = true) { lifecycle } bindName name
-    factory(override = true) { viewModelStore } bindName name
-    factory(override = true) { savedStateRegistry } bindName name
-    factory(override = true) { childFragmentManager } bindName name
+    provide(override = true) { requireContext() } bindName name
+    provide(override = true) { resources } bindName name
+    provide(override = true) { lifecycle } bindName name
+    provide(override = true) { viewModelStore } bindName name
+    provide(override = true) { savedStateRegistry } bindName name
+    provide(override = true) { childFragmentManager } bindName name
 }

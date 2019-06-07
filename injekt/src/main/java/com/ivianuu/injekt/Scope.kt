@@ -18,3 +18,32 @@ package com.ivianuu.injekt
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
+
+fun <T> Binding<T>.asScoped(): Binding<T> {
+    return if (this is ScopedBinding) this
+    else ScopedBinding(this)
+}
+
+private class ScopedBinding<T>(private val binding: Binding<T>) : Binding<T>() {
+    private var _value: Any? = this
+
+    override fun attach(component: Component) {
+        binding.attach(component)
+    }
+
+    override fun get(parameters: ParametersDefinition?): T {
+        var value = _value
+        if (value === this) {
+            synchronized(this) {
+                value = _value
+                if (value === this) {
+                    _value = binding.get(parameters)
+                    value = _value
+                }
+            }
+        }
+
+        return value as T
+    }
+
+}

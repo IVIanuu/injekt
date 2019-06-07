@@ -27,9 +27,10 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindClasses
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
+
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.provide
 import com.ivianuu.injekt.scopes
 
 fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
@@ -45,5 +46,5 @@ fun <T : Application> T.applicationModule(): Module = module {
         bindAlias<Context>(ForApplication)
     }
 
-    factory { resources } bindName ForApplication
+    provide { resources } bindName ForApplication
 }

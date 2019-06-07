@@ -19,14 +19,14 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.singleWithState
+import com.ivianuu.injekt.provideWithState
 
 fun Module.sharedPreferences(
     sharedPreferencesName: String,
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
     name: Any? = null
 ) {
-    singleWithState(name) {
+    provideWithState(name = name, scoped = true) {
         val application = link<Application>()
         definition {
             application().getSharedPreferences(

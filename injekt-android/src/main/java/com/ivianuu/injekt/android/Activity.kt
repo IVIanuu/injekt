@@ -35,9 +35,9 @@ import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
+import com.ivianuu.injekt.provide
 import com.ivianuu.injekt.scopes
 
 @Scope
@@ -91,21 +91,21 @@ fun <T : Activity> T.activityModule(): Module = module {
         }
     }
 
-    factory(override = true) { resources } bindName ForActivity
+    provide(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        factory { lifecycle } bindName ForActivity
+        provide { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        factory { viewModelStore } bindName ForActivity
+        provide { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        factory { savedStateRegistry } bindName ForActivity
+        provide { savedStateRegistry } bindName ForActivity
     }
 
     (this@activityModule as? FragmentActivity)?.let {
-        factory { supportFragmentManager } bindName ForActivity
+        provide { supportFragmentManager } bindName ForActivity
     }
 }

@@ -19,14 +19,14 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class SingleTest {
+class ScopedTest {
 
     @Test
     fun testCreatesOnlyOnce() {
         val component = component {
             modules(
                 module {
-                    single { TestDep1() }
+                    provide(scoped = true) { TestDep1() }
                 }
             )
         }
