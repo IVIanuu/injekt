@@ -103,19 +103,6 @@ fun <T> Module.factory(
     definition: Definition<T>
 ): BindingContext<T> = bind(definitionBinding(definition), type, name, override)
 
-inline fun <reified T> Module.factoryWithState(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = factoryWithState(typeOf(), name, override, definition)
-
-fun <T> Module.factoryWithState(
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false,
-    definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = bind(stateDefinitionBinding(definition), type, name, override)
-
 inline fun <reified T> Module.single(
     name: Any? = null,
     override: Boolean = false,
@@ -128,19 +115,6 @@ fun <T> Module.single(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> = bind(definitionBinding(definition).asScoped(), type, name, override)
-
-inline fun <reified T> Module.singleWithState(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = singleWithState(typeOf(), name, override, definition)
-
-fun <T> Module.singleWithState(
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false,
-    definition: StateDefinitionFactory.() -> StateDefinition<T>
-): BindingContext<T> = bind(stateDefinitionBinding(definition).asScoped(), type, name, override)
 
 inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,
