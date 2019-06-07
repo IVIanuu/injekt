@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.comparison.injektoptimized
 
-import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.ParametersDefinition
+import com.ivianuu.injekt.UnlinkedBinding
 import com.ivianuu.injekt.comparison.Fib1
 import com.ivianuu.injekt.comparison.Fib10
 import com.ivianuu.injekt.comparison.Fib100
@@ -120,1088 +121,1284 @@ import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
 
-class Fib1Binding : Binding<Fib1>() {
-    override fun get(parameters: ParametersDefinition?) = Fib1()
+class Fib1Binding : LinkedBinding<Fib1>() {
+    override fun get(parameters: ParametersDefinition?): Fib1 = Fib1()
 }
 
-class Fib2Binding : Binding<Fib2>() {
-    override fun get(parameters: ParametersDefinition?) = Fib2()
+class Fib2Binding : LinkedBinding<Fib2>() {
+    override fun get(parameters: ParametersDefinition?): Fib2 = Fib2()
 }
 
-class Fib3Binding : Binding<Fib3>() {
-    private lateinit var fib2Binding: Binding<Fib2>
-    private lateinit var fib1Binding: Binding<Fib1>
-    override fun link(linker: Linker) {
-        fib2Binding = linker.get()
-        fib1Binding = linker.get()
-    }
+class UnlinkedFib3Binding : UnlinkedBinding<Fib3>() {
+    override fun link(linker: Linker) =
+        LinkedFib3Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib3(fib2Binding(), fib1Binding())
+class LinkedFib3Binding(
+    private val fib2Binding: LinkedBinding<Fib2>,
+    private val fib1Binding: LinkedBinding<Fib1>
+) : LinkedBinding<Fib3>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib3(fib2Binding(), fib1Binding())
 }
 
-class Fib4Binding : Binding<Fib4>() {
-    private lateinit var fib3Binding: Binding<Fib3>
-    private lateinit var fib2Binding: Binding<Fib2>
-    override fun link(linker: Linker) {
-        fib3Binding = linker.get()
-        fib2Binding = linker.get()
-    }
+class UnlinkedFib4Binding : UnlinkedBinding<Fib4>() {
+    override fun link(linker: Linker) =
+        LinkedFib4Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib4(fib3Binding(), fib2Binding())
+class LinkedFib4Binding(
+    private val fib3Binding: LinkedBinding<Fib3>,
+    private val fib2Binding: LinkedBinding<Fib2>
+) : LinkedBinding<Fib4>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib4(fib3Binding(), fib2Binding())
 }
 
-class Fib5Binding : Binding<Fib5>() {
-    private lateinit var fib4Binding: Binding<Fib4>
-    private lateinit var fib3Binding: Binding<Fib3>
-    override fun link(linker: Linker) {
-        fib4Binding = linker.get()
-        fib3Binding = linker.get()
-    }
+class UnlinkedFib5Binding : UnlinkedBinding<Fib5>() {
+    override fun link(linker: Linker) =
+        LinkedFib5Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib5(fib4Binding(), fib3Binding())
+class LinkedFib5Binding(
+    private val fib4Binding: LinkedBinding<Fib4>,
+    private val fib3Binding: LinkedBinding<Fib3>
+) : LinkedBinding<Fib5>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib5(fib4Binding(), fib3Binding())
 }
 
-class Fib6Binding : Binding<Fib6>() {
-    private lateinit var fib5Binding: Binding<Fib5>
-    private lateinit var fib4Binding: Binding<Fib4>
-    override fun link(linker: Linker) {
-        fib5Binding = linker.get()
-        fib4Binding = linker.get()
-    }
+class UnlinkedFib6Binding : UnlinkedBinding<Fib6>() {
+    override fun link(linker: Linker) =
+        LinkedFib6Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib6(fib5Binding(), fib4Binding())
+class LinkedFib6Binding(
+    private val fib5Binding: LinkedBinding<Fib5>,
+    private val fib4Binding: LinkedBinding<Fib4>
+) : LinkedBinding<Fib6>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib6(fib5Binding(), fib4Binding())
 }
 
-class Fib7Binding : Binding<Fib7>() {
-    private lateinit var fib6Binding: Binding<Fib6>
-    private lateinit var fib5Binding: Binding<Fib5>
-    override fun link(linker: Linker) {
-        fib6Binding = linker.get()
-        fib5Binding = linker.get()
-    }
+class UnlinkedFib7Binding : UnlinkedBinding<Fib7>() {
+    override fun link(linker: Linker) =
+        LinkedFib7Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib7(fib6Binding(), fib5Binding())
+class LinkedFib7Binding(
+    private val fib6Binding: LinkedBinding<Fib6>,
+    private val fib5Binding: LinkedBinding<Fib5>
+) : LinkedBinding<Fib7>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib7(fib6Binding(), fib5Binding())
 }
 
-class Fib8Binding : Binding<Fib8>() {
-    private lateinit var fib7Binding: Binding<Fib7>
-    private lateinit var fib6Binding: Binding<Fib6>
-    override fun link(linker: Linker) {
-        fib7Binding = linker.get()
-        fib6Binding = linker.get()
-    }
+class UnlinkedFib8Binding : UnlinkedBinding<Fib8>() {
+    override fun link(linker: Linker) =
+        LinkedFib8Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib8(fib7Binding(), fib6Binding())
+class LinkedFib8Binding(
+    private val fib7Binding: LinkedBinding<Fib7>,
+    private val fib6Binding: LinkedBinding<Fib6>
+) : LinkedBinding<Fib8>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib8(fib7Binding(), fib6Binding())
 }
 
-class Fib9Binding : Binding<Fib9>() {
-    private lateinit var fib8Binding: Binding<Fib8>
-    private lateinit var fib7Binding: Binding<Fib7>
-    override fun link(linker: Linker) {
-        fib8Binding = linker.get()
-        fib7Binding = linker.get()
-    }
+class UnlinkedFib9Binding : UnlinkedBinding<Fib9>() {
+    override fun link(linker: Linker) =
+        LinkedFib9Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib9(fib8Binding(), fib7Binding())
+class LinkedFib9Binding(
+    private val fib8Binding: LinkedBinding<Fib8>,
+    private val fib7Binding: LinkedBinding<Fib7>
+) : LinkedBinding<Fib9>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib9(fib8Binding(), fib7Binding())
 }
 
-class Fib10Binding : Binding<Fib10>() {
-    private lateinit var fib9Binding: Binding<Fib9>
-    private lateinit var fib8Binding: Binding<Fib8>
-    override fun link(linker: Linker) {
-        fib9Binding = linker.get()
-        fib8Binding = linker.get()
-    }
+class UnlinkedFib10Binding : UnlinkedBinding<Fib10>() {
+    override fun link(linker: Linker) =
+        LinkedFib10Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib10(fib9Binding(), fib8Binding())
+class LinkedFib10Binding(
+    private val fib9Binding: LinkedBinding<Fib9>,
+    private val fib8Binding: LinkedBinding<Fib8>
+) : LinkedBinding<Fib10>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib10(fib9Binding(), fib8Binding())
 }
 
-class Fib11Binding : Binding<Fib11>() {
-    private lateinit var fib10Binding: Binding<Fib10>
-    private lateinit var fib9Binding: Binding<Fib9>
-    override fun link(linker: Linker) {
-        fib10Binding = linker.get()
-        fib9Binding = linker.get()
-    }
+class UnlinkedFib11Binding : UnlinkedBinding<Fib11>() {
+    override fun link(linker: Linker) =
+        LinkedFib11Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib11(fib10Binding(), fib9Binding())
+class LinkedFib11Binding(
+    private val fib10Binding: LinkedBinding<Fib10>,
+    private val fib9Binding: LinkedBinding<Fib9>
+) : LinkedBinding<Fib11>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib11(fib10Binding(), fib9Binding())
 }
 
-class Fib12Binding : Binding<Fib12>() {
-    private lateinit var fib11Binding: Binding<Fib11>
-    private lateinit var fib10Binding: Binding<Fib10>
-    override fun link(linker: Linker) {
-        fib11Binding = linker.get()
-        fib10Binding = linker.get()
-    }
+class UnlinkedFib12Binding : UnlinkedBinding<Fib12>() {
+    override fun link(linker: Linker) =
+        LinkedFib12Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib12(fib11Binding(), fib10Binding())
+class LinkedFib12Binding(
+    private val fib11Binding: LinkedBinding<Fib11>,
+    private val fib10Binding: LinkedBinding<Fib10>
+) : LinkedBinding<Fib12>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib12(fib11Binding(), fib10Binding())
 }
 
-class Fib13Binding : Binding<Fib13>() {
-    private lateinit var fib12Binding: Binding<Fib12>
-    private lateinit var fib11Binding: Binding<Fib11>
-    override fun link(linker: Linker) {
-        fib12Binding = linker.get()
-        fib11Binding = linker.get()
-    }
+class UnlinkedFib13Binding : UnlinkedBinding<Fib13>() {
+    override fun link(linker: Linker) =
+        LinkedFib13Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib13(fib12Binding(), fib11Binding())
+class LinkedFib13Binding(
+    private val fib12Binding: LinkedBinding<Fib12>,
+    private val fib11Binding: LinkedBinding<Fib11>
+) : LinkedBinding<Fib13>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib13(fib12Binding(), fib11Binding())
 }
 
-class Fib14Binding : Binding<Fib14>() {
-    private lateinit var fib13Binding: Binding<Fib13>
-    private lateinit var fib12Binding: Binding<Fib12>
-    override fun link(linker: Linker) {
-        fib13Binding = linker.get()
-        fib12Binding = linker.get()
-    }
+class UnlinkedFib14Binding : UnlinkedBinding<Fib14>() {
+    override fun link(linker: Linker) =
+        LinkedFib14Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib14(fib13Binding(), fib12Binding())
+class LinkedFib14Binding(
+    private val fib13Binding: LinkedBinding<Fib13>,
+    private val fib12Binding: LinkedBinding<Fib12>
+) : LinkedBinding<Fib14>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib14(fib13Binding(), fib12Binding())
 }
 
-class Fib15Binding : Binding<Fib15>() {
-    private lateinit var fib14Binding: Binding<Fib14>
-    private lateinit var fib13Binding: Binding<Fib13>
-    override fun link(linker: Linker) {
-        fib14Binding = linker.get()
-        fib13Binding = linker.get()
-    }
+class UnlinkedFib15Binding : UnlinkedBinding<Fib15>() {
+    override fun link(linker: Linker) =
+        LinkedFib15Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib15(fib14Binding(), fib13Binding())
+class LinkedFib15Binding(
+    private val fib14Binding: LinkedBinding<Fib14>,
+    private val fib13Binding: LinkedBinding<Fib13>
+) : LinkedBinding<Fib15>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib15(fib14Binding(), fib13Binding())
 }
 
-class Fib16Binding : Binding<Fib16>() {
-    private lateinit var fib15Binding: Binding<Fib15>
-    private lateinit var fib14Binding: Binding<Fib14>
-    override fun link(linker: Linker) {
-        fib15Binding = linker.get()
-        fib14Binding = linker.get()
-    }
+class UnlinkedFib16Binding : UnlinkedBinding<Fib16>() {
+    override fun link(linker: Linker) =
+        LinkedFib16Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib16(fib15Binding(), fib14Binding())
+class LinkedFib16Binding(
+    private val fib15Binding: LinkedBinding<Fib15>,
+    private val fib14Binding: LinkedBinding<Fib14>
+) : LinkedBinding<Fib16>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib16(fib15Binding(), fib14Binding())
 }
 
-class Fib17Binding : Binding<Fib17>() {
-    private lateinit var fib16Binding: Binding<Fib16>
-    private lateinit var fib15Binding: Binding<Fib15>
-    override fun link(linker: Linker) {
-        fib16Binding = linker.get()
-        fib15Binding = linker.get()
-    }
+class UnlinkedFib17Binding : UnlinkedBinding<Fib17>() {
+    override fun link(linker: Linker) =
+        LinkedFib17Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib17(fib16Binding(), fib15Binding())
+class LinkedFib17Binding(
+    private val fib16Binding: LinkedBinding<Fib16>,
+    private val fib15Binding: LinkedBinding<Fib15>
+) : LinkedBinding<Fib17>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib17(fib16Binding(), fib15Binding())
 }
 
-class Fib18Binding : Binding<Fib18>() {
-    private lateinit var fib17Binding: Binding<Fib17>
-    private lateinit var fib16Binding: Binding<Fib16>
-    override fun link(linker: Linker) {
-        fib17Binding = linker.get()
-        fib16Binding = linker.get()
-    }
+class UnlinkedFib18Binding : UnlinkedBinding<Fib18>() {
+    override fun link(linker: Linker) =
+        LinkedFib18Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib18(fib17Binding(), fib16Binding())
+class LinkedFib18Binding(
+    private val fib17Binding: LinkedBinding<Fib17>,
+    private val fib16Binding: LinkedBinding<Fib16>
+) : LinkedBinding<Fib18>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib18(fib17Binding(), fib16Binding())
 }
 
-class Fib19Binding : Binding<Fib19>() {
-    private lateinit var fib18Binding: Binding<Fib18>
-    private lateinit var fib17Binding: Binding<Fib17>
-    override fun link(linker: Linker) {
-        fib18Binding = linker.get()
-        fib17Binding = linker.get()
-    }
+class UnlinkedFib19Binding : UnlinkedBinding<Fib19>() {
+    override fun link(linker: Linker) =
+        LinkedFib19Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib19(fib18Binding(), fib17Binding())
+class LinkedFib19Binding(
+    private val fib18Binding: LinkedBinding<Fib18>,
+    private val fib17Binding: LinkedBinding<Fib17>
+) : LinkedBinding<Fib19>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib19(fib18Binding(), fib17Binding())
 }
 
-class Fib20Binding : Binding<Fib20>() {
-    private lateinit var fib19Binding: Binding<Fib19>
-    private lateinit var fib18Binding: Binding<Fib18>
-    override fun link(linker: Linker) {
-        fib19Binding = linker.get()
-        fib18Binding = linker.get()
-    }
+class UnlinkedFib20Binding : UnlinkedBinding<Fib20>() {
+    override fun link(linker: Linker) =
+        LinkedFib20Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib20(fib19Binding(), fib18Binding())
+class LinkedFib20Binding(
+    private val fib19Binding: LinkedBinding<Fib19>,
+    private val fib18Binding: LinkedBinding<Fib18>
+) : LinkedBinding<Fib20>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib20(fib19Binding(), fib18Binding())
 }
 
-class Fib21Binding : Binding<Fib21>() {
-    private lateinit var fib20Binding: Binding<Fib20>
-    private lateinit var fib19Binding: Binding<Fib19>
-    override fun link(linker: Linker) {
-        fib20Binding = linker.get()
-        fib19Binding = linker.get()
-    }
+class UnlinkedFib21Binding : UnlinkedBinding<Fib21>() {
+    override fun link(linker: Linker) =
+        LinkedFib21Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib21(fib20Binding(), fib19Binding())
+class LinkedFib21Binding(
+    private val fib20Binding: LinkedBinding<Fib20>,
+    private val fib19Binding: LinkedBinding<Fib19>
+) : LinkedBinding<Fib21>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib21(fib20Binding(), fib19Binding())
 }
 
-class Fib22Binding : Binding<Fib22>() {
-    private lateinit var fib21Binding: Binding<Fib21>
-    private lateinit var fib20Binding: Binding<Fib20>
-    override fun link(linker: Linker) {
-        fib21Binding = linker.get()
-        fib20Binding = linker.get()
-    }
+class UnlinkedFib22Binding : UnlinkedBinding<Fib22>() {
+    override fun link(linker: Linker) =
+        LinkedFib22Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib22(fib21Binding(), fib20Binding())
+class LinkedFib22Binding(
+    private val fib21Binding: LinkedBinding<Fib21>,
+    private val fib20Binding: LinkedBinding<Fib20>
+) : LinkedBinding<Fib22>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib22(fib21Binding(), fib20Binding())
 }
 
-class Fib23Binding : Binding<Fib23>() {
-    private lateinit var fib22Binding: Binding<Fib22>
-    private lateinit var fib21Binding: Binding<Fib21>
-    override fun link(linker: Linker) {
-        fib22Binding = linker.get()
-        fib21Binding = linker.get()
-    }
+class UnlinkedFib23Binding : UnlinkedBinding<Fib23>() {
+    override fun link(linker: Linker) =
+        LinkedFib23Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib23(fib22Binding(), fib21Binding())
+class LinkedFib23Binding(
+    private val fib22Binding: LinkedBinding<Fib22>,
+    private val fib21Binding: LinkedBinding<Fib21>
+) : LinkedBinding<Fib23>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib23(fib22Binding(), fib21Binding())
 }
 
-class Fib24Binding : Binding<Fib24>() {
-    private lateinit var fib23Binding: Binding<Fib23>
-    private lateinit var fib22Binding: Binding<Fib22>
-    override fun link(linker: Linker) {
-        fib23Binding = linker.get()
-        fib22Binding = linker.get()
-    }
+class UnlinkedFib24Binding : UnlinkedBinding<Fib24>() {
+    override fun link(linker: Linker) =
+        LinkedFib24Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib24(fib23Binding(), fib22Binding())
+class LinkedFib24Binding(
+    private val fib23Binding: LinkedBinding<Fib23>,
+    private val fib22Binding: LinkedBinding<Fib22>
+) : LinkedBinding<Fib24>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib24(fib23Binding(), fib22Binding())
 }
 
-class Fib25Binding : Binding<Fib25>() {
-    private lateinit var fib24Binding: Binding<Fib24>
-    private lateinit var fib23Binding: Binding<Fib23>
-    override fun link(linker: Linker) {
-        fib24Binding = linker.get()
-        fib23Binding = linker.get()
-    }
+class UnlinkedFib25Binding : UnlinkedBinding<Fib25>() {
+    override fun link(linker: Linker) =
+        LinkedFib25Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib25(fib24Binding(), fib23Binding())
+class LinkedFib25Binding(
+    private val fib24Binding: LinkedBinding<Fib24>,
+    private val fib23Binding: LinkedBinding<Fib23>
+) : LinkedBinding<Fib25>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib25(fib24Binding(), fib23Binding())
 }
 
-class Fib26Binding : Binding<Fib26>() {
-    private lateinit var fib25Binding: Binding<Fib25>
-    private lateinit var fib24Binding: Binding<Fib24>
-    override fun link(linker: Linker) {
-        fib25Binding = linker.get()
-        fib24Binding = linker.get()
-    }
+class UnlinkedFib26Binding : UnlinkedBinding<Fib26>() {
+    override fun link(linker: Linker) =
+        LinkedFib26Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib26(fib25Binding(), fib24Binding())
+class LinkedFib26Binding(
+    private val fib25Binding: LinkedBinding<Fib25>,
+    private val fib24Binding: LinkedBinding<Fib24>
+) : LinkedBinding<Fib26>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib26(fib25Binding(), fib24Binding())
 }
 
-class Fib27Binding : Binding<Fib27>() {
-    private lateinit var fib26Binding: Binding<Fib26>
-    private lateinit var fib25Binding: Binding<Fib25>
-    override fun link(linker: Linker) {
-        fib26Binding = linker.get()
-        fib25Binding = linker.get()
-    }
+class UnlinkedFib27Binding : UnlinkedBinding<Fib27>() {
+    override fun link(linker: Linker) =
+        LinkedFib27Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib27(fib26Binding(), fib25Binding())
+class LinkedFib27Binding(
+    private val fib26Binding: LinkedBinding<Fib26>,
+    private val fib25Binding: LinkedBinding<Fib25>
+) : LinkedBinding<Fib27>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib27(fib26Binding(), fib25Binding())
 }
 
-class Fib28Binding : Binding<Fib28>() {
-    private lateinit var fib27Binding: Binding<Fib27>
-    private lateinit var fib26Binding: Binding<Fib26>
-    override fun link(linker: Linker) {
-        fib27Binding = linker.get()
-        fib26Binding = linker.get()
-    }
+class UnlinkedFib28Binding : UnlinkedBinding<Fib28>() {
+    override fun link(linker: Linker) =
+        LinkedFib28Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib28(fib27Binding(), fib26Binding())
+class LinkedFib28Binding(
+    private val fib27Binding: LinkedBinding<Fib27>,
+    private val fib26Binding: LinkedBinding<Fib26>
+) : LinkedBinding<Fib28>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib28(fib27Binding(), fib26Binding())
 }
 
-class Fib29Binding : Binding<Fib29>() {
-    private lateinit var fib28Binding: Binding<Fib28>
-    private lateinit var fib27Binding: Binding<Fib27>
-    override fun link(linker: Linker) {
-        fib28Binding = linker.get()
-        fib27Binding = linker.get()
-    }
+class UnlinkedFib29Binding : UnlinkedBinding<Fib29>() {
+    override fun link(linker: Linker) =
+        LinkedFib29Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib29(fib28Binding(), fib27Binding())
+class LinkedFib29Binding(
+    private val fib28Binding: LinkedBinding<Fib28>,
+    private val fib27Binding: LinkedBinding<Fib27>
+) : LinkedBinding<Fib29>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib29(fib28Binding(), fib27Binding())
 }
 
-class Fib30Binding : Binding<Fib30>() {
-    private lateinit var fib29Binding: Binding<Fib29>
-    private lateinit var fib28Binding: Binding<Fib28>
-    override fun link(linker: Linker) {
-        fib29Binding = linker.get()
-        fib28Binding = linker.get()
-    }
+class UnlinkedFib30Binding : UnlinkedBinding<Fib30>() {
+    override fun link(linker: Linker) =
+        LinkedFib30Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib30(fib29Binding(), fib28Binding())
+class LinkedFib30Binding(
+    private val fib29Binding: LinkedBinding<Fib29>,
+    private val fib28Binding: LinkedBinding<Fib28>
+) : LinkedBinding<Fib30>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib30(fib29Binding(), fib28Binding())
 }
 
-class Fib31Binding : Binding<Fib31>() {
-    private lateinit var fib30Binding: Binding<Fib30>
-    private lateinit var fib29Binding: Binding<Fib29>
-    override fun link(linker: Linker) {
-        fib30Binding = linker.get()
-        fib29Binding = linker.get()
-    }
+class UnlinkedFib31Binding : UnlinkedBinding<Fib31>() {
+    override fun link(linker: Linker) =
+        LinkedFib31Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib31(fib30Binding(), fib29Binding())
+class LinkedFib31Binding(
+    private val fib30Binding: LinkedBinding<Fib30>,
+    private val fib29Binding: LinkedBinding<Fib29>
+) : LinkedBinding<Fib31>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib31(fib30Binding(), fib29Binding())
 }
 
-class Fib32Binding : Binding<Fib32>() {
-    private lateinit var fib31Binding: Binding<Fib31>
-    private lateinit var fib30Binding: Binding<Fib30>
-    override fun link(linker: Linker) {
-        fib31Binding = linker.get()
-        fib30Binding = linker.get()
-    }
+class UnlinkedFib32Binding : UnlinkedBinding<Fib32>() {
+    override fun link(linker: Linker) =
+        LinkedFib32Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib32(fib31Binding(), fib30Binding())
+class LinkedFib32Binding(
+    private val fib31Binding: LinkedBinding<Fib31>,
+    private val fib30Binding: LinkedBinding<Fib30>
+) : LinkedBinding<Fib32>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib32(fib31Binding(), fib30Binding())
 }
 
-class Fib33Binding : Binding<Fib33>() {
-    private lateinit var fib32Binding: Binding<Fib32>
-    private lateinit var fib31Binding: Binding<Fib31>
-    override fun link(linker: Linker) {
-        fib32Binding = linker.get()
-        fib31Binding = linker.get()
-    }
+class UnlinkedFib33Binding : UnlinkedBinding<Fib33>() {
+    override fun link(linker: Linker) =
+        LinkedFib33Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib33(fib32Binding(), fib31Binding())
+class LinkedFib33Binding(
+    private val fib32Binding: LinkedBinding<Fib32>,
+    private val fib31Binding: LinkedBinding<Fib31>
+) : LinkedBinding<Fib33>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib33(fib32Binding(), fib31Binding())
 }
 
-class Fib34Binding : Binding<Fib34>() {
-    private lateinit var fib33Binding: Binding<Fib33>
-    private lateinit var fib32Binding: Binding<Fib32>
-    override fun link(linker: Linker) {
-        fib33Binding = linker.get()
-        fib32Binding = linker.get()
-    }
+class UnlinkedFib34Binding : UnlinkedBinding<Fib34>() {
+    override fun link(linker: Linker) =
+        LinkedFib34Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib34(fib33Binding(), fib32Binding())
+class LinkedFib34Binding(
+    private val fib33Binding: LinkedBinding<Fib33>,
+    private val fib32Binding: LinkedBinding<Fib32>
+) : LinkedBinding<Fib34>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib34(fib33Binding(), fib32Binding())
 }
 
-class Fib35Binding : Binding<Fib35>() {
-    private lateinit var fib34Binding: Binding<Fib34>
-    private lateinit var fib33Binding: Binding<Fib33>
-    override fun link(linker: Linker) {
-        fib34Binding = linker.get()
-        fib33Binding = linker.get()
-    }
+class UnlinkedFib35Binding : UnlinkedBinding<Fib35>() {
+    override fun link(linker: Linker) =
+        LinkedFib35Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib35(fib34Binding(), fib33Binding())
+class LinkedFib35Binding(
+    private val fib34Binding: LinkedBinding<Fib34>,
+    private val fib33Binding: LinkedBinding<Fib33>
+) : LinkedBinding<Fib35>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib35(fib34Binding(), fib33Binding())
 }
 
-class Fib36Binding : Binding<Fib36>() {
-    private lateinit var fib35Binding: Binding<Fib35>
-    private lateinit var fib34Binding: Binding<Fib34>
-    override fun link(linker: Linker) {
-        fib35Binding = linker.get()
-        fib34Binding = linker.get()
-    }
+class UnlinkedFib36Binding : UnlinkedBinding<Fib36>() {
+    override fun link(linker: Linker) =
+        LinkedFib36Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib36(fib35Binding(), fib34Binding())
+class LinkedFib36Binding(
+    private val fib35Binding: LinkedBinding<Fib35>,
+    private val fib34Binding: LinkedBinding<Fib34>
+) : LinkedBinding<Fib36>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib36(fib35Binding(), fib34Binding())
 }
 
-class Fib37Binding : Binding<Fib37>() {
-    private lateinit var fib36Binding: Binding<Fib36>
-    private lateinit var fib35Binding: Binding<Fib35>
-    override fun link(linker: Linker) {
-        fib36Binding = linker.get()
-        fib35Binding = linker.get()
-    }
+class UnlinkedFib37Binding : UnlinkedBinding<Fib37>() {
+    override fun link(linker: Linker) =
+        LinkedFib37Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib37(fib36Binding(), fib35Binding())
+class LinkedFib37Binding(
+    private val fib36Binding: LinkedBinding<Fib36>,
+    private val fib35Binding: LinkedBinding<Fib35>
+) : LinkedBinding<Fib37>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib37(fib36Binding(), fib35Binding())
 }
 
-class Fib38Binding : Binding<Fib38>() {
-    private lateinit var fib37Binding: Binding<Fib37>
-    private lateinit var fib36Binding: Binding<Fib36>
-    override fun link(linker: Linker) {
-        fib37Binding = linker.get()
-        fib36Binding = linker.get()
-    }
+class UnlinkedFib38Binding : UnlinkedBinding<Fib38>() {
+    override fun link(linker: Linker) =
+        LinkedFib38Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib38(fib37Binding(), fib36Binding())
+class LinkedFib38Binding(
+    private val fib37Binding: LinkedBinding<Fib37>,
+    private val fib36Binding: LinkedBinding<Fib36>
+) : LinkedBinding<Fib38>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib38(fib37Binding(), fib36Binding())
 }
 
-class Fib39Binding : Binding<Fib39>() {
-    private lateinit var fib38Binding: Binding<Fib38>
-    private lateinit var fib37Binding: Binding<Fib37>
-    override fun link(linker: Linker) {
-        fib38Binding = linker.get()
-        fib37Binding = linker.get()
-    }
+class UnlinkedFib39Binding : UnlinkedBinding<Fib39>() {
+    override fun link(linker: Linker) =
+        LinkedFib39Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib39(fib38Binding(), fib37Binding())
+class LinkedFib39Binding(
+    private val fib38Binding: LinkedBinding<Fib38>,
+    private val fib37Binding: LinkedBinding<Fib37>
+) : LinkedBinding<Fib39>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib39(fib38Binding(), fib37Binding())
 }
 
-class Fib40Binding : Binding<Fib40>() {
-    private lateinit var fib39Binding: Binding<Fib39>
-    private lateinit var fib38Binding: Binding<Fib38>
-    override fun link(linker: Linker) {
-        fib39Binding = linker.get()
-        fib38Binding = linker.get()
-    }
+class UnlinkedFib40Binding : UnlinkedBinding<Fib40>() {
+    override fun link(linker: Linker) =
+        LinkedFib40Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib40(fib39Binding(), fib38Binding())
+class LinkedFib40Binding(
+    private val fib39Binding: LinkedBinding<Fib39>,
+    private val fib38Binding: LinkedBinding<Fib38>
+) : LinkedBinding<Fib40>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib40(fib39Binding(), fib38Binding())
 }
 
-class Fib41Binding : Binding<Fib41>() {
-    private lateinit var fib40Binding: Binding<Fib40>
-    private lateinit var fib39Binding: Binding<Fib39>
-    override fun link(linker: Linker) {
-        fib40Binding = linker.get()
-        fib39Binding = linker.get()
-    }
+class UnlinkedFib41Binding : UnlinkedBinding<Fib41>() {
+    override fun link(linker: Linker) =
+        LinkedFib41Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib41(fib40Binding(), fib39Binding())
+class LinkedFib41Binding(
+    private val fib40Binding: LinkedBinding<Fib40>,
+    private val fib39Binding: LinkedBinding<Fib39>
+) : LinkedBinding<Fib41>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib41(fib40Binding(), fib39Binding())
 }
 
-class Fib42Binding : Binding<Fib42>() {
-    private lateinit var fib41Binding: Binding<Fib41>
-    private lateinit var fib40Binding: Binding<Fib40>
-    override fun link(linker: Linker) {
-        fib41Binding = linker.get()
-        fib40Binding = linker.get()
-    }
+class UnlinkedFib42Binding : UnlinkedBinding<Fib42>() {
+    override fun link(linker: Linker) =
+        LinkedFib42Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib42(fib41Binding(), fib40Binding())
+class LinkedFib42Binding(
+    private val fib41Binding: LinkedBinding<Fib41>,
+    private val fib40Binding: LinkedBinding<Fib40>
+) : LinkedBinding<Fib42>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib42(fib41Binding(), fib40Binding())
 }
 
-class Fib43Binding : Binding<Fib43>() {
-    private lateinit var fib42Binding: Binding<Fib42>
-    private lateinit var fib41Binding: Binding<Fib41>
-    override fun link(linker: Linker) {
-        fib42Binding = linker.get()
-        fib41Binding = linker.get()
-    }
+class UnlinkedFib43Binding : UnlinkedBinding<Fib43>() {
+    override fun link(linker: Linker) =
+        LinkedFib43Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib43(fib42Binding(), fib41Binding())
+class LinkedFib43Binding(
+    private val fib42Binding: LinkedBinding<Fib42>,
+    private val fib41Binding: LinkedBinding<Fib41>
+) : LinkedBinding<Fib43>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib43(fib42Binding(), fib41Binding())
 }
 
-class Fib44Binding : Binding<Fib44>() {
-    private lateinit var fib43Binding: Binding<Fib43>
-    private lateinit var fib42Binding: Binding<Fib42>
-    override fun link(linker: Linker) {
-        fib43Binding = linker.get()
-        fib42Binding = linker.get()
-    }
+class UnlinkedFib44Binding : UnlinkedBinding<Fib44>() {
+    override fun link(linker: Linker) =
+        LinkedFib44Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib44(fib43Binding(), fib42Binding())
+class LinkedFib44Binding(
+    private val fib43Binding: LinkedBinding<Fib43>,
+    private val fib42Binding: LinkedBinding<Fib42>
+) : LinkedBinding<Fib44>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib44(fib43Binding(), fib42Binding())
 }
 
-class Fib45Binding : Binding<Fib45>() {
-    private lateinit var fib44Binding: Binding<Fib44>
-    private lateinit var fib43Binding: Binding<Fib43>
-    override fun link(linker: Linker) {
-        fib44Binding = linker.get()
-        fib43Binding = linker.get()
-    }
+class UnlinkedFib45Binding : UnlinkedBinding<Fib45>() {
+    override fun link(linker: Linker) =
+        LinkedFib45Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib45(fib44Binding(), fib43Binding())
+class LinkedFib45Binding(
+    private val fib44Binding: LinkedBinding<Fib44>,
+    private val fib43Binding: LinkedBinding<Fib43>
+) : LinkedBinding<Fib45>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib45(fib44Binding(), fib43Binding())
 }
 
-class Fib46Binding : Binding<Fib46>() {
-    private lateinit var fib45Binding: Binding<Fib45>
-    private lateinit var fib44Binding: Binding<Fib44>
-    override fun link(linker: Linker) {
-        fib45Binding = linker.get()
-        fib44Binding = linker.get()
-    }
+class UnlinkedFib46Binding : UnlinkedBinding<Fib46>() {
+    override fun link(linker: Linker) =
+        LinkedFib46Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib46(fib45Binding(), fib44Binding())
+class LinkedFib46Binding(
+    private val fib45Binding: LinkedBinding<Fib45>,
+    private val fib44Binding: LinkedBinding<Fib44>
+) : LinkedBinding<Fib46>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib46(fib45Binding(), fib44Binding())
 }
 
-class Fib47Binding : Binding<Fib47>() {
-    private lateinit var fib46Binding: Binding<Fib46>
-    private lateinit var fib45Binding: Binding<Fib45>
-    override fun link(linker: Linker) {
-        fib46Binding = linker.get()
-        fib45Binding = linker.get()
-    }
+class UnlinkedFib47Binding : UnlinkedBinding<Fib47>() {
+    override fun link(linker: Linker) =
+        LinkedFib47Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib47(fib46Binding(), fib45Binding())
+class LinkedFib47Binding(
+    private val fib46Binding: LinkedBinding<Fib46>,
+    private val fib45Binding: LinkedBinding<Fib45>
+) : LinkedBinding<Fib47>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib47(fib46Binding(), fib45Binding())
 }
 
-class Fib48Binding : Binding<Fib48>() {
-    private lateinit var fib47Binding: Binding<Fib47>
-    private lateinit var fib46Binding: Binding<Fib46>
-    override fun link(linker: Linker) {
-        fib47Binding = linker.get()
-        fib46Binding = linker.get()
-    }
+class UnlinkedFib48Binding : UnlinkedBinding<Fib48>() {
+    override fun link(linker: Linker) =
+        LinkedFib48Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib48(fib47Binding(), fib46Binding())
+class LinkedFib48Binding(
+    private val fib47Binding: LinkedBinding<Fib47>,
+    private val fib46Binding: LinkedBinding<Fib46>
+) : LinkedBinding<Fib48>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib48(fib47Binding(), fib46Binding())
 }
 
-class Fib49Binding : Binding<Fib49>() {
-    private lateinit var fib48Binding: Binding<Fib48>
-    private lateinit var fib47Binding: Binding<Fib47>
-    override fun link(linker: Linker) {
-        fib48Binding = linker.get()
-        fib47Binding = linker.get()
-    }
+class UnlinkedFib49Binding : UnlinkedBinding<Fib49>() {
+    override fun link(linker: Linker) =
+        LinkedFib49Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib49(fib48Binding(), fib47Binding())
+class LinkedFib49Binding(
+    private val fib48Binding: LinkedBinding<Fib48>,
+    private val fib47Binding: LinkedBinding<Fib47>
+) : LinkedBinding<Fib49>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib49(fib48Binding(), fib47Binding())
 }
 
-class Fib50Binding : Binding<Fib50>() {
-    private lateinit var fib49Binding: Binding<Fib49>
-    private lateinit var fib48Binding: Binding<Fib48>
-    override fun link(linker: Linker) {
-        fib49Binding = linker.get()
-        fib48Binding = linker.get()
-    }
+class UnlinkedFib50Binding : UnlinkedBinding<Fib50>() {
+    override fun link(linker: Linker) =
+        LinkedFib50Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib50(fib49Binding(), fib48Binding())
+class LinkedFib50Binding(
+    private val fib49Binding: LinkedBinding<Fib49>,
+    private val fib48Binding: LinkedBinding<Fib48>
+) : LinkedBinding<Fib50>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib50(fib49Binding(), fib48Binding())
 }
 
-class Fib51Binding : Binding<Fib51>() {
-    private lateinit var fib50Binding: Binding<Fib50>
-    private lateinit var fib49Binding: Binding<Fib49>
-    override fun link(linker: Linker) {
-        fib50Binding = linker.get()
-        fib49Binding = linker.get()
-    }
+class UnlinkedFib51Binding : UnlinkedBinding<Fib51>() {
+    override fun link(linker: Linker) =
+        LinkedFib51Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib51(fib50Binding(), fib49Binding())
+class LinkedFib51Binding(
+    private val fib50Binding: LinkedBinding<Fib50>,
+    private val fib49Binding: LinkedBinding<Fib49>
+) : LinkedBinding<Fib51>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib51(fib50Binding(), fib49Binding())
 }
 
-class Fib52Binding : Binding<Fib52>() {
-    private lateinit var fib51Binding: Binding<Fib51>
-    private lateinit var fib50Binding: Binding<Fib50>
-    override fun link(linker: Linker) {
-        fib51Binding = linker.get()
-        fib50Binding = linker.get()
-    }
+class UnlinkedFib52Binding : UnlinkedBinding<Fib52>() {
+    override fun link(linker: Linker) =
+        LinkedFib52Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib52(fib51Binding(), fib50Binding())
+class LinkedFib52Binding(
+    private val fib51Binding: LinkedBinding<Fib51>,
+    private val fib50Binding: LinkedBinding<Fib50>
+) : LinkedBinding<Fib52>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib52(fib51Binding(), fib50Binding())
 }
 
-class Fib53Binding : Binding<Fib53>() {
-    private lateinit var fib52Binding: Binding<Fib52>
-    private lateinit var fib51Binding: Binding<Fib51>
-    override fun link(linker: Linker) {
-        fib52Binding = linker.get()
-        fib51Binding = linker.get()
-    }
+class UnlinkedFib53Binding : UnlinkedBinding<Fib53>() {
+    override fun link(linker: Linker) =
+        LinkedFib53Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib53(fib52Binding(), fib51Binding())
+class LinkedFib53Binding(
+    private val fib52Binding: LinkedBinding<Fib52>,
+    private val fib51Binding: LinkedBinding<Fib51>
+) : LinkedBinding<Fib53>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib53(fib52Binding(), fib51Binding())
 }
 
-class Fib54Binding : Binding<Fib54>() {
-    private lateinit var fib53Binding: Binding<Fib53>
-    private lateinit var fib52Binding: Binding<Fib52>
-    override fun link(linker: Linker) {
-        fib53Binding = linker.get()
-        fib52Binding = linker.get()
-    }
+class UnlinkedFib54Binding : UnlinkedBinding<Fib54>() {
+    override fun link(linker: Linker) =
+        LinkedFib54Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib54(fib53Binding(), fib52Binding())
+class LinkedFib54Binding(
+    private val fib53Binding: LinkedBinding<Fib53>,
+    private val fib52Binding: LinkedBinding<Fib52>
+) : LinkedBinding<Fib54>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib54(fib53Binding(), fib52Binding())
 }
 
-class Fib55Binding : Binding<Fib55>() {
-    private lateinit var fib54Binding: Binding<Fib54>
-    private lateinit var fib53Binding: Binding<Fib53>
-    override fun link(linker: Linker) {
-        fib54Binding = linker.get()
-        fib53Binding = linker.get()
-    }
+class UnlinkedFib55Binding : UnlinkedBinding<Fib55>() {
+    override fun link(linker: Linker) =
+        LinkedFib55Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib55(fib54Binding(), fib53Binding())
+class LinkedFib55Binding(
+    private val fib54Binding: LinkedBinding<Fib54>,
+    private val fib53Binding: LinkedBinding<Fib53>
+) : LinkedBinding<Fib55>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib55(fib54Binding(), fib53Binding())
 }
 
-class Fib56Binding : Binding<Fib56>() {
-    private lateinit var fib55Binding: Binding<Fib55>
-    private lateinit var fib54Binding: Binding<Fib54>
-    override fun link(linker: Linker) {
-        fib55Binding = linker.get()
-        fib54Binding = linker.get()
-    }
+class UnlinkedFib56Binding : UnlinkedBinding<Fib56>() {
+    override fun link(linker: Linker) =
+        LinkedFib56Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib56(fib55Binding(), fib54Binding())
+class LinkedFib56Binding(
+    private val fib55Binding: LinkedBinding<Fib55>,
+    private val fib54Binding: LinkedBinding<Fib54>
+) : LinkedBinding<Fib56>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib56(fib55Binding(), fib54Binding())
 }
 
-class Fib57Binding : Binding<Fib57>() {
-    private lateinit var fib56Binding: Binding<Fib56>
-    private lateinit var fib55Binding: Binding<Fib55>
-    override fun link(linker: Linker) {
-        fib56Binding = linker.get()
-        fib55Binding = linker.get()
-    }
+class UnlinkedFib57Binding : UnlinkedBinding<Fib57>() {
+    override fun link(linker: Linker) =
+        LinkedFib57Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib57(fib56Binding(), fib55Binding())
+class LinkedFib57Binding(
+    private val fib56Binding: LinkedBinding<Fib56>,
+    private val fib55Binding: LinkedBinding<Fib55>
+) : LinkedBinding<Fib57>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib57(fib56Binding(), fib55Binding())
 }
 
-class Fib58Binding : Binding<Fib58>() {
-    private lateinit var fib57Binding: Binding<Fib57>
-    private lateinit var fib56Binding: Binding<Fib56>
-    override fun link(linker: Linker) {
-        fib57Binding = linker.get()
-        fib56Binding = linker.get()
-    }
+class UnlinkedFib58Binding : UnlinkedBinding<Fib58>() {
+    override fun link(linker: Linker) =
+        LinkedFib58Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib58(fib57Binding(), fib56Binding())
+class LinkedFib58Binding(
+    private val fib57Binding: LinkedBinding<Fib57>,
+    private val fib56Binding: LinkedBinding<Fib56>
+) : LinkedBinding<Fib58>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib58(fib57Binding(), fib56Binding())
 }
 
-class Fib59Binding : Binding<Fib59>() {
-    private lateinit var fib58Binding: Binding<Fib58>
-    private lateinit var fib57Binding: Binding<Fib57>
-    override fun link(linker: Linker) {
-        fib58Binding = linker.get()
-        fib57Binding = linker.get()
-    }
+class UnlinkedFib59Binding : UnlinkedBinding<Fib59>() {
+    override fun link(linker: Linker) =
+        LinkedFib59Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib59(fib58Binding(), fib57Binding())
+class LinkedFib59Binding(
+    private val fib58Binding: LinkedBinding<Fib58>,
+    private val fib57Binding: LinkedBinding<Fib57>
+) : LinkedBinding<Fib59>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib59(fib58Binding(), fib57Binding())
 }
 
-class Fib60Binding : Binding<Fib60>() {
-    private lateinit var fib59Binding: Binding<Fib59>
-    private lateinit var fib58Binding: Binding<Fib58>
-    override fun link(linker: Linker) {
-        fib59Binding = linker.get()
-        fib58Binding = linker.get()
-    }
+class UnlinkedFib60Binding : UnlinkedBinding<Fib60>() {
+    override fun link(linker: Linker) =
+        LinkedFib60Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib60(fib59Binding(), fib58Binding())
+class LinkedFib60Binding(
+    private val fib59Binding: LinkedBinding<Fib59>,
+    private val fib58Binding: LinkedBinding<Fib58>
+) : LinkedBinding<Fib60>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib60(fib59Binding(), fib58Binding())
 }
 
-class Fib61Binding : Binding<Fib61>() {
-    private lateinit var fib60Binding: Binding<Fib60>
-    private lateinit var fib59Binding: Binding<Fib59>
-    override fun link(linker: Linker) {
-        fib60Binding = linker.get()
-        fib59Binding = linker.get()
-    }
+class UnlinkedFib61Binding : UnlinkedBinding<Fib61>() {
+    override fun link(linker: Linker) =
+        LinkedFib61Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib61(fib60Binding(), fib59Binding())
+class LinkedFib61Binding(
+    private val fib60Binding: LinkedBinding<Fib60>,
+    private val fib59Binding: LinkedBinding<Fib59>
+) : LinkedBinding<Fib61>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib61(fib60Binding(), fib59Binding())
 }
 
-class Fib62Binding : Binding<Fib62>() {
-    private lateinit var fib61Binding: Binding<Fib61>
-    private lateinit var fib60Binding: Binding<Fib60>
-    override fun link(linker: Linker) {
-        fib61Binding = linker.get()
-        fib60Binding = linker.get()
-    }
+class UnlinkedFib62Binding : UnlinkedBinding<Fib62>() {
+    override fun link(linker: Linker) =
+        LinkedFib62Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib62(fib61Binding(), fib60Binding())
+class LinkedFib62Binding(
+    private val fib61Binding: LinkedBinding<Fib61>,
+    private val fib60Binding: LinkedBinding<Fib60>
+) : LinkedBinding<Fib62>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib62(fib61Binding(), fib60Binding())
 }
 
-class Fib63Binding : Binding<Fib63>() {
-    private lateinit var fib62Binding: Binding<Fib62>
-    private lateinit var fib61Binding: Binding<Fib61>
-    override fun link(linker: Linker) {
-        fib62Binding = linker.get()
-        fib61Binding = linker.get()
-    }
+class UnlinkedFib63Binding : UnlinkedBinding<Fib63>() {
+    override fun link(linker: Linker) =
+        LinkedFib63Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib63(fib62Binding(), fib61Binding())
+class LinkedFib63Binding(
+    private val fib62Binding: LinkedBinding<Fib62>,
+    private val fib61Binding: LinkedBinding<Fib61>
+) : LinkedBinding<Fib63>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib63(fib62Binding(), fib61Binding())
 }
 
-class Fib64Binding : Binding<Fib64>() {
-    private lateinit var fib63Binding: Binding<Fib63>
-    private lateinit var fib62Binding: Binding<Fib62>
-    override fun link(linker: Linker) {
-        fib63Binding = linker.get()
-        fib62Binding = linker.get()
-    }
+class UnlinkedFib64Binding : UnlinkedBinding<Fib64>() {
+    override fun link(linker: Linker) =
+        LinkedFib64Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib64(fib63Binding(), fib62Binding())
+class LinkedFib64Binding(
+    private val fib63Binding: LinkedBinding<Fib63>,
+    private val fib62Binding: LinkedBinding<Fib62>
+) : LinkedBinding<Fib64>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib64(fib63Binding(), fib62Binding())
 }
 
-class Fib65Binding : Binding<Fib65>() {
-    private lateinit var fib64Binding: Binding<Fib64>
-    private lateinit var fib63Binding: Binding<Fib63>
-    override fun link(linker: Linker) {
-        fib64Binding = linker.get()
-        fib63Binding = linker.get()
-    }
+class UnlinkedFib65Binding : UnlinkedBinding<Fib65>() {
+    override fun link(linker: Linker) =
+        LinkedFib65Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib65(fib64Binding(), fib63Binding())
+class LinkedFib65Binding(
+    private val fib64Binding: LinkedBinding<Fib64>,
+    private val fib63Binding: LinkedBinding<Fib63>
+) : LinkedBinding<Fib65>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib65(fib64Binding(), fib63Binding())
 }
 
-class Fib66Binding : Binding<Fib66>() {
-    private lateinit var fib65Binding: Binding<Fib65>
-    private lateinit var fib64Binding: Binding<Fib64>
-    override fun link(linker: Linker) {
-        fib65Binding = linker.get()
-        fib64Binding = linker.get()
-    }
+class UnlinkedFib66Binding : UnlinkedBinding<Fib66>() {
+    override fun link(linker: Linker) =
+        LinkedFib66Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib66(fib65Binding(), fib64Binding())
+class LinkedFib66Binding(
+    private val fib65Binding: LinkedBinding<Fib65>,
+    private val fib64Binding: LinkedBinding<Fib64>
+) : LinkedBinding<Fib66>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib66(fib65Binding(), fib64Binding())
 }
 
-class Fib67Binding : Binding<Fib67>() {
-    private lateinit var fib66Binding: Binding<Fib66>
-    private lateinit var fib65Binding: Binding<Fib65>
-    override fun link(linker: Linker) {
-        fib66Binding = linker.get()
-        fib65Binding = linker.get()
-    }
+class UnlinkedFib67Binding : UnlinkedBinding<Fib67>() {
+    override fun link(linker: Linker) =
+        LinkedFib67Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib67(fib66Binding(), fib65Binding())
+class LinkedFib67Binding(
+    private val fib66Binding: LinkedBinding<Fib66>,
+    private val fib65Binding: LinkedBinding<Fib65>
+) : LinkedBinding<Fib67>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib67(fib66Binding(), fib65Binding())
 }
 
-class Fib68Binding : Binding<Fib68>() {
-    private lateinit var fib67Binding: Binding<Fib67>
-    private lateinit var fib66Binding: Binding<Fib66>
-    override fun link(linker: Linker) {
-        fib67Binding = linker.get()
-        fib66Binding = linker.get()
-    }
+class UnlinkedFib68Binding : UnlinkedBinding<Fib68>() {
+    override fun link(linker: Linker) =
+        LinkedFib68Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib68(fib67Binding(), fib66Binding())
+class LinkedFib68Binding(
+    private val fib67Binding: LinkedBinding<Fib67>,
+    private val fib66Binding: LinkedBinding<Fib66>
+) : LinkedBinding<Fib68>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib68(fib67Binding(), fib66Binding())
 }
 
-class Fib69Binding : Binding<Fib69>() {
-    private lateinit var fib68Binding: Binding<Fib68>
-    private lateinit var fib67Binding: Binding<Fib67>
-    override fun link(linker: Linker) {
-        fib68Binding = linker.get()
-        fib67Binding = linker.get()
-    }
+class UnlinkedFib69Binding : UnlinkedBinding<Fib69>() {
+    override fun link(linker: Linker) =
+        LinkedFib69Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib69(fib68Binding(), fib67Binding())
+class LinkedFib69Binding(
+    private val fib68Binding: LinkedBinding<Fib68>,
+    private val fib67Binding: LinkedBinding<Fib67>
+) : LinkedBinding<Fib69>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib69(fib68Binding(), fib67Binding())
 }
 
-class Fib70Binding : Binding<Fib70>() {
-    private lateinit var fib69Binding: Binding<Fib69>
-    private lateinit var fib68Binding: Binding<Fib68>
-    override fun link(linker: Linker) {
-        fib69Binding = linker.get()
-        fib68Binding = linker.get()
-    }
+class UnlinkedFib70Binding : UnlinkedBinding<Fib70>() {
+    override fun link(linker: Linker) =
+        LinkedFib70Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib70(fib69Binding(), fib68Binding())
+class LinkedFib70Binding(
+    private val fib69Binding: LinkedBinding<Fib69>,
+    private val fib68Binding: LinkedBinding<Fib68>
+) : LinkedBinding<Fib70>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib70(fib69Binding(), fib68Binding())
 }
 
-class Fib71Binding : Binding<Fib71>() {
-    private lateinit var fib70Binding: Binding<Fib70>
-    private lateinit var fib69Binding: Binding<Fib69>
-    override fun link(linker: Linker) {
-        fib70Binding = linker.get()
-        fib69Binding = linker.get()
-    }
+class UnlinkedFib71Binding : UnlinkedBinding<Fib71>() {
+    override fun link(linker: Linker) =
+        LinkedFib71Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib71(fib70Binding(), fib69Binding())
+class LinkedFib71Binding(
+    private val fib70Binding: LinkedBinding<Fib70>,
+    private val fib69Binding: LinkedBinding<Fib69>
+) : LinkedBinding<Fib71>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib71(fib70Binding(), fib69Binding())
 }
 
-class Fib72Binding : Binding<Fib72>() {
-    private lateinit var fib71Binding: Binding<Fib71>
-    private lateinit var fib70Binding: Binding<Fib70>
-    override fun link(linker: Linker) {
-        fib71Binding = linker.get()
-        fib70Binding = linker.get()
-    }
+class UnlinkedFib72Binding : UnlinkedBinding<Fib72>() {
+    override fun link(linker: Linker) =
+        LinkedFib72Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib72(fib71Binding(), fib70Binding())
+class LinkedFib72Binding(
+    private val fib71Binding: LinkedBinding<Fib71>,
+    private val fib70Binding: LinkedBinding<Fib70>
+) : LinkedBinding<Fib72>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib72(fib71Binding(), fib70Binding())
 }
 
-class Fib73Binding : Binding<Fib73>() {
-    private lateinit var fib72Binding: Binding<Fib72>
-    private lateinit var fib71Binding: Binding<Fib71>
-    override fun link(linker: Linker) {
-        fib72Binding = linker.get()
-        fib71Binding = linker.get()
-    }
+class UnlinkedFib73Binding : UnlinkedBinding<Fib73>() {
+    override fun link(linker: Linker) =
+        LinkedFib73Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib73(fib72Binding(), fib71Binding())
+class LinkedFib73Binding(
+    private val fib72Binding: LinkedBinding<Fib72>,
+    private val fib71Binding: LinkedBinding<Fib71>
+) : LinkedBinding<Fib73>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib73(fib72Binding(), fib71Binding())
 }
 
-class Fib74Binding : Binding<Fib74>() {
-    private lateinit var fib73Binding: Binding<Fib73>
-    private lateinit var fib72Binding: Binding<Fib72>
-    override fun link(linker: Linker) {
-        fib73Binding = linker.get()
-        fib72Binding = linker.get()
-    }
+class UnlinkedFib74Binding : UnlinkedBinding<Fib74>() {
+    override fun link(linker: Linker) =
+        LinkedFib74Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib74(fib73Binding(), fib72Binding())
+class LinkedFib74Binding(
+    private val fib73Binding: LinkedBinding<Fib73>,
+    private val fib72Binding: LinkedBinding<Fib72>
+) : LinkedBinding<Fib74>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib74(fib73Binding(), fib72Binding())
 }
 
-class Fib75Binding : Binding<Fib75>() {
-    private lateinit var fib74Binding: Binding<Fib74>
-    private lateinit var fib73Binding: Binding<Fib73>
-    override fun link(linker: Linker) {
-        fib74Binding = linker.get()
-        fib73Binding = linker.get()
-    }
+class UnlinkedFib75Binding : UnlinkedBinding<Fib75>() {
+    override fun link(linker: Linker) =
+        LinkedFib75Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib75(fib74Binding(), fib73Binding())
+class LinkedFib75Binding(
+    private val fib74Binding: LinkedBinding<Fib74>,
+    private val fib73Binding: LinkedBinding<Fib73>
+) : LinkedBinding<Fib75>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib75(fib74Binding(), fib73Binding())
 }
 
-class Fib76Binding : Binding<Fib76>() {
-    private lateinit var fib75Binding: Binding<Fib75>
-    private lateinit var fib74Binding: Binding<Fib74>
-    override fun link(linker: Linker) {
-        fib75Binding = linker.get()
-        fib74Binding = linker.get()
-    }
+class UnlinkedFib76Binding : UnlinkedBinding<Fib76>() {
+    override fun link(linker: Linker) =
+        LinkedFib76Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib76(fib75Binding(), fib74Binding())
+class LinkedFib76Binding(
+    private val fib75Binding: LinkedBinding<Fib75>,
+    private val fib74Binding: LinkedBinding<Fib74>
+) : LinkedBinding<Fib76>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib76(fib75Binding(), fib74Binding())
 }
 
-class Fib77Binding : Binding<Fib77>() {
-    private lateinit var fib76Binding: Binding<Fib76>
-    private lateinit var fib75Binding: Binding<Fib75>
-    override fun link(linker: Linker) {
-        fib76Binding = linker.get()
-        fib75Binding = linker.get()
-    }
+class UnlinkedFib77Binding : UnlinkedBinding<Fib77>() {
+    override fun link(linker: Linker) =
+        LinkedFib77Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib77(fib76Binding(), fib75Binding())
+class LinkedFib77Binding(
+    private val fib76Binding: LinkedBinding<Fib76>,
+    private val fib75Binding: LinkedBinding<Fib75>
+) : LinkedBinding<Fib77>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib77(fib76Binding(), fib75Binding())
 }
 
-class Fib78Binding : Binding<Fib78>() {
-    private lateinit var fib77Binding: Binding<Fib77>
-    private lateinit var fib76Binding: Binding<Fib76>
-    override fun link(linker: Linker) {
-        fib77Binding = linker.get()
-        fib76Binding = linker.get()
-    }
+class UnlinkedFib78Binding : UnlinkedBinding<Fib78>() {
+    override fun link(linker: Linker) =
+        LinkedFib78Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib78(fib77Binding(), fib76Binding())
+class LinkedFib78Binding(
+    private val fib77Binding: LinkedBinding<Fib77>,
+    private val fib76Binding: LinkedBinding<Fib76>
+) : LinkedBinding<Fib78>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib78(fib77Binding(), fib76Binding())
 }
 
-class Fib79Binding : Binding<Fib79>() {
-    private lateinit var fib78Binding: Binding<Fib78>
-    private lateinit var fib77Binding: Binding<Fib77>
-    override fun link(linker: Linker) {
-        fib78Binding = linker.get()
-        fib77Binding = linker.get()
-    }
+class UnlinkedFib79Binding : UnlinkedBinding<Fib79>() {
+    override fun link(linker: Linker) =
+        LinkedFib79Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib79(fib78Binding(), fib77Binding())
+class LinkedFib79Binding(
+    private val fib78Binding: LinkedBinding<Fib78>,
+    private val fib77Binding: LinkedBinding<Fib77>
+) : LinkedBinding<Fib79>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib79(fib78Binding(), fib77Binding())
 }
 
-class Fib80Binding : Binding<Fib80>() {
-    private lateinit var fib79Binding: Binding<Fib79>
-    private lateinit var fib78Binding: Binding<Fib78>
-    override fun link(linker: Linker) {
-        fib79Binding = linker.get()
-        fib78Binding = linker.get()
-    }
+class UnlinkedFib80Binding : UnlinkedBinding<Fib80>() {
+    override fun link(linker: Linker) =
+        LinkedFib80Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib80(fib79Binding(), fib78Binding())
+class LinkedFib80Binding(
+    private val fib79Binding: LinkedBinding<Fib79>,
+    private val fib78Binding: LinkedBinding<Fib78>
+) : LinkedBinding<Fib80>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib80(fib79Binding(), fib78Binding())
 }
 
-class Fib81Binding : Binding<Fib81>() {
-    private lateinit var fib80Binding: Binding<Fib80>
-    private lateinit var fib79Binding: Binding<Fib79>
-    override fun link(linker: Linker) {
-        fib80Binding = linker.get()
-        fib79Binding = linker.get()
-    }
+class UnlinkedFib81Binding : UnlinkedBinding<Fib81>() {
+    override fun link(linker: Linker) =
+        LinkedFib81Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib81(fib80Binding(), fib79Binding())
+class LinkedFib81Binding(
+    private val fib80Binding: LinkedBinding<Fib80>,
+    private val fib79Binding: LinkedBinding<Fib79>
+) : LinkedBinding<Fib81>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib81(fib80Binding(), fib79Binding())
 }
 
-class Fib82Binding : Binding<Fib82>() {
-    private lateinit var fib81Binding: Binding<Fib81>
-    private lateinit var fib80Binding: Binding<Fib80>
-    override fun link(linker: Linker) {
-        fib81Binding = linker.get()
-        fib80Binding = linker.get()
-    }
+class UnlinkedFib82Binding : UnlinkedBinding<Fib82>() {
+    override fun link(linker: Linker) =
+        LinkedFib82Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib82(fib81Binding(), fib80Binding())
+class LinkedFib82Binding(
+    private val fib81Binding: LinkedBinding<Fib81>,
+    private val fib80Binding: LinkedBinding<Fib80>
+) : LinkedBinding<Fib82>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib82(fib81Binding(), fib80Binding())
 }
 
-class Fib83Binding : Binding<Fib83>() {
-    private lateinit var fib82Binding: Binding<Fib82>
-    private lateinit var fib81Binding: Binding<Fib81>
-    override fun link(linker: Linker) {
-        fib82Binding = linker.get()
-        fib81Binding = linker.get()
-    }
+class UnlinkedFib83Binding : UnlinkedBinding<Fib83>() {
+    override fun link(linker: Linker) =
+        LinkedFib83Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib83(fib82Binding(), fib81Binding())
+class LinkedFib83Binding(
+    private val fib82Binding: LinkedBinding<Fib82>,
+    private val fib81Binding: LinkedBinding<Fib81>
+) : LinkedBinding<Fib83>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib83(fib82Binding(), fib81Binding())
 }
 
-class Fib84Binding : Binding<Fib84>() {
-    private lateinit var fib83Binding: Binding<Fib83>
-    private lateinit var fib82Binding: Binding<Fib82>
-    override fun link(linker: Linker) {
-        fib83Binding = linker.get()
-        fib82Binding = linker.get()
-    }
+class UnlinkedFib84Binding : UnlinkedBinding<Fib84>() {
+    override fun link(linker: Linker) =
+        LinkedFib84Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib84(fib83Binding(), fib82Binding())
+class LinkedFib84Binding(
+    private val fib83Binding: LinkedBinding<Fib83>,
+    private val fib82Binding: LinkedBinding<Fib82>
+) : LinkedBinding<Fib84>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib84(fib83Binding(), fib82Binding())
 }
 
-class Fib85Binding : Binding<Fib85>() {
-    private lateinit var fib84Binding: Binding<Fib84>
-    private lateinit var fib83Binding: Binding<Fib83>
-    override fun link(linker: Linker) {
-        fib84Binding = linker.get()
-        fib83Binding = linker.get()
-    }
+class UnlinkedFib85Binding : UnlinkedBinding<Fib85>() {
+    override fun link(linker: Linker) =
+        LinkedFib85Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib85(fib84Binding(), fib83Binding())
+class LinkedFib85Binding(
+    private val fib84Binding: LinkedBinding<Fib84>,
+    private val fib83Binding: LinkedBinding<Fib83>
+) : LinkedBinding<Fib85>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib85(fib84Binding(), fib83Binding())
 }
 
-class Fib86Binding : Binding<Fib86>() {
-    private lateinit var fib85Binding: Binding<Fib85>
-    private lateinit var fib84Binding: Binding<Fib84>
-    override fun link(linker: Linker) {
-        fib85Binding = linker.get()
-        fib84Binding = linker.get()
-    }
+class UnlinkedFib86Binding : UnlinkedBinding<Fib86>() {
+    override fun link(linker: Linker) =
+        LinkedFib86Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib86(fib85Binding(), fib84Binding())
+class LinkedFib86Binding(
+    private val fib85Binding: LinkedBinding<Fib85>,
+    private val fib84Binding: LinkedBinding<Fib84>
+) : LinkedBinding<Fib86>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib86(fib85Binding(), fib84Binding())
 }
 
-class Fib87Binding : Binding<Fib87>() {
-    private lateinit var fib86Binding: Binding<Fib86>
-    private lateinit var fib85Binding: Binding<Fib85>
-    override fun link(linker: Linker) {
-        fib86Binding = linker.get()
-        fib85Binding = linker.get()
-    }
+class UnlinkedFib87Binding : UnlinkedBinding<Fib87>() {
+    override fun link(linker: Linker) =
+        LinkedFib87Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib87(fib86Binding(), fib85Binding())
+class LinkedFib87Binding(
+    private val fib86Binding: LinkedBinding<Fib86>,
+    private val fib85Binding: LinkedBinding<Fib85>
+) : LinkedBinding<Fib87>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib87(fib86Binding(), fib85Binding())
 }
 
-class Fib88Binding : Binding<Fib88>() {
-    private lateinit var fib87Binding: Binding<Fib87>
-    private lateinit var fib86Binding: Binding<Fib86>
-    override fun link(linker: Linker) {
-        fib87Binding = linker.get()
-        fib86Binding = linker.get()
-    }
+class UnlinkedFib88Binding : UnlinkedBinding<Fib88>() {
+    override fun link(linker: Linker) =
+        LinkedFib88Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib88(fib87Binding(), fib86Binding())
+class LinkedFib88Binding(
+    private val fib87Binding: LinkedBinding<Fib87>,
+    private val fib86Binding: LinkedBinding<Fib86>
+) : LinkedBinding<Fib88>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib88(fib87Binding(), fib86Binding())
 }
 
-class Fib89Binding : Binding<Fib89>() {
-    private lateinit var fib88Binding: Binding<Fib88>
-    private lateinit var fib87Binding: Binding<Fib87>
-    override fun link(linker: Linker) {
-        fib88Binding = linker.get()
-        fib87Binding = linker.get()
-    }
+class UnlinkedFib89Binding : UnlinkedBinding<Fib89>() {
+    override fun link(linker: Linker) =
+        LinkedFib89Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib89(fib88Binding(), fib87Binding())
+class LinkedFib89Binding(
+    private val fib88Binding: LinkedBinding<Fib88>,
+    private val fib87Binding: LinkedBinding<Fib87>
+) : LinkedBinding<Fib89>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib89(fib88Binding(), fib87Binding())
 }
 
-class Fib90Binding : Binding<Fib90>() {
-    private lateinit var fib89Binding: Binding<Fib89>
-    private lateinit var fib88Binding: Binding<Fib88>
-    override fun link(linker: Linker) {
-        fib89Binding = linker.get()
-        fib88Binding = linker.get()
-    }
+class UnlinkedFib90Binding : UnlinkedBinding<Fib90>() {
+    override fun link(linker: Linker) =
+        LinkedFib90Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib90(fib89Binding(), fib88Binding())
+class LinkedFib90Binding(
+    private val fib89Binding: LinkedBinding<Fib89>,
+    private val fib88Binding: LinkedBinding<Fib88>
+) : LinkedBinding<Fib90>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib90(fib89Binding(), fib88Binding())
 }
 
-class Fib91Binding : Binding<Fib91>() {
-    private lateinit var fib90Binding: Binding<Fib90>
-    private lateinit var fib89Binding: Binding<Fib89>
-    override fun link(linker: Linker) {
-        fib90Binding = linker.get()
-        fib89Binding = linker.get()
-    }
+class UnlinkedFib91Binding : UnlinkedBinding<Fib91>() {
+    override fun link(linker: Linker) =
+        LinkedFib91Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib91(fib90Binding(), fib89Binding())
+class LinkedFib91Binding(
+    private val fib90Binding: LinkedBinding<Fib90>,
+    private val fib89Binding: LinkedBinding<Fib89>
+) : LinkedBinding<Fib91>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib91(fib90Binding(), fib89Binding())
 }
 
-class Fib92Binding : Binding<Fib92>() {
-    private lateinit var fib91Binding: Binding<Fib91>
-    private lateinit var fib90Binding: Binding<Fib90>
-    override fun link(linker: Linker) {
-        fib91Binding = linker.get()
-        fib90Binding = linker.get()
-    }
+class UnlinkedFib92Binding : UnlinkedBinding<Fib92>() {
+    override fun link(linker: Linker) =
+        LinkedFib92Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib92(fib91Binding(), fib90Binding())
+class LinkedFib92Binding(
+    private val fib91Binding: LinkedBinding<Fib91>,
+    private val fib90Binding: LinkedBinding<Fib90>
+) : LinkedBinding<Fib92>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib92(fib91Binding(), fib90Binding())
 }
 
-class Fib93Binding : Binding<Fib93>() {
-    private lateinit var fib92Binding: Binding<Fib92>
-    private lateinit var fib91Binding: Binding<Fib91>
-    override fun link(linker: Linker) {
-        fib92Binding = linker.get()
-        fib91Binding = linker.get()
-    }
+class UnlinkedFib93Binding : UnlinkedBinding<Fib93>() {
+    override fun link(linker: Linker) =
+        LinkedFib93Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib93(fib92Binding(), fib91Binding())
+class LinkedFib93Binding(
+    private val fib92Binding: LinkedBinding<Fib92>,
+    private val fib91Binding: LinkedBinding<Fib91>
+) : LinkedBinding<Fib93>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib93(fib92Binding(), fib91Binding())
 }
 
-class Fib94Binding : Binding<Fib94>() {
-    private lateinit var fib93Binding: Binding<Fib93>
-    private lateinit var fib92Binding: Binding<Fib92>
-    override fun link(linker: Linker) {
-        fib93Binding = linker.get()
-        fib92Binding = linker.get()
-    }
+class UnlinkedFib94Binding : UnlinkedBinding<Fib94>() {
+    override fun link(linker: Linker) =
+        LinkedFib94Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib94(fib93Binding(), fib92Binding())
+class LinkedFib94Binding(
+    private val fib93Binding: LinkedBinding<Fib93>,
+    private val fib92Binding: LinkedBinding<Fib92>
+) : LinkedBinding<Fib94>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib94(fib93Binding(), fib92Binding())
 }
 
-class Fib95Binding : Binding<Fib95>() {
-    private lateinit var fib94Binding: Binding<Fib94>
-    private lateinit var fib93Binding: Binding<Fib93>
-    override fun link(linker: Linker) {
-        fib94Binding = linker.get()
-        fib93Binding = linker.get()
-    }
+class UnlinkedFib95Binding : UnlinkedBinding<Fib95>() {
+    override fun link(linker: Linker) =
+        LinkedFib95Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib95(fib94Binding(), fib93Binding())
+class LinkedFib95Binding(
+    private val fib94Binding: LinkedBinding<Fib94>,
+    private val fib93Binding: LinkedBinding<Fib93>
+) : LinkedBinding<Fib95>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib95(fib94Binding(), fib93Binding())
 }
 
-class Fib96Binding : Binding<Fib96>() {
-    private lateinit var fib95Binding: Binding<Fib95>
-    private lateinit var fib94Binding: Binding<Fib94>
-    override fun link(linker: Linker) {
-        fib95Binding = linker.get()
-        fib94Binding = linker.get()
-    }
+class UnlinkedFib96Binding : UnlinkedBinding<Fib96>() {
+    override fun link(linker: Linker) =
+        LinkedFib96Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib96(fib95Binding(), fib94Binding())
+class LinkedFib96Binding(
+    private val fib95Binding: LinkedBinding<Fib95>,
+    private val fib94Binding: LinkedBinding<Fib94>
+) : LinkedBinding<Fib96>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib96(fib95Binding(), fib94Binding())
 }
 
-class Fib97Binding : Binding<Fib97>() {
-    private lateinit var fib96Binding: Binding<Fib96>
-    private lateinit var fib95Binding: Binding<Fib95>
-    override fun link(linker: Linker) {
-        fib96Binding = linker.get()
-        fib95Binding = linker.get()
-    }
+class UnlinkedFib97Binding : UnlinkedBinding<Fib97>() {
+    override fun link(linker: Linker) =
+        LinkedFib97Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib97(fib96Binding(), fib95Binding())
+class LinkedFib97Binding(
+    private val fib96Binding: LinkedBinding<Fib96>,
+    private val fib95Binding: LinkedBinding<Fib95>
+) : LinkedBinding<Fib97>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib97(fib96Binding(), fib95Binding())
 }
 
-class Fib98Binding : Binding<Fib98>() {
-    private lateinit var fib97Binding: Binding<Fib97>
-    private lateinit var fib96Binding: Binding<Fib96>
-    override fun link(linker: Linker) {
-        fib97Binding = linker.get()
-        fib96Binding = linker.get()
-    }
+class UnlinkedFib98Binding : UnlinkedBinding<Fib98>() {
+    override fun link(linker: Linker) =
+        LinkedFib98Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib98(fib97Binding(), fib96Binding())
+class LinkedFib98Binding(
+    private val fib97Binding: LinkedBinding<Fib97>,
+    private val fib96Binding: LinkedBinding<Fib96>
+) : LinkedBinding<Fib98>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib98(fib97Binding(), fib96Binding())
 }
 
-class Fib99Binding : Binding<Fib99>() {
-    private lateinit var fib98Binding: Binding<Fib98>
-    private lateinit var fib97Binding: Binding<Fib97>
-    override fun link(linker: Linker) {
-        fib98Binding = linker.get()
-        fib97Binding = linker.get()
-    }
+class UnlinkedFib99Binding : UnlinkedBinding<Fib99>() {
+    override fun link(linker: Linker) =
+        LinkedFib99Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib99(fib98Binding(), fib97Binding())
+class LinkedFib99Binding(
+    private val fib98Binding: LinkedBinding<Fib98>,
+    private val fib97Binding: LinkedBinding<Fib97>
+) : LinkedBinding<Fib99>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib99(fib98Binding(), fib97Binding())
 }
 
-class Fib100Binding : Binding<Fib100>() {
-    private lateinit var fib99Binding: Binding<Fib99>
-    private lateinit var fib98Binding: Binding<Fib98>
-    override fun link(linker: Linker) {
-        fib99Binding = linker.get()
-        fib98Binding = linker.get()
-    }
+class UnlinkedFib100Binding : UnlinkedBinding<Fib100>() {
+    override fun link(linker: Linker) =
+        LinkedFib100Binding(linker.get(), linker.get())
+}
 
-    override fun get(parameters: ParametersDefinition?) = Fib100(fib99Binding(), fib98Binding())
+class LinkedFib100Binding(
+    private val fib99Binding: LinkedBinding<Fib99>,
+    private val fib98Binding: LinkedBinding<Fib98>
+) : LinkedBinding<Fib100>() {
+    override fun get(parameters: ParametersDefinition?) =
+        Fib100(fib99Binding(), fib98Binding())
 }

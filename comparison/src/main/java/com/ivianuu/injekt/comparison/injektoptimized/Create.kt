@@ -17,29 +17,36 @@
 package com.ivianuu.injekt.comparison.injektoptimized
 
 fun main() {
-    println(createModule(100))
+    //  println(createFibBindings())
+    print(createModule(100))
 }
 
 fun createFibBindings(): String = buildString {
     (3..100).forEach {
-        append(binding(it))
+        append(unlinkedBinding(it))
+        append("\n")
+        append(linkedBinding(it))
         append("\n")
     }
 }
 
-private fun binding(n: Int): String {
+private fun linkedBinding(n: Int): String {
     val b1 = n - 1
     val b2 = n - 2
 
-    return "class Fib${n}Binding : Binding<Fib${n}>() {\n" +
-            "    private lateinit var fib${b1}Binding: Binding<Fib${b1}>\n" +
-            "    private lateinit var fib${b2}Binding: Binding<Fib${b2}>\n" +
-            "    override fun link(component: Component) {\n" +
-            "        fib${b1}Binding = component.get()\n" +
-            "        fib${b2}Binding = component.get()\n" +
-            "    }\n" +
-            "\n" +
-            "    override fun get(parameters: ParametersDefinition?) = Fib${n}(fib${b1}Binding(), fib${b2}Binding())\n" +
+    return "class LinkedFib${n}Binding(\n" +
+            "    private val fib${b1}Binding: LinkedBinding<Fib${b1}>,\n" +
+            "    private val fib${b2}Binding: LinkedBinding<Fib${b2}>\n" +
+            ") : LinkedBinding<Fib${n}>() {\n" +
+            "    override fun get(parameters: ParametersDefinition?) =\n" +
+            "        Fib${n}(fib${b1}Binding(), fib${b2}Binding())\n" +
+            "}"
+}
+
+private fun unlinkedBinding(n: Int): String {
+    return "class UnlinkedFib${n}Binding : UnlinkedBinding<Fib${n}>() {\n" +
+            "    override fun link(linker: Linker) =\n" +
+            "        LinkedFib${n}Binding(linker.get(), linker.get())\n" +
             "}"
 }
 
@@ -48,7 +55,7 @@ private fun createModule(n: Int): String {
         append("fun createModule() = module {")
         for (i in 1..n) {
             append("\n")
-            append("instance(Fib${i}Binding())")
+            append("instance(UnlinkedFib${i}Binding())")
         }
         append("\n}")
     }

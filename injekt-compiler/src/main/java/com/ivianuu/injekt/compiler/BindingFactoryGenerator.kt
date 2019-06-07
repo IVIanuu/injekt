@@ -18,8 +18,10 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingFactory
+import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.UnlinkedBinding
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -60,9 +62,9 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                         FunSpec.getterBuilder()
                             .apply {
                                 if (descriptor.scope != null) {
-                                    addCode("return %T::class", descriptor.scope)
+                                    addStatement("return %T::class", descriptor.scope)
                                 } else {
-                                    addCode("return null")
+                                    addStatement("return null")
                                 }
                             }
                             .build()
@@ -74,16 +76,61 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
             FunSpec.builder("create")
                 .addModifiers(KModifier.OVERRIDE)
                 .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                .addCode("return BindingImpl()")
+                .addStatement("return UnlinkedBindingImpl()")
                 .build()
         )
-        .addType(bindingImpl())
+        .addType(unlinkedBinding())
+        .addType(linkedBinding())
         .build()
 
-    private fun bindingImpl() = TypeSpec.classBuilder("BindingImpl")
+    private fun unlinkedBinding() = TypeSpec.classBuilder("UnlinkedBindingImpl")
         .addModifiers(KModifier.PRIVATE)
         .superclass(
-            Binding::class.asClassName().plusParameter(descriptor.target)
+            UnlinkedBinding::class.asClassName().plusParameter(descriptor.target)
+        )
+        .addFunction(
+            FunSpec.builder("link")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("linker", Linker::class.asClassName())
+                .returns(
+                    LinkedBinding::class.asTypeName().plusParameter(descriptor.target)
+                )
+                .addCode(
+                    CodeBlock.builder()
+                        .add("return LinkedBindingImpl(\n")
+                        .apply {
+                            add(
+                                descriptor.constructorParams
+                                    .filterIsInstance<ParamDescriptor.Dependency>()
+                                    .joinToString(separator = ", ") { "linker.get()" }
+                            )
+                        }
+                        .add(")")
+                        .add("\n")
+                        .build()
+                )
+                .build()
+        )
+        .build()
+
+    private fun linkedBinding() = TypeSpec.classBuilder("LinkedBindingImpl")
+        .addModifiers(KModifier.PRIVATE)
+        .superclass(
+            LinkedBinding::class.asClassName().plusParameter(descriptor.target)
+        )
+        .primaryConstructor(
+            FunSpec.constructorBuilder()
+                .apply {
+                    descriptor.constructorParams
+                        .filterIsInstance<ParamDescriptor.Dependency>()
+                        .forEach { param ->
+                            addParameter(
+                                param.paramName + "Binding",
+                                LinkedBinding::class.asTypeName().plusParameter(param.paramType)
+                            )
+                        }
+                }
+                .build()
         )
         .apply {
             descriptor.constructorParams
@@ -92,41 +139,13 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                     addProperty(
                         PropertySpec.builder(
                             param.paramName + "Binding",
-                            Binding::class.asTypeName().plusParameter(param.paramType)
+                            LinkedBinding::class.asTypeName().plusParameter(param.paramType),
+                            KModifier.PRIVATE
                         )
-                            .addModifiers(KModifier.PRIVATE, KModifier.LATEINIT)
-                            .mutable()
+                            .initializer(param.paramName + "Binding")
                             .build()
                     )
                 }
-        }
-        .apply {
-            if (descriptor.constructorParams.isNotEmpty()) {
-                addFunction(
-                    FunSpec.builder("link")
-                        .addModifiers(KModifier.OVERRIDE)
-                        .addParameter("linker", Linker::class)
-                        .addCode(
-                            CodeBlock.builder()
-                                .apply {
-                                    descriptor.constructorParams
-                                        .filterIsInstance<ParamDescriptor.Dependency>()
-                                        .forEach { param ->
-                                            if (param.qualifierName != null) {
-                                                addStatement(
-                                                    "${param.paramName}Binding = linker.get(%T)",
-                                                    param.qualifierName
-                                                )
-                                            } else {
-                                                addStatement("${param.paramName}Binding = linker.get()")
-                                            }
-                                        }
-                                }
-                                .build()
-                        )
-                        .build()
-                )
-            }
         }
         .addFunction(
             FunSpec.builder("get")

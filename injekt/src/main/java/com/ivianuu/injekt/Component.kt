@@ -31,7 +31,7 @@ class Component internal constructor(
 ) {
 
     private val linker = Linker(this)
-    private val attachedBindings = hashMapOf<Key, Binding<*>>()
+    private val linkedBindings = hashMapOf<Key, LinkedBinding<*>>()
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -42,20 +42,22 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T = getBinding<T>(keyOf(type, name)).get(parameters)
 
-    internal fun <T> getBinding(key: Key): Binding<T> =
+    internal fun <T> getBinding(key: Key): LinkedBinding<T> =
         findBinding(key, true)
             ?: error("Couldn't find a binding for $key")
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key, fullLookup: Boolean): Binding<T>? {
-        var binding = attachedBindings[key]
-        if (binding != null) return binding as Binding<T>
+    private fun <T> findBinding(key: Key, fullLookup: Boolean): LinkedBinding<T>? {
+        var binding: Binding<*>? = linkedBindings[key]
+        if (binding != null) return binding as LinkedBinding<T>
 
         binding = bindings[key]
         if (binding != null) {
-            binding.link(linker)
-            attachedBindings[key] = binding
-            return binding as Binding<T>
+            val override = binding.override
+            binding = binding.link(linker)
+            binding.override = override
+            linkedBindings[key] = binding
+            return binding as LinkedBinding<T>
         }
 
         for (dependency in dependencies) {
@@ -67,15 +69,13 @@ class Component internal constructor(
             when (key.type.raw) {
                 Provider::class -> {
                     val realKey = keyOf(key.type.parameters.first(), key.name)
-                    binding = ProviderBinding<T>(realKey)
-                    addBinding(key, binding)
-                    return binding as Binding<T>
+                    binding = UnlinkedProviderBinding<T>(realKey)
+                    return addBinding(key, binding) as LinkedBinding<T>
                 }
                 Lazy::class -> {
                     val realKey = keyOf(key.type.parameters.first(), key.name)
-                    binding = LazyBinding<T>(realKey)
-                    addBinding(key, binding)
-                    return binding as Binding<T>
+                    binding = UnlinkedLazyBinding<T>(realKey)
+                    return addBinding(key, binding) as LinkedBinding<T>
                 }
             }
         }
@@ -89,18 +89,18 @@ class Component internal constructor(
                 if (bindingFactory.scope != null) {
                     binding = binding.asScoped()
                 }
-                component.addBinding(key, binding)
-                return binding
+                return component.addBinding(key, binding)
             }
         }
 
         return null
     }
 
-    private fun addBinding(key: Key, binding: Binding<*>) {
+    private fun <T> addBinding(key: Key, binding: Binding<T>): LinkedBinding<T> {
         bindings[key] = binding
-        binding.link(linker)
-        attachedBindings[key] = binding
+        val linkedBinding = binding.link(linker)
+        linkedBindings[key] = linkedBinding
+        return linkedBinding
     }
 
     private fun findComponentForScope(scope: Any?): Component? {

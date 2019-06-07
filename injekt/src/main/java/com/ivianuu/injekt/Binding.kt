@@ -16,15 +16,17 @@
 
 package com.ivianuu.injekt
 
-abstract class Binding<T> : Provider<T> {
+sealed class Binding<T> {
 
     var override = false
 
-    /**
-     * Can be used to retrieve [Binding] dependencies via [Linker.get]
-     * For optimizing performance
-     */
-    open fun link(linker: Linker) {
-    }
+    abstract fun link(linker: Linker): LinkedBinding<T>
 
+}
+
+abstract class UnlinkedBinding<T> : Binding<T>()
+
+abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
+    final override fun link(linker: Linker): LinkedBinding<T> = this
+    final override fun invoke(parameters: ParametersDefinition?): T = super.invoke(parameters)
 }

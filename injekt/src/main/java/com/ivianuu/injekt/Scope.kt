@@ -19,17 +19,19 @@ package com.ivianuu.injekt
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
 
-fun <T> Binding<T>.asScoped(): Binding<T> {
-    return if (this is ScopedBinding) this
-    else ScopedBinding(this)
+fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
+    is LinkedScopedBinding, is UnlinkedScopedBinding -> this
+    is LinkedBinding -> LinkedScopedBinding(this)
+    else -> UnlinkedScopedBinding(this)
 }
 
-private class ScopedBinding<T>(private val binding: Binding<T>) : Binding<T>() {
-    private var _value: Any? = this
+private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedScopedBinding(binding.link(linker))
+}
 
-    override fun link(linker: Linker) {
-        binding.link(linker)
-    }
+private class LinkedScopedBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
+    private var _value: Any? = this
 
     override fun get(parameters: ParametersDefinition?): T {
         var value = _value
@@ -45,5 +47,4 @@ private class ScopedBinding<T>(private val binding: Binding<T>) : Binding<T>() {
 
         return value as T
     }
-
 }

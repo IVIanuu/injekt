@@ -16,81 +16,49 @@
 
 package com.ivianuu.injekt
 
-internal class ProviderBinding<T>(private val bindingKey: Key) : Binding<Provider<T>>() {
-    private lateinit var binding: Binding<T>
-    override fun link(linker: Linker) {
-        binding = linker.get(bindingKey)
-    }
+internal class UnlinkedProviderBinding<T>(private val key: Key) : UnlinkedBinding<Provider<T>>() {
+    override fun link(linker: Linker): LinkedBinding<Provider<T>> =
+        LinkedProviderBinding(linker.get(key))
+}
 
+internal class LinkedProviderBinding<T>(private val binding: LinkedBinding<T>) :
+    LinkedBinding<Provider<T>>() {
     override fun get(parameters: ParametersDefinition?): Provider<T> = provider {
         binding.get(it)
     }
 }
 
-internal class LazyBinding<T>(private val bindingKey: Key) : Binding<Lazy<T>>() {
-    private lateinit var binding: Binding<T>
-    override fun link(linker: Linker) {
-        binding = linker.get(bindingKey)
-    }
+internal class UnlinkedLazyBinding<T>(private val key: Key) : UnlinkedBinding<Lazy<T>>() {
+    override fun link(linker: Linker): LinkedBinding<Lazy<T>> =
+        LinkedLazyBinding(linker.get(key))
+}
 
+internal class LinkedLazyBinding<T>(private val binding: LinkedBinding<T>) :
+    LinkedBinding<Lazy<T>>() {
     override fun get(parameters: ParametersDefinition?): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
         binding.get()
     }
 }
 
-internal abstract class AbsMapBinding<K, V, M : Map<K, *>>(private val keysByKey: Map<K, Key>) :
-    Binding<M>() {
-    protected lateinit var bindingsByKey: Map<K, Binding<out V>>
-    final override fun link(linker: Linker) {
-        bindingsByKey = keysByKey
-            .mapValues { linker.get<V>(it.value) }
-    }
+internal class UnlinkedMapBinding<K, V>(private val keysByKey: Map<K, Key>) :
+    UnlinkedBinding<Map<K, V>>() {
+    override fun link(linker: Linker): LinkedBinding<Map<K, V>> =
+        LinkedMapBinding(keysByKey.mapValues { linker.get<V>(it.value) })
 }
 
-internal class MapBinding<K, V>(keysByKey: Map<K, Key>) :
-    AbsMapBinding<K, V, Map<K, V>>(keysByKey) {
-    override fun get(parameters: ParametersDefinition?): Map<K, V> = bindingsByKey
-        .mapValues { it.value.get() }
+internal class LinkedMapBinding<K, V>(private val bindingsByKey: Map<K, LinkedBinding<out V>>) :
+    LinkedBinding<Map<K, V>>() {
+    override fun get(parameters: ParametersDefinition?): Map<K, V> =
+        bindingsByKey.mapValues { it.value.get() }
 }
 
-internal class LazyMapBinding<K, V>(keysByKey: Map<K, Key>) :
-    AbsMapBinding<K, V, Map<K, Lazy<V>>>(keysByKey) {
-    override fun get(parameters: ParametersDefinition?): Map<K, Lazy<V>> = bindingsByKey
-        .mapValues { (_, binding) ->
-            lazy(LazyThreadSafetyMode.NONE) { binding.get() }
-        }
+internal class UnlinkedSetBinding<E>(private val keys: Set<Key>) : UnlinkedBinding<Set<E>>() {
+    override fun link(linker: Linker): LinkedBinding<Set<E>> =
+        LinkedSetBinding<E>(keys.map { linker.get<E>(it) }.toSet())
 }
 
-internal class ProviderMapBinding<K, V>(keysByKey: Map<K, Key>) :
-    AbsMapBinding<K, V, Map<K, Provider<out V>>>(keysByKey) {
-    override fun get(parameters: ParametersDefinition?): Map<K, Provider<out V>> = bindingsByKey
-        .mapValues { (_, binding) ->
-            provider { binding.get(it) }
-        }
-}
-
-internal abstract class AbsSetBinding<E, S : Set<*>>(private val keys: Set<Key>) : Binding<S>() {
-    protected lateinit var bindings: Set<Binding<out E>>
-    final override fun link(linker: Linker) {
-        bindings = keys.map { linker.get<E>(it) }.toSet()
-    }
-}
-
-internal class SetBinding<E>(keys: Set<Key>) : AbsSetBinding<E, Set<E>>(keys) {
-    override fun get(parameters: ParametersDefinition?): Set<E> = bindings
-        .map { it.get() }
-        .toSet()
-}
-
-internal class LazySetBinding<E>(keys: Set<Key>) : AbsSetBinding<E, Set<Lazy<E>>>(keys) {
-    override fun get(parameters: ParametersDefinition?): Set<Lazy<E>> = bindings
-        .map { binding -> lazy(LazyThreadSafetyMode.NONE) { binding.get() } }
-        .toSet()
-}
-
-internal class ProviderSetBinding<E>(keys: Set<Key>) :
-    AbsSetBinding<E, Set<Provider<out E>>>(keys) {
-    override fun get(parameters: ParametersDefinition?): Set<Provider<E>> = bindings
-        .map { binding -> provider { binding.get(it) } }
-        .toSet()
+internal class LinkedSetBinding<E>(private val bindings: Set<LinkedBinding<out E>>) :
+    LinkedBinding<Set<E>>() {
+    override fun get(parameters: ParametersDefinition?): Set<E> =
+        bindings.map { it.get() }.toSet()
 }

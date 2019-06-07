@@ -19,16 +19,19 @@ package com.ivianuu.injekt
 typealias Definition<T> = Component.(Parameters) -> T
 
 fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
-    DefinitionBinding(definition)
+    UnlinkedDefinitionBinding(definition)
 
-private class DefinitionBinding<T>(
+private class UnlinkedDefinitionBinding<T>(
     private val definition: Definition<T>
-) : Binding<T>() {
-    private lateinit var component: Component
-    override fun link(linker: Linker) {
-        this.component = linker.component
-    }
+) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedDefinitionBinding(linker.component, definition)
+}
 
+private class LinkedDefinitionBinding<T>(
+    private val component: Component,
+    private val definition: Definition<T>
+) : LinkedBinding<T>() {
     override fun get(parameters: ParametersDefinition?): T =
         definition(component, parameters?.invoke() ?: emptyParameters())
 }

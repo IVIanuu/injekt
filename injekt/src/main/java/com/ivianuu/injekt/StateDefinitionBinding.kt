@@ -36,7 +36,7 @@ class Link<T>(
     private val name: Any? = null
 ) : () -> T {
 
-    private lateinit var binding: Binding<T>
+    private lateinit var binding: LinkedBinding<T>
 
     internal fun link(linker: Linker) {
         binding = linker.get(type, name)
@@ -50,17 +50,22 @@ typealias StateDefinition<T> = (Parameters) -> T
 fun <T> stateDefinitionBinding(block: StateDefinitionFactory.() -> StateDefinition<T>): Binding<T> {
     val factory = StateDefinitionFactory()
     val definition = factory.block()
-    return StateDefinitionBinding(definition, factory.links)
+    return UnlinkedStateDefinitionBinding(definition, factory.links)
 }
 
-private class StateDefinitionBinding<T>(
+private class UnlinkedStateDefinitionBinding<T>(
     private val definition: StateDefinition<T>,
     private val links: List<Link<*>>
-) : Binding<T>() {
-    override fun link(linker: Linker) {
+) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> {
         links.forEach { it.link(linker) }
+        return LinkedStateDefinitionBinding(definition)
     }
+}
 
+private class LinkedStateDefinitionBinding<T>(
+    private val definition: StateDefinition<T>
+) : LinkedBinding<T>() {
     override fun get(parameters: ParametersDefinition?): T =
         definition(parameters?.invoke() ?: emptyParameters())
 }
