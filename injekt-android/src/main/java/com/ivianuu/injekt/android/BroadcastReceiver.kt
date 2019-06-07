@@ -38,7 +38,7 @@ annotation class ForReceiver {
     companion object
 }
 
-fun <T : BroadcastReceiver> BroadcastReceiver.receiverComponent(
+fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
