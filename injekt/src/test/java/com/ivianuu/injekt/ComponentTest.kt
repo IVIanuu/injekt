@@ -36,7 +36,7 @@ class ComponentTest {
             modules(
                 module {
                     bind { typed }
-                    single(Named) { named }
+                    bind(Named) { named }
                 }
             )
         }
@@ -196,8 +196,8 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    single { listOf(1, 2, 3) }
-                    single { listOf("one", "two", "three") }
+                    bind { listOf(1, 2, 3) }
+                    bind { listOf("one", "two", "three") }
                 }
             )
         }

@@ -45,28 +45,21 @@ class Module @PublishedApi internal constructor() {
         module.setBindings?.let { nonNullSetBindings().putAll(it) }
     }
 
-    // todo rename
-    fun <K, V> bindMap(
-        mapKeyType: Type<K>,
-        mapValueType: Type<V>,
-        mapName: Any? = null
+    inline fun <reified K, reified V> map(
+        mapName: Any? = null,
+        noinline block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
     ) {
-        val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
-        nonNullMapBindings().putIfAbsent(mapKey)
+        map(typeOf(), typeOf(), mapName, block)
     }
 
-    fun <K, V> bindIntoMap(
+    fun <K, V> map(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
-        entryValueType: Type<out V>,
-        entryKey: K,
         mapName: Any? = null,
-        entryValueName: Any? = null,
-        override: Boolean = false
+        block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
     ) {
         val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
-        nonNullMapBindings().get<K, V>(mapKey)
-            .put(entryKey, keyOf(entryValueType, entryValueName), override)
+        nonNullMapBindings().get<K, V>(mapKey).apply { block?.invoke(this) }
     }
 
     // todo rename
@@ -150,24 +143,6 @@ fun <T> Module.bindWithState(
     var binding = stateDefinitionBinding(definition)
     if (scoped) binding = binding.asScoped()
     return bind(binding, type, name, override)
-}
-
-inline fun <reified K, reified V> Module.bindMap(
-    mapName: Any? = null
-) {
-    bindMap<K, V>(typeOf(), typeOf(), mapName)
-}
-
-inline fun <reified K, reified V, reified E : V> Module.bindIntoMap(
-    entryKey: K,
-    mapName: Any? = null,
-    entryName: Any? = null,
-    override: Boolean = false
-) {
-    bindIntoMap(
-        typeOf(), typeOf<V>(),
-        typeOf<E>(), entryKey, mapName, entryName, override
-    )
 }
 
 inline fun <reified E> Module.bindSet(setName: Any? = null) {

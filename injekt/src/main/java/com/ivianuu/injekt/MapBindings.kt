@@ -27,10 +27,6 @@ class MapBindings {
         }
     }
 
-    fun putIfAbsent(mapKey: Key) {
-        maps.getOrPut(mapKey) { BindingMap<Any?, Any?>(mapKey) }
-    }
-
     fun <K, V> get(mapKey: Key): BindingMap<K, V> {
         return maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
     }
@@ -44,7 +40,29 @@ class MapBindings {
             other.map.forEach { (key, entry) -> put(key, entry) }
         }
 
-        fun put(entryKey: K, entryValueKey: Key, override: Boolean) {
+        inline fun <reified T : V> put(
+            entryKey: K,
+            entryValueName: Any? = null,
+            override: Boolean = false
+        ) {
+            put<T>(entryKey, typeOf(), entryValueName, override)
+        }
+
+        fun <T : V> put(
+            entryKey: K,
+            entryValueType: Type<T>,
+            entryValueName: Any? = null,
+            override: Boolean = false
+        ) {
+            val entryValueKey = keyOf(entryValueType, entryValueName)
+            put(entryKey, entryValueKey, override)
+        }
+
+        fun put(
+            entryKey: K,
+            entryValueKey: Key,
+            override: Boolean = false
+        ) {
             put(entryKey, Entry(entryValueKey, override))
         }
 

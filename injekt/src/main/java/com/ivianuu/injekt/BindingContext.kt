@@ -93,28 +93,22 @@ infix fun <T> BindingContext<T>.bindNames(names: Iterable<Any>): BindingContext<
     return this
 }
 
-inline fun <reified T : V, reified K, reified V> BindingContext<T>.bindIntoMap(
+inline fun <reified T : V, reified K, reified V> BindingContext<T>.intoMap(
     entryKey: K,
     mapName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bindIntoMap(typeOf(), typeOf(), entryKey, mapName, override)
+): BindingContext<T> = intoMap(typeOf(), typeOf(), entryKey, mapName, override)
 
-fun <T : V, K, V> BindingContext<T>.bindIntoMap(
+fun <T : V, K, V> BindingContext<T>.intoMap(
     mapKeyType: Type<K>,
     mapValueType: Type<V>,
     entryKey: K,
     mapName: Any? = null,
     override: Boolean = false
 ): BindingContext<T> {
-    module.bindIntoMap(
-        mapKeyType = mapKeyType,
-        mapValueType = mapValueType,
-        entryValueType = key.type as Type<out V>,
-        entryKey = entryKey,
-        mapName = mapName,
-        entryValueName = key.name,
-        override = override
-    )
+    module.map(mapKeyType, mapValueType, mapName) {
+        put(entryKey, key.type as Type<T>, key.name, override)
+    }
     return this
 }
 
