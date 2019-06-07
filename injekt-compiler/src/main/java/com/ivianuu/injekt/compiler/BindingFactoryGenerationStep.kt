@@ -81,7 +81,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
 
         val creatorName = ClassName(
             targetName.packageName,
-            element.simpleName.toString() + "Factory"
+            element.simpleName.toString() + "__Binding"
         )
 
         val constructorParams = element.enclosedElements
