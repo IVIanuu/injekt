@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.comparison
 
-import com.ivianuu.injekt.comparison.dagger2.DaggerTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
 import com.ivianuu.injekt.comparison.injektoptimized.InjektOptimizedTest
@@ -58,14 +57,14 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
             KodeinTest,
-            DaggerTest,
+            // DaggerTest,
             ToothpickTest,
             KoinTest,
             KatanaTest,
-            InjektTest,
-            InjektOptimizedTest,
-            InjektCodegenTest,
-            InjektOptimizedDslTest
+            //    InjektTest,
+            //        InjektOptimizedTest,
+            InjektCodegenTest//,
+            //      InjektOptimizedDslTest
         ),
         config
     )
