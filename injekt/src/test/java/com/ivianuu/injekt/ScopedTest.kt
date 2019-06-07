@@ -26,7 +26,7 @@ class ScopedTest {
         val component = component {
             modules(
                 module {
-                    provide(scoped = true) { TestDep1() }
+                    bind(scoped = true) { TestDep1() }
                 }
             )
         }

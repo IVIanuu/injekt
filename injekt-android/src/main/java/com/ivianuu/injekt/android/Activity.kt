@@ -30,14 +30,13 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.bindAlias
 import com.ivianuu.injekt.bindName
 import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.provide
 import com.ivianuu.injekt.scopes
 
 @Scope
@@ -91,21 +90,21 @@ fun <T : Activity> T.activityModule(): Module = module {
         }
     }
 
-    provide(override = true) { resources } bindName ForActivity
+    bind(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        provide { lifecycle } bindName ForActivity
+        bind { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        provide { viewModelStore } bindName ForActivity
+        bind { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        provide { savedStateRegistry } bindName ForActivity
+        bind { savedStateRegistry } bindName ForActivity
     }
 
     (this@activityModule as? FragmentActivity)?.let {
-        provide { supportFragmentManager } bindName ForActivity
+        bind { supportFragmentManager } bindName ForActivity
     }
 }

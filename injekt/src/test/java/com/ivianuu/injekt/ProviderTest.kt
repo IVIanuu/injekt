@@ -27,7 +27,7 @@ class ProviderTest {
         val component = component {
             modules(
                 module {
-                    provide { TestDep1() }
+                    bind { TestDep1() }
                 }
             )
         }
@@ -44,7 +44,7 @@ class ProviderTest {
         val component = component {
             modules(
                 module {
-                    provide {
+                    bind {
                         usedParams = it
                         TestDep1()
                     }

@@ -26,7 +26,7 @@ class FactoryTest {
         val component = component {
             modules(
                 module {
-                    provide { TestDep1() }
+                    bind { TestDep1() }
                 }
             )
         }

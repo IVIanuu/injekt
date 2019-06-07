@@ -114,12 +114,12 @@ fun <T> Module.bind(
     override: Boolean = false
 ): BindingContext<T> = bind(binding, keyOf(type, name), override)
 
-inline fun <reified T> Module.provide(
+inline fun <reified T> Module.bind(
     name: Any? = null,
     scoped: Boolean = false,
     override: Boolean = false,
     noinline definition: Definition<T>
-): BindingContext<T> = bind(typeOf(), name, scoped, override, definition)
+): BindingContext<T> = this@provide.bind(typeOf(), name, scoped, override, definition)
 
 fun <T> Module.bind(
     type: Type<T>,
