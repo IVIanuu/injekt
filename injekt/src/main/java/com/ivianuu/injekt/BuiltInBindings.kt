@@ -16,27 +16,37 @@
 
 package com.ivianuu.injekt
 
-internal class UnlinkedProviderBinding<T>(private val key: Key) : UnlinkedBinding<Provider<T>>() {
-    override fun link(linker: Linker): LinkedBinding<Provider<T>> =
-        LinkedProviderBinding(linker.get(key))
+internal class LinkedProviderBinding<T>(
+    private val component: Component,
+    private val key: Key
+) : LinkedBinding<Provider<T>>() {
+    override fun get(parameters: ParametersDefinition?): Provider<T> =
+        KeyedProvider(component, key)
 }
 
-internal class LinkedProviderBinding<T>(private val binding: LinkedBinding<T>) :
-    LinkedBinding<Provider<T>>() {
-    override fun get(parameters: ParametersDefinition?): Provider<T> = provider {
-        binding.get(it)
+private class KeyedProvider<T>(
+    private val component: Component,
+    private val key: Key
+) : Provider<T> {
+
+    private var _binding: LinkedBinding<T>? = null
+
+    override fun get(parameters: ParametersDefinition?): T {
+        var binding = _binding
+        if (binding == null) {
+            binding = component.getBinding(key)
+            _binding = binding
+        }
+        return binding.get(parameters)
     }
 }
 
-internal class UnlinkedLazyBinding<T>(private val key: Key) : UnlinkedBinding<Lazy<T>>() {
-    override fun link(linker: Linker): LinkedBinding<Lazy<T>> =
-        LinkedLazyBinding(linker.get(key))
-}
-
-internal class LinkedLazyBinding<T>(private val binding: LinkedBinding<T>) :
-    LinkedBinding<Lazy<T>>() {
+internal class LinkedLazyBinding<T>(
+    private val component: Component,
+    private val key: Key
+) : LinkedBinding<Lazy<T>>() {
     override fun get(parameters: ParametersDefinition?): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
-        binding.get()
+        component.getBinding<T>(key).get()
     }
 }
 

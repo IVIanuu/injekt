@@ -78,7 +78,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testLazy() {
+    fun testGetLazy() {
         var called = false
 
         val component = component {
@@ -94,10 +94,34 @@ class ComponentTest {
 
         assertFalse(called)
 
-        val depLazy = component.inject<TestDep1>()
+        val depLazy = component.get<Lazy<TestDep1>>()
         assertFalse(called)
         depLazy.value
         assertTrue(called)
+    }
+
+    @Test
+    fun testGetProvider() {
+        var called = 0
+        val component = component {
+            modules(
+                module {
+                    factory {
+                        ++called
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        assertEquals(0, called)
+
+        val depProvider = component.get<Provider<TestDep1>>()
+        assertEquals(0, called)
+        depProvider.get()
+        assertEquals(1, called)
+        depProvider.get()
+        assertEquals(2, called)
     }
 
     @Test

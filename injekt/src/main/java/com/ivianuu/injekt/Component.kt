@@ -48,6 +48,19 @@ class Component internal constructor(
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> findBinding(key: Key, fullLookup: Boolean): LinkedBinding<T>? {
+        if (key.type.parameters.size == 1) {
+            when (key.type.raw) {
+                Provider::class -> {
+                    val realKey = keyOf(key.type.parameters.first(), key.name)
+                    return LinkedProviderBinding<Any?>(this, realKey) as LinkedBinding<T>
+                }
+                Lazy::class -> {
+                    val realKey = keyOf(key.type.parameters.first(), key.name)
+                    return LinkedLazyBinding<Any?>(this, realKey) as LinkedBinding<T>
+                }
+            }
+        }
+
         var binding: Binding<*>? = linkedBindings[key]
         if (binding != null) return binding as LinkedBinding<T>
 
@@ -63,21 +76,6 @@ class Component internal constructor(
         for (dependency in dependencies) {
             binding = dependency.findBinding<T>(key, false)
             if (binding != null) return binding
-        }
-
-        if (fullLookup && key.type.parameters.size == 1) {
-            when (key.type.raw) {
-                Provider::class -> {
-                    val realKey = keyOf(key.type.parameters.first(), key.name)
-                    binding = UnlinkedProviderBinding<T>(realKey)
-                    return addBinding(key, binding) as LinkedBinding<T>
-                }
-                Lazy::class -> {
-                    val realKey = keyOf(key.type.parameters.first(), key.name)
-                    binding = UnlinkedLazyBinding<T>(realKey)
-                    return addBinding(key, binding) as LinkedBinding<T>
-                }
-            }
         }
 
         if (fullLookup && key.name == null) {
