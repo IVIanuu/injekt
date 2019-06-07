@@ -37,7 +37,12 @@ fun BindingContext<*>.bindAlias(
     name: Any? = null,
     override: Boolean = false
 ) {
-    module.bind(binding as Binding<Any?>, type as Type<Any?>, name, override)
+    module.bind(
+        binding = binding as Binding<Any?>,
+        type = type as Type<Any?>,
+        name = name,
+        override = override
+    )
 }
 
 inline fun <reified T> BindingContext<*>.bindType() {
