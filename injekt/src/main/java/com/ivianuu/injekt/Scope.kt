@@ -16,8 +16,14 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
+
+interface HasScope {
+    val scope: KClass<out Annotation>
+}
 
 fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
     is LinkedScopedBinding, is UnlinkedScopedBinding -> this

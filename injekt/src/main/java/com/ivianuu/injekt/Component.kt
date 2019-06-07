@@ -77,15 +77,15 @@ class Component internal constructor(
         }
 
         if (fullLookup && key.name == null) {
-            val bindingFactory = JustInTimeBindings.find<T>(key)
-            if (bindingFactory != null) {
-                val component = findComponentForScope(bindingFactory.scope)
-                    ?: error("Couldn't find component for ${bindingFactory.scope}")
-                binding = bindingFactory.create()
-                if (bindingFactory.scope != null) {
+            binding = JustInTimeBindings.find<T>(key)
+            if (binding != null) {
+                val scope = (binding as? HasScope)?.scope
+                val component = findComponentForScope(scope)
+                    ?: error("Couldn't find component for $scope")
+                if (scope != null) {
                     binding = binding.asScoped()
                 }
-                return component.addBinding(key, binding)
+                return component.addBinding(key, binding) as LinkedBinding<T>
             }
         }
 

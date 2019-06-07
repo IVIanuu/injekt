@@ -19,9 +19,9 @@ package com.ivianuu.injekt.compiler
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 
-data class BindingFactoryDescriptor(
+data class BindingDescriptor(
     val target: ClassName,
-    val factoryName: ClassName,
+    val bindingName: ClassName,
     val isInternal: Boolean,
     val scope: ClassName?,
     val constructorParams: List<ParamDescriptor>

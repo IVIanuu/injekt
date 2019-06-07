@@ -44,7 +44,7 @@ import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
-class BindingFactoryGenerationStep : ProcessingStep() {
+class BindingGenerationStep : ProcessingStep() {
 
     override fun annotations() = setOf(Inject::class)
 
@@ -53,14 +53,14 @@ class BindingFactoryGenerationStep : ProcessingStep() {
             .flatMap { elementsByAnnotation[it] }
             .filterIsInstance<TypeElement>()
             .mapNotNull { createDescriptor(it) }
-            .map { BindingFactoryGenerator(it) }
+            .map { BindingGenerator(it) }
             .map { it.generate() }
             .forEach { it.writeTo(filer) }
 
         return emptySet()
     }
 
-    private fun createDescriptor(element: TypeElement): BindingFactoryDescriptor? {
+    private fun createDescriptor(element: TypeElement): BindingDescriptor? {
         val classMetadata = element.kotlinMetadata as? KotlinClassMetadata
 
         if (classMetadata == null) {
@@ -181,7 +181,7 @@ class BindingFactoryGenerationStep : ProcessingStep() {
                 }
             }
 
-        return BindingFactoryDescriptor(
+        return BindingDescriptor(
             targetName,
             factoryName,
             isInternal,

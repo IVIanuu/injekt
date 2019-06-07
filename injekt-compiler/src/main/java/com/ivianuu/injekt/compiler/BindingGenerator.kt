@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingFactory
+import com.ivianuu.injekt.HasScope
 import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.Parameters
@@ -35,14 +34,14 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import kotlin.reflect.KClass
 
-class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) {
+class BindingGenerator(private val descriptor: BindingDescriptor) {
 
     fun generate() =
-        FileSpec.builder(descriptor.factoryName.packageName, descriptor.factoryName.simpleName)
-            .addType(bindingFactory())
+        FileSpec.builder(descriptor.bindingName.packageName, descriptor.bindingName.simpleName)
+            .addType(binding())
             .build()
 
-    private fun bindingFactory() = TypeSpec.objectBuilder(descriptor.factoryName)
+    private fun binding() = TypeSpec.objectBuilder(descriptor.bindingName)
         .apply {
             if (descriptor.isInternal) addModifiers(KModifier.INTERNAL)
         }
@@ -57,39 +56,28 @@ class BindingFactoryGenerator(private val descriptor: BindingFactoryDescriptor) 
                 )
             }
         }
-        .addSuperinterface(
-            BindingFactory::class.asClassName().plusParameter(descriptor.target)
-        )
-        .addProperty(
-            PropertySpec.builder(
-                "scope",
-                KClass::class.asClassName().plusParameter(
-                    WildcardTypeName.producerOf(Annotation::class)
-                ).copy(nullable = true),
-                KModifier.OVERRIDE
-            )
-                .apply {
-                    getter(
-                        FunSpec.getterBuilder()
-                            .apply {
-                                if (descriptor.scope != null) {
-                                    addStatement("return %T::class", descriptor.scope)
-                                } else {
-                                    addStatement("return null")
-                                }
-                            }
-                            .build()
+        .apply {
+            if (descriptor.scope != null) {
+                addSuperinterface(HasScope::class)
+                addProperty(
+                    PropertySpec.builder(
+                        "scope",
+                        KClass::class.asClassName().plusParameter(
+                            WildcardTypeName.producerOf(Annotation::class)
+                        ),
+                        KModifier.OVERRIDE
                     )
-                }
-                .build()
-        )
-        .addFunction(
-            FunSpec.builder("create")
-                .addModifiers(KModifier.OVERRIDE)
-                .returns(Binding::class.asClassName().plusParameter(descriptor.target))
-                .addStatement("return this")
-                .build()
-        )
+                        .apply {
+                            getter(
+                                FunSpec.getterBuilder()
+                                    .addStatement("return %T::class", descriptor.scope)
+                                    .build()
+                            )
+                        }
+                        .build()
+                )
+            }
+        }
         .apply {
             if (descriptor.hasDependencies) {
                 addFunction(

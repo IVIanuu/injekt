@@ -16,18 +16,11 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-interface BindingFactory<T> {
-    val scope: KClass<out Annotation>? get() = null
-    fun create(): Binding<T>
-}
-
 internal object JustInTimeBindings {
 
-    private val factories = hashMapOf<Key, BindingFactory<*>>()
+    private val factories = hashMapOf<Key, Binding<*>>()
 
-    fun <T> find(key: Key): BindingFactory<T>? {
+    fun <T> find(key: Key): Binding<T>? {
         var factory = factories[key]
 
         if (factory == null) {
@@ -35,14 +28,14 @@ internal object JustInTimeBindings {
             if (factory != null) factories[key] = factory
         }
 
-        return factory as? BindingFactory<T>
+        return factory as? Binding<T>
     }
 
     private fun findFactory(type: Class<*>) = try {
         val bindingClass = Class.forName(type.name + "__Binding")
         bindingClass.declaredFields.first()
             .also { it.isAccessible = true }
-            .get(null) as BindingFactory<*>
+            .get(null) as Binding<*>
     } catch (e: Exception) {
         null
     }
