@@ -20,9 +20,9 @@ import kotlin.reflect.KClass
 
 class ComponentBuilder @PublishedApi internal constructor() {
 
-    private val scopes = mutableListOf<KClass<out Annotation>>()
-    private val modules = mutableListOf<Module>()
-    private val dependencies = mutableListOf<Component>()
+    private val scopes = arrayListOf<KClass<out Annotation>>()
+    private val modules = arrayListOf<Module>()
+    private val dependencies = arrayListOf<Component>()
 
     fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
         this.scopes.add(scope)
