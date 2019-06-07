@@ -112,7 +112,45 @@ fun <T> Module.bind(
     type: Type<T>,
     name: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bind(binding, com.ivianuu.injekt.keyOf(type, name), override)
+): BindingContext<T> = bind(binding, keyOf(type, name), override)
+
+inline fun <reified T> Module.provide(
+    name: Any? = null,
+    scoped: Boolean = false,
+    override: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = bind(typeOf(), name, scoped, override, definition)
+
+fun <T> Module.bind(
+    type: Type<T>,
+    name: Any? = null,
+    scoped: Boolean = false,
+    override: Boolean = false,
+    definition: Definition<T>
+): BindingContext<T> {
+    var binding = definitionBinding(definition)
+    if (scoped) binding = binding.asScoped()
+    return bind(binding, type, name, override)
+}
+
+inline fun <reified T> Module.bindWithState(
+    name: Any? = null,
+    scoped: Boolean = false,
+    override: Boolean = false,
+    noinline definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> = bindWithState(typeOf(), name, scoped, override, definition)
+
+fun <T> Module.bindWithState(
+    type: Type<T>,
+    name: Any? = null,
+    scoped: Boolean = false,
+    override: Boolean = false,
+    definition: StateDefinitionFactory.() -> StateDefinition<T>
+): BindingContext<T> {
+    var binding = stateDefinitionBinding(definition)
+    if (scoped) binding = binding.asScoped()
+    return bind(binding, type, name, override)
+}
 
 inline fun <reified K, reified V> Module.bindMap(
     mapName: Any? = null

@@ -52,7 +52,7 @@ viewModelStoreName: Any? = null,
 override: Boolean = false,
 definition: Definition<T>
 ): Binding<T> =
-provide(
+bind(
 type,
 name,
 override,
