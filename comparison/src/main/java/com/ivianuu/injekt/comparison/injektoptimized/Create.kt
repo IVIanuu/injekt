@@ -14,14 +14,26 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.injektoptimized
 
 fun main() {
-    //runInjectionTests(InjektCodegenTest)
-    //runInjektTests()
-    //runInjectionTests(KoinTest, InjektUnoptimizedTest, InjektTest)
-    runAllInjectionTests()
-    //runInjectionTests(KatanaTest, InjektOptimizedTest)
-    //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektTest)
-    // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
+    println(create())
+}
+
+fun create(): String = buildString {
+    (3..100).forEach {
+        append(factoryBlock(it))
+        append("\n")
+    }
+}
+
+private fun factoryBlock(n: Int): String {
+    val b1 = n - 1
+    val b2 = n - 2
+
+    return "factoryS { \n" +
+            "        val fib$b1 = link<Fib$b1>()\n" +
+            "        val fib$b2 = link<Fib$b2>()\n" +
+            "        definition { Fib$n(fib$b1(), fib$b2()) }\n" +
+            "    }"
 }

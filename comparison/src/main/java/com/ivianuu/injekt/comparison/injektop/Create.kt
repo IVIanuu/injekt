@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.injektop
 
 fun main() {
-    //runInjectionTests(InjektCodegenTest)
-    //runInjektTests()
-    //runInjectionTests(KoinTest, InjektUnoptimizedTest, InjektTest)
-    runAllInjectionTests()
-    //runInjectionTests(KatanaTest, InjektOptimizedTest)
-    //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektTest)
-    // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
+    println(create())
+}
+
+fun create(): String = buildString {
+    (3..100).forEach {
+        append(factoryBlock(it))
+        append("\n")
+    }
+}
+
+private fun factoryBlock(n: Int): String {
+    val b1 = n - 1
+    val b2 = n - 2
+
+    return "object Fib${n}Binding : LinkedBinding<Fib${n}>() {\n" +
+            "    override fun get(parameters: ParametersDefinition?) = \n" +
+            "        Fib${n}(Fib${b1}Binding.get(), Fib${b2}Binding.get())\n" +
+            "}"
 }
