@@ -33,8 +33,8 @@ internal object JustInTimeBindings {
 
     private fun findFactory(type: Class<*>) = try {
         val bindingClass = Class.forName(type.name + "__Binding")
-        bindingClass.declaredFields.first()
-            .also { it.isAccessible = true }
+        // get the INSTANCE field
+        bindingClass.declaredFields.last()
             .get(null) as Binding<*>
     } catch (e: Exception) {
         null
