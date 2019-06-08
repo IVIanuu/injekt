@@ -18,9 +18,6 @@ package com.ivianuu.injekt
 
 typealias Definition<T> = DefinitionContext.(Parameters?) -> T
 
-fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
-    DefinitionBinding(definition)
-
 interface DefinitionContext {
     fun <T> get(type: Type<T>, name: Any? = null): T =
         get(keyOf(type, name))
@@ -34,9 +31,34 @@ interface DefinitionContext {
     operator fun <T> Parameters?.component5(): T = this!![4]
 }
 
+fun <T> definitionBinding(
+    definition: Definition<T>,
+    optimizing: Boolean = true
+): Binding<T> {
+    return if (optimizing) OptimizingDefinitionBinding(definition)
+    else DefinitionBinding(definition)
+}
+
 inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf(), name)
 
 private class DefinitionBinding<T>(
+    private val definition: Definition<T>
+) : LinkedBinding<T>(), DefinitionContext {
+
+    private lateinit var component: Component
+
+    override fun <T> get(key: Key): T = component.get(key)
+
+    override fun get(parameters: ParametersDefinition?): T =
+        definition(this, parameters?.invoke())
+
+    override fun attached(component: Component) {
+        this.component = component
+    }
+
+}
+
+private class OptimizingDefinitionBinding<T>(
     private val definition: Definition<T>
 ) : LinkedBinding<T>(), DefinitionContext {
 
