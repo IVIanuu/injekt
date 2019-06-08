@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-typealias Definition<T> = DefinitionContext.(Parameters) -> T
+typealias Definition<T> = DefinitionContext.(Parameters?) -> T
 
 fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
     DefinitionBinding(definition)
@@ -26,6 +26,12 @@ interface DefinitionContext {
         get(keyOf(type, name))
 
     fun <T> get(key: Key): T
+
+    operator fun <T> Parameters?.component1(): T = this!![0]
+    operator fun <T> Parameters?.component2(): T = this!![1]
+    operator fun <T> Parameters?.component3(): T = this!![2]
+    operator fun <T> Parameters?.component4(): T = this!![3]
+    operator fun <T> Parameters?.component5(): T = this!![4]
 }
 
 inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf<T>(), name)
@@ -50,7 +56,7 @@ private class DefinitionBinding<T>(private val definition: Definition<T>) : Link
 
     override fun get(parameters: ParametersDefinition?): T {
         currentIndex = -1
-        return definition(this, parameters?.invoke() ?: emptyParameters())
+        return definition(this, parameters?.invoke())
     }
 
     override fun attached(component: Component) {
