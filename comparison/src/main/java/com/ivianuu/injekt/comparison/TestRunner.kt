@@ -46,6 +46,8 @@ enum class TimeUnit {
 fun runInjektTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
+            InjektOpTest,
+            InjektOptimizedTest,
             InjektTest,
             InjektCodegenTest,
             InjektUnoptimizedTest
