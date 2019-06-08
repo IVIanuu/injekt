@@ -29,6 +29,9 @@ sealed class Binding<T> {
         return linked
     }
 
+    internal open fun attached(component: Component) {
+    }
+
 }
 
 abstract class UnlinkedBinding<T> : Binding<T>()

@@ -30,7 +30,11 @@ class Component internal constructor(
     internal val dependencies: Iterable<Component>
 ) {
 
-    private val linker = Linker(this)
+    internal val linker = Linker(this)
+
+    init {
+        bindings.forEach { it.value.attached(this) }
+    }
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -40,6 +44,9 @@ class Component internal constructor(
         name: Any? = null,
         parameters: ParametersDefinition? = null
     ): T = getBinding<T>(keyOf(type, name)).get(parameters)
+
+    internal fun <T> get(key: Key): T =
+        getBinding<T>(key).get()
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
         findBinding(key, true)

@@ -16,22 +16,44 @@
 
 package com.ivianuu.injekt
 
-typealias Definition<T> = Component.(Parameters) -> T
+typealias Definition<T> = DefinitionContext.(Parameters) -> T
 
 fun <T> definitionBinding(definition: Definition<T>): Binding<T> =
-    UnlinkedDefinitionBinding(definition)
+    DefinitionBinding(definition)
 
-private class UnlinkedDefinitionBinding<T>(
-    private val definition: Definition<T>
-) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> =
-        LinkedDefinitionBinding(linker.component, definition)
+interface DefinitionContext {
+    fun <T> get(type: Type<T>, name: Any? = null): T =
+        get(keyOf(type, name))
+
+    fun <T> get(key: Key): T
 }
 
-private class LinkedDefinitionBinding<T>(
-    private val component: Component,
-    private val definition: Definition<T>
-) : LinkedBinding<T>() {
-    override fun get(parameters: ParametersDefinition?): T =
-        definition(component, parameters?.invoke() ?: emptyParameters())
+inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf<T>(), name)
+
+private class DefinitionBinding<T>(private val definition: Definition<T>) : LinkedBinding<T>(),
+    DefinitionContext {
+
+    private val bindings = arrayListOf<LinkedBinding<*>>()
+    @PublishedApi internal var currentIndex = -1
+    private lateinit var component: Component
+
+    override fun <T> get(key: Key): T {
+        ++currentIndex
+        var binding = bindings.getOrNull(currentIndex)
+        if (binding == null) {
+            binding = component.linker.get<T>(key)
+            bindings.add(currentIndex, binding)
+        }
+
+        return binding.get() as T
+    }
+
+    override fun get(parameters: ParametersDefinition?): T {
+        currentIndex = -1
+        return definition(this, parameters?.invoke() ?: emptyParameters())
+    }
+
+    override fun attached(component: Component) {
+        this.component = component
+    }
 }
