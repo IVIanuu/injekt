@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder

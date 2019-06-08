@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-
 import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.Component
