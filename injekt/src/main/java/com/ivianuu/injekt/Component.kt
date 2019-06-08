@@ -32,10 +32,6 @@ class Component internal constructor(
 
     internal val linker = Linker(this)
 
-    init {
-        bindings.forEach { it.value.attached(this) }
-    }
-
     /**
      * Returns the instance matching the [type] and [name]
      */

@@ -19,7 +19,7 @@ package com.ivianuu.injekt.comparison
 import com.ivianuu.injekt.comparison.dagger2.DaggerTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
-import com.ivianuu.injekt.comparison.injektoptimized.InjektOptimizedTest
+import com.ivianuu.injekt.comparison.injektunoptimized.InjektUnoptimizedTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
@@ -46,7 +46,7 @@ fun runInjektTests(config: Config = defaultConfig) {
         listOf(
             InjektTest,
             InjektCodegenTest,
-            InjektOptimizedTest
+            InjektUnoptimizedTest
         ),
         config
     )
@@ -61,7 +61,7 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             KoinTest,
             KatanaTest,
             InjektTest,
-            InjektOptimizedTest,
+            InjektUnoptimizedTest,
             InjektCodegenTest
         ),
         config

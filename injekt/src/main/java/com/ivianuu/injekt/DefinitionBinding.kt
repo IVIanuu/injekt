@@ -35,36 +35,46 @@ fun <T> definitionBinding(
     definition: Definition<T>,
     optimizing: Boolean = true
 ): Binding<T> {
-    return if (optimizing) OptimizingDefinitionBinding(definition)
-    else DefinitionBinding(definition)
+    return if (optimizing) UnlinkedOptimizingDefinitionBinding(definition)
+    else UnlinkedDefinitionBinding(definition)
 }
 
 inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf(), name)
 
-private class DefinitionBinding<T>(
+private class UnlinkedDefinitionBinding<T>(
+    private val definition: Definition<T>
+) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> = LinkedDefinitionBinding(
+        linker.component, definition
+    )
+}
+
+private class LinkedDefinitionBinding<T>(
+    private val component: Component,
     private val definition: Definition<T>
 ) : LinkedBinding<T>(), DefinitionContext {
-
-    private lateinit var component: Component
 
     override fun <T> get(key: Key): T = component.get(key)
 
     override fun get(parameters: ParametersDefinition?): T =
         definition(this, parameters?.invoke())
 
-    override fun attached(component: Component) {
-        this.component = component
-    }
-
 }
 
-private class OptimizingDefinitionBinding<T>(
+private class UnlinkedOptimizingDefinitionBinding<T>(
+    private val definition: Definition<T>
+) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        LinkedOptimizingDefinitionBinding(linker.component, definition)
+}
+
+private class LinkedOptimizingDefinitionBinding<T>(
+    private val component: Component,
     private val definition: Definition<T>
 ) : LinkedBinding<T>(), DefinitionContext {
 
     private var bindings = arrayOfNulls<LinkedBinding<*>>(5)
     @PublishedApi internal var currentIndex = -1
-    private lateinit var component: Component
 
     override fun <T> get(key: Key): T {
         ++currentIndex
@@ -89,7 +99,4 @@ private class OptimizingDefinitionBinding<T>(
         return definition(this, parameters?.invoke())
     }
 
-    override fun attached(component: Component) {
-        this.component = component
-    }
 }

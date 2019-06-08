@@ -95,7 +95,7 @@ inline fun <reified T> Module.factory(
     override: Boolean = false,
     optimizing: Boolean = true,
     noinline definition: Definition<T>
-): BindingContext<T> = factory(typeOf(), name, optimizing, override, definition)
+): BindingContext<T> = factory(typeOf(), name, override, optimizing, definition)
 
 fun <T> Module.factory(
     type: Type<T>,
@@ -110,7 +110,7 @@ inline fun <reified T> Module.single(
     override: Boolean = false,
     optimizing: Boolean = true,
     noinline definition: Definition<T>
-): BindingContext<T> = single(typeOf(), name, optimizing, override, definition)
+): BindingContext<T> = single(typeOf(), name, override, optimizing, definition)
 
 fun <T> Module.single(
     type: Type<T>,
