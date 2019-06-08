@@ -34,24 +34,32 @@ interface DefinitionContext {
     operator fun <T> Parameters?.component5(): T = this!![4]
 }
 
-inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf<T>(), name)
+inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf(), name)
 
-private class DefinitionBinding<T>(private val definition: Definition<T>) : LinkedBinding<T>(),
-    DefinitionContext {
+private class DefinitionBinding<T>(
+    private val definition: Definition<T>
+) : LinkedBinding<T>(), DefinitionContext {
 
-    private val bindings = arrayListOf<LinkedBinding<*>>()
+    private var bindings = arrayOfNulls<LinkedBinding<*>>(5)
     @PublishedApi internal var currentIndex = -1
     private lateinit var component: Component
 
     override fun <T> get(key: Key): T {
         ++currentIndex
-        var binding = bindings.getOrNull(currentIndex)
-        if (binding == null) {
-            binding = component.linker.get<T>(key)
-            bindings.add(currentIndex, binding)
-        }
+        return if (currentIndex > bindings.lastIndex) {
+            bindings = bindings.copyOf(currentIndex + 1)
+            val binding = component.linker.get<T>(key)
+            bindings[currentIndex] = binding
+            binding
+        } else {
+            var binding = bindings[currentIndex]
+            if (binding == null) {
+                binding = component.linker.get<T>(key)
+                bindings[currentIndex] = binding
+            }
 
-        return binding.get() as T
+            binding
+        }.get() as T
     }
 
     override fun get(parameters: ParametersDefinition?): T {
