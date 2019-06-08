@@ -32,8 +32,8 @@ interface DefinitionContext {
 }
 
 fun <T> definitionBinding(
-    definition: Definition<T>,
-    optimizing: Boolean = true
+    optimizing: Boolean = true,
+    definition: Definition<T>
 ): Binding<T> {
     return if (optimizing) UnlinkedOptimizingDefinitionBinding(definition)
     else UnlinkedDefinitionBinding(definition)

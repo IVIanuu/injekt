@@ -103,7 +103,7 @@ fun <T> Module.factory(
     override: Boolean = false,
     optimizing: Boolean = true,
     definition: Definition<T>
-): BindingContext<T> = bind(definitionBinding(definition, optimizing), type, name, override)
+): BindingContext<T> = bind(definitionBinding(optimizing, definition), type, name, override)
 
 inline fun <reified T> Module.single(
     name: Any? = null,
@@ -119,7 +119,7 @@ fun <T> Module.single(
     optimizing: Boolean = true,
     definition: Definition<T>
 ): BindingContext<T> =
-    bind(definitionBinding(definition, optimizing).asScoped(), type, name, override)
+    bind(definitionBinding(optimizing, definition).asScoped(), type, name, override)
 
 inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,
