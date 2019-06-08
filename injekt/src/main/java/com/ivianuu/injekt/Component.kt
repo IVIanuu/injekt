@@ -31,7 +31,6 @@ class Component internal constructor(
 ) {
 
     private val linker = Linker(this)
-    private val linkedBindings = hashMapOf<Key, LinkedBinding<*>>()
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -61,15 +60,8 @@ class Component internal constructor(
             }
         }
 
-        var binding: Binding<*>? = linkedBindings[key]
-        if (binding != null) return binding as LinkedBinding<T>
-
-        binding = bindings[key]
-        if (binding != null) {
-            binding = binding.performLink(linker)
-            linkedBindings[key] = binding
-            return binding as LinkedBinding<T>
-        }
+        var binding: Binding<*>? = bindings[key]
+        if (binding != null) return linkIfNeeded(key, binding) as LinkedBinding<T>
 
         for (dependency in dependencies) {
             binding = dependency.findBinding<T>(key, false)
@@ -92,10 +84,16 @@ class Component internal constructor(
         return null
     }
 
+    private fun <T> linkIfNeeded(key: Key, binding: Binding<T>): LinkedBinding<T> {
+        if (binding is LinkedBinding) return binding
+        val linkedBinding = binding.link(linker)
+        bindings[key] = linkedBinding
+        return linkedBinding
+    }
+
     private fun <T> addBinding(key: Key, binding: Binding<T>): LinkedBinding<T> {
-        bindings[key] = binding
-        val linkedBinding = binding.performLink(linker)
-        linkedBindings[key] = linkedBinding
+        val linkedBinding = binding.link(linker)
+        bindings[key] = linkedBinding
         return linkedBinding
     }
 
