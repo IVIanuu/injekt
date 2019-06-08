@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.HasScope
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.LinkedBinding
 import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.Parameters
@@ -39,6 +40,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
     fun generate() =
         FileSpec.builder(descriptor.bindingName.packageName, descriptor.bindingName.simpleName)
             .addType(binding())
+            .addImport("com.ivianuu.injekt", "keyOf")
             .build()
 
     private fun binding() = TypeSpec.objectBuilder(descriptor.bindingName)
@@ -80,6 +82,33 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         }
         .apply {
             if (descriptor.hasDependencies) {
+                descriptor.constructorParams
+                    .filterIsInstance<ParamDescriptor.Dependency>()
+                    .forEach { param ->
+                        addProperty(
+                            PropertySpec.builder(
+                                "${param.paramName}Key",
+                                Key::class,
+                                KModifier.PRIVATE
+                            )
+                                .apply {
+                                    if (param.qualifierName != null) {
+                                        initializer(
+                                            "keyOf<%T>(%T)",
+                                            param.paramType,
+                                            param.qualifierName
+                                        )
+                                    } else {
+                                        initializer("keyOf<%T>()", param.paramType)
+                                    }
+                                }
+                                .build()
+                        )
+                    }
+            }
+        }
+        .apply {
+            if (descriptor.hasDependencies) {
                 addFunction(
                     FunSpec.builder("link")
                         .addModifiers(KModifier.OVERRIDE)
@@ -95,14 +124,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                                     descriptor.constructorParams
                                         .filterIsInstance<ParamDescriptor.Dependency>()
                                         .forEachIndexed { i, param ->
-                                            if (param.qualifierName != null) {
-                                                add(
-                                                    "${param.paramName}Binding = linker.get(%T)",
-                                                    param.qualifierName
-                                                )
-                                            } else {
-                                                add("${param.paramName}Binding = linker.get()")
-                                            }
+                                            add("${param.paramName}Binding = linker.get(${param.paramName}Key)")
                                             if (i != descriptor.constructorParams.lastIndex) {
                                                 add(",\n")
                                             }
