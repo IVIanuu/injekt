@@ -72,15 +72,15 @@ class Component internal constructor(
         }
 
         if (fullLookup && key.name == null) {
-            binding = JustInTimeBindings.find<T>(key)
-            if (binding != null) {
-                val scope = (binding as? HasScope)?.scope
-                val component = findComponentForScope(scope)
-                    ?: error("Couldn't find component for $scope")
-                if (scope != null) {
+            val jitLookup = InjektPlugins.justInTimeLookupFactory.create<T>(key)
+            if (jitLookup != null) {
+                binding = jitLookup.binding
+                val component = findComponentForScope(jitLookup.scope)
+                    ?: error("Couldn't find component for ${jitLookup.scope}")
+                if (jitLookup.scope != null) {
                     binding = binding.asScoped()
                 }
-                return component.addBinding(key, binding) as LinkedBinding<T>
+                return component.addBinding(key, binding)
             }
         }
 

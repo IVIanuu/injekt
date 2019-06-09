@@ -30,3 +30,10 @@ var InjektPlugins.logger: Logger?
     set(value) {
         _logger = value
     }
+
+private var _justInTimeLookupFactory: JustInTimeLookupFactory = DefaultJustInTimeLookupFactory
+var InjektPlugins.justInTimeLookupFactory: JustInTimeLookupFactory
+    get() = _justInTimeLookupFactory
+    set(value) {
+        _justInTimeLookupFactory = value
+    }

@@ -16,27 +16,72 @@
 
 package com.ivianuu.injekt
 
-internal object JustInTimeBindings {
+import kotlin.reflect.KClass
 
-    private val factories = hashMapOf<Key, Binding<*>>()
+data class JustInTimeLookup<T>(
+    val binding: Binding<T>,
+    val scope: KClass<out Annotation>?
+)
 
-    fun <T> find(key: Key): Binding<T>? {
-        var factory = factories[key]
+interface JustInTimeLookupFactory {
+    fun <T> create(key: Key): JustInTimeLookup<T>?
+}
 
-        if (factory == null) {
-            factory = findFactory(key.type.rawJava)
-            if (factory != null) factories[key] = factory
+internal object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
+    override fun <T> create(key: Key): JustInTimeLookup<T>? =
+        CodegenJustInTimeLookupFactory.create(key)
+            ?: ReflectiveJustInTimeLookupFactory.create(key)
+}
+
+
+internal object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
+
+    private val lookups = hashMapOf<Key, JustInTimeLookup<*>>()
+
+    override fun <T> create(key: Key): JustInTimeLookup<T>? {
+        if (key.name != null) return null
+
+        var lookup = lookups[key]
+
+        if (lookup == null) {
+            lookup = findLookup(key.type.rawJava)
+            if (lookup != null) lookups[key] = lookup
         }
 
-        return factory as? Binding<T>
+        return lookup as? JustInTimeLookup<T>
     }
 
-    private fun findFactory(type: Class<*>) = try {
+    private fun findLookup(type: Class<*>) = try {
         val bindingClass = Class.forName(type.name + "__Binding")
         // get the INSTANCE field
-        bindingClass.declaredFields.last()
-            .get(null) as Binding<*>
+        val binding = bindingClass.declaredFields.last().get(null) as Binding<*>
+        JustInTimeLookup(binding, (binding as? HasScope)?.scope)
     } catch (e: Exception) {
         null
     }
 }
+
+internal object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
+    override fun <T> create(key: Key): JustInTimeLookup<T>? = null // todo implement
+}
+
+/*
+internal class UnlinkedJustInTimeBinding<T>(private val type: Type<T>) : UnlinkedBinding<T>() {
+
+    override fun link(linker: Linker): LinkedBinding<T> {
+        val constructor = type.rawJava.constructors.first()
+        val parameterTypes = constructor.genericParameterTypes
+        val parameterAnnotations = constructor.parameterAnnotations
+
+        val bindings = arrayOfNulls<LinkedBinding<*>>(parameterTypes.size)
+        for (i in parameterTypes.indices) {
+            val key = Key.of(findQualifier(parameterAnnotations[i]), parameterTypes[i])
+            bindings[i] = linker.get<*>(key)
+        }
+
+        val membersInjector = ReflectiveMembersInjector.create(cls, scope)
+
+        return LinkedJustInTimeBinding(constructor, bindings, membersInjector)
+    }
+
+}*/

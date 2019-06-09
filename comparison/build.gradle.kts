@@ -14,17 +14,33 @@
  * limitations under the License.
  */
 plugins {
-    id("java-library")
-    id("kotlin")
+    id("com.android.application")
+    id("kotlin-android")
     id("kotlin-kapt")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
 
+android {
+    compileSdkVersion(Build.compileSdk)
+
+    defaultConfig {
+        applicationId = Build.applicationIdComparison
+        buildToolsVersion = Build.buildToolsVersion
+        minSdkVersion(Build.minSdk)
+        targetSdkVersion(Build.targetSdk)
+        versionCode = Build.versionCode
+        versionName = Build.versionName
+    }
+}
+
 dependencies {
+    implementation(Deps.androidxAppCompat)
+
     implementation(Deps.dagger)
     kapt(Deps.daggerCompiler)
+
+    api(Deps.guava)
 
     implementation(Deps.guice)
 
