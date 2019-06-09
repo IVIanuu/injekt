@@ -14,32 +14,29 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektcodegen
+package com.ivianuu.injekt.comparison.dagger2
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.get
 
-object InjektCodegenTest : InjectionTest {
-    override val name = "InjektCodegen"
+object Dagger2Test : InjectionTest {
 
-    private var component: Component? = null
+    override val name = "Dagger 2"
+
+    private var component: Dagger2Component? = null
 
     override fun moduleCreation() {
     }
 
     override fun setup() {
-        component = component()
+        component = DaggerDagger2Component.create()
     }
 
     override fun firstInject() {
-        component!!.get<Fib8>()
+        component!!.fib8
     }
 
     override fun secondInject() {
-        component!!.get<Fib8>()
+        component!!.fib8
     }
 
     override fun shutdown() {

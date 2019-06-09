@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.dagger2
 
-import android.app.Activity
-import android.os.Bundle
+import com.ivianuu.injekt.comparison.Fib8
+import dagger.Component
 
-class MainActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
+@Component
+interface Dagger2Component {
+    val fib8: Fib8
 }

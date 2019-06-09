@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger2
+package com.ivianuu.injekt.comparison.dagger2module
 
+import com.ivianuu.injekt.comparison.Fib8
 import dagger.Component
 
-@Component
-interface DaggerComponent {
-    fun inject(test: DaggerTest)
+@Component(modules = [Dagger2Module::class])
+interface Dagger2ModuleComponent {
+    val fib8: Fib8
 }

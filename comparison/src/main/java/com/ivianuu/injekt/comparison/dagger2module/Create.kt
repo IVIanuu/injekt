@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.dagger2module
 
-import android.app.Activity
-import android.os.Bundle
+fun main() {
+    println(create())
+}
 
-class MainActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+fun create(): String = buildString {
+    (3..100).forEach {
+        append(provideBlock(it))
+        append("\n")
     }
+}
+
+private fun provideBlock(n: Int): String {
+    val b1 = n - 1
+    val b2 = n - 2
+
+    return "    @Provides fun provideFib${n}(fib${b1}: Fib${b1}, fib${b2}: Fib${b2}) = Fib${n}(fib${b1}, fib${b2})"
 }

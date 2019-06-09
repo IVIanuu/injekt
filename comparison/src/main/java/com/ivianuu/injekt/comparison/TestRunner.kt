@@ -16,7 +16,8 @@
 
 package com.ivianuu.injekt.comparison
 
-import com.ivianuu.injekt.comparison.dagger2.DaggerTest
+import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
+import com.ivianuu.injekt.comparison.dagger2module.Dagger2ModuleTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
 import com.ivianuu.injekt.comparison.injektdsl.InjektDslTest
 import com.ivianuu.injekt.comparison.injektop.InjektOpTest
@@ -43,32 +44,20 @@ enum class TimeUnit {
     NANOS, MILLIS
 }
 
-fun runInjektTests(config: Config = defaultConfig) {
-    runInjectionTests(
-        listOf(
-            InjektOpTest,
-            InjektOptimizedDslTest,
-            InjektDslTest,
-            InjektCodegenTest,
-            InjektUnoptimizedDslTest
-        ),
-        config
-    )
-}
-
 fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
             KodeinTest,
-            DaggerTest,
+            Dagger2Test,
+            Dagger2ModuleTest,
             ToothpickTest,
             KoinTest,
             KatanaTest,
             InjektOpTest,
             InjektOptimizedDslTest,
             InjektDslTest,
-            InjektCodegenTest,
-            InjektUnoptimizedDslTest
+            InjektUnoptimizedDslTest,
+            InjektCodegenTest
         ),
         config
     )
@@ -163,75 +152,43 @@ fun Result.print(name: String, config: Config) {
 fun Map<String, Results>.print(config: Config) {
     println("Module:")
     println("Library | Average | Median | Min | Max")
-    forEach { (name, results) ->
-        results.setup.print(name, config)
-    }
-
-    println()
-
-    println("Best:")
-    println("Average | Median | Min | Max")
-    println(
-        "${minBy { it.value.moduleCreation.average }?.key} | " +
-                "${minBy { it.value.moduleCreation.median }?.key} | " +
-                "${minBy { it.value.moduleCreation.min }?.key} | " +
-                "${maxBy { it.value.moduleCreation.max }?.key}"
-    )
+    toList()
+        .sortedBy { it.second.moduleCreation.min }
+        .forEach { (name, results) ->
+            results.setup.print(name, config)
+        }
 
     println()
 
     println("Setup:")
     println("Library | Average | Median | Min | Max")
-    forEach { (name, results) ->
-        results.setup.print(name, config)
-    }
-
-    println()
-
-    println("Best:")
-    println("Average | Median | Min | Max")
-    println(
-        "${minBy { it.value.setup.average }?.key} | " +
-                "${minBy { it.value.setup.median }?.key} | " +
-                "${minBy { it.value.setup.min }?.key} | " +
-                "${maxBy { it.value.setup.max }?.key}"
-    )
+    toList()
+        .sortedBy { it.second.setup.min }
+        .forEach { (name, results) ->
+            results.setup.print(name, config)
+        }
 
     println()
 
     println("First injection")
     println("Library | Average | Median | Min | Max")
-    forEach { (name, results) ->
-        results.firstInjection.print(name, config)
-    }
 
-    println()
-
-    println("Best:")
-    println("Average | Median | Min | Max")
-    println(
-        "${minBy { it.value.firstInjection.average }?.key} | " +
-                "${minBy { it.value.firstInjection.median }?.key} | " +
-                "${minBy { it.value.firstInjection.min }?.key} | " +
-                "${maxBy { it.value.firstInjection.max }?.key}"
-    )
+    toList()
+        .sortedBy { it.second.firstInjection.min }
+        .forEach { (name, results) ->
+            results.firstInjection.print(name, config)
+        }
 
     println()
 
     println("Second injection")
     println("Library | Average | Median | Min | Max")
-    forEach { (name, results) ->
-        results.secondInjection.print(name, config)
-    }
+    toList()
+        .sortedBy { it.second.secondInjection.min }
+        .forEach { (name, results) ->
+            results.secondInjection.print(name, config)
+        }
 
     println()
 
-    println("Best:")
-    println("Average | Median | Min | Max")
-    println(
-        "${minBy { it.value.secondInjection.average }?.key} | " +
-                "${minBy { it.value.secondInjection.median }?.key} | " +
-                "${minBy { it.value.secondInjection.min }?.key} | " +
-                "${maxBy { it.value.secondInjection.max }?.key}"
-    )
 }
