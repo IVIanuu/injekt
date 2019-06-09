@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.guice
 
-import android.app.Activity
-import android.os.Bundle
+import com.google.inject.AbstractModule
 
-class MainActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+class GuiceModule : AbstractModule() {
+    override fun configure() {
+        // bind(Fib1::class.java).t
     }
 }

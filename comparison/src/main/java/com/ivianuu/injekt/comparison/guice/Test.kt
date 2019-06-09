@@ -16,4 +16,28 @@
 
 package com.ivianuu.injekt.comparison.guice
 
-// todo
+import com.google.inject.Guice
+import com.google.inject.Injector
+import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.InjectionTest
+
+object GuiceTest : InjectionTest {
+    override val name = "Guice"
+
+    private var injector: Injector? = null
+
+    override fun moduleCreation() {
+    }
+
+    override fun setup() {
+        injector = Guice.createInjector()
+    }
+
+    override fun inject() {
+        injector!!.getInstance(Fib8::class.java)
+    }
+
+    override fun shutdown() {
+        injector = null
+    }
+}

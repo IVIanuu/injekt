@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.comparison
 
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
-import com.ivianuu.injekt.comparison.dagger2module.Dagger2ModuleTest
+import com.ivianuu.injekt.comparison.guice.GuiceTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
 import com.ivianuu.injekt.comparison.injektdsl.InjektDslTest
 import com.ivianuu.injekt.comparison.injektop.InjektOpTest
@@ -49,10 +49,10 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
         listOf(
             KodeinTest,
             Dagger2Test,
-            Dagger2ModuleTest,
             ToothpickTest,
             KoinTest,
             KatanaTest,
+            GuiceTest,
             InjektOpTest,
             InjektOptimizedDslTest,
             InjektDslTest,

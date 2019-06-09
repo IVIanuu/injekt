@@ -14,37 +14,33 @@
  * limitations under the License.
  */
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
+    id("java-library")
+    id("kotlin")
     id("kotlin-kapt")
 }
 
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-compatibility-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-kapt.gradle")
 
-android {
-    compileSdkVersion(Build.compileSdk)
-
-    defaultConfig {
-        applicationId = Build.applicationIdComparison
-        buildToolsVersion = Build.buildToolsVersion
-        minSdkVersion(Build.minSdk)
-        targetSdkVersion(Build.targetSdk)
-        versionCode = Build.versionCode
-        versionName = Build.versionName
-    }
-}
-
 dependencies {
-    implementation(Deps.androidxAppCompat)
     implementation(Deps.dagger)
     kapt(Deps.daggerCompiler)
+
+    implementation(Deps.guice)
+
     implementation(project(":injekt"))
     kapt(project(":injekt-compiler"))
+
     implementation(Deps.katana)
+
     implementation(Deps.kodein)
+
     implementation(Deps.koin)
+
     implementation(Deps.kotlinStdLib)
+
     implementation(Deps.kotlinStatistics)
+
     implementation(Deps.toothpick)
     kapt(Deps.toothpickCompiler)
 }
