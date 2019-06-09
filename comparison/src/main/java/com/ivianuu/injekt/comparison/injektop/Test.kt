@@ -35,11 +35,7 @@ object InjektOpTest : InjectionTest {
         component = component { modules(injektOpModule) }
     }
 
-    override fun firstInject() {
-        component!!.get<Fib8>()
-    }
-
-    override fun secondInject() {
+    override fun inject() {
         component!!.get<Fib8>()
     }
 

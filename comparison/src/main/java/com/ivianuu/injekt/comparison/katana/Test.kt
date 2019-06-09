@@ -34,11 +34,7 @@ object KatanaTest : InjectionTest {
         component = Component(modules = listOf(katanaModule))
     }
 
-    override fun firstInject() {
-        component!!.injectNow<Fib8>()
-    }
-
-    override fun secondInject() {
+    override fun inject() {
         component!!.injectNow<Fib8>()
     }
 

@@ -32,11 +32,7 @@ object Dagger2ModuleTest : InjectionTest {
         component = DaggerDagger2ModuleComponent.create()
     }
 
-    override fun firstInject() {
-        component!!.fib8
-    }
-
-    override fun secondInject() {
+    override fun inject() {
         component!!.fib8
     }
 

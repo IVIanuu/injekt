@@ -90,8 +90,8 @@ fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultCo
 fun measure(test: InjectionTest): Timings {
     val moduleCreation = measureNanoTime { test.moduleCreation() }
     val setup = measureNanoTime { test.setup() }
-    val firstInjection = measureNanoTime { test.firstInject() }
-    val secondInjection = measureNanoTime { test.secondInject() }
+    val firstInjection = measureNanoTime { test.inject() }
+    val secondInjection = measureNanoTime { test.inject() }
     test.shutdown()
     return Timings(test.name, moduleCreation, setup, firstInjection, secondInjection)
 }
