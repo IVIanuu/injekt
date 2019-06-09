@@ -157,7 +157,7 @@ fun Map<String, Results>.print(config: Config) {
     toList()
         .sortedBy { it.second.moduleCreation.min }
         .forEach { (name, results) ->
-            results.setup.print(name, config)
+            results.moduleCreation.print(name, config)
         }
 
     println()
