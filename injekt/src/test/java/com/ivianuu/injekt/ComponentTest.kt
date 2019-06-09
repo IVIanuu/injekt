@@ -74,7 +74,7 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testGetUnknownDefinitionThrows() {
         val component = component()
-        component.get<TestDep1>()
+        component.get<Int>()
     }
 
     @Test
