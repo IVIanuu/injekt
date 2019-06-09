@@ -105,7 +105,7 @@ class BindingGenerationStep : ProcessingStep() {
             ?.asType()
             ?.asTypeName() as? ClassName
 
-        var paramsIndex = -1
+        var currentParamsIndex = -1
 
         val targetName = element.asClassName().javaToKotlinType() as ClassName
 
@@ -114,7 +114,7 @@ class BindingGenerationStep : ProcessingStep() {
             element.simpleName.toString() + "__Binding"
         )
 
-        val constructorParams = element.enclosedElements
+        val constructorArgs = element.enclosedElements
             // todo consider multiple constructors
             .filterIsInstance<ExecutableElement>()
             .first { it.kind == ElementKind.CONSTRUCTOR }
@@ -123,8 +123,7 @@ class BindingGenerationStep : ProcessingStep() {
                 val paramName = param.simpleName.toString()
 
                 val paramIndex = if (param.hasAnnotation<Param>()) {
-                    paramsIndex++
-                    paramsIndex
+                    ++currentParamsIndex
                 } else {
                     -1
                 }
@@ -175,9 +174,9 @@ class BindingGenerationStep : ProcessingStep() {
                 val paramType = param.asType().asTypeName().javaToKotlinType()
 
                 if (paramIndex != -1) {
-                    ParamDescriptor.Dynamic(paramName, paramIndex)
+                    ArgDescriptor.Parameter(paramName, paramIndex)
                 } else {
-                    ParamDescriptor.Dependency(paramName, paramType, qualifierName)
+                    ArgDescriptor.Dependency(paramName, paramType, qualifierName)
                 }
             }
 
@@ -186,7 +185,7 @@ class BindingGenerationStep : ProcessingStep() {
             factoryName,
             isInternal,
             scopeName,
-            constructorParams
+            constructorArgs
         )
     }
 

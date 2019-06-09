@@ -82,12 +82,12 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         }
         .apply {
             if (descriptor.hasDependencies) {
-                descriptor.constructorParams
-                    .filterIsInstance<ParamDescriptor.Dependency>()
+                descriptor.constructorArgs
+                    .filterIsInstance<ArgDescriptor.Dependency>()
                     .forEach { param ->
                         addProperty(
                             PropertySpec.builder(
-                                "${param.paramName}Key",
+                                "${param.argName}Key",
                                 Key::class,
                                 KModifier.PRIVATE
                             )
@@ -121,11 +121,11 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                                 .add("return Linked(\n")
                                 .indent()
                                 .apply {
-                                    descriptor.constructorParams
-                                        .filterIsInstance<ParamDescriptor.Dependency>()
+                                    descriptor.constructorArgs
+                                        .filterIsInstance<ArgDescriptor.Dependency>()
                                         .forEachIndexed { i, param ->
-                                            add("${param.paramName}Binding = linker.get(${param.paramName}Key)")
-                                            if (i != descriptor.constructorParams.lastIndex) {
+                                            add("${param.argName}Binding = linker.get(${param.argName}Key)")
+                                            if (i != descriptor.constructorArgs.lastIndex) {
                                                 add(",\n")
                                             }
                                         }
@@ -168,11 +168,11 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                 primaryConstructor(
                     FunSpec.constructorBuilder()
                         .apply {
-                            descriptor.constructorParams
-                                .filterIsInstance<ParamDescriptor.Dependency>()
+                            descriptor.constructorArgs
+                                .filterIsInstance<ArgDescriptor.Dependency>()
                                 .forEach { param ->
                                     addParameter(
-                                        param.paramName + "Binding",
+                                        param.argName + "Binding",
                                         LinkedBinding::class.asTypeName().plusParameter(param.paramType)
                                     )
                                 }
@@ -180,16 +180,16 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         .build()
                 )
 
-                descriptor.constructorParams
-                    .filterIsInstance<ParamDescriptor.Dependency>()
+                descriptor.constructorArgs
+                    .filterIsInstance<ArgDescriptor.Dependency>()
                     .forEach { param ->
                         addProperty(
                             PropertySpec.builder(
-                                param.paramName + "Binding",
+                                param.argName + "Binding",
                                 LinkedBinding::class.asTypeName().plusParameter(param.paramType),
                                 KModifier.PRIVATE
                             )
-                                .initializer(param.paramName + "Binding")
+                                .initializer(param.argName + "Binding")
                                 .build()
                         )
                     }
@@ -211,30 +211,30 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
 
     private fun createBody() = CodeBlock.builder()
         .apply {
-            if (!descriptor.hasDependencies && !descriptor.hasDynamicParams) {
+            if (!descriptor.hasDependencies && !descriptor.hasDynamicArgs) {
                 addStatement("return %T()", descriptor.target)
                 return@createBody build()
             }
         }
         .apply {
-            if (descriptor.hasDynamicParams) {
+            if (descriptor.hasDynamicArgs) {
                 addStatement("val params = parameters?.invoke()")
             }
         }
         .add("return %T(\n", descriptor.target)
         .indent()
         .apply {
-            descriptor.constructorParams.forEachIndexed { i, param ->
+            descriptor.constructorArgs.forEachIndexed { i, param ->
                 when (param) {
-                    is ParamDescriptor.Dynamic -> {
-                        add("${param.paramName} = params!!.get(${param.index})")
+                    is ArgDescriptor.Parameter -> {
+                        add("${param.argName} = params!!.get(${param.index})")
                     }
-                    is ParamDescriptor.Dependency -> {
-                        add("${param.paramName} = ${param.paramName}Binding()")
+                    is ArgDescriptor.Dependency -> {
+                        add("${param.argName} = ${param.argName}Binding()")
                     }
                 }
 
-                if (i != descriptor.constructorParams.lastIndex) {
+                if (i != descriptor.constructorArgs.lastIndex) {
                     add(",\n")
                 }
             }
