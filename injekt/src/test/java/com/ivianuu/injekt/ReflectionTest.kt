@@ -28,7 +28,8 @@ class ReflectionDep
 @TestScope
 class ReflectionDepWithNamedParam(
     @PackageName private val packageName: Provider<String>,
-    private val reflectionDep: ReflectionDep
+    private val reflectionDep: ReflectionDep,
+    @Param private val parameter: Int
 )
 
 class ReflectionTest {
@@ -44,7 +45,7 @@ class ReflectionTest {
             )
         }
 
-        component.get<ReflectionDepWithNamedParam>()
+        component.get<ReflectionDepWithNamedParam> { parametersOf(1) }
     }
 
 }

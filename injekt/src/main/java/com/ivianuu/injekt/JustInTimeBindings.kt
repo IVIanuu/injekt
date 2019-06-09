@@ -107,33 +107,58 @@ private class UnlinkedJustInTimeBinding<T>(
         val parameterTypes = constructor.genericParameterTypes
         val parameterAnnotations = constructor.parameterAnnotations
 
-        val bindings = arrayOfNulls<LinkedBinding<*>>(parameterTypes.size)
+        val args =
+            arrayOfNulls<LinkedJustInTimeBinding.Arg>(parameterTypes.size)
+        var currentParamIndex = -1
         for (i in parameterTypes.indices) {
-            val type = typeOf<Any?>(parameterTypes[i])
-            val nameAnnotation = parameterAnnotations[i]
-                .mapNotNull { annotation ->
-                    annotation.annotationClass.java.declaredAnnotations.firstOrNull { annotatedAnnotation ->
-                        annotatedAnnotation.annotationClass == Name::class
+            val thisAnnotations = parameterAnnotations[i]
+
+            if (thisAnnotations.any { it is Param }) {
+                ++currentParamIndex
+                args[i] = LinkedJustInTimeBinding.Arg.Parameter(currentParamIndex)
+            } else {
+                val type = typeOf<Any?>(parameterTypes[i])
+                val nameAnnotation = parameterAnnotations[i]
+                    .mapNotNull { annotation ->
+                        annotation.annotationClass.java.declaredAnnotations.firstOrNull { annotatedAnnotation ->
+                            annotatedAnnotation.annotationClass == Name::class
+                        }
                     }
-                }
-                .firstOrNull()
+                    .firstOrNull()
 
-            val name = (nameAnnotation as? Name)
-                ?.name?.java?.declaredFields?.last()?.get(null)
+                val name = (nameAnnotation as? Name)
+                    ?.name?.java?.declaredFields?.last()?.get(null)
 
-            val key = keyOf(type, name)
-            bindings[i] = linker.get<Any?>(key)
+                val key = keyOf(type, name)
+                args[i] = LinkedJustInTimeBinding.Arg.Dependency(linker.get<Any?>(key))
+            }
         }
 
-        return LinkedJustInTimeBinding(constructor, bindings as Array<LinkedBinding<*>>)
+        return LinkedJustInTimeBinding(constructor, args as Array<LinkedJustInTimeBinding.Arg>)
     }
 
 }
 
 private class LinkedJustInTimeBinding<T>(
     private val constructor: Constructor<T>,
-    private val bindings: Array<LinkedBinding<*>>
+    private val args: Array<Arg>
 ) : LinkedBinding<T>() {
-    override fun get(parameters: ParametersDefinition?): T =
-        constructor.newInstance(*bindings.map { it() }.toTypedArray())
+    override fun get(parameters: ParametersDefinition?): T {
+        val initializedParameters by lazy(LazyThreadSafetyMode.NONE) { parameters!!.invoke() }
+        val resolvedArgs = args
+            .map { arg ->
+                when (arg) {
+                    is Arg.Dependency -> arg.binding.get()
+                    is Arg.Parameter -> initializedParameters.get<Any?>(arg.index)
+                }
+            }
+            .toTypedArray()
+
+        return constructor.newInstance(*resolvedArgs)
+    }
+
+    sealed class Arg {
+        data class Dependency(val binding: LinkedBinding<*>) : Arg()
+        data class Parameter(val index: Int) : Arg()
+    }
 }
