@@ -155,7 +155,7 @@ fun Map<String, Results>.print(config: Config) {
     println("Module:")
     println("Library | Average | Median | Min | Max")
     toList()
-        .sortedBy { it.second.moduleCreation.min }
+        .sortedBy { it.second.moduleCreation.average }
         .forEach { (name, results) ->
             results.moduleCreation.print(name, config)
         }
@@ -165,7 +165,7 @@ fun Map<String, Results>.print(config: Config) {
     println("Setup:")
     println("Library | Average | Median | Min | Max")
     toList()
-        .sortedBy { it.second.setup.min }
+        .sortedBy { it.second.setup.average }
         .forEach { (name, results) ->
             results.setup.print(name, config)
         }
@@ -176,7 +176,7 @@ fun Map<String, Results>.print(config: Config) {
     println("Library | Average | Median | Min | Max")
 
     toList()
-        .sortedBy { it.second.firstInjection.min }
+        .sortedBy { it.second.firstInjection.average }
         .forEach { (name, results) ->
             results.firstInjection.print(name, config)
         }
@@ -186,7 +186,7 @@ fun Map<String, Results>.print(config: Config) {
     println("Second injection")
     println("Library | Average | Median | Min | Max")
     toList()
-        .sortedBy { it.second.secondInjection.min }
+        .sortedBy { it.second.secondInjection.average }
         .forEach { (name, results) ->
             results.secondInjection.print(name, config)
         }
