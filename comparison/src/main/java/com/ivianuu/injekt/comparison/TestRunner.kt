@@ -17,11 +17,12 @@
 package com.ivianuu.injekt.comparison
 
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
+import com.ivianuu.injekt.comparison.dagger2reflect.Dagger2ReflectTest
 import com.ivianuu.injekt.comparison.guice.GuiceTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
 import com.ivianuu.injekt.comparison.injektdsl.InjektDslTest
 import com.ivianuu.injekt.comparison.injektop.InjektOpTest
-import com.ivianuu.injekt.comparison.injektoptimized.InjektOptimizedDslTest
+import com.ivianuu.injekt.comparison.injektoptimizeddsl.InjektOptimizedDslTest
 import com.ivianuu.injekt.comparison.injektreflection.InjektReflectionTest
 import com.ivianuu.injekt.comparison.injektunoptimizeddsl.InjektUnoptimizedDslTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
@@ -48,19 +49,20 @@ enum class TimeUnit {
 fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
-            KodeinTest,
             Dagger2Test,
-            ToothpickTest,
-            KoinTest,
-            KatanaTest,
+            Dagger2ReflectTest,
             GuiceTest,
+            InjektCodegenTest,
+            InjektDslTest,
             InjektOpTest,
             InjektOptimizedDslTest,
-            InjektDslTest,
+            InjektReflectionTest,
             InjektUnoptimizedDslTest,
-            InjektCodegenTest,
-            InjektReflectionTest
-        ),
+            KatanaTest,
+            KodeinTest,
+            KoinTest,
+            ToothpickTest
+        ).shuffled(),
         config
     )
 }

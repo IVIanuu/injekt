@@ -14,29 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektoptimized
+package com.ivianuu.injekt.comparison.dagger2reflect
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.comparison.dagger2.Dagger2Component
+import dagger.Dagger
 
-object InjektOptimizedDslTest : InjectionTest {
-    override val name = "Injekt Optimized Dsl"
+object Dagger2ReflectTest : InjectionTest {
 
-    private var component: Component? = null
+    override val name = "Dagger 2 Reflect"
+
+    private var component: Dagger2Component? = null
 
     override fun moduleCreation() {
-        createModule()
     }
 
     override fun setup() {
-        component = component { modules(injektOptimizedDslModule) }
+        component = Dagger.factory(Dagger2Component.Factory::class.java).create()
     }
 
     override fun inject() {
-        component!!.get<Fib8>()
+        component!!.fib8
     }
 
     override fun shutdown() {

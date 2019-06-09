@@ -19,6 +19,7 @@ buildscript {
         google()
         jcenter()
         maven("https://dl.bintray.com/kotlin/kotlin-eap")
+        maven("https://oss.sonatype.org/content/repositories/snapshots")
     }
     dependencies {
         classpath(Deps.androidGradlePlugin)
@@ -35,6 +36,7 @@ allprojects {
         mavenLocal()
         maven("https://dl.bintray.com/ivianuu/maven")
         maven("https://dl.bintray.com/kotlin/kotlin-eap")
+        maven("https://oss.sonatype.org/content/repositories/snapshots")
     }
 }
 

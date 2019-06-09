@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektoptimized
+package com.ivianuu.injekt.comparison.injektoptimizeddsl
 
 import com.ivianuu.injekt.comparison.Fib1
 import com.ivianuu.injekt.comparison.Fib10

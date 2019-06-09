@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektoptimized
+package com.ivianuu.injekt.comparison.injektoptimizeddsl
 
 fun main() {
     println(create())

@@ -14,17 +14,33 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger2
+package com.ivianuu.injekt.comparison.injektoptimizeddsl
 
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib8
-import dagger.Component
+import com.ivianuu.injekt.comparison.InjectionTest
+import com.ivianuu.injekt.component
+import com.ivianuu.injekt.get
 
-@Component
-interface Dagger2Component {
-    val fib8: Fib8
+object InjektOptimizedDslTest : InjectionTest {
+    override val name = "Injekt Optimized Dsl"
 
-    @Component.Factory
-    interface Factory {
-        fun create(): Dagger2Component
+    private var component: Component? = null
+
+    override fun moduleCreation() {
+        createModule()
     }
+
+    override fun setup() {
+        component = component { modules(injektOptimizedDslModule) }
+    }
+
+    override fun inject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun shutdown() {
+        component = null
+    }
+
 }

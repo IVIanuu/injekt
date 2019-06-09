@@ -40,6 +40,8 @@ dependencies {
     implementation(Deps.dagger)
     kapt(Deps.daggerCompiler)
 
+    implementation(Deps.daggerReflect)
+
     api(Deps.guava)
 
     implementation(Deps.guice)
