@@ -27,7 +27,7 @@ android {
     defaultConfig {
         applicationId = Build.applicationIdComparison
         buildToolsVersion = Build.buildToolsVersion
-        minSdkVersion(Build.minSdk)
+        minSdkVersion(Build.minSdkComparison)
         targetSdkVersion(Build.targetSdk)
         versionCode = Build.versionCode
         versionName = Build.versionName
@@ -37,10 +37,13 @@ android {
 dependencies {
     implementation(Deps.androidxAppCompat)
 
-    implementation(Deps.dagger)
-    kapt(Deps.daggerCompiler)
+    implementation(files("libs/dagger-1-shadowed.jar"))
+    kapt(files("libs/dagger-1-compiler-shadowed.jar"))
 
-    implementation(Deps.daggerReflect)
+    implementation(Deps.dagger2)
+    kapt(Deps.dagger2Compiler)
+
+    implementation(Deps.dagger2Reflect)
 
     api(Deps.guava)
 

@@ -22,6 +22,7 @@ object Build {
     const val buildToolsVersion = "28.0.3"
     const val compileSdk = 28
     const val minSdk = 14
+    const val minSdkComparison = 28
     const val targetSdk = 28
 
     const val versionCode = 1
@@ -38,8 +39,8 @@ object Versions {
     const val androidGradlePlugin = "3.4.0"
     const val androidxAppCompat = "1.1.0-alpha04"
     const val bintray = "1.8.4"
-    const val dagger = "2.22.1"
-    const val daggerReflect = "0.1.0-SNAPSHOT"
+    const val dagger2 = "2.22.1"
+    const val dagger2Reflect = "0.1.0-SNAPSHOT"
     const val guava = "27.1-android"
     const val guice = "4.2.2"
     const val junit = "4.12"
@@ -61,11 +62,12 @@ object Deps {
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.bintray}"
 
-    const val dagger = "com.google.dagger:dagger:${Versions.dagger}"
-    const val daggerCompiler = "com.google.dagger:dagger-compiler:${Versions.dagger}"
-    const val daggerReflect = "com.jakewharton.dagger:dagger-reflect:${Versions.daggerReflect}"
+    const val dagger2 = "com.google.dagger:dagger:${Versions.dagger2}"
+    const val dagger2Compiler = "com.google.dagger:dagger-compiler:${Versions.dagger2}"
+    const val dagger2Reflect = "com.jakewharton.dagger:dagger-reflect:${Versions.dagger2Reflect}"
 
     const val guava = "com.google.guava:guava:${Versions.guava}"
+
     const val guice = "com.google.inject:guice:${Versions.guice}"
 
     const val junit = "junit:junit:${Versions.junit}"

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.comparison
 
+import com.ivianuu.injekt.comparison.dagger.DaggerTest
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
 import com.ivianuu.injekt.comparison.dagger2reflect.Dagger2ReflectTest
 import com.ivianuu.injekt.comparison.guice.GuiceTest
@@ -49,6 +50,7 @@ enum class TimeUnit {
 fun runAllInjectionTests(config: Config = defaultConfig) {
     runInjectionTests(
         listOf(
+            DaggerTest,
             Dagger2Test,
             Dagger2ReflectTest,
             GuiceTest,
