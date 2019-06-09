@@ -85,7 +85,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
         val constructor = type.constructors.first()
         // todo consider multiple constructors
         val scope = type.annotations.firstOrNull { annotation ->
-            annotation.javaClass.annotations.any { annotatedAnnotation ->
+            annotation.annotationClass.java.annotations.any { annotatedAnnotation ->
                 annotatedAnnotation.annotationClass == Scope::class
             }
         }?.annotationClass
@@ -110,11 +110,16 @@ private class UnlinkedJustInTimeBinding<T>(
         val bindings = arrayOfNulls<LinkedBinding<*>>(parameterTypes.size)
         for (i in parameterTypes.indices) {
             val type = typeOf<Any?>(parameterTypes[i])
-            val name = parameterAnnotations[i].firstOrNull { annotation ->
-                annotation.javaClass.annotations.any { annotatedAnnotation ->
-                    annotatedAnnotation.annotationClass == Name::class
+            val nameAnnotation = parameterAnnotations[i]
+                .mapNotNull { annotation ->
+                    annotation.annotationClass.java.declaredAnnotations.firstOrNull { annotatedAnnotation ->
+                        annotatedAnnotation.annotationClass == Name::class
+                    }
                 }
-            }?.annotationClass
+                .firstOrNull()
+
+            val name = (nameAnnotation as? Name)
+                ?.name?.java?.declaredFields?.last()?.get(null)
 
             val key = keyOf(type, name)
             bindings[i] = linker.get<Any?>(key)
