@@ -25,6 +25,7 @@ annotation class PackageName {
 
 class ReflectionDep
 
+@TestScope
 class ReflectionDepWithNamedParam(
     @PackageName private val packageName: Provider<String>,
     private val reflectionDep: ReflectionDep
@@ -35,6 +36,7 @@ class ReflectionTest {
     @Test
     fun testCreatesViaReflection() {
         val component = component {
+            scopes(TestScope::class)
             modules(
                 module {
                     factory(PackageName) { "com.ivianuu.injekt" }
