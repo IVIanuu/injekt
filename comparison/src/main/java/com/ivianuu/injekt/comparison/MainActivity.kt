@@ -18,13 +18,13 @@ package com.ivianuu.injekt.comparison
 
 import android.app.Activity
 import android.os.Bundle
-import com.ivianuu.injekt.comparison.injekt.InjektTest
+import com.ivianuu.injekt.comparison.injektdsl.InjektDslTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runInjectionTests(KoinTest, KatanaTest, InjektTest)
+        runInjectionTests(KoinTest, KatanaTest, InjektDslTest)
     }
 }

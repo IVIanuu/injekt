@@ -18,10 +18,11 @@ package com.ivianuu.injekt.comparison
 
 fun main() {
     //runInjectionTests(InjektCodegenTest)
-    runInjektTests()
-    //runInjectionTests(KoinTest, InjektUnoptimizedTest, InjektTest)
-    //runAllInjectionTests()
-    //runInjectionTests(KatanaTest, InjektOptimizedTest)
-    //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektTest)
-    // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektTest)
+    //runInjektTests()
+    //runInjectionTests(KoinTest, InjektUnoptimizedDslTest, InjektDslTest)
+
+    runAllInjectionTests()
+    //runInjectionTests(KatanaTest, InjektOptimizedDslTest)
+    //runInjectionTests(CustomTest, KodeinTest, KoinTest, KatanaTest, InjektDslTest)
+    // runInjectionTests(KodeinTest, KoinTest, KatanaTest, InjektDslTest)
 }

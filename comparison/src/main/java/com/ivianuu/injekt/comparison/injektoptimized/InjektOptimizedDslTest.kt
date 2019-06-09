@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektunoptimized
+package com.ivianuu.injekt.comparison.injektoptimized
 
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib8
@@ -22,17 +22,17 @@ import com.ivianuu.injekt.comparison.InjectionTest
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.get
 
-object InjektUnoptimizedTest : InjectionTest {
-    override val name = "Injekt Unoptimized"
+object InjektOptimizedDslTest : InjectionTest {
+    override val name = "Injekt Optimized Dsl"
 
     private var component: Component? = null
 
     override fun moduleCreation() {
-        com.ivianuu.injekt.comparison.injekt.createModule()
+        createModule()
     }
 
     override fun setup() {
-        component = component { modules(injektUnoptimizedModule) }
+        component = component { modules(injektOptimizedDslModule) }
     }
 
     override fun firstInject() {

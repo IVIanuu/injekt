@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injekt
+package com.ivianuu.injekt.comparison.injektdsl
 
 import com.ivianuu.injekt.comparison.Fib1
 import com.ivianuu.injekt.comparison.Fib10
@@ -120,7 +120,7 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 
-val injektModule = createModule()
+val injektDslModule = createModule()
 
 fun createModule() = module {
     factory { Fib1() }

@@ -28,7 +28,7 @@ object InjektOpTest : InjectionTest {
     private var component: Component? = null
 
     override fun moduleCreation() {
-        com.ivianuu.injekt.comparison.injektoptimized.createModule()
+        createModule()
     }
 
     override fun setup() {
