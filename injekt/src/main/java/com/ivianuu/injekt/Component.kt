@@ -45,11 +45,32 @@ class Component internal constructor(
         getBinding<T>(key).get()
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
-        findBinding(key, true)
+        findBinding(key)
             ?: error("Couldn't find a binding for $key")
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key, fullLookup: Boolean): LinkedBinding<T>? {
+    private fun <T> findBinding(key: Key): LinkedBinding<T>? {
+        var binding: Binding<T>?
+
+        // providers, lazy
+        binding = findSpecialBinding(key)
+        if (binding != null) return binding
+
+        binding = findExplicitBinding(key)
+        if (binding != null) return binding
+
+        for (dependency in dependencies) {
+            binding = dependency.findExplicitBinding(key)
+            if (binding != null) return binding
+        }
+
+        binding = findJustInTimeBinding(key)
+        if (binding != null) return binding
+
+        return null
+    }
+
+    private fun <T> findSpecialBinding(key: Key): LinkedBinding<T>? {
         if (key.type.parameters.size == 1) {
             when (key.type.raw) {
                 Provider::class -> {
@@ -63,33 +84,30 @@ class Component internal constructor(
             }
         }
 
-        var binding: Binding<*>? = bindings[key]
-        if (binding != null) return linkIfNeeded(key, binding) as LinkedBinding<T>
+        return null
+    }
 
-        for (dependency in dependencies) {
-            binding = dependency.findBinding<T>(key, false)
-            if (binding != null) return binding
-        }
+    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? =
+        bindings[key]?.linkIfNeeded(key) as? LinkedBinding<T>
 
-        if (fullLookup && key.name == null) {
-            val jitLookup = InjektPlugins.justInTimeLookupFactory.create<T>(key)
-            if (jitLookup != null) {
-                binding = jitLookup.binding
-                val component = findComponentForScope(jitLookup.scope)
-                    ?: error("Couldn't find component for ${jitLookup.scope}")
-                if (jitLookup.scope != null) {
-                    binding = binding.asScoped()
-                }
-                return component.addBinding(key, binding)
+    private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
+        val jitLookup = InjektPlugins.justInTimeLookupFactory.create<T>(key)
+        if (jitLookup != null) {
+            var binding = jitLookup.binding
+            val component = findComponentForScope(jitLookup.scope)
+                ?: error("Couldn't find component for ${jitLookup.scope}")
+            if (jitLookup.scope != null) {
+                binding = binding.asScoped()
             }
+            return component.addBinding(key, binding)
         }
 
         return null
     }
 
-    private fun <T> linkIfNeeded(key: Key, binding: Binding<T>): LinkedBinding<T> {
-        if (binding is LinkedBinding) return binding
-        val linkedBinding = binding.link(linker)
+    private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
+        if (this is LinkedBinding) return this
+        val linkedBinding = link(linker)
         bindings[key] = linkedBinding
         return linkedBinding
     }
