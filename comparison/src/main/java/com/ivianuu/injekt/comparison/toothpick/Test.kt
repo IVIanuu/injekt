@@ -20,13 +20,11 @@ import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 import toothpick.Scope
 import toothpick.Toothpick
-import javax.inject.Inject
 
 object ToothpickTest : InjectionTest {
     override val name: String
         get() = "Toothpick"
 
-    @set:Inject var dep: Fib8? = null
     private var scope: Scope? = null
 
     override fun moduleCreation() {
@@ -37,7 +35,7 @@ object ToothpickTest : InjectionTest {
     }
 
     override fun inject() {
-        Toothpick.inject(this, scope)
+        scope!!.getInstance(Fib8::class.java)
     }
 
     override fun shutdown() {
