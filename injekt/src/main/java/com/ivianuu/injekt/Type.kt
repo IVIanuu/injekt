@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import java.lang.reflect.ParameterizedType
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
@@ -91,3 +92,17 @@ fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> =
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> =
     Type(raw, isNullable, parameters)
+
+fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<T> {
+    if (type !is ParameterizedType) {
+        return Type((type as Class<*>).kotlin, isNullable, emptyArray())
+    }
+
+    return Type(
+        (type.rawType as Class<*>).kotlin,
+        isNullable,
+        type.actualTypeArguments
+            .map { typeOf<Any?>(it) }
+            .toTypedArray()
+    )
+}

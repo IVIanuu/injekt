@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import java.lang.reflect.Constructor
 import kotlin.reflect.KClass
 
 data class JustInTimeLookup<T>(
@@ -27,25 +28,26 @@ interface JustInTimeLookupFactory {
     fun <T> create(key: Key): JustInTimeLookup<T>?
 }
 
-internal object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
+object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
     override fun <T> create(key: Key): JustInTimeLookup<T>? =
         CodegenJustInTimeLookupFactory.create(key)
             ?: ReflectiveJustInTimeLookupFactory.create(key)
 }
 
 
-internal object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
+object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = hashMapOf<Key, JustInTimeLookup<*>>()
+    private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> create(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
+        val type = key.type
 
-        var lookup = lookups[key]
+        var lookup = lookups[type]
 
         if (lookup == null) {
-            lookup = findLookup(key.type.rawJava)
-            if (lookup != null) lookups[key] = lookup
+            lookup = findLookup(type.rawJava)
+            if (lookup != null) lookups[type] = lookup
         }
 
         return lookup as? JustInTimeLookup<T>
@@ -61,27 +63,72 @@ internal object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
     }
 }
 
-internal object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
-    override fun <T> create(key: Key): JustInTimeLookup<T>? = null // todo implement
+object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
+
+    private val lookups = mutableMapOf<Type<*>, JustInTimeLookup<*>>()
+
+    override fun <T> create(key: Key): JustInTimeLookup<T>? {
+        if (key.name != null) return null
+        val type = key.type
+
+        var lookup = lookups[type]
+
+        if (lookup == null) {
+            lookup = findLookup(type.rawJava)
+            if (lookup != null) lookups[type] = lookup
+        }
+
+        return lookup as? JustInTimeLookup<T>
+    }
+
+    private fun findLookup(type: Class<*>) = try {
+        val constructor = type.constructors.first()
+        // todo consider multiple constructors
+        val scope = type.annotations.firstOrNull { annotation ->
+            annotation.javaClass.annotations.any { annotatedAnnotation ->
+                annotatedAnnotation.annotationClass == Scope::class
+            }
+        }?.annotationClass
+
+        JustInTimeLookup(
+            UnlinkedJustInTimeBinding(constructor),
+            scope
+        )
+    } catch (e: Exception) {
+        null
+    }
 }
 
-/*
-internal class UnlinkedJustInTimeBinding<T>(private val type: Type<T>) : UnlinkedBinding<T>() {
+private class UnlinkedJustInTimeBinding<T>(
+    private val constructor: Constructor<T>
+) : UnlinkedBinding<T>() {
 
     override fun link(linker: Linker): LinkedBinding<T> {
-        val constructor = type.rawJava.constructors.first()
         val parameterTypes = constructor.genericParameterTypes
         val parameterAnnotations = constructor.parameterAnnotations
 
         val bindings = arrayOfNulls<LinkedBinding<*>>(parameterTypes.size)
         for (i in parameterTypes.indices) {
-            val key = Key.of(findQualifier(parameterAnnotations[i]), parameterTypes[i])
-            bindings[i] = linker.get<*>(key)
+            val type = typeOf<Any?>(parameterTypes[i])
+            val name = parameterAnnotations[i].firstOrNull { annotation ->
+                annotation.javaClass.annotations.any { annotatedAnnotation ->
+                    annotatedAnnotation.annotationClass == Name::class
+                }
+            }?.annotationClass
+
+            val key = keyOf(type, name)
+            bindings[i] = linker.get<Any?>(key)
         }
 
-        val membersInjector = ReflectiveMembersInjector.create(cls, scope)
-
-        return LinkedJustInTimeBinding(constructor, bindings, membersInjector)
+        return LinkedJustInTimeBinding(constructor, bindings as Array<LinkedBinding<*>>)
     }
 
-}*/
+}
+
+private class LinkedJustInTimeBinding<T>(
+    private val constructor: Constructor<T>,
+    private val bindings: Array<LinkedBinding<*>>
+) : LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?): T =
+        constructor.newInstance(*bindings.map { it() }.toTypedArray())
+}
