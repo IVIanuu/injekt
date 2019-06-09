@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 class ComponentBuilder @PublishedApi internal constructor() {
@@ -122,7 +123,10 @@ class ComponentBuilder @PublishedApi internal constructor() {
             includeSetBindings(bindings, setKey, set)
         }
 
-        return Component(scopes, bindings, mapBindings, setBindings, dependencies)
+        val finalBindings = ConcurrentHashMap<Key, Binding<*>>()
+        finalBindings.putAll(bindings)
+
+        return Component(scopes, finalBindings, mapBindings, setBindings, dependencies)
     }
 
     private fun checkScopes() {

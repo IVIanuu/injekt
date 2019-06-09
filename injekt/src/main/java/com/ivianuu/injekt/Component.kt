@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -24,7 +25,7 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(
     internal val scopes: Iterable<KClass<out Annotation>>,
-    internal val bindings: MutableMap<Key, Binding<*>>,
+    internal val bindings: ConcurrentHashMap<Key, Binding<*>>,
     internal val mapBindings: MapBindings?,
     internal val setBindings: SetBindings?,
     internal val dependencies: Iterable<Component>

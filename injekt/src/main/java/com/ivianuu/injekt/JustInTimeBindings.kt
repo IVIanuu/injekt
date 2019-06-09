@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import java.lang.reflect.Constructor
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 data class JustInTimeLookup<T>(
@@ -37,7 +38,7 @@ object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = ConcurrentHashMap<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> create(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
@@ -65,7 +66,7 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
 object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = mutableMapOf<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = ConcurrentHashMap<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> create(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
