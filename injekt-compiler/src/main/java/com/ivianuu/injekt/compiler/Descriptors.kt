@@ -26,9 +26,9 @@ data class BindingDescriptor(
     val scope: ClassName?,
     val constructorArgs: List<ArgDescriptor>
 ) {
-    val hasDependencies
+    val hasDependencyArgs
         get() = constructorArgs.any { it is ArgDescriptor.Dependency }
-    val hasDynamicArgs
+    val hasParamArgs
         get() = constructorArgs.any { it is ArgDescriptor.Parameter }
 }
 

@@ -48,7 +48,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
             if (descriptor.isInternal) addModifiers(KModifier.INTERNAL)
         }
         .apply {
-            if (descriptor.hasDependencies) {
+            if (descriptor.hasDependencyArgs) {
                 superclass(
                     UnlinkedBinding::class.asClassName().plusParameter(descriptor.target)
                 )
@@ -81,7 +81,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
             }
         }
         .apply {
-            if (descriptor.hasDependencies) {
+            if (descriptor.hasDependencyArgs) {
                 descriptor.constructorArgs
                     .filterIsInstance<ArgDescriptor.Dependency>()
                     .forEach { param ->
@@ -108,7 +108,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
             }
         }
         .apply {
-            if (descriptor.hasDependencies) {
+            if (descriptor.hasDependencyArgs) {
                 addFunction(
                     FunSpec.builder("link")
                         .addModifiers(KModifier.OVERRIDE)
@@ -153,14 +153,14 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
             }
         }
         .apply {
-            if (descriptor.hasDependencies) {
+            if (descriptor.hasDependencyArgs) {
                 addType(linkedBinding())
             }
         }
         .build()
 
     private fun linkedBinding() =
-        (if (descriptor.hasDependencies) TypeSpec.classBuilder("Linked")
+        (if (descriptor.hasDependencyArgs) TypeSpec.classBuilder("Linked")
         else TypeSpec.objectBuilder("Linked"))
             .addModifiers(KModifier.PRIVATE)
             .superclass(LinkedBinding::class.asClassName().plusParameter(descriptor.target))
@@ -211,13 +211,13 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
 
     private fun createBody() = CodeBlock.builder()
         .apply {
-            if (!descriptor.hasDependencies && !descriptor.hasDynamicArgs) {
+            if (!descriptor.hasDependencyArgs && !descriptor.hasParamArgs) {
                 addStatement("return %T()", descriptor.target)
                 return@createBody build()
             }
         }
         .apply {
-            if (descriptor.hasDynamicArgs) {
+            if (descriptor.hasParamArgs) {
                 addStatement("val params = parameters?.invoke()")
             }
         }
