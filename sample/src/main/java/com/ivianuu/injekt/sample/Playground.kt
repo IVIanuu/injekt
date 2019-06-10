@@ -52,7 +52,7 @@ internal class InternalDep
 class EmptyConstructorDep
 
 @Inject
-class OnlyParamsConstructorDep(@Param param: String)
+class OnlyParamsConstructorDep(@Param param: String, val lol: String)
 
 @Inject
 class MyDep(

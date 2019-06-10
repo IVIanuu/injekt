@@ -121,14 +121,15 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                                 .add("return Linked(\n")
                                 .indent()
                                 .apply {
-                                    descriptor.constructorArgs
+                                    val dependencyArgs = descriptor.constructorArgs
                                         .filterIsInstance<ArgDescriptor.Dependency>()
-                                        .forEachIndexed { i, param ->
-                                            add("${param.argName}Binding = linker.get(${param.argName}Key)")
-                                            if (i != descriptor.constructorArgs.lastIndex) {
-                                                add(",\n")
-                                            }
+
+                                    dependencyArgs.forEachIndexed { i, param ->
+                                        add("${param.argName}Binding = linker.get(${param.argName}Key)")
+                                        if (i != dependencyArgs.lastIndex) {
+                                            add(",\n")
                                         }
+                                    }
                                 }
                                 .unindent()
                                 .add("\n)\n")
