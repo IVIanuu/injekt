@@ -16,13 +16,7 @@
 
 package com.ivianuu.injekt
 
-data class Key internal constructor(val type: Type<*>, val name: Any? = null) {
-    override fun toString(): String {
-        return "Key(" +
-                "type=$type, " +
-                "name=$name)"
-    }
-}
+data class Key internal constructor(val type: Type<*>, val name: Any? = null)
 
 fun keyOf(type: Type<*>, name: Any? = null): Key = Key(type, name)
 

@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 @Name(PackageName.Companion::class)
@@ -25,19 +27,48 @@ annotation class PackageName {
 
 class ReflectionDep
 
+class ReflectionDepWithParam(@Param val value: Int)
+
+class ReflectionDepWithNamedParam(@PackageName val packageName: String)
+
+class ReflectionDepWithAtInjectConstructor {
+
+    val arg: Any?
+
+    constructor(testDep1: TestDep1) {
+        arg = testDep1
+    }
+
+    @Inject
+    constructor(testDep2: TestDep2) {
+        arg = testDep2
+    }
+
+}
+
 @TestScope
-class ReflectionDepWithNamedParam(
-    @PackageName private val packageName: Provider<String>,
-    private val reflectionDep: ReflectionDep,
-    @Param private val parameter: Int
-)
+class ReflectionDepWithScope
+
+@Scope
+annotation class OtherScope
 
 class ReflectionTest {
 
     @Test
     fun testCreatesViaReflection() {
+        val component = component()
+        component.get<ReflectionDep>()
+    }
+
+    @Test
+    fun testUsesParams() {
+        val component = component()
+        component.get<ReflectionDepWithParam> { parametersOf(1) }
+    }
+
+    @Test
+    fun testUsesNamedParams() {
         val component = component {
-            scopes(TestScope::class)
             modules(
                 module {
                     factory(PackageName) { "com.ivianuu.injekt" }
@@ -45,7 +76,30 @@ class ReflectionTest {
             )
         }
 
-        component.get<ReflectionDepWithNamedParam> { parametersOf(1) }
+        component.get<ReflectionDepWithNamedParam>()
+    }
+
+    @Test
+    fun testUsesScope() {
+        val testScopeComponent = component {
+            scopes(TestScope::class)
+        }
+
+        val component = component {
+            scopes(OtherScope::class)
+            dependencies(testScopeComponent)
+        }
+
+        component.get<ReflectionDepWithScope>()
+
+        assertTrue(testScopeComponent.bindings.containsKey(keyOf<ReflectionDepWithScope>()))
+        assertFalse(component.bindings.containsKey(keyOf<ReflectionDepWithScope>()))
+    }
+
+    @Test
+    fun testUsesAtInjectConstructor() {
+        val component = component()
+        assertTrue(component.get<ReflectionDepWithAtInjectConstructor>().arg is TestDep2)
     }
 
 }
