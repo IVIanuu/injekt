@@ -62,7 +62,6 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
             .get(null) as Binding<*>
         JustInTimeLookup(binding, (binding as? HasScope)?.scope)
     } catch (e: Exception) {
-        e.printStackTrace()
         null
     }
 }
