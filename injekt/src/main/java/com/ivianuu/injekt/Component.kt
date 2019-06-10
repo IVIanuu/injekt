@@ -83,17 +83,12 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findExplicitBinding(
-        key: Key,
-        includePrivate: Boolean = true
-    ): LinkedBinding<T>? {
+    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
         var binding = bindings[key] as? Binding<T>
-        if (binding != null && (includePrivate || !binding.isPrivate)) {
-            return binding.linkIfNeeded(key)
-        }
+        if (binding != null) return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
-            binding = dependency.findExplicitBinding(key, false)
+            binding = dependency.findExplicitBinding(key)
             if (binding != null) return binding
         }
 
@@ -110,7 +105,6 @@ class Component internal constructor(
                 binding = binding.asScoped()
                 component.addJitBinding(key, binding)
             } else {
-                binding.isPrivate = true
                 addJitBinding(key, binding)
             }
         }

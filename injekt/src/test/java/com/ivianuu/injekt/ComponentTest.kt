@@ -293,24 +293,4 @@ class ComponentTest {
         }
     }
 
-    @Test
-    fun testInjectsUnboundedJitBindingsInTheRequestingComponent() {
-        val componentA = component()
-        val componentB = component { dependencies(componentA) }
-        val componentC = component { dependencies(componentB) }
-        assertEquals(componentA, componentA.get<Context>().component)
-        assertEquals(componentB, componentB.get<Context>().component)
-        assertEquals(componentC, componentC.get<Context>().component)
-    }
-
-}
-
-class Context(val component: Component)
-
-// we mimik codegen here
-object Context__Binding : UnlinkedBinding<Context>() {
-    override fun link(linker: Linker): LinkedBinding<Context> = Linked(linker.component)
-    private class Linked(private val component: Component) : LinkedBinding<Context>() {
-        override fun get(parameters: ParametersDefinition?) = Context(component)
-    }
 }
