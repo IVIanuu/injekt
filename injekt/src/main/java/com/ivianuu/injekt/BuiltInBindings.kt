@@ -72,3 +72,7 @@ internal class LinkedSetBinding<E>(private val bindings: Set<LinkedBinding<out E
     override fun get(parameters: ParametersDefinition?): Set<E> =
         bindings.map { it.get() }.toSet()
 }
+
+internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?): T = instance
+}
