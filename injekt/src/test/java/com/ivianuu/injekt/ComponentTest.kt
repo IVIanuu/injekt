@@ -293,4 +293,19 @@ class ComponentTest {
         }
     }
 
+    @Test
+    fun testImplicitComponentBindings() {
+        val componentA = component { scopes<TestScope>() }
+        val componentB = component {
+            scopes<OtherScope>()
+            dependencies(componentA)
+        }
+
+        assertEquals(componentA, componentA.get<Component>())
+        assertEquals(componentA, componentA.get<Component>(TestScope::class))
+
+        assertEquals(componentB, componentB.get<Component>())
+        assertEquals(componentB, componentB.get<Component>(OtherScope::class))
+        assertEquals(componentA, componentB.get<Component>(TestScope::class))
+    }
 }

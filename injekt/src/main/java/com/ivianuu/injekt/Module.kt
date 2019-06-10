@@ -176,6 +176,6 @@ fun <T> Module.instance(
     override: Boolean = false
 ): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)
 
-private class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
+internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
     override fun get(parameters: ParametersDefinition?): T = instance
 }

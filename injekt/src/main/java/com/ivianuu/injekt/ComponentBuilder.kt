@@ -123,6 +123,8 @@ class ComponentBuilder @PublishedApi internal constructor() {
             includeSetBindings(bindings, setKey, set)
         }
 
+        includeComponentBindings(bindings)
+
         val finalBindings = ConcurrentHashMap<Key, Binding<*>>()
         finalBindings.putAll(bindings)
 
@@ -149,6 +151,24 @@ class ComponentBuilder @PublishedApi internal constructor() {
         check(scopes.isNotEmpty() || dependencyScopes.isEmpty()) {
             "Must have a scope if a dependency has a scope"
         }
+    }
+
+    private class ComponentBinding : UnlinkedBinding<Component>() {
+        override fun link(linker: Linker): LinkedBinding<Component> = Linked(linker.component)
+
+        private class Linked(private val component: Component) : LinkedBinding<Component>() {
+            override fun get(parameters: ParametersDefinition?): Component =
+                component
+        }
+    }
+
+    private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
+        val componentBinding = ComponentBinding()
+        val componentKey = keyOf<Component>()
+        bindings[componentKey] = componentBinding
+        scopes
+            .map { keyOf<Component>(it) }
+            .forEach { bindings[it] = componentBinding }
     }
 
     private fun includeMapBindings(
