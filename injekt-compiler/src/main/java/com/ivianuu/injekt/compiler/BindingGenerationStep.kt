@@ -40,6 +40,7 @@ import me.eugeniomarletti.kotlin.metadata.visibility
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
@@ -51,7 +52,6 @@ class BindingGenerationStep : ProcessingStep() {
     override fun process(elementsByAnnotation: SetMultimap<KClass<out Annotation>, Element>): Set<Element> {
         annotations()
             .flatMap { elementsByAnnotation[it] }
-            .filterIsInstance<TypeElement>()
             .mapNotNull { createDescriptor(it) }
             .map { BindingGenerator(it) }
             .map { it.generate() }
@@ -60,41 +60,55 @@ class BindingGenerationStep : ProcessingStep() {
         return emptySet()
     }
 
-    private fun createDescriptor(element: TypeElement): BindingDescriptor? {
-        val classMetadata = element.kotlinMetadata as? KotlinClassMetadata
+    private fun createDescriptor(element: Element): BindingDescriptor? {
+        val annotatedType = if (element is TypeElement) element
+        else element.enclosingElement as TypeElement
+
+        if (element is ExecutableElement
+            && annotatedType.hasAnnotation<Inject>()
+        ) {
+            messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Can only have @Inject on the type or the constructor",
+                element
+            )
+            return null
+        }
+
+        val classMetadata =
+            annotatedType.kotlinMetadata as? KotlinClassMetadata
 
         if (classMetadata == null) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Must be a kotlin class",
-                element
+                annotatedType
             )
             return null
         }
 
-        val visibility = classMetadata.data.classProto.visibility
-
-        if (visibility != ProtoBuf.Visibility.PUBLIC
-            && visibility != ProtoBuf.Visibility.INTERNAL
+        if (annotatedType.modifiers.contains(Modifier.PRIVATE)
+            || annotatedType.modifiers.contains(Modifier.PROTECTED)
         ) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Must be a public or internal",
-                element
+                annotatedType
             )
             return null
         }
 
-        val isInternal = classMetadata.data.classProto.visibility == ProtoBuf.Visibility.INTERNAL
+        val isInternal =
+            classMetadata.data.classProto.visibility == ProtoBuf.Visibility.INTERNAL
 
         val scopeAnnotations =
-            element.getAnnotatedAnnotations<Scope>()
+            annotatedType.getAnnotatedAnnotations<Scope>()
 
         if (scopeAnnotations.size > 1) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
                 "Can only have 1 scope annotation",
-                element
+                annotatedType
             )
             return null
         }
@@ -107,17 +121,36 @@ class BindingGenerationStep : ProcessingStep() {
 
         var currentParamsIndex = -1
 
-        val targetName = element.asClassName().javaToKotlinType() as ClassName
+        val targetName = annotatedType.asClassName().javaToKotlinType() as ClassName
 
         val factoryName = ClassName(
             targetName.packageName,
-            element.simpleName.toString() + "__Binding"
+            annotatedType.simpleName.toString() + "__Binding"
         )
 
-        val constructorArgs = element.enclosedElements
-            // todo consider multiple constructors
-            .filterIsInstance<ExecutableElement>()
-            .first { it.kind == ElementKind.CONSTRUCTOR }
+        val constructor = if (element is ExecutableElement) {
+            element
+        } else {
+            element.enclosedElements
+                // todo consider multiple constructors
+                .filterIsInstance<ExecutableElement>()
+                .first { it.kind == ElementKind.CONSTRUCTOR }
+        }
+
+        constructor.kotlinMetadata
+
+        if (constructor.modifiers.contains(Modifier.PRIVATE)
+            || constructor.modifiers.contains(Modifier.PROTECTED)
+        ) {
+            messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                "Must be a public or internal",
+                annotatedType
+            )
+            return null
+        }
+
+        val constructorArgs = constructor
             .parameters
             .map { param ->
                 val paramName = param.simpleName.toString()

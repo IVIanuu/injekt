@@ -83,8 +83,14 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
     }
 
     private fun findLookup(type: Class<*>) = try {
-        val constructor = type.constructors.first()
-        // todo consider multiple constructors
+        val constructor = if (type.isAnnotationPresent(Inject::class.java)) {
+            type.constructors.first()
+        } else {
+            type.constructors
+                .firstOrNull { it.isAnnotationPresent(Inject::class.java) }
+                ?: type.constructors.first()
+        }
+
         val scope = type.annotations.firstOrNull { annotation ->
             annotation.annotationClass.java.annotations.any { annotatedAnnotation ->
                 annotatedAnnotation.annotationClass == Scope::class
