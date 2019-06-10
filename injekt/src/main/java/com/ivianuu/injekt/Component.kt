@@ -83,12 +83,17 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
-        var binding = bindings[key]?.linkIfNeeded(key) as? LinkedBinding<T>
-        if (binding != null) return binding
+    private fun <T> findExplicitBinding(
+        key: Key,
+        includePrivate: Boolean = true
+    ): LinkedBinding<T>? {
+        var binding = bindings[key] as? Binding<T>
+        if (binding != null && (includePrivate || !binding.isPrivate)) {
+            return binding.linkIfNeeded(key)
+        }
 
         for (dependency in dependencies) {
-            binding = dependency.findExplicitBinding(key)
+            binding = dependency.findExplicitBinding(key, false)
             if (binding != null) return binding
         }
 
@@ -99,32 +104,37 @@ class Component internal constructor(
         val jitLookup = InjektPlugins.justInTimeLookupFactory.create<T>(key)
         if (jitLookup != null) {
             var binding = jitLookup.binding
-            val component = findComponentForScope(jitLookup.scope)
-                ?: error("Couldn't find component for ${jitLookup.scope}")
-            if (jitLookup.scope != null) {
+            return if (jitLookup.scope != null) {
+                val component = findComponentForScope(jitLookup.scope)
+                    ?: error("Couldn't find component for ${jitLookup.scope}")
                 binding = binding.asScoped()
+                component.addJitBinding(key, binding)
+            } else {
+                binding.isPrivate = true
+                addJitBinding(key, binding)
             }
-            return component.addBinding(key, binding)
         }
 
         return null
     }
 
+    private fun <T> addJitBinding(
+        key: Key,
+        binding: Binding<T>
+    ): LinkedBinding<T> {
+        val linkedBinding = binding.performLink(linker)
+        bindings[key] = linkedBinding
+        return linkedBinding
+    }
+
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
         if (this is LinkedBinding) return this
-        val linkedBinding = link(linker)
+        val linkedBinding = performLink(linker)
         bindings[key] = linkedBinding
         return linkedBinding
     }
 
-    private fun <T> addBinding(key: Key, binding: Binding<T>): LinkedBinding<T> {
-        val linkedBinding = binding.link(linker)
-        bindings[key] = linkedBinding
-        return linkedBinding
-    }
-
-    private fun findComponentForScope(scope: KClass<out Annotation>?): Component? {
-        if (scope == null) return this
+    private fun findComponentForScope(scope: KClass<out Annotation>): Component? {
         if (scopes.contains(scope)) return this
         for (dependency in dependencies) {
             dependency.findComponentForScope(scope)

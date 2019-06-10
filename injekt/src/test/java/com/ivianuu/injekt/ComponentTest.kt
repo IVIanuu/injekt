@@ -50,32 +50,32 @@ class ComponentTest {
 
     @Test
     fun testGetNested() {
-        val root = component {
+        val componentA = component {
             modules(
                 module {
                     factory { TestDep1() }
                 }
             )
         }
-        val middle = component {
+        val componentB = component {
+            dependencies(componentA)
             modules(
                 module {
                     factory { TestDep2(get()) }
                 }
             )
-            dependencies(root)
         }
 
-        val component = component {
+        val componentC = component {
+            dependencies(componentB)
             modules(
                 module {
                     factory { TestDep3(get(), get()) }
                 }
             )
-            dependencies(middle)
         }
 
-        component.get<TestDep3>()
+        componentC.get<TestDep3>()
     }
 
     @Test(expected = IllegalStateException::class)
@@ -183,7 +183,7 @@ class ComponentTest {
 
     @Test(expected = IllegalStateException::class)
     fun testDisallowsNestedImplicitOverride() {
-        val rootComponent = component {
+        val componentA = component {
             modules(
                 module {
                     factory { "my_value" }
@@ -192,7 +192,7 @@ class ComponentTest {
         }
 
         component {
-            dependencies(rootComponent)
+            dependencies(componentA)
             modules(
                 module {
                     factory { "my_overriden_value" }
@@ -291,5 +291,26 @@ class ComponentTest {
             scopes<OtherTestScope>()
             dependencies(dependency1, dependency2)
         }
+    }
+
+    @Test
+    fun testInjectsUnboundedJitBindingsInTheRequestingComponent() {
+        val componentA = component()
+        val componentB = component { dependencies(componentA) }
+        val componentC = component { dependencies(componentB) }
+        assertEquals(componentA, componentA.get<Context>().component)
+        assertEquals(componentB, componentB.get<Context>().component)
+        assertEquals(componentC, componentC.get<Context>().component)
+    }
+
+}
+
+class Context(val component: Component)
+
+// we mimik codegen here
+object Context__Binding : UnlinkedBinding<Context>() {
+    override fun link(linker: Linker): LinkedBinding<Context> = Linked(linker.component)
+    private class Linked(private val component: Component) : LinkedBinding<Context>() {
+        override fun get(parameters: ParametersDefinition?) = Context(component)
     }
 }

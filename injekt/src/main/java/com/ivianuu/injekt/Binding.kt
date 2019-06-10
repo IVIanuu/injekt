@@ -21,11 +21,14 @@ sealed class Binding<T> {
     var override = false
         internal set
 
+    internal var isPrivate = false
+
     abstract fun link(linker: Linker): LinkedBinding<T>
 
     internal open fun performLink(linker: Linker): LinkedBinding<T> {
         val linked = link(linker)
         linked.override = override
+        linked.isPrivate = isPrivate
         return linked
     }
 

@@ -232,7 +232,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
     private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
         dependencies.forEach { it.collectBindingKeys(keys) }
-        keys.addAll(this.bindings.keys)
+        keys.addAll(this.bindings.filterValues { !it.isPrivate }.keys)
     }
 
 }

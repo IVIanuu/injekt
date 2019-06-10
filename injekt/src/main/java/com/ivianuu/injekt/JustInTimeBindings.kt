@@ -56,10 +56,13 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
     private fun findLookup(type: Class<*>) = try {
         val bindingClass = Class.forName(type.name + "__Binding")
-        // get the INSTANCE field
-        val binding = bindingClass.declaredFields.first().get(null) as Binding<*>
+        val binding = bindingClass.declaredFields
+            .first { it.type == bindingClass }
+            .also { it.isAccessible = true }
+            .get(null) as Binding<*>
         JustInTimeLookup(binding, (binding as? HasScope)?.scope)
     } catch (e: Exception) {
+        e.printStackTrace()
         null
     }
 }
