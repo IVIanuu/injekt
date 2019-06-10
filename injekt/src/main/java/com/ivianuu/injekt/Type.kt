@@ -103,17 +103,17 @@ fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<
         }
     }
 
-    if (type !is ParameterizedType) {
-        return Type((type as Class<*>).kotlin, isNullable, emptyArray())
+    if (type is ParameterizedType) {
+        return Type<T>(
+            (type.rawType as Class<*>).kotlin,
+            isNullable,
+            (type as? ParameterizedType)
+                ?.actualTypeArguments
+                ?.map { typeOf<Any?>(it) }
+                ?.toTypedArray()
+                ?: emptyArray()
+        )
     }
 
-    return Type<T>(
-        (type.rawType as Class<*>).kotlin,
-        isNullable,
-        (type as? ParameterizedType)
-            ?.actualTypeArguments
-            ?.map { typeOf<Any?>(it) }
-            ?.toTypedArray()
-            ?: emptyArray()
-    )
+    return Type((type as Class<*>).kotlin, isNullable, emptyArray())
 }
