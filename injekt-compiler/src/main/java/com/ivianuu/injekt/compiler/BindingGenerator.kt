@@ -219,7 +219,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         }
         .apply {
             if (descriptor.hasParamArgs) {
-                addStatement("val params = parameters?.invoke()")
+                addStatement("val params = parameters!!.invoke()")
             }
         }
         .add("return %T(\n", descriptor.target)
@@ -228,7 +228,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
             descriptor.constructorArgs.forEachIndexed { i, param ->
                 when (param) {
                     is ArgDescriptor.Parameter -> {
-                        add("${param.argName} = params!!.get(${param.index})")
+                        add("${param.argName} = params.get(${param.index})")
                     }
                     is ArgDescriptor.Dependency -> {
                         add("${param.argName} = ${param.argName}Binding()")
