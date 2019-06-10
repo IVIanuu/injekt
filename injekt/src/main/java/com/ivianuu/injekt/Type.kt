@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt
 
+import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
+import java.lang.reflect.TypeVariable
+import java.lang.reflect.WildcardType
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
@@ -94,15 +97,38 @@ fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>):
     Type(raw, isNullable, parameters)
 
 fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<T> {
-    if (type !is ParameterizedType) {
-        return Type((type as Class<*>).kotlin, isNullable, emptyArray())
-    }
-
     return Type(
-        (type.rawType as Class<*>).kotlin,
+        getRawType(type).kotlin,
         isNullable,
-        type.actualTypeArguments
-            .map { typeOf<Any?>(it) }
-            .toTypedArray()
+        (type as? ParameterizedType)
+            ?.actualTypeArguments
+            ?.map { typeOf<Any?>(it) }
+            ?.toTypedArray()
+            ?: emptyArray()
     )
+}
+
+private fun getRawType(type: java.lang.reflect.Type): Class<*> {
+    return when (type) {
+        // type is a normal class.
+        is Class<*> -> type
+        // I'm not exactly sure why getRawType() returns Type instead of Class. Neal isn't either but
+        // suspects some pathological case related to nested classes exists.
+        is ParameterizedType -> type.rawType as Class<*>
+        is GenericArrayType -> java.lang.reflect.Array.newInstance(
+            getRawType(type.genericComponentType),
+            0
+        ).javaClass
+        // We could use the variable's bounds, but that won't work if there are multiple. having a raw
+        // type that's more general than necessary is okay.
+        is TypeVariable<*> -> return Any::class.java
+        is WildcardType -> return getRawType(type.upperBounds[0])
+        else -> {
+            val className = type.javaClass.name
+            throw IllegalArgumentException(
+                "Expected a Class, ParameterizedType, or "
+                        + "GenericArrayType, but <$type> is of type $className"
+            )
+        }
+    }
 }

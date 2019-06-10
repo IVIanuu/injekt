@@ -22,7 +22,7 @@ import daggerone.ObjectGraph
 
 object DaggerTest : InjectionTest {
 
-    override val name = "Dagger"
+    override val name = "Dagger 1"
 
     private var graph: ObjectGraph? = null
 
