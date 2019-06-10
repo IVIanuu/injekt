@@ -14,8 +14,29 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.custom
 
-fun main() {
-    runAllInjectionTests()
+import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.InjectionTest
+
+object CustomTest : InjectionTest {
+
+    override val name = "Custom"
+
+    override fun moduleCreation() {
+        createModule()
+    }
+
+    override fun setup() {
+        DIContainer.loadModule(customModule)
+    }
+
+    override fun inject() {
+        DIContainer.get<Fib8>()
+    }
+
+    override fun shutdown() {
+        DIContainer.unloadModules()
+    }
+
 }
