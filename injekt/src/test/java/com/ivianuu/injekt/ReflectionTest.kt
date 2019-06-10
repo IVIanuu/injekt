@@ -46,6 +46,12 @@ class ReflectionDepWithAtInjectConstructor {
 
 }
 
+interface Memoized<T>
+
+class ReflectionDepWithParameterizedDep(
+    private val mapOfStrings: Map<String, Memoized<String>>
+)
+
 @TestScope
 class ReflectionDepWithScope
 
@@ -102,4 +108,16 @@ class ReflectionTest {
         assertTrue(component.get<ReflectionDepWithAtInjectConstructor>().arg is TestDep2)
     }
 
+    @Test
+    fun testResolversParameterizedDeps() {
+        val component = component {
+            modules(
+                module {
+                    map<String, Memoized<String>>()
+                }
+            )
+        }
+
+        component.get<ReflectionDepWithParameterizedDep>()
+    }
 }
