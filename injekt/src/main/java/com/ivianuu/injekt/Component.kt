@@ -60,11 +60,6 @@ class Component internal constructor(
         binding = findExplicitBinding(key)
         if (binding != null) return binding
 
-        for (dependency in dependencies) {
-            binding = dependency.findExplicitBinding(key)
-            if (binding != null) return binding
-        }
-
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
 
@@ -88,8 +83,17 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? =
-        bindings[key]?.linkIfNeeded(key) as? LinkedBinding<T>
+    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
+        var binding = bindings[key]?.linkIfNeeded(key) as? LinkedBinding<T>
+        if (binding != null) return binding
+
+        for (dependency in dependencies) {
+            binding = dependency.findExplicitBinding(key)
+            if (binding != null) return binding
+        }
+
+        return null
+    }
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
         val jitLookup = InjektPlugins.justInTimeLookupFactory.create<T>(key)

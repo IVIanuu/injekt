@@ -50,25 +50,32 @@ class ComponentTest {
 
     @Test
     fun testGetNested() {
-        val dependency = component {
+        val root = component {
             modules(
                 module {
                     factory { TestDep1() }
                 }
             )
         }
-
-
-        val component = component {
+        val middle = component {
             modules(
                 module {
                     factory { TestDep2(get()) }
                 }
             )
-            dependencies(dependency)
+            dependencies(root)
         }
 
-        component.get<TestDep2>()
+        val component = component {
+            modules(
+                module {
+                    factory { TestDep3(get(), get()) }
+                }
+            )
+            dependencies(middle)
+        }
+
+        component.get<TestDep3>()
     }
 
     @Test(expected = IllegalStateException::class)
