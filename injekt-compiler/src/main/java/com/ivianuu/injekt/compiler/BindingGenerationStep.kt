@@ -21,14 +21,7 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Scope
-import com.ivianuu.processingx.filer
-import com.ivianuu.processingx.getAnnotatedAnnotations
-import com.ivianuu.processingx.getAnnotationMirror
-import com.ivianuu.processingx.getAnnotationMirrorOrNull
-import com.ivianuu.processingx.getAsType
-import com.ivianuu.processingx.hasAnnotation
-import com.ivianuu.processingx.javaToKotlinType
-import com.ivianuu.processingx.messager
+import com.ivianuu.processingx.*
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
@@ -36,12 +29,9 @@ import com.squareup.kotlinpoet.asTypeName
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
 import me.eugeniomarletti.kotlin.metadata.visibility
-import javax.lang.model.element.Element
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.TypeElement
+import javax.lang.model.element.*
 import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
@@ -87,8 +77,15 @@ class BindingGenerationStep : ProcessingStep() {
             return null
         }
 
-        if (annotatedType.modifiers.contains(Modifier.PRIVATE)
-            || annotatedType.modifiers.contains(Modifier.PROTECTED)
+        val isInternal =
+            classMetadata.data.classProto.visibility == ProtoBuf.Visibility.INTERNAL
+
+        val isObject =
+            Flags.CLASS_KIND.get(classMetadata.data.classProto.flags) == ProtoBuf.Class.Kind.OBJECT
+
+        if ((element is TypeElement || !isObject)
+            && (annotatedType.modifiers.contains(Modifier.PRIVATE)
+                    || annotatedType.modifiers.contains(Modifier.PROTECTED))
         ) {
             messager.printMessage(
                 Diagnostic.Kind.ERROR,
@@ -97,9 +94,6 @@ class BindingGenerationStep : ProcessingStep() {
             )
             return null
         }
-
-        val isInternal =
-            classMetadata.data.classProto.visibility == ProtoBuf.Visibility.INTERNAL
 
         val scopeAnnotations =
             annotatedType.getAnnotatedAnnotations<Scope>()
@@ -128,56 +122,47 @@ class BindingGenerationStep : ProcessingStep() {
             annotatedType.simpleName.toString() + "__Binding"
         )
 
-        val constructor = if (element is ExecutableElement) {
-            element
-        } else {
-            element.enclosedElements
-                // todo consider multiple constructors
-                .filterIsInstance<ExecutableElement>()
-                .first { it.kind == ElementKind.CONSTRUCTOR }
-        }
+        var constructorArgs: List<ArgDescriptor>? = null
 
-        constructor.kotlinMetadata
+        if (!isObject) {
+            val constructor = if (element is ExecutableElement) {
+                element
+            } else {
+                element.enclosedElements
+                    // todo consider multiple constructors
+                    .filterIsInstance<ExecutableElement>()
+                    .first { it.kind == ElementKind.CONSTRUCTOR }
+            }
 
-        if (constructor.modifiers.contains(Modifier.PRIVATE)
-            || constructor.modifiers.contains(Modifier.PROTECTED)
-        ) {
-            messager.printMessage(
-                Diagnostic.Kind.ERROR,
-                "Must be a public or internal",
-                annotatedType
-            )
-            return null
-        }
+            if (constructor.modifiers.contains(Modifier.PRIVATE)
+                || constructor.modifiers.contains(Modifier.PROTECTED)
+            ) {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Must be a public or internal",
+                    annotatedType
+                )
+                return null
+            }
 
-        val constructorArgs = constructor
-            .parameters
-            .map { param ->
-                val paramName = param.simpleName.toString()
+            constructorArgs = constructor
+                .parameters
+                .map { param ->
+                    val paramName = param.simpleName.toString()
 
-                val paramIndex = if (param.hasAnnotation<Param>()) {
-                    ++currentParamsIndex
-                } else {
-                    -1
-                }
+                    val paramIndex = if (param.hasAnnotation<Param>()) {
+                        ++currentParamsIndex
+                    } else {
+                        -1
+                    }
 
-                var nameType = param.getAnnotationMirrorOrNull<Name>()
-                    ?.getAsType("name")
+                    var nameType = param.getAnnotationMirrorOrNull<Name>()
+                        ?.getAsType("name")
 
-                val nameAnnotations =
-                    param.getAnnotatedAnnotations<Name>()
+                    val nameAnnotations =
+                        param.getAnnotatedAnnotations<Name>()
 
-                if (nameType != null && nameAnnotations.isNotEmpty()) {
-                    messager.printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Can only have 1 name annotation",
-                        param
-                    )
-                    return@createDescriptor null
-                }
-
-                if (nameType == null) {
-                    if (nameAnnotations.size > 1) {
+                    if (nameType != null && nameAnnotations.isNotEmpty()) {
                         messager.printMessage(
                             Diagnostic.Kind.ERROR,
                             "Can only have 1 name annotation",
@@ -186,39 +171,51 @@ class BindingGenerationStep : ProcessingStep() {
                         return@createDescriptor null
                     }
 
-                    nameType = nameAnnotations.firstOrNull()
-                        ?.annotationType
-                        ?.asElement()
-                        ?.getAnnotationMirror<Name>()
-                        ?.getAsType("name")
+                    if (nameType == null) {
+                        if (nameAnnotations.size > 1) {
+                            messager.printMessage(
+                                Diagnostic.Kind.ERROR,
+                                "Can only have 1 name annotation",
+                                param
+                            )
+                            return@createDescriptor null
+                        }
+
+                        nameType = nameAnnotations.firstOrNull()
+                            ?.annotationType
+                            ?.asElement()
+                            ?.getAnnotationMirror<Name>()
+                            ?.getAsType("name")
+                    }
+
+                    val qualifierName = nameType?.asTypeName() as? ClassName
+
+                    if (paramIndex != -1 && qualifierName != null) {
+                        messager.printMessage(
+                            Diagnostic.Kind.ERROR,
+                            "Only one of @Param or @Name can be annotated per parameter",
+                            param
+                        )
+                        return@createDescriptor null
+                    }
+
+                    val paramType = param.asType().asTypeName().javaToKotlinType()
+
+                    if (paramIndex != -1) {
+                        ArgDescriptor.Parameter(paramName, paramIndex)
+                    } else {
+                        ArgDescriptor.Dependency(paramName, paramType, qualifierName)
+                    }
                 }
-
-                val qualifierName = nameType?.asTypeName() as? ClassName
-
-                if (paramIndex != -1 && qualifierName != null) {
-                    messager.printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Only one of @Param or @Name can be annotated per parameter",
-                        param
-                    )
-                    return@createDescriptor null
-                }
-
-                val paramType = param.asType().asTypeName().javaToKotlinType()
-
-                if (paramIndex != -1) {
-                    ArgDescriptor.Parameter(paramName, paramIndex)
-                } else {
-                    ArgDescriptor.Dependency(paramName, paramType, qualifierName)
-                }
-            }
+        }
 
         return BindingDescriptor(
             targetName,
             factoryName,
             isInternal,
+            isObject,
             scopeName,
-            constructorArgs
+            constructorArgs ?: emptyList()
         )
     }
 

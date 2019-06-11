@@ -16,13 +16,7 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.Param
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.keyOf
-import com.ivianuu.injekt.map
-import com.ivianuu.injekt.module
+import com.ivianuu.injekt.*
 import kotlin.reflect.KClass
 
 // kinds
@@ -47,6 +41,9 @@ val commandsModule = module {
 
 @Inject
 internal class InternalDep
+
+@Inject
+object ObjectDep
 
 @Inject
 class EmptyConstructorDep
