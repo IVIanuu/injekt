@@ -310,6 +310,29 @@ class ComponentTest {
     }
 
     @Test
+    fun testReusesScopedBindings() {
+        val componentA = component {
+            modules(
+                module {
+                    single { TestDep1() }
+                }
+            )
+        }
+
+        val componentB = component { dependencies(componentA) }
+        val componentC = component { dependencies(componentB) }
+
+        val depA = componentA.get<TestDep1>()
+        val depA2 = componentA.get<TestDep1>()
+        val depB = componentB.get<TestDep1>()
+        val depC = componentC.get<TestDep1>()
+
+        assertEquals(depA, depA2)
+        assertEquals(depA, depB)
+        assertEquals(depA, depC)
+    }
+
+    @Test
     fun testInjectsUnscopedBindingsInTheRequestingComponent() {
         val componentA = component {
             modules(

@@ -182,4 +182,4 @@ fun <T> Module.instance(
     type: Type<T> = typeOf((instance as Any)::class),
     name: Any? = null,
     override: Boolean = false
-): BindingContext<T> = bind(InstanceBinding(instance), type, name, override)
+): BindingContext<T> = bind(InstanceBinding(instance), type, name, override, false)
