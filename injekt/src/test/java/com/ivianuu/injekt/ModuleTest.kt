@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -68,4 +69,16 @@ class ModuleTest {
         assertTrue(moduleB.setBindings?.getAll()?.containsKey(keyOf<Set<Any>>()) ?: false)
     }
 
+    @Test
+    fun testInheresAllAttributesWhenIncluding() {
+        val moduleA = module {
+            single(override = true) { TestDep1() }
+        }
+
+        val moduleB = module { include(moduleA) }
+
+        val binding = moduleB.bindings.values.first()
+        assertTrue(binding.override)
+        assertFalse(binding.unscoped)
+    }
 }

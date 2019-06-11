@@ -48,7 +48,9 @@ class Module @PublishedApi internal constructor() {
     }
 
     fun include(module: Module) {
-        module.bindings.forEach { bind(it.value, it.key, it.value.override) }
+        module.bindings.forEach {
+            bind(it.value, it.key, it.value.override, it.value.unscoped)
+        }
         module.mapBindings?.let { nonNullMapBindings().putAll(it) }
         module.setBindings?.let { nonNullSetBindings().addAll(it) }
     }
