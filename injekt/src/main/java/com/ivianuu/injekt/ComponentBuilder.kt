@@ -187,22 +187,6 @@ class ComponentBuilder @PublishedApi internal constructor() {
         val bindingKeys = map.getBindingMap() as Map<Any?, Key>
         bindings[mapKey] = UnlinkedMapBinding<Any?, Any?>(bindingKeys)
             .also { it.unscoped = false }
-
-        val providerMapKey = keyOf(
-            typeOf<Any?>(
-                Map::class, mapKey.type.parameters[0],
-                typeOf<Any?>(Provider::class, mapKey.type.parameters[1])
-            ),
-            mapKey.name
-        )
-        val providerBindingKeys = bindingKeys.mapValues {
-            keyOf(
-                typeOf<Any?>(Provider::class, it.value.type),
-                it.value.name
-            )
-        }
-        bindings[providerMapKey] = UnlinkedMapBinding<Any?, Any?>(providerBindingKeys)
-            .also { it.unscoped = false }
     }
 
     private fun includeSetBindings(
@@ -212,21 +196,6 @@ class ComponentBuilder @PublishedApi internal constructor() {
     ) {
         val setKeys = set.getBindingSet()
         bindings[setKey] = UnlinkedSetBinding<Any?>(setKeys)
-            .also { it.unscoped = false }
-
-        val providerSetKey = keyOf(
-            typeOf<Any?>(Set::class, typeOf<Any?>(Provider::class, setKey.type.parameters[0])),
-            setKey.name
-        )
-        val providerSetKeys = setKeys
-            .map {
-                keyOf(
-                    typeOf<Any?>(Provider::class, it.type),
-                    it.name
-                )
-            }
-            .toSet()
-        bindings[providerSetKey] = UnlinkedSetBinding<Any?>(providerSetKeys)
             .also { it.unscoped = false }
     }
 

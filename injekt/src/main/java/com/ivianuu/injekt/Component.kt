@@ -83,6 +83,36 @@ class Component internal constructor(
                     val realKey = keyOf(key.type.parameters.first(), key.name)
                     return LinkedLazyBinding<Any?>(this, realKey) as LinkedBinding<T>
                 }
+                Set::class -> {
+                    if (key.type.parameters[0].raw == Provider::class) {
+                        val realKey = keyOf(
+                                typeOf<Any?>(
+                                        Set::class,
+                                        key.type.parameters[0].parameters[0]
+                                ), key.name
+                        )
+
+                        val binding = findBinding<Any?>(realKey) as LinkedSetBinding<*>
+                        return binding.asLinkedProviderSetBinding() as LinkedBinding<T>
+                    }
+                }
+            }
+        } else if (key.type.parameters.size == 2) {
+            when (key.type.raw) {
+                Map::class -> {
+                    if (key.type.parameters[1].raw == Provider::class) {
+                        val realKey = keyOf(
+                                typeOf<Any?>(
+                                        Map::class,
+                                        key.type.parameters[0],
+                                        key.type.parameters[1].parameters[0]
+                                ), key.name
+                        )
+
+                        val binding = findBinding<Any?>(realKey) as LinkedMapBinding<*, *>
+                        return binding.asLinkedProviderMapBinding() as LinkedBinding<T>
+                    }
+                }
             }
         }
 

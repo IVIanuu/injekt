@@ -16,6 +16,17 @@
 
 package com.ivianuu.injekt
 
+internal class BindingProvider<T>(private val binding: LinkedBinding<T>) : Provider<T> {
+    override fun invoke(parameters: ParametersDefinition?): T = binding.get(parameters)
+}
+
+internal class LinkedProviderBindingWrapper<T>(
+        private val binding: LinkedBinding<T>
+) : LinkedBinding<Provider<T>>() {
+    override fun get(parameters: ParametersDefinition?): Provider<T> =
+            BindingProvider(binding)
+}
+
 internal class LinkedProviderBinding<T>(
     private val component: Component,
     private val key: Key
@@ -60,6 +71,19 @@ internal class LinkedMapBinding<K, V>(private val bindingsByKey: Map<K, LinkedBi
     LinkedBinding<Map<K, V>>() {
     override fun get(parameters: ParametersDefinition?): Map<K, V> =
         bindingsByKey.mapValues { it.value.get() }
+
+    fun asLinkedProviderMapBinding(): LinkedBinding<Map<K, Provider<V>>> {
+        val providersByKey = bindingsByKey
+                .mapValues { LinkedProviderBindingWrapper(it.value) }
+        return LinkedProviderMapBinding(providersByKey as Map<K, LinkedBinding<Provider<V>>>)
+    }
+}
+
+internal class LinkedProviderMapBinding<K, V>(
+        private val providersByKey: Map<K, LinkedBinding<Provider<V>>>
+) : LinkedBinding<Map<K, Provider<V>>>() {
+    override fun get(parameters: ParametersDefinition?): Map<K, Provider<V>> = providersByKey
+            .mapValues { it.value.get() }
 }
 
 internal class UnlinkedSetBinding<E>(private val keys: Set<Key>) : UnlinkedBinding<Set<E>>() {
@@ -71,6 +95,21 @@ internal class LinkedSetBinding<E>(private val bindings: Set<LinkedBinding<out E
     LinkedBinding<Set<E>>() {
     override fun get(parameters: ParametersDefinition?): Set<E> =
         bindings.map { it.get() }.toSet()
+
+    fun asLinkedProviderSetBinding(): LinkedBinding<Set<Provider<E>>> {
+        val providers = bindings
+                .map { LinkedProviderBindingWrapper(it) }
+                .toSet()
+        return LinkedProviderSetBinding(providers as Set<LinkedBinding<Provider<E>>>)
+    }
+}
+
+
+internal class LinkedProviderSetBinding<E>(
+        private val providers: Set<LinkedBinding<Provider<E>>>
+) : LinkedBinding<Set<Provider<E>>>() {
+    override fun get(parameters: ParametersDefinition?): Set<Provider<E>> =
+            providers.map { it.get() }.toSet()
 }
 
 internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
