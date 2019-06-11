@@ -103,6 +103,19 @@ fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<
         }
     }
 
+    if (!isNullable) {
+        when (type) {
+            java.lang.Boolean::class.java -> return typeOf<Boolean>() as Type<T>
+            java.lang.Byte::class.java -> return typeOf<Byte>() as Type<T>
+            java.lang.Character::class.java -> return typeOf<Char>() as Type<T>
+            java.lang.Double::class.java -> return typeOf<Double>() as Type<T>
+            java.lang.Float::class.java -> return typeOf<Float>() as Type<T>
+            java.lang.Integer::class.java -> return typeOf<Int>() as Type<T>
+            java.lang.Long::class.java -> return typeOf<Long>() as Type<T>
+            java.lang.Short::class.java -> return typeOf<Short>() as Type<T>
+        }
+    }
+
     if (type is ParameterizedType) {
         return Type<T>(
             (type.rawType as Class<*>).kotlin,
@@ -114,6 +127,8 @@ fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<
                 ?: emptyArray()
         )
     }
+
+
 
     return Type((type as Class<*>).kotlin, isNullable, emptyArray())
 }
