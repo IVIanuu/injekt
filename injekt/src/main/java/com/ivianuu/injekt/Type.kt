@@ -126,29 +126,12 @@ fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<
         )
     }
 
-    if (isNullable) {
-        when (type.typeName) {
-            "boolean" -> return typeOf<Boolean?>() as Type<T>
-            "byte" -> return typeOf<Byte?>() as Type<T>
-            "char" -> return typeOf<Char?>() as Type<T>
-            "double" -> return typeOf<Double?>() as Type<T>
-            "float" -> return typeOf<Float?>() as Type<T>
-            "int" -> return typeOf<Int?>() as Type<T>
-            "long" -> return typeOf<Long?>() as Type<T>
-            "short" -> return typeOf<Short?>() as Type<T>
-        }
+    var kotlinType = (type as Class<*>).kotlin
+    kotlinType = if (isNullable) {
+        kotlinType.javaObjectType.kotlin
     } else {
-        when (type) {
-            java.lang.Boolean::class.java -> return typeOf<Boolean>() as Type<T>
-            java.lang.Byte::class.java -> return typeOf<Byte>() as Type<T>
-            java.lang.Character::class.java -> return typeOf<Char>() as Type<T>
-            java.lang.Double::class.java -> return typeOf<Double>() as Type<T>
-            java.lang.Float::class.java -> return typeOf<Float>() as Type<T>
-            java.lang.Integer::class.java -> return typeOf<Int>() as Type<T>
-            java.lang.Long::class.java -> return typeOf<Long>() as Type<T>
-            java.lang.Short::class.java -> return typeOf<Short>() as Type<T>
-        }
+        kotlinType.javaPrimitiveType?.kotlin ?: kotlinType
     }
 
-    return Type((type as Class<*>).kotlin, isNullable, emptyArray())
+    return Type(kotlinType, isNullable, emptyArray())
 }
