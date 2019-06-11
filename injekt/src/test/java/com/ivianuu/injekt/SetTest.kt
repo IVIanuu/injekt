@@ -40,13 +40,6 @@ class SetTest {
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val lazySet = component.get<Set<Lazy<String>>>(Values)
-
-        assertEquals(3, lazySet.size)
-        assertEquals("value_one", lazySet.toList()[0].value)
-        assertEquals("value_two", lazySet.toList()[1].value)
-        assertEquals("value_three", lazySet.toList()[2].value)
-
         val providerSet = component.get<Set<Provider<String>>>(Values)
 
         assertEquals(3, providerSet.size)
