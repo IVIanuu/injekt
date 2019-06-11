@@ -188,22 +188,6 @@ class ComponentBuilder @PublishedApi internal constructor() {
         bindings[mapKey] = UnlinkedMapBinding<Any?, Any?>(bindingKeys)
             .also { it.unscoped = false }
 
-        val lazyMapKey = keyOf(
-            typeOf<Any?>(
-                Map::class, mapKey.type.parameters[0],
-                typeOf<Any?>(Lazy::class, mapKey.type.parameters[1])
-            ),
-            mapKey.name
-        )
-        val lazyBindingKeys = bindingKeys.mapValues {
-            keyOf(
-                typeOf<Any?>(Lazy::class, it.value.type),
-                it.value.name
-            )
-        }
-        bindings[lazyMapKey] = UnlinkedMapBinding<Any?, Any?>(lazyBindingKeys)
-            .also { it.unscoped = false }
-
         val providerMapKey = keyOf(
             typeOf<Any?>(
                 Map::class, mapKey.type.parameters[0],
@@ -228,21 +212,6 @@ class ComponentBuilder @PublishedApi internal constructor() {
     ) {
         val setKeys = set.getBindingSet()
         bindings[setKey] = UnlinkedSetBinding<Any?>(setKeys)
-            .also { it.unscoped = false }
-
-        val lazySetKey = keyOf(
-            typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),
-            setKey.name
-        )
-        val lazySetKeys = setKeys
-            .map {
-                keyOf(
-                    typeOf<Any?>(Lazy::class, it.type),
-                    it.name
-                )
-            }
-            .toSet()
-        bindings[lazySetKey] = UnlinkedSetBinding<Any?>(lazySetKeys)
             .also { it.unscoped = false }
 
         val providerSetKey = keyOf(
