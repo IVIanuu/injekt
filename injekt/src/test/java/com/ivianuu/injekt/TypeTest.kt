@@ -20,6 +20,7 @@ import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
+import kotlin.reflect.KClass
 
 class TypeTest {
 
@@ -27,126 +28,56 @@ class TypeTest {
         BOOLEAN {
             override val nonNullReified: Type<*> = typeOf<Boolean>()
             override val nullableReified: Type<*> = typeOf<Boolean?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Boolean>(Boolean::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Boolean?>(Boolean::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Boolean>(java.lang.Boolean::class)
-            override val nullableBoxedClass: Type<*> =
-                typeOf<Boolean?>(java.lang.Boolean::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Boolean>(Boolean::class.java)
-            override val nullableUnboxedJavaType: Type<*> =
-                typeOf<Boolean?>(Boolean::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> =
-                typeOf<Boolean>(java.lang.Boolean::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Boolean?>(java.lang.Boolean::class.java, true)
+            override val unboxedClass: KClass<*> = Boolean::class
+            override val boxedClass: KClass<*> = java.lang.Boolean::class
         },
         BYTE {
             override val nonNullReified: Type<*> = typeOf<Byte>()
             override val nullableReified: Type<*> = typeOf<Byte?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Byte>(Byte::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Byte?>(Byte::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Byte>(java.lang.Byte::class)
-            override val nullableBoxedClass: Type<*> = typeOf<Byte?>(java.lang.Byte::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Byte>(Byte::class.java)
-            override val nullableUnboxedJavaType: Type<*> = typeOf<Byte?>(Byte::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> = typeOf<Byte>(java.lang.Byte::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Byte?>(java.lang.Byte::class.java, true)
+            override val unboxedClass: KClass<*> = Byte::class
+            override val boxedClass: KClass<*> = java.lang.Byte::class
         },
         CHAR {
             override val nonNullReified: Type<*> = typeOf<Char>()
             override val nullableReified: Type<*> = typeOf<Char?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Char>(Char::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Char?>(Char::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Char>(java.lang.Character::class)
-            override val nullableBoxedClass: Type<*> =
-                typeOf<Char?>(java.lang.Character::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Char>(Char::class.java)
-            override val nullableUnboxedJavaType: Type<*> = typeOf<Char?>(Char::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> =
-                typeOf<Char>(java.lang.Character::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Char?>(java.lang.Character::class.java, true)
+            override val unboxedClass: KClass<*> = Char::class
+            override val boxedClass: KClass<*> = java.lang.Character::class
         },
         DOUBLE {
             override val nonNullReified: Type<*> = typeOf<Double>()
             override val nullableReified: Type<*> = typeOf<Double?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Double>(Double::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Double?>(Double::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Double>(java.lang.Double::class)
-            override val nullableBoxedClass: Type<*> =
-                typeOf<Double?>(java.lang.Double::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Double>(Double::class.java)
-            override val nullableUnboxedJavaType: Type<*> =
-                typeOf<Double?>(Double::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> =
-                typeOf<Double>(java.lang.Double::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Double?>(java.lang.Double::class.java, true)
+            override val unboxedClass: KClass<*> = Double::class
+            override val boxedClass: KClass<*> = java.lang.Double::class
         },
         FLOAT {
             override val nonNullReified: Type<*> = typeOf<Float>()
             override val nullableReified: Type<*> = typeOf<Float?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Float>(Float::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Float?>(Float::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Float>(java.lang.Float::class)
-            override val nullableBoxedClass: Type<*> = typeOf<Float?>(java.lang.Float::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Float>(Float::class.java)
-            override val nullableUnboxedJavaType: Type<*> = typeOf<Float?>(Float::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> = typeOf<Float>(java.lang.Float::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Float?>(java.lang.Float::class.java, true)
+            override val unboxedClass: KClass<*> = Float::class
+            override val boxedClass: KClass<*> = java.lang.Float::class
         },
         INT {
             override val nonNullReified: Type<*> = typeOf<Int>()
             override val nullableReified: Type<*> = typeOf<Int?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Int>(Int::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Int?>(Int::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Int>(java.lang.Integer::class)
-            override val nullableBoxedClass: Type<*> = typeOf<Int?>(java.lang.Integer::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Int>(Int::class.java)
-            override val nullableUnboxedJavaType: Type<*> = typeOf<Int?>(Int::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> = typeOf<Int>(java.lang.Integer::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Int?>(java.lang.Integer::class.java, true)
+            override val unboxedClass: KClass<*> = Int::class
+            override val boxedClass: KClass<*> = java.lang.Integer::class
         },
         LONG {
             override val nonNullReified: Type<*> = typeOf<Long>()
             override val nullableReified: Type<*> = typeOf<Long?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Long>(Long::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Long?>(Long::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Long>(java.lang.Long::class)
-            override val nullableBoxedClass: Type<*> = typeOf<Long?>(java.lang.Long::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Long>(Long::class.java)
-            override val nullableUnboxedJavaType: Type<*> = typeOf<Long?>(Long::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> = typeOf<Long>(java.lang.Long::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Long?>(java.lang.Long::class.java, true)
+            override val unboxedClass: KClass<*> = Long::class
+            override val boxedClass: KClass<*> = java.lang.Long::class
         },
         SHORT {
             override val nonNullReified: Type<*> = typeOf<Short>()
             override val nullableReified: Type<*> = typeOf<Short?>()
-            override val nonNullUnboxedClass: Type<*> = typeOf<Short>(Short::class)
-            override val nullableUnboxedClass: Type<*> = typeOf<Short?>(Short::class, true)
-            override val nonNullBoxedClass: Type<*> = typeOf<Short>(java.lang.Short::class)
-            override val nullableBoxedClass: Type<*> = typeOf<Short?>(java.lang.Short::class, true)
-            override val nonNullUnboxedJavaType: Type<*> = typeOf<Short>(Short::class.java)
-            override val nullableUnboxedJavaType: Type<*> = typeOf<Short?>(Short::class.java, true)
-            override val nonNullBoxedJavaType: Type<*> = typeOf<Short>(java.lang.Short::class.java)
-            override val nullableBoxedJavaType: Type<*> =
-                typeOf<Short?>(java.lang.Short::class.java, true)
+            override val unboxedClass: KClass<*> = Short::class
+            override val boxedClass: KClass<*> = java.lang.Short::class
         };
 
         abstract val nonNullReified: Type<*>
         abstract val nullableReified: Type<*>
-        abstract val nonNullUnboxedClass: Type<*>
-        abstract val nullableUnboxedClass: Type<*>
-        abstract val nonNullBoxedClass: Type<*>
-        abstract val nullableBoxedClass: Type<*>
-        abstract val nonNullUnboxedJavaType: Type<*>
-        abstract val nullableUnboxedJavaType: Type<*>
-        abstract val nonNullBoxedJavaType: Type<*>
-        abstract val nullableBoxedJavaType: Type<*>
+        abstract val unboxedClass: KClass<*>
+        abstract val boxedClass: KClass<*>
     }
 
     @Test
@@ -155,17 +86,17 @@ class TypeTest {
             val nonNullReified = type.nonNullReified
             val nullableReified = type.nullableReified
 
-            val nonNullUnboxedClass = type.nonNullUnboxedClass
-            val nullableUnboxedClass = type.nullableUnboxedClass
+            val nonNullUnboxedClass = typeOf<Any?>(type.unboxedClass)
+            val nullableUnboxedClass = typeOf<Any?>(type.unboxedClass, true)
 
-            val nonNullBoxedClass = type.nonNullBoxedClass
-            val nullableBoxedClass = type.nullableBoxedClass
+            val nonNullBoxedClass = typeOf<Any?>(type.boxedClass)
+            val nullableBoxedClass = typeOf<Any?>(type.boxedClass, true)
 
-            val nonNullUnboxedJavaType = type.nonNullUnboxedJavaType
-            val nullableUnboxedJavaType = type.nullableUnboxedJavaType
+            val nonNullUnboxedJavaType = typeOf<Any?>(type.unboxedClass.java)
+            val nullableUnboxedJavaType = typeOf<Any?>(type.unboxedClass.java, true)
 
-            val nonNullBoxedJavaType = type.nonNullBoxedJavaType
-            val nullableBoxedJavaType = type.nullableBoxedJavaType
+            val nonNullBoxedJavaType = typeOf<Any?>(type.boxedClass.java)
+            val nullableBoxedJavaType = typeOf<Any?>(type.boxedClass.java, true)
 
             val pairs = listOf(
                 nonNullReified to nullableReified,
