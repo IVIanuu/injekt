@@ -47,8 +47,7 @@ class Component internal constructor(
         getBinding<T>(key).get()
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
-        findBinding(key)
-            ?: error("Couldn't find a binding for $key")
+        findBinding(key) ?: error("Couldn't find a binding for $key")
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> findBinding(key: Key): LinkedBinding<T>? {
@@ -58,10 +57,10 @@ class Component internal constructor(
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = findExplicitBinding(key)
+        binding = findExplicitBinding(key, true)
         if (binding != null) return binding
 
-        binding = findUnscopedBinding(key)
+        binding = findUnscopedBinding(key, false)
         if (binding != null) {
             return addJitBinding(key, binding)
         }
@@ -121,12 +120,11 @@ class Component internal constructor(
 
     private fun <T> findExplicitBinding(
         key: Key,
-        includeUnscoped: Boolean = true
+        includeUnscoped: Boolean
     ): LinkedBinding<T>? {
         var binding = allBindings[key] as? Binding<T>
-        if (binding != null && (!binding.unscoped || includeUnscoped)) return binding.linkIfNeeded(
-            key
-        )
+        if (binding != null && (includeUnscoped || !binding.unscoped))
+            return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
             binding = dependency.findExplicitBinding(key, false)
@@ -136,7 +134,7 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findUnscopedBinding(key: Key, includeThis: Boolean = false): Binding<T>? {
+    private fun <T> findUnscopedBinding(key: Key, includeThis: Boolean): Binding<T>? {
         var binding: Binding<T>?
 
         if (includeThis) {

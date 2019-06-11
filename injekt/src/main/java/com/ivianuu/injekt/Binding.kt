@@ -26,7 +26,6 @@ sealed class Binding<T> {
     abstract fun link(linker: Linker): LinkedBinding<T>
 
     internal open fun performLink(linker: Linker): LinkedBinding<T> {
-        if (this is LinkedBinding) return this
         val linked = link(linker)
         linked.override = override
         linked.unscoped = unscoped
