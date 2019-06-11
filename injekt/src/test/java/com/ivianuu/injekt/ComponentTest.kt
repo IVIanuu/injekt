@@ -308,4 +308,42 @@ class ComponentTest {
         assertEquals(componentB, componentB.get<Component>(OtherScope::class))
         assertEquals(componentA, componentB.get<Component>(TestScope::class))
     }
+
+    @Test
+    fun testInjectsUnscopedBindingsInTheRequestingComponent() {
+        val componentA = component {
+            modules(
+                module {
+                    withBinding<Context> { bindClass<Environment>() }
+                }
+            )
+        }
+        val componentB = component { dependencies(componentA) }
+        val componentC = component { dependencies(componentB) }
+
+        val contextA = componentA.get<Context>()
+        val contextB = componentB.get<Context>()
+        val contextC = componentC.get<Context>()
+
+        assertEquals(componentA, contextA.component)
+        assertEquals(componentB, contextB.component)
+        assertEquals(componentC, contextC.component)
+
+        val environmentA = componentA.get<Environment>()
+        val environmentB = componentB.get<Environment>()
+        val environmentC = componentC.get<Environment>()
+
+        environmentA as Context
+        environmentB as Context
+        environmentC as Context
+
+        assertEquals(componentA, environmentA.component)
+        assertEquals(componentB, environmentB.component)
+        assertEquals(componentC, environmentC.component)
+    }
+
 }
+
+class Context(val component: Component) : Environment
+
+interface Environment
