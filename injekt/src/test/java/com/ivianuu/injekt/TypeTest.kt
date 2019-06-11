@@ -24,60 +24,19 @@ import kotlin.reflect.KClass
 
 class TypeTest {
 
-    private enum class Primitive {
-        BOOLEAN {
-            override val nonNullReified: Type<*> = typeOf<Boolean>()
-            override val nullableReified: Type<*> = typeOf<Boolean?>()
-            override val unboxedClass: KClass<*> = Boolean::class
-            override val boxedClass: KClass<*> = java.lang.Boolean::class
-        },
-        BYTE {
-            override val nonNullReified: Type<*> = typeOf<Byte>()
-            override val nullableReified: Type<*> = typeOf<Byte?>()
-            override val unboxedClass: KClass<*> = Byte::class
-            override val boxedClass: KClass<*> = java.lang.Byte::class
-        },
-        CHAR {
-            override val nonNullReified: Type<*> = typeOf<Char>()
-            override val nullableReified: Type<*> = typeOf<Char?>()
-            override val unboxedClass: KClass<*> = Char::class
-            override val boxedClass: KClass<*> = java.lang.Character::class
-        },
-        DOUBLE {
-            override val nonNullReified: Type<*> = typeOf<Double>()
-            override val nullableReified: Type<*> = typeOf<Double?>()
-            override val unboxedClass: KClass<*> = Double::class
-            override val boxedClass: KClass<*> = java.lang.Double::class
-        },
-        FLOAT {
-            override val nonNullReified: Type<*> = typeOf<Float>()
-            override val nullableReified: Type<*> = typeOf<Float?>()
-            override val unboxedClass: KClass<*> = Float::class
-            override val boxedClass: KClass<*> = java.lang.Float::class
-        },
-        INT {
-            override val nonNullReified: Type<*> = typeOf<Int>()
-            override val nullableReified: Type<*> = typeOf<Int?>()
-            override val unboxedClass: KClass<*> = Int::class
-            override val boxedClass: KClass<*> = java.lang.Integer::class
-        },
-        LONG {
-            override val nonNullReified: Type<*> = typeOf<Long>()
-            override val nullableReified: Type<*> = typeOf<Long?>()
-            override val unboxedClass: KClass<*> = Long::class
-            override val boxedClass: KClass<*> = java.lang.Long::class
-        },
-        SHORT {
-            override val nonNullReified: Type<*> = typeOf<Short>()
-            override val nullableReified: Type<*> = typeOf<Short?>()
-            override val unboxedClass: KClass<*> = Short::class
-            override val boxedClass: KClass<*> = java.lang.Short::class
-        };
-
-        abstract val nonNullReified: Type<*>
-        abstract val nullableReified: Type<*>
-        abstract val unboxedClass: KClass<*>
-        abstract val boxedClass: KClass<*>
+    private enum class Primitive(
+        val primitiveType: KClass<*>,
+        val nonNullReified: Type<*>,
+        val nullableReified: Type<*>
+    ) {
+        BOOLEAN(Boolean::class, typeOf<Boolean>(), typeOf<Boolean?>()),
+        BYTE(Byte::class, typeOf<Byte>(), typeOf<Byte?>()),
+        CHAR(Char::class, typeOf<Char>(), typeOf<Char?>()),
+        DOUBLE(Double::class, typeOf<Double>(), typeOf<Double?>()),
+        FLOAT(Float::class, typeOf<Float>(), typeOf<Float?>()),
+        INT(Int::class, typeOf<Int>(), typeOf<Int?>()),
+        LONG(Long::class, typeOf<Long>(), typeOf<Long?>()),
+        SHORT(Short::class, typeOf<Short>(), typeOf<Short?>());
     }
 
     @Test
@@ -86,24 +45,24 @@ class TypeTest {
             val nonNullReified = type.nonNullReified
             val nullableReified = type.nullableReified
 
-            val nonNullUnboxedClass = typeOf<Any?>(type.unboxedClass)
-            val nullableUnboxedClass = typeOf<Any?>(type.unboxedClass, true)
+            val nonNullPrimitive = typeOf<Any?>(type.primitiveType)
+            val nullablePrimitive = typeOf<Any?>(type.primitiveType, true)
 
-            val nonNullBoxedClass = typeOf<Any?>(type.boxedClass)
-            val nullableBoxedClass = typeOf<Any?>(type.boxedClass, true)
+            val nonNullObject = typeOf<Any?>(type.primitiveType.javaObjectType)
+            val nullableObject = typeOf<Any?>(type.primitiveType.javaObjectType, true)
 
-            val nonNullUnboxedJavaType = typeOf<Any?>(type.unboxedClass.java)
-            val nullableUnboxedJavaType = typeOf<Any?>(type.unboxedClass.java, true)
+            val nonNullPrimitiveJava = typeOf<Any?>(type.primitiveType.java)
+            val nullablePrimitiveJava = typeOf<Any?>(type.primitiveType.java, true)
 
-            val nonNullBoxedJavaType = typeOf<Any?>(type.boxedClass.java)
-            val nullableBoxedJavaType = typeOf<Any?>(type.boxedClass.java, true)
+            val nonNullObjectJava = typeOf<Any?>(type.primitiveType.javaObjectType)
+            val nullableObjectJava = typeOf<Any?>(type.primitiveType.javaObjectType, true)
 
             val pairs = listOf(
                 nonNullReified to nullableReified,
-                nonNullUnboxedClass to nullableUnboxedClass,
-                nonNullBoxedClass to nullableBoxedClass,
-                nonNullUnboxedJavaType to nullableUnboxedJavaType,
-                nonNullBoxedJavaType to nullableBoxedJavaType
+                nonNullPrimitive to nullablePrimitive,
+                nonNullObject to nullableObject,
+                nonNullPrimitiveJava to nullablePrimitiveJava,
+                nonNullObjectJava to nullableObjectJava
             )
 
             pairs.forEach { (nonNull, nullable) -> assertTrue(nonNull != nullable) }
