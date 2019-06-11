@@ -84,49 +84,21 @@ internal fun <T> KType.asType(): Type<T> {
 }
 
 fun <T> typeOf(raw: KClass<*>): Type<T> {
-    when (raw) {
-        Boolean::class, java.lang.Boolean::class.java -> return typeOf<Boolean>() as Type<T>
-        Byte::class, java.lang.Byte::class.java -> return typeOf<Byte>() as Type<T>
-        Char::class, java.lang.Character::class.java -> return typeOf<Char>() as Type<T>
-        Double::class, java.lang.Double::class.java -> return typeOf<Double>() as Type<T>
-        Float::class, java.lang.Float::class.java -> return typeOf<Float>() as Type<T>
-        Int::class, java.lang.Integer::class.java -> return typeOf<Int>() as Type<T>
-        Long::class, java.lang.Long::class.java -> return typeOf<Long>() as Type<T>
-        Short::class, java.lang.Short::class.java -> return typeOf<Short>() as Type<T>
-    }
-
-    return Type(raw, false, emptyArray())
+    val finalRaw = raw.javaPrimitiveType?.kotlin ?: raw
+    return Type(finalRaw, false, emptyArray())
 }
 
 fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
     Type(raw, false, parameters)
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> {
-    if (isNullable) {
-        when (raw) {
-            Boolean::class, java.lang.Boolean::class -> return typeOf<Boolean?>() as Type<T>
-            Byte::class, java.lang.Byte::class -> return typeOf<Byte?>() as Type<T>
-            Char::class, java.lang.Character::class -> return typeOf<Char?>() as Type<T>
-            Double::class, java.lang.Double::class -> return typeOf<Double?>() as Type<T>
-            Float::class, java.lang.Float::class -> return typeOf<Float?>() as Type<T>
-            Int::class, java.lang.Integer::class -> return typeOf<Int?>() as Type<T>
-            Long::class, java.lang.Long::class -> return typeOf<Long?>() as Type<T>
-            Short::class, java.lang.Short::class -> return typeOf<Short?>() as Type<T>
-        }
+    val finalRaw = if (isNullable) {
+        raw.javaObjectType.kotlin
     } else {
-        when (raw) {
-            Boolean::class, java.lang.Boolean::class.java -> return typeOf<Boolean>() as Type<T>
-            Byte::class, java.lang.Byte::class.java -> return typeOf<Byte>() as Type<T>
-            Char::class, java.lang.Character::class.java -> return typeOf<Char>() as Type<T>
-            Double::class, java.lang.Double::class.java -> return typeOf<Double>() as Type<T>
-            Float::class, java.lang.Float::class.java -> return typeOf<Float>() as Type<T>
-            Int::class, java.lang.Integer::class.java -> return typeOf<Int>() as Type<T>
-            Long::class, java.lang.Long::class.java -> return typeOf<Long>() as Type<T>
-            Short::class, java.lang.Short::class.java -> return typeOf<Short>() as Type<T>
-        }
+        raw.javaPrimitiveType?.kotlin ?: raw
     }
 
-    return Type(raw, isNullable, emptyArray())
+    return Type(finalRaw, isNullable, emptyArray())
 }
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean, vararg parameters: Type<*>): Type<T> {
