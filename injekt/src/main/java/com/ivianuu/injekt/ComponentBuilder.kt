@@ -86,7 +86,8 @@ class ComponentBuilder @PublishedApi internal constructor() {
                 return@fold acc
             }
 
-        val bindings = hashMapOf<Key, Binding<*>>()
+        val allBindings = hashMapOf<Key, Binding<*>>()
+        val unscopedBindings = hashMapOf<Key, Binding<*>>()
 
         var mapBindings: MapBindings? = null
         var setBindings: SetBindings? = null
@@ -103,12 +104,15 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
         modules.forEach { module ->
             module.bindings.forEach { (key, binding) ->
-                if ((bindings.contains(key)
+                if ((allBindings.contains(key)
                             || dependencyBindingKeys.contains(key)) && !binding.override
                 ) {
                     error("Already declared key $key")
                 }
-                bindings[key] = binding
+                allBindings[key] = binding
+                if (binding.unscoped) {
+                    unscopedBindings[key] = binding
+                }
             }
 
             module.mapBindings?.let { nonNullMapBindings().putAll(it) }
@@ -116,19 +120,22 @@ class ComponentBuilder @PublishedApi internal constructor() {
         }
 
         mapBindings?.getAll()?.forEach { (mapKey, map) ->
-            includeMapBindings(bindings, mapKey, map)
+            includeMapBindings(allBindings, mapKey, map)
         }
 
         setBindings?.getAll()?.forEach { (setKey, set) ->
-            includeSetBindings(bindings, setKey, set)
+            includeSetBindings(allBindings, setKey, set)
         }
 
-        includeComponentBindings(bindings)
+        includeComponentBindings(allBindings)
 
-        val finalBindings = ConcurrentHashMap<Key, Binding<*>>()
-        finalBindings.putAll(bindings)
+        val finalAllBindings = ConcurrentHashMap<Key, Binding<*>>()
+        finalAllBindings.putAll(allBindings)
 
-        return Component(scopes, finalBindings, mapBindings, setBindings, dependencies)
+        return Component(
+            scopes, finalAllBindings, unscopedBindings,
+            mapBindings, setBindings, dependencies
+        )
     }
 
     private fun checkScopes() {
@@ -164,6 +171,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
         val componentBinding = ComponentBinding()
+        componentBinding.unscoped = false
         val componentKey = keyOf<Component>()
         bindings[componentKey] = componentBinding
         scopes
@@ -178,6 +186,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
     ) {
         val bindingKeys = map.getBindingMap() as Map<Any?, Key>
         bindings[mapKey] = UnlinkedMapBinding<Any?, Any?>(bindingKeys)
+            .also { it.unscoped = false }
 
         val lazyMapKey = keyOf(
             typeOf<Any?>(
@@ -193,6 +202,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             )
         }
         bindings[lazyMapKey] = UnlinkedMapBinding<Any?, Any?>(lazyBindingKeys)
+            .also { it.unscoped = false }
 
         val providerMapKey = keyOf(
             typeOf<Any?>(
@@ -208,6 +218,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             )
         }
         bindings[providerMapKey] = UnlinkedMapBinding<Any?, Any?>(providerBindingKeys)
+            .also { it.unscoped = false }
     }
 
     private fun includeSetBindings(
@@ -217,6 +228,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
     ) {
         val setKeys = set.getBindingSet()
         bindings[setKey] = UnlinkedSetBinding<Any?>(setKeys)
+            .also { it.unscoped = false }
 
         val lazySetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Lazy::class, setKey.type.parameters[0])),
@@ -231,6 +243,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             }
             .toSet()
         bindings[lazySetKey] = UnlinkedSetBinding<Any?>(lazySetKeys)
+            .also { it.unscoped = false }
 
         val providerSetKey = keyOf(
             typeOf<Any?>(Set::class, typeOf<Any?>(Provider::class, setKey.type.parameters[0])),
@@ -245,6 +258,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             }
             .toSet()
         bindings[providerSetKey] = UnlinkedSetBinding<Any?>(providerSetKeys)
+            .also { it.unscoped = false }
     }
 
     private fun Component.getAllBindingKeys(): Set<Key> =
@@ -252,7 +266,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
     private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
         dependencies.forEach { it.collectBindingKeys(keys) }
-        keys.addAll(this.bindings.keys)
+        keys.addAll(this.allBindings.keys)
     }
 
 }

@@ -29,12 +29,18 @@ class Module @PublishedApi internal constructor() {
     internal var setBindings: SetBindings? = null
         private set
 
-    fun <T> bind(binding: Binding<T>, key: Key, override: Boolean = false): BindingContext<T> {
+    fun <T> bind(
+        binding: Binding<T>,
+        key: Key,
+        override: Boolean = false,
+        unscoped: Boolean = true
+    ): BindingContext<T> {
         if (bindings.contains(key) && !override) {
             error("Already declared binding for $binding.key")
         }
 
         binding.override = override
+        binding.unscoped = unscoped
 
         bindings[key] = binding
 
@@ -80,15 +86,17 @@ inline fun module(block: Module.() -> Unit): Module = Module().apply(block)
 inline fun <reified T> Module.bind(
     binding: Binding<T>,
     name: Any? = null,
-    override: Boolean = false
-): BindingContext<T> = this.bind(binding, typeOf<T>(), name, override)
+    override: Boolean = false,
+    unscoped: Boolean = true
+): BindingContext<T> = this.bind(binding, typeOf<T>(), name, override, unscoped)
 
 fun <T> Module.bind(
     binding: Binding<T>,
     type: Type<T>,
     name: Any? = null,
-    override: Boolean = false
-): BindingContext<T> = bind(binding, keyOf(type, name), override)
+    override: Boolean = false,
+    unscoped: Boolean = true
+): BindingContext<T> = bind(binding, keyOf(type, name), override, unscoped)
 
 inline fun <reified T> Module.factory(
     name: Any? = null,
@@ -103,7 +111,7 @@ fun <T> Module.factory(
     override: Boolean = false,
     optimizing: Boolean = true,
     definition: Definition<T>
-): BindingContext<T> = bind(definitionBinding(optimizing, definition), type, name, override)
+): BindingContext<T> = bind(definitionBinding(optimizing, definition), type, name, override, true)
 
 inline fun <reified T> Module.factoryWithState(
     name: Any? = null,
@@ -116,7 +124,7 @@ fun <T> Module.factoryWithState(
     name: Any? = null,
     override: Boolean = false,
     block: StateDefinitionContext.() -> StateDefinition<T>
-): BindingContext<T> = bind(stateDefinitionBinding(block), type, name, override)
+): BindingContext<T> = bind(stateDefinitionBinding(block), type, name, override, true)
 
 inline fun <reified T> Module.single(
     name: Any? = null,
@@ -130,7 +138,7 @@ fun <T> Module.single(
     override: Boolean = false,
     definition: Definition<T>
 ): BindingContext<T> =
-    bind(definitionBinding(false, definition).asScoped(), type, name, override)
+    bind(definitionBinding(false, definition).asScoped(), type, name, override, false)
 
 inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,

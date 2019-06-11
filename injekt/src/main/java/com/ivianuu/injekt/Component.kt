@@ -25,7 +25,8 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(
     internal val scopes: Iterable<KClass<out Annotation>>,
-    internal val bindings: ConcurrentHashMap<Key, Binding<*>>,
+    internal val allBindings: ConcurrentHashMap<Key, Binding<*>>,
+    internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
     internal val mapBindings: MapBindings?,
     internal val setBindings: SetBindings?,
     internal val dependencies: Iterable<Component>
@@ -60,6 +61,11 @@ class Component internal constructor(
         binding = findExplicitBinding(key)
         if (binding != null) return binding
 
+        binding = findUnscopedBinding(key)
+        if (binding != null) {
+            return addJitBinding(key, binding)
+        }
+
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
 
@@ -83,12 +89,33 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
-        var binding = bindings[key] as? Binding<T>
-        if (binding != null) return binding.linkIfNeeded(key)
+    private fun <T> findExplicitBinding(
+        key: Key,
+        includeUnscoped: Boolean = true
+    ): LinkedBinding<T>? {
+        var binding = allBindings[key] as? Binding<T>
+        if (binding != null && (!binding.unscoped || includeUnscoped)) return binding.linkIfNeeded(
+            key
+        )
 
         for (dependency in dependencies) {
-            binding = dependency.findExplicitBinding(key)
+            binding = dependency.findExplicitBinding(key, false)
+            if (binding != null) return binding
+        }
+
+        return null
+    }
+
+    private fun <T> findUnscopedBinding(key: Key, includeThis: Boolean = false): Binding<T>? {
+        var binding: Binding<T>?
+
+        if (includeThis) {
+            binding = unlinkedUnscopedBindings[key] as? Binding<T>
+            if (binding != null) return binding
+        }
+
+        for (dependency in dependencies) {
+            binding = dependency.findUnscopedBinding(key, true)
             if (binding != null) return binding
         }
 
@@ -105,6 +132,7 @@ class Component internal constructor(
                 binding = binding.asScoped()
                 component.addJitBinding(key, binding)
             } else {
+                binding.unscoped = true
                 addJitBinding(key, binding)
             }
         }
@@ -117,14 +145,14 @@ class Component internal constructor(
         binding: Binding<T>
     ): LinkedBinding<T> {
         val linkedBinding = binding.performLink(linker)
-        bindings[key] = linkedBinding
+        allBindings[key] = linkedBinding
         return linkedBinding
     }
 
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
         if (this is LinkedBinding) return this
         val linkedBinding = performLink(linker)
-        bindings[key] = linkedBinding
+        allBindings[key] = linkedBinding
         return linkedBinding
     }
 
