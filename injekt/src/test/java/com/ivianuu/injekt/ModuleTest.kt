@@ -53,4 +53,19 @@ class ModuleTest {
         }
     }
 
+    @Test
+    fun testInclude() {
+        val moduleA = module {
+            factory { TestDep1() }
+            map<String, Any> { "key" to keyOf<TestDep1>() }
+            set<Any> { add<TestDep1>() }
+        }
+
+        val moduleB = module { include(moduleA) }
+
+        assertTrue(moduleB.bindings.containsKey(keyOf<TestDep1>()))
+        assertTrue(moduleB.mapBindings?.getAll()?.containsKey(keyOf<Map<String, Any>>()) ?: false)
+        assertTrue(moduleB.setBindings?.getAll()?.containsKey(keyOf<Set<Any>>()) ?: false)
+    }
+
 }
