@@ -57,13 +57,11 @@ class Component internal constructor(
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = findExplicitBinding(key, true)
+        binding = findExplicitBinding(key)
         if (binding != null) return binding
 
-        binding = findUnscopedBinding(key, false)
-        if (binding != null) {
-            return addJitBinding(key, binding)
-        }
+        binding = findUnscopedBinding(key)
+        if (binding != null) return binding
 
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
@@ -118,32 +116,45 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findExplicitBinding(
-        key: Key,
-        includeUnscoped: Boolean
-    ): LinkedBinding<T>? {
+    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
         var binding = allBindings[key] as? Binding<T>
-        if (binding != null && (includeUnscoped || !binding.unscoped))
-            return binding.linkIfNeeded(key)
+        if (binding != null) return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
-            binding = dependency.findExplicitBinding(key, false)
+            binding = dependency.findExplicitBindingForDependency(key)
             if (binding != null) return binding
         }
 
         return null
     }
 
-    private fun <T> findUnscopedBinding(key: Key, includeThis: Boolean): Binding<T>? {
-        var binding: Binding<T>?
+    private fun <T> findExplicitBindingForDependency(key: Key): LinkedBinding<T>? {
+        var binding = allBindings[key] as? Binding<T>
+        if (binding != null && !binding.unscoped) return binding.linkIfNeeded(key)
 
-        if (includeThis) {
-            binding = unlinkedUnscopedBindings[key] as? Binding<T>
+        for (dependency in dependencies) {
+            binding = dependency.findExplicitBindingForDependency(key)
             if (binding != null) return binding
         }
 
+        return null
+    }
+
+    private fun <T> findUnscopedBinding(key: Key): LinkedBinding<T>? {
         for (dependency in dependencies) {
-            binding = dependency.findUnscopedBinding(key, true)
+            val binding = dependency.findUnscopedBindingForDependency<T>(key)
+            if (binding != null) return addJitBinding(key, binding)
+        }
+
+        return null
+    }
+
+    private fun <T> findUnscopedBindingForDependency(key: Key): Binding<T>? {
+        var binding = unlinkedUnscopedBindings[key] as? Binding<T>
+        if (binding != null) return binding
+
+        for (dependency in dependencies) {
+            binding = dependency.findUnscopedBindingForDependency(key)
             if (binding != null) return binding
         }
 
