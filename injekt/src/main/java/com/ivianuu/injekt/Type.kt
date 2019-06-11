@@ -18,6 +18,7 @@ package com.ivianuu.injekt
 
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.WildcardType
+import kotlin.jvm.internal.ClassBasedDeclarationContainer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
@@ -84,7 +85,7 @@ internal fun <T> KType.asType(): Type<T> {
 }
 
 fun <T> typeOf(raw: KClass<*>): Type<T> {
-    val finalRaw = raw.javaPrimitiveType?.kotlin ?: raw
+    val finalRaw = unboxed(raw)
     return Type(finalRaw, false, emptyArray())
 }
 
@@ -92,12 +93,7 @@ fun <T> typeOf(raw: KClass<*>, vararg parameters: Type<*>): Type<T> =
     Type(raw, false, parameters)
 
 fun <T> typeOf(raw: KClass<*>, isNullable: Boolean): Type<T> {
-    val finalRaw = if (isNullable) {
-        raw.javaObjectType.kotlin
-    } else {
-        raw.javaPrimitiveType?.kotlin ?: raw
-    }
-
+    val finalRaw = if (isNullable) boxed(raw) else unboxed(raw)
     return Type(finalRaw, isNullable, emptyArray())
 }
 
@@ -127,11 +123,46 @@ fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<
     }
 
     var kotlinType = (type as Class<*>).kotlin
+
     kotlinType = if (isNullable) {
-        kotlinType.javaObjectType.kotlin
+        boxed(kotlinType)
     } else {
-        kotlinType.javaPrimitiveType?.kotlin ?: kotlinType
+        unboxed(kotlinType)
     }
 
     return Type(kotlinType, isNullable, emptyArray())
+}
+
+private fun unboxed(type: KClass<*>): KClass<*> {
+    val thisJClass = (type as ClassBasedDeclarationContainer).jClass
+    if (thisJClass.isPrimitive) return type
+
+    return when (thisJClass.name) {
+        "java.lang.Boolean" -> Boolean::class
+        "java.lang.Character" -> Char::class
+        "java.lang.Byte" -> Byte::class
+        "java.lang.Short" -> Short::class
+        "java.lang.Integer" -> Int::class
+        "java.lang.Float" -> Float::class
+        "java.lang.Long" -> Long::class
+        "java.lang.Double" -> Double::class
+        else -> type
+    }
+}
+
+private fun boxed(type: KClass<*>): KClass<*> {
+    val jClass = (type as ClassBasedDeclarationContainer).jClass
+    if (!jClass.isPrimitive) return type
+
+    return when (jClass.name) {
+        "boolean" -> java.lang.Boolean::class
+        "char" -> java.lang.Character::class
+        "byte" -> java.lang.Byte::class
+        "short" -> java.lang.Short::class
+        "int" -> java.lang.Integer::class
+        "float" -> java.lang.Float::class
+        "long" -> java.lang.Long::class
+        "double" -> java.lang.Double::class
+        else -> type
+    }
 }
