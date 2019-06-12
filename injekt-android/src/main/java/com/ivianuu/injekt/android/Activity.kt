@@ -24,20 +24,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.bindAlias
-import com.ivianuu.injekt.bindName
-import com.ivianuu.injekt.bindType
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.module
-import com.ivianuu.injekt.scopes
+import com.ivianuu.injekt.*
 
 @Scope
 annotation class ActivityScope
@@ -93,18 +80,18 @@ fun <T : Activity> T.activityModule(): Module = module {
     factory(override = true) { resources } bindName ForActivity
 
     (this@activityModule as? LifecycleOwner)?.let {
-        factory { lifecycle } bindName ForActivity
+        factory(override = true) { lifecycle } bindName ForActivity
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        factory { viewModelStore } bindName ForActivity
+        factory(override = true) { viewModelStore } bindName ForActivity
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        factory { savedStateRegistry } bindName ForActivity
+        factory(override = true) { savedStateRegistry } bindName ForActivity
     }
 
     (this@activityModule as? FragmentActivity)?.let {
-        factory { supportFragmentManager } bindName ForActivity
+        factory(override = true) { supportFragmentManager } bindName ForActivity
     }
 }
