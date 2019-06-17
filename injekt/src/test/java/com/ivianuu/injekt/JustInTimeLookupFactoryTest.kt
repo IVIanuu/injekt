@@ -26,12 +26,12 @@ object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
     override fun get(parameters: ParametersDefinition?) = MyUnscopedDep()
 }
 
-@TestScope
+@TestScopeOne
 class MyScopedDep
 
 object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {
     override val scope: KClass<out Annotation>
-        get() = TestScope::class
+        get() = TestScopeOne::class
 
     override fun get(parameters: ParametersDefinition?) = MyScopedDep()
 }
@@ -60,7 +60,7 @@ class JustInTimeLookupFactoryTest {
             println("test factory $factory")
             val lookup = factory.create<MyScopedDep>(keyOf<MyScopedDep>())
             assertNotNull(lookup)
-            assertEquals(TestScope::class, lookup!!.scope)
+            assertEquals(TestScopeOne::class, lookup!!.scope)
         }
     }
 

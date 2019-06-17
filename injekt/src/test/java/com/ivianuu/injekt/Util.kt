@@ -23,10 +23,13 @@ object NameThree
 object Values
 
 @Scope
-annotation class TestScope
+annotation class TestScopeOne
 
 @Scope
-annotation class OtherTestScope
+annotation class TestScopeTwo
+
+@Scope
+annotation class TestScopeThree
 
 class TestDep1
 class TestDep2(val dep1: TestDep1)

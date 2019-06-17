@@ -52,7 +52,7 @@ class ReflectionDepWithParameterizedDep(
     private val mapOfStrings: Map<String, Memoized<String>>
 )
 
-@TestScope
+@TestScopeOne
 class ReflectionDepWithScope
 
 @Scope
@@ -88,7 +88,7 @@ class ReflectionTest {
     @Test
     fun testUsesScope() {
         val testScopeComponent = component {
-            scopes(TestScope::class)
+            scopes(TestScopeOne::class)
         }
 
         val component = component {

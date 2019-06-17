@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertNotSame
-import junit.framework.Assert.assertTrue
+import junit.framework.Assert.*
 import org.junit.Test
 
 class ComponentTest {
@@ -258,7 +255,7 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
         val dependency = component {
-            scopes<TestScope>()
+            scopes<TestScopeOne>()
         }
 
         component { dependencies(dependency) }
@@ -267,11 +264,11 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val dependency = component {
-            scopes<TestScope>()
+            scopes<TestScopeOne>()
         }
 
         component {
-            scopes<TestScope>()
+            scopes<TestScopeOne>()
             dependencies(dependency)
         }
     }
@@ -279,33 +276,33 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnDependenciesWithSameScope() {
         val dependency1 = component {
-            scopes<TestScope>()
+            scopes<TestScopeOne>()
         }
 
         val dependency2 = component {
-            scopes<TestScope>()
+            scopes<TestScopeOne>()
         }
 
         component {
-            scopes<OtherTestScope>()
+            scopes<TestScopeTwo>()
             dependencies(dependency1, dependency2)
         }
     }
 
     @Test
     fun testImplicitComponentBindings() {
-        val componentA = component { scopes<TestScope>() }
+        val componentA = component { scopes<TestScopeOne>() }
         val componentB = component {
             scopes<OtherScope>()
             dependencies(componentA)
         }
 
         assertEquals(componentA, componentA.get<Component>())
-        assertEquals(componentA, componentA.get<Component>(TestScope::class))
+        assertEquals(componentA, componentA.get<Component>(TestScopeOne::class))
 
         assertEquals(componentB, componentB.get<Component>())
         assertEquals(componentB, componentB.get<Component>(OtherScope::class))
-        assertEquals(componentA, componentB.get<Component>(TestScope::class))
+        assertEquals(componentA, componentB.get<Component>(TestScopeOne::class))
     }
 
     @Test
@@ -325,6 +322,29 @@ class ComponentTest {
         val depA2 = componentA.get<TestDep1>()
         val depB = componentB.get<TestDep1>()
         val depC = componentC.get<TestDep1>()
+
+        assertEquals(depA, depA2)
+        assertEquals(depA, depB)
+        assertEquals(depA, depC)
+    }
+
+    @Test
+    fun testReusesScopedJitBindings() {
+        val componentA = component { scopes<TestScopeOne>() }
+
+        val componentB = component {
+            scopes<TestScopeTwo>()
+            dependencies(componentA)
+        }
+        val componentC = component {
+            scopes<TestScopeThree>()
+            dependencies(componentB)
+        }
+
+        val depA = componentA.get<ScopedJitBinding>()
+        val depA2 = componentA.get<ScopedJitBinding>()
+        val depB = componentB.get<ScopedJitBinding>()
+        val depC = componentC.get<ScopedJitBinding>()
 
         assertEquals(depA, depA2)
         assertEquals(depA, depB)
@@ -369,3 +389,6 @@ class ComponentTest {
 class Context(val component: Component) : Environment
 
 interface Environment
+
+@TestScopeOne
+class ScopedJitBinding
