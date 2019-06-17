@@ -22,13 +22,20 @@ sealed class Binding<T> {
         internal set
 
     internal var unscoped = false
+    internal var linkPerformed = false
 
     abstract fun link(linker: Linker): LinkedBinding<T>
 
     internal open fun performLink(linker: Linker): LinkedBinding<T> {
         val linked = link(linker)
-        linked.override = override
-        linked.unscoped = unscoped
+        // some bindings such as the bridge binding are acting like a bridge
+        // so they return already linked bindings
+        // we only copy the state if it's the first link
+        if (!linked.linkPerformed) {
+            linked.linkPerformed = true
+            linked.override = override
+            linked.unscoped = unscoped
+        }
         return linked
     }
 
