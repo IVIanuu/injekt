@@ -1,0 +1,76 @@
+/*
+ * Copyright 2018 Manuel Wrage
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.ivianuu.injekt
+
+import junit.framework.Assert.*
+import org.junit.Test
+import kotlin.reflect.KClass
+
+class MyUnscopedDep
+
+object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
+    override fun get(parameters: ParametersDefinition?) = MyUnscopedDep()
+}
+
+@TestScope
+class MyScopedDep
+
+object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {
+    override val scope: KClass<out Annotation>
+        get() = TestScope::class
+
+    override fun get(parameters: ParametersDefinition?) = MyScopedDep()
+}
+
+private val factories = listOf(
+    CodegenJustInTimeLookupFactory,
+    ReflectiveJustInTimeLookupFactory,
+    DefaultJustInTimeLookupFactory
+)
+
+class JustInTimeLookupFactoryTest {
+
+    @Test
+    fun testUnscoped() {
+        factories.forEach { factory ->
+            println("test factory $factory")
+            val lookup = factory.create<MyUnscopedDep>(keyOf<MyUnscopedDep>())
+            assertNotNull(lookup)
+            assertNull(lookup!!.scope)
+        }
+    }
+
+    @Test
+    fun testScoped() {
+        factories.forEach { factory ->
+            println("test factory $factory")
+            val lookup = factory.create<MyScopedDep>(keyOf<MyScopedDep>())
+            assertNotNull(lookup)
+            assertEquals(TestScope::class, lookup!!.scope)
+        }
+    }
+
+    @Test
+    fun testCannotResolveNamed() {
+        factories.forEach { factory ->
+            println("test factory $factory")
+            val lookup = factory.create<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
+            assertNull(lookup)
+        }
+    }
+
+}
