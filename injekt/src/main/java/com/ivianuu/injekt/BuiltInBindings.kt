@@ -104,7 +104,6 @@ internal class LinkedSetBinding<E>(private val bindings: Set<LinkedBinding<out E
     }
 }
 
-
 internal class LinkedProviderSetBinding<E>(
         private val providers: Set<LinkedBinding<Provider<E>>>
 ) : LinkedBinding<Set<Provider<E>>>() {

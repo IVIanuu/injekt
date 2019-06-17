@@ -19,7 +19,6 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-
 class MapTest {
 
     @Test

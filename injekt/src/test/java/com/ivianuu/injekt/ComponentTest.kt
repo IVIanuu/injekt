@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals

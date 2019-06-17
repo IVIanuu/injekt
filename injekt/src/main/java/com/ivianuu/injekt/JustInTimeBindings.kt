@@ -35,7 +35,6 @@ object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
             ?: ReflectiveJustInTimeLookupFactory.create(key)
 }
 
-
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
     private val lookups = ConcurrentHashMap<Type<*>, JustInTimeLookup<*>>()

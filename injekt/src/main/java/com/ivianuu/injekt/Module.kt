@@ -80,7 +80,6 @@ class Module @PublishedApi internal constructor() {
     private fun nonNullSetBindings(): SetBindings =
         setBindings ?: SetBindings().also { setBindings = it }
 
-
 }
 
 inline fun module(block: Module.() -> Unit): Module = Module().apply(block)
