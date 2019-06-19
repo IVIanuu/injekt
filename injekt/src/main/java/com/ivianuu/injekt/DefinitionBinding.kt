@@ -74,7 +74,8 @@ private class LinkedOptimizingDefinitionBinding<T>(
 ) : LinkedBinding<T>(), DefinitionContext {
 
     private var bindings = arrayOfNulls<LinkedBinding<*>>(5)
-    @PublishedApi internal var currentIndex = -1
+    @PublishedApi
+    internal var currentIndex = -1
 
     override fun <T> get(key: Key): T {
         ++currentIndex

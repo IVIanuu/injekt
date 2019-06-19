@@ -44,7 +44,8 @@ class ParentView @JvmOverloads constructor(
 
 }
 
-@Inject @ViewScope
+@Inject
+@ViewScope
 class ParentViewDependency(
     val app: App,
     val mainActivity: MainActivity,

@@ -18,17 +18,10 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import android.content.Context
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.logger
-import com.ivianuu.injekt.module
 
 class App : Application(), InjektTrait {
 
@@ -54,5 +47,6 @@ fun appModule() = module {
     factory(PackageName) { get<Context>().packageName }
 }
 
-@Inject @ApplicationScope
+@Inject
+@ApplicationScope
 class AppDependency(val app: App)

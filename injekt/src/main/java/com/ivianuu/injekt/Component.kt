@@ -83,10 +83,10 @@ class Component internal constructor(
                 Set::class -> {
                     if (key.type.parameters[0].raw == Provider::class) {
                         val realKey = keyOf(
-                                typeOf<Any?>(
-                                        Set::class,
-                                        key.type.parameters[0].parameters[0]
-                                ), key.name
+                            typeOf<Any?>(
+                                Set::class,
+                                key.type.parameters[0].parameters[0]
+                            ), key.name
                         )
 
                         val binding = findBinding<Any?>(realKey) as LinkedSetBinding<*>
@@ -99,11 +99,11 @@ class Component internal constructor(
                 Map::class -> {
                     if (key.type.parameters[1].raw == Provider::class) {
                         val realKey = keyOf(
-                                typeOf<Any?>(
-                                        Map::class,
-                                        key.type.parameters[0],
-                                        key.type.parameters[1].parameters[0]
-                                ), key.name
+                            typeOf<Any?>(
+                                Map::class,
+                                key.type.parameters[0],
+                                key.type.parameters[1].parameters[0]
+                            ), key.name
                         )
 
                         val binding = findBinding<Any?>(realKey) as LinkedMapBinding<*, *>

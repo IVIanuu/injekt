@@ -44,7 +44,8 @@ class ChildView @JvmOverloads constructor(
     }
 }
 
-@Inject @ChildViewScope
+@Inject
+@ChildViewScope
 class ChildViewDependency(
     val app: App,
     val mainActivity: MainActivity,

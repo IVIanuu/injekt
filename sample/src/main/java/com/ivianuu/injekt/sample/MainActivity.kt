@@ -43,7 +43,8 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
 }
 
-@Inject @ActivityScope
+@Inject
+@ActivityScope
 class MainActivityDependency(
     val app: App,
     val mainActivity: MainActivity

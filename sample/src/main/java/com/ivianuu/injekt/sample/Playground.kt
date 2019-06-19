@@ -27,9 +27,14 @@ annotation class Commands {
     companion object
 }
 
-@Inject class CommandOne : Command
-@Inject class CommandTwo : Command
-@Inject class CommandThree : Command
+@Inject
+class CommandOne : Command
+
+@Inject
+class CommandTwo : Command
+
+@Inject
+class CommandThree : Command
 
 val commandsModule = module {
     map<KClass<out Command>, Command> {

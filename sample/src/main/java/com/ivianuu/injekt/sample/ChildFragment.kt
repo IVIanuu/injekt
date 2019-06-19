@@ -51,7 +51,8 @@ class ChildFragment : Fragment(), InjektTrait {
     }
 }
 
-@Inject @ChildFragmentScope
+@Inject
+@ChildFragmentScope
 class ChildFragmentDependency(
     val app: App,
     val mainActivity: MainActivity,
