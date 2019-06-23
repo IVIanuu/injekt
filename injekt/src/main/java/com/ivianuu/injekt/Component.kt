@@ -89,7 +89,7 @@ class Component internal constructor(
                             ), key.name
                         )
 
-                        val binding = findBinding<Any?>(realKey) as LinkedSetBinding<*>
+                        val binding = getBinding<Any?>(realKey) as LinkedSetBinding<*>
                         return binding.asLinkedProviderSetBinding() as LinkedBinding<T>
                     }
                 }
@@ -106,7 +106,7 @@ class Component internal constructor(
                             ), key.name
                         )
 
-                        val binding = findBinding<Any?>(realKey) as LinkedMapBinding<*, *>
+                        val binding = getBinding<Any?>(realKey) as LinkedMapBinding<*, *>
                         return binding.asLinkedProviderMapBinding() as LinkedBinding<T>
                     }
                 }

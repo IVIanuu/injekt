@@ -26,21 +26,21 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" }.intoSet(setName = Values)
-                    factory(NameTwo) { "value_two" }.intoSet(setName = Values)
-                    factory(NameThree) { "value_three" }.intoSet(setName = Values)
+                    factory(NameOne) { "value_one" }.intoSet<String, CharSequence>(setName = Values)
+                    factory(NameTwo) { "value_two" }.intoSet<String, CharSequence>(setName = Values)
+                    factory(NameThree) { "value_three" }.intoSet<String, CharSequence>(setName = Values)
                 }
             )
         }
 
-        val set = component.get<Set<String>>(Values)
+        val set = component.get<Set<CharSequence>>(Values)
 
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val providerSet = component.get<Set<Provider<String>>>(Values)
+        val providerSet = component.get<Set<Provider<CharSequence>>>(Values)
 
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0]())

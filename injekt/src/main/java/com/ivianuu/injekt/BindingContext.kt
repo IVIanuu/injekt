@@ -102,7 +102,7 @@ inline fun <reified T : V, reified K, reified V> BindingContext<T>.intoMap(
     entryKey: K,
     mapName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = intoMap(typeOf(), typeOf(), entryKey, mapName, override)
+): BindingContext<T> = intoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
 
 fun <T : V, K, V> BindingContext<T>.intoMap(
     mapKeyType: Type<K>,
@@ -120,7 +120,7 @@ fun <T : V, K, V> BindingContext<T>.intoMap(
 inline fun <reified T : E, reified E> BindingContext<T>.intoSet(
     setName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = intoSet(typeOf(), setName, override)
+): BindingContext<T> = intoSet(typeOf<E>(), setName, override)
 
 fun <T : E, E> BindingContext<T>.intoSet(
     setElementType: Type<E>,

@@ -29,23 +29,23 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "value_one" }
-                        .intoMap("key_one", mapName = Values)
+                        .intoMap<String, String, CharSequence>("key_one", mapName = Values)
                     factory(NameTwo) { "value_two" }
-                        .intoMap("key_two", mapName = Values)
+                        .intoMap<String, String, CharSequence>("key_two", mapName = Values)
                     factory(NameThree) { "value_three" }
-                        .intoMap("key_three", mapName = Values)
+                        .intoMap<String, String, CharSequence>("key_three", mapName = Values)
                 }
             )
         }
 
-        val map = component.get<Map<String, String>>(Values)
+        val map = component.get<Map<String, CharSequence>>(Values)
 
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
 
-        val providerMap = component.get<Map<String, Provider<String>>>(Values)
+        val providerMap = component.get<Map<String, Provider<CharSequence>>>(Values)
 
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("key_one")(), "value_one")
