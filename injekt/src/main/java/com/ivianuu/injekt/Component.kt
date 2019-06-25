@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -25,7 +24,7 @@ import kotlin.reflect.KClass
  */
 class Component internal constructor(
     internal val scopes: Iterable<KClass<out Annotation>>,
-    internal val allBindings: ConcurrentHashMap<Key, Binding<*>>,
+    internal val allBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
     internal val mapBindings: MapBindings?,
     internal val setBindings: SetBindings?,
@@ -79,36 +78,6 @@ class Component internal constructor(
                 Lazy::class -> {
                     val realKey = keyOf(key.type.parameters.first(), key.name)
                     return LinkedLazyBinding<Any?>(this, realKey) as LinkedBinding<T>
-                }
-                Set::class -> {
-                    if (key.type.parameters[0].raw == Provider::class) {
-                        val realKey = keyOf(
-                            typeOf<Any?>(
-                                Set::class,
-                                key.type.parameters[0].parameters[0]
-                            ), key.name
-                        )
-
-                        val binding = getBinding<Any?>(realKey) as LinkedSetBinding<*>
-                        return binding.asLinkedProviderSetBinding() as LinkedBinding<T>
-                    }
-                }
-            }
-        } else if (key.type.parameters.size == 2) {
-            when (key.type.raw) {
-                Map::class -> {
-                    if (key.type.parameters[1].raw == Provider::class) {
-                        val realKey = keyOf(
-                            typeOf<Any?>(
-                                Map::class,
-                                key.type.parameters[0],
-                                key.type.parameters[1].parameters[0]
-                            ), key.name
-                        )
-
-                        val binding = getBinding<Any?>(realKey) as LinkedMapBinding<*, *>
-                        return binding.asLinkedProviderMapBinding() as LinkedBinding<T>
-                    }
                 }
             }
         }

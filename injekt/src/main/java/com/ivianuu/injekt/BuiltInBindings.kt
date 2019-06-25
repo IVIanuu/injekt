@@ -16,15 +16,12 @@
 
 package com.ivianuu.injekt
 
-internal class BindingProvider<T>(private val binding: LinkedBinding<T>) : Provider<T> {
-    override fun invoke(parameters: ParametersDefinition?): T = binding.get(parameters)
+internal class LinkedInstanceBinding<T>(private val value: T) : LinkedBinding<T>() {
+    override fun get(parameters: ParametersDefinition?) = value
 }
 
-internal class LinkedProviderBindingWrapper<T>(
-    private val binding: LinkedBinding<T>
-) : LinkedBinding<Provider<T>>() {
-    override fun get(parameters: ParametersDefinition?): Provider<T> =
-        BindingProvider(binding)
+internal class BindingProvider<T>(private val binding: LinkedBinding<T>) : Provider<T> {
+    override fun invoke(parameters: ParametersDefinition?): T = binding.get(parameters)
 }
 
 internal class LinkedProviderBinding<T>(
@@ -33,6 +30,15 @@ internal class LinkedProviderBinding<T>(
 ) : LinkedBinding<Provider<T>>() {
     override fun get(parameters: ParametersDefinition?): Provider<T> =
         KeyedProvider(component, key)
+}
+
+internal class LinkedLazyBinding<T>(
+    private val component: Component,
+    private val key: Key
+) : LinkedBinding<Lazy<T>>() {
+    override fun get(parameters: ParametersDefinition?): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
+        component.getBinding<T>(key).get()
+    }
 }
 
 private class KeyedProvider<T>(
@@ -52,65 +58,89 @@ private class KeyedProvider<T>(
     }
 }
 
-internal class LinkedLazyBinding<T>(
-    private val component: Component,
-    private val key: Key
-) : LinkedBinding<Lazy<T>>() {
-    override fun get(parameters: ParametersDefinition?): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
-        component.getBinding<T>(key).get()
+internal class UnlinkedMapOfProviderBinding<K, V>(
+    private val entryKeys: Map<K, Key>
+) : UnlinkedBinding<Map<K, Provider<V>>>() {
+    override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> {
+        return LinkedInstanceBinding(
+            entryKeys
+                .mapValues { linker.get<V>(it.value) }
+                .mapValues { BindingProvider(it.value) }
+        )
     }
 }
 
-internal class UnlinkedMapBinding<K, V>(private val keysByKey: Map<K, Key>) :
-    UnlinkedBinding<Map<K, V>>() {
-    override fun link(linker: Linker): LinkedBinding<Map<K, V>> =
-        LinkedMapBinding(keysByKey.mapValues { linker.get<V>(it.value) })
+internal class UnlinkedMapOfValueBinding<K, V>(
+    private val mapOfProviderKey: Key
+) : UnlinkedBinding<Map<K, Lazy<V>>>() {
+    override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
+        LinkedMapOfValueBinding(linker.get(mapOfProviderKey))
 }
 
-internal class LinkedMapBinding<K, V>(private val bindingsByKey: Map<K, LinkedBinding<out V>>) :
-    LinkedBinding<Map<K, V>>() {
-    override fun get(parameters: ParametersDefinition?): Map<K, V> =
-        bindingsByKey.mapValues { it.value.get() }
+internal class LinkedMapOfValueBinding<K, V>(
+    private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
+) : LinkedBinding<Map<K, V>>() {
+    override fun get(parameters: ParametersDefinition?) = mapOfProviderBinding.get()
+        .mapValues { it.value() }
+}
 
-    fun asLinkedProviderMapBinding(): LinkedBinding<Map<K, Provider<V>>> {
-        val providersByKey = bindingsByKey
-            .mapValues { LinkedProviderBindingWrapper(it.value) }
-        return LinkedProviderMapBinding(providersByKey as Map<K, LinkedBinding<Provider<V>>>)
+internal class UnlinkedMapOfLazyBinding<K, V>(
+    private val mapOfProviderKey: Key
+) : UnlinkedBinding<Map<K, Lazy<V>>>() {
+    override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
+        LinkedMapOfLazyBinding(linker.get(mapOfProviderKey))
+}
+
+internal class LinkedMapOfLazyBinding<K, V>(
+    private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
+) : LinkedBinding<Map<K, Lazy<V>>>() {
+    override fun get(parameters: ParametersDefinition?) = mapOfProviderBinding.get()
+        .mapValues { lazy { it.value() } }
+}
+
+internal class UnlinkedSetOfProviderBinding<E>(
+    private val elementKeys: Set<Key>
+) : UnlinkedBinding<Set<Provider<E>>>() {
+    override fun link(linker: Linker): LinkedBinding<Set<Provider<E>>> {
+        return LinkedInstanceBinding(
+            elementKeys
+                .map { linker.get<E>(it) }
+                .map { BindingProvider(it) }
+                .toSet()
+        )
     }
 }
 
-internal class LinkedProviderMapBinding<K, V>(
-    private val providersByKey: Map<K, LinkedBinding<Provider<V>>>
-) : LinkedBinding<Map<K, Provider<V>>>() {
-    override fun get(parameters: ParametersDefinition?): Map<K, Provider<V>> = providersByKey
-        .mapValues { it.value.get() }
+internal class UnlinkedSetOfValueBinding<E>(
+    private val setOfProviderKey: Key
+) : UnlinkedBinding<Set<Lazy<E>>>() {
+    override fun link(linker: Linker): LinkedBinding<Set<Lazy<E>>> =
+        LinkedSetOfValueBinding(linker.get(setOfProviderKey))
 }
 
-internal class UnlinkedSetBinding<E>(private val keys: Set<Key>) : UnlinkedBinding<Set<E>>() {
-    override fun link(linker: Linker): LinkedBinding<Set<E>> =
-        LinkedSetBinding(keys.map { linker.get<E>(it) }.toSet())
-}
-
-internal class LinkedSetBinding<E>(private val bindings: Set<LinkedBinding<out E>>) :
-    LinkedBinding<Set<E>>() {
-    override fun get(parameters: ParametersDefinition?): Set<E> =
-        bindings.map { it.get() }.toSet()
-
-    fun asLinkedProviderSetBinding(): LinkedBinding<Set<Provider<E>>> {
-        val providers = bindings
-            .map { LinkedProviderBindingWrapper(it) }
+internal class LinkedSetOfValueBinding<E>(
+    private val setOfProviderBinding: LinkedBinding<Set<Provider<E>>>
+) : LinkedBinding<Set<E>>() {
+    override fun get(parameters: ParametersDefinition?): Set<E> {
+        return setOfProviderBinding.get()
+            .map { it() }
             .toSet()
-        return LinkedProviderSetBinding(providers as Set<LinkedBinding<Provider<E>>>)
     }
 }
 
-internal class LinkedProviderSetBinding<E>(
-    private val providers: Set<LinkedBinding<Provider<E>>>
-) : LinkedBinding<Set<Provider<E>>>() {
-    override fun get(parameters: ParametersDefinition?): Set<Provider<E>> =
-        providers.map { it.get() }.toSet()
+internal class UnlinkedSetOfLazyBinding<E>(
+    private val setOfProviderKey: Key
+) : UnlinkedBinding<Set<Lazy<E>>>() {
+    override fun link(linker: Linker): LinkedBinding<Set<Lazy<E>>> =
+        LinkedSetOfLazyBinding(linker.get(setOfProviderKey))
 }
 
-internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
-    override fun get(parameters: ParametersDefinition?): T = instance
+internal class LinkedSetOfLazyBinding<E>(
+    private val setOfProviderBinding: LinkedBinding<Set<Provider<E>>>
+) : LinkedBinding<Set<Lazy<E>>>() {
+    override fun get(parameters: ParametersDefinition?): Set<Lazy<E>> {
+        return setOfProviderBinding.get()
+            .map { lazy { it() } }
+            .toSet()
+    }
 }

@@ -185,7 +185,35 @@ class ComponentBuilder @PublishedApi internal constructor() {
         map: MapBindings.BindingMap<*, *>
     ) {
         val bindingKeys = map.getBindingMap() as Map<Any?, Key>
-        bindings[mapKey] = UnlinkedMapBinding<Any?, Any?>(bindingKeys)
+
+        val mapKeyType = mapKey.type.parameters[0]
+        val mapValueType = mapKey.type.parameters[1]
+
+        val mapOfProviderKey = keyOf(
+            typeOf<Any?>(
+                Map::class,
+                mapKeyType,
+                typeOf<Provider<*>>(Provider::class, mapValueType)
+            ),
+            mapKey.name
+        )
+
+        bindings[mapOfProviderKey] = UnlinkedMapOfProviderBinding<Any?, Any?>(bindingKeys)
+            .also { it.unscoped = false }
+
+        val mapOfLazyKey = keyOf(
+            typeOf<Any?>(
+                Map::class,
+                mapKeyType,
+                typeOf<Lazy<*>>(Lazy::class, mapValueType)
+            ),
+            mapKey.name
+        )
+
+        bindings[mapOfLazyKey] = UnlinkedMapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
+            .also { it.unscoped = false }
+
+        bindings[mapKey] = UnlinkedMapOfValueBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.unscoped = false }
     }
 
@@ -195,7 +223,32 @@ class ComponentBuilder @PublishedApi internal constructor() {
         set: SetBindings.BindingSet<*>
     ) {
         val setKeys = set.getBindingSet()
-        bindings[setKey] = UnlinkedSetBinding<Any?>(setKeys)
+
+        val setElementType = setKey.type.parameters[0]
+
+        val setOfProviderKey = keyOf(
+            typeOf<Any?>(
+                Set::class,
+                typeOf<Provider<*>>(Provider::class, setElementType)
+            ),
+            setKey.name
+        )
+
+        bindings[setOfProviderKey] = UnlinkedSetOfProviderBinding<Any?>(setKeys)
+            .also { it.unscoped = false }
+
+        val setOfLazyKey = keyOf(
+            typeOf<Any?>(
+                Set::class,
+                typeOf<Lazy<*>>(Lazy::class, setElementType)
+            ),
+            setKey.name
+        )
+
+        bindings[setOfLazyKey] = UnlinkedSetOfLazyBinding<Any?>(setOfProviderKey)
+            .also { it.unscoped = false }
+
+        bindings[setKey] = UnlinkedSetOfValueBinding<Any?>(setOfProviderKey)
             .also { it.unscoped = false }
     }
 
