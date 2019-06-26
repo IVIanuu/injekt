@@ -164,7 +164,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
         override fun link(linker: Linker): LinkedBinding<Component> = Linked(linker.component)
 
         private class Linked(private val component: Component) : LinkedBinding<Component>() {
-            override fun get(parameters: ParametersDefinition?): Component =
+            override fun invoke(parameters: ParametersDefinition?): Component =
                 component
         }
     }

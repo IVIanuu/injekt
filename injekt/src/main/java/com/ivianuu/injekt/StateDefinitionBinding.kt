@@ -42,7 +42,7 @@ class Link<T> internal constructor(
         binding = linker.get(type, name)
     }
 
-    override fun invoke() = binding.get()
+    override fun invoke() = binding()
 }
 
 typealias StateDefinition<T> = (Parameters?) -> T
@@ -66,6 +66,6 @@ private class UnlinkedStateDefinitionBinding<T>(
 private class LinkedStateDefinitionBinding<T>(
     private val definition: StateDefinition<T>
 ) : LinkedBinding<T>() {
-    override fun get(parameters: ParametersDefinition?): T =
+    override fun invoke(parameters: ParametersDefinition?): T =
         definition(parameters?.invoke())
 }

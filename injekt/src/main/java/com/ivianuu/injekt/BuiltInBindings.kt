@@ -17,18 +17,14 @@
 package com.ivianuu.injekt
 
 internal class LinkedInstanceBinding<T>(private val value: T) : LinkedBinding<T>() {
-    override fun get(parameters: ParametersDefinition?) = value
-}
-
-internal class BindingProvider<T>(private val binding: LinkedBinding<T>) : Provider<T> {
-    override fun invoke(parameters: ParametersDefinition?): T = binding.get(parameters)
+    override fun invoke(parameters: ParametersDefinition?) = value
 }
 
 internal class LinkedProviderBinding<T>(
     private val component: Component,
     private val key: Key
 ) : LinkedBinding<Provider<T>>() {
-    override fun get(parameters: ParametersDefinition?): Provider<T> =
+    override fun invoke(parameters: ParametersDefinition?): Provider<T> =
         KeyedProvider(component, key)
 }
 
@@ -36,8 +32,9 @@ internal class LinkedLazyBinding<T>(
     private val component: Component,
     private val key: Key
 ) : LinkedBinding<Lazy<T>>() {
-    override fun get(parameters: ParametersDefinition?): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
-        component.getBinding<T>(key).get()
+    override fun invoke(parameters: ParametersDefinition?): Lazy<T> =
+        lazy(LazyThreadSafetyMode.NONE) {
+            component.getBinding<T>(key)()
     }
 }
 
@@ -54,7 +51,7 @@ private class KeyedProvider<T>(
             binding = component.getBinding(key)
             _binding = binding
         }
-        return binding.get(parameters)
+        return binding(parameters)
     }
 }
 
@@ -63,9 +60,7 @@ internal class UnlinkedMapOfProviderBinding<K, V>(
 ) : UnlinkedBinding<Map<K, Provider<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> {
         return LinkedInstanceBinding(
-            entryKeys
-                .mapValues { linker.get<V>(it.value) }
-                .mapValues { BindingProvider(it.value) }
+            entryKeys.mapValues { linker.get<V>(it.value) }
         )
     }
 }
@@ -80,7 +75,7 @@ internal class UnlinkedMapOfValueBinding<K, V>(
 internal class LinkedMapOfValueBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, V>>() {
-    override fun get(parameters: ParametersDefinition?) = mapOfProviderBinding.get()
+    override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
         .mapValues { it.value() }
 }
 
@@ -94,7 +89,7 @@ internal class UnlinkedMapOfLazyBinding<K, V>(
 internal class LinkedMapOfLazyBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, Lazy<V>>>() {
-    override fun get(parameters: ParametersDefinition?) = mapOfProviderBinding.get()
+    override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
         .mapValues { lazy { it.value() } }
 }
 
@@ -105,7 +100,6 @@ internal class UnlinkedSetOfProviderBinding<E>(
         return LinkedInstanceBinding(
             elementKeys
                 .map { linker.get<E>(it) }
-                .map { BindingProvider(it) }
                 .toSet()
         )
     }
@@ -121,8 +115,8 @@ internal class UnlinkedSetOfValueBinding<E>(
 internal class LinkedSetOfValueBinding<E>(
     private val setOfProviderBinding: LinkedBinding<Set<Provider<E>>>
 ) : LinkedBinding<Set<E>>() {
-    override fun get(parameters: ParametersDefinition?): Set<E> {
-        return setOfProviderBinding.get()
+    override fun invoke(parameters: ParametersDefinition?): Set<E> {
+        return setOfProviderBinding()
             .map { it() }
             .toSet()
     }
@@ -138,8 +132,8 @@ internal class UnlinkedSetOfLazyBinding<E>(
 internal class LinkedSetOfLazyBinding<E>(
     private val setOfProviderBinding: LinkedBinding<Set<Provider<E>>>
 ) : LinkedBinding<Set<Lazy<E>>>() {
-    override fun get(parameters: ParametersDefinition?): Set<Lazy<E>> {
-        return setOfProviderBinding.get()
+    override fun invoke(parameters: ParametersDefinition?): Set<Lazy<E>> {
+        return setOfProviderBinding()
             .map { lazy { it() } }
             .toSet()
     }

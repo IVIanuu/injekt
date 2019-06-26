@@ -39,13 +39,13 @@ private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : Unlink
 private class LinkedScopedBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
     private var _value: Any? = this
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun invoke(parameters: ParametersDefinition?): T {
         var value = _value
         if (value === this) {
             synchronized(this) {
                 value = _value
                 if (value === this) {
-                    _value = binding.get(parameters)
+                    _value = binding(parameters)
                     value = _value
                 }
             }

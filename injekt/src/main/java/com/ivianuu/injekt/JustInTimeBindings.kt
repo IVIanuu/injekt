@@ -154,12 +154,12 @@ private class LinkedJustInTimeBinding<T>(
     private val constructor: Constructor<T>,
     private val args: Array<Arg>
 ) : LinkedBinding<T>() {
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun invoke(parameters: ParametersDefinition?): T {
         val initializedParameters by lazy(LazyThreadSafetyMode.NONE) { parameters!!.invoke() }
         val resolvedArgs = args
             .map { arg ->
                 when (arg) {
-                    is Arg.Dependency -> arg.binding.get()
+                    is Arg.Dependency -> arg.binding()
                     is Arg.Parameter -> initializedParameters.get<Any?>(arg.index)
                 }
             }

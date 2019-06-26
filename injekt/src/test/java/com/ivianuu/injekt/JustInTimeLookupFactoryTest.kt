@@ -16,14 +16,16 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertNotNull
+import junit.framework.Assert.assertNull
 import org.junit.Test
 import kotlin.reflect.KClass
 
 class MyUnscopedDep
 
 object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
-    override fun get(parameters: ParametersDefinition?) = MyUnscopedDep()
+    override fun invoke(parameters: ParametersDefinition?) = MyUnscopedDep()
 }
 
 @TestScopeOne
@@ -33,7 +35,7 @@ object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {
     override val scope: KClass<out Annotation>
         get() = TestScopeOne::class
 
-    override fun get(parameters: ParametersDefinition?) = MyScopedDep()
+    override fun invoke(parameters: ParametersDefinition?) = MyScopedDep()
 }
 
 private val factories = listOf(

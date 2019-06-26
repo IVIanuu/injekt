@@ -32,7 +32,7 @@ private fun factoryBlock(n: Int): String {
     val b2 = n - 2
 
     return "object Fib${n}Binding : LinkedBinding<Fib${n}>() {\n" +
-            "    override fun get(parameters: ParametersDefinition?) = \n" +
+            "    override fun invoke(parameters: ParametersDefinition?) = \n" +
             "        Fib${n}(Fib${b1}Binding.get(), Fib${b2}Binding.get())\n" +
             "}"
 }

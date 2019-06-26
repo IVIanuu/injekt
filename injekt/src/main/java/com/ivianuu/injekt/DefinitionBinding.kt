@@ -56,7 +56,7 @@ private class LinkedDefinitionBinding<T>(
 
     override fun <T> get(key: Key): T = component.get(key)
 
-    override fun get(parameters: ParametersDefinition?): T =
+    override fun invoke(parameters: ParametersDefinition?): T =
         definition(this, parameters?.invoke())
 
 }
@@ -92,10 +92,10 @@ private class LinkedOptimizingDefinitionBinding<T>(
             }
 
             binding
-        }.get() as T
+        }() as T
     }
 
-    override fun get(parameters: ParametersDefinition?): T {
+    override fun invoke(parameters: ParametersDefinition?): T {
         currentIndex = -1
         return definition(this, parameters?.invoke())
     }
