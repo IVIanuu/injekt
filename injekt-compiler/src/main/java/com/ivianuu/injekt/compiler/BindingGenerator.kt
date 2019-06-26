@@ -16,9 +16,23 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.*
-import com.squareup.kotlinpoet.*
+import com.ivianuu.injekt.HasScope
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.LinkedBinding
+import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.UnlinkedBinding
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.WildcardTypeName
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
 import kotlin.reflect.KClass
 
 class BindingGenerator(private val descriptor: BindingDescriptor) {
@@ -125,7 +139,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                 )
             } else {
                 addFunction(
-                    FunSpec.builder("get")
+                    FunSpec.builder("invoke")
                         .addModifiers(KModifier.OVERRIDE)
                         .addParameter(
                             "parameters",
@@ -188,7 +202,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                     }
             }
             .addFunction(
-                FunSpec.builder("get")
+                FunSpec.builder("invoke")
                     .addModifiers(KModifier.OVERRIDE)
                     .addParameter(
                         "parameters",
