@@ -32,11 +32,11 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev-66"
+    const val version = "${Build.versionName}-dev-67"
 }
 
 object Versions {
-    const val androidGradlePlugin = "3.4.0"
+    const val androidGradlePlugin = "3.5.0-beta05"
     const val androidxAppCompat = "1.1.0-alpha04"
     const val bintray = "1.8.4"
     const val dagger2 = "2.22.1"

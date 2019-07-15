@@ -16,7 +16,13 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Param
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.map
+import com.ivianuu.injekt.module
 import kotlin.reflect.KClass
 
 // kinds
@@ -75,5 +81,9 @@ class MyDep(
     // set
     @Commands private val commandsSet: Set<Command>,
     @Commands private val commandsSetLazy: Set<Lazy<Command>>,
-    @Commands private val commandsSetProvider: Set<Provider<Command>>
+    @Commands private val commandsSetProvider: Set<Provider<Command>>,
+
+    private val adapter: Lazy<JsonAdapter<List<MyInterface>>>
 )
+
+interface MyInterface
