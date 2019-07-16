@@ -33,26 +33,7 @@ internal class LinkedLazyBinding<T>(
     private val key: Key
 ) : LinkedBinding<Lazy<T>>() {
     override fun invoke(parameters: ParametersDefinition?): Lazy<T> =
-        lazy(LazyThreadSafetyMode.NONE) {
-            component.getBinding<T>(key)()
-    }
-}
-
-private class KeyedProvider<T>(
-    private val component: Component,
-    private val key: Key
-) : Provider<T> {
-
-    private var _binding: LinkedBinding<T>? = null
-
-    override fun invoke(parameters: ParametersDefinition?): T {
-        var binding = _binding
-        if (binding == null) {
-            binding = component.getBinding(key)
-            _binding = binding
-        }
-        return binding(parameters)
-    }
+        ProviderLazy(component.getBinding<T>(key))
 }
 
 internal class UnlinkedMapOfProviderBinding<K, V>(
@@ -90,7 +71,7 @@ internal class LinkedMapOfLazyBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, Lazy<V>>>() {
     override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
-        .mapValues { lazy { it.value() } }
+        .mapValues { ProviderLazy(it.value) }
 }
 
 internal class UnlinkedSetOfProviderBinding<E>(
@@ -134,7 +115,7 @@ internal class LinkedSetOfLazyBinding<E>(
 ) : LinkedBinding<Set<Lazy<E>>>() {
     override fun invoke(parameters: ParametersDefinition?): Set<Lazy<E>> {
         return setOfProviderBinding()
-            .map { lazy { it() } }
+            .map { ProviderLazy(it) }
             .toSet()
     }
 }

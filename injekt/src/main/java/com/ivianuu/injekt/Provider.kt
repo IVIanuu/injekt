@@ -22,3 +22,21 @@ package com.ivianuu.injekt
 interface Provider<T> {
     operator fun invoke(parameters: ParametersDefinition? = null): T
 }
+
+// todo delete this class
+internal class KeyedProvider<T>(
+    private val component: Component,
+    private val key: Key
+) : Provider<T> {
+
+    private var _binding: LinkedBinding<T>? = null
+
+    override fun invoke(parameters: ParametersDefinition?): T {
+        var binding = _binding
+        if (binding == null) {
+            binding = component.getBinding(key)
+            _binding = binding
+        }
+        return binding(parameters)
+    }
+}

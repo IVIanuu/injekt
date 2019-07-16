@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ComponentTest {
@@ -99,7 +102,7 @@ class ComponentTest {
 
         val depLazy = component.get<Lazy<TestDep1>>()
         assertFalse(called)
-        depLazy.value
+        depLazy()
         assertTrue(called)
     }
 

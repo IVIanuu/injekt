@@ -37,10 +37,10 @@ fun <T> InjektTrait.get(
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(typeOf(), name, parameters)
+): kotlin.Lazy<T> = inject(typeOf(), name, parameters)
 
 fun <T> InjektTrait.inject(
     type: Type<T>,
     name: Any? = null,
     parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }
+): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }

@@ -184,10 +184,10 @@ inline fun <reified T> Component.get(
 inline fun <reified T> Component.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): Lazy<T> = inject(typeOf(), name, parameters)
+): kotlin.Lazy<T> = inject(typeOf(), name, parameters)
 
 fun <T> Component.inject(
     type: Type<T>,
     name: Any? = null,
     parameters: ParametersDefinition? = null
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
+): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
