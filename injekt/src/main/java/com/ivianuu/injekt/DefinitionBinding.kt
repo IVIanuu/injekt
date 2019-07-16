@@ -19,10 +19,13 @@ package com.ivianuu.injekt
 typealias Definition<T> = DefinitionContext.(Parameters?) -> T
 
 interface DefinitionContext {
-    fun <T> get(type: Type<T>, name: Any? = null): T =
-        get(keyOf(type, name))
+    fun <T> get(
+        type: Type<T>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): T = get(keyOf(type, name), parameters)
 
-    fun <T> get(key: Key): T
+    fun <T> get(key: Key, parameters: ParametersDefinition? = null): T
 
     operator fun <T> Parameters?.component1(): T = this!![0]
     operator fun <T> Parameters?.component2(): T = this!![1]
@@ -39,7 +42,10 @@ fun <T> definitionBinding(
     else UnlinkedDefinitionBinding(definition)
 }
 
-inline fun <reified T> DefinitionContext.get(name: Any? = null): T = get(typeOf(), name)
+inline fun <reified T> DefinitionContext.get(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): T = get(typeOf(), name, parameters)
 
 private class UnlinkedDefinitionBinding<T>(
     private val definition: Definition<T>
@@ -54,7 +60,8 @@ private class LinkedDefinitionBinding<T>(
     private val definition: Definition<T>
 ) : LinkedBinding<T>(), DefinitionContext {
 
-    override fun <T> get(key: Key): T = component.get(key)
+    override fun <T> get(key: Key, parameters: ParametersDefinition?): T =
+        component.get(key, parameters)
 
     override fun invoke(parameters: ParametersDefinition?): T =
         definition(this, parameters?.invoke())
@@ -77,7 +84,7 @@ private class LinkedOptimizingDefinitionBinding<T>(
     @PublishedApi
     internal var currentIndex = -1
 
-    override fun <T> get(key: Key): T {
+    override fun <T> get(key: Key, parameters: ParametersDefinition?): T {
         ++currentIndex
         return if (currentIndex > bindings.lastIndex) {
             bindings = bindings.copyOf(currentIndex + 1)
@@ -92,7 +99,7 @@ private class LinkedOptimizingDefinitionBinding<T>(
             }
 
             binding
-        }() as T
+        }(parameters) as T
     }
 
     override fun invoke(parameters: ParametersDefinition?): T {

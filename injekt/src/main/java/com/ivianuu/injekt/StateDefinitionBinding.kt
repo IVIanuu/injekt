@@ -34,7 +34,7 @@ class StateDefinitionContext {
 class Link<T> internal constructor(
     private val type: Type<T>,
     private val name: Any? = null
-) : () -> T {
+) {
 
     private lateinit var binding: LinkedBinding<T>
 
@@ -42,7 +42,8 @@ class Link<T> internal constructor(
         binding = linker.get(type, name)
     }
 
-    override fun invoke() = binding()
+    operator fun invoke(parameters: ParametersDefinition? = null) =
+        binding(parameters)
 }
 
 typealias StateDefinition<T> = (Parameters?) -> T
