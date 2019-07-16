@@ -42,7 +42,7 @@ class Component internal constructor(
         parameters: ParametersDefinition? = null
     ): T = getBinding<T>(keyOf(type, name))(parameters)
 
-    internal fun <T> get(key: Key): T =
+    internal fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
         getBinding<T>(key)()
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =

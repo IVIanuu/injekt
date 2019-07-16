@@ -23,7 +23,6 @@ interface Provider<T> {
     operator fun invoke(parameters: ParametersDefinition? = null): T
 }
 
-// todo delete this class
 internal class KeyedProvider<T>(
     private val component: Component,
     private val key: Key

@@ -33,7 +33,7 @@ internal class LinkedLazyBinding<T>(
     private val key: Key
 ) : LinkedBinding<Lazy<T>>() {
     override fun invoke(parameters: ParametersDefinition?): Lazy<T> =
-        ProviderLazy(component.getBinding<T>(key))
+        KeyedLazy(component, key)
 }
 
 internal class UnlinkedMapOfProviderBinding<K, V>(
