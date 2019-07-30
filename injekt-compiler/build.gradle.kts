@@ -15,9 +15,8 @@
  */
 
 plugins {
-    id("java-library")
-    id("kotlin")
-    id("kotlin-kapt")
+    kotlin("jvm")
+    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")

@@ -37,7 +37,3 @@ allprojects {
         maven("https://oss.sonatype.org/content/repositories/snapshots")
     }
 }
-
-task("clean", Delete::class) {
-    delete(rootProject.buildDir)
-}

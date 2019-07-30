@@ -7,8 +7,15 @@
       <module fileurl="file://$PROJECT_DIR$/comparison/comparison.iml" filepath="$PROJECT_DIR$/comparison/comparison.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt/injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildSrc/injekt-buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/injekt-buildSrc.iml" group="injekt/buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/comparison/injekt-comparison.iml" filepath="$PROJECT_DIR$/comparison/injekt-comparison.iml" group="injekt/comparison" />
       <module fileurl="file://$PROJECT_DIR$/injekt-compiler/injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-compiler/injekt-compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt/injekt-injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt-injekt.iml" group="injekt/injekt" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-injekt-android.iml" group="injekt/injekt-android" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-compiler/injekt-injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-compiler/injekt-injekt-compiler.iml" group="injekt/injekt-compiler" />
+      <module fileurl="file://$PROJECT_DIR$/sample/injekt-sample.iml" filepath="$PROJECT_DIR$/sample/injekt-sample.iml" group="injekt/sample" />
       <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" />
+      <module fileurl="file://$PROJECT_DIR$/studio-projects-injekt.iml" filepath="$PROJECT_DIR$/studio-projects-injekt.iml" group="injekt" />
     </modules>
   </component>
 </project>
