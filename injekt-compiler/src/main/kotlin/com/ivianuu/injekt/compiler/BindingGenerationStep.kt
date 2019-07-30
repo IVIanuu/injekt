@@ -48,7 +48,7 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
-import javax.tools.Diagnostic
+import javax.tools.Diagnostic.Kind.ERROR
 import kotlin.reflect.KClass
 
 class BindingGenerationStep : ProcessingStep() {
@@ -74,7 +74,7 @@ class BindingGenerationStep : ProcessingStep() {
             && annotatedType.hasAnnotation<Inject>()
         ) {
             messager.printMessage(
-                Diagnostic.Kind.ERROR,
+                ERROR,
                 "Can only have @Inject on the type or the constructor",
                 element
             )
@@ -86,7 +86,7 @@ class BindingGenerationStep : ProcessingStep() {
 
         if (classMetadata == null) {
             messager.printMessage(
-                Diagnostic.Kind.ERROR,
+                ERROR,
                 "Must be a kotlin class",
                 annotatedType
             )
@@ -104,7 +104,7 @@ class BindingGenerationStep : ProcessingStep() {
                     || annotatedType.modifiers.contains(Modifier.PROTECTED))
         ) {
             messager.printMessage(
-                Diagnostic.Kind.ERROR,
+                ERROR,
                 "Must be a public or internal",
                 annotatedType
             )
@@ -116,7 +116,7 @@ class BindingGenerationStep : ProcessingStep() {
 
         if (scopeAnnotations.size > 1) {
             messager.printMessage(
-                Diagnostic.Kind.ERROR,
+                ERROR,
                 "Can only have 1 scope annotation",
                 annotatedType
             )
@@ -154,7 +154,7 @@ class BindingGenerationStep : ProcessingStep() {
                 || constructor.modifiers.contains(Modifier.PROTECTED)
             ) {
                 messager.printMessage(
-                    Diagnostic.Kind.ERROR,
+                    ERROR,
                     "Must be a public or internal",
                     annotatedType
                 )
@@ -180,7 +180,7 @@ class BindingGenerationStep : ProcessingStep() {
 
                     if (nameType != null && nameAnnotations.isNotEmpty()) {
                         messager.printMessage(
-                            Diagnostic.Kind.ERROR,
+                            ERROR,
                             "Can only have 1 name annotation",
                             param
                         )
@@ -190,7 +190,7 @@ class BindingGenerationStep : ProcessingStep() {
                     if (nameType == null) {
                         if (nameAnnotations.size > 1) {
                             messager.printMessage(
-                                Diagnostic.Kind.ERROR,
+                                ERROR,
                                 "Can only have 1 name annotation",
                                 param
                             )
@@ -208,7 +208,7 @@ class BindingGenerationStep : ProcessingStep() {
 
                     if (paramIndex != -1 && qualifierName != null) {
                         messager.printMessage(
-                            Diagnostic.Kind.ERROR,
+                            ERROR,
                             "Only one of @Param or @Name can be annotated per parameter",
                             param
                         )
