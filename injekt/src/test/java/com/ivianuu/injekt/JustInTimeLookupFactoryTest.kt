@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Manuel Wrage
+ * Copyright 2019 Manuel Wrage
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertNull
+import junit.framework.Assert.*
 import org.junit.Test
 import kotlin.reflect.KClass
 
