@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.playground
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
 // kinds
 interface Command
 
-@Name(Commands.Companion::class)
+@Name(Commands::class)
 annotation class Commands {
     companion object
 }
