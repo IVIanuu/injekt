@@ -27,21 +27,16 @@ import com.ivianuu.processingx.getAnnotationMirror
 import com.ivianuu.processingx.getAnnotationMirrorOrNull
 import com.ivianuu.processingx.getAsType
 import com.ivianuu.processingx.hasAnnotation
+import com.ivianuu.processingx.javaToKotlinType
 import com.ivianuu.processingx.messager
 import com.ivianuu.processingx.steps.ProcessingStep
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.Flags
-import me.eugeniomarletti.kotlin.metadata.shadow.name.FqName
-import me.eugeniomarletti.kotlin.metadata.shadow.platform.JavaToKotlinClassMap
 import me.eugeniomarletti.kotlin.metadata.visibility
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -235,23 +230,4 @@ class BindingGenerationStep : ProcessingStep() {
         )
     }
 
-    private fun TypeName.javaToKotlinType(): TypeName {
-        return if (this is WildcardTypeName) {
-            if (outTypes.isNotEmpty()) {
-                outTypes.first().javaToKotlinType()
-            } else {
-                inTypes.first().javaToKotlinType()
-            }
-        } else if (this is ParameterizedTypeName) {
-            (rawType.javaToKotlinType() as ClassName).parameterizedBy(
-                *typeArguments.map { it.javaToKotlinType() }.toTypedArray()
-            )
-        } else {
-            val className =
-                JavaToKotlinClassMap.mapJavaToKotlin(FqName(toString()))?.asSingleFqName()
-                    ?.asString()
-            if (className == null) this
-            else ClassName.bestGuess(className)
-        }
-    }
 }
