@@ -86,7 +86,7 @@ class Component internal constructor(
     }
 
     private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
-        var binding = allBindings[key] as? Binding<T>
+        var binding = synchronized(allBindings) { allBindings[key] } as? Binding<T>
         if (binding != null) return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
@@ -98,7 +98,7 @@ class Component internal constructor(
     }
 
     private fun <T> findExplicitBindingForDependency(key: Key): LinkedBinding<T>? {
-        var binding = allBindings[key] as? Binding<T>
+        var binding = synchronized(allBindings) { allBindings[key] } as? Binding<T>
         if (binding != null && !binding.unscoped) return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
@@ -153,14 +153,14 @@ class Component internal constructor(
         binding: Binding<T>
     ): LinkedBinding<T> {
         val linkedBinding = binding.performLink(linker)
-        allBindings[key] = linkedBinding
+        synchronized(allBindings) { allBindings[key] = linkedBinding }
         return linkedBinding
     }
 
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
         if (this is LinkedBinding) return this
         val linkedBinding = performLink(linker)
-        allBindings[key] = linkedBinding
+        synchronized(allBindings) { allBindings[key] = linkedBinding }
         return linkedBinding
     }
 
