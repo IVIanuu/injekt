@@ -43,7 +43,7 @@ class Component internal constructor(
     ): T = getBinding<T>(keyOf(type, name))(parameters)
 
     internal fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
-        getBinding<T>(key)()
+        getBinding<T>(key)(parameters)
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
         findBinding(key) ?: error("Couldn't find a binding for $key")
