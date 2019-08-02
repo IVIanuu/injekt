@@ -95,8 +95,8 @@ class BindingGenerationStep : ProcessingStep() {
             Flags.CLASS_KIND.get(classMetadata.data.classProto.flags) == ProtoBuf.Class.Kind.OBJECT
 
         if ((element is TypeElement || !isObject)
-            && (annotatedType.modifiers.contains(Modifier.PRIVATE)
-                    || annotatedType.modifiers.contains(Modifier.PROTECTED))
+            && (Modifier.PRIVATE in annotatedType.modifiers
+                    || Modifier.PROTECTED in annotatedType.modifiers)
         ) {
             messager.printMessage(
                 ERROR,
@@ -145,8 +145,8 @@ class BindingGenerationStep : ProcessingStep() {
                     .first { it.kind == ElementKind.CONSTRUCTOR }
             }
 
-            if (constructor.modifiers.contains(Modifier.PRIVATE)
-                || constructor.modifiers.contains(Modifier.PROTECTED)
+            if (Modifier.PRIVATE in annotatedType.modifiers
+                || Modifier.PROTECTED in annotatedType.modifiers
             ) {
                 messager.printMessage(
                     ERROR,

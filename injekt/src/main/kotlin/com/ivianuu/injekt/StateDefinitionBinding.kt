@@ -24,7 +24,7 @@ class StateDefinitionContext {
 
     fun <T> link(type: Type<T>, name: Any? = null): Link<T> {
         val link = Link(type, name)
-        links.add(link)
+        links += link
         return link
     }
 

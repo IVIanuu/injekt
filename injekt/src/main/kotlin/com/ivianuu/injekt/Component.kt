@@ -165,7 +165,7 @@ class Component internal constructor(
     }
 
     private fun findComponentForScope(scope: KClass<out Annotation>): Component? {
-        if (scopes.contains(scope)) return this
+        if (scope in scopes) return this
         for (dependency in dependencies) {
             dependency.findComponentForScope(scope)
                 ?.let { return@findComponentForScope it }

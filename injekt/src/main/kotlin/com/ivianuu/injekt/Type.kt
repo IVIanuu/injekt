@@ -67,7 +67,6 @@ class Type<T> internal constructor(
 
 }
 
-@UseExperimental(ExperimentalStdlibApi::class)
 inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
 @PublishedApi

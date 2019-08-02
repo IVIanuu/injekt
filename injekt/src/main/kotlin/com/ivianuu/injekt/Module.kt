@@ -35,7 +35,7 @@ class Module @PublishedApi internal constructor() {
         override: Boolean = false,
         unscoped: Boolean = true
     ): BindingContext<T> {
-        if (bindings.contains(key) && !override) {
+        if (key in bindings && !override) {
             error("Already declared binding for $binding.key")
         }
 

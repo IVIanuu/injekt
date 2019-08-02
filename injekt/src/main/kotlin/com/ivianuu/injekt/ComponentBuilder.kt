@@ -26,47 +26,47 @@ class ComponentBuilder @PublishedApi internal constructor() {
     private val dependencies = arrayListOf<Component>()
 
     fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
-        this.scopes.add(scope)
+        this.scopes += scope
         return this
     }
 
     fun scopes(vararg scopes: KClass<out Annotation>): ComponentBuilder {
-        this.scopes.addAll(scopes)
+        this.scopes += scopes
         return this
     }
 
     fun scopes(scopes: Iterable<KClass<out Annotation>>): ComponentBuilder {
-        this.scopes.addAll(scopes)
+        this.scopes += scopes
         return this
     }
 
     fun dependencies(dependency: Component): ComponentBuilder {
-        this.dependencies.add(dependency)
+        this.dependencies += dependency
         return this
     }
 
     fun dependencies(vararg dependencies: Component): ComponentBuilder {
-        this.dependencies.addAll(dependencies)
+        this.dependencies += dependencies
         return this
     }
 
     fun dependencies(dependencies: Iterable<Component>): ComponentBuilder {
-        this.dependencies.addAll(dependencies)
+        this.dependencies += dependencies
         return this
     }
 
     fun modules(module: Module): ComponentBuilder {
-        this.modules.add(module)
+        this.modules += module
         return this
     }
 
     fun modules(vararg modules: Module): ComponentBuilder {
-        this.modules.addAll(modules)
+        this.modules += modules
         return this
     }
 
     fun modules(modules: Iterable<Module>): ComponentBuilder {
-        this.modules.addAll(modules)
+        this.modules += modules
         return this
     }
 
@@ -78,7 +78,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             .map { it.getAllBindingKeys() }
             .fold(hashSetOf<Key>()) { acc, current ->
                 current.forEach { key ->
-                    check(acc.add(key)) {
+                    check(acc += key) {
                         "Already declared binding for $key"
                     }
                 }
@@ -104,8 +104,8 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
         modules.forEach { module ->
             module.bindings.forEach { (key, binding) ->
-                if ((allBindings.contains(key)
-                            || dependencyBindingKeys.contains(key)) && !binding.override
+                if ((key in allBindings
+                            || key in dependencyBindingKeys) && !binding.override
                 ) {
                     error("Already declared key $key")
                 }
@@ -130,7 +130,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
         includeComponentBindings(allBindings)
 
         val finalAllBindings = ConcurrentHashMap<Key, Binding<*>>()
-        finalAllBindings.putAll(allBindings)
+        finalAllBindings += allBindings
 
         return Component(
             scopes, finalAllBindings, unscopedBindings,
@@ -144,13 +144,13 @@ class ComponentBuilder @PublishedApi internal constructor() {
         dependencies
             .flatMap { it.scopes }
             .forEach {
-                if (!dependencyScopes.add(it)) {
+                if (!dependencyScopes += it) {
                     error("Duplicated scope $it")
                 }
             }
 
         scopes.forEach {
-            if (!dependencyScopes.add(it)) {
+            if (!dependencyScopes += it) {
                 error("Duplicated scope $it")
             }
         }
@@ -257,7 +257,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
     private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
         dependencies.forEach { it.collectBindingKeys(keys) }
-        keys.addAll(this.allBindings.keys)
+        keys += this.allBindings.keys
     }
 
 }

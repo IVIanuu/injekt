@@ -98,8 +98,8 @@ class ReflectionTest {
 
         component.get<ReflectionDepWithScope>()
 
-        assertTrue(testScopeComponent.allBindings.containsKey(keyOf<ReflectionDepWithScope>()))
-        assertFalse(component.allBindings.containsKey(keyOf<ReflectionDepWithScope>()))
+        assertTrue(keyOf<ReflectionDepWithScope>() in testScopeComponent.allBindings)
+        assertFalse(keyOf<ReflectionDepWithScope>() in component.allBindings)
     }
 
     @Test

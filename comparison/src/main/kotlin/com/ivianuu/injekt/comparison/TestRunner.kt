@@ -83,7 +83,7 @@ fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultCo
     repeat(config.rounds) {
         tests.forEach { test ->
             timingsPerTest.getOrPut(test.name) { arrayListOf() }
-                .add(measure(test))
+            += measure(test)
         }
     }
 

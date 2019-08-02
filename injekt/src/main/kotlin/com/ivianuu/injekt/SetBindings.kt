@@ -57,7 +57,7 @@ class SetBindings {
         }
 
         fun add(elementKey: Key, override: Boolean) {
-            if (map.contains(elementKey) && !override) {
+            if (elementKey in map && !override) {
                 error("Already declared $elementKey in set $setKey")
             }
 

@@ -71,7 +71,7 @@ object DIContainer {
     fun loadModule(module: Module) {
         module.definitions.forEach {
             definitions[it.key] = it
-            singletons.remove(it.key)
+            singletons -= it.key
         }
     }
 

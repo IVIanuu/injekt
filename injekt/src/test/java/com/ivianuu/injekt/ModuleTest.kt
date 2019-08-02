@@ -25,7 +25,7 @@ class ModuleTest {
     fun testBind() {
         val binding = definitionBinding { "value" }
         val module = module { bind(binding) }
-        assertTrue(module.bindings.values.contains(binding))
+        assertTrue(binding in module.bindings.values)
     }
 
     @Test
@@ -62,7 +62,7 @@ class ModuleTest {
 
         val moduleB = module { include(moduleA) }
 
-        assertTrue(moduleB.bindings.containsKey(keyOf<TestDep1>()))
+        assertTrue(keyOf<TestDep1>() in moduleB.bindings)
         assertTrue(moduleB.mapBindings?.getAll()?.containsKey(keyOf<Map<String, Any>>()) ?: false)
         assertTrue(moduleB.setBindings?.getAll()?.containsKey(keyOf<Set<Any>>()) ?: false)
     }

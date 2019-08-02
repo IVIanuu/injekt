@@ -75,7 +75,7 @@ class MapBindings {
         }
 
         private fun put(entryKey: K, entry: Entry) {
-            if (map.contains(entryKey) && !entry.override) {
+            if (entryKey in map && !entry.override) {
                 error("Already declared $entryKey in map $mapKey")
             }
 
