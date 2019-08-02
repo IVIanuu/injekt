@@ -80,6 +80,8 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
             if (lookup != null) lookups[type] = lookup
         }
 
+        InjektPlugins.logger?.warn("Used reflection for key: $key")
+
         return lookup as? JustInTimeLookup<T>
     }
 

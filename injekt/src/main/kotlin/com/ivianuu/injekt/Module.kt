@@ -114,19 +114,6 @@ fun <T> Module.factory(
     definition: Definition<T>
 ): BindingContext<T> = bind(definitionBinding(optimizing, definition), type, name, override, true)
 
-inline fun <reified T> Module.factoryWithState(
-    name: Any? = null,
-    override: Boolean = false,
-    noinline block: StateDefinitionContext.() -> StateDefinition<T>
-): BindingContext<T> = factoryWithState(typeOf(), name, override, block)
-
-fun <T> Module.factoryWithState(
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false,
-    block: StateDefinitionContext.() -> StateDefinition<T>
-): BindingContext<T> = bind(stateDefinitionBinding(block), type, name, override, true)
-
 inline fun <reified T> Module.single(
     name: Any? = null,
     override: Boolean = false,

@@ -78,7 +78,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             .map { it.getAllBindingKeys() }
             .fold(hashSetOf<Key>()) { acc, current ->
                 current.forEach { key ->
-                    check(acc += key) {
+                    check(acc.add(key)) {
                         "Already declared binding for $key"
                     }
                 }
@@ -144,13 +144,13 @@ class ComponentBuilder @PublishedApi internal constructor() {
         dependencies
             .flatMap { it.scopes }
             .forEach {
-                if (!dependencyScopes += it) {
+                if (!dependencyScopes.add(it)) {
                     error("Duplicated scope $it")
                 }
             }
 
         scopes.forEach {
-            if (!dependencyScopes += it) {
+            if (!dependencyScopes.add(it)) {
                 error("Duplicated scope $it")
             }
         }

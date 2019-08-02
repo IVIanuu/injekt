@@ -24,9 +24,7 @@ import com.ivianuu.injekt.comparison.guice.GuiceTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
 import com.ivianuu.injekt.comparison.injektdsl.InjektDslTest
 import com.ivianuu.injekt.comparison.injektop.InjektOpTest
-import com.ivianuu.injekt.comparison.injektoptimizeddsl.InjektOptimizedDslTest
 import com.ivianuu.injekt.comparison.injektreflection.InjektReflectionTest
-import com.ivianuu.injekt.comparison.injektunoptimizeddsl.InjektUnoptimizedDslTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
@@ -59,9 +57,7 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             InjektCodegenTest,
             InjektDslTest,
             InjektOpTest,
-            InjektOptimizedDslTest,
             InjektReflectionTest,
-            InjektUnoptimizedDslTest,
             KatanaTest,
             KodeinTest,
             KoinTest,
@@ -82,8 +78,7 @@ fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultCo
 
     repeat(config.rounds) {
         tests.forEach { test ->
-            timingsPerTest.getOrPut(test.name) { arrayListOf() }
-            += measure(test)
+            timingsPerTest.getOrPut(test.name) { arrayListOf() } += measure(test)
         }
     }
 
