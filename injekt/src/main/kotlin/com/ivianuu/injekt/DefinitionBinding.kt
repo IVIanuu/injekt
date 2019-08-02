@@ -81,15 +81,14 @@ private class LinkedOptimizingDefinitionBinding<T>(
 ) : LinkedBinding<T>(), DefinitionContext {
 
     private var bindings = arrayOfNulls<LinkedBinding<*>>(5)
-    @PublishedApi
-    internal var currentIndex = -1
+    private var currentIndex = 0
 
     override fun <T> get(key: Key, parameters: ParametersDefinition?): T {
-        ++currentIndex
         return if (currentIndex > bindings.lastIndex) {
-            bindings = bindings.copyOf(currentIndex + 1)
+            bindings = bindings.copyOf(currentIndex + 5)
             val binding = component.linker.get<T>(key)
             bindings[currentIndex] = binding
+            ++currentIndex
             binding
         } else {
             var binding = bindings[currentIndex]
@@ -98,12 +97,14 @@ private class LinkedOptimizingDefinitionBinding<T>(
                 bindings[currentIndex] = binding
             }
 
+            ++currentIndex
+
             binding
         }(parameters) as T
     }
 
     override fun invoke(parameters: ParametersDefinition?): T {
-        currentIndex = -1
+        currentIndex = 0
         return definition(this, parameters?.invoke())
     }
 
