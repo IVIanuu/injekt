@@ -384,6 +384,17 @@ class ComponentTest {
         assertEquals(componentC, environmentC.component)
     }
 
+    @Test
+    fun testComponentBuilderAddInstance() {
+        val component = component {
+            instance("string")
+            instance(1)
+        }
+
+        assertEquals("string", component.get<String>())
+        assertEquals(1, component.get<Int>())
+    }
+
 }
 
 class Context(val component: Component) : Environment

@@ -165,9 +165,15 @@ private class UnlinkedBridgeBinding<T>(private val originalKey: Key) : UnlinkedB
         linker.get(originalKey)
 }
 
+inline fun <reified T> Module.instance(
+    instance: T,
+    name: Any? = null,
+    override: Boolean = false
+): BindingContext<T> = instance(instance, typeOf(), name, override)
+
 fun <T> Module.instance(
     instance: T,
-    type: Type<T> = typeOf((instance as Any)::class),
+    type: Type<T>,
     name: Any? = null,
     override: Boolean = false
 ): BindingContext<T> = bind(LinkedInstanceBinding(instance), type, name, override, false)

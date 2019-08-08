@@ -23,6 +23,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
     private val scopes = arrayListOf<KClass<out Annotation>>()
     private val modules = arrayListOf<Module>()
+    private val instances = mutableMapOf<Key, Binding<*>>()
     private val dependencies = arrayListOf<Component>()
 
     fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
@@ -70,6 +71,25 @@ class ComponentBuilder @PublishedApi internal constructor() {
         return this
     }
 
+    fun <T> instance(
+        instance: T,
+        type: Type<T>,
+        name: Any? = null,
+        override: Boolean = false
+    ) {
+        val key = keyOf(type, name)
+
+        if (key in instances && !override) {
+            error("Already declared binding for $key")
+        }
+
+        val binding = LinkedInstanceBinding(instance)
+        binding.override = override
+        binding.unscoped = false
+
+        instances[key] = binding
+    }
+
     @PublishedApi
     internal fun build(): Component {
         checkScopes()
@@ -100,6 +120,18 @@ class ComponentBuilder @PublishedApi internal constructor() {
         dependencies.forEach { dependency ->
             dependency.mapBindings?.let { nonNullMapBindings().putAll(it) }
             dependency.setBindings?.let { nonNullSetBindings().addAll(it) }
+        }
+
+        instances.forEach { (key, binding) ->
+            if ((key in allBindings
+                        || key in dependencyBindingKeys) && !binding.override
+            ) {
+                error("Already declared key $key")
+            }
+            allBindings[key] = binding
+            if (binding.unscoped) {
+                unscopedBindings[key] = binding
+            }
         }
 
         modules.forEach { module ->
@@ -271,4 +303,12 @@ inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
 inline fun <reified T : Annotation> ComponentBuilder.scopes(): ComponentBuilder {
     scopes(T::class)
     return this
+}
+
+inline fun <reified T> ComponentBuilder.instance(
+    instance: T,
+    name: Any? = null,
+    override: Boolean = false
+) {
+    instance(instance, typeOf(), name, override)
 }
