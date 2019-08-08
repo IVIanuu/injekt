@@ -28,7 +28,7 @@ sealed class Binding<T> {
 
     internal open fun performLink(linker: Linker): LinkedBinding<T> {
         val linked = link(linker)
-        // some bindings such as the bridge binding are acting like a bridge
+        // some bindings such as the bridge binding are linked bindings only
         // so they return already linked bindings
         // we only copy the state if it's the first link
         if (!linked.linkPerformed) {

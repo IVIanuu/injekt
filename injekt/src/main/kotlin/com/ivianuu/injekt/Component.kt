@@ -72,12 +72,12 @@ class Component internal constructor(
         if (key.type.parameters.size == 1) {
             when (key.type.raw) {
                 Provider::class -> {
-                    val realKey = keyOf(key.type.parameters.first(), key.name)
-                    return LinkedProviderBinding<Any?>(this, realKey) as LinkedBinding<T>
+                    val instanceKey = keyOf(key.type.parameters.first(), key.name)
+                    return LinkedProviderBinding<Any?>(this, instanceKey) as LinkedBinding<T>
                 }
                 Lazy::class -> {
-                    val realKey = keyOf(key.type.parameters.first(), key.name)
-                    return LinkedLazyBinding<Any?>(this, realKey) as LinkedBinding<T>
+                    val instanceKey = keyOf(key.type.parameters.first(), key.name)
+                    return LinkedLazyBinding<Any?>(this, instanceKey) as LinkedBinding<T>
                 }
             }
         }
