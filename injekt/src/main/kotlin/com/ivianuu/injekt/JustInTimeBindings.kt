@@ -17,7 +17,6 @@
 package com.ivianuu.injekt
 
 import java.lang.reflect.Constructor
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 data class JustInTimeLookup<T>(
@@ -37,17 +36,21 @@ object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = ConcurrentHashMap<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> create(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
         val type = key.type
 
-        var lookup = lookups[type]
+        var lookup = synchronized(lookups) { lookups[type] }
 
         if (lookup == null) {
             lookup = findLookup(type.rawJava)
-            if (lookup != null) lookups[type] = lookup
+            if (lookup != null) {
+                synchronized(lookups) {
+                    lookups[type] = lookup
+                }
+            }
         }
 
         return lookup as? JustInTimeLookup<T>
@@ -67,17 +70,21 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
 object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = ConcurrentHashMap<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> create(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
         val type = key.type
 
-        var lookup = lookups[type]
+        var lookup = synchronized(lookups) { lookups[type] }
 
         if (lookup == null) {
             lookup = findLookup(type.rawJava)
-            if (lookup != null) lookups[type] = lookup
+            if (lookup != null) {
+                synchronized(lookups) {
+                    lookups[type] = lookup
+                }
+            }
         }
 
         InjektPlugins.logger?.warn("Used reflection to create a binding for key: $key")
