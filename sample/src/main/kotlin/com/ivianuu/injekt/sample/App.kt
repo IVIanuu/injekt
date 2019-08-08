@@ -51,7 +51,7 @@ annotation class PackageName {
 }
 
 fun appModule() = module {
-    factory(PackageName) { get<Context>().packageName }
+    factory(name = PackageName) { get<Context>().packageName }
 }
 
 @Inject

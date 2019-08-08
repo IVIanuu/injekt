@@ -32,6 +32,7 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
+import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ViewScope
@@ -110,7 +111,7 @@ fun <T : View> T.childViewModule(): Module = module {
 }
 
 private fun <T : View> T.internalViewModule(name: Any) = module {
-    instance(this@internalViewModule, override = true).apply {
+    instance(this@internalViewModule, typeOf(this@internalViewModule), override = true).apply {
         bindType<View>()
         bindAlias<View>(name)
     }

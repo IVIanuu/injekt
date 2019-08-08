@@ -29,6 +29,7 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
+import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ReceiverScope
@@ -61,5 +62,5 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
 fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    instance(this@receiverModule) bindClass BroadcastReceiver::class
+    instance(this@receiverModule, typeOf(this@receiverModule)) bindClass BroadcastReceiver::class
 }

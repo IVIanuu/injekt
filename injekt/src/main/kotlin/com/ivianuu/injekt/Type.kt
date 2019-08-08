@@ -69,6 +69,8 @@ class Type<T> internal constructor(
 
 inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
+inline fun <T> typeOf(instance: T): Type<T> = typeOf<T>((instance as Any)::class)
+
 @PublishedApi
 internal fun <T> KType.asType(): Type<T> {
     val parameters = arrayOfNulls<Type<*>>(arguments.size)

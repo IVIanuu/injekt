@@ -34,6 +34,7 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
 import com.ivianuu.injekt.scopes
+import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class FragmentScope
@@ -103,7 +104,11 @@ fun <T : Fragment> T.childFragmentModule(): Module = module {
 }
 
 private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
-    instance(this@internalFragmentModule, override = true).apply {
+    instance(
+        this@internalFragmentModule,
+        typeOf(this@internalFragmentModule),
+        override = true
+    ).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()

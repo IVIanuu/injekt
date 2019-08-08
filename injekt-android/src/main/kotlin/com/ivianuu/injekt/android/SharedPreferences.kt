@@ -27,7 +27,7 @@ fun Module.sharedPreferences(
     sharedPreferencesMode: Int = Context.MODE_PRIVATE,
     name: Any? = null
 ) {
-    single(name) {
+    single(name = name) {
         get<Application>().getSharedPreferences(
             sharedPreferencesName,
             sharedPreferencesMode
