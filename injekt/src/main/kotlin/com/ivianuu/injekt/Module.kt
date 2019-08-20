@@ -55,29 +55,31 @@ class Module @PublishedApi internal constructor() {
         module.setBindings?.let { nonNullSetBindings().addAll(it) }
     }
 
-    fun <K, V> map(
+    inline fun <K, V> map(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
         mapName: Any? = null,
-        block: (BindingMap<K, V>.() -> Unit)? = null
+        block: BindingMap<K, V>.() -> Unit = {}
     ) {
         val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
-        nonNullMapBindings().get<K, V>(mapKey).apply { block?.invoke(this) }
+        nonNullMapBindings().get<K, V>(mapKey).apply(block)
     }
 
-    fun <E> set(
+    inline fun <E> set(
         setElementType: Type<E>,
         setName: Any? = null,
-        block: (BindingSet<E>.() -> Unit)? = null
+        block: BindingSet<E>.() -> Unit = {}
     ) {
         val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
-        nonNullSetBindings().get<E>(setKey).apply { block?.invoke(this) }
+        nonNullSetBindings().get<E>(setKey).apply(block)
     }
 
-    private fun nonNullMapBindings(): MapBindings =
+    @PublishedApi
+    internal fun nonNullMapBindings(): MapBindings =
         mapBindings ?: MapBindings().also { mapBindings = it }
 
-    private fun nonNullSetBindings(): SetBindings =
+    @PublishedApi
+    internal fun nonNullSetBindings(): SetBindings =
         setBindings ?: SetBindings().also { setBindings = it }
 
 }
@@ -130,34 +132,42 @@ fun <T> Module.single(
 
 inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,
-    noinline block: (BindingMap<K, V>.() -> Unit)? = null
+    block: BindingMap<K, V>.() -> Unit = {}
 ) {
-    map(typeOf(), typeOf(), mapName, block)
+    map(typeOf<K>(), typeOf<V>(), mapName, block)
 }
 
 inline fun <reified E> Module.set(
     setName: Any? = null,
-    noinline block: (BindingSet<E>.() -> Unit)? = null
+    block: BindingSet<E>.() -> Unit = {}
 ) {
-    set(typeOf(), setName, block)
+    set(typeOf<E>(), setName, block)
 }
 
 inline fun <reified T> Module.withBinding(
     name: Any? = null,
-    noinline block: BindingContext<T>.() -> Unit
+    block: BindingContext<T>.() -> Unit
 ) {
     withBinding(typeOf(), name, block)
 }
 
-fun <T> Module.withBinding(
+inline fun <T> Module.withBinding(
     type: Type<T>,
     name: Any? = null,
     block: BindingContext<T>.() -> Unit
 ) {
+    bindProxy(type, name).block()
+}
+
+@PublishedApi
+internal fun <T> Module.bindProxy(
+    type: Type<T>,
+    name: Any?
+): BindingContext<T> {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
     // this binding acts as proxy and just calls trough the original implementation
-    bind(UnlinkedProxyBinding(keyOf(type, name)), type, UUID.randomUUID().toString()).block()
+    return bind(UnlinkedProxyBinding(keyOf(type, name)), type, UUID.randomUUID().toString())
 }
 
 private class UnlinkedProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {

@@ -356,7 +356,7 @@ class ComponentTest {
         val componentA = component {
             modules(
                 module {
-                    withBinding<Context> { bindClass<Environment>() }
+                    withBinding<Context> { bindType<Environment>() }
                 }
             )
         }
