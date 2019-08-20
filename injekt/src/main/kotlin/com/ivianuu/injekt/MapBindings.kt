@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt
 
-class MapBindings {
+/*inline */ class MapBindings {
 
-    private val maps = hashMapOf<Key, BindingMap<*, *>>()
+    private val maps: MutableMap<Key, BindingMap<*, *>> = hashMapOf()
 
     fun putAll(mapBindings: MapBindings) {
         mapBindings.maps.forEach { (mapKey, map) ->
@@ -27,66 +27,66 @@ class MapBindings {
         }
     }
 
-    fun <K, V> get(mapKey: Key): BindingMap<K, V> {
-        return maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
-    }
+    fun <K, V> get(mapKey: Key): BindingMap<K, V> =
+        maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
 
     fun getAll(): Map<Key, BindingMap<*, *>> = maps
 
-    class BindingMap<K, V> internal constructor(private val mapKey: Key) {
-        private val map = linkedMapOf<K, Entry>()
+}
 
-        fun putAll(other: BindingMap<K, V>) {
-            other.map.forEach { (key, entry) -> put(key, entry) }
-        }
+class BindingMap<K, V> internal constructor(private val mapKey: Key) {
+    private val map = linkedMapOf<K, Entry>()
 
-        inline fun <reified T : V> put(
-            entryKey: K,
-            entryValueName: Any? = null,
-            override: Boolean = false
-        ) {
-            put<T>(entryKey, typeOf(), entryValueName, override)
-        }
-
-        fun <T : V> put(
-            entryKey: K,
-            entryValueType: Type<T>,
-            entryValueName: Any? = null,
-            override: Boolean = false
-        ) {
-            val entryValueKey = keyOf(entryValueType, entryValueName)
-            put(entryKey, entryValueKey, override)
-        }
-
-        fun put(
-            entryKey: K,
-            entryValueKey: Key,
-            override: Boolean = false
-        ) {
-            put(entryKey, Entry(entryValueKey, override))
-        }
-
-        infix fun K.to(key: Key) {
-            put(this, key)
-        }
-
-        infix fun K.to(type: Type<out V>) {
-            put(this, keyOf(type))
-        }
-
-        private fun put(entryKey: K, entry: Entry) {
-            if (entryKey in map && !entry.override) {
-                error("Already declared $entryKey in map $mapKey")
-            }
-
-            map[entryKey] = entry
-        }
-
-        fun getBindingMap(): Map<K, Key> = map.mapValues { it.value.entryValueKey }
-
-        private class Entry(
-            val entryValueKey: Key,
-            val override: Boolean
-        )
+    fun putAll(other: BindingMap<K, V>) {
+        other.map.forEach { (key, entry) -> put(key, entry) }
     }
+
+    inline fun <reified T : V> put(
+        entryKey: K,
+        entryValueName: Any? = null,
+        override: Boolean = false
+    ) {
+        put<T>(entryKey, typeOf(), entryValueName, override)
+    }
+
+    fun <T : V> put(
+        entryKey: K,
+        entryValueType: Type<T>,
+        entryValueName: Any? = null,
+        override: Boolean = false
+    ) {
+        val entryValueKey = keyOf(entryValueType, entryValueName)
+        put(entryKey, entryValueKey, override)
+    }
+
+    fun put(
+        entryKey: K,
+        entryValueKey: Key,
+        override: Boolean = false
+    ) {
+        put(entryKey, Entry(entryValueKey, override))
+    }
+
+    infix fun K.to(key: Key) {
+        put(this, key)
+    }
+
+    infix fun K.to(type: Type<out V>) {
+        put(this, keyOf(type))
+    }
+
+    private fun put(entryKey: K, entry: Entry) {
+        if (entryKey in map && !entry.override) {
+            error("Already declared $entryKey in map $mapKey")
+        }
+
+        map[entryKey] = entry
+    }
+
+    fun getBindingMap(): Map<K, Key> = map.mapValues { it.value.entryValueKey }
+
+    private class Entry(
+        val entryValueKey: Key,
+        val override: Boolean
+    )
 }

@@ -41,7 +41,7 @@ internal class UnlinkedMapOfProviderBinding<K, V>(
 ) : UnlinkedBinding<Map<K, Provider<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> {
         return LinkedInstanceBinding(
-            entryKeys.mapValues { linker.get<V>(it.value) }
+            entryKeys.mapValues { linker.get(it.value) }
         )
     }
 }

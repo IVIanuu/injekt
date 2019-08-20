@@ -19,9 +19,7 @@ package com.ivianuu.injekt
 /**
  * Provides instances lazily and caches results
  */
-interface Lazy<T> {
-    operator fun invoke(parameters: ParametersDefinition? = null): T
-}
+interface Lazy<T> : Provider<T>
 
 internal class ProviderLazy<T>(private val provider: Provider<T>) : Lazy<T> {
     private var _value: Any? = this

@@ -21,7 +21,7 @@ import java.util.*
 /**
  * Parameters which can be used to pass things like an id
  */
-/* inline*/ class Parameters(private val values: Array<Any?>) {
+/*inline */ class Parameters(private val values: Array<Any?>) {
 
     val size: Int get() = values.size
 
@@ -56,8 +56,7 @@ fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<A
 
 fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArray())
 
-private val emptyParameters = Parameters(emptyArray())
-fun emptyParameters(): Parameters = emptyParameters
+fun emptyParameters(): Parameters = Parameters(emptyArray())
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Param

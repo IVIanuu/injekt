@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt
 
-class SetBindings {
+/*inline */ class SetBindings {
 
-    private val sets = hashMapOf<Key, BindingSet<*>>()
+    private val sets: MutableMap<Key, BindingSet<*>> = hashMapOf()
 
     fun addAll(setBindings: SetBindings) {
         setBindings.sets.forEach { (setKey, set) ->
@@ -33,38 +33,39 @@ class SetBindings {
 
     fun getAll(): Map<Key, BindingSet<*>> = sets
 
-    class BindingSet<E> internal constructor(private val setKey: Key) {
+}
 
-        private val map = linkedMapOf<Key, Boolean>()
+class BindingSet<E> internal constructor(private val setKey: Key) {
 
-        fun addAll(other: BindingSet<E>) {
-            other.map.forEach { (key, override) -> add(key, override) }
-        }
+    private val map = linkedMapOf<Key, Boolean>()
 
-        inline fun <reified T : E> add(
-            elementName: Any? = null,
-            override: Boolean = false
-        ) {
-            add<T>(typeOf(), elementName, override)
-        }
-
-        fun <T : E> add(
-            elementType: Type<T>,
-            elementName: Any? = null,
-            override: Boolean = false
-        ) {
-            add(keyOf(elementType, elementName), override)
-        }
-
-        fun add(elementKey: Key, override: Boolean) {
-            if (elementKey in map && !override) {
-                error("Already declared $elementKey in set $setKey")
-            }
-
-            map[elementKey] = override
-        }
-
-        fun getBindingSet(): Set<Key> = map.keys
-
+    fun addAll(other: BindingSet<E>) {
+        other.map.forEach { (key, override) -> add(key, override) }
     }
+
+    inline fun <reified T : E> add(
+        elementName: Any? = null,
+        override: Boolean = false
+    ) {
+        add<T>(typeOf(), elementName, override)
+    }
+
+    fun <T : E> add(
+        elementType: Type<T>,
+        elementName: Any? = null,
+        override: Boolean = false
+    ) {
+        add(keyOf(elementType, elementName), override)
+    }
+
+    fun add(elementKey: Key, override: Boolean) {
+        if (elementKey in map && !override) {
+            error("Already declared $elementKey in set $setKey")
+        }
+
+        map[elementKey] = override
+    }
+
+    fun getBindingSet(): Set<Key> = map.keys
+
 }

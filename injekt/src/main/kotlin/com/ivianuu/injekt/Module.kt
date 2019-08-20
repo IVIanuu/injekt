@@ -59,7 +59,7 @@ class Module @PublishedApi internal constructor() {
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
         mapName: Any? = null,
-        block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
+        block: (BindingMap<K, V>.() -> Unit)? = null
     ) {
         val mapKey = keyOf(typeOf<Any?>(Map::class, mapKeyType, mapValueType), mapName)
         nonNullMapBindings().get<K, V>(mapKey).apply { block?.invoke(this) }
@@ -68,7 +68,7 @@ class Module @PublishedApi internal constructor() {
     fun <E> set(
         setElementType: Type<E>,
         setName: Any? = null,
-        block: (SetBindings.BindingSet<E>.() -> Unit)? = null
+        block: (BindingSet<E>.() -> Unit)? = null
     ) {
         val setKey = keyOf(typeOf<Any?>(Set::class, setElementType), setName)
         nonNullSetBindings().get<E>(setKey).apply { block?.invoke(this) }
@@ -130,14 +130,14 @@ fun <T> Module.single(
 
 inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,
-    noinline block: (MapBindings.BindingMap<K, V>.() -> Unit)? = null
+    noinline block: (BindingMap<K, V>.() -> Unit)? = null
 ) {
     map(typeOf(), typeOf(), mapName, block)
 }
 
 inline fun <reified E> Module.set(
     setName: Any? = null,
-    noinline block: (SetBindings.BindingSet<E>.() -> Unit)? = null
+    noinline block: (BindingSet<E>.() -> Unit)? = null
 ) {
     set(typeOf(), setName, block)
 }

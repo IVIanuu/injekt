@@ -210,7 +210,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
     private fun includeMapBindings(
         bindings: MutableMap<Key, Binding<*>>,
         mapKey: Key,
-        map: MapBindings.BindingMap<*, *>
+        map: BindingMap<*, *>
     ) {
         val bindingKeys = map.getBindingMap() as Map<Any?, Key>
 
@@ -248,7 +248,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
     private fun includeSetBindings(
         bindings: MutableMap<Key, Binding<*>>,
         setKey: Key,
-        set: SetBindings.BindingSet<*>
+        set: BindingSet<*>
     ) {
         val setKeys = set.getBindingSet()
 

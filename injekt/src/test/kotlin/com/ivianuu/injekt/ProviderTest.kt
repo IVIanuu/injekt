@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProviderTest {
@@ -58,7 +58,7 @@ class ProviderTest {
 
         provider { parameters }
 
-        assertEquals(parameters, usedParams)
+        assertTrue(parameters.areEqual(usedParams))
     }
 
 }
