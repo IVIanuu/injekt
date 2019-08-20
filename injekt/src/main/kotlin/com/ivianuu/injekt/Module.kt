@@ -156,11 +156,11 @@ fun <T> Module.withBinding(
 ) {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
-    // this binding acts as bridge and just calls trough the original implementation
-    bind(UnlinkedBridgeBinding(keyOf(type, name)), type, UUID.randomUUID().toString()).block()
+    // this binding acts as proxy and just calls trough the original implementation
+    bind(UnlinkedProxyBinding(keyOf(type, name)), type, UUID.randomUUID().toString()).block()
 }
 
-private class UnlinkedBridgeBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
+private class UnlinkedProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
     override fun link(linker: Linker): LinkedBinding<T> =
         linker.get(originalKey)
 }

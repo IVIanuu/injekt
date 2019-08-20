@@ -291,7 +291,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
 }
 
 /**
- * Constructs a new [Component] which will configured [block]
+ * Constructs a new [Component] configured by [block]
  */
 inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()

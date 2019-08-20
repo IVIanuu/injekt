@@ -20,7 +20,7 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class BridgeTest {
+class ProxyTest {
 
     @Test
     fun testBridgingDoesNotModifyOriginalBindingState() {
@@ -32,9 +32,9 @@ class BridgeTest {
         val component = component { modules(module) }
 
         val original = component.getBinding<String>(keyOf<String>())
-        val bridged = component.getBinding<CharSequence>(keyOf<CharSequence>())
+        val proxy = component.getBinding<CharSequence>(keyOf<CharSequence>())
 
-        assertTrue(original === bridged)
+        assertTrue(original === proxy)
         assertFalse(original.unscoped)
         assertTrue(original.override)
     }
