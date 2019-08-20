@@ -24,8 +24,8 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.bindAlias
-import com.ivianuu.injekt.bindClasses
 import com.ivianuu.injekt.bindName
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
@@ -50,7 +50,8 @@ fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit
 
 fun <T : Application> T.applicationModule(): Module = module {
     instance(this@applicationModule, typeOf(this@applicationModule)).apply {
-        bindClasses(Application::class, Context::class)
+        bindType<Application>()
+        bindType<Context>()
         bindAlias<Context>(ForApplication)
     }
 

@@ -48,7 +48,7 @@ class JustInTimeLookupFactoryTest {
     fun testUnscoped() {
         factories.forEach { factory ->
             println("test factory $factory")
-            val lookup = factory.create<MyUnscopedDep>(keyOf<MyUnscopedDep>())
+            val lookup = factory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>())
             assertNotNull(lookup)
             assertNull(lookup!!.scope)
         }
@@ -58,7 +58,7 @@ class JustInTimeLookupFactoryTest {
     fun testScoped() {
         factories.forEach { factory ->
             println("test factory $factory")
-            val lookup = factory.create<MyScopedDep>(keyOf<MyScopedDep>())
+            val lookup = factory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
             assertNotNull(lookup)
             assertEquals(TestScopeOne::class, lookup!!.scope)
         }
@@ -68,7 +68,7 @@ class JustInTimeLookupFactoryTest {
     fun testCannotResolveNamed() {
         factories.forEach { factory ->
             println("test factory $factory")
-            val lookup = factory.create<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
+            val lookup = factory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
             assertNull(lookup)
         }
     }

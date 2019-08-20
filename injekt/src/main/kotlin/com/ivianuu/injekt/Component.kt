@@ -131,7 +131,7 @@ class Component internal constructor(
     }
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
-        val jitLookup = InjektPlugins.justInTimeLookupFactory.create<T>(key)
+        val jitLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
         if (jitLookup != null) {
             var binding = jitLookup.binding
             return if (jitLookup.scope != null) {

@@ -24,7 +24,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.bindClass
+import com.ivianuu.injekt.bindType
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.module
@@ -62,5 +62,5 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
 fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    instance(this@receiverModule, typeOf(this@receiverModule)) bindClass BroadcastReceiver::class
+    instance(this@receiverModule, typeOf(this@receiverModule)) bindType typeOf<BroadcastReceiver>()
 }

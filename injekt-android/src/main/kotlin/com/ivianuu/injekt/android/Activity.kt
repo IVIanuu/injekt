@@ -69,9 +69,13 @@ fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application component found for $this")
 
 fun <T : Activity> T.activityModule(): Module = module {
-    instance(this@activityModule, typeOf(this@activityModule), override = true).apply {
+    instance(
+        instance = this@activityModule,
+        type = typeOf(this@activityModule),
+        override = true
+    ).apply {
         bindType<Activity>()
-        bindAlias<Context>(ForActivity)
+        bindAlias<Context>(name = ForActivity)
         bindType<Context>()
 
         if (this@activityModule is ComponentActivity) bindType<ComponentActivity>()
@@ -79,15 +83,15 @@ fun <T : Activity> T.activityModule(): Module = module {
         if (this@activityModule is AppCompatActivity) bindType<AppCompatActivity>()
         if (this@activityModule is LifecycleOwner) {
             bindType<LifecycleOwner>()
-            bindAlias<LifecycleOwner>(ForActivity)
+            bindAlias<LifecycleOwner>(name = ForActivity)
         }
         if (this@activityModule is ViewModelStoreOwner) {
             bindType<ViewModelStoreOwner>()
-            bindAlias<ViewModelStoreOwner>(ForActivity)
+            bindAlias<ViewModelStoreOwner>(name = ForActivity)
         }
         if (this@activityModule is SavedStateRegistryOwner) {
             bindType<SavedStateRegistryOwner>()
-            bindAlias<SavedStateRegistryOwner>(ForActivity)
+            bindAlias<SavedStateRegistryOwner>(name = ForActivity)
         }
     }
 

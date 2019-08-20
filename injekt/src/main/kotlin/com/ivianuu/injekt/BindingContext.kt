@@ -52,28 +52,8 @@ infix fun <T> BindingContext<T>.bindType(type: Type<*>): BindingContext<T> {
     return this
 }
 
-fun <T> BindingContext<T>.bindTypes(vararg types: Type<*>): BindingContext<T> {
-    types.forEach { bindType(it) }
-    return this
-}
-
-infix fun <T> BindingContext<T>.bindTypes(types: Iterable<Type<*>>): BindingContext<T> {
-    types.forEach { bindType(it) }
-    return this
-}
-
 infix fun <T> BindingContext<T>.bindName(name: Any): BindingContext<T> {
     bindAlias(key.type, name)
-    return this
-}
-
-fun <T> BindingContext<T>.bindNames(vararg names: Any): BindingContext<T> {
-    names.forEach { bindName(it) }
-    return this
-}
-
-infix fun <T> BindingContext<T>.bindNames(names: Iterable<Any>): BindingContext<T> {
-    names.forEach { bindName(it) }
     return this
 }
 

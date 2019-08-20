@@ -25,20 +25,20 @@ data class JustInTimeLookup<T>(
 )
 
 interface JustInTimeLookupFactory {
-    fun <T> create(key: Key): JustInTimeLookup<T>?
+    fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>?
 }
 
 object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
-    override fun <T> create(key: Key): JustInTimeLookup<T>? =
-        CodegenJustInTimeLookupFactory.create(key)
-            ?: ReflectiveJustInTimeLookupFactory.create(key)
+    override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? =
+        CodegenJustInTimeLookupFactory.findBindingForKey(key)
+            ?: ReflectiveJustInTimeLookupFactory.findBindingForKey(key)
 }
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
     private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
 
-    override fun <T> create(key: Key): JustInTimeLookup<T>? {
+    override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
         val type = key.type
 
@@ -72,7 +72,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
 
     private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
 
-    override fun <T> create(key: Key): JustInTimeLookup<T>? {
+    override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
         val type = key.type
 
@@ -87,7 +87,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
             }
         }
 
-        InjektPlugins.logger?.warn("Used reflection to create a binding for key: $key")
+        InjektPlugins.logger?.warn("Used reflection to findBindingForKey a binding for key: $key")
 
         return lookup as? JustInTimeLookup<T>
     }
