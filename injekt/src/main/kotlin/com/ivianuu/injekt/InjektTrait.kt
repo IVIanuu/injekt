@@ -18,6 +18,20 @@ package com.ivianuu.injekt
 
 /**
  * Holds a [Component] and allows for shorter syntax
+ *
+ * Example:
+ *
+ * ```
+ * class MainActivity : Activity(), InjektTrait {
+ *
+ *     override val component = component { ... }
+ *
+ *     private val dep1 by inject<Dependency1>()
+ *     private val dep2 by inject<Dependency2>()
+ *
+ * }
+ * ```
+ *
  */
 interface InjektTrait {
     val component: Component

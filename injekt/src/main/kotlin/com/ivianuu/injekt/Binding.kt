@@ -29,7 +29,7 @@ sealed class Binding<T> {
     internal open fun performLink(linker: Linker): LinkedBinding<T> {
         val linked = link(linker)
         // some bindings such as the proxy binding are unlinked bindings only
-        // so they return already linked bindings
+        // they return existing linked bindings
         // we only copy the state if it's the first link
         if (!linked.linkPerformed) {
             linked.linkPerformed = true

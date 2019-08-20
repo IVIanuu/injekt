@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 data class BindingContext<T>(
     val binding: Binding<T>,
     val key: Key,
@@ -61,25 +59,6 @@ fun <T> BindingContext<T>.bindTypes(vararg types: Type<*>): BindingContext<T> {
 
 infix fun <T> BindingContext<T>.bindTypes(types: Iterable<Type<*>>): BindingContext<T> {
     types.forEach { bindType(it) }
-    return this
-}
-
-inline fun <reified T> BindingContext<*>.bindClass() {
-    bindClass(T::class)
-}
-
-infix fun <T> BindingContext<T>.bindClass(clazz: KClass<*>): BindingContext<T> {
-    bindAlias(typeOf<Any?>(clazz))
-    return this
-}
-
-fun <T> BindingContext<T>.bindClasses(vararg classes: KClass<*>): BindingContext<T> {
-    classes.forEach { bindClass(it) }
-    return this
-}
-
-infix fun <T> BindingContext<T>.bindClasses(classes: Iterable<KClass<*>>): BindingContext<T> {
-    classes.forEach { bindClass(it) }
     return this
 }
 
