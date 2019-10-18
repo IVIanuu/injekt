@@ -20,10 +20,10 @@ object Build {
     const val applicationId = "com.ivianuu.injekt.sample"
     const val applicationIdComparison = "com.ivianuu.injekt.comparison"
     const val buildToolsVersion = "28.0.3"
-    const val compileSdk = 28
+    const val compileSdk = 29
     const val minSdk = 14
-    const val minSdkComparison = 28
-    const val targetSdk = 28
+    const val minSdkComparison = 29
+    const val targetSdk = 29
 
     const val versionCode = 1
     const val versionName = "0.0.1"
@@ -36,22 +36,22 @@ object Publishing {
 }
 
 object Versions {
-    const val androidGradlePlugin = "3.6.0-alpha05"
-    const val androidxAppCompat = "1.1.0-alpha04"
+    const val androidGradlePlugin = "3.5.1"
+    const val androidxAppCompat = "1.1.0"
     const val bintray = "1.8.4"
-    const val dagger2 = "2.22.1"
+    const val dagger2 = "2.24"
     const val dagger2Reflect = "0.1.0-SNAPSHOT"
     const val guava = "27.1-android"
     const val guice = "4.2.2"
     const val junit = "4.12"
-    const val kotlin = "1.3.40"
+    const val kotlin = "1.3.50"
     const val kotlinStatistics = "1.2.1"
-    const val katana = "1.6.0"
-    const val kodein = "6.1.0"
-    const val koin = "2.0.0-rc-2"
+    const val katana = "1.8.1"
+    const val kodein = "6.4.1"
+    const val koin = "2.0.1"
     const val mavenGradle = "2.1"
     const val processingX = "0.0.1-dev4"
-    const val toothpick = "2.1.0"
+    const val toothpick = "3.1.0"
 }
 
 object Deps {

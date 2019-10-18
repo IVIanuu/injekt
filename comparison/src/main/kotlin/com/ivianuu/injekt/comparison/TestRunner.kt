@@ -72,6 +72,8 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 }
 
 fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultConfig) {
+    Thread.sleep(1000)
+
     println("Running ${config.rounds} iterations. Please stand by...")
 
     val timingsPerTest = linkedMapOf<String, MutableList<Timings>>()
