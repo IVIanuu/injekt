@@ -34,7 +34,7 @@ import kotlin.system.measureNanoTime
 
 val defaultConfig = Config(
     rounds = 100_000,
-    timeUnit = TimeUnit.MILLIS
+    timeUnit = TimeUnit.Millis
 )
 
 data class Config(
@@ -43,7 +43,7 @@ data class Config(
 )
 
 enum class TimeUnit {
-    NANOS, MILLIS
+    Nanos, Millis
 }
 
 fun runAllInjectionTests(config: Config = defaultConfig) {
@@ -139,8 +139,8 @@ fun Iterable<Timings>.results(): Results {
 
 fun Double.format(config: Config): String {
     return when (config.timeUnit) {
-        TimeUnit.MILLIS -> String.format("%.5f ms", this / 1000000.0)
-        TimeUnit.NANOS -> this.toString()
+        TimeUnit.Millis -> String.format("%.5f ms", this / 1000000.0)
+        TimeUnit.Nanos -> this.toString()
     }
 }
 
