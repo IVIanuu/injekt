@@ -78,8 +78,8 @@ class ComponentBuilder @PublishedApi internal constructor() {
     ) {
         val key = keyOf(type, name)
 
-        if (key in instances && !override) {
-            error("Already declared binding for $key")
+        check(key !in instances || override) {
+            "Already declared binding for $key"
         }
 
         val binding = LinkedInstanceBinding(instance)
@@ -122,10 +122,11 @@ class ComponentBuilder @PublishedApi internal constructor() {
         }
 
         instances.forEach { (key, binding) ->
-            if ((key in allBindings
-                        || key in dependencyBindingKeys) && !binding.override
+            check(
+                (key !in allBindings
+                        && key !in dependencyBindingKeys) || binding.override
             ) {
-                error("Already declared key $key")
+                "Already declared key $key"
             }
             allBindings[key] = binding
             if (binding.unscoped) {
@@ -135,10 +136,11 @@ class ComponentBuilder @PublishedApi internal constructor() {
 
         modules.forEach { module ->
             module.bindings.forEach { (key, binding) ->
-                if ((key in allBindings
-                            || key in dependencyBindingKeys) && !binding.override
+                check(
+                    (key !in allBindings
+                            && key !in dependencyBindingKeys) || binding.override
                 ) {
-                    error("Already declared key $key")
+                    "Already declared key $key"
                 }
                 allBindings[key] = binding
                 if (binding.unscoped) {
