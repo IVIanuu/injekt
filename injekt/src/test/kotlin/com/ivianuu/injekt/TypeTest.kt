@@ -27,14 +27,14 @@ class TypeTest {
         val nonNullReified: Type<*>,
         val nullableReified: Type<*>
     ) {
-        BOOLEAN(Boolean::class, typeOf<Boolean>(), typeOf<Boolean?>()),
-        BYTE(Byte::class, typeOf<Byte>(), typeOf<Byte?>()),
-        CHAR(Char::class, typeOf<Char>(), typeOf<Char?>()),
-        DOUBLE(Double::class, typeOf<Double>(), typeOf<Double?>()),
-        FLOAT(Float::class, typeOf<Float>(), typeOf<Float?>()),
-        INT(Int::class, typeOf<Int>(), typeOf<Int?>()),
-        LONG(Long::class, typeOf<Long>(), typeOf<Long?>()),
-        SHORT(Short::class, typeOf<Short>(), typeOf<Short?>());
+        Boolean(Boolean::class, typeOf<kotlin.Boolean>(), typeOf<kotlin.Boolean?>()),
+        Byte(Byte::class, typeOf<kotlin.Byte>(), typeOf<kotlin.Byte?>()),
+        Char(Char::class, typeOf<kotlin.Char>(), typeOf<kotlin.Char?>()),
+        Double(Double::class, typeOf<kotlin.Double>(), typeOf<kotlin.Double?>()),
+        Float(Float::class, typeOf<kotlin.Float>(), typeOf<kotlin.Float?>()),
+        Int(Int::class, typeOf<kotlin.Int>(), typeOf<kotlin.Int?>()),
+        Long(Long::class, typeOf<kotlin.Long>(), typeOf<kotlin.Long?>()),
+        Short(Short::class, typeOf<kotlin.Short>(), typeOf<kotlin.Short?>());
     }
 
     @Test
