@@ -59,8 +59,8 @@ dependencies {
     implementation(files("libs/dagger-1-shadowed.jar"))
     kapt(files("libs/dagger-1-compiler-shadowed.jar"))
 
-    implementation(Deps.dagger2)
-    kapt(Deps.dagger2Compiler)
+    implementation(Deps.Dagger2.dagger2)
+    kapt(Deps.Dagger2.compiler)
 
     implementation(Deps.dagger2Reflect)
 
@@ -77,10 +77,10 @@ dependencies {
 
     implementation(Deps.koin)
 
-    implementation(Deps.kotlinStdLib)
+    implementation(Deps.Kotlin.stdlib)
 
     implementation(Deps.kotlinStatistics)
 
-    implementation(Deps.toothpick)
-    kapt(Deps.toothpickCompiler)
+    implementation(Deps.Toothpick.toothpick)
+    kapt(Deps.Toothpick.compiler)
 }

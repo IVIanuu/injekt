@@ -35,62 +35,53 @@ object Publishing {
     const val version = "${Build.versionName}-dev71"
 }
 
-object Versions {
-    const val androidGradlePlugin = "3.5.1"
-    const val androidxAppCompat = "1.1.0"
-    const val bintray = "1.8.4"
-    const val dagger2 = "2.24"
-    const val dagger2Reflect = "0.1.0-SNAPSHOT"
-    const val guava = "27.1-android"
-    const val guice = "4.2.2"
-    const val junit = "4.12"
-    const val kotlin = "1.3.50"
-    const val kotlinStatistics = "1.2.1"
-    const val katana = "1.8.1"
-    const val kodein = "6.4.1"
-    const val koin = "2.0.1"
-    const val mavenGradle = "2.1"
-    const val processingX = "0.0.1-dev4"
-    const val toothpick = "3.1.0"
-}
-
 object Deps {
-    const val androidGradlePlugin = "com.android.tools.build:gradle:${Versions.androidGradlePlugin}"
+    const val androidGradlePlugin = "com.android.tools.build:gradle:3.5.1"
 
-    const val androidxAppCompat = "androidx.appcompat:appcompat:${Versions.androidxAppCompat}"
+    const val androidxAppCompat = "androidx.appcompat:appcompat:1.1.0"
 
     const val bintrayGradlePlugin =
-        "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.bintray}"
+        "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
 
-    const val dagger2 = "com.google.dagger:dagger:${Versions.dagger2}"
-    const val dagger2Compiler = "com.google.dagger:dagger-compiler:${Versions.dagger2}"
-    const val dagger2Reflect = "com.jakewharton.dagger:dagger-reflect:${Versions.dagger2Reflect}"
+    object Dagger2 {
+        private const val version = "2.24"
+        const val dagger2 = "com.google.dagger:dagger:$version"
+        const val compiler = "com.google.dagger:dagger-compiler:$version"
+    }
 
-    const val guava = "com.google.guava:guava:${Versions.guava}"
+    const val dagger2Reflect = "com.jakewharton.dagger:dagger-reflect:0.1.0-SNAPSHOT"
 
-    const val guice = "com.google.inject:guice:${Versions.guice}"
+    const val guava = "com.google.guava:guava:27.1-android"
 
-    const val junit = "junit:junit:${Versions.junit}"
+    const val guice = "com.google.inject:guice:4.2.2"
 
-    const val katana = "org.rewedigital.katana:katana-core:${Versions.katana}"
+    const val junit = "junit:junit:4.12"
 
-    const val kodein = "org.kodein.di:kodein-di-erased-jvm:${Versions.kodein}"
+    const val katana = "org.rewedigital.katana:katana-core:1.8.1"
 
-    const val koin = "org.koin:koin-core:${Versions.koin}"
+    const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.4.1"
 
-    const val kotlinGradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.kotlin}"
-    const val kotlinStdLib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${Versions.kotlin}"
+    const val koin = "org.koin:koin-core:2.0.1"
 
-    const val kotlinStatistics = "org.nield:kotlin-statistics:${Versions.kotlinStatistics}"
+    object Kotlin {
+        private const val version = "1.3.50"
+        const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
+        const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version"
+    }
+
+    const val kotlinStatistics = "org.nield:kotlin-statistics:1.2.1"
 
     const val mavenGradlePlugin =
-        "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
+        "com.github.dcendents:android-maven-gradle-plugin:2.1"
 
-    const val processingX = "com.ivianuu.processingx:processingx:${Versions.processingX}"
+    const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
 
-    const val toothpick =
-        "com.github.stephanenicolas.toothpick:toothpick-runtime:${Versions.toothpick}"
-    const val toothpickCompiler =
-        "com.github.stephanenicolas.toothpick:toothpick-compiler:${Versions.toothpick}"
+    object Toothpick {
+        private const val version = "3.1.0"
+        const val toothpick =
+            "com.github.stephanenicolas.toothpick:toothpick-runtime:$version"
+        const val compiler =
+            "com.github.stephanenicolas.toothpick:toothpick-compiler:$version"
+    }
 
 }
