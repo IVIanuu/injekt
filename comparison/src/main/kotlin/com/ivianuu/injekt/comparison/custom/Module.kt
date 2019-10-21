@@ -16,112 +16,13 @@
 
 package com.ivianuu.injekt.comparison.custom
 
-import com.ivianuu.injekt.comparison.Fib1
-import com.ivianuu.injekt.comparison.Fib10
-import com.ivianuu.injekt.comparison.Fib100
-import com.ivianuu.injekt.comparison.Fib11
-import com.ivianuu.injekt.comparison.Fib12
-import com.ivianuu.injekt.comparison.Fib13
-import com.ivianuu.injekt.comparison.Fib14
-import com.ivianuu.injekt.comparison.Fib15
-import com.ivianuu.injekt.comparison.Fib16
-import com.ivianuu.injekt.comparison.Fib17
-import com.ivianuu.injekt.comparison.Fib18
-import com.ivianuu.injekt.comparison.Fib19
-import com.ivianuu.injekt.comparison.Fib2
-import com.ivianuu.injekt.comparison.Fib20
-import com.ivianuu.injekt.comparison.Fib21
-import com.ivianuu.injekt.comparison.Fib22
-import com.ivianuu.injekt.comparison.Fib23
-import com.ivianuu.injekt.comparison.Fib24
-import com.ivianuu.injekt.comparison.Fib25
-import com.ivianuu.injekt.comparison.Fib26
-import com.ivianuu.injekt.comparison.Fib27
-import com.ivianuu.injekt.comparison.Fib28
-import com.ivianuu.injekt.comparison.Fib29
-import com.ivianuu.injekt.comparison.Fib3
-import com.ivianuu.injekt.comparison.Fib30
-import com.ivianuu.injekt.comparison.Fib31
-import com.ivianuu.injekt.comparison.Fib32
-import com.ivianuu.injekt.comparison.Fib33
-import com.ivianuu.injekt.comparison.Fib34
-import com.ivianuu.injekt.comparison.Fib35
-import com.ivianuu.injekt.comparison.Fib36
-import com.ivianuu.injekt.comparison.Fib37
-import com.ivianuu.injekt.comparison.Fib38
-import com.ivianuu.injekt.comparison.Fib39
-import com.ivianuu.injekt.comparison.Fib4
-import com.ivianuu.injekt.comparison.Fib40
-import com.ivianuu.injekt.comparison.Fib41
-import com.ivianuu.injekt.comparison.Fib42
-import com.ivianuu.injekt.comparison.Fib43
-import com.ivianuu.injekt.comparison.Fib44
-import com.ivianuu.injekt.comparison.Fib45
-import com.ivianuu.injekt.comparison.Fib46
-import com.ivianuu.injekt.comparison.Fib47
-import com.ivianuu.injekt.comparison.Fib48
-import com.ivianuu.injekt.comparison.Fib49
-import com.ivianuu.injekt.comparison.Fib5
-import com.ivianuu.injekt.comparison.Fib50
-import com.ivianuu.injekt.comparison.Fib51
-import com.ivianuu.injekt.comparison.Fib52
-import com.ivianuu.injekt.comparison.Fib53
-import com.ivianuu.injekt.comparison.Fib54
-import com.ivianuu.injekt.comparison.Fib55
-import com.ivianuu.injekt.comparison.Fib56
-import com.ivianuu.injekt.comparison.Fib57
-import com.ivianuu.injekt.comparison.Fib58
-import com.ivianuu.injekt.comparison.Fib59
-import com.ivianuu.injekt.comparison.Fib6
-import com.ivianuu.injekt.comparison.Fib60
-import com.ivianuu.injekt.comparison.Fib61
-import com.ivianuu.injekt.comparison.Fib62
-import com.ivianuu.injekt.comparison.Fib63
-import com.ivianuu.injekt.comparison.Fib64
-import com.ivianuu.injekt.comparison.Fib65
-import com.ivianuu.injekt.comparison.Fib66
-import com.ivianuu.injekt.comparison.Fib67
-import com.ivianuu.injekt.comparison.Fib68
-import com.ivianuu.injekt.comparison.Fib69
-import com.ivianuu.injekt.comparison.Fib7
-import com.ivianuu.injekt.comparison.Fib70
-import com.ivianuu.injekt.comparison.Fib71
-import com.ivianuu.injekt.comparison.Fib72
-import com.ivianuu.injekt.comparison.Fib73
-import com.ivianuu.injekt.comparison.Fib74
-import com.ivianuu.injekt.comparison.Fib75
-import com.ivianuu.injekt.comparison.Fib76
-import com.ivianuu.injekt.comparison.Fib77
-import com.ivianuu.injekt.comparison.Fib78
-import com.ivianuu.injekt.comparison.Fib79
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.Fib80
-import com.ivianuu.injekt.comparison.Fib81
-import com.ivianuu.injekt.comparison.Fib82
-import com.ivianuu.injekt.comparison.Fib83
-import com.ivianuu.injekt.comparison.Fib84
-import com.ivianuu.injekt.comparison.Fib85
-import com.ivianuu.injekt.comparison.Fib86
-import com.ivianuu.injekt.comparison.Fib87
-import com.ivianuu.injekt.comparison.Fib88
-import com.ivianuu.injekt.comparison.Fib89
-import com.ivianuu.injekt.comparison.Fib9
-import com.ivianuu.injekt.comparison.Fib90
-import com.ivianuu.injekt.comparison.Fib91
-import com.ivianuu.injekt.comparison.Fib92
-import com.ivianuu.injekt.comparison.Fib93
-import com.ivianuu.injekt.comparison.Fib94
-import com.ivianuu.injekt.comparison.Fib95
-import com.ivianuu.injekt.comparison.Fib96
-import com.ivianuu.injekt.comparison.Fib97
-import com.ivianuu.injekt.comparison.Fib98
-import com.ivianuu.injekt.comparison.Fib99
+import com.ivianuu.injekt.comparison.*
 
 val customModule = createModule()
 
 fun createModule() = module {
-    single { Fib1() }
-    single { Fib2() }
+    factory { Fib1() }
+    factory { Fib2() }
     factory { Fib3(get(), get()) }
     factory { Fib4(get(), get()) }
     factory { Fib5(get(), get()) }
