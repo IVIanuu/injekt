@@ -67,7 +67,7 @@ class TypeTest {
 
             val nonNulls = pairs.map { it.first }
 
-            for (i in 0 until nonNulls.size) {
+            for (i in nonNulls.indices) {
                 for (j in i + 1 until nonNulls.size) {
                     val a = nonNulls[i]
                     val b = nonNulls[j]
@@ -77,7 +77,7 @@ class TypeTest {
 
             val nulls = pairs.map { it.second }
 
-            for (i in 0 until nulls.size) {
+            for (i in nulls.indices) {
                 for (j in i + 1 until nulls.size) {
                     val a = nulls[i]
                     val b = nulls[j]

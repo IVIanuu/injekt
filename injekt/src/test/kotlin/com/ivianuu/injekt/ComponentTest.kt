@@ -240,7 +240,7 @@ class ComponentTest {
         val component = component {
             modules(
                 module {
-                    factory<String> { "string" }
+                    factory { "string" }
                     factory<String?> { "nullable string" }
                 }
             )

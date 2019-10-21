@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import java.util.*
-
 /**
  * Parameters which can be used to pass things like an id
  */
@@ -38,7 +36,7 @@ import java.util.*
 
     override fun hashCode(): Int = values.contentHashCode()
 
-    override fun toString(): String = Arrays.toString(values)
+    override fun toString(): String = values.contentToString()
 
 }
 

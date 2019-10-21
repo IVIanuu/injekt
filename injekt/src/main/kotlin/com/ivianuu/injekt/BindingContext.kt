@@ -61,7 +61,7 @@ inline fun <reified T : V, reified K, reified V> BindingContext<T>.intoMap(
     entryKey: K,
     mapName: Any? = null,
     override: Boolean = false
-): BindingContext<T> = intoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
+): BindingContext<T> = intoMap(typeOf(), typeOf<V>(), entryKey, mapName, override)
 
 fun <T : V, K, V> BindingContext<T>.intoMap(
     mapKeyType: Type<K>,

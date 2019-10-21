@@ -91,7 +91,7 @@ inline fun <reified T> Module.bind(
     name: Any? = null,
     override: Boolean = false,
     unscoped: Boolean = true
-): BindingContext<T> = this.bind(binding, typeOf<T>(), name, override, unscoped)
+): BindingContext<T> = bind(binding, typeOf(), name, override, unscoped)
 
 fun <T> Module.bind(
     binding: Binding<T>,
@@ -134,14 +134,14 @@ inline fun <reified K, reified V> Module.map(
     mapName: Any? = null,
     block: BindingMap<K, V>.() -> Unit = {}
 ) {
-    map(typeOf<K>(), typeOf<V>(), mapName, block)
+    map(typeOf(), typeOf(), mapName, block)
 }
 
 inline fun <reified E> Module.set(
     setName: Any? = null,
     block: BindingSet<E>.() -> Unit = {}
 ) {
-    set(typeOf<E>(), setName, block)
+    set(typeOf(), setName, block)
 }
 
 inline fun <reified T> Module.withBinding(
@@ -166,7 +166,7 @@ internal fun <T> Module.bindProxy(
 ): BindingContext<T> {
     // we create a additional binding because we have no reference to the original one
     // we use a unique id here to make sure that the binding does not collide with any user config
-    // this binding acts as proxy and just calls trough the original implementation
+    // this binding acts as proxy and just calls trough the original implementation and should be never injected directly
     return bind(UnlinkedProxyBinding(keyOf(type, name)), type, UUID.randomUUID().toString())
 }
 

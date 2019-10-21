@@ -69,7 +69,7 @@ class Type<T> internal constructor(
 
 inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
-inline fun <T> typeOf(instance: T): Type<T> = typeOf<T>((instance as Any)::class)
+fun <T> typeOf(instance: T): Type<T> = typeOf((instance as Any)::class)
 
 @PublishedApi
 internal fun <T> KType.asType(): Type<T> {
@@ -78,7 +78,7 @@ internal fun <T> KType.asType(): Type<T> {
         parameters[i] = kType.type!!.asType<Any?>()
     }
 
-    return Type<T>(
+    return Type(
         classifier as KClass<*>,
         isMarkedNullable,
         parameters as Array<out Type<*>>
@@ -112,7 +112,7 @@ fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<
     }
 
     if (type is ParameterizedType) {
-        return Type<T>(
+        return Type(
             (type.rawType as Class<*>).kotlin,
             isNullable,
             (type as? ParameterizedType)
