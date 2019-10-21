@@ -26,8 +26,8 @@ package com.ivianuu.injekt
  *
  *     override val component = component { ... }
  *
- *     private val dep1 by inject<Dependency1>()
- *     private val dep2 by inject<Dependency2>()
+ *     private val dep1: Dependency1 by inject()
+ *     private val dep2: Dependency2 by inject()
  *
  * }
  * ```
