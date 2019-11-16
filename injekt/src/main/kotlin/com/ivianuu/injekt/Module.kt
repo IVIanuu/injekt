@@ -20,125 +20,6 @@ import java.util.*
 
 fun module(block: Module.() -> Unit): Module = Module().apply(block)
 
-inline fun <reified T> Module.factory(
-    name: Any? = null,
-    override: Boolean = false,
-    optimizing: Boolean = true,
-    noinline definition: Definition<T>
-): BindingContext<T> = factory(
-    type = typeOf(),
-    name = name,
-    override = override,
-    optimizing = optimizing,
-    definition = definition
-)
-
-fun <T> Module.factory(
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false,
-    optimizing: Boolean = true,
-    definition: Definition<T>
-): BindingContext<T> = bind(
-    key = keyOf(type, name),
-    binding = definitionBinding(optimizing = optimizing, definition = definition),
-    override = override,
-    unscoped = true
-)
-
-inline fun <reified T> Module.single(
-    name: Any? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    noinline definition: Definition<T>
-): BindingContext<T> = single(
-    type = typeOf(),
-    name = name,
-    override = override,
-    eager = eager,
-    definition = definition
-)
-
-fun <T> Module.single(
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false,
-    eager: Boolean = false,
-    definition: Definition<T>
-): BindingContext<T> =
-    bind(
-        key = keyOf(type, name),
-        binding = definitionBinding(optimizing = false, definition = definition).asScoped(),
-        override = override,
-        eager = eager,
-        unscoped = false
-    )
-
-inline fun <reified K, reified V> Module.map(
-    mapName: Any? = null,
-    noinline block: BindingMap<K, V>.() -> Unit = {}
-) {
-    map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
-}
-
-inline fun <reified E> Module.set(
-    setName: Any? = null,
-    noinline block: BindingSet<E>.() -> Unit = {}
-) {
-    set(setElementType = typeOf(), setName = setName, block = block)
-}
-
-inline fun <reified T> Module.withBinding(
-    name: Any? = null,
-    noinline block: BindingContext<T>.() -> Unit
-) {
-    withBinding(type = typeOf(), name = name, block = block)
-}
-
-fun <T> Module.withBinding(
-    type: Type<T>,
-    name: Any? = null,
-    block: BindingContext<T>.() -> Unit
-) {
-    bindProxy(type = type, name = name).block()
-}
-
-private fun <T> Module.bindProxy(
-    type: Type<T>,
-    name: Any?
-): BindingContext<T> {
-    // we create a additional binding because we have no reference to the original one
-    // we use a unique id here to make sure that the binding does not collide with any user config
-    // this binding acts as proxy and just calls trough the original implementation and should be never injected directly
-    return bind(
-        key = keyOf(type = type, name = UUID.randomUUID().toString()),
-        binding = UnlinkedProxyBinding(originalKey = keyOf(type = type, name = name))
-    )
-}
-
-inline fun <reified T> Module.instance(
-    instance: T,
-    name: Any? = null,
-    override: Boolean = false
-): BindingContext<T> = instance(
-    instance = instance,
-    type = typeOf(),
-    name = name,
-    override = override
-)
-
-fun <T> Module.instance(
-    instance: T,
-    type: Type<T>,
-    name: Any? = null,
-    override: Boolean = false
-): BindingContext<T> = bind(
-    key = keyOf(type, name),
-    binding = LinkedInstanceBinding(instance),
-    override = override,
-    unscoped = false
-)
-
 /**
  * A module is a collection of [Binding]s to drive [Component]s
  */
@@ -148,24 +29,110 @@ class Module internal constructor() {
     internal val mapBindings = MapBindings()
     internal val setBindings = SetBindings()
 
-    fun <T> bind(
-        key: Key,
-        binding: Binding<T>,
+    inline fun <reified T> factory(
+        name: Any? = null,
+        override: Boolean = false,
+        optimizing: Boolean = true,
+        noinline definition: Definition<T>
+    ): BindingContext<T> = factory(
+        type = typeOf(),
+        name = name,
+        override = override,
+        optimizing = optimizing,
+        definition = definition
+    )
+
+    fun <T> factory(
+        type: Type<T>,
+        name: Any? = null,
+        override: Boolean = false,
+        optimizing: Boolean = true,
+        definition: Definition<T>
+    ): BindingContext<T> = bind(
+        key = keyOf(type, name),
+        binding = definitionBinding(optimizing = optimizing, definition = definition),
+        override = override,
+        unscoped = true
+    )
+
+    inline fun <reified T> single(
+        name: Any? = null,
         override: Boolean = false,
         eager: Boolean = false,
-        unscoped: Boolean = true
-    ): BindingContext<T> {
-        check(key !in bindings || override) {
-            "Already declared binding for $binding.key"
-        }
+        noinline definition: Definition<T>
+    ): BindingContext<T> = single(
+        type = typeOf(),
+        name = name,
+        override = override,
+        eager = eager,
+        definition = definition
+    )
 
-        binding.override = override
-        binding.eager = eager
-        binding.unscoped = unscoped
+    fun <T> single(
+        type: Type<T>,
+        name: Any? = null,
+        override: Boolean = false,
+        eager: Boolean = false,
+        definition: Definition<T>
+    ): BindingContext<T> =
+        bind(
+            key = keyOf(type, name),
+            binding = definitionBinding(optimizing = false, definition = definition).asScoped(),
+            override = override,
+            eager = eager,
+            unscoped = false
+        )
 
-        bindings[key] = binding
+    inline fun <reified K, reified V> map(
+        mapName: Any? = null,
+        noinline block: BindingMap<K, V>.() -> Unit = {}
+    ) {
+        map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
+    }
 
-        return BindingContext(binding, key, override, this)
+    inline fun <reified E> set(
+        setName: Any? = null,
+        noinline block: BindingSet<E>.() -> Unit = {}
+    ) {
+        set(setElementType = typeOf(), setName = setName, block = block)
+    }
+
+    inline fun <reified T> instance(
+        instance: T,
+        name: Any? = null,
+        override: Boolean = false
+    ): BindingContext<T> = instance(
+        instance = instance,
+        type = typeOf(),
+        name = name,
+        override = override
+    )
+
+    fun <T> instance(
+        instance: T,
+        type: Type<T>,
+        name: Any? = null,
+        override: Boolean = false
+    ): BindingContext<T> = bind(
+        key = keyOf(type, name),
+        binding = LinkedInstanceBinding(instance),
+        override = override,
+        unscoped = false
+    )
+
+    inline fun <reified T> withBinding(
+        name: Any? = null,
+        noinline block: BindingContext<T>.() -> Unit
+    ) {
+        withBinding(type = typeOf(), name = name, block = block)
+    }
+
+    fun <T> withBinding(
+        type: Type<T>,
+        name: Any? = null,
+        block: BindingContext<T>.() -> Unit
+    ) {
+        bindProxy(type = type, name = name).block()
     }
 
     fun include(module: Module) {
@@ -201,6 +168,39 @@ class Module internal constructor() {
     ) {
         val setKey = keyOf(type = typeOf<Any?>(Set::class, setElementType), name = setName)
         setBindings.get<E>(setKey).apply(block)
+    }
+
+    fun <T> bind(
+        key: Key,
+        binding: Binding<T>,
+        override: Boolean = false,
+        eager: Boolean = false,
+        unscoped: Boolean = true
+    ): BindingContext<T> {
+        check(key !in bindings || override) {
+            "Already declared binding for $binding.key"
+        }
+
+        binding.override = override
+        binding.eager = eager
+        binding.unscoped = unscoped
+
+        bindings[key] = binding
+
+        return BindingContext(binding, key, override, this)
+    }
+
+    private fun <T> bindProxy(
+        type: Type<T>,
+        name: Any?
+    ): BindingContext<T> {
+        // we create a additional binding because we have no reference to the original one
+        // we use a unique id here to make sure that the binding does not collide with any user config
+        // this binding acts as proxy and just calls trough the original implementation and should be never injected directly
+        return bind(
+            key = keyOf(type = type, name = UUID.randomUUID().toString()),
+            binding = UnlinkedProxyBinding(originalKey = keyOf(type = type, name = name))
+        )
     }
 
 }

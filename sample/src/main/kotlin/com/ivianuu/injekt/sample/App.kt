@@ -25,9 +25,7 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationScope
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.logger
 import com.ivianuu.injekt.module
 
 class App : Application(), InjektTrait {

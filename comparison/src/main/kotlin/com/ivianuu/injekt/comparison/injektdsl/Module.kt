@@ -116,7 +116,6 @@ import com.ivianuu.injekt.comparison.Fib96
 import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 

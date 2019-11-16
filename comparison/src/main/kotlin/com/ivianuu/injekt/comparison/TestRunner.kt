@@ -23,7 +23,6 @@ import com.ivianuu.injekt.comparison.dagger2reflect.Dagger2ReflectTest
 import com.ivianuu.injekt.comparison.guice.GuiceTest
 import com.ivianuu.injekt.comparison.injektcodegen.InjektCodegenTest
 import com.ivianuu.injekt.comparison.injektdsl.InjektDslTest
-import com.ivianuu.injekt.comparison.injektop.InjektOpTest
 import com.ivianuu.injekt.comparison.injektreflection.InjektReflectionTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
@@ -56,7 +55,6 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             GuiceTest,
             InjektCodegenTest,
             InjektDslTest,
-            InjektOpTest,
             InjektReflectionTest,
             KatanaTest,
             KodeinTest,

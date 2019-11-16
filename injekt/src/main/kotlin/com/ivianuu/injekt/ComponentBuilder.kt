@@ -31,6 +31,11 @@ class ComponentBuilder internal constructor() {
     private val instances = mutableMapOf<Key, Binding<*>>()
     private val dependencies = mutableListOf<Component>()
 
+    inline fun <reified T : Annotation> scopes(): ComponentBuilder {
+        scopes(T::class)
+        return this
+    }
+
     fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
         this.scopes += scope
         return this
@@ -74,6 +79,14 @@ class ComponentBuilder internal constructor() {
     fun modules(modules: List<Module>): ComponentBuilder {
         this.modules += modules
         return this
+    }
+
+    inline fun <reified T> instance(
+        instance: T,
+        name: Any? = null,
+        override: Boolean = false
+    ) {
+        instance(instance, typeOf(), name, override)
     }
 
     fun <T> instance(
@@ -294,17 +307,4 @@ class ComponentBuilder internal constructor() {
         keys += this.allBindings.keys
     }
 
-}
-
-inline fun <reified T : Annotation> ComponentBuilder.scopes(): ComponentBuilder {
-    scopes(T::class)
-    return this
-}
-
-inline fun <reified T> ComponentBuilder.instance(
-    instance: T,
-    name: Any? = null,
-    override: Boolean = false
-) {
-    instance(instance, typeOf(), name, override)
 }

@@ -23,8 +23,6 @@ import com.ivianuu.injekt.ReflectiveJustInTimeLookupFactory
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 import com.ivianuu.injekt.component
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.justInTimeLookupFactory
 
 object InjektReflectionTest : InjectionTest {
     override val name = "Injekt Reflection"

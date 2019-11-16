@@ -21,7 +21,6 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.keyOf
-import com.ivianuu.injekt.map
 import com.ivianuu.injekt.module
 import kotlin.reflect.KClass
 

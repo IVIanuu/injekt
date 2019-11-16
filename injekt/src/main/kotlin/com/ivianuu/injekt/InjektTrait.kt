@@ -35,6 +35,19 @@ package com.ivianuu.injekt
  */
 interface InjektTrait {
     val component: Component
+
+    fun <T> InjektTrait.get(
+        type: Type<T>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): T = component.get(type, name, parameters)
+
+    fun <T> InjektTrait.inject(
+        type: Type<T>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }
+
 }
 
 inline fun <reified T> InjektTrait.get(
@@ -42,19 +55,7 @@ inline fun <reified T> InjektTrait.get(
     noinline parameters: ParametersDefinition? = null
 ): T = get(typeOf(), name, parameters)
 
-fun <T> InjektTrait.get(
-    type: Type<T>,
-    name: Any? = null,
-    parameters: ParametersDefinition? = null
-): T = component.get(type, name, parameters)
-
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): kotlin.Lazy<T> = inject(typeOf(), name, parameters)
-
-fun <T> InjektTrait.inject(
-    type: Type<T>,
-    name: Any? = null,
-    parameters: ParametersDefinition? = null
-): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }
