@@ -33,7 +33,7 @@ fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
 
 private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
     override fun link(linker: Linker): LinkedBinding<T> =
-        LinkedScopedBinding(binding.link(linker))
+        LinkedScopedBinding(binding.performLink(linker))
 }
 
 private class LinkedScopedBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {

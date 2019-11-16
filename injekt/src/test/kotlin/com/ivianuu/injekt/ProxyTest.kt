@@ -25,7 +25,7 @@ class ProxyTest {
     @Test
     fun testBridgingDoesNotModifyOriginalBindingState() {
         val module = module {
-            single(override = true) { "value" }
+            single(override = true, eager = true) { "value" }
             withBinding<String> { bindType<CharSequence>() }
         }
 

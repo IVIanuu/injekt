@@ -26,7 +26,7 @@ sealed class Binding<T> {
     internal var unscoped = false
     internal var linkPerformed = false
 
-    abstract fun link(linker: Linker): LinkedBinding<T>
+    protected abstract fun link(linker: Linker): LinkedBinding<T>
 
     internal open fun performLink(linker: Linker): LinkedBinding<T> {
         val linked = link(linker)
