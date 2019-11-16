@@ -45,23 +45,28 @@ class Component internal constructor(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): T = getBinding<T>(keyOf(type, name))(parameters)
+    ): T {
+        val binding = getBinding<T>(keyOf(type, name))
+        return binding(parameters)
+    }
 
     inline fun <reified T> get(
         name: Any? = null,
         noinline parameters: ParametersDefinition? = null
-    ): T = get(typeOf(), name, parameters)
+    ): T = get(type = typeOf(), name = name, parameters = parameters)
 
     inline fun <reified T> inject(
         name: Any? = null,
         noinline parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T> = inject(typeOf(), name, parameters)
+    ): kotlin.Lazy<T> = inject(type = typeOf(), name = name, parameters = parameters)
 
     fun <T> inject(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(type, name, parameters) }
+    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
+        get(type = type, name = name, parameters = parameters)
+    }
 
     internal fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
         getBinding<T>(key)(parameters)

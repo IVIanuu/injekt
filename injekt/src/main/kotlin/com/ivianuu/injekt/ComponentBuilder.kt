@@ -86,7 +86,7 @@ class ComponentBuilder internal constructor() {
         name: Any? = null,
         override: Boolean = false
     ) {
-        instance(instance, typeOf(), name, override)
+        instance(instance = instance, type = typeOf(), name = name, override = override)
     }
 
     fun <T> instance(
