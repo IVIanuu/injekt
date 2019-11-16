@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 import kotlin.reflect.KClass
 
@@ -27,14 +29,14 @@ class TypeTest {
         val nonNullReified: Type<*>,
         val nullableReified: Type<*>
     ) {
-        Boolean(Boolean::class, typeOf<kotlin.Boolean>(), typeOf<kotlin.Boolean?>()),
-        Byte(Byte::class, typeOf<kotlin.Byte>(), typeOf<kotlin.Byte?>()),
-        Char(Char::class, typeOf<kotlin.Char>(), typeOf<kotlin.Char?>()),
-        Double(Double::class, typeOf<kotlin.Double>(), typeOf<kotlin.Double?>()),
-        Float(Float::class, typeOf<kotlin.Float>(), typeOf<kotlin.Float?>()),
-        Int(Int::class, typeOf<kotlin.Int>(), typeOf<kotlin.Int?>()),
-        Long(Long::class, typeOf<kotlin.Long>(), typeOf<kotlin.Long?>()),
-        Short(Short::class, typeOf<kotlin.Short>(), typeOf<kotlin.Short?>());
+        Boolean(kotlin.Boolean::class, typeOf<kotlin.Boolean>(), typeOf<kotlin.Boolean?>()),
+        Byte(kotlin.Byte::class, typeOf<kotlin.Byte>(), typeOf<kotlin.Byte?>()),
+        Char(kotlin.Char::class, typeOf<kotlin.Char>(), typeOf<kotlin.Char?>()),
+        Double(kotlin.Double::class, typeOf<kotlin.Double>(), typeOf<kotlin.Double?>()),
+        Float(kotlin.Float::class, typeOf<kotlin.Float>(), typeOf<kotlin.Float?>()),
+        Int(kotlin.Int::class, typeOf<kotlin.Int>(), typeOf<kotlin.Int?>()),
+        Long(kotlin.Long::class, typeOf<kotlin.Long>(), typeOf<kotlin.Long?>()),
+        Short(kotlin.Short::class, typeOf<kotlin.Short>(), typeOf<kotlin.Short?>());
     }
 
     @Test

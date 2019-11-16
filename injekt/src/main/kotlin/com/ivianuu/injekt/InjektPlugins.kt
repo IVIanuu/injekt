@@ -19,21 +19,11 @@ package com.ivianuu.injekt
 /**
  * Global configurations
  */
-object InjektPlugins
+object InjektPlugins {
 
-private var _logger: Logger? = null
-/**
- * The logger to use
- */
-var InjektPlugins.logger: Logger?
-    get() = _logger
-    set(value) {
-        _logger = value
-    }
+    var logger: Logger? = null
 
-private var _justInTimeLookupFactory: JustInTimeLookupFactory = DefaultJustInTimeLookupFactory
-var InjektPlugins.justInTimeLookupFactory: JustInTimeLookupFactory
-    get() = _justInTimeLookupFactory
-    set(value) {
-        _justInTimeLookupFactory = value
-    }
+    var justInTimeLookupFactory: JustInTimeLookupFactory = DefaultJustInTimeLookupFactory
+
+
+}

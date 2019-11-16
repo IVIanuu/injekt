@@ -16,31 +16,11 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertNotNull
+import junit.framework.Assert.assertNull
 import org.junit.Test
 import kotlin.reflect.KClass
-
-class MyUnscopedDep
-
-object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
-    override fun invoke(parameters: ParametersDefinition?) = MyUnscopedDep()
-}
-
-@TestScopeOne
-class MyScopedDep
-
-object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {
-    override val scope: KClass<out Annotation>
-        get() = TestScopeOne::class
-
-    override fun invoke(parameters: ParametersDefinition?) = MyScopedDep()
-}
-
-private val factories = listOf(
-    CodegenJustInTimeLookupFactory,
-    ReflectiveJustInTimeLookupFactory,
-    DefaultJustInTimeLookupFactory
-)
 
 class JustInTimeLookupFactoryTest {
 
@@ -74,3 +54,25 @@ class JustInTimeLookupFactoryTest {
     }
 
 }
+
+class MyUnscopedDep
+
+object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
+    override fun invoke(parameters: ParametersDefinition?) = MyUnscopedDep()
+}
+
+@TestScopeOne
+class MyScopedDep
+
+object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {
+    override val scope: KClass<out Annotation>
+        get() = TestScopeOne::class
+
+    override fun invoke(parameters: ParametersDefinition?) = MyScopedDep()
+}
+
+private val factories = listOf(
+    CodegenJustInTimeLookupFactory,
+    ReflectiveJustInTimeLookupFactory,
+    DefaultJustInTimeLookupFactory
+)

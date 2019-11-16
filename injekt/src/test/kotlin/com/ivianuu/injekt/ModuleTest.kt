@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ModuleTest {
@@ -24,7 +26,9 @@ class ModuleTest {
     @Test
     fun testBind() {
         val binding = definitionBinding { "value" }
-        val module = module { bind(binding) }
+        val module = module {
+            bind(key = keyOf<String>(), binding = binding)
+        }
         assertTrue(binding in module.bindings.values)
     }
 
@@ -34,8 +38,8 @@ class ModuleTest {
         val overrideBinding = definitionBinding { "overridden_value" }
 
         val module = module {
-            bind(firstBinding)
-            bind(overrideBinding, override = true)
+            bind(key = keyOf<String>(), binding = firstBinding)
+            bind(key = keyOf<String>(), binding = overrideBinding, override = true)
         }
 
         assertEquals(module.bindings[keyOf<String>()], overrideBinding)
@@ -47,8 +51,8 @@ class ModuleTest {
         val overrideBinding = definitionBinding { "overridden_value" }
 
         module {
-            bind(firstBinding)
-            bind(overrideBinding, override = false)
+            bind(key = keyOf<String>(), binding = firstBinding)
+            bind(key = keyOf<String>(), binding = overrideBinding, override = false)
         }
     }
 
@@ -63,8 +67,8 @@ class ModuleTest {
         val moduleB = module { include(moduleA) }
 
         assertTrue(keyOf<TestDep1>() in moduleB.bindings)
-        assertTrue(moduleB.mapBindings?.getAll()?.containsKey(keyOf<Map<String, Any>>()) ?: false)
-        assertTrue(moduleB.setBindings?.getAll()?.containsKey(keyOf<Set<Any>>()) ?: false)
+        assertTrue(moduleB.mapBindings.getAll().containsKey(keyOf<Map<String, Any>>()))
+        assertTrue(moduleB.setBindings.getAll().containsKey(keyOf<Set<Any>>()))
     }
 
     @Test

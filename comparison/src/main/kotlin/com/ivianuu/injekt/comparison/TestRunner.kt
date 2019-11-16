@@ -71,16 +71,16 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
     runInjectionTests(tests.toList(), config)
 }
 
-fun runInjectionTests(tests: Iterable<InjectionTest>, config: Config = defaultConfig) {
+fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig) {
     Thread.sleep(1000)
 
     println("Running ${config.rounds} iterations. Please stand by...")
 
-    val timingsPerTest = linkedMapOf<String, MutableList<Timings>>()
+    val timingsPerTest = mutableMapOf<String, MutableList<Timings>>()
 
     repeat(config.rounds) {
         tests.forEach { test ->
-            timingsPerTest.getOrPut(test.name) { arrayListOf() } += measure(test)
+            timingsPerTest.getOrPut(test.name) { mutableListOf() } += measure(test)
         }
     }
 
@@ -111,7 +111,7 @@ data class Timings(
 
 data class Result(
     val name: String,
-    val timings: Iterable<Long>
+    val timings: List<Long>
 ) {
     val average = timings.average()
     val median = timings.median()
@@ -127,7 +127,7 @@ data class Results(
     val secondInjection: Result
 )
 
-fun Iterable<Timings>.results(): Results {
+fun List<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName, // todo dirty
         moduleCreation = Result("Module creation", map { it.moduleCreation }),

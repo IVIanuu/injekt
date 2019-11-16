@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.*
+import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ComponentTest {
@@ -329,7 +332,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testReusesScopedJitBindings() {
+    fun testReusesScopedJustInTimeBindings() {
         val componentA = component { scopes<TestScopeOne>() }
 
         val componentB = component {
@@ -341,10 +344,10 @@ class ComponentTest {
             dependencies(componentB)
         }
 
-        val depA = componentA.get<ScopedJitBinding>()
-        val depA2 = componentA.get<ScopedJitBinding>()
-        val depB = componentB.get<ScopedJitBinding>()
-        val depC = componentC.get<ScopedJitBinding>()
+        val depA = componentA.get<ScopedJustInTimeDep>()
+        val depA2 = componentA.get<ScopedJustInTimeDep>()
+        val depB = componentB.get<ScopedJustInTimeDep>()
+        val depC = componentC.get<ScopedJustInTimeDep>()
 
         assertEquals(depA, depA2)
         assertEquals(depA, depB)
@@ -395,6 +398,18 @@ class ComponentTest {
         assertEquals(1, component.get<Int>())
     }
 
+    @Test
+    fun testInstantiatesEagerBindingOnStart() {
+        var called = false
+        component {
+            modules(
+                module {
+                    single(eager = true) { called = true }
+                }
+            )
+        }
+        assertTrue(called)
+    }
 }
 
 class Context(val component: Component) : Environment
@@ -402,4 +417,4 @@ class Context(val component: Component) : Environment
 interface Environment
 
 @TestScopeOne
-class ScopedJitBinding
+class ScopedJustInTimeDep

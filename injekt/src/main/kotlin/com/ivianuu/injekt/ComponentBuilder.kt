@@ -18,12 +18,18 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-class ComponentBuilder @PublishedApi internal constructor() {
+/**
+ * Constructs a new [Component] configured by [block]
+ */
+fun component(block: ComponentBuilder.() -> Unit = {}): Component =
+    ComponentBuilder().apply(block).build()
 
-    private val scopes = arrayListOf<KClass<out Annotation>>()
-    private val modules = arrayListOf<Module>()
+class ComponentBuilder internal constructor() {
+
+    private val scopes = mutableListOf<KClass<out Annotation>>()
+    private val modules = mutableListOf<Module>()
     private val instances = mutableMapOf<Key, Binding<*>>()
-    private val dependencies = arrayListOf<Component>()
+    private val dependencies = mutableListOf<Component>()
 
     fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
         this.scopes += scope
@@ -35,7 +41,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
         return this
     }
 
-    fun scopes(scopes: Iterable<KClass<out Annotation>>): ComponentBuilder {
+    fun scopes(scopes: List<KClass<out Annotation>>): ComponentBuilder {
         this.scopes += scopes
         return this
     }
@@ -50,7 +56,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
         return this
     }
 
-    fun dependencies(dependencies: Iterable<Component>): ComponentBuilder {
+    fun dependencies(dependencies: List<Component>): ComponentBuilder {
         this.dependencies += dependencies
         return this
     }
@@ -65,7 +71,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
         return this
     }
 
-    fun modules(modules: Iterable<Module>): ComponentBuilder {
+    fun modules(modules: List<Module>): ComponentBuilder {
         this.modules += modules
         return this
     }
@@ -89,13 +95,12 @@ class ComponentBuilder @PublishedApi internal constructor() {
         instances[key] = binding
     }
 
-    @PublishedApi
     internal fun build(): Component {
         checkScopes()
 
         val dependencyBindingKeys = dependencies
             .map { it.getAllBindingKeys() }
-            .fold(hashSetOf<Key>()) { acc, current ->
+            .fold(mutableSetOf<Key>()) { acc, current ->
                 current.forEach { key ->
                     check(acc.add(key)) {
                         "Already declared binding for $key"
@@ -105,20 +110,15 @@ class ComponentBuilder @PublishedApi internal constructor() {
                 return@fold acc
             }
 
-        val allBindings = hashMapOf<Key, Binding<*>>()
-        val unscopedBindings = hashMapOf<Key, Binding<*>>()
-
-        var mapBindings: MapBindings? = null
-        var setBindings: SetBindings? = null
-        fun nonNullMapBindings(): MapBindings =
-            mapBindings ?: MapBindings().also { mapBindings = it }
-
-        fun nonNullSetBindings(): SetBindings =
-            setBindings ?: SetBindings().also { setBindings = it }
+        val allBindings = mutableMapOf<Key, Binding<*>>()
+        val unscopedBindings = mutableMapOf<Key, Binding<*>>()
+        val eagerBindings = mutableListOf<Key>()
+        val mapBindings = MapBindings()
+        val setBindings = SetBindings()
 
         dependencies.forEach { dependency ->
-            dependency.mapBindings?.let { nonNullMapBindings().putAll(it) }
-            dependency.setBindings?.let { nonNullSetBindings().addAll(it) }
+            mapBindings.putAll(dependency.mapBindings)
+            setBindings.addAll(dependency.setBindings)
         }
 
         instances.forEach { (key, binding) ->
@@ -143,33 +143,37 @@ class ComponentBuilder @PublishedApi internal constructor() {
                     "Already declared key $key"
                 }
                 allBindings[key] = binding
-                if (binding.unscoped) {
-                    unscopedBindings[key] = binding
-                }
+                if (binding.unscoped) unscopedBindings[key] = binding
+                if (binding.eager) eagerBindings += key
             }
 
-            module.mapBindings?.let { nonNullMapBindings().putAll(it) }
-            module.setBindings?.let { nonNullSetBindings().addAll(it) }
+            mapBindings.putAll(module.mapBindings)
+            setBindings.addAll(module.setBindings)
         }
 
-        mapBindings?.getAll()?.forEach { (mapKey, map) ->
+        mapBindings.getAll().forEach { (mapKey, map) ->
             includeMapBindings(allBindings, mapKey, map)
         }
 
-        setBindings?.getAll()?.forEach { (setKey, set) ->
+        setBindings.getAll().forEach { (setKey, set) ->
             includeSetBindings(allBindings, setKey, set)
         }
 
         includeComponentBindings(allBindings)
 
         return Component(
-            scopes, allBindings, unscopedBindings,
-            mapBindings, setBindings, dependencies
+            scopes = scopes,
+            allBindings = allBindings,
+            unlinkedUnscopedBindings = unscopedBindings,
+            eagerBindings = eagerBindings,
+            mapBindings = mapBindings,
+            setBindings = setBindings,
+            dependencies = dependencies
         )
     }
 
     private fun checkScopes() {
-        val dependencyScopes = hashSetOf<KClass<out Annotation>>()
+        val dependencyScopes = mutableSetOf<KClass<out Annotation>>()
 
         dependencies
             .flatMap { it.scopes }
@@ -228,7 +232,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
             mapKey.name
         )
 
-        bindings[mapOfProviderKey] = UnlinkedMapOfProviderBinding<Any?, Any?>(bindingKeys)
+        bindings[mapOfProviderKey] = UnmutableMapOfProviderBinding<Any?, Any?>(bindingKeys)
             .also { it.unscoped = false }
 
         val mapOfLazyKey = keyOf(
@@ -240,10 +244,10 @@ class ComponentBuilder @PublishedApi internal constructor() {
             mapKey.name
         )
 
-        bindings[mapOfLazyKey] = UnlinkedMapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapOfLazyKey] = UnmutableMapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.unscoped = false }
 
-        bindings[mapKey] = UnlinkedMapOfValueBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapKey] = UnmutableMapOfValueBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.unscoped = false }
     }
 
@@ -283,7 +287,7 @@ class ComponentBuilder @PublishedApi internal constructor() {
     }
 
     private fun Component.getAllBindingKeys(): Set<Key> =
-        hashSetOf<Key>().also { collectBindingKeys(it) }
+        mutableSetOf<Key>().also { collectBindingKeys(it) }
 
     private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
         dependencies.forEach { it.collectBindingKeys(keys) }
@@ -291,12 +295,6 @@ class ComponentBuilder @PublishedApi internal constructor() {
     }
 
 }
-
-/**
- * Constructs a new [Component] configured by [block]
- */
-inline fun component(block: ComponentBuilder.() -> Unit = {}): Component =
-    ComponentBuilder().apply(block).build()
 
 inline fun <reified T : Annotation> ComponentBuilder.scopes(): ComponentBuilder {
     scopes(T::class)

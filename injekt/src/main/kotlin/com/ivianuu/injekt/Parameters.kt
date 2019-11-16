@@ -25,6 +25,12 @@ package com.ivianuu.injekt
 
     operator fun <T> get(i: Int): T = values[i] as T
 
+    operator fun <T> component1(): T = get(0)
+    operator fun <T> component2(): T = get(1)
+    operator fun <T> component3(): T = get(2)
+    operator fun <T> component4(): T = get(3)
+    operator fun <T> component5(): T = get(4)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Parameters) return false
@@ -41,12 +47,6 @@ package com.ivianuu.injekt
 }
 
 typealias ParametersDefinition = () -> Parameters
-
-operator fun <T> Parameters.component1(): T = get(0)
-operator fun <T> Parameters.component2(): T = get(1)
-operator fun <T> Parameters.component3(): T = get(2)
-operator fun <T> Parameters.component4(): T = get(3)
-operator fun <T> Parameters.component5(): T = get(4)
 
 fun parametersOf(): Parameters = Parameters(emptyArray())
 

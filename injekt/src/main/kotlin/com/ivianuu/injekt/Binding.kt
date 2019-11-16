@@ -20,6 +20,8 @@ sealed class Binding<T> {
 
     var override = false
         internal set
+    var eager = false
+        internal set
 
     internal var unscoped = false
     internal var linkPerformed = false
@@ -34,6 +36,7 @@ sealed class Binding<T> {
         if (!linked.linkPerformed) {
             linked.linkPerformed = true
             linked.override = override
+            linked.eager = eager
             linked.unscoped = unscoped
         }
         return linked
@@ -45,5 +48,5 @@ abstract class UnlinkedBinding<T> : Binding<T>()
 
 abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
     final override fun link(linker: Linker): LinkedBinding<T> = this
-    override fun performLink(linker: Linker): LinkedBinding<T> = this
+    final override fun performLink(linker: Linker): LinkedBinding<T> = this
 }

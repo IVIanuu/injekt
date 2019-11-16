@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
-data class BindingContext<T>(
+// todo clean multi binding api mess
+
+data class BindingContext<T> internal constructor(
     val binding: Binding<T>,
     val key: Key,
     val override: Boolean,
@@ -36,9 +38,8 @@ fun BindingContext<*>.bindAlias(
     override: Boolean = this.override
 ) {
     module.bind(
+        key = keyOf(type, name),
         binding = binding as Binding<Any?>,
-        type = type as Type<Any?>,
-        name = name,
         override = override
     )
 }

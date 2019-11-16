@@ -36,7 +36,7 @@ object DefaultJustInTimeLookupFactory : JustInTimeLookupFactory {
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = mutableMapOf<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null
@@ -70,7 +70,7 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
 object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = hashMapOf<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = mutableMapOf<Type<*>, JustInTimeLookup<*>>()
 
     override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? {
         if (key.name != null) return null

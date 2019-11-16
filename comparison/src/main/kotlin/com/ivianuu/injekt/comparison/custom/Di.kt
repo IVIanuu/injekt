@@ -54,7 +54,7 @@ class ModuleBuilder(val definitions: MutableList<Definition<*>>) {
 }
 
 fun module(block: ModuleBuilder.() -> Unit): Module {
-    val builder = ModuleBuilder(arrayListOf())
+    val builder = ModuleBuilder(mutableListOf())
     builder.block()
     return Module(builder.definitions)
 }

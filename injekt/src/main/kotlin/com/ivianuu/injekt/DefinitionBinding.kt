@@ -34,18 +34,18 @@ interface DefinitionContext {
     operator fun <T> Parameters?.component5(): T = this!![4]
 }
 
-fun <T> definitionBinding(
+inline fun <reified T> DefinitionContext.get(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): T = get(typeOf(), name, parameters)
+
+internal fun <T> definitionBinding(
     optimizing: Boolean = true,
     definition: Definition<T>
 ): Binding<T> {
     return if (optimizing) UnlinkedOptimizingDefinitionBinding(definition)
     else UnlinkedDefinitionBinding(definition)
 }
-
-inline fun <reified T> DefinitionContext.get(
-    name: Any? = null,
-    noinline parameters: ParametersDefinition? = null
-): T = get(typeOf(), name, parameters)
 
 private class UnlinkedDefinitionBinding<T>(
     private val definition: Definition<T>

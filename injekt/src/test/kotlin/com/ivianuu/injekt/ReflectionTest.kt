@@ -20,44 +20,6 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-@Name(PackageName.Companion::class)
-annotation class PackageName {
-    companion object
-}
-
-class ReflectionDep
-
-class ReflectionDepWithParam(@Param val value: Int)
-
-class ReflectionDepWithNamedParam(@PackageName val packageName: String)
-
-class ReflectionDepWithAtInjectConstructor {
-
-    val arg: Any?
-
-    constructor(testDep1: TestDep1) {
-        arg = testDep1
-    }
-
-    @Inject
-    constructor(testDep2: TestDep2) {
-        arg = testDep2
-    }
-
-}
-
-interface Memoized<T>
-
-class ReflectionDepWithParameterizedDep(
-    private val mapOfStrings: Map<String, Memoized<String>>
-)
-
-@TestScopeOne
-class ReflectionDepWithScope
-
-@Scope
-annotation class OtherScope
-
 class ReflectionTest {
 
     @Test
@@ -121,3 +83,41 @@ class ReflectionTest {
         component.get<ReflectionDepWithParameterizedDep>()
     }
 }
+
+@Name(PackageName.Companion::class)
+annotation class PackageName {
+    companion object
+}
+
+class ReflectionDep
+
+class ReflectionDepWithParam(@Param val value: Int)
+
+class ReflectionDepWithNamedParam(@PackageName val packageName: String)
+
+class ReflectionDepWithAtInjectConstructor {
+
+    val arg: Any?
+
+    constructor(testDep1: TestDep1) {
+        arg = testDep1
+    }
+
+    @Inject
+    constructor(testDep2: TestDep2) {
+        arg = testDep2
+    }
+
+}
+
+interface Memoized<T>
+
+class ReflectionDepWithParameterizedDep(
+    private val mapOfStrings: Map<String, Memoized<String>>
+)
+
+@TestScopeOne
+class ReflectionDepWithScope
+
+@Scope
+annotation class OtherScope

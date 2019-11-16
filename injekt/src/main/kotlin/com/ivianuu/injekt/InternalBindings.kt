@@ -20,6 +20,11 @@ internal class LinkedInstanceBinding<T>(private val value: T) : LinkedBinding<T>
     override fun invoke(parameters: ParametersDefinition?) = value
 }
 
+internal class UnlinkedProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        linker.get(originalKey)
+}
+
 internal class LinkedProviderBinding<T>(
     private val component: Component,
     private val key: Key
@@ -36,7 +41,7 @@ internal class LinkedLazyBinding<T>(
         KeyedLazy(component, key)
 }
 
-internal class UnlinkedMapOfProviderBinding<K, V>(
+internal class UnmutableMapOfProviderBinding<K, V>(
     private val entryKeys: Map<K, Key>
 ) : UnlinkedBinding<Map<K, Provider<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> {
@@ -46,28 +51,28 @@ internal class UnlinkedMapOfProviderBinding<K, V>(
     }
 }
 
-internal class UnlinkedMapOfValueBinding<K, V>(
+internal class UnmutableMapOfValueBinding<K, V>(
     private val mapOfProviderKey: Key
 ) : UnlinkedBinding<Map<K, Lazy<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
-        LinkedMapOfValueBinding(linker.get(mapOfProviderKey))
+        mutableMapOfValueBinding(linker.get(mapOfProviderKey))
 }
 
-internal class LinkedMapOfValueBinding<K, V>(
+internal class mutableMapOfValueBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, V>>() {
     override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
         .mapValues { it.value() }
 }
 
-internal class UnlinkedMapOfLazyBinding<K, V>(
+internal class UnmutableMapOfLazyBinding<K, V>(
     private val mapOfProviderKey: Key
 ) : UnlinkedBinding<Map<K, Lazy<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
-        LinkedMapOfLazyBinding(linker.get(mapOfProviderKey))
+        mutableMapOfLazyBinding(linker.get(mapOfProviderKey))
 }
 
-internal class LinkedMapOfLazyBinding<K, V>(
+internal class mutableMapOfLazyBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, Lazy<V>>>() {
     override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()

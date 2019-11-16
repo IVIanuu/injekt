@@ -23,15 +23,20 @@ import kotlin.reflect.KClass
  * Dependencies can be requested by calling either [get] or [inject]
  */
 class Component internal constructor(
-    internal val scopes: Iterable<KClass<out Annotation>>,
+    internal val scopes: List<KClass<out Annotation>>,
     internal val allBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
-    internal val mapBindings: MapBindings?,
-    internal val setBindings: SetBindings?,
-    internal val dependencies: Iterable<Component>
+    eagerBindings: List<Key>,
+    internal val mapBindings: MapBindings,
+    internal val setBindings: SetBindings,
+    internal val dependencies: List<Component>
 ) {
 
     internal val linker = Linker(this)
+
+    init {
+        eagerBindings.forEach { get(it) }
+    }
 
     /**
      * Returns the instance matching the [type] and [name]
@@ -112,7 +117,7 @@ class Component internal constructor(
     private fun <T> findUnscopedBinding(key: Key): LinkedBinding<T>? {
         for (dependency in dependencies) {
             val binding = dependency.findUnscopedBindingForDependency<T>(key)
-            if (binding != null) return addJitBinding(key, binding)
+            if (binding != null) return addJustInTimeBinding(key, binding)
         }
 
         return null
@@ -131,24 +136,24 @@ class Component internal constructor(
     }
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
-        val jitLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
-        if (jitLookup != null) {
-            var binding = jitLookup.binding
-            return if (jitLookup.scope != null) {
-                val component = findComponentForScope(jitLookup.scope)
-                    ?: error("Couldn't find component for ${jitLookup.scope}")
+        val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
+        if (justInTimeLookup != null) {
+            var binding = justInTimeLookup.binding
+            return if (justInTimeLookup.scope != null) {
+                val component = findComponentForScope(justInTimeLookup.scope)
+                    ?: error("Couldn't find component for ${justInTimeLookup.scope}")
                 binding = binding.asScoped()
-                component.addJitBinding(key, binding)
+                component.addJustInTimeBinding(key, binding)
             } else {
                 binding.unscoped = true
-                addJitBinding(key, binding)
+                addJustInTimeBinding(key, binding)
             }
         }
 
         return null
     }
 
-    private fun <T> addJitBinding(
+    private fun <T> addJustInTimeBinding(
         key: Key,
         binding: Binding<T>
     ): LinkedBinding<T> {
