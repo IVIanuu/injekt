@@ -23,8 +23,6 @@ class MapTest {
 
     @Test
     fun testMapBinding() {
-        InjektPlugins.logger = PrintLogger()
-
         val component = component {
             modules(
                 module {
@@ -39,18 +37,22 @@ class MapTest {
         }
 
         val map = component.get<Map<String, CharSequence>>(Values)
-
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
 
         val providerMap = component.get<Map<String, Provider<CharSequence>>>(Values)
-
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("key_one")(), "value_one")
         assertEquals(providerMap.getValue("key_two")(), "value_two")
         assertEquals(providerMap.getValue("key_three")(), "value_three")
+
+        val lazyMap = component.get<Map<String, Lazy<CharSequence>>>(Values)
+        assertEquals(3, lazyMap.size)
+        assertEquals(lazyMap.getValue("key_one")(), "value_one")
+        assertEquals(lazyMap.getValue("key_two")(), "value_two")
+        assertEquals(lazyMap.getValue("key_three")(), "value_three")
     }
 
     @Test(expected = IllegalStateException::class)
@@ -78,8 +80,8 @@ class MapTest {
     fun testThrowsOnIllegalOverride() {
         component {
             module {
-                factory { "value" }.intoMap("key")
-                factory { "overridden_value" }.intoMap("key")
+                factory { "value" }.intoMap<String, String, String>("key")
+                factory { "overridden_value" }.intoMap<String, String, String>("key")
             }
         }
     }
@@ -90,9 +92,9 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "value" }
-                        .intoMap("key")
+                        .intoMap<String, String, String>("key")
                     factory(NameTwo) { "overridden_value" }
-                        .intoMap("key", override = true)
+                        .intoMap<String, String, String>("key", override = true)
                 }
             )
         }

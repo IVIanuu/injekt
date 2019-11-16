@@ -34,18 +34,22 @@ class SetTest {
         }
 
         val set = component.get<Set<CharSequence>>(Values)
-
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
         val providerSet = component.get<Set<Provider<CharSequence>>>(Values)
-
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0]())
         assertEquals("value_two", providerSet.toList()[1]())
         assertEquals("value_three", providerSet.toList()[2]())
+
+        val lazySet = component.get<Set<Lazy<CharSequence>>>(Values)
+        assertEquals(3, providerSet.size)
+        assertEquals("value_one", lazySet.toList()[0]())
+        assertEquals("value_two", lazySet.toList()[1]())
+        assertEquals("value_three", lazySet.toList()[2]())
     }
 
     @Test(expected = IllegalStateException::class)
@@ -74,8 +78,8 @@ class SetTest {
         component {
             modules(
                 module {
-                    factory { "value" }.intoSet()
-                    factory { "overridden_value" }.intoSet()
+                    factory { "value" }.intoSet<String, String>()
+                    factory { "overridden_value" }.intoSet<String, String>()
                 }
             )
         }
@@ -85,14 +89,14 @@ class SetTest {
     fun testOverridesLegalOverride() {
         val originalValueComponent = component {
             modules(
-                module { factory { "value" }.intoSet() }
+                module { factory { "value" }.intoSet<String, String>() }
             )
         }
         val overriddenValueComponent = component {
             dependencies(originalValueComponent)
             modules(
                 module {
-                    factory(override = true) { "overridden_value" }.intoSet(override = true)
+                    factory(override = true) { "overridden_value" }.intoSet<String, String>(override = true)
                 }
             )
         }

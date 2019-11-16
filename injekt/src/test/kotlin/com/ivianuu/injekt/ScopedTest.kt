@@ -22,7 +22,7 @@ import org.junit.Test
 class ScopedTest {
 
     @Test
-    fun testCreatesOnlyOnce() {
+    fun testInstantiatesOnlyOnce() {
         val component = component {
             modules(
                 module {
@@ -34,7 +34,7 @@ class ScopedTest {
         val value1 = component.get<TestDep1>()
         val value2 = component.get<TestDep1>()
 
-        assertTrue(value1 === value2)
+        assertTrue(System.identityHashCode(value1) == System.identityHashCode(value2))
     }
 
 }

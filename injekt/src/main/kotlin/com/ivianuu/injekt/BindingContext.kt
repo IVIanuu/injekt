@@ -21,13 +21,12 @@ package com.ivianuu.injekt
 data class BindingContext<T> internal constructor(
     val binding: Binding<T>,
     val key: Key,
-    val override: Boolean,
     val module: Module
 ) {
 
     inline fun <reified T> bindAlias(
         name: Any? = null,
-        override: Boolean = this.override
+        override: Boolean = this.binding.override
     ) {
         bindAlias(typeOf<T>(), name, override)
     }
@@ -35,12 +34,14 @@ data class BindingContext<T> internal constructor(
     fun bindAlias(
         type: Type<*>,
         name: Any? = null,
-        override: Boolean = this.override
+        override: Boolean = this.binding.override
     ) {
         module.bind(
             key = keyOf(type, name),
             binding = binding as Binding<Any?>,
-            override = override
+            override = override,
+            eager = this.binding.eager,
+            unscoped = this.binding.unscoped
         )
     }
 

@@ -141,6 +141,7 @@ class Module internal constructor() {
                 key = it.key,
                 binding = it.value,
                 override = it.value.override,
+                eager = it.value.eager,
                 unscoped = it.value.unscoped
             )
         }
@@ -187,16 +188,16 @@ class Module internal constructor() {
 
         bindings[key] = binding
 
-        return BindingContext(binding, key, override, this)
+        return BindingContext(binding = binding, key = key, module = this)
     }
 
     private fun <T> bindProxy(
         type: Type<T>,
         name: Any?
     ): BindingContext<T> {
-        // we create a additional binding because we have no reference to the original one
+        // we create a proxy binding which links to the original binding
+        // because we have no reference to the original one it's likely in another module or component
         // we use a unique id here to make sure that the binding does not collide with any user config
-        // this binding acts as proxy and just calls trough the original implementation and should be never injected directly
         return bind(
             key = keyOf(type = type, name = UUID.randomUUID().toString()),
             binding = UnlinkedProxyBinding(originalKey = keyOf(type = type, name = name))

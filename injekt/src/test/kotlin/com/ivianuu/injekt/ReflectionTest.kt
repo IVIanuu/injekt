@@ -65,9 +65,9 @@ class ReflectionTest {
     }
 
     @Test
-    fun testUsesAtInjectConstructor() {
+    fun testUsesAnnotatedConstructor() {
         val component = component()
-        assertTrue(component.get<ReflectionDepWithAtInjectConstructor>().arg is TestDep2)
+        assertTrue(component.get<ReflectionDepWithAnnotatedConstructor>().arg is TestDep2)
     }
 
     @Test
@@ -95,7 +95,7 @@ class ReflectionDepWithParam(@Param val value: Int)
 
 class ReflectionDepWithNamedParam(@PackageName val packageName: String)
 
-class ReflectionDepWithAtInjectConstructor {
+class ReflectionDepWithAnnotatedConstructor {
 
     val arg: Any?
 

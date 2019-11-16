@@ -355,7 +355,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testInjectsUnscopedBindingsInTheRequestingComponent() {
+    fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = component {
             modules(
                 module {
@@ -401,6 +401,14 @@ class ComponentTest {
     @Test
     fun testInstantiatesEagerBindingOnStart() {
         var called = false
+        component {
+            modules(
+                module {
+                    single(eager = false) { called = true }
+                }
+            )
+        }
+        assertFalse(called)
         component {
             modules(
                 module {

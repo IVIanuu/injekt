@@ -22,7 +22,7 @@ import org.junit.Assert.assertTrue
 class LazyTest {
 
     @Factory
-    fun testLazyReturnsOnce() {
+    fun testLazyInstantiatesOnce() {
         val component = component {
             modules(
                 module {

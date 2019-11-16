@@ -27,7 +27,10 @@ class ModuleTest {
     fun testBind() {
         val binding = definitionBinding { "value" }
         val module = module {
-            bind(key = keyOf<String>(), binding = binding)
+            bind(
+                key = keyOf<String>(),
+                binding = binding
+            )
         }
         assertTrue(binding in module.bindings.values)
     }
@@ -74,13 +77,14 @@ class ModuleTest {
     @Test
     fun testInheresAllAttributesWhenIncluding() {
         val moduleA = module {
-            single(override = true) { TestDep1() }
+            single(override = true, eager = true) { TestDep1() }
         }
 
         val moduleB = module { include(moduleA) }
 
         val binding = moduleB.bindings.values.first()
         assertTrue(binding.override)
+        assertTrue(binding.eager)
         assertFalse(binding.unscoped)
     }
 }
