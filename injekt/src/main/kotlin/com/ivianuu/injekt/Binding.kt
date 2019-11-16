@@ -22,8 +22,9 @@ sealed class Binding<T> {
         internal set
     var eager = false
         internal set
+    var unscoped = false
+        internal set
 
-    internal var unscoped = false
     internal var linkPerformed = false
 
     protected abstract fun link(linker: Linker): LinkedBinding<T>
