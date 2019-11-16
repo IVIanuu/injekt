@@ -38,6 +38,11 @@ class Component internal constructor(
         eagerBindings.forEach { get(it) }
     }
 
+    inline fun <reified T> get(
+        name: Any? = null,
+        noinline parameters: ParametersDefinition? = null
+    ): T = get(type = typeOf(), name = name, parameters = parameters)
+
     /**
      * Returns the instance matching the [type] and [name]
      */
@@ -50,10 +55,8 @@ class Component internal constructor(
         return binding(parameters)
     }
 
-    inline fun <reified T> get(
-        name: Any? = null,
-        noinline parameters: ParametersDefinition? = null
-    ): T = get(type = typeOf(), name = name, parameters = parameters)
+    fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
+        getBinding<T>(key)(parameters)
 
     inline fun <reified T> inject(
         name: Any? = null,
@@ -67,9 +70,6 @@ class Component internal constructor(
     ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
         get(type = type, name = name, parameters = parameters)
     }
-
-    internal fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
-        getBinding<T>(key)(parameters)
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
         findBinding(key) ?: error("Couldn't find a binding for $key")
