@@ -16,5 +16,8 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Makes the annotated class injectable by generating a binding for it
+ */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Inject

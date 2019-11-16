@@ -23,7 +23,7 @@ interface DefinitionContext {
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): T = get(keyOf(type, name), parameters)
+    ): T = get(key = keyOf(type, name), parameters = parameters)
 
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T
 
@@ -37,7 +37,7 @@ interface DefinitionContext {
 inline fun <reified T> DefinitionContext.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(typeOf(), name, parameters)
+): T = get(type = typeOf(), name = name, parameters = parameters)
 
 internal fun <T> definitionBinding(
     optimizing: Boolean = true,

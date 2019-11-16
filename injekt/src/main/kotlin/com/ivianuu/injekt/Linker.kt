@@ -19,10 +19,10 @@ package com.ivianuu.injekt
 /*inline */ class Linker internal constructor(internal val component: Component) {
 
     inline fun <reified T> get(name: Any? = null): LinkedBinding<T> =
-        get(typeOf(), name)
+        get(type = typeOf(), name = name)
 
     fun <T> get(type: Type<T>, name: Any? = null): LinkedBinding<T> =
-        get(keyOf(type, name))
+        get(key = keyOf(type, name))
 
     fun <T> get(key: Key): LinkedBinding<T> = component.getBinding(key)
 

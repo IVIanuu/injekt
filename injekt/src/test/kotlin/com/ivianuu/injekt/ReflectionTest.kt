@@ -71,7 +71,7 @@ class ReflectionTest {
     }
 
     @Test
-    fun testResolversParameterizedDeps() {
+    fun testResolvesParameterizedDeps() {
         val component = component {
             modules(
                 module {

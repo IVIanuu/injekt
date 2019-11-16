@@ -53,9 +53,9 @@ interface InjektTrait {
 inline fun <reified T> InjektTrait.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): T = get(typeOf(), name, parameters)
+): T = get(type = typeOf(), name = name, parameters = parameters)
 
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): kotlin.Lazy<T> = inject(typeOf(), name, parameters)
+): kotlin.Lazy<T> = inject(type = typeOf(), name = name, parameters = parameters)
