@@ -99,7 +99,6 @@ class ComponentTest {
         }
 
         assertFalse(called)
-
         val depLazy = component.get<Lazy<TestDep1>>()
         assertFalse(called)
         depLazy()
@@ -121,7 +120,6 @@ class ComponentTest {
         }
 
         assertEquals(0, called)
-
         val depProvider = component.get<Provider<TestDep1>>()
         assertEquals(0, called)
         depProvider()

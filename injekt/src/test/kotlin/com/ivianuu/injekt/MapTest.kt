@@ -74,16 +74,53 @@ class MapTest {
         assertEquals(0, component.get<Map<String, Int>>().size)
     }
 
-// todo test nested
-
-    @Test(expected = IllegalStateException::class)
-    fun testThrowsOnIllegalOverride() {
-        component {
-            module {
-                factory { "value" }.intoMap<String, String, String>("key")
-                factory { "overridden_value" }.intoMap<String, String, String>("key")
-            }
+    @Test
+    fun testNestedMapBindings() {
+        val componentA = component {
+            modules(
+                module {
+                    factory(NameOne) { "value_one" }
+                        .intoMap<String, String, String>("key_one")
+                }
+            )
         }
+
+        val mapA = componentA.get<Map<String, String>>()
+        assertEquals(1, mapA.size)
+        assertEquals("value_one", mapA["key_one"])
+
+        val componentB = component {
+            dependencies(componentA)
+
+            modules(
+                module {
+                    factory(NameTwo) { "value_two" }
+                        .intoMap<String, String, String>("key_two")
+                }
+            )
+        }
+
+        val mapB = componentB.get<Map<String, String>>()
+        assertEquals(2, mapB.size)
+        assertEquals("value_one", mapA["key_one"])
+        assertEquals("value_two", mapB["key_two"])
+
+        val componentC = component {
+            dependencies(componentB)
+
+            modules(
+                module {
+                    factory(NameThree) { "value_three" }
+                        .intoMap<String, String, String>("key_three")
+                }
+            )
+        }
+
+        val mapC = componentC.get<Map<String, String>>()
+        assertEquals(3, mapC.size)
+        assertEquals("value_one", mapA["key_one"])
+        assertEquals("value_two", mapB["key_two"])
+        assertEquals("value_three", mapC["key_three"])
     }
 
     @Test
@@ -103,6 +140,65 @@ class MapTest {
             "overridden_value",
             component.get<Map<String, String>>()["key"]
         )
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnIllegalOverride() {
+        component {
+            module {
+                factory { "value" }.intoMap<String, String, String>("key")
+                factory { "overridden_value" }.intoMap<String, String, String>("key")
+            }
+        }
+    }
+
+    @Test
+    fun testOverridesLegalNestedOverride() {
+        val componentA = component {
+            modules(
+                module {
+                    factory { "value" }
+                        .intoMap<String, String, String>("key")
+                }
+            )
+        }
+        val componentB = component {
+            dependencies(componentA)
+
+            modules(
+                module {
+                    factory(NameOne) { "overridden_value" }
+                        .intoMap<String, String, String>("key", override = true)
+                }
+            )
+        }
+
+        val mapA = componentA.get<Map<String, String>>()
+        assertEquals("value", mapA["key"])
+        val mapB = componentB.get<Map<String, String>>()
+        assertEquals("overridden_value", mapB["key"])
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnIllegalNestedOverride() {
+        val componentA = component {
+            modules(
+                module {
+                    factory { "value" }
+                        .intoMap<String, String, String>("key")
+                }
+            )
+        }
+        val componentB = component {
+            dependencies(componentA)
+
+            modules(
+                module {
+                    factory(NameOne) { "overridden_value" }
+                        .intoMap<String, String, String>("key")
+                }
+            )
+        }
     }
 
 }

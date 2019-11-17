@@ -71,18 +71,53 @@ class SetTest {
         assertEquals(0, component.get<Set<String>>().size)
     }
 
-    // todo test nested
-
-    @Test(expected = IllegalStateException::class)
-    fun testThrowsOnIllegalOverride() {
-        component {
+    @Test
+    fun testNestedMapBindings() {
+        val componentA = component {
             modules(
                 module {
-                    factory { "value" }.intoSet<String, String>()
-                    factory { "overridden_value" }.intoSet<String, String>()
+                    factory(NameOne) { "value_one" }
+                        .intoSet<String, String>()
                 }
             )
         }
+
+        val setA = componentA.get<Set<String>>()
+        assertEquals(1, setA.size)
+        assertEquals("value_one", setA.toList()[0])
+
+        val componentB = component {
+            dependencies(componentA)
+
+            modules(
+                module {
+                    factory(NameTwo) { "value_two" }
+                        .intoSet<String, String>()
+                }
+            )
+        }
+
+        val setB = componentB.get<Set<String>>()
+        assertEquals(2, setB.size)
+        assertEquals("value_one", setA.toList()[0])
+        assertEquals("value_two", setB.toList()[1])
+
+        val componentC = component {
+            dependencies(componentB)
+
+            modules(
+                module {
+                    factory(NameThree) { "value_three" }
+                        .intoSet<String, String>()
+                }
+            )
+        }
+
+        val setC = componentC.get<Set<String>>()
+        assertEquals(3, setC.size)
+        assertEquals("value_one", setA.toList()[0])
+        assertEquals("value_two", setB.toList()[1])
+        assertEquals("value_three", setC.toList()[2])
     }
 
     @Test
@@ -102,6 +137,67 @@ class SetTest {
         }
 
         assertEquals("overridden_value", overriddenValueComponent.get<Set<String>>().first())
+    }
+    
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnIllegalOverride() {
+        component {
+            modules(
+                module {
+                    factory { "value" }.intoSet<String, String>()
+                    factory { "overridden_value" }.intoSet<String, String>()
+                }
+            )
+        }
+    }
+
+    @Test
+    fun testOverridesLegalNestedOverride() {
+        val componentA = component {
+            modules(
+                module {
+                    factory { "value" }
+                        .intoSet<String, String>()
+                }
+            )
+        }
+        val componentB = component {
+            dependencies(componentA)
+
+            modules(
+                module {
+                    factory(override = true) { "overridden_value" }
+                        .intoSet<String, String>(override = true)
+                }
+            )
+        }
+
+        val setA = componentA.get<Set<String>>()
+        assertEquals("value", setA.toList()[0])
+        val setB = componentB.get<Set<String>>()
+        assertEquals("overridden_value", setB.toList()[0])
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnIllegalNestedOverride() {
+        val componentA = component {
+            modules(
+                module {
+                    factory { "value" }
+                        .intoSet<String, String>()
+                }
+            )
+        }
+        val componentB = component {
+            dependencies(componentA)
+
+            modules(
+                module {
+                    factory(override = true) { "overridden_value" }
+                        .intoSet<String, String>(override = false)
+                }
+            )
+        }
     }
 
 }

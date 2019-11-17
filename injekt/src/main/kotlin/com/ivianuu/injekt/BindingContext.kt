@@ -26,7 +26,7 @@ data class BindingContext<T> internal constructor(
 
     inline fun <reified T> bindAlias(
         name: Any? = null,
-        override: Boolean = this.binding.override
+        override: Boolean = binding.override
     ) {
         bindAlias(typeOf<T>(), name, override)
     }
@@ -34,7 +34,7 @@ data class BindingContext<T> internal constructor(
     fun bindAlias(
         type: Type<*>,
         name: Any? = null,
-        override: Boolean = this.binding.override
+        override: Boolean = binding.override
     ) {
         module.bind(
             key = keyOf(type, name),
@@ -62,7 +62,7 @@ data class BindingContext<T> internal constructor(
     inline fun <reified T : V, reified K, reified V> intoMap(
         entryKey: K,
         mapName: Any? = null,
-        override: Boolean = false
+        override: Boolean = binding.override
     ): BindingContext<T> = intoMap(typeOf(), typeOf<V>(), entryKey, mapName, override)
 
     fun <T : V, K, V> intoMap(
@@ -70,7 +70,7 @@ data class BindingContext<T> internal constructor(
         mapValueType: Type<V>,
         entryKey: K,
         mapName: Any? = null,
-        override: Boolean = false
+        override: Boolean = binding.override
     ): BindingContext<T> {
         module.map(mapKeyType, mapValueType, mapName) {
             put(entryKey, key.type as Type<T>, key.name, override)
@@ -86,7 +86,7 @@ data class BindingContext<T> internal constructor(
     fun <T : E, E> intoSet(
         setElementType: Type<E>,
         setName: Any? = null,
-        override: Boolean = false
+        override: Boolean = binding.override
     ): BindingContext<T> {
         module.set(setElementType, setName) {
             add(key.type as Type<T>, key.name, override)

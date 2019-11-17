@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt
 
-import org.hamcrest.Factory
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class LazyTest {
 
-    @Factory
+    @Test
     fun testLazyInstantiatesOnce() {
         val component = component {
             modules(
