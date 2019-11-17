@@ -16,6 +16,17 @@
 
 package com.ivianuu.injekt
 
+internal class UnlinkedComponentBinding : UnlinkedBinding<Component>() {
+    override fun link(linker: Linker): LinkedBinding<Component> =
+        LinkedComponentBinding(linker.component)
+}
+
+internal class LinkedComponentBinding(private val component: Component) :
+    LinkedBinding<Component>() {
+    override fun invoke(parameters: ParametersDefinition?): Component =
+        component
+}
+
 internal class LinkedInstanceBinding<T>(private val value: T) : LinkedBinding<T>() {
     override fun invoke(parameters: ParametersDefinition?) = value
 }

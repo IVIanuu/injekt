@@ -25,5 +25,4 @@ object InjektPlugins {
 
     var justInTimeLookupFactory: JustInTimeLookupFactory = DefaultJustInTimeLookupFactory
 
-
 }

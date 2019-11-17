@@ -207,17 +207,8 @@ class ComponentBuilder internal constructor() {
         }
     }
 
-    private class ComponentBinding : UnlinkedBinding<Component>() {
-        override fun link(linker: Linker): LinkedBinding<Component> = Linked(linker.component)
-
-        private class Linked(private val component: Component) : LinkedBinding<Component>() {
-            override fun invoke(parameters: ParametersDefinition?): Component =
-                component
-        }
-    }
-
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
-        val componentBinding = ComponentBinding()
+        val componentBinding = UnlinkedComponentBinding()
         componentBinding.unscoped = false
         val componentKey = keyOf<Component>()
         bindings[componentKey] = componentBinding
