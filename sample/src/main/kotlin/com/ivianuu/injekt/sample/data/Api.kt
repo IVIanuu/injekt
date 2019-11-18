@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.sample.data
 
-import android.content.Context
-import android.content.ContextWrapper
-import android.util.Log
-import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Inject
 
-inline fun Any.d(m: () -> String) {
-    Log.d(javaClass.simpleName, m())
+@Inject
+class Api(@WebApiUrl private val url: String) {
+    fun getItems(): List<String> = (0 until 1000).map { "Item: $it" }
 }
-
-class InjektTraitContextWrapper(
-    base: Context,
-    injektTrait: InjektTrait
-) : ContextWrapper(base), InjektTrait by injektTrait

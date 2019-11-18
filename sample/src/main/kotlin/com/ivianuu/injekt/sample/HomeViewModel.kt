@@ -16,23 +16,12 @@
 
 package com.ivianuu.injekt.sample
 
-import android.app.Application
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.AndroidLogger
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.sample.data.dataModule
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.android.ActivityScope
+import com.ivianuu.injekt.sample.data.Repository
 
-class App : Application(), InjektTrait {
-
-    override val component by lazy {
-        applicationComponent {
-            modules(dataModule)
-        }
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        InjektPlugins.logger = AndroidLogger()
-    }
+@ActivityScope
+@Inject
+class HomeViewModel(private val repository: Repository) {
+    fun getItems() = repository.getItems()
 }

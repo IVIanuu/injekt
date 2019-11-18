@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.sample.data
 
-import android.app.Application
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.AndroidLogger
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.sample.data.dataModule
+import android.content.Context
+import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.module
+import java.io.File
 
-class App : Application(), InjektTrait {
+@Name(WebApiUrl::class)
+annotation class WebApiUrl {
+    companion object
+}
 
-    override val component by lazy {
-        applicationComponent {
-            modules(dataModule)
-        }
-    }
+@Name(DatabaseFile::class)
+annotation class DatabaseFile {
+    companion object
+}
 
-    override fun onCreate() {
-        super.onCreate()
-        InjektPlugins.logger = AndroidLogger()
-    }
+val dataModule = module {
+    single(name = WebApiUrl) { "https://baseurl/" }
+    single(name = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
 }

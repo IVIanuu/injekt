@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.sample.data
 
-import android.app.Application
-import com.ivianuu.injekt.InjektPlugins
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.AndroidLogger
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.sample.data.dataModule
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.android.ApplicationScope
+import java.io.File
 
-class App : Application(), InjektTrait {
+@ApplicationScope
+@Inject
+class Database(private val file: File) {
 
-    override val component by lazy {
-        applicationComponent {
-            modules(dataModule)
-        }
+    private var _cached: List<String>? = null
+
+    fun getItems(): List<String>? = _cached
+
+    fun setItems(items: List<String>) {
+        _cached = items
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        InjektPlugins.logger = AndroidLogger()
-    }
 }

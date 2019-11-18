@@ -18,34 +18,15 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.android.ActivityScope
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.get
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
     override val component by lazy { activityComponent() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        d { "Injected app dependency ${get<AppDependency>()}" }
-        d { "Injected main activity dependency ${get<MainActivityDependency>()}" }
-
         super.onCreate(savedInstanceState)
-
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(android.R.id.content, ParentFragment())
-                .commit()
-        }
     }
 
 }
-
-@Inject
-@ActivityScope
-class MainActivityDependency(
-    val app: App,
-    val mainActivity: MainActivity
-)
