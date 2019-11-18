@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-// todo clean multi binding api mess
-
 /**
  * Result of call to [Module.bind]
  * This is allows to add additional aliases to the same declared binding
@@ -48,17 +46,13 @@ data class BindingContext<T> internal constructor(
     /**
      * Binds the [binding] to [module] with the alias params
      *
-     * For example to bind RepositoryImpl to Repository
+     * For example the following code binds RepositoryImpl to Repository
      *
-     * ```
-     * factory { RepositoryImpl() }
-     *     .bindAlias(typeOf<Repository>())
-     *
-     * ```
+     * `factory { RepositoryImpl() }.bindAlias(typeOf<Repository>())`
      *
      * @param type the alias type
      * @param name the alias name
-     * @param override whether or not the alias binding should override existing one's
+     * @param override whether or not the alias binding can override existing bindings
      *
      * @see Module.bind
      */
@@ -111,7 +105,7 @@ data class BindingContext<T> internal constructor(
      * @param mapValueType the value type of the map
      * @param entryKey the key of this binding in the map
      * @param mapName the name of the map
-     * @param override whether or not this binding should override existing one's
+     * @param override whether or not this binding can override existing one's
      *
      * @see BindingMap
      */
@@ -138,7 +132,7 @@ data class BindingContext<T> internal constructor(
      *
      * @param setElementType the type of the set
      * @param setName the name of the set
-     * @param override whether or not this binding should override existing one's
+     * @param override whether or not this binding can override existing one's
      *
      * @see BindingSet
      */

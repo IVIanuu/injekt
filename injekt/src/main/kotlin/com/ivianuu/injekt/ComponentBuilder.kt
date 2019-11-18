@@ -55,7 +55,7 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Scope component
+     * Scope the component
      *
      * @param scopes the scopes to include
      */
@@ -111,7 +111,7 @@ class ComponentBuilder internal constructor() {
 
     /**
      * Adds a binding for a already existing instance
-     * This is shortcut to avoid the creation of a [Module] for just a single binding
+     * This is a shortcut to avoid the creation of a [Module] for just a single binding
      *
      * @param instance the instance to contribute
      * @param type the type for the [Key] by which the binding can be retrieved later in the component

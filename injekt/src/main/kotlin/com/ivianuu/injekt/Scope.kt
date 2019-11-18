@@ -25,7 +25,6 @@ import kotlin.reflect.KClass
  *
  * @Scope annotation class ActivityScope
  *
- *
  * The following code ensures that the same view model instance is reused in activity scoped [Component]s
  *
  * ´´´
@@ -34,13 +33,13 @@ import kotlin.reflect.KClass
  * class MyViewModel
  * ´´´
  *
- * @see Component.scopes
+ * @see ComponentBuilder.scopes
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
 
 /**
- * Wraps this binding with a scoped one to make sure that the instance will be instantiated only once
+ * Wraps this binding with a scoped one to make sure that the instance will be created only once
  *
  * @see Scope
  * @see Component.scopes

@@ -81,7 +81,7 @@ class BindingMap<K, V> internal constructor(private val mapKey: Key) {
      *
      * @param entryKey the key of the instance inside the map
      * @param entryValueKey the key of the actual instance in the component
-     * @param override whether or not existing bindings should be overridden
+     * @param override whether or not existing bindings can be overridden
      */
     fun put(
         entryKey: K,

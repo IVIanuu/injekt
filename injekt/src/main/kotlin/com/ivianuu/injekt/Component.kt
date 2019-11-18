@@ -34,7 +34,6 @@ import kotlin.reflect.KClass
  *
  * val api = component.get<Api>()
  * val database = component.get<Database>()
- *
  * ´´´
  *
  * @see get
@@ -70,7 +69,7 @@ class Component internal constructor(
     ): T = get(key = keyOf(type, name), parameters = parameters)
 
     /**
-     * Retrieve a instance of [T]
+     * Retrieve a instance of type [T]
      *
      * @param key the of the instance
      * @param parameters optional parameters to construct the instance

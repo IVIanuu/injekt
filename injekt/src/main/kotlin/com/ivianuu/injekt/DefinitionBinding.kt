@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Creates instances of [T]
+ * Creates instances of type [T]
  */
 typealias Definition<T> = DefinitionContext.(Parameters?) -> T
 

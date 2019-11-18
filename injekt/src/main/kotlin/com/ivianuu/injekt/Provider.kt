@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Provides instances of [T]
+ * Provides instances of type [T]
  * For any type [T] that can be injected, you can also inject Provider<T>. This enables
  * Providing multiple instances
  * Lazy or optional retrieval of an instance
@@ -25,10 +25,10 @@ package com.ivianuu.injekt
 interface Provider<T> {
 
     /**
-     * Provides an instance of [T]
+     * Provides an instance of type [T]
      *
      * @param parameters optional parameters for constructing the instance
-     * @return the instance of [T]
+     * @return the instance of type [T]
      */
     operator fun invoke(parameters: ParametersDefinition? = null): T
 

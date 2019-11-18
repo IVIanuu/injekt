@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Parameters which can be used to inject dynamic data like id's into instances
+ * Parameters can be used to inject dynamic data like id's into instances
  *
  * In the following example the presenter depends on a specific user id
  * We can declare the definition as follows:
@@ -132,10 +132,10 @@ fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArra
 fun emptyParameters(): Parameters = Parameters(emptyArray())
 
 /**
- * Marks a the annotated constructor parameter in an @[Inject] annotated class as a parameter
+ * Marks a the annotated constructor parameter in a @[Inject] annotated class as a parameter
  * The generated binding will then use the provided [Parameters] to resolve the dependency
  *
- * For example:
+ * Example usage:
  * ´´´
  * class MyViewModel(
  *     @Param private val id: String,
@@ -143,7 +143,7 @@ fun emptyParameters(): Parameters = Parameters(emptyArray())
  * )
  * ´´´
  *
- * Note that [Parameters] will be retrieved in the same order like in the constructor
+ * Note that [Parameters] will be retrieved in the same order they are specified in the constructor
  *
  * @see Parameters
  * @see Inject

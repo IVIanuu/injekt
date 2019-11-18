@@ -80,7 +80,7 @@ class BindingSet<E> internal constructor(private val setKey: Key) {
      * Contributes a binding into this set
      *
      * @param elementKey the key of the actual instance in the component
-     * @param override whether or not existing bindings should be overridden
+     * @param override whether or not existing bindings can be overridden
      */
     fun add(elementKey: Key, override: Boolean = false) {
         check(elementKey !in entries || override) {

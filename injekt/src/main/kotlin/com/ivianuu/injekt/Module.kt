@@ -65,7 +65,7 @@ class Module internal constructor() {
      *
      * @param type the of the instance
      * @param name the name of the instance
-     * @param override whether or not the instance should override existing ones
+     * @param override whether or not the binding can override existing bindings
      * @param definition the definitions which creates instances
      *
      * @see bind
@@ -100,8 +100,8 @@ class Module internal constructor() {
      *
      * @param type the of the instance
      * @param name the name of the instance
-     * @param override whether or not the instance should override existing ones
-     * @param eager whether a instance should be created when the component get's created
+     * @param override whether or not the binding can override existing bindings
+     * @param eager whether the instance should be created when the component get's created
      * @param definition the definitions which creates instances
      *
      * @see bind
@@ -270,7 +270,7 @@ class Module internal constructor() {
      *
      * @param key the key by which the binding can be retrieved later in the component
      * @param binding the binding to add
-     * @param override whether or not the contribution should override existing ones
+     * @param override whether or not the binding can override existing bindings
      * @param eager whether a instance should be created when the component get's created
      * @param unscoped whether instances should be created in the requesting scope
      * @return the [BindingContext] to chain binding calls
