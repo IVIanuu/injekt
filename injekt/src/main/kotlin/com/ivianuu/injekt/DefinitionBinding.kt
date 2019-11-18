@@ -57,7 +57,7 @@ interface DefinitionContext {
 }
 
 /**
- * @see DefinitionContext.get
+ * @see Component.get
  */
 inline fun <reified T> DefinitionContext.get(
     name: Any? = null,

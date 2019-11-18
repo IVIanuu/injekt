@@ -19,11 +19,11 @@ package com.ivianuu.injekt
 /**
  * A binding knows how to create a concrete instance of a type
  * It also holds additional information about the declaration
- * You typically don't access them directly but instead declare declare dependencies
- * via the module dsl
-
- * @see Module.factory
- * @see Module.single
+ * You typically don't access them directly but instead declare dependencies
+ * via the [Module]s or annotating classes [Inject]
+ *
+ * @see Module
+ * @see Inject
  */
 sealed class Binding<T> {
 

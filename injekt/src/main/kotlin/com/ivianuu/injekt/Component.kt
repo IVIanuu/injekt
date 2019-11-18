@@ -19,8 +19,11 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * The actual dependency container which provides bindings
+ * The heart of the library which provides instances
  * Dependencies can be requested by calling either [get] or [inject]
+ * Use [ComponentBuilder] to construct component instances
+ *
+ * @see ComponentBuilder
  */
 class Component internal constructor(
     internal val scopes: List<KClass<out Annotation>>,
@@ -43,18 +46,20 @@ class Component internal constructor(
         noinline parameters: ParametersDefinition? = null
     ): T = get(type = typeOf(), name = name, parameters = parameters)
 
-    /**
-     * Returns the instance matching the [type] and [name]
-     */
+
     fun <T> get(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): T {
-        val binding = getBinding<T>(keyOf(type, name))
-        return binding(parameters)
-    }
+    ): T = get(key = keyOf(type, name), parameters = parameters)
 
+    /**
+     * Retrieve a instance of [T]
+     *
+     * @param key the of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance
+     */
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
         getBinding<T>(key)(parameters)
 
@@ -63,6 +68,16 @@ class Component internal constructor(
         noinline parameters: ParametersDefinition? = null
     ): kotlin.Lazy<T> = inject(type = typeOf(), name = name, parameters = parameters)
 
+    /**
+     * Lazy version of [get]
+     *
+     * @param type the type of key of the instance
+     * @param name the name of the of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance
+
+     * @see Component.get
+     */
     fun <T> inject(
         type: Type<T>,
         name: Any? = null,

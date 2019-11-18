@@ -18,6 +18,14 @@ package com.ivianuu.injekt
 
 import java.util.*
 
+/**
+ * Construct a [Module] with a lambda
+ *
+ * @param block the block to configure the module
+ * @return the constructed module
+ *
+ * @see Module
+ */
 fun module(block: Module.() -> Unit): Module = Module().apply(block)
 
 /**
@@ -41,9 +49,6 @@ class Module internal constructor() {
     internal val mapBindings = MapBindings()
     internal val setBindings = SetBindings()
 
-    /**
-     * @see factory
-     */
     inline fun <reified T> factory(
         name: Any? = null,
         override: Boolean = false,
@@ -77,9 +82,6 @@ class Module internal constructor() {
         unscoped = true
     )
 
-    /**
-     * @see single
-     */
     inline fun <reified T> single(
         name: Any? = null,
         override: Boolean = false,
@@ -119,9 +121,6 @@ class Module internal constructor() {
             unscoped = false
         )
 
-    /**
-     * @see instance
-     */
     inline fun <reified T> instance(
         instance: T,
         name: Any? = null,
@@ -155,9 +154,6 @@ class Module internal constructor() {
         unscoped = false
     )
 
-    /**
-     * @see withBinding
-     */
     inline fun <reified T> withBinding(
         name: Any? = null,
         noinline block: BindingContext<T>.() -> Unit
@@ -211,9 +207,6 @@ class Module internal constructor() {
         setBindings.addAll(module.setBindings)
     }
 
-    /**
-     * @see map
-     */
     inline fun <reified K, reified V> map(
         mapName: Any? = null,
         noinline block: BindingMap<K, V>.() -> Unit = {}
@@ -234,9 +227,6 @@ class Module internal constructor() {
         mapBindings.get<K, V>(mapKey).apply(block)
     }
 
-    /**
-     * @see see
-     */
     inline fun <reified E> set(
         setName: Any? = null,
         noinline block: BindingSet<E>.() -> Unit = {}
@@ -268,7 +258,6 @@ class Module internal constructor() {
      * @see BindingContext
      * @see factory
      * @see single
-     *
      */
     fun <T> bind(
         key: Key,

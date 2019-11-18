@@ -35,22 +35,6 @@ data class BindingContext<T> internal constructor(
     val module: Module
 ) {
 
-    /**
-     * Binds the [binding] to [module] with the alias params
-     *
-     * For example to bind RepositoryImpl to Repository
-     *
-     * ```
-     * factory { RepositoryImpl() }.bindAlias<Repository>()
-     *
-     * ```
-     *
-     * @param T the alias type
-     * @param name the alias name
-     * @param override whether or not the alias binding should override existing one's
-     *
-     * @see Module.bind
-     */
     inline fun <reified T> bindAlias(
         name: Any? = null,
         override: Boolean = binding.override
@@ -88,9 +72,6 @@ data class BindingContext<T> internal constructor(
         )
     }
 
-    /**
-     * @see bindAlias
-     */
     inline fun <reified T> bindType() {
         bindAlias(typeOf<T>())
     }
@@ -111,17 +92,6 @@ data class BindingContext<T> internal constructor(
         return this
     }
 
-    /**
-     * Contributes the [binding] into to the specified map
-     *
-     * @param K the key type of the map
-     * @param V the value type of the map
-     * @param entryKey the key of this binding in the map
-     * @param mapName the name of the map
-     * @param override whether or not this binding should override existing one's
-     *
-     * @see BindingMap
-     */
     inline fun <reified T : V, reified K, reified V> intoMap(
         entryKey: K,
         mapName: Any? = null,
@@ -152,15 +122,6 @@ data class BindingContext<T> internal constructor(
         return this as BindingContext<T> // todo
     }
 
-    /**
-     * Contributes the [binding] into to the specified set
-     *
-     * @param E the type of the set
-     * @param setName the name of the set
-     * @param override whether or not this binding should override existing one's
-     *
-     * @see BindingSet
-     */
     inline fun <reified T : E, reified E> intoSet(
         setName: Any? = null,
         override: Boolean = false

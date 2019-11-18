@@ -26,9 +26,6 @@ package com.ivianuu.injekt
  */
 data class Key internal constructor(val type: Type<*>, val name: Any? = null)
 
-/**
- * @see keyOf
- */
 inline fun <reified T> keyOf(name: Any? = null): Key = keyOf(typeOf<T>(), name)
 
 /**

@@ -19,11 +19,22 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * Constructs a new [Component] configured by [block]
+ * Construct a [Component] with a lambda
+ *
+ * @param block the block to configure the component
+ * @return the constructed [Component]
+ *
+ * @see Component
  */
 fun component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()
 
+/**
+ * Builder for an [Component]
+ *
+ * @see component
+ * @see Component
+ */
 class ComponentBuilder internal constructor() {
 
     private val scopes = mutableListOf<KClass<out Annotation>>()
@@ -31,54 +42,63 @@ class ComponentBuilder internal constructor() {
     private val instances = mutableMapOf<Key, Binding<*>>()
     private val dependencies = mutableListOf<Component>()
 
-    inline fun <reified T : Annotation> scopes(): ComponentBuilder {
+    inline fun <reified T : Annotation> scopes() {
         scopes(T::class)
-        return this
     }
 
-    fun scopes(scope: KClass<out Annotation>): ComponentBuilder {
+    fun scopes(scope: KClass<out Annotation>) {
         this.scopes += scope
-        return this
     }
 
-    fun scopes(vararg scopes: KClass<out Annotation>): ComponentBuilder {
+    fun scopes(vararg scopes: KClass<out Annotation>) {
         this.scopes += scopes
-        return this
     }
 
-    fun scopes(scopes: List<KClass<out Annotation>>): ComponentBuilder {
+    /**
+     * Scope component
+     *
+     * @param scopes the scopes to include
+     */
+    fun scopes(scopes: List<KClass<out Annotation>>) {
         this.scopes += scopes
-        return this
     }
 
-    fun dependencies(dependency: Component): ComponentBuilder {
+    fun dependencies(dependency: Component) {
         this.dependencies += dependency
-        return this
     }
 
-    fun dependencies(vararg dependencies: Component): ComponentBuilder {
+    fun dependencies(vararg dependencies: Component) {
         this.dependencies += dependencies
-        return this
     }
 
-    fun dependencies(dependencies: List<Component>): ComponentBuilder {
+    /**
+     * Add component dependencies
+     *
+     * This all make all bindings of the dependencies accessible in this component
+     *
+     * @param dependencies the dependencies to add
+     */
+    fun dependencies(dependencies: List<Component>) {
         this.dependencies += dependencies
-        return this
     }
 
-    fun modules(module: Module): ComponentBuilder {
+    fun modules(module: Module) {
         this.modules += module
-        return this
     }
 
-    fun modules(vararg modules: Module): ComponentBuilder {
+    fun modules(vararg modules: Module) {
         this.modules += modules
-        return this
     }
 
-    fun modules(modules: List<Module>): ComponentBuilder {
+    /**
+     * Include all bindings of the modules in the component
+     *
+     * @param modules the modules to include
+     *
+     * @see Module
+     */
+    fun modules(modules: List<Module>) {
         this.modules += modules
-        return this
     }
 
     inline fun <reified T> instance(
@@ -89,6 +109,14 @@ class ComponentBuilder internal constructor() {
         instance(instance = instance, type = typeOf(), name = name, override = override)
     }
 
+    /**
+     * Adds a binding for a already existing instance
+     * This is shortcut to avoid the creation of a [Module] for just a single binding
+     *
+     * @param instance the instance to contribute
+     * @param type the type for the [Key] by which the binding can be retrieved later in the component
+     * @param name the type for the [Key] by which the binding can be retrieved later in the component
+     */
     fun <T> instance(
         instance: T,
         type: Type<T>,
