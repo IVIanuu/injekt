@@ -89,21 +89,26 @@ fun <T : Activity> T.activityModule(): Module = module {
         }
     }
 
-    factory(override = true) { resources } bindName ForActivity
+    factory(override = true) { resources }
+        .bindName(ForActivity)
 
     (this@activityModule as? LifecycleOwner)?.let {
-        factory(override = true) { lifecycle } bindName ForActivity
+        factory(override = true) { lifecycle }
+            .bindName(ForActivity)
     }
 
     (this@activityModule as? ViewModelStoreOwner)?.let {
-        factory(override = true) { viewModelStore } bindName ForActivity
+        factory(override = true) { viewModelStore }
+            .bindName(ForActivity)
     }
 
     (this@activityModule as? SavedStateRegistryOwner)?.let {
-        factory(override = true) { savedStateRegistry } bindName ForActivity
+        factory(override = true) { savedStateRegistry }
+            .bindName(ForActivity)
     }
 
     (this@activityModule as? FragmentActivity)?.let {
-        factory(override = true) { supportFragmentManager } bindName ForActivity
+        factory(override = true) { supportFragmentManager }
+            .bindName(ForActivity)
     }
 }

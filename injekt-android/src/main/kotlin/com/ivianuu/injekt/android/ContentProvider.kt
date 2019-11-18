@@ -59,5 +59,5 @@ fun <T : ContentProvider> T.contentProviderModule(): Module = module {
     instance(
         this@contentProviderModule,
         typeOf(this@contentProviderModule)
-    ) bindType typeOf<ContentProvider>()
+    ).bindType<ContentProvider>()
 }

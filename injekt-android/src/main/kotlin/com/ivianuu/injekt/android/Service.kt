@@ -62,5 +62,5 @@ fun <T : Service> T.serviceModule(): Module = module {
         bindType<Context>()
     }
 
-    factory(override = true) { resources } bindName ForService
+    factory(override = true) { resources }.bindName(ForService)
 }

@@ -25,7 +25,9 @@ package com.ivianuu.injekt
  * E.g.
  *
  *```
- * factory { MyRepository() } bindType type<IRepository>() bindName "my_name"
+ * factory { MyRepository() }
+ *     .bindType<IRepository>()
+ *     .bindName("my_name")
  *```
  *
  */
@@ -35,11 +37,12 @@ data class BindingContext<T> internal constructor(
     val module: Module
 ) {
 
-    inline fun <reified T> bindAlias(
+    inline fun <reified S> bindAlias(
         name: Any? = null,
         override: Boolean = binding.override
-    ) {
-        bindAlias(typeOf<T>(), name, override)
+    ): BindingContext<T> {
+        bindAlias(typeOf<S>(), name, override)
+        return this
     }
 
     /**
@@ -48,7 +51,8 @@ data class BindingContext<T> internal constructor(
      * For example to bind RepositoryImpl to Repository
      *
      * ```
-     * factory { RepositoryImpl() }.bindAlias(typeOf<Repository>())
+     * factory { RepositoryImpl() }
+     *     .bindAlias(typeOf<Repository>())
      *
      * ```
      *
@@ -62,7 +66,7 @@ data class BindingContext<T> internal constructor(
         type: Type<*>,
         name: Any? = null,
         override: Boolean = binding.override
-    ) {
+    ): BindingContext<T> {
         module.bind(
             key = keyOf(type, name),
             binding = binding as Binding<Any?>,
@@ -70,6 +74,8 @@ data class BindingContext<T> internal constructor(
             eager = binding.eager,
             unscoped = binding.unscoped
         )
+
+        return this
     }
 
     inline fun <reified T> bindType() {
@@ -79,7 +85,7 @@ data class BindingContext<T> internal constructor(
     /**
      * @see bindAlias
      */
-    infix fun bindType(type: Type<*>): BindingContext<T> {
+    fun bindType(type: Type<*>): BindingContext<T> {
         bindAlias(type)
         return this
     }
@@ -87,7 +93,7 @@ data class BindingContext<T> internal constructor(
     /**
      * @see bindAlias
      */
-    infix fun bindName(name: Any): BindingContext<T> {
+    fun bindName(name: Any): BindingContext<T> {
         bindAlias(key.type, name)
         return this
     }

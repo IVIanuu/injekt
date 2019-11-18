@@ -59,5 +59,6 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application component found for $this")
 
 fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    instance(this@receiverModule, typeOf(this@receiverModule)) bindType typeOf<BroadcastReceiver>()
+    instance(this@receiverModule, typeOf(this@receiverModule))
+        .bindType<BroadcastReceiver>()
 }
