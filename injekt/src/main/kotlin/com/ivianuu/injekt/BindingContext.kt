@@ -18,9 +18,29 @@ package com.ivianuu.injekt
 
 // todo clean multi binding api mess
 
+/**
+ * Result of call to [Module.bind]
+ * This is allows to add additional aliases to the declared [binding]
+ *
+ * E.g.
+ *
+ * factory { MyRepository() } bindType type<IRepository>()
+ *
+ */
 data class BindingContext<T> internal constructor(
+    /**
+     * The binding added in the [Module.bind] call
+     */
     val binding: Binding<T>,
+
+    /**
+     * The binding added in the [Module.bind] call
+     */
     val key: Key,
+
+    /**
+     * The module the [binding] was added to
+     */
     val module: Module
 ) {
 
@@ -40,8 +60,8 @@ data class BindingContext<T> internal constructor(
             key = keyOf(type, name),
             binding = binding as Binding<Any?>,
             override = override,
-            eager = this.binding.eager,
-            unscoped = this.binding.unscoped
+            eager = binding.eager,
+            unscoped = binding.unscoped
         )
     }
 
@@ -83,6 +103,11 @@ data class BindingContext<T> internal constructor(
         override: Boolean = false
     ): BindingContext<T> = intoSet(typeOf<E>(), setName, override)
 
+    /**
+     * Contributes the [binding] into to the specified set
+     *
+     * @param
+     */
     fun <T : E, E> intoSet(
         setElementType: Type<E>,
         setName: Any? = null,

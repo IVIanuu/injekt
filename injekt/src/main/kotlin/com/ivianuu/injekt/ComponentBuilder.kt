@@ -236,7 +236,7 @@ class ComponentBuilder internal constructor() {
             mapKey.name
         )
 
-        bindings[mapOfProviderKey] = UnmutableMapOfProviderBinding<Any?, Any?>(bindingKeys)
+        bindings[mapOfProviderKey] = UnlinkedMapOfProviderBinding<Any?, Any?>(bindingKeys)
             .also { it.unscoped = false }
 
         val mapOfLazyKey = keyOf(
@@ -248,10 +248,10 @@ class ComponentBuilder internal constructor() {
             mapKey.name
         )
 
-        bindings[mapOfLazyKey] = UnmutableMapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapOfLazyKey] = UnlinkedMapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.unscoped = false }
 
-        bindings[mapKey] = UnmutableMapOfValueBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapKey] = UnlinkedMapOfValueBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.unscoped = false }
     }
 
