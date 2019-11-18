@@ -27,6 +27,12 @@ package com.ivianuu.injekt
     fun <T> get(type: Type<T>, name: Any? = null): LinkedBinding<T> =
         get(key = keyOf(type, name))
 
+    /**
+     * Obtain a linked binding
+     *
+     * @param key the for the binding
+     * @return the linked binding
+     */
     fun <T> get(key: Key): LinkedBinding<T> = component.getBinding(key)
 
 }

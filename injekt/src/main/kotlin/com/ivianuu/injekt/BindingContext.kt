@@ -98,11 +98,11 @@ data class BindingContext<T> internal constructor(
         return this
     }
 
-    inline fun <reified T : V, reified K, reified V> intoMap(
+    inline fun <reified K, reified V> intoMap(
         entryKey: K,
         mapName: Any? = null,
         override: Boolean = binding.override
-    ): BindingContext<T> = intoMap(typeOf(), typeOf<V>(), entryKey, mapName, override)
+    ): BindingContext<T> = intoMap(typeOf<K>(), typeOf<V>(), entryKey, mapName, override)
 
     /**
      * Contributes the [binding] into to the specified map
@@ -115,7 +115,7 @@ data class BindingContext<T> internal constructor(
      *
      * @see BindingMap
      */
-    fun <T : V, K, V> intoMap(
+    fun <K, V> intoMap(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
         entryKey: K,
@@ -123,12 +123,12 @@ data class BindingContext<T> internal constructor(
         override: Boolean = binding.override
     ): BindingContext<T> {
         module.map(mapKeyType, mapValueType, mapName) {
-            put(entryKey, key.type as Type<T>, key.name, override)
+            put(entryKey, key.type as Type<V>, key.name, override)
         }
-        return this as BindingContext<T> // todo
+        return this
     }
 
-    inline fun <reified T : E, reified E> intoSet(
+    inline fun <reified E> intoSet(
         setName: Any? = null,
         override: Boolean = false
     ): BindingContext<T> = intoSet(typeOf<E>(), setName, override)
@@ -142,15 +142,15 @@ data class BindingContext<T> internal constructor(
      *
      * @see BindingSet
      */
-    fun <T : E, E> intoSet(
+    fun <E> intoSet(
         setElementType: Type<E>,
         setName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
         module.set(setElementType, setName) {
-            add(key.type as Type<T>, key.name, override)
+            add(key.type as Type<E>, key.name, override)
         }
-        return this as BindingContext<T> // todo
+        return this
     }
 
 }
