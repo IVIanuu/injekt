@@ -21,8 +21,14 @@ package com.ivianuu.injekt
  */
 object InjektPlugins {
 
+    /**
+     * The logger to use
+     */
     var logger: Logger? = null
 
+    /**
+     * The factory to use while looking up just in time bindings
+     */
     var justInTimeLookupFactory: JustInTimeLookupFactory = DefaultJustInTimeLookupFactory
 
 }

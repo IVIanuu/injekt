@@ -16,31 +16,56 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Creates instances of [T]
+ */
 typealias Definition<T> = DefinitionContext.(Parameters?) -> T
 
+/**
+ * The receiver scope for [Definition]s
+ *
+ * Which allows the following syntax:
+ *
+ * @see Module.factory
+ * @see Module.single
+ */
 interface DefinitionContext {
+
+    /**
+     * @see Component.get
+     */
     fun <T> get(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
     ): T = get(key = keyOf(type, name), parameters = parameters)
 
+    /**
+     * @see Component.get
+     */
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T
 
+    /**
+     * Nullable version of [Parameters.component1]
+     */
     operator fun <T> Parameters?.component1(): T = this!![0]
+
     operator fun <T> Parameters?.component2(): T = this!![1]
     operator fun <T> Parameters?.component3(): T = this!![2]
     operator fun <T> Parameters?.component4(): T = this!![3]
     operator fun <T> Parameters?.component5(): T = this!![4]
 }
 
+/**
+ * @see DefinitionContext.get
+ */
 inline fun <reified T> DefinitionContext.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
 internal fun <T> definitionBinding(
-    optimizing: Boolean = true,
+    optimizing: Boolean,
     definition: Definition<T>
 ): Binding<T> {
     return if (optimizing) UnlinkedOptimizingDefinitionBinding(definition)
@@ -55,6 +80,12 @@ private class UnlinkedDefinitionBinding<T>(
     )
 }
 
+/**
+ * Unlike [LinkedOptimizingDefinitionBinding] always looks up the bindings
+ * because it will be only for singletons
+ *
+ * @see Module.single
+ */
 private class LinkedDefinitionBinding<T>(
     private val component: Component,
     private val definition: Definition<T>
@@ -75,6 +106,12 @@ private class UnlinkedOptimizingDefinitionBinding<T>(
         LinkedOptimizingDefinitionBinding(linker.component, definition)
 }
 
+/**
+ * Caches already retrieved bindings to avoid the lookup cost
+ * because it will be used in factory bindings which will get called on each request
+ *
+ * @see Module.factory
+ */
 private class LinkedOptimizingDefinitionBinding<T>(
     private val component: Component,
     private val definition: Definition<T>

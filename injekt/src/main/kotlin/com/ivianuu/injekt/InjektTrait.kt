@@ -34,14 +34,24 @@ package com.ivianuu.injekt
  *
  */
 interface InjektTrait {
+
+    /**
+     * The component which will be used in the below functions
+     */
     val component: Component
 
+    /**
+     * @see Component.get
+     */
     fun <T> InjektTrait.get(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
     ): T = component.get(type, name, parameters)
 
+    /**
+     * @see Component.inject
+     */
     fun <T> InjektTrait.inject(
         type: Type<T>,
         name: Any? = null,
@@ -50,11 +60,17 @@ interface InjektTrait {
 
 }
 
+/**
+ * @see Component.get
+ */
 inline fun <reified T> InjektTrait.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
+/**
+ * @see Component.inject
+ */
 inline fun <reified T> InjektTrait.inject(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null

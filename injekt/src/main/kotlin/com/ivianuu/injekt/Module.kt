@@ -22,6 +22,18 @@ fun module(block: Module.() -> Unit): Module = Module().apply(block)
 
 /**
  * A module is a collection of [Binding]s to drive [Component]s
+ *
+ * A typical module might look like this:
+ *
+ * ´´´
+ * val myRepositoryModule = module {
+ *     single { MyRepository(api = get(), database = get()) }
+ *     single { MyApi(serializer = get()) }
+ *     single { MyDatabase(databaseFile = get()) }
+ * }
+ * ´´´
+ *
+ * @see ComponentBuilder.modules
  */
 class Module internal constructor() {
 
@@ -29,32 +41,45 @@ class Module internal constructor() {
     internal val mapBindings = MapBindings()
     internal val setBindings = SetBindings()
 
+    /**
+     * @see factory
+     */
     inline fun <reified T> factory(
         name: Any? = null,
         override: Boolean = false,
-        optimizing: Boolean = true,
         noinline definition: Definition<T>
     ): BindingContext<T> = factory(
         type = typeOf(),
         name = name,
         override = override,
-        optimizing = optimizing,
         definition = definition
     )
 
+    /**
+     * Contributes a binding which will be instantiated on each request
+     *
+     * @param type the of the instance
+     * @param name the name of the instance
+     * @param override whether or not the instance should override existing ones
+     * @param definition the definitions which creates instances
+     *
+     * @see bind
+     */
     fun <T> factory(
         type: Type<T>,
         name: Any? = null,
         override: Boolean = false,
-        optimizing: Boolean = true,
         definition: Definition<T>
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
-        binding = definitionBinding(optimizing = optimizing, definition = definition),
+        binding = definitionBinding(optimizing = true, definition = definition),
         override = override,
         unscoped = true
     )
 
+    /**
+     * @see single
+     */
     inline fun <reified T> single(
         name: Any? = null,
         override: Boolean = false,
@@ -68,6 +93,17 @@ class Module internal constructor() {
         definition = definition
     )
 
+    /**
+     * Contributes a binding which will be reused throughout the lifetime of the component it life's in
+     *
+     * @param type the of the instance
+     * @param name the name of the instance
+     * @param override whether or not the instance should override existing ones
+     * @param eager whether a instance should be created when the component get's created
+     * @param definition the definitions which creates instances
+     *
+     * @see bind
+     */
     fun <T> single(
         type: Type<T>,
         name: Any? = null,
@@ -83,20 +119,9 @@ class Module internal constructor() {
             unscoped = false
         )
 
-    inline fun <reified K, reified V> map(
-        mapName: Any? = null,
-        noinline block: BindingMap<K, V>.() -> Unit = {}
-    ) {
-        map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
-    }
-
-    inline fun <reified E> set(
-        setName: Any? = null,
-        noinline block: BindingSet<E>.() -> Unit = {}
-    ) {
-        set(setElementType = typeOf(), setName = setName, block = block)
-    }
-
+    /**
+     * @see instance
+     */
     inline fun <reified T> instance(
         instance: T,
         name: Any? = null,
@@ -108,6 +133,16 @@ class Module internal constructor() {
         override = override
     )
 
+    /**
+     * Adds a binding for a already existing instance
+     *
+     * @param instance the instance to contribute
+     * @param type the type for the [Key] by which the binding can be retrieved later in the component
+     * @param name the type for the [Key] by which the binding can be retrieved later in the component
+     * @return the [BindingContext] to chain binding calls
+     *
+     * @see bind
+     */
     fun <T> instance(
         instance: T,
         type: Type<T>,
@@ -120,6 +155,9 @@ class Module internal constructor() {
         unscoped = false
     )
 
+    /**
+     * @see withBinding
+     */
     inline fun <reified T> withBinding(
         name: Any? = null,
         noinline block: BindingContext<T>.() -> Unit
@@ -127,6 +165,25 @@ class Module internal constructor() {
         withBinding(type = typeOf(), name = name, block = block)
     }
 
+    /**
+     * Invokes a lambda in the binding context of a other binding
+     * This allows to add aliases to bindings which are declared somewhere else
+     *
+     * For example to add a alias for a annotated class one can write the following:
+     *
+     * ´@Inject class MyRepository : Repository`
+     *
+     * ´´´
+     * withBinding(type = typeOf<MyRepository>()) {
+     *     bindType<Repository>()
+     * }
+     *
+     * ´´´
+     *
+     * @param type the type of the binding
+     * @param name the name of the other binding
+     * @param block the lambda to call in the context of the other binding
+     */
     fun <T> withBinding(
         type: Type<T>,
         name: Any? = null,
@@ -135,6 +192,11 @@ class Module internal constructor() {
         bindProxy(type = type, name = name).block()
     }
 
+    /**
+     * Merges the contents of the other module into this one
+     *
+     * @param module the module to merge
+     */
     fun include(module: Module) {
         module.bindings.forEach {
             bind(
@@ -147,6 +209,16 @@ class Module internal constructor() {
         }
         mapBindings.putAll(module.mapBindings)
         setBindings.addAll(module.setBindings)
+    }
+
+    /**
+     * @see map
+     */
+    inline fun <reified K, reified V> map(
+        mapName: Any? = null,
+        noinline block: BindingMap<K, V>.() -> Unit = {}
+    ) {
+        map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
     }
 
     fun <K, V> map(
@@ -162,6 +234,16 @@ class Module internal constructor() {
         mapBindings.get<K, V>(mapKey).apply(block)
     }
 
+    /**
+     * @see see
+     */
+    inline fun <reified E> set(
+        setName: Any? = null,
+        noinline block: BindingSet<E>.() -> Unit = {}
+    ) {
+        set(setElementType = typeOf(), setName = setName, block = block)
+    }
+
     fun <E> set(
         setElementType: Type<E>,
         setName: Any? = null,
@@ -171,6 +253,23 @@ class Module internal constructor() {
         setBindings.get<E>(setKey).apply(block)
     }
 
+    /**
+     * Contributes the binding
+     * This function is rarely used directly instead use [factory] or [single]
+     *
+     * @param key the key by which the binding can be retrieved later in the component
+     * @param binding the binding to add
+     * @param override whether or not the contribution should override existing ones
+     * @param eager whether a instance should be created when the component get's created
+     * @param unscoped whether instances should be created in the requesting scope
+     * @return the [BindingContext] to chain binding calls
+     *
+     * @see Component.get
+     * @see BindingContext
+     * @see factory
+     * @see single
+     *
+     */
     fun <T> bind(
         key: Key,
         binding: Binding<T>,

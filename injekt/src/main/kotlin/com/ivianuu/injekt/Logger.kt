@@ -16,24 +16,47 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Logs useful information
+ */
 interface Logger {
 
+    /**
+     * Logs a debug message
+     *
+     * @param msg the message
+     */
     fun debug(msg: String)
 
+    /**
+     * Logs a info message
+     *
+     * @param msg the message
+     */
     fun info(msg: String)
 
+    /**
+     * Logs a warning message
+     *
+     * @param msg the message
+     */
     fun warn(msg: String)
 
+    /**
+     * Logs a error message
+     *
+     * @param msg the message
+     */
     fun error(msg: String)
 }
 
 /**
- * Default tag to use by [Logger]s
+ * Default tag to use in a [Logger]
  */
 const val INJEKT_TAG = "[INJEKT]"
 
 /**
- * Logs messages using [println]
+ * Logs messages using [System.out]
  */
 class PrintLogger : Logger {
 

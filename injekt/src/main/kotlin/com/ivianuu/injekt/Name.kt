@@ -21,8 +21,8 @@ import kotlin.reflect.KClass
 /**
  * Marks the annotated class as a name which can be used to differentiate between instances of the same type
  *
- * It's a good convention to declare names which can be used from the dsl AND annotated classes
- * This can be achieved like this:
+ * It's a good convention to declare names which can be used from both the dsl AND annotated classes
+ * This can be achieved by declaring it like this:
  *
  * ´´´
  * @Name(UserId.Companion::class)

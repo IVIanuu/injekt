@@ -16,8 +16,26 @@
 
 package com.ivianuu.injekt
 
+/**
+ * A key of a binding
+ *
+ * This is used to identify bindings in [Component]s and [Module]s
+ *
+ * @see Component.get
+ * @see Module.bind
+ */
 data class Key internal constructor(val type: Type<*>, val name: Any? = null)
 
-fun keyOf(type: Type<*>, name: Any? = null): Key = Key(type, name)
-
+/**
+ * @see keyOf
+ */
 inline fun <reified T> keyOf(name: Any? = null): Key = keyOf(typeOf<T>(), name)
+
+/**
+ * Create a key
+ *
+ * @param type the type of the key
+ * @param name the name of the key
+ * @return the constructed key
+ */
+fun keyOf(type: Type<*>, name: Any? = null): Key = Key(type, name)
