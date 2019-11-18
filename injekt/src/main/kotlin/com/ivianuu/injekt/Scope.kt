@@ -18,17 +18,49 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
+/**
+ * Marks the annotated class as a scope
+ *
+ * For example a scope for activities is declared like this
+ *
+ * @Scope annotation class ActivityScope
+ *
+ *
+ * The following code ensures that the same view model instance is reused in activity scoped [Component]s
+ *
+ * ´´´
+ * @ActivityScope
+ * @Inject
+ * class MyViewModel
+ * ´´´
+ *
+ * @see Component.scopes
+ */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
 
-interface HasScope {
-    val scope: KClass<out Annotation>
-}
-
+/**
+ * Wraps this binding with a scoped one to make sure that the instance will be instantiated only once
+ *
+ * @see Scope
+ * @see Component.scopes
+ * @see ComponentBuilder.scopes
+ * @see Module.single
+ */
 fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
     is LinkedScopedBinding, is UnlinkedScopedBinding -> this
     is LinkedBinding -> LinkedScopedBinding(this)
     else -> UnlinkedScopedBinding(this)
+}
+
+/**
+ * Used by generated code to provide the of the injectable
+ *
+ * @see CodegenJustInTimeLookupFactory
+ * @see ReflectiveJustInTimeLookupFactory
+ */
+interface HasScope {
+    val scope: KClass<out Annotation>
 }
 
 private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {

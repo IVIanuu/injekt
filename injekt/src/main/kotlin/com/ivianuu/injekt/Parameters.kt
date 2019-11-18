@@ -17,14 +17,64 @@
 package com.ivianuu.injekt
 
 /**
- * Parameters which can be used to pass things like an id
+ * Parameters which can be used to inject dynamic data like id's into instances
+ *
+ * In the following example the presenter depends on a specific user id
+ * We can declare the definition as follows:
+ *
+ * ´´´
+ * single { (id: String) ->
+ *     MyPresenter(api = get(), id = id)
+ * }
+ *
+ * ´´´
+ *
+ * We can then inject the presenter as follows:
+ *
+ * ´´´
+ * class MyView : UiView() {
+ *
+ *     override onAttach() {
+ *         val presenter = component.get<MyPresenter> {
+ *             parametersOf("user_id")
+ *         }
+ *
+ *         // use presenter
+ *     }
+ *
+ * }
+ *
+ * ´´´
+ *
  */
 /*inline */ class Parameters(private val values: Array<Any?>) {
 
+    /**
+     * The count of parameters
+     */
     val size: Int get() = values.size
 
-    operator fun <T> get(i: Int): T = values[i] as T
+    /**
+     * Retrieve the parameter at the [index]
+     *
+     * @param index the index of the parameter
+     */
+    operator fun <T> get(index: Int): T = values[index] as T
 
+    /**
+     * Retrieve the parameter at 0
+     * Enables convenient syntax in definitions like this:
+     *
+     * ´´´
+     *
+     * factory { (id: String) ->
+     *     MyPresenter(id = id)
+     * }
+     *
+     * ´´´
+     *
+     * @see get
+     */
     operator fun <T> component1(): T = get(0)
     operator fun <T> component2(): T = get(1)
     operator fun <T> component3(): T = get(2)
@@ -46,15 +96,62 @@ package com.ivianuu.injekt
 
 }
 
+/**
+ * Lazily returns [Parameters] for an instance
+ *
+ * @see Component.get
+ * @see Component.inject
+ */
 typealias ParametersDefinition = () -> Parameters
 
-fun parametersOf(): Parameters = Parameters(emptyArray())
+/**
+ * Creates empty parameters
+ *
+ * @return empty parameters
+ * @see emptyParameters
+ */
+fun parametersOf(): Parameters = emptyParameters()
 
+/**
+ * Creates parameters which contains all [values]
+ *
+ * @param values the provided parameters
+ * @return the newly constructed parameters
+ */
 fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 
+/**
+ * Creates parameters which contains all [values]
+ *
+ * @param values the provided parameters
+ * @return the newly constructed parameters
+ */
 fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArray())
 
+/**
+ * Creates empty parameters
+ *
+ * @return empty parameters
+ */
 fun emptyParameters(): Parameters = Parameters(emptyArray())
 
+/**
+ * Marks a the annotated constructor parameter in an @[Inject] annotated class as a parameter
+ * The generated binding will then use the provided [Parameters] to resolve the dependency
+ *
+ * For example:
+ * ´´´
+ * class MyViewModel(
+ *     @Param private val id: String,
+ *     private val api: Api
+ * )
+ *
+ * ´´´
+ *
+ * Note that [Parameters] will be retrieved in the same order like in the constructor
+ *
+ * @see Parameters
+ * @see Inject
+ */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Param

@@ -52,7 +52,7 @@ internal class LinkedLazyBinding<T>(
         KeyedLazy(component, key)
 }
 
-internal class UnmutableMapOfProviderBinding<K, V>(
+internal class UnlinkedMapOfProviderBinding<K, V>(
     private val entryKeys: Map<K, Key>
 ) : UnlinkedBinding<Map<K, Provider<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> {
@@ -62,28 +62,28 @@ internal class UnmutableMapOfProviderBinding<K, V>(
     }
 }
 
-internal class UnmutableMapOfValueBinding<K, V>(
+internal class UnlinkedMapOfValueBinding<K, V>(
     private val mapOfProviderKey: Key
 ) : UnlinkedBinding<Map<K, Lazy<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
-        mutableMapOfValueBinding(linker.get(mapOfProviderKey))
+        LinkedMapOfValueBinding(linker.get(mapOfProviderKey))
 }
 
-internal class mutableMapOfValueBinding<K, V>(
+internal class LinkedMapOfValueBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, V>>() {
     override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
         .mapValues { it.value() }
 }
 
-internal class UnmutableMapOfLazyBinding<K, V>(
+internal class UnlinkedMapOfLazyBinding<K, V>(
     private val mapOfProviderKey: Key
 ) : UnlinkedBinding<Map<K, Lazy<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
-        mutableMapOfLazyBinding(linker.get(mapOfProviderKey))
+        LinkedMapOfLazyBinding(linker.get(mapOfProviderKey))
 }
 
-internal class mutableMapOfLazyBinding<K, V>(
+internal class LinkedMapOfLazyBinding<K, V>(
     private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
 ) : LinkedBinding<Map<K, Lazy<V>>>() {
     override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()

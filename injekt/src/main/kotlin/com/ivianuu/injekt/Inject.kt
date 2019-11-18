@@ -18,6 +18,28 @@ package com.ivianuu.injekt
 
 /**
  * Makes the annotated class injectable by generating a binding for it
+ *
+ * For example making a class injectable looks like this:
+ * ´´´
+ * @Inject
+ * class MyViewModel(private val myRepository: MyRepository)
+ *
+ * ´´´
+ *
+ * In case a class has multiple constructors the injectable constructor must be annotated instead
+ *
+ * ```
+ *
+ * class MyApi {
+ *
+ *     @Inject
+ *     constructor() : this("https://defaulturl.com/")
+ *
+ *     constructor(url: String)
+ *
+ * }
+ *
+ * ```
  */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Inject

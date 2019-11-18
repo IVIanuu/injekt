@@ -16,17 +16,44 @@
 
 package com.ivianuu.injekt
 
+/**
+ * A binding knows how to create a concrete instance of a type
+ * It also holds additional information about the declaration
+ * You typically don't access them directly but instead declare declare dependencies
+ * via the module dsl
+
+ * @see Module.factory
+ * @see Module.single
+ */
 sealed class Binding<T> {
 
+    /**
+     * Overrides existing bindings with the same key
+     */
     var override = false
         internal set
+
+    /**
+     * Creates the instance in the moment the component get's created
+     */
     var eager = false
         internal set
+
+    /**
+     * Creates instances in the requesting component
+     */
     var unscoped = false
         internal set
 
     internal var linkPerformed = false
 
+    /**
+     * Returns a [LinkedBinding] and get's all required dependencies from the [linker]
+     *
+     * @param linker the linker where to get required bindings from
+     *
+     * @see UnlinkedMapOfLazyBinding
+     */
     protected abstract fun link(linker: Linker): LinkedBinding<T>
 
     internal open fun performLink(linker: Linker): LinkedBinding<T> {

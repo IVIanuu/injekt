@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
 /**
- * Describes a injected [Type]
+ * Describes a injectable type [Type]
  */
 class Type<T> internal constructor(
     val raw: KClass<*>,

@@ -24,26 +24,33 @@ package com.ivianuu.injekt
  *
  * E.g.
  *
- * factory { MyRepository() } bindType type<IRepository>()
+ *```
+ * factory { MyRepository() } bindType type<IRepository>() bindName "my_name"
+ *```
  *
  */
 data class BindingContext<T> internal constructor(
-    /**
-     * The binding added in the [Module.bind] call
-     */
     val binding: Binding<T>,
-
-    /**
-     * The binding added in the [Module.bind] call
-     */
     val key: Key,
-
-    /**
-     * The module the [binding] was added to
-     */
     val module: Module
 ) {
 
+    /**
+     * Binds the [binding] to [module] with the alias params
+     *
+     * For example to bind RepositoryImpl to Repository
+     *
+     * ```
+     * factory { RepositoryImpl() }.bindAlias<Repository>()
+     *
+     * ```
+     *
+     * @param T the alias type
+     * @param name the alias name
+     * @param override whether or not the alias binding should override existing one's
+     *
+     * @see Module.bind
+     */
     inline fun <reified T> bindAlias(
         name: Any? = null,
         override: Boolean = binding.override
@@ -51,6 +58,22 @@ data class BindingContext<T> internal constructor(
         bindAlias(typeOf<T>(), name, override)
     }
 
+    /**
+     * Binds the [binding] to [module] with the alias params
+     *
+     * For example to bind RepositoryImpl to Repository
+     *
+     * ```
+     * factory { RepositoryImpl() }.bindAlias(typeOf<Repository>())
+     *
+     * ```
+     *
+     * @param type the alias type
+     * @param name the alias name
+     * @param override whether or not the alias binding should override existing one's
+     *
+     * @see Module.bind
+     */
     fun bindAlias(
         type: Type<*>,
         name: Any? = null,
@@ -65,26 +88,57 @@ data class BindingContext<T> internal constructor(
         )
     }
 
+    /**
+     * @see bindAlias
+     */
     inline fun <reified T> bindType() {
         bindAlias(typeOf<T>())
     }
 
+    /**
+     * @see bindAlias
+     */
     infix fun bindType(type: Type<*>): BindingContext<T> {
         bindAlias(type)
         return this
     }
 
+    /**
+     * @see bindAlias
+     */
     infix fun bindName(name: Any): BindingContext<T> {
         bindAlias(key.type, name)
         return this
     }
 
+    /**
+     * Contributes the [binding] into to the specified map
+     *
+     * @param K the key type of the map
+     * @param V the value type of the map
+     * @param entryKey the key of this binding in the map
+     * @param mapName the name of the map
+     * @param override whether or not this binding should override existing one's
+     *
+     * @see BindingMap
+     */
     inline fun <reified T : V, reified K, reified V> intoMap(
         entryKey: K,
         mapName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> = intoMap(typeOf(), typeOf<V>(), entryKey, mapName, override)
 
+    /**
+     * Contributes the [binding] into to the specified map
+     *
+     * @param mapKeyType the key type of the map
+     * @param mapValueType the value type of the map
+     * @param entryKey the key of this binding in the map
+     * @param mapName the name of the map
+     * @param override whether or not this binding should override existing one's
+     *
+     * @see BindingMap
+     */
     fun <T : V, K, V> intoMap(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
@@ -98,6 +152,15 @@ data class BindingContext<T> internal constructor(
         return this as BindingContext<T> // todo
     }
 
+    /**
+     * Contributes the [binding] into to the specified set
+     *
+     * @param E the type of the set
+     * @param setName the name of the set
+     * @param override whether or not this binding should override existing one's
+     *
+     * @see BindingSet
+     */
     inline fun <reified T : E, reified E> intoSet(
         setName: Any? = null,
         override: Boolean = false
@@ -106,7 +169,11 @@ data class BindingContext<T> internal constructor(
     /**
      * Contributes the [binding] into to the specified set
      *
-     * @param
+     * @param setElementType the type of the set
+     * @param setName the name of the set
+     * @param override whether or not this binding should override existing one's
+     *
+     * @see BindingSet
      */
     fun <T : E, E> intoSet(
         setElementType: Type<E>,

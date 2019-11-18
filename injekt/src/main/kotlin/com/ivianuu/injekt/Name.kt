@@ -18,5 +18,42 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
+/**
+ * Marks the annotated class as a name which can be used to differentiate between instances of the same type
+ *
+ * It's a good convention to declare names which can be used from the dsl AND annotated classes
+ * This can be achieved like this:
+ *
+ * ´´´
+ *
+ * @Name(UserId.Companion::class)
+ * annotation class UserId {
+ *     companion object
+ * }
+ *
+ * ´´´
+ *
+ * We can then use the name in the dsl as follows:
+ *
+ * ´´´
+ *
+ * factory {
+ *     MyViewModel(userId = get(name = UserId))
+ * }
+ *
+ * ´´´
+ *
+ * And also in @Inject annotated classes like this:
+ *
+ * ´´´
+ *
+ * @Inject
+ * class MyViewModel(@UserId private val userId: String)
+ *
+ * ´´´
+ *
+ * @see Component.get
+ * @see Inject
+ */
 @Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.CLASS)
 annotation class Name(val name: KClass<*>)
