@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Provides instances lazily and caches results
+ * A provider which reuses instances after the first call to [invoke]
  */
 interface Lazy<T> : Provider<T>
 

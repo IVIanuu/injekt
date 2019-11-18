@@ -26,7 +26,6 @@ package com.ivianuu.injekt
  * In case a class has multiple constructors the injectable constructor must be annotated instead
  *
  * ```
- *
  * class MyApi {
  *
  *     @Inject
@@ -35,7 +34,6 @@ package com.ivianuu.injekt
  *     constructor(url: String)
  *
  * }
- *
  * ```
  *
  * @see Name
