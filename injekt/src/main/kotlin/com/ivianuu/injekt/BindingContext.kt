@@ -20,14 +20,14 @@ package com.ivianuu.injekt
 
 /**
  * Result of call to [Module.bind]
- * This is allows to add additional aliases to the declared [binding]
+ * This is allows to add additional aliases to the same declared binding
  *
  * E.g.
  *
  *```
- * factory { MyRepository() } // retrievable with component.get<MyRepository>()
- *     .bindType<IRepository>() // retrievable with component.get<IRepository>()
- *     .bindName("my_name") // retrievable with component.get<MyRepository>(name = "my_name")
+ * factory { MyRepository() } // retrievable via component.get<MyRepository>()
+ *     .bindType<IRepository>() // retrievable via component.get<IRepository>()
+ *     .bindName("my_name") // retrievable via component.get<MyRepository>(name = "my_name")
  *```
  *
  */
