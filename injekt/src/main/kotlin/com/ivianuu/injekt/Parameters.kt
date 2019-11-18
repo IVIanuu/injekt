@@ -26,7 +26,6 @@ package com.ivianuu.injekt
  * single { (id: String) ->
  *     MyPresenter(api = get(), id = id)
  * }
- *
  * ´´´
  *
  * We can then inject the presenter as follows:
@@ -43,7 +42,6 @@ package com.ivianuu.injekt
  *     }
  *
  * }
- *
  * ´´´
  *
  */
@@ -66,11 +64,9 @@ package com.ivianuu.injekt
      * Enables convenient syntax in definitions like this:
      *
      * ´´´
-     *
      * factory { (id: String) ->
      *     MyPresenter(id = id)
      * }
-     *
      * ´´´
      *
      * @see get
@@ -145,7 +141,6 @@ fun emptyParameters(): Parameters = Parameters(emptyArray())
  *     @Param private val id: String,
  *     private val api: Api
  * )
- *
  * ´´´
  *
  * Note that [Parameters] will be retrieved in the same order like in the constructor

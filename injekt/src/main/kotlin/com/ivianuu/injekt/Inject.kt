@@ -23,7 +23,6 @@ package com.ivianuu.injekt
  * ´´´
  * @Inject
  * class MyViewModel(private val myRepository: MyRepository)
- *
  * ´´´
  *
  * In case a class has multiple constructors the injectable constructor must be annotated instead
