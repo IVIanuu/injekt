@@ -16,30 +16,47 @@
 
 package com.ivianuu.injekt
 
-/*inline */ class MapBindings internal constructor() {
-
-    private val maps: MutableMap<Key, BindingMap<*, *>> = mutableMapOf()
-
-    fun putAll(mapBindings: MapBindings) {
-        mapBindings.maps.forEach { (mapKey, map) ->
-            val thisMap = get<Any?, Any?>(mapKey)
-            thisMap.putAll(map as BindingMap<Any?, Any?>)
-        }
-    }
-
-    fun <K, V> get(mapKey: Key): BindingMap<K, V> =
-        maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
-
-    fun getAll(): Map<Key, BindingMap<*, *>> = maps
-
-}
-
+/**
+ * A [BindingMap] is the description of a "multi binding map"
+ *
+ * A multi binding map is a keyed collection of instances of the same type
+ * This allows to inject a map of 'Map<K, V>'
+ *
+ * The contents of the map can come from different modules
+ *
+ * The following is a typical usage of multi binding maps:
+ *
+ * ´´´
+ * val creditcardModule = module {
+ *     map<String, PaymentHandler> {
+ *         put("creditcard", typeOf<CreditcardPaymentHandler>())
+ *     }
+ * }
+ *
+ * val paypalModule = module {
+ *     map<String, PaymentHandler> {
+ *         put("paypal", typeOf<PaypalPaymentHandler>())
+ *     }
+ * }
+ *
+ * val component = component {
+ *     modules(creditcardModule, paypalModule)
+ * }
+ *
+ * // will include both CreditcardPaymentHandler and PaypalPaymentHandler
+ * val paymentHandlers = component.get<Map<String, PaymentHandler>>()
+ *
+ * paymentHandlers.get(paymentMethod).processPayment(shoppingCart)
+ * ´´´
+ *
+ * It's also possible to automatically retrieve a 'Map<K, Provider<V>>'
+ * or a 'Map<K, Lazy<V>>'
+ *
+ *
+ * @see Module.map
+ */
 class BindingMap<K, V> internal constructor(private val mapKey: Key) {
-    private val map = mutableMapOf<K, Entry>()
-
-    fun putAll(other: BindingMap<K, V>) {
-        other.map.forEach { (key, entry) -> put(key, entry) }
-    }
+    private val entries = mutableMapOf<K, Entry>()
 
     inline fun <reified T : V> put(
         entryKey: K,
@@ -59,6 +76,13 @@ class BindingMap<K, V> internal constructor(private val mapKey: Key) {
         put(entryKey, entryValueKey, override)
     }
 
+    /**
+     * Contributes a binding into this map
+     *
+     * @param entryKey the key of the instance inside the map
+     * @param entryValueKey the key of the actual instance in the component
+     * @param override whether or not existing bindings should be overridden
+     */
     fun put(
         entryKey: K,
         entryValueKey: Key,
@@ -67,25 +91,39 @@ class BindingMap<K, V> internal constructor(private val mapKey: Key) {
         put(entryKey, Entry(entryValueKey, override))
     }
 
-    infix fun K.to(key: Key) {
-        put(this, key)
-    }
+    internal fun getBindingMap(): Map<K, Key> = entries.mapValues { it.value.entryValueKey }
 
-    infix fun K.to(type: Type<out V>) {
-        put(this, keyOf(type))
+    internal fun putAll(other: BindingMap<K, V>) {
+        other.entries.forEach { (key, entry) -> put(key, entry) }
     }
 
     private fun put(entryKey: K, entry: Entry) {
-        check(entryKey !in map || entry.override) {
+        check(entryKey !in entries || entry.override) {
             "Already declared $entryKey in map $mapKey"
         }
-        map[entryKey] = entry
+        entries[entryKey] = entry
     }
-
-    fun getBindingMap(): Map<K, Key> = map.mapValues { it.value.entryValueKey }
 
     private class Entry(
         val entryValueKey: Key,
         val override: Boolean
     )
+}
+
+internal class MapBindings {
+
+    private val maps: MutableMap<Key, BindingMap<*, *>> = mutableMapOf()
+
+    fun putAll(mapBindings: MapBindings) {
+        mapBindings.maps.forEach { (mapKey, map) ->
+            val thisMap = get<Any?, Any?>(mapKey)
+            thisMap.putAll(map as BindingMap<Any?, Any?>)
+        }
+    }
+
+    fun <K, V> get(mapKey: Key): BindingMap<K, V> =
+        maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
+
+    fun getAll(): Map<Key, BindingMap<*, *>> = maps
+
 }

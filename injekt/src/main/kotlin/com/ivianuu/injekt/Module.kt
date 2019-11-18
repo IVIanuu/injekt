@@ -214,6 +214,17 @@ class Module internal constructor() {
         map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
     }
 
+    /**
+     * Runs a lambda in the scope of a contributed binding map
+     * Creates and adds a new binding set if it does not exist yet in this module
+     *
+     * @param mapKeyType the type of the keys in the map
+     * @param mapValueType the type of the values in the map
+     * @param mapName the name by which the map can be retrieved later in the component
+     * @param block the lambda to run in the context of the binding map
+     *
+     * @see BindingMap
+     */
     fun <K, V> map(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
@@ -234,6 +245,16 @@ class Module internal constructor() {
         set(setElementType = typeOf(), setName = setName, block = block)
     }
 
+    /**
+     * Runs a lambda in the scope of a contributed binding set
+     * Creates and adds a new binding set if it does not exist yet in this module
+     *
+     * @param setElementType the type of the elements in the set
+     * @param setName the name by which the set can be retrieved later in the component
+     * @param block the lambda to run in the context of the binding set
+     *
+     * @see BindingSet
+     */
     fun <E> set(
         setElementType: Type<E>,
         setName: Any? = null,

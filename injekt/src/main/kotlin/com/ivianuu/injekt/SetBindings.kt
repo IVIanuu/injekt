@@ -16,32 +16,50 @@
 
 package com.ivianuu.injekt
 
-/*inline */ class SetBindings {
-
-    private val sets: MutableMap<Key, BindingSet<*>> = mutableMapOf()
-
-    fun addAll(setBindings: SetBindings) {
-        setBindings.sets.forEach { (setKey, set) ->
-            val thisSet = get<Any?>(setKey)
-            thisSet.addAll(set as BindingSet<Any?>)
-        }
-    }
-
-    fun <E> get(setKey: Key): BindingSet<E> {
-        return sets.getOrPut(setKey) { BindingSet<Any?>(setKey) } as BindingSet<E>
-    }
-
-    fun getAll(): Map<Key, BindingSet<*>> = sets
-
-}
-
+/**
+ * A [BindingSet] is the description of a "multi binding set"
+ *
+ * A set multi binding is a collection of instances of the same type
+ * This allows to inject a set of 'Set<E>'
+ *
+ * The contents of the set can come from different modules
+ *
+ * The following is a typical usage of multi binding sets:
+ *
+ * ´´´
+ * val fabricModule = module {
+ *     set<AnalyticsEventHandler> {
+ *         add<FabricAnalyticsEventHandler>()
+ *     }
+ * }
+ *
+ * val firebaseModule = module {
+ *     set<AnalyticsEventHandler> {
+ *         add<FirebaseAnalyticsEventHandler>()
+ *     }
+ * }
+ *
+ * val component = component {
+ *     modules(fabricModule, firebaseModule)
+ * }
+ *
+ * // will include both FabricAnalyticsEventHandler and FirebaseAnalyticsEventHandler
+ * val analyticsEventHandlers = component.get<Set<AnalyticsEventHandler>>()
+ *
+ * analyticsEventHandlers.forEach { handler ->
+ *     handler.handleEvent(MyEvent())
+ * }
+ * ´´´
+ *
+ * It's also possible to automatically retrieve a 'Set<Provider<E>>'
+ * or a 'Set<Lazy<E>>'
+ *
+ *
+ * @see Module.set
+ */
 class BindingSet<E> internal constructor(private val setKey: Key) {
 
-    private val map = mutableMapOf<Key, Entry>()
-
-    fun addAll(other: BindingSet<E>) {
-        other.map.forEach { (key, entry) -> add(key, entry.override) }
-    }
+    private val entries = mutableMapOf<Key, Entry>()
 
     inline fun <reified T : E> add(
         elementName: Any? = null,
@@ -58,15 +76,44 @@ class BindingSet<E> internal constructor(private val setKey: Key) {
         add(keyOf(elementType, elementName), override)
     }
 
+    /**
+     * Contributes a binding into this set
+     *
+     * @param elementKey the key of the actual instance in the component
+     * @param override whether or not existing bindings should be overridden
+     */
     fun add(elementKey: Key, override: Boolean = false) {
-        check(elementKey !in map || override) {
+        check(elementKey !in entries || override) {
             "Already declared $elementKey in set $setKey"
         }
 
-        map[elementKey] = Entry(override)
+        entries[elementKey] = Entry(override)
     }
 
-    fun getBindingSet(): Set<Key> = map.keys
+    internal fun addAll(other: BindingSet<E>) {
+        other.entries.forEach { (key, entry) -> add(key, entry.override) }
+    }
+
+    internal fun getBindingSet(): Set<Key> = entries.keys
 
     private class Entry(val override: Boolean)
+}
+
+internal class SetBindings {
+
+    private val sets: MutableMap<Key, BindingSet<*>> = mutableMapOf()
+
+    fun addAll(setBindings: SetBindings) {
+        setBindings.sets.forEach { (setKey, set) ->
+            val thisSet = get<Any?>(setKey)
+            thisSet.addAll(set as BindingSet<Any?>)
+        }
+    }
+
+    fun <E> get(setKey: Key): BindingSet<E> {
+        return sets.getOrPut(setKey) { BindingSet<Any?>(setKey) } as BindingSet<E>
+    }
+
+    fun getAll(): Map<Key, BindingSet<*>> = sets
+
 }
