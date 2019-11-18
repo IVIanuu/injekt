@@ -23,6 +23,8 @@ import kotlin.reflect.KClass
  * Dependencies can be requested by calling either [get] or [inject]
  * Use [ComponentBuilder] to construct component instances
  *
+ * @see get
+ * @see inject
  * @see ComponentBuilder
  */
 class Component internal constructor(
