@@ -101,14 +101,6 @@ class ComponentBuilder internal constructor() {
         this.modules += modules
     }
 
-    inline fun <reified T> instance(
-        instance: T,
-        name: Any? = null,
-        override: Boolean = false
-    ) {
-        instance(instance = instance, type = typeOf(), name = name, override = override)
-    }
-
     /**
      * Adds a binding for a already existing instance
      * This is a shortcut to avoid the creation of a [Module] for just a single binding
@@ -119,7 +111,7 @@ class ComponentBuilder internal constructor() {
      */
     fun <T> instance(
         instance: T,
-        type: Type<T>,
+        type: Type<T> = typeOf(instance),
         name: Any? = null,
         override: Boolean = false
     ) {

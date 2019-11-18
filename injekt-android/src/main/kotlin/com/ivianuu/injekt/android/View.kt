@@ -26,7 +26,6 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ViewScope
@@ -105,7 +104,7 @@ fun <T : View> T.childViewModule(): Module = module {
 }
 
 private fun <T : View> T.internalViewModule(name: Any) = module {
-    instance(this@internalViewModule, typeOf(this@internalViewModule), override = true).apply {
+    instance(instance = this@internalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)
     }

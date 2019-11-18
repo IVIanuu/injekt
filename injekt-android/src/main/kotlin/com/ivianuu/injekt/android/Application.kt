@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
-import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ApplicationScope
@@ -43,7 +42,7 @@ fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit
     }
 
 fun <T : Application> T.applicationModule(): Module = module {
-    instance(this@applicationModule, typeOf(this@applicationModule)).apply {
+    instance(this@applicationModule).apply {
         bindType<Application>()
         bindType<Context>()
         bindAlias<Context>(ForApplication)

@@ -121,17 +121,6 @@ class Module internal constructor() {
             unscoped = false
         )
 
-    inline fun <reified T> instance(
-        instance: T,
-        name: Any? = null,
-        override: Boolean = false
-    ): BindingContext<T> = instance(
-        instance = instance,
-        type = typeOf(),
-        name = name,
-        override = override
-    )
-
     /**
      * Adds a binding for a already existing instance
      *
@@ -144,7 +133,7 @@ class Module internal constructor() {
      */
     fun <T> instance(
         instance: T,
-        type: Type<T>,
+        type: Type<T> = typeOf(instance),
         name: Any? = null,
         override: Boolean = false
     ): BindingContext<T> = bind(

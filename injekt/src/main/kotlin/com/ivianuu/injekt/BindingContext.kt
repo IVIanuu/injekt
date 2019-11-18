@@ -72,23 +72,26 @@ data class BindingContext<T> internal constructor(
         return this
     }
 
-    inline fun <reified T> bindType() {
-        bindAlias(typeOf<T>())
+    inline fun <reified T> bindType(override: Boolean = binding.override) {
+        bindAlias(typeOf<T>(), override)
     }
 
     /**
      * @see bindAlias
      */
-    fun bindType(type: Type<*>): BindingContext<T> {
-        bindAlias(type)
+    fun bindType(
+        type: Type<*>,
+        override: Boolean = binding.override
+    ): BindingContext<T> {
+        bindAlias(type, override)
         return this
     }
 
     /**
      * @see bindAlias
      */
-    fun bindName(name: Any): BindingContext<T> {
-        bindAlias(key.type, name)
+    fun bindName(name: Any, override: Boolean = binding.override): BindingContext<T> {
+        bindAlias(key.type, name, override)
         return this
     }
 
