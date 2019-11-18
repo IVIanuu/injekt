@@ -26,9 +26,9 @@ class SetTest {
         val component = component {
             modules(
                 module {
-                    factory(NameOne) { "value_one" }.intoSet<String, CharSequence>(setName = Values)
-                    factory(NameTwo) { "value_two" }.intoSet<String, CharSequence>(setName = Values)
-                    factory(NameThree) { "value_three" }.intoSet<String, CharSequence>(setName = Values)
+                    factory(NameOne) { "value_one" }.intoSet<CharSequence>(setName = Values)
+                    factory(NameTwo) { "value_two" }.intoSet<CharSequence>(setName = Values)
+                    factory(NameThree) { "value_three" }.intoSet<CharSequence>(setName = Values)
                 }
             )
         }
@@ -77,7 +77,7 @@ class SetTest {
             modules(
                 module {
                     factory(NameOne) { "value_one" }
-                        .intoSet<String, String>()
+                        .intoSet<String>()
                 }
             )
         }
@@ -92,7 +92,7 @@ class SetTest {
             modules(
                 module {
                     factory(NameTwo) { "value_two" }
-                        .intoSet<String, String>()
+                        .intoSet<String>()
                 }
             )
         }
@@ -108,7 +108,7 @@ class SetTest {
             modules(
                 module {
                     factory(NameThree) { "value_three" }
-                        .intoSet<String, String>()
+                        .intoSet<String>()
                 }
             )
         }
@@ -124,14 +124,14 @@ class SetTest {
     fun testOverridesLegalOverride() {
         val originalValueComponent = component {
             modules(
-                module { factory { "value" }.intoSet<String, String>() }
+                module { factory { "value" }.intoSet<String>() }
             )
         }
         val overriddenValueComponent = component {
             dependencies(originalValueComponent)
             modules(
                 module {
-                    factory(override = true) { "overridden_value" }.intoSet<String, String>(override = true)
+                    factory(override = true) { "overridden_value" }.intoSet<String>(override = true)
                 }
             )
         }
@@ -144,8 +144,8 @@ class SetTest {
         component {
             modules(
                 module {
-                    factory { "value" }.intoSet<String, String>()
-                    factory { "overridden_value" }.intoSet<String, String>()
+                    factory { "value" }.intoSet<String>()
+                    factory { "overridden_value" }.intoSet<String>()
                 }
             )
         }
@@ -157,7 +157,7 @@ class SetTest {
             modules(
                 module {
                     factory { "value" }
-                        .intoSet<String, String>()
+                        .intoSet<String>()
                 }
             )
         }
@@ -167,7 +167,7 @@ class SetTest {
             modules(
                 module {
                     factory(override = true) { "overridden_value" }
-                        .intoSet<String, String>(override = true)
+                        .intoSet<String>(override = true)
                 }
             )
         }
@@ -184,7 +184,7 @@ class SetTest {
             modules(
                 module {
                     factory { "value" }
-                        .intoSet<String, String>()
+                        .intoSet<String>()
                 }
             )
         }
@@ -194,7 +194,7 @@ class SetTest {
             modules(
                 module {
                     factory(override = true) { "overridden_value" }
-                        .intoSet<String, String>(override = false)
+                        .intoSet<String>(override = false)
                 }
             )
         }

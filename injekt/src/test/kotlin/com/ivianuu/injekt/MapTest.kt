@@ -27,11 +27,11 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "value_one" }
-                        .intoMap<String, String, CharSequence>("key_one", mapName = Values)
+                        .intoMap<String, CharSequence>("key_one", mapName = Values)
                     factory(NameTwo) { "value_two" }
-                        .intoMap<String, String, CharSequence>("key_two", mapName = Values)
+                        .intoMap<String, CharSequence>("key_two", mapName = Values)
                     factory(NameThree) { "value_three" }
-                        .intoMap<String, String, CharSequence>("key_three", mapName = Values)
+                        .intoMap<String, CharSequence>("key_three", mapName = Values)
                 }
             )
         }
@@ -80,7 +80,7 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "value_one" }
-                        .intoMap<String, String, String>("key_one")
+                        .intoMap<String, String>("key_one")
                 }
             )
         }
@@ -95,7 +95,7 @@ class MapTest {
             modules(
                 module {
                     factory(NameTwo) { "value_two" }
-                        .intoMap<String, String, String>("key_two")
+                        .intoMap<String, String>("key_two")
                 }
             )
         }
@@ -111,7 +111,7 @@ class MapTest {
             modules(
                 module {
                     factory(NameThree) { "value_three" }
-                        .intoMap<String, String, String>("key_three")
+                        .intoMap<String, String>("key_three")
                 }
             )
         }
@@ -129,9 +129,9 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "value" }
-                        .intoMap<String, String, String>("key")
+                        .intoMap<String, String>("key")
                     factory(NameTwo) { "overridden_value" }
-                        .intoMap<String, String, String>("key", override = true)
+                        .intoMap<String, String>("key", override = true)
                 }
             )
         }
@@ -146,8 +146,8 @@ class MapTest {
     fun testThrowsOnIllegalOverride() {
         component {
             module {
-                factory { "value" }.intoMap<String, String, String>("key")
-                factory { "overridden_value" }.intoMap<String, String, String>("key")
+                factory { "value" }.intoMap<String, String>("key")
+                factory { "overridden_value" }.intoMap<String, String>("key")
             }
         }
     }
@@ -158,7 +158,7 @@ class MapTest {
             modules(
                 module {
                     factory { "value" }
-                        .intoMap<String, String, String>("key")
+                        .intoMap<String, String>("key")
                 }
             )
         }
@@ -168,7 +168,7 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "overridden_value" }
-                        .intoMap<String, String, String>("key", override = true)
+                        .intoMap<String, String>("key", override = true)
                 }
             )
         }
@@ -185,7 +185,7 @@ class MapTest {
             modules(
                 module {
                     factory { "value" }
-                        .intoMap<String, String, String>("key")
+                        .intoMap<String, String>("key")
                 }
             )
         }
@@ -195,7 +195,7 @@ class MapTest {
             modules(
                 module {
                     factory(NameOne) { "overridden_value" }
-                        .intoMap<String, String, String>("key")
+                        .intoMap<String, String>("key")
                 }
             )
         }
