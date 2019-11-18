@@ -59,7 +59,6 @@ class BindingSet<E> internal constructor(private val setKey: Key) {
     }
 
     fun add(elementKey: Key, override: Boolean = false) {
-        println("add $elementKey to $setKey is override $override exists ${elementKey in map}")
         check(elementKey !in map || override) {
             "Already declared $elementKey in set $setKey"
         }
