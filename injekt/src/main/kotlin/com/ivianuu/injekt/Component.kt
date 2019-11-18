@@ -23,6 +23,20 @@ import kotlin.reflect.KClass
  * Dependencies can be requested by calling either [get] or [inject]
  * Use [ComponentBuilder] to construct component instances
  *
+ * Typical usage of a component looks like this:
+ *
+ * ´´´
+ * val component = component {
+ *     scopes(Singleton::class)
+ *     modules(networkModule)
+ *     modules(databaseModule)
+ * }
+ *
+ * val api = component.get<Api>()
+ * val database = component.get<Database>()
+ *
+ * ´´´
+ *
  * @see get
  * @see inject
  * @see ComponentBuilder
