@@ -1,46 +1,42 @@
-/*
- * Copyright 2019 Manuel Wrage
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * Copyright 2018 Manuel Wrage
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import org.anarres.gradle.plugin.jarjar.JarjarTask
 
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    id("org.anarres.jarjar")
+    id("maven-publish")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
+configurations {
+    register("jarFiles")
+    register("embeddablePlugin")
+}
+
 dependencies {
-    implementation(project(":injekt"))
-    implementation(Deps.processingX)
-    kapt(Deps.processingX)
+    "jarFiles"(project(":injekt-compiler-hosted")) {
+        isTransitive = false
+    }
+}
+
+val embeddedPlugin = tasks.register<JarjarTask>("jarJar") {
+    destinationName = "injekt-kotlin-compiler.jar"
+    from(configurations.getByName("jarFiles"))
+    classRename("com.intellij.**", "org.jetbrains.kotlin.com.intellij.@1")
+}.get()
+
+publishing {
+    publications {
+        getByName<MavenPublication>("MyPublication") {
+            artifact(embeddedPlugin.destinationPath)
+        }
+    }
+}
+
+// todo
+tasks.withType<GenerateMavenPom>().configureEach {
+    dependsOn(embeddedPlugin)
 }

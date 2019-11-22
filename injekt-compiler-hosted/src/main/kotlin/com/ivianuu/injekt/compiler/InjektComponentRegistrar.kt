@@ -17,16 +17,20 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.processingx.steps.ProcessingStep
-import com.ivianuu.processingx.steps.StepProcessor
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType.ISOLATING
-import javax.annotation.processing.Processor
-import javax.lang.model.SourceVersion
+import com.intellij.mock.MockProject
+import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 
-@AutoService(Processor::class)
-@IncrementalAnnotationProcessor(ISOLATING)
-class InjektProcessor : StepProcessor() {
-    override fun initSteps(): Set<ProcessingStep> = setOf(BindingGenerationStep())
-    override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
+@AutoService(ComponentRegistrar::class)
+class InjektComponentRegistrar : ComponentRegistrar {
+    override fun registerProjectComponents(
+        project: MockProject,
+        configuration: CompilerConfiguration
+    ) {
+        StorageComponentContainerContributor.registerExtension(
+            project,
+            InjektStorageComponentContainerContributor()
+        )
+    }
 }

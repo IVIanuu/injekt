@@ -1,0 +1,32 @@
+<!--
+  ~ Copyright 2019 Manuel Wrage
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<idea-plugin url="https://github.com/IVIanuu/compose">
+    <name>Injekt Compiler Plugin</name>
+    <id>com.ivianuu.injekt</id>
+    <version>1.0</version>
+    <vendor email="ivianuu@gmail.com" url="https://github.com/IVIanuu/">IVIanuu</vendor>
+
+    <description>This is a description. Awesome right?</description>
+
+    <depends>org.jetbrains.plugins.gradle</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <storageComponentContainerContributor
+            implementation="com.ivianuu.injekt.compiler.InjektStorageComponentContainerContributor" />
+    </extensions>
+</idea-plugin>
