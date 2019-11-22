@@ -18,9 +18,8 @@ package com.ivianuu.injekt
 
 /**
  * Provides instances of type [T]
- * For any type [T] that can be injected, you can also inject Provider<T>. This enables
- * Providing multiple instances
- * Lazy or optional retrieval of an instance
+ * For any type [T] that can be injected, you can also inject Provider<T>.
+ * This enables providing multiple, lazy or optional retrieval of instances
  */
 interface Provider<T> {
 
