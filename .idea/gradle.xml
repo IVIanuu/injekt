@@ -15,9 +15,7 @@
             <option value="$PROJECT_DIR$/injekt" />
             <option value="$PROJECT_DIR$/injekt-android" />
             <option value="$PROJECT_DIR$/injekt-compiler" />
-            <option value="$PROJECT_DIR$/injekt-compiler-hosted" />
             <option value="$PROJECT_DIR$/injekt-gradle-plugin" />
-            <option value="$PROJECT_DIR$/injekt-ide-plugin" />
             <option value="$PROJECT_DIR$/playground" />
             <option value="$PROJECT_DIR$/sample" />
           </set>

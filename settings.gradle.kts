@@ -19,9 +19,7 @@ include(
     ":injekt",
     ":injekt-android",
     ":injekt-compiler",
-    ":injekt-compiler-hosted",
     ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
     ":playground",
     ":sample"
 )

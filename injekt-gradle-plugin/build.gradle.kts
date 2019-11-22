@@ -24,7 +24,7 @@ buildConfig {
 
     version = Publishing.version
     buildConfigField("String", "GROUP_ID", Publishing.groupId)
-    buildConfigField("String", "ARTIFACT_ID", "injekt-kotlin-compiler")
+    buildConfigField("String", "ARTIFACT_ID", "injekt-compiler")
 }
 
 dependencies {
