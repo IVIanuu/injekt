@@ -31,6 +31,7 @@ class InjektClassBuilderInterceptorExtension : ClassBuilderInterceptorExtension 
     ): ClassBuilderFactory = object : ClassBuilderFactory by interceptedFactory {
 
         override fun newClassBuilder(origin: JvmDeclarationOrigin): ClassBuilder {
+            msg { "new class builder" }
             generateNotifier?.invoke()
             return interceptedFactory.newClassBuilder(origin)
         }

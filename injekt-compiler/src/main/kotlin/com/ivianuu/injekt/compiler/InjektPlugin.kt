@@ -21,9 +21,14 @@ import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.codegen.extensions.ClassBuilderInterceptorExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOption
+import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import java.io.File
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -31,12 +36,18 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
+        val outputDir = File(configuration.getNotNull(OutputDirKey))
         messageCollector =
             configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
 
+        msg { "init with $outputDir" }
+
+        outputDir.deleteRecursively()
+        outputDir.mkdirs()
+
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageComponentContainerContributor()
+            BindingFinder(outputDir)
         )
 
         ClassBuilderInterceptorExtension.registerExtension(
@@ -45,3 +56,28 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
     }
 }
+
+@AutoService(CommandLineProcessor::class)
+class InjektCommandLineProcessor : CommandLineProcessor {
+    override val pluginId = "com.ivianuu.injekt"
+
+    override val pluginOptions = listOf(
+        CliOption(
+            optionName = "outputDir",
+            valueDescription = "generated src dir",
+            description = "generated src"
+        )
+    )
+
+    override fun processOption(
+        option: AbstractCliOption,
+        value: String,
+        configuration: CompilerConfiguration
+    ) {
+        when(option.optionName) {
+            "outputDir" -> configuration.put(OutputDirKey, value)
+        }
+    }
+}
+
+val OutputDirKey = CompilerConfigurationKey<String>("outputDir")
