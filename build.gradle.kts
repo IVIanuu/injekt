@@ -19,10 +19,13 @@ buildscript {
         google()
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
+        maven("https://plugins.gradle.org/m2")
     }
     dependencies {
         classpath(Deps.androidGradlePlugin)
         classpath(Deps.bintrayGradlePlugin)
+        classpath(Deps.buildConfigGradlePlugin)
+        classpath(Deps.jarJarGradlePlugin)
         classpath(Deps.Kotlin.gradlePlugin)
         classpath(Deps.mavenGradlePlugin)
     }
@@ -35,5 +38,6 @@ allprojects {
         mavenLocal()
         maven("https://dl.bintray.com/ivianuu/maven")
         maven("https://oss.sonatype.org/content/repositories/snapshots")
+        maven("https://plugins.gradle.org/m2")
     }
 }

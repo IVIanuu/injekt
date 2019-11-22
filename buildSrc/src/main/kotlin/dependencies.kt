@@ -32,7 +32,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev73"
+    const val version = "${Build.versionName}-dev75"
 }
 
 object Deps {
@@ -42,6 +42,9 @@ object Deps {
 
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
+
+    const val buildConfigGradlePlugin =
+        "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
     object Dagger2 {
         private const val version = "2.24"
@@ -55,6 +58,8 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
+    const val jarJarGradlePlugin = "org.anarres.jarjar:jarjar-gradle:1.0.1"
+
     const val junit = "junit:junit:4.12"
 
     const val katana = "org.rewedigital.katana:katana-core:1.8.1"
@@ -65,7 +70,9 @@ object Deps {
 
     object Kotlin {
         private const val version = "1.3.50"
+        const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
+        const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
         const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version"
     }
 

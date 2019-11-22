@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-include(
-    ":comparison",
-    ":injekt",
-    ":injekt-android",
-    ":injekt-compiler",
-    ":injekt-compiler-hosted",
-    ":injekt-gradle-plugin",
-    ":injekt-ide-plugin",
-    ":playground",
-    ":sample"
-)
+package com.ivianuu.injekt.compiler
+
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
+import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+
+class InjektDeclarationChecker : DeclarationChecker {
+    override fun check(
+        declaration: KtDeclaration,
+        descriptor: DeclarationDescriptor,
+        context: DeclarationCheckerContext
+    ) {
+        println("check declaration $declaration $descriptor $context")
+    }
+}
