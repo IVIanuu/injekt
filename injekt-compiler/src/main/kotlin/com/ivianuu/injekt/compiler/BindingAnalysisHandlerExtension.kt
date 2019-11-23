@@ -68,6 +68,8 @@ class BindingAnalysisHandlerExtension(
         if (generatedFiles) return null
         generatedFiles = true
 
+        msg { "on analysis complete" }
+
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
@@ -76,6 +78,8 @@ class BindingAnalysisHandlerExtension(
                 classRecursiveVisitor { ktClass ->
                     val classDescriptor =
                         resolveSession.resolveToDescriptor(ktClass) as ClassDescriptor
+                    msg { "process class $ktClass desc is $classDescriptor" }
+
                     val descriptor = createBindingDescriptor(
                         ktClass,
                         classDescriptor,
@@ -89,6 +93,7 @@ class BindingAnalysisHandlerExtension(
         }
 
         return if (bindingTrace.bindingContext.diagnostics.isEmpty()) {
+            msg { "analysis try with addional roots" }
             AnalysisResult.RetryWithAdditionalRoots(
                 bindingContext = bindingTrace.bindingContext,
                 moduleDescriptor = module,
@@ -96,6 +101,7 @@ class BindingAnalysisHandlerExtension(
                 additionalKotlinRoots = listOf(outputDir)
             )
         } else {
+            msg { "analysis error" }
             AnalysisResult.compilationError(bindingTrace.bindingContext)
         }
     }
