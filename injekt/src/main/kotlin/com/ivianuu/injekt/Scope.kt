@@ -29,7 +29,6 @@ import kotlin.reflect.KClass
  *
  * ´´´
  * @ActivityScope
- * @Inject
  * class MyViewModel
  * ´´´
  *
