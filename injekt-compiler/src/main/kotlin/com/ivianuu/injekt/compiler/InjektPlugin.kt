@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.codegen.extensions.ClassBuilderInterceptorExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
@@ -27,7 +26,7 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
 @AutoService(ComponentRegistrar::class)
@@ -45,14 +44,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
-        StorageComponentContainerContributor.registerExtension(
+        AnalysisHandlerExtension.registerExtension(
             project,
-            BindingFinder(outputDir)
-        )
-
-        ClassBuilderInterceptorExtension.registerExtension(
-            project,
-            InjektClassBuilderInterceptorExtension()
+            BindingAnalysisHandlerExtension(outputDir)
         )
     }
 }

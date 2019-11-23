@@ -50,7 +50,7 @@ fun createBindingDescriptor(
 
     if (descriptor is FunctionDescriptor
         && annotatedType.annotations.hasAnnotation(InjectAnnotation)) {
-        report(descriptor, trace) { InjektError.OnlyOneAnnotation }
+        report(descriptor, trace) { OnlyOneAnnotation }
         return null
     }
 
@@ -60,7 +60,7 @@ fun createBindingDescriptor(
 
     if (annotatedType.visibility != Visibilities.PUBLIC
         && annotatedType.visibility != Visibilities.INTERNAL) {
-        report(descriptor, trace) { InjektError.CannotBePrivate }
+        report(descriptor, trace) { CannotBePrivate }
         return null
     }
 
@@ -69,7 +69,7 @@ fun createBindingDescriptor(
     }
 
     if (scopeAnnotations.size > 1) {
-        report(descriptor, trace) { InjektError.OnlyOneAnnotation }
+        report(descriptor, trace) { OnlyOneAnnotation }
         return null
     }
 
@@ -95,7 +95,7 @@ fun createBindingDescriptor(
 
         if (constructor.visibility != Visibilities.PUBLIC
             && constructor.visibility != Visibilities.INTERNAL) {
-            report(constructor, trace) { InjektError.CannotBePrivate }
+            report(constructor, trace) { CannotBePrivate }
             return null
         }
 
@@ -114,7 +114,7 @@ fun createBindingDescriptor(
                         (param.annotations.filter { it.hasAnnotation(NameAnnotation, descriptor.module) })
 
                 if (nameAnnotations.size > 1) {
-                    report(param, trace) { InjektError.OnlyOneName }
+                    report(param, trace) { OnlyOneName }
                     return null
                 }
 
@@ -130,7 +130,7 @@ fun createBindingDescriptor(
                     ?.let { ClassName.bestGuess(it) }
 
                 if (paramIndex != null && nameType != null) {
-                    report(param, trace) { InjektError.EitherNameOrParam }
+                    report(param, trace) { EitherNameOrParam }
                     return null
                 }
 
