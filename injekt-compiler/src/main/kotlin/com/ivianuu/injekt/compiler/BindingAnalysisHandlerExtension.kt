@@ -49,9 +49,6 @@ class BindingAnalysisHandlerExtension(
 
         msg { "on analysis complete" }
 
-        outputDir.deleteRecursively()
-        outputDir.mkdirs()
-
         val resolveSession = componentProvider.get<ResolveSession>()
 
         files.forEach { file ->
