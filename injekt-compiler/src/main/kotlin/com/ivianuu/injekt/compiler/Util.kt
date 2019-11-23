@@ -21,6 +21,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -37,7 +38,9 @@ fun msg(block: () -> String) {
     messageCollector.report(CompilerMessageSeverity.WARNING, "inject: ${block()}")
 }
 
-fun FqName.asClassName() = ClassName.bestGuess(asString())
+fun ClassDescriptor.asClassName() = fqNameSafe.asClassName()
+
+fun FqName.asClassName() = ClassName.bestGuess(asString()) // todo
 
 fun KotlinType.asTypeName(): TypeName {
     val type = constructor.declarationDescriptor!!.fqNameSafe.asClassName()

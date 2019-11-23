@@ -41,6 +41,7 @@ val OnlyOneAnnotation = error()
 val OnlyOneName = error()
 val EitherNameOrParam = error()
 val CannotBePrivate = error()
+val NeedsACompanionObject = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -64,6 +65,10 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             CannotBePrivate,
             "Must be public or internal"
+        )
+        map.put(
+            NeedsACompanionObject,
+            "Name annotation needs a companion object"
         )
     }
 }

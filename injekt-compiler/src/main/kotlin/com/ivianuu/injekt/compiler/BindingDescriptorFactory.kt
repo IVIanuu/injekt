@@ -25,13 +25,10 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.hasCompanionObject
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun createBindingDescriptor(
     declaration: KtDeclaration,
@@ -79,7 +76,7 @@ fun createBindingDescriptor(
 
     var currentParamsIndex = -1
 
-    val targetName = annotatedType.fqNameSafe.asClassName()
+    val targetName = annotatedType.asClassName()
 
     val factoryName = ClassName(
         targetName.packageName,
@@ -112,8 +109,8 @@ fun createBindingDescriptor(
                     null
                 }
 
-                val nameAnnotations = listOfNotNull(param.annotations.findAnnotation(NameAnnotation)) +
-                        (param.annotations.filter { it.hasAnnotation(NameAnnotation, descriptor.module) })
+                val nameAnnotations =
+                    param.annotations.filter { it.hasAnnotation(NameAnnotation, descriptor.module) }
 
                 if (nameAnnotations.size > 1) {
                     report(param, trace) { OnlyOneName }
@@ -121,22 +118,20 @@ fun createBindingDescriptor(
                 }
 
                 val nameType = if (nameAnnotations.isNotEmpty()) {
-                    nameAnnotations
+                    val namedAnnotation = nameAnnotations
                         .map {
                             descriptor.module.findClassAcrossModuleDependencies(
-                                ClassId.topLevel(
-                                    it.fqName!!
-                                )
+                                ClassId.topLevel(it.fqName!!)
                             )!!
                         }
                         .first()
-                        .annotations
-                        .findAnnotation(NameAnnotation)!!
-                        .allValueArguments
-                        .getValue(Name.identifier("name"))
-                        .cast<KClassValue>()
-                        .getArgumentType(descriptor.module)
-                        .asTypeName() as ClassName
+
+                    if (!namedAnnotation.hasCompanionObject) {
+                        report(namedAnnotation, trace) { NeedsACompanionObject }
+                        return null
+                    }
+
+                    namedAnnotation.companionObjectDescriptor!!.asClassName()
                 } else null
 
                 if (paramIndex != null && nameType != null) {
