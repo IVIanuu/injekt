@@ -28,8 +28,10 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun createBindingDescriptor(
     declaration: KtDeclaration,
@@ -118,16 +120,24 @@ fun createBindingDescriptor(
                     return null
                 }
 
-                val nameType = nameAnnotations
-                    .map { descriptor.module.findClassAcrossModuleDependencies(ClassId.topLevel(it.fqName!!)) }
-                    .firstOrNull()
-                    ?.annotations
-                    ?.findAnnotation(NameAnnotation)
-                    ?.allValueArguments
-                    ?.getValue(Name.identifier("name"))
-                    ?.value
-                    ?.let { it as? String }
-                    ?.let { ClassName.bestGuess(it) }
+                val nameType = if (nameAnnotations.isNotEmpty()) {
+                    nameAnnotations
+                        .map {
+                            descriptor.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(
+                                    it.fqName!!
+                                )
+                            )!!
+                        }
+                        .first()
+                        .annotations
+                        .findAnnotation(NameAnnotation)!!
+                        .allValueArguments
+                        .getValue(Name.identifier("name"))
+                        .cast<KClassValue>()
+                        .getArgumentType(descriptor.module)
+                        .asTypeName() as ClassName
+                } else null
 
                 if (paramIndex != null && nameType != null) {
                     report(param, trace) { EitherNameOrParam }
