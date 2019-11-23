@@ -18,6 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * Marks the annotated class as a name which can be used to differentiate between instances of the same type
+ * The annotated class must have an companion object
  *
  * It's a good convention to declare names which can be used from both the dsl AND annotated classes
  * This can be achieved by declaring it like this:
