@@ -108,7 +108,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
         }?.annotationClass
 
         JustInTimeLookup(
-            UnlinkedJustInTimeBinding(constructor),
+            UnlinkedReflectiveBinding(constructor),
             scope
         )
     } catch (e: Exception) {
@@ -116,7 +116,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
     }
 }
 
-private class UnlinkedJustInTimeBinding<T>(
+private class UnlinkedReflectiveBinding<T>(
     private val constructor: Constructor<T>
 ) : UnlinkedBinding<T>() {
 
@@ -125,14 +125,14 @@ private class UnlinkedJustInTimeBinding<T>(
         val parameterAnnotations = constructor.parameterAnnotations
 
         val args =
-            arrayOfNulls<LinkedJustInTimeBinding.Arg>(parameterTypes.size)
+            arrayOfNulls<LinkedReflectiveBinding.Arg>(parameterTypes.size)
         var currentParamIndex = -1
         for (i in parameterTypes.indices) {
             val thisAnnotations = parameterAnnotations[i]
 
             if (thisAnnotations.any { it is Param }) {
                 ++currentParamIndex
-                args[i] = LinkedJustInTimeBinding.Arg.Parameter(currentParamIndex)
+                args[i] = LinkedReflectiveBinding.Arg.Parameter(currentParamIndex)
             } else {
                 val type = typeOf<Any?>(parameterTypes[i])
                 val nameAnnotation = parameterAnnotations[i]
@@ -154,16 +154,16 @@ private class UnlinkedJustInTimeBinding<T>(
                     ?.get(null)
 
                 val key = keyOf(type, name)
-                args[i] = LinkedJustInTimeBinding.Arg.Dependency(linker.get<Any?>(key))
+                args[i] = LinkedReflectiveBinding.Arg.Dependency(linker.get<Any?>(key))
             }
         }
 
-        return LinkedJustInTimeBinding(constructor, args as Array<LinkedJustInTimeBinding.Arg>)
+        return LinkedReflectiveBinding(constructor, args as Array<LinkedReflectiveBinding.Arg>)
     }
 
 }
 
-private class LinkedJustInTimeBinding<T>(
+private class LinkedReflectiveBinding<T>(
     private val constructor: Constructor<T>,
     private val args: Array<Arg>
 ) : LinkedBinding<T>() {
