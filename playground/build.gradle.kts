@@ -33,7 +33,6 @@
 plugins {
     id("com.ivianuu.injekt")
     kotlin("jvm")
-    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")

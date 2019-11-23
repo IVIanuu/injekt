@@ -34,7 +34,6 @@ plugins {
     id("com.android.application")
     id("com.ivianuu.injekt")
     kotlin("android")
-    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")

@@ -16,12 +16,10 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.android.ActivityScope
 import com.ivianuu.injekt.sample.data.Repository
 
 @ActivityScope
-@Inject
 class HomeViewModel(private val repository: Repository) {
     fun getItems() = repository.getItems()
 }

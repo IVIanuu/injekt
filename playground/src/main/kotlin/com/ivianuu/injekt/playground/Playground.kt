@@ -27,7 +27,7 @@ import kotlin.reflect.KClass
 // kinds
 interface Command
 
-@Name(Commands::class)
+@Name
 annotation class Commands {
     companion object
 }
