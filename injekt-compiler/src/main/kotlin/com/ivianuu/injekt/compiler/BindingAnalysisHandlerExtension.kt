@@ -55,6 +55,8 @@ class BindingAnalysisHandlerExtension(
         val resolveSession = componentProvider.get<ResolveSession>()
 
         files.forEach { file ->
+            val diagnosticCount = bindingTrace.bindingContext.diagnostics.all().size
+
             file.accept(
                 classRecursiveVisitor { ktClass ->
                     val classDescriptor =
@@ -66,6 +68,10 @@ class BindingAnalysisHandlerExtension(
                         classDescriptor,
                         bindingTrace
                     ) ?: return@classRecursiveVisitor
+
+                    if (bindingTrace.bindingContext.diagnostics.all().size != diagnosticCount) {
+                        return@classRecursiveVisitor
+                    }
 
                     val generator = BindingGenerator(descriptor)
                     generator.generate().writeTo(outputDir)
