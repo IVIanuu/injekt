@@ -84,7 +84,7 @@ class ReflectionTest {
     }
 }
 
-@Name(PackageName.Companion::class)
+@Name
 annotation class PackageName {
     companion object
 }

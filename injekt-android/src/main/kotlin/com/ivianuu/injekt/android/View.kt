@@ -33,12 +33,12 @@ annotation class ViewScope
 @Scope
 annotation class ChildViewScope
 
-@Name(ForView.Companion::class)
+@Name
 annotation class ForView {
     companion object
 }
 
-@Name(ForChildView.Companion::class)
+@Name
 annotation class ForChildView {
     companion object
 }

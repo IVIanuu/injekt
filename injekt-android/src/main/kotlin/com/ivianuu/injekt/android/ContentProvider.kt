@@ -29,7 +29,7 @@ import com.ivianuu.injekt.module
 @Scope
 annotation class ContentProviderScope
 
-@Name(ForContentProvider.Companion::class)
+@Name
 annotation class ForContentProvider {
     companion object
 }

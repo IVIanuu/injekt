@@ -29,7 +29,7 @@ import com.ivianuu.injekt.module
 @Scope
 annotation class ApplicationScope
 
-@Name(ForApplication.Companion::class)
+@Name
 annotation class ForApplication {
     companion object
 }

@@ -137,15 +137,19 @@ private class UnlinkedJustInTimeBinding<T>(
                 val type = typeOf<Any?>(parameterTypes[i])
                 val nameAnnotation = parameterAnnotations[i]
                     .mapNotNull { annotation ->
-                        annotation.annotationClass.java.declaredAnnotations.firstOrNull { annotatedAnnotation ->
-                            annotatedAnnotation.annotationClass == Name::class
-                        }
+                        if (annotation.annotationClass.java.declaredAnnotations.any {
+                                it.annotationClass == Name::class
+                            }) annotation else null
                     }
                     .firstOrNull()
 
-                val name = (nameAnnotation as? Name)
-                    ?.name?.java?.declaredFields
-                    ?.last()
+                val name = nameAnnotation
+                    ?.annotationClass
+                    ?.java
+                    ?.declaredClasses
+                    ?.firstOrNull()
+                    ?.declaredFields
+                    ?.first { it.type == it.declaringClass }
                     ?.also { it.isAccessible = true }
                     ?.get(null)
 

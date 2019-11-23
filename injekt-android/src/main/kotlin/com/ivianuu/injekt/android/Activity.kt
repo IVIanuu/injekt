@@ -36,7 +36,7 @@ import com.ivianuu.injekt.module
 @Scope
 annotation class ActivityScope
 
-@Name(ForActivity.Companion::class)
+@Name
 annotation class ForActivity {
     companion object
 }

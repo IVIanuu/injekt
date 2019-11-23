@@ -22,12 +22,12 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.module
 import java.io.File
 
-@Name(WebApiUrl::class)
+@Name
 annotation class WebApiUrl {
     companion object
 }
 
-@Name(DatabaseFile::class)
+@Name
 annotation class DatabaseFile {
     companion object
 }

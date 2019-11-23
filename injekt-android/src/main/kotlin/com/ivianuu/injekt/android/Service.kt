@@ -30,7 +30,7 @@ import com.ivianuu.injekt.module
 @Scope
 annotation class ServiceScope
 
-@Name(ForService.Companion::class)
+@Name
 annotation class ForService {
     companion object
 }

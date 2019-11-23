@@ -30,7 +30,7 @@ import com.ivianuu.injekt.module
 @Scope
 annotation class ReceiverScope
 
-@Name(ForReceiver.Companion::class)
+@Name
 annotation class ForReceiver {
     companion object
 }

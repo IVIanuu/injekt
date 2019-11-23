@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Marks the annotated class as a name which can be used to differentiate between instances of the same type
  *
@@ -25,7 +23,7 @@ import kotlin.reflect.KClass
  * This can be achieved by declaring it like this:
  *
  * ´´´
- * @Name(UserId.Companion::class)
+ * @Name
  * annotation class UserId {
  *     companion object
  * }
@@ -49,5 +47,5 @@ import kotlin.reflect.KClass
  * @see Component.get
  * @see Inject
  */
-@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.CLASS)
-annotation class Name(val name: KClass<*>)
+@Target(AnnotationTarget.CLASS)
+annotation class Name

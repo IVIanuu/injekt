@@ -35,12 +35,12 @@ annotation class FragmentScope
 @Scope
 annotation class ChildFragmentScope
 
-@Name(ForFragment.Companion::class)
+@Name
 annotation class ForFragment {
     companion object
 }
 
-@Name(ForChildFragment.Companion::class)
+@Name
 annotation class ForChildFragment {
     companion object
 }
