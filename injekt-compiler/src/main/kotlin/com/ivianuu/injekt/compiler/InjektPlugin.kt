@@ -41,7 +41,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         msg { "init with $outputDir" }
 
-        outputDir.deleteRecursively()
         outputDir.mkdirs()
 
         AnalysisHandlerExtension.registerExtension(
