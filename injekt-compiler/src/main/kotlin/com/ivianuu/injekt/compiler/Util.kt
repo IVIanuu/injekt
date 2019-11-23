@@ -32,8 +32,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeConstructor
 
-var generateNotifier: (() -> Unit)? = null
-
 lateinit var messageCollector: MessageCollector
 
 fun msg(block: () -> String) {
