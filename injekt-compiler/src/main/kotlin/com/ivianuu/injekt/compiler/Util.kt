@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeConstructor
 
 lateinit var messageCollector: MessageCollector
 
@@ -40,12 +39,10 @@ fun msg(block: () -> String) {
 
 fun FqName.asClassName() = ClassName.bestGuess(asString())
 
-fun KotlinType.asTypeName(): TypeName = constructor.asTypeName()
-
-fun TypeConstructor.asTypeName(): TypeName {
-    val type = declarationDescriptor!!.fqNameSafe.asClassName()
-    return if (parameters.isNotEmpty()) {
-        type.parameterizedBy(*parameters.map { it.typeConstructor.asTypeName() }.toTypedArray())
+fun KotlinType.asTypeName(): TypeName {
+    val type = constructor.declarationDescriptor!!.fqNameSafe.asClassName()
+    return if (arguments.isNotEmpty()) {
+        type.parameterizedBy(*arguments.map { it.type.asTypeName() }.toTypedArray())
     } else type
 }
 
