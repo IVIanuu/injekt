@@ -16,6 +16,8 @@
 
 buildscript {
     repositories {
+        mavenLocal()
+        maven("https://dl.bintray.com/ivianuu/maven")
         google()
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
@@ -25,6 +27,7 @@ buildscript {
         classpath(Deps.androidGradlePlugin)
         classpath(Deps.bintrayGradlePlugin)
         classpath(Deps.buildConfigGradlePlugin)
+        classpath(Deps.injektGradlePlugin)
         classpath(Deps.Kotlin.gradlePlugin)
         classpath(Deps.mavenGradlePlugin)
     }
@@ -32,10 +35,10 @@ buildscript {
 
 allprojects {
     repositories {
-        google()
-        jcenter()
         mavenLocal()
         maven("https://dl.bintray.com/ivianuu/maven")
+        google()
+        jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://plugins.gradle.org/m2")
     }

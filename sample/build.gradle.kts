@@ -32,6 +32,7 @@
 
 plugins {
     id("com.android.application")
+    id("com.ivianuu.injekt")
     kotlin("android")
     kotlin("kapt")
 }
@@ -46,5 +47,4 @@ dependencies {
     implementation(Deps.androidxAppCompat)
     implementation(project(":injekt"))
     implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
 }

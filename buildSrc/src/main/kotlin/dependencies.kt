@@ -58,6 +58,8 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev76"
+
     const val junit = "junit:junit:4.12"
 
     const val katana = "org.rewedigital.katana:katana-core:1.8.1"
