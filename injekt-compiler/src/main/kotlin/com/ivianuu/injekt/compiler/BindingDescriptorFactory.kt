@@ -20,35 +20,29 @@ import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.hasCompanionObject
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 fun createBindingDescriptor(
-    declaration: KtDeclaration,
-    descriptor: DeclarationDescriptor,
+    descriptor: ClassDescriptor,
     trace: BindingTrace
 ): BindingDescriptor? {
-    val annotatedType = if (descriptor is ClassDescriptor
-        && (descriptor.annotations.hasAnnotation(InjectAnnotation)
-                || descriptor.hasAnnotatedAnnotations(ScopeAnnotation))) {
+    val annotatedType = if (descriptor.annotations.hasAnnotation(InjectAnnotation)) {
         descriptor
-    } else if (descriptor is FunctionDescriptor && descriptor.annotations.hasAnnotation(InjectAnnotation)) {
+    } else if (descriptor.constructors.any { it.annotations.hasAnnotation(InjectAnnotation) }) {
+        descriptor.constructors.first { it.annotations.hasAnnotation(InjectAnnotation) }
         descriptor.containingDeclaration as ClassDescriptor
     } else {
         return null
     }
 
-    msg { "process $descriptor annotated type $declaration" }
+    msg { "process $descriptor" }
 
-    if (descriptor is FunctionDescriptor
-        && annotatedType.annotations.hasAnnotation(InjectAnnotation)) {
+    if ((1 + descriptor.constructors.count { it.annotations.hasAnnotation(InjectAnnotation) } > 1)) {
         report(descriptor, trace) { OnlyOneAnnotation }
         return null
     }

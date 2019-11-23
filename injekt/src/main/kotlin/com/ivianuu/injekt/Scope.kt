@@ -29,6 +29,7 @@ import kotlin.reflect.KClass
  *
  * ´´´
  * @ActivityScope
+ * @Inject
  * class MyViewModel
  * ´´´
  *
@@ -55,7 +56,6 @@ fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
  * Used by generated code to provide the of the injectable
  *
  * @see CodegenJustInTimeLookupFactory
- * @see ReflectiveJustInTimeLookupFactory
  */
 interface HasScope {
     val scope: KClass<out Annotation>
