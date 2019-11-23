@@ -18,7 +18,8 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
+import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
@@ -35,10 +36,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        val outputDir = File(configuration.getNotNull(OutputDirKey))
-        messageCollector =
-            configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
+        messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
+            ?: PrintingMessageCollector(System.out, MessageRenderer.PLAIN_FULL_PATHS, true)
 
+        val outputDir = File(configuration.getNotNull(OutputDirKey))
         msg { "init with $outputDir" }
 
         outputDir.mkdirs()

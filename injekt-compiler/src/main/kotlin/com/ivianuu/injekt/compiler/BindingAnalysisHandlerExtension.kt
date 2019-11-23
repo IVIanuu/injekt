@@ -26,19 +26,15 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.classRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.jvm.extensions.PartialAnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 
 class BindingAnalysisHandlerExtension(
     private val outputDir: File
-) : PartialAnalysisHandlerExtension() {
-
-    override val analyzePartially: Boolean
-        get() = !generatedFiles
+) : AnalysisHandlerExtension {
 
     private var generatedFiles = false
-    private lateinit var resolveSession: ResolveSession
 
     override fun doAnalysis(
         project: Project,
@@ -48,23 +44,6 @@ class BindingAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
-        resolveSession = componentProvider.get()
-        return super.doAnalysis(
-            project,
-            module,
-            projectContext,
-            files,
-            bindingTrace,
-            componentProvider
-        )
-    }
-
-    override fun analysisCompleted(
-        project: Project,
-        module: ModuleDescriptor,
-        bindingTrace: BindingTrace,
-        files: Collection<KtFile>
-    ): AnalysisResult? {
         if (generatedFiles) return null
         generatedFiles = true
 
@@ -72,6 +51,8 @@ class BindingAnalysisHandlerExtension(
 
         outputDir.deleteRecursively()
         outputDir.mkdirs()
+
+        val resolveSession = componentProvider.get<ResolveSession>()
 
         files.forEach { file ->
             file.accept(
@@ -105,6 +86,5 @@ class BindingAnalysisHandlerExtension(
             AnalysisResult.compilationError(bindingTrace.bindingContext)
         }
     }
-
 
 }

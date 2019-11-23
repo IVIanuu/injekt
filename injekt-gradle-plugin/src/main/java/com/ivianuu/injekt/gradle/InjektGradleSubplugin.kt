@@ -35,15 +35,9 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         }
 
         val outputDir = File(project.buildDir, "generated/source/injekt/$sourceSetName/")
-        kotlinCompilation?.allKotlinSourceSets?.forEach {
-            it.kotlin.srcDir(outputDir)
-            it.kotlin.exclude { it.file.startsWith(outputDir) }
-        }
-
-        // Lol #2
-        variantData?.javaClass?.methods?.first { it.name =="addJavaSourceFoldersToModel" }?.apply {
-            isAccessible = true
-            invoke(variantData, outputDir)
+        kotlinCompilation?.allKotlinSourceSets?.forEach { sourceSet ->
+            sourceSet.kotlin.srcDir(outputDir)
+            sourceSet.kotlin.exclude { it.file.startsWith(outputDir) }
         }
 
         return listOf(
