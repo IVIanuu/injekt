@@ -16,12 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.HasScope
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.LinkedBinding
-import com.ivianuu.injekt.Linker
-import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.UnlinkedBinding
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -32,7 +27,6 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.asTypeName
 import kotlin.reflect.KClass
 
 class BindingGenerator(private val descriptor: BindingDescriptor) {
@@ -50,17 +44,17 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         .apply {
             if (descriptor.hasDependencyArgs) {
                 superclass(
-                    UnlinkedBinding::class.asClassName().plusParameter(descriptor.target)
+                    InjektClassNames.UnlinkedBinding.plusParameter(descriptor.target)
                 )
             } else {
                 superclass(
-                    LinkedBinding::class.asClassName().plusParameter(descriptor.target)
+                    InjektClassNames.LinkedBinding.plusParameter(descriptor.target)
                 )
             }
         }
         .apply {
             if (descriptor.scope != null) {
-                addSuperinterface(HasScope::class)
+                addSuperinterface(InjektClassNames.HasScope)
                 addProperty(
                     PropertySpec.builder(
                         "scope",
@@ -88,7 +82,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         addProperty(
                             PropertySpec.builder(
                                 "${param.argName}Key",
-                                Key::class,
+                                InjektClassNames.Key,
                                 KModifier.PRIVATE
                             )
                                 .apply {
@@ -112,10 +106,8 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                 addFunction(
                     FunSpec.builder("link")
                         .addModifiers(KModifier.OVERRIDE)
-                        .addParameter("linker", Linker::class.asClassName())
-                        .returns(
-                            LinkedBinding::class.asTypeName().plusParameter(descriptor.target)
-                        )
+                        .addParameter("linker", InjektClassNames.Linker)
+                        .returns(InjektClassNames.LinkedBinding.plusParameter(descriptor.target))
                         .addCode(
                             CodeBlock.builder()
                                 .add("return Linked(\n")
@@ -144,7 +136,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         .addParameter(
                             "parameters",
                             LambdaTypeName.get(
-                                returnType = Parameters::class.asClassName()
+                                returnType = InjektClassNames.Parameters
                             ).copy(nullable = true)
                         )
                         .returns(descriptor.target)
@@ -170,7 +162,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         (if (descriptor.hasDependencyArgs) TypeSpec.classBuilder("Linked")
         else TypeSpec.objectBuilder("Linked"))
             .addModifiers(KModifier.PRIVATE)
-            .superclass(LinkedBinding::class.asClassName().plusParameter(descriptor.target))
+            .superclass(InjektClassNames.LinkedBinding.plusParameter(descriptor.target))
             .apply {
                 primaryConstructor(
                     FunSpec.constructorBuilder()
@@ -180,7 +172,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                                 .forEach { param ->
                                     addParameter(
                                         param.argName + "Binding",
-                                        LinkedBinding::class.asTypeName().plusParameter(param.paramType)
+                                        InjektClassNames.LinkedBinding.plusParameter(param.paramType)
                                     )
                                 }
                         }
@@ -193,7 +185,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         addProperty(
                             PropertySpec.builder(
                                 param.argName + "Binding",
-                                LinkedBinding::class.asTypeName().plusParameter(param.paramType),
+                                InjektClassNames.LinkedBinding.plusParameter(param.paramType),
                                 KModifier.PRIVATE
                             )
                                 .initializer(param.argName + "Binding")
@@ -207,7 +199,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                     .addParameter(
                         "parameters",
                         LambdaTypeName.get(
-                            returnType = Parameters::class.asClassName()
+                            returnType = InjektClassNames.Parameters
                         ).copy(nullable = true)
                     )
                     .returns(descriptor.target)
@@ -249,4 +241,13 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         .unindent()
         .add("\n)\n")
         .build()
+}
+
+private object InjektClassNames {
+    val HasScope = ClassName("com.ivianuu.injekt", "HasScope")
+    val Key = ClassName("com.ivianuu.injekt", "Key")
+    val LinkedBinding = ClassName("com.ivianuu.injekt", "LinkedBinding")
+    val Linker = ClassName("com.ivianuu.injekt", "Linker")
+    val Parameters = ClassName("com.ivianuu.injekt", "Parameters")
+    val UnlinkedBinding = ClassName("com.ivianuu.injekt", "UnlinkedBinding")
 }
