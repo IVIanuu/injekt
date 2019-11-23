@@ -58,6 +58,8 @@ fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
 
 fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
-    val descriptor = module.findClassAcrossModuleDependencies(ClassId.topLevel(this.fqName!!))!!
+    val thisFqName = this.fqName ?: return false
+    val descriptor =
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
     return descriptor.annotations.hasAnnotation(annotation)
 }
