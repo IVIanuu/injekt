@@ -27,16 +27,18 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ContentProviderScope
+annotation class ContentProviderScope {
+    companion object
+}
 
-@Name(ForContentProvider.Companion::class)
+@Name
 annotation class ForContentProvider {
     companion object
 }
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ContentProviderScope>()
+        scopes(ContentProviderScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(contentProviderModule())
         block?.invoke(this)

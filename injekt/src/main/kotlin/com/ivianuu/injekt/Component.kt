@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * The heart of the library which provides instances
  * Dependencies can be requested by calling either [get] or [inject]
@@ -27,7 +25,7 @@ import kotlin.reflect.KClass
  *
  * ´´´
  * val component = component {
- *     scopes(Singleton::class)
+ *     scopes(Singleton)
  *     modules(networkModule)
  *     modules(databaseModule)
  * }
@@ -41,7 +39,7 @@ import kotlin.reflect.KClass
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: List<KClass<out Annotation>>,
+    internal val scopes: List<Any>,
     internal val allBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
     eagerBindings: List<Key>,
@@ -51,6 +49,8 @@ class Component internal constructor(
 ) {
 
     internal val linker = Linker(this)
+
+    private val linkedBindingsByUnlinked = mutableMapOf<UnlinkedBinding<*>, LinkedBinding<*>>()
 
     init {
         eagerBindings.forEach { get(it) }
@@ -155,7 +155,7 @@ class Component internal constructor(
 
     private fun <T> findExplicitBindingForDependency(key: Key): LinkedBinding<T>? {
         var binding = synchronized(allBindings) { allBindings[key] } as? Binding<T>
-        if (binding != null && !binding.unscoped) return binding.linkIfNeeded(key)
+        if (binding != null && binding.scoped) return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
             binding = dependency.findExplicitBindingForDependency(key)
@@ -189,14 +189,14 @@ class Component internal constructor(
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
         val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
         if (justInTimeLookup != null) {
-            var binding = justInTimeLookup.binding
+            val binding = justInTimeLookup.binding
+                .let { if (justInTimeLookup.isSingle) it.asSingle() else it }
             return if (justInTimeLookup.scope != null) {
                 val component = findComponentForScope(justInTimeLookup.scope)
                     ?: error("Couldn't find component for ${justInTimeLookup.scope}")
-                binding = binding.asScoped()
+                binding.scoped = true
                 component.addJustInTimeBinding(key, binding)
             } else {
-                binding.unscoped = true
                 addJustInTimeBinding(key, binding)
             }
         }
@@ -215,12 +215,15 @@ class Component internal constructor(
 
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
         if (this is LinkedBinding) return this
-        val linkedBinding = performLink(linker)
+        this as UnlinkedBinding
+        val linkedBinding = linkedBindingsByUnlinked.getOrPut(this) {
+            performLink(linker)
+        } as LinkedBinding<T>
         synchronized(allBindings) { allBindings[key] = linkedBinding }
         return linkedBinding
     }
 
-    private fun findComponentForScope(scope: KClass<out Annotation>): Component? {
+    private fun findComponentForScope(scope: Any): Component? {
         if (scope in scopes) return this
         for (dependency in dependencies) {
             dependency.findComponentForScope(scope)

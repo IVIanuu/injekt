@@ -20,10 +20,11 @@ package com.ivianuu.injekt
  * A binding knows how to create a concrete instance of a type
  * It also holds additional information about the declaration
  * You typically don't access them directly but instead declare dependencies
- * via the [Module]s or annotating classes [Inject]
+ * via the [Module]s or annotating classes [Factory] [Single]
  *
  * @see Module
- * @see Inject
+ * @see Factory
+ * @see Single
  */
 sealed class Binding<T> {
 
@@ -40,9 +41,9 @@ sealed class Binding<T> {
         internal set
 
     /**
-     * Creates instances in the requesting component
+     * Creates instances in the bound scope
      */
-    var unscoped = false
+    var scoped = false
         internal set
 
     internal var linkPerformed = false
@@ -65,7 +66,7 @@ sealed class Binding<T> {
             linked.linkPerformed = true
             linked.override = override
             linked.eager = eager
-            linked.unscoped = unscoped
+            linked.scoped = scoped
         }
         return linked
     }

@@ -50,11 +50,11 @@ class ReflectionTest {
     @Test
     fun testUsesScope() {
         val testScopeComponent = component {
-            scopes(TestScopeOne::class)
+            scopes(TestScopeOne)
         }
 
         val component = component {
-            scopes(OtherScope::class)
+            scopes(OtherScope)
             dependencies(testScopeComponent)
         }
 
@@ -84,17 +84,21 @@ class ReflectionTest {
     }
 }
 
-@Name(PackageName.Companion::class)
+@Name
 annotation class PackageName {
     companion object
 }
 
+@Factory
 class ReflectionDep
 
+@Factory
 class ReflectionDepWithParam(@Param val value: Int)
 
+@Factory
 class ReflectionDepWithNamedParam(@PackageName val packageName: String)
 
+@Factory
 class ReflectionDepWithAnnotatedConstructor {
 
     val arg: Any?
@@ -103,7 +107,7 @@ class ReflectionDepWithAnnotatedConstructor {
         arg = testDep1
     }
 
-    @Inject
+    @InjektConstructor
     constructor(testDep2: TestDep2) {
         arg = testDep2
     }
@@ -112,12 +116,16 @@ class ReflectionDepWithAnnotatedConstructor {
 
 interface Memoized<T>
 
+@Factory
 class ReflectionDepWithParameterizedDep(
     private val mapOfStrings: Map<String, Memoized<String>>
 )
 
 @TestScopeOne
+@Factory
 class ReflectionDepWithScope
 
 @Scope
-annotation class OtherScope
+annotation class OtherScope {
+    companion object
+}

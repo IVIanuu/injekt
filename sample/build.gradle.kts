@@ -32,8 +32,8 @@
 
 plugins {
     id("com.android.application")
+    id("com.ivianuu.injekt")
     kotlin("android")
-    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
@@ -46,5 +46,4 @@ dependencies {
     implementation(Deps.androidxAppCompat)
     implementation(project(":injekt"))
     implementation(project(":injekt-android"))
-    kapt(project(":injekt-compiler"))
 }

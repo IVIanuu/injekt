@@ -24,6 +24,7 @@ data class BindingDescriptor(
     val bindingName: ClassName,
     val isInternal: Boolean,
     val isObject: Boolean,
+    val isSingle: Boolean,
     val scope: ClassName?,
     val constructorArgs: List<ArgDescriptor>
 ) {

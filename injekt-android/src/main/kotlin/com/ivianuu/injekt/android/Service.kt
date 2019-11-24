@@ -28,16 +28,18 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ServiceScope
+annotation class ServiceScope {
+    companion object
+}
 
-@Name(ForService.Companion::class)
+@Name
 annotation class ForService {
     companion object
 }
 
 fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ServiceScope>()
+        scopes(ServiceScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(serviceModule())
         block?.invoke(this)

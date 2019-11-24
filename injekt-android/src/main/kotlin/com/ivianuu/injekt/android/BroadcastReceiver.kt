@@ -28,9 +28,11 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ReceiverScope
+annotation class ReceiverScope {
+    companion object
+}
 
-@Name(ForReceiver.Companion::class)
+@Name
 annotation class ForReceiver {
     companion object
 }
@@ -39,7 +41,7 @@ fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scopes<ReceiverScope>()
+    scopes(ReceiverScope)
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule(context))
     block?.invoke(this)

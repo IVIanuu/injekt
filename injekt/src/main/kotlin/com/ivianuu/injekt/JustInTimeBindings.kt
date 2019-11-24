@@ -17,11 +17,11 @@
 package com.ivianuu.injekt
 
 import java.lang.reflect.Constructor
-import kotlin.reflect.KClass
 
 data class JustInTimeLookup<T>(
     val binding: Binding<T>,
-    val scope: KClass<out Annotation>?
+    val scope: Any?,
+    val isSingle: Boolean
 )
 
 interface JustInTimeLookupFactory {
@@ -62,7 +62,11 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
             .first { it.type == bindingClass }
             .also { it.isAccessible = true }
             .get(null) as Binding<*>
-        JustInTimeLookup(binding, (binding as? HasScope)?.scope)
+        JustInTimeLookup(
+            binding = binding,
+            scope = (binding as? HasScope)?.scope,
+            isSingle = binding is IsSingle
+        )
     } catch (e: Exception) {
         null
     }
@@ -92,31 +96,48 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
         return lookup as? JustInTimeLookup<T>
     }
 
-    private fun findLookup(type: Class<*>) = try {
-        val constructor = if (type.isAnnotationPresent(Inject::class.java)) {
-            type.constructors.first()
-        } else {
-            type.constructors
-                .firstOrNull { it.isAnnotationPresent(Inject::class.java) }
+    private fun findLookup(type: Class<*>): JustInTimeLookup<out Any>? {
+        return try {
+            val isFactory = type.isAnnotationPresent(Factory::class.java)
+            val isSingle = type.isAnnotationPresent(Single::class.java)
+            if (!isFactory && !isSingle) return null
+
+            val constructor = type.constructors
+                .firstOrNull { it.isAnnotationPresent(InjektConstructor::class.java) }
                 ?: type.constructors.first()
+
+            val scopeAnnotation = type
+                .annotations
+                .mapNotNull { annotation ->
+                    if (annotation.annotationClass.java.declaredAnnotations.any {
+                            it.annotationClass == Scope::class
+                        }) annotation else null
+                }
+                .firstOrNull()
+
+            val scope = scopeAnnotation
+                ?.annotationClass
+                ?.java
+                ?.declaredClasses
+                ?.firstOrNull()
+                ?.declaredFields
+                ?.first { it.type == it.declaringClass }
+                ?.also { it.isAccessible = true }
+                ?.get(null)
+
+            JustInTimeLookup(
+                binding = UnlinkedReflectiveBinding(constructor),
+                scope = scope,
+                isSingle = isSingle
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-
-        val scope = type.annotations.firstOrNull { annotation ->
-            annotation.annotationClass.java.annotations.any { annotatedAnnotation ->
-                annotatedAnnotation.annotationClass == Scope::class
-            }
-        }?.annotationClass
-
-        JustInTimeLookup(
-            UnlinkedJustInTimeBinding(constructor),
-            scope
-        )
-    } catch (e: Exception) {
-        null
     }
 }
 
-private class UnlinkedJustInTimeBinding<T>(
+private class UnlinkedReflectiveBinding<T>(
     private val constructor: Constructor<T>
 ) : UnlinkedBinding<T>() {
 
@@ -125,41 +146,45 @@ private class UnlinkedJustInTimeBinding<T>(
         val parameterAnnotations = constructor.parameterAnnotations
 
         val args =
-            arrayOfNulls<LinkedJustInTimeBinding.Arg>(parameterTypes.size)
+            arrayOfNulls<LinkedReflectiveBinding.Arg>(parameterTypes.size)
         var currentParamIndex = -1
         for (i in parameterTypes.indices) {
             val thisAnnotations = parameterAnnotations[i]
 
             if (thisAnnotations.any { it is Param }) {
                 ++currentParamIndex
-                args[i] = LinkedJustInTimeBinding.Arg.Parameter(currentParamIndex)
+                args[i] = LinkedReflectiveBinding.Arg.Parameter(currentParamIndex)
             } else {
                 val type = typeOf<Any?>(parameterTypes[i])
                 val nameAnnotation = parameterAnnotations[i]
                     .mapNotNull { annotation ->
-                        annotation.annotationClass.java.declaredAnnotations.firstOrNull { annotatedAnnotation ->
-                            annotatedAnnotation.annotationClass == Name::class
-                        }
+                        if (annotation.annotationClass.java.declaredAnnotations.any {
+                                it.annotationClass == Name::class
+                            }) annotation else null
                     }
                     .firstOrNull()
 
-                val name = (nameAnnotation as? Name)
-                    ?.name?.java?.declaredFields
-                    ?.last()
+                val name = nameAnnotation
+                    ?.annotationClass
+                    ?.java
+                    ?.declaredClasses
+                    ?.firstOrNull()
+                    ?.declaredFields
+                    ?.first { it.type == it.declaringClass }
                     ?.also { it.isAccessible = true }
                     ?.get(null)
 
                 val key = keyOf(type, name)
-                args[i] = LinkedJustInTimeBinding.Arg.Dependency(linker.get<Any?>(key))
+                args[i] = LinkedReflectiveBinding.Arg.Dependency(linker.get<Any?>(key))
             }
         }
 
-        return LinkedJustInTimeBinding(constructor, args as Array<LinkedJustInTimeBinding.Arg>)
+        return LinkedReflectiveBinding(constructor, args as Array<LinkedReflectiveBinding.Arg>)
     }
 
 }
 
-private class LinkedJustInTimeBinding<T>(
+private class LinkedReflectiveBinding<T>(
     private val constructor: Constructor<T>,
     private val args: Array<Arg>
 ) : LinkedBinding<T>() {

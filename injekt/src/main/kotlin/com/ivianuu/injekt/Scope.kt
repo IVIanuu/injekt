@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Marks the annotated class as a scope
  *
@@ -39,49 +37,10 @@ import kotlin.reflect.KClass
 annotation class Scope
 
 /**
- * Wraps this binding with a scoped one to make sure that the instance will be created only once
- *
- * @see Scope
- * @see Component.scopes
- * @see ComponentBuilder.scopes
- * @see Module.single
- */
-fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
-    is LinkedScopedBinding, is UnlinkedScopedBinding -> this
-    is LinkedBinding -> LinkedScopedBinding(this)
-    else -> UnlinkedScopedBinding(this)
-}
-
-/**
  * Used by generated code to provide the of the injectable
  *
  * @see CodegenJustInTimeLookupFactory
- * @see ReflectiveJustInTimeLookupFactory
  */
 interface HasScope {
-    val scope: KClass<out Annotation>
-}
-
-private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> =
-        LinkedScopedBinding(binding.performLink(linker))
-}
-
-private class LinkedScopedBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
-    private var _value: Any? = this
-
-    override fun invoke(parameters: ParametersDefinition?): T {
-        var value = _value
-        if (value === this) {
-            synchronized(this) {
-                value = _value
-                if (value === this) {
-                    _value = binding(parameters)
-                    value = _value
-                }
-            }
-        }
-
-        return value as T
-    }
+    val scope: Any
 }

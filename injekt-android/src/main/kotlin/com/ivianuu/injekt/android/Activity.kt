@@ -34,9 +34,11 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ActivityScope
+annotation class ActivityScope {
+    companion object
+}
 
-@Name(ForActivity.Companion::class)
+@Name
 annotation class ForActivity {
     companion object
 }
@@ -44,7 +46,7 @@ annotation class ForActivity {
 fun <T : Activity> T.activityComponent(
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scopes<ActivityScope>()
+    scopes(ActivityScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     block?.invoke(this)

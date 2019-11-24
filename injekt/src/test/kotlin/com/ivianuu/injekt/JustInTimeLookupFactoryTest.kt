@@ -20,7 +20,6 @@ import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNull
 import org.junit.Test
-import kotlin.reflect.KClass
 
 class JustInTimeLookupFactoryTest {
 
@@ -38,7 +37,7 @@ class JustInTimeLookupFactoryTest {
         factories.forEach { factory ->
             val lookup = factory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
             assertNotNull(lookup)
-            assertEquals(TestScopeOne::class, lookup!!.scope)
+            assertEquals(TestScopeOne, lookup!!.scope)
         }
     }
 
@@ -52,6 +51,7 @@ class JustInTimeLookupFactoryTest {
 
 }
 
+@Factory
 class MyUnscopedDep
 
 object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
@@ -59,11 +59,12 @@ object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
 }
 
 @TestScopeOne
+@Single
 class MyScopedDep
 
 object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {
-    override val scope: KClass<out Annotation>
-        get() = TestScopeOne::class
+    override val scope: Any
+        get() = TestScopeOne
 
     override fun invoke(parameters: ParametersDefinition?) = MyScopedDep()
 }

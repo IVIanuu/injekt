@@ -27,16 +27,18 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ApplicationScope
+annotation class ApplicationScope {
+    companion object
+}
 
-@Name(ForApplication.Companion::class)
+@Name
 annotation class ForApplication {
     companion object
 }
 
 fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ApplicationScope>()
+        scopes(ApplicationScope)
         modules(applicationModule())
         block?.invoke(this)
     }

@@ -66,14 +66,15 @@ data class BindingContext<T> internal constructor(
             binding = binding as Binding<Any?>,
             override = override,
             eager = binding.eager,
-            unscoped = binding.unscoped
+            scoped = binding.scoped
         )
 
         return this
     }
 
-    inline fun <reified T> bindType(override: Boolean = binding.override) {
-        bindAlias(type = typeOf<T>(), override = override)
+    inline fun <reified S> bindType(override: Boolean = binding.override): BindingContext<T> {
+        bindType(type = typeOf<S>(), override = override)
+        return this
     }
 
     /**

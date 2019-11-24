@@ -30,24 +30,28 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class FragmentScope
+annotation class FragmentScope {
+    companion object
+}
 
 @Scope
-annotation class ChildFragmentScope
+annotation class ChildFragmentScope {
+    companion object
+}
 
-@Name(ForFragment.Companion::class)
+@Name
 annotation class ForFragment {
     companion object
 }
 
-@Name(ForChildFragment.Companion::class)
+@Name
 annotation class ForChildFragment {
     companion object
 }
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<FragmentScope>()
+        scopes(FragmentScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(fragmentModule())
         block?.invoke(this)
@@ -55,7 +59,7 @@ fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = n
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ChildFragmentScope>()
+        scopes(ChildFragmentScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
         block?.invoke(this)

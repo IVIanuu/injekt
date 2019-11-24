@@ -16,32 +16,15 @@
 
 package com.ivianuu.injekt
 
-object NameOne
-object NameTwo
-object NameThree
-
-object Values
-
-@Scope
-annotation class TestScopeOne {
-    companion object
-}
-
-@Scope
-annotation class TestScopeTwo {
-    companion object
-}
-
-@Scope
-annotation class TestScopeThree {
-    companion object
-}
-
-@Factory
-class TestDep1
-
-@Factory
-class TestDep2(val dep1: TestDep1)
-
-@Factory
-class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
+/**
+ * Makes the annotated class injectable and generates a factory binding for it
+ * The class will be created on each request
+ *
+ * @see Single
+ * @see Name
+ * @see Scope
+ * @see InjektConstructor
+ * @see Module.factory
+ */
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
+annotation class Factory

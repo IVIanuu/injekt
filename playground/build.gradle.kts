@@ -31,8 +31,8 @@
  */
 
 plugins {
+    id("com.ivianuu.injekt")
     kotlin("jvm")
-    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -41,5 +41,4 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 
 dependencies {
     implementation(project(":injekt"))
-    kapt(project(":injekt-compiler"))
 }

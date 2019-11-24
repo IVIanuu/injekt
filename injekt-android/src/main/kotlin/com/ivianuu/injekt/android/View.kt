@@ -28,24 +28,28 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ViewScope
+annotation class ViewScope {
+    companion object
+}
 
 @Scope
-annotation class ChildViewScope
+annotation class ChildViewScope {
+    companion object
+}
 
-@Name(ForView.Companion::class)
+@Name
 annotation class ForView {
     companion object
 }
 
-@Name(ForChildView.Companion::class)
+@Name
 annotation class ForChildView {
     companion object
 }
 
 fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ViewScope>()
+        scopes(ViewScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(viewModule())
         block?.invoke(this)
@@ -53,7 +57,7 @@ fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Co
 
 fun <T : View> T.childViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ChildViewScope>()
+        scopes(ChildViewScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childViewModule())
         block?.invoke(this)
