@@ -31,6 +31,8 @@ annotation class Single
 
 /**
  * Used by generated code
+ *
+ * @see CodegenJustInTimeLookupFactory
  */
 interface IsSingle
 
