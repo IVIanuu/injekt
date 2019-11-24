@@ -50,6 +50,8 @@ class Component internal constructor(
 
     internal val linker = Linker(this)
 
+    private val linkedBindingsByUnlinked = mutableMapOf<UnlinkedBinding<*>, LinkedBinding<*>>()
+
     init {
         eagerBindings.forEach { get(it) }
     }
@@ -213,7 +215,10 @@ class Component internal constructor(
 
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
         if (this is LinkedBinding) return this
-        val linkedBinding = performLink(linker)
+        this as UnlinkedBinding
+        val linkedBinding = linkedBindingsByUnlinked.getOrPut(this) {
+            performLink(linker)
+        } as LinkedBinding<T>
         synchronized(allBindings) { allBindings[key] = linkedBinding }
         return linkedBinding
     }

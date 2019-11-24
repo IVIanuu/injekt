@@ -52,11 +52,13 @@ class Module internal constructor() {
     inline fun <reified T> factory(
         name: Any? = null,
         override: Boolean = false,
+        scoped: Boolean = false,
         noinline definition: Definition<T>
     ): BindingContext<T> = factory(
         type = typeOf(),
         name = name,
         override = override,
+        scoped = scoped,
         definition = definition
     )
 
@@ -66,6 +68,7 @@ class Module internal constructor() {
      * @param type the of the instance
      * @param name the name of the instance
      * @param override whether or not the binding can override existing bindings
+     * @param scoped whether or not to create instances in the added scope
      * @param definition the definitions which creates instances
      *
      * @see bind
@@ -74,23 +77,26 @@ class Module internal constructor() {
         type: Type<T>,
         name: Any? = null,
         override: Boolean = false,
+        scoped: Boolean = false,
         definition: Definition<T>
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
         binding = definitionBinding(optimizing = true, definition = definition),
         override = override,
-        scoped = false
+        scoped = scoped
     )
 
     inline fun <reified T> single(
         name: Any? = null,
         override: Boolean = false,
+        scoped: Boolean = true,
         eager: Boolean = false,
         noinline definition: Definition<T>
     ): BindingContext<T> = single(
         type = typeOf(),
         name = name,
         override = override,
+        scoped = scoped,
         eager = eager,
         definition = definition
     )
@@ -101,6 +107,7 @@ class Module internal constructor() {
      * @param type the of the instance
      * @param name the name of the instance
      * @param override whether or not the binding can override existing bindings
+     * @param scoped whether or not to create instances in the added scope
      * @param eager whether the instance should be created when the component get's created
      * @param definition the definitions which creates instances
      *
@@ -110,6 +117,7 @@ class Module internal constructor() {
         type: Type<T>,
         name: Any? = null,
         override: Boolean = false,
+        scoped: Boolean = true,
         eager: Boolean = false,
         definition: Definition<T>
     ): BindingContext<T> =
@@ -117,8 +125,8 @@ class Module internal constructor() {
             key = keyOf(type, name),
             binding = definitionBinding(optimizing = false, definition = definition).asSingle(),
             override = override,
-            eager = eager,
-            scoped = true
+            scoped = scoped,
+            eager = eager
         )
 
     /**
@@ -273,8 +281,8 @@ class Module internal constructor() {
         key: Key,
         binding: Binding<T>,
         override: Boolean = false,
-        eager: Boolean = false,
-        scoped: Boolean = false
+        scoped: Boolean = false,
+        eager: Boolean = false
     ): BindingContext<T> {
         check(key !in bindings || override) {
             "Already declared binding for $binding.key"
