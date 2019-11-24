@@ -61,7 +61,6 @@ class BindingAnalysisHandlerExtension(
                     msg { "process class $ktClass desc is $classDescriptor" }
 
                     val descriptor = createBindingDescriptor(
-                        ktClass,
                         classDescriptor,
                         bindingTrace
                     ) ?: return@classRecursiveVisitor
