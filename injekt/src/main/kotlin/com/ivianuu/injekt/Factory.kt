@@ -17,10 +17,14 @@
 package com.ivianuu.injekt
 
 /**
- * Makes the annotated class injectable by generating a factory binding for it
+ * Makes the annotated class injectable and generates a factory binding for it
+ * The class will be created on each request
+ *
  * @see Single
  * @see Name
  * @see Scope
+ * @see InjektConstructor
+ * @see Module.factory
  */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Factory
