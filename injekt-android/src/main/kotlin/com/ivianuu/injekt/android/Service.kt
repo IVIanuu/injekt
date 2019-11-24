@@ -28,7 +28,9 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ServiceScope
+annotation class ServiceScope {
+    companion object
+}
 
 @Name
 annotation class ForService {

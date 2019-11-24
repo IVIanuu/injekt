@@ -23,14 +23,25 @@ object NameThree
 object Values
 
 @Scope
-annotation class TestScopeOne
+annotation class TestScopeOne {
+    companion object
+}
 
 @Scope
-annotation class TestScopeTwo
+annotation class TestScopeTwo {
+    companion object
+}
 
 @Scope
-annotation class TestScopeThree
+annotation class TestScopeThree {
+    companion object
+}
 
+@Inject
 class TestDep1
+
+@Inject
 class TestDep2(val dep1: TestDep1)
+
+@Inject
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)

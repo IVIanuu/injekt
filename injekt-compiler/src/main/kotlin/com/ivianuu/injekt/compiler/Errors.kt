@@ -68,7 +68,7 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         )
         map.put(
             NeedsACompanionObject,
-            "Name annotation needs a companion object"
+            "Needs a companion object"
         )
     }
 }

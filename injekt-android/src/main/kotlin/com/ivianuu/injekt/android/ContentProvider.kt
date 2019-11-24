@@ -27,7 +27,9 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ContentProviderScope
+annotation class ContentProviderScope {
+    companion object
+}
 
 @Name
 annotation class ForContentProvider {

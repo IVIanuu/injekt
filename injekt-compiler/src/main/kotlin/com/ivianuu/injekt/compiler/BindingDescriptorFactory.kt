@@ -39,6 +39,8 @@ fun createBindingDescriptor(
         )
     }
 
+    if (!hasClassInjectAnnotation && injectableConstructors.isEmpty()) return null
+
     if ((hasClassInjectAnnotation && injectableConstructors.isNotEmpty()) || injectableConstructors.size > 1) {
         report(descriptor, trace) { OnlyOneAnnotation }
         return null
@@ -64,15 +66,28 @@ fun createBindingDescriptor(
         return null
     }
 
-    val scopeName = scopeAnnotations.firstOrNull()?.fqName?.asClassName()
+    val scopeAnnotation = scopeAnnotations
+        .map {
+            descriptor.module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(it.fqName!!)
+            )!!
+        }
+        .first()
+
+    if (!scopeAnnotation.hasCompanionObject) {
+        report(scopeAnnotation, trace) { NeedsACompanionObject }
+        return null
+    }
+
+    val scopeType = scopeAnnotation.companionObjectDescriptor!!.asClassName()
 
     var currentParamsIndex = -1
 
-    val targetName = descriptor.asClassName()
+    val className = descriptor.asClassName()
 
     val factoryName = ClassName(
-        targetName.packageName,
-        targetName.simpleName + "__Binding"
+        className.packageName,
+        className.simpleName + "__Binding"
     )
 
     val constructorArgs: List<ArgDescriptor>?
@@ -141,11 +156,11 @@ fun createBindingDescriptor(
     }
 
     return BindingDescriptor(
-        targetName,
+        className,
         factoryName,
         isInternal,
         isObject,
-        scopeName,
+        scopeType,
         constructorArgs ?: emptyList()
     )
 }

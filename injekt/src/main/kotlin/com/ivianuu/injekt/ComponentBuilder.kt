@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Construct a [Component] with a lambda
  *
@@ -37,21 +35,13 @@ fun component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder internal constructor() {
 
-    private val scopes = mutableListOf<KClass<out Annotation>>()
+    private val scopes = mutableListOf<Any>()
     private val modules = mutableListOf<Module>()
     private val instances = mutableMapOf<Key, Binding<*>>()
     private val dependencies = mutableListOf<Component>()
 
-    inline fun <reified T : Annotation> scopes() {
-        scopes(T::class)
-    }
-
-    fun scopes(scope: KClass<out Annotation>) {
+    fun scopes(scope: Any) {
         this.scopes += scope
-    }
-
-    fun scopes(vararg scopes: KClass<out Annotation>) {
-        this.scopes += scopes
     }
 
     /**
@@ -59,8 +49,8 @@ class ComponentBuilder internal constructor() {
      *
      * @param scopes the scopes to include
      */
-    fun scopes(scopes: List<KClass<out Annotation>>) {
-        this.scopes += scopes
+    fun scopes(vararg scopes: Any) {
+        this.scopes.addAll(scopes) // can't use += here?
     }
 
     fun dependencies(dependency: Component) {
@@ -206,7 +196,7 @@ class ComponentBuilder internal constructor() {
     }
 
     private fun checkScopes() {
-        val dependencyScopes = mutableSetOf<KClass<out Annotation>>()
+        val dependencyScopes = mutableSetOf<Any>()
 
         dependencies
             .flatMap { it.scopes }

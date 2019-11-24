@@ -34,7 +34,9 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ActivityScope
+annotation class ActivityScope {
+    companion object
+}
 
 @Name
 annotation class ForActivity {

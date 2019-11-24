@@ -28,10 +28,14 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ViewScope
+annotation class ViewScope {
+    companion object
+}
 
 @Scope
-annotation class ChildViewScope
+annotation class ChildViewScope {
+    companion object
+}
 
 @Name
 annotation class ForView {

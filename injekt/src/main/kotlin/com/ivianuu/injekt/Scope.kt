@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Marks the annotated class as a scope
  *
@@ -58,7 +56,7 @@ fun <T> Binding<T>.asScoped(): Binding<T> = when (this) {
  * @see CodegenJustInTimeLookupFactory
  */
 interface HasScope {
-    val scope: KClass<out Annotation>
+    val scope: Any
 }
 
 private class UnlinkedScopedBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {

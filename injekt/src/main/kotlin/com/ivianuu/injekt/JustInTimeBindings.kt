@@ -17,11 +17,10 @@
 package com.ivianuu.injekt
 
 import java.lang.reflect.Constructor
-import kotlin.reflect.KClass
 
 data class JustInTimeLookup<T>(
     val binding: Binding<T>,
-    val scope: KClass<out Annotation>?
+    val scope: Any?
 )
 
 interface JustInTimeLookupFactory {
@@ -92,27 +91,42 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
         return lookup as? JustInTimeLookup<T>
     }
 
-    private fun findLookup(type: Class<*>) = try {
-        val constructor = if (type.isAnnotationPresent(Inject::class.java)) {
-            type.constructors.first()
-        } else {
-            type.constructors
-                .firstOrNull { it.isAnnotationPresent(Inject::class.java) }
-                ?: type.constructors.first()
+    private fun findLookup(type: Class<*>): JustInTimeLookup<out Any>? {
+        return try {
+            val constructor = if (type.isAnnotationPresent(Inject::class.java)) {
+                type.constructors.first()
+            } else {
+                type.constructors
+                    .firstOrNull { it.isAnnotationPresent(Inject::class.java) }
+            } ?: return null
+
+            val scopeAnnotation = type
+                .annotations
+                .mapNotNull { annotation ->
+                    if (annotation.annotationClass.java.declaredAnnotations.any {
+                            it.annotationClass == Scope::class
+                        }) annotation else null
+                }
+                .firstOrNull()
+
+            val scope = scopeAnnotation
+                ?.annotationClass
+                ?.java
+                ?.declaredClasses
+                ?.firstOrNull()
+                ?.declaredFields
+                ?.first { it.type == it.declaringClass }
+                ?.also { it.isAccessible = true }
+                ?.get(null)
+
+            JustInTimeLookup(
+                UnlinkedReflectiveBinding(constructor),
+                scope
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-
-        val scope = type.annotations.firstOrNull { annotation ->
-            annotation.annotationClass.java.annotations.any { annotatedAnnotation ->
-                annotatedAnnotation.annotationClass == Scope::class
-            }
-        }?.annotationClass
-
-        JustInTimeLookup(
-            UnlinkedReflectiveBinding(constructor),
-            scope
-        )
-    } catch (e: Exception) {
-        null
     }
 }
 

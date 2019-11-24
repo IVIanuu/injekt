@@ -30,10 +30,14 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class FragmentScope
+annotation class FragmentScope {
+    companion object
+}
 
 @Scope
-annotation class ChildFragmentScope
+annotation class ChildFragmentScope {
+    companion object
+}
 
 @Name
 annotation class ForFragment {

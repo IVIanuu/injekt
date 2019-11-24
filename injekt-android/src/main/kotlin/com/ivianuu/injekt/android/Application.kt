@@ -27,7 +27,9 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ApplicationScope
+annotation class ApplicationScope {
+    companion object
+}
 
 @Name
 annotation class ForApplication {

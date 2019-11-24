@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * The heart of the library which provides instances
  * Dependencies can be requested by calling either [get] or [inject]
@@ -27,7 +25,7 @@ import kotlin.reflect.KClass
  *
  * ´´´
  * val component = component {
- *     scopes(Singleton::class)
+ *     scopes(Singleton)
  *     modules(networkModule)
  *     modules(databaseModule)
  * }
@@ -41,7 +39,7 @@ import kotlin.reflect.KClass
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: List<KClass<out Annotation>>,
+    internal val scopes: List<Any>,
     internal val allBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
     eagerBindings: List<Key>,
@@ -220,7 +218,7 @@ class Component internal constructor(
         return linkedBinding
     }
 
-    private fun findComponentForScope(scope: KClass<out Annotation>): Component? {
+    private fun findComponentForScope(scope: Any): Component? {
         if (scope in scopes) return this
         for (dependency in dependencies) {
             dependency.findComponentForScope(scope)

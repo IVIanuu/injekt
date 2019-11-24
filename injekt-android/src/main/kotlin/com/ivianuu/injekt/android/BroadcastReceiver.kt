@@ -28,7 +28,9 @@ import com.ivianuu.injekt.component
 import com.ivianuu.injekt.module
 
 @Scope
-annotation class ReceiverScope
+annotation class ReceiverScope {
+    companion object
+}
 
 @Name
 annotation class ForReceiver {

@@ -66,7 +66,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         .apply {
                             getter(
                                 FunSpec.getterBuilder()
-                                    .addStatement("return %T::class", descriptor.scope)
+                                    .addStatement("return %T", descriptor.scope)
                                     .build()
                             )
                         }
