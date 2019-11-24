@@ -164,7 +164,7 @@ class Module internal constructor() {
      *
      * For example to add a alias for a annotated class one can write the following:
      *
-     * ´@Inject class MyRepository : Repository`
+     * ´@Factory class MyRepository : Repository`
      *
      * ´´´
      * withBinding(type = typeOf<MyRepository>()) {

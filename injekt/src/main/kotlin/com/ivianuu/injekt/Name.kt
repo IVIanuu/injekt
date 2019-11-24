@@ -38,10 +38,10 @@ package com.ivianuu.injekt
  * }
  * ´´´
  *
- * And also in @Inject annotated classes like this:
+ * And also in @Factory or @Single annotated classes like this:
  *
  * ´´´
- * @Inject
+ * @Factory
  * class MyViewModel(@UserId private val userId: String)
  * ´´´
  *
