@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
@@ -31,33 +30,32 @@ fun createBindingDescriptor(
     descriptor: ClassDescriptor,
     trace: BindingTrace
 ): BindingDescriptor? {
-    val annotatedType = if (descriptor.annotations.hasAnnotation(InjectAnnotation)) {
-        descriptor
-    } else if (descriptor.constructors.any { it.annotations.hasAnnotation(InjectAnnotation) }) {
-        descriptor.constructors.first { it.annotations.hasAnnotation(InjectAnnotation) }
-        descriptor.containingDeclaration as ClassDescriptor
-    } else {
-        return null
-    }
-
     msg { "process $descriptor" }
 
-    if ((1 + descriptor.constructors.count { it.annotations.hasAnnotation(InjectAnnotation) } > 1)) {
+    val hasClassInjectAnnotation = descriptor.annotations.hasAnnotation(InjectAnnotation)
+    val injectableConstructors = descriptor.constructors.filter {
+        it.annotations.hasAnnotation(
+            InjectAnnotation
+        )
+    }
+
+    if ((hasClassInjectAnnotation && injectableConstructors.isNotEmpty()) || injectableConstructors.size > 1) {
         report(descriptor, trace) { OnlyOneAnnotation }
         return null
     }
 
-    val isInternal = annotatedType.visibility == Visibilities.INTERNAL
+    val isInternal = descriptor.visibility == Visibilities.INTERNAL
 
-    val isObject = annotatedType.kind == ClassKind.OBJECT
+    val isObject = descriptor.kind == ClassKind.OBJECT
 
-    if (annotatedType.visibility != Visibilities.PUBLIC
-        && annotatedType.visibility != Visibilities.INTERNAL) {
+    if (descriptor.visibility != Visibilities.PUBLIC
+        && descriptor.visibility != Visibilities.INTERNAL
+    ) {
         report(descriptor, trace) { CannotBePrivate }
         return null
     }
 
-    val scopeAnnotations = annotatedType.annotations.filter {
+    val scopeAnnotations = descriptor.annotations.filter {
         it.hasAnnotation(ScopeAnnotation, descriptor.module)
     }
 
@@ -70,21 +68,20 @@ fun createBindingDescriptor(
 
     var currentParamsIndex = -1
 
-    val targetName = annotatedType.asClassName()
+    val targetName = descriptor.asClassName()
 
     val factoryName = ClassName(
         targetName.packageName,
         targetName.simpleName + "__Binding"
     )
 
-    var constructorArgs: List<ArgDescriptor>? = null
+    val constructorArgs: List<ArgDescriptor>?
 
-    if (!isObject) {
-        val constructor = if (descriptor is ConstructorDescriptor) {
-            descriptor
-        } else {
-            (descriptor as ClassDescriptor).unsubstitutedPrimaryConstructor!!
-        }
+    if (isObject) {
+        constructorArgs = null
+    } else {
+        val constructor = injectableConstructors.firstOrNull()
+            ?: descriptor.constructors.first()
 
         if (constructor.visibility != Visibilities.PUBLIC
             && constructor.visibility != Visibilities.INTERNAL) {
