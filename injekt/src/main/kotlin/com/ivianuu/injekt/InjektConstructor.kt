@@ -18,7 +18,10 @@ package com.ivianuu.injekt
 
 /**
  * Marks the annotated constructor as the constructor to be used
- * When creating instances of the class
+ * When generating a binding for it
+ *
+ * @see Factory
+ * @see Single
  */
 @Target(AnnotationTarget.CONSTRUCTOR)
 annotation class InjektConstructor
