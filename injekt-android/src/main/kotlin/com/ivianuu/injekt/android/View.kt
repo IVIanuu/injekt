@@ -49,7 +49,7 @@ annotation class ForChildView {
 
 fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ViewScope>()
+        scopes(ViewScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(viewModule())
         block?.invoke(this)
@@ -57,7 +57,7 @@ fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Co
 
 fun <T : View> T.childViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ChildViewScope>()
+        scopes(ChildViewScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childViewModule())
         block?.invoke(this)

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.playground
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider

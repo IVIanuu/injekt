@@ -37,7 +37,8 @@ fun report(
     }
 }
 
-val OnlyOneAnnotation = error()
+val EitherFactoryOrSingle = error()
+val OnlyOneScope = error()
 val OnlyOneName = error()
 val EitherNameOrParam = error()
 val CannotBePrivate = error()
@@ -51,8 +52,12 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
 
     init {
         map.put(
-            OnlyOneAnnotation,
-            "Can only have @Inject on the type or the constructor"
+            EitherFactoryOrSingle,
+            "Can only have one of @Factory or @Single"
+        )
+        map.put(
+            OnlyOneScope,
+            "Can only have one 1 scope ammptatopm"
         )
         map.put(
             OnlyOneName,
@@ -60,7 +65,7 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         )
         map.put(
             EitherNameOrParam,
-            "Only one of @Param or @Name can be annotated per parameter"
+            "Can only have one of @Param or @Name"
         )
         map.put(
             CannotBePrivate,

@@ -38,7 +38,7 @@ annotation class ForContentProvider {
 
 fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ContentProviderScope>()
+        scopes(ContentProviderScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(contentProviderModule())
         block?.invoke(this)

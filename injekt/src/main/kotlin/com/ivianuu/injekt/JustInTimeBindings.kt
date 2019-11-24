@@ -20,7 +20,8 @@ import java.lang.reflect.Constructor
 
 data class JustInTimeLookup<T>(
     val binding: Binding<T>,
-    val scope: Any?
+    val scope: Any?,
+    val isSingle: Boolean
 )
 
 interface JustInTimeLookupFactory {
@@ -61,7 +62,11 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
             .first { it.type == bindingClass }
             .also { it.isAccessible = true }
             .get(null) as Binding<*>
-        JustInTimeLookup(binding, (binding as? HasScope)?.scope)
+        JustInTimeLookup(
+            binding = binding,
+            scope = (binding as? HasScope)?.scope,
+            isSingle = binding is IsSingle
+        )
     } catch (e: Exception) {
         null
     }
@@ -93,12 +98,13 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
 
     private fun findLookup(type: Class<*>): JustInTimeLookup<out Any>? {
         return try {
-            val constructor = if (type.isAnnotationPresent(Inject::class.java)) {
-                type.constructors.first()
-            } else {
-                type.constructors
-                    .firstOrNull { it.isAnnotationPresent(Inject::class.java) }
-            } ?: return null
+            val isFactory = type.isAnnotationPresent(Factory::class.java)
+            val isSingle = type.isAnnotationPresent(Single::class.java)
+            if (!isFactory && !isSingle) return null
+
+            val constructor = type.constructors
+                .firstOrNull { it.isAnnotationPresent(InjektConstructor::class.java) }
+                ?: type.constructors.first()
 
             val scopeAnnotation = type
                 .annotations
@@ -120,8 +126,9 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
                 ?.get(null)
 
             JustInTimeLookup(
-                UnlinkedReflectiveBinding(constructor),
-                scope
+                binding = UnlinkedReflectiveBinding(constructor),
+                scope = scope,
+                isSingle = isSingle
             )
         } catch (e: Exception) {
             e.printStackTrace()

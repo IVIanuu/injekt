@@ -189,11 +189,11 @@ class Component internal constructor(
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
         val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
         if (justInTimeLookup != null) {
-            var binding = justInTimeLookup.binding
+            val binding = justInTimeLookup.binding
+                .let { if (justInTimeLookup.isSingle) it.asSingle() else it }
             return if (justInTimeLookup.scope != null) {
                 val component = findComponentForScope(justInTimeLookup.scope)
                     ?: error("Couldn't find component for ${justInTimeLookup.scope}")
-                binding = binding.asSingle()
                 binding.scoped = true
                 component.addJustInTimeBinding(key, binding)
             } else {

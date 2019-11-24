@@ -32,17 +32,12 @@ fun createBindingDescriptor(
 ): BindingDescriptor? {
     msg { "process $descriptor" }
 
-    val hasClassInjectAnnotation = descriptor.annotations.hasAnnotation(InjectAnnotation)
-    val injectableConstructors = descriptor.constructors.filter {
-        it.annotations.hasAnnotation(
-            InjectAnnotation
-        )
-    }
+    val isFactory = descriptor.annotations.hasAnnotation(FactoryAnnotation)
+    val isSingle = descriptor.annotations.hasAnnotation(SingleAnnotation)
 
-    if (!hasClassInjectAnnotation && injectableConstructors.isEmpty()) return null
-
-    if ((hasClassInjectAnnotation && injectableConstructors.isNotEmpty()) || injectableConstructors.size > 1) {
-        report(descriptor, trace) { OnlyOneAnnotation }
+    if (!isFactory && !isSingle) return null
+    if (isFactory && isSingle) {
+        report(descriptor, trace) { EitherFactoryOrSingle }
         return null
     }
 
@@ -62,30 +57,33 @@ fun createBindingDescriptor(
     }
 
     if (scopeAnnotations.size > 1) {
-        report(descriptor, trace) { OnlyOneAnnotation }
+        report(descriptor, trace) { OnlyOneScope }
         return null
     }
 
-    val scopeAnnotation = scopeAnnotations
-        .map {
-            descriptor.module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(it.fqName!!)
-            )!!
-        }
-        .first()
+    val scopeAnnotation = if (scopeAnnotations.isEmpty()) null else {
+        scopeAnnotations
+            .map {
+                descriptor.module.findClassAcrossModuleDependencies(
+                    ClassId.topLevel(it.fqName!!)
+                )!!
+            }
+            .first()
+    }
 
-    if (!scopeAnnotation.hasCompanionObject) {
+    if (scopeAnnotation != null && !scopeAnnotation.hasCompanionObject) {
         report(scopeAnnotation, trace) { NeedsACompanionObject }
         return null
     }
 
-    val scopeType = scopeAnnotation.companionObjectDescriptor!!.asClassName()
+    val scopeType = if (scopeAnnotation != null)
+        scopeAnnotation.companionObjectDescriptor!!.asClassName() else null
 
     var currentParamsIndex = -1
 
     val className = descriptor.asClassName()
 
-    val factoryName = ClassName(
+    val bindingName = ClassName(
         className.packageName,
         className.simpleName + "__Binding"
     )
@@ -95,7 +93,8 @@ fun createBindingDescriptor(
     if (isObject) {
         constructorArgs = null
     } else {
-        val constructor = injectableConstructors.firstOrNull()
+        val constructor = descriptor.constructors
+            .firstOrNull { it.annotations.hasAnnotation(InjektConstructorAnnotation) }
             ?: descriptor.constructors.first()
 
         if (constructor.visibility != Visibilities.PUBLIC
@@ -156,11 +155,12 @@ fun createBindingDescriptor(
     }
 
     return BindingDescriptor(
-        className,
-        factoryName,
-        isInternal,
-        isObject,
-        scopeType,
-        constructorArgs ?: emptyList()
+        target = className,
+        bindingName = bindingName,
+        isInternal = isInternal,
+        isObject = isObject,
+        isSingle = isSingle,
+        scope = scopeType,
+        constructorArgs = constructorArgs ?: emptyList()
     )
 }

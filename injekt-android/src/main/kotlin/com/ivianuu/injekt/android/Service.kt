@@ -39,7 +39,7 @@ annotation class ForService {
 
 fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ServiceScope>()
+        scopes(ServiceScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(serviceModule())
         block?.invoke(this)

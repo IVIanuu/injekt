@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Param
 
-@Inject
+@Factory
 class DetailViewModel(@Param private val item: String)

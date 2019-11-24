@@ -51,7 +51,7 @@ class JustInTimeLookupFactoryTest {
 
 }
 
-@Inject
+@Factory
 class MyUnscopedDep
 
 object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
@@ -59,7 +59,7 @@ object MyUnscopedDep__Binding : LinkedBinding<MyUnscopedDep>() {
 }
 
 @TestScopeOne
-@Inject
+@Single
 class MyScopedDep
 
 object MyScopedDep__Binding : LinkedBinding<MyScopedDep>(), HasScope {

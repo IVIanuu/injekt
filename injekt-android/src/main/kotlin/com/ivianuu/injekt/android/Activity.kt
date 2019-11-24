@@ -46,7 +46,7 @@ annotation class ForActivity {
 fun <T : Activity> T.activityComponent(
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scopes<ActivityScope>()
+    scopes(ActivityScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
     modules(activityModule())
     block?.invoke(this)

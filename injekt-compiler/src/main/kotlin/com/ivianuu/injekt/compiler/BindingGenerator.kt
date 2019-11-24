@@ -25,9 +25,6 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.WildcardTypeName
-import com.squareup.kotlinpoet.asClassName
-import kotlin.reflect.KClass
 
 class BindingGenerator(private val descriptor: BindingDescriptor) {
 
@@ -58,9 +55,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                 addProperty(
                     PropertySpec.builder(
                         "scope",
-                        KClass::class.asClassName().plusParameter(
-                            WildcardTypeName.producerOf(Annotation::class)
-                        ),
+                        Any::class,
                         KModifier.OVERRIDE
                     )
                         .apply {
@@ -72,6 +67,11 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         }
                         .build()
                 )
+            }
+        }
+        .apply {
+            if (descriptor.isSingle) {
+                addSuperinterface(InjektClassNames.IsSingle)
             }
         }
         .apply {
@@ -245,6 +245,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
 
 private object InjektClassNames {
     val HasScope = ClassName("com.ivianuu.injekt", "HasScope")
+    val IsSingle = ClassName("com.ivianuu.injekt", "IsSingle")
     val Key = ClassName("com.ivianuu.injekt", "Key")
     val LinkedBinding = ClassName("com.ivianuu.injekt", "LinkedBinding")
     val Linker = ClassName("com.ivianuu.injekt", "Linker")

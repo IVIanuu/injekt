@@ -49,10 +49,12 @@ fun KotlinType.asTypeName(): TypeName {
     } else type
 }
 
-val InjectAnnotation = FqName("com.ivianuu.injekt.Inject")
+val FactoryAnnotation = FqName("com.ivianuu.injekt.Factory")
+val InjektConstructorAnnotation = FqName("com.ivianuu.injekt.InjektConstructor")
 val NameAnnotation = FqName("com.ivianuu.injekt.Name")
 val ParamAnnotation = FqName("com.ivianuu.injekt.Param")
 val ScopeAnnotation = FqName("com.ivianuu.injekt.Scope")
+val SingleAnnotation = FqName("com.ivianuu.injekt.Single")
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }

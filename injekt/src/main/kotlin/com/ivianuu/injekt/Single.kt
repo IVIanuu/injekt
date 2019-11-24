@@ -16,8 +16,19 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Makes the annotated class injectable by generating a single binding for it
+ * @see Factory
+ * @see Name
+ * @see Scope
+ */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Single
+
+/**
+ * Used by generated code
+ */
+interface IsSingle
 
 /**
  * Ensures that a instance is only created once

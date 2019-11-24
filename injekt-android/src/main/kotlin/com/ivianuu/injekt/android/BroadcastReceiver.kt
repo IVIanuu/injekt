@@ -41,7 +41,7 @@ fun <T : BroadcastReceiver> T.receiverComponent(
     context: Context,
     block: (ComponentBuilder.() -> Unit)? = null
 ): Component = component {
-    scopes<ReceiverScope>()
+    scopes(ReceiverScope)
     getClosestComponentOrNull(context)?.let { dependencies(it) }
     modules(receiverModule(context))
     block?.invoke(this)

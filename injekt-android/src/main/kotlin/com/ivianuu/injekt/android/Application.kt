@@ -38,7 +38,7 @@ annotation class ForApplication {
 
 fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ApplicationScope>()
+        scopes(ApplicationScope)
         modules(applicationModule())
         block?.invoke(this)
     }

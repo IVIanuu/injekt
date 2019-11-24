@@ -307,7 +307,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testReusesScopedBindings() {
+    fun testReusesSingleBindings() {
         val componentA = component {
             modules(
                 module {
@@ -330,7 +330,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testReusesScopedJustInTimeBindings() {
+    fun testReusesSingleJustInTimeBindings() {
         val componentA = component { scopes(TestScopeOne) }
 
         val componentB = component {
@@ -342,10 +342,10 @@ class ComponentTest {
             dependencies(componentB)
         }
 
-        val depA = componentA.get<ScopedJustInTimeDep>()
-        val depA2 = componentA.get<ScopedJustInTimeDep>()
-        val depB = componentB.get<ScopedJustInTimeDep>()
-        val depC = componentC.get<ScopedJustInTimeDep>()
+        val depA = componentA.get<SingleJustInTimeBinding>()
+        val depA2 = componentA.get<SingleJustInTimeBinding>()
+        val depB = componentB.get<SingleJustInTimeBinding>()
+        val depC = componentC.get<SingleJustInTimeBinding>()
 
         assertEquals(depA, depA2)
         assertEquals(depA, depB)
@@ -357,7 +357,7 @@ class ComponentTest {
         val componentA = component {
             modules(
                 module {
-                    single { Context(get()) }
+                    single(scoped = false) { Context(get()) }
                         .bindType<Environment>()
                 }
             )
@@ -424,5 +424,5 @@ class Context(val component: Component) : Environment
 interface Environment
 
 @TestScopeOne
-@Inject
-class ScopedJustInTimeDep
+@Single
+class SingleJustInTimeBinding

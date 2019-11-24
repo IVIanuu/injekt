@@ -51,7 +51,7 @@ annotation class ForChildFragment {
 
 fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<FragmentScope>()
+        scopes(FragmentScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(fragmentModule())
         block?.invoke(this)
@@ -59,7 +59,7 @@ fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = n
 
 fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
     component {
-        scopes<ChildFragmentScope>()
+        scopes(ChildFragmentScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
         modules(childFragmentModule())
         block?.invoke(this)

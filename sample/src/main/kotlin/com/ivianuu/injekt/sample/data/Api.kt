@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.sample.data
 
-import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Factory
 
-@Inject
+@Factory
 class Api(@WebApiUrl private val url: String) {
     fun getItems(): List<String> = (0 until 1000).map { "Item: $it" }
 }

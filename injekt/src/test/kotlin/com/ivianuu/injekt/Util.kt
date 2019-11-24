@@ -37,11 +37,11 @@ annotation class TestScopeThree {
     companion object
 }
 
-@Inject
+@Factory
 class TestDep1
 
-@Inject
+@Factory
 class TestDep2(val dep1: TestDep1)
 
-@Inject
+@Factory
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)

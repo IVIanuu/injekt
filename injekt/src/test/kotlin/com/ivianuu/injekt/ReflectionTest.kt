@@ -89,15 +89,16 @@ annotation class PackageName {
     companion object
 }
 
-@Inject
+@Factory
 class ReflectionDep
 
-@Inject
+@Factory
 class ReflectionDepWithParam(@Param val value: Int)
 
-@Inject
+@Factory
 class ReflectionDepWithNamedParam(@PackageName val packageName: String)
 
+@Factory
 class ReflectionDepWithAnnotatedConstructor {
 
     val arg: Any?
@@ -106,7 +107,7 @@ class ReflectionDepWithAnnotatedConstructor {
         arg = testDep1
     }
 
-    @Inject
+    @InjektConstructor
     constructor(testDep2: TestDep2) {
         arg = testDep2
     }
@@ -115,13 +116,13 @@ class ReflectionDepWithAnnotatedConstructor {
 
 interface Memoized<T>
 
-@Inject
+@Factory
 class ReflectionDepWithParameterizedDep(
     private val mapOfStrings: Map<String, Memoized<String>>
 )
 
 @TestScopeOne
-@Inject
+@Factory
 class ReflectionDepWithScope
 
 @Scope
