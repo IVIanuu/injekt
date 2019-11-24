@@ -40,9 +40,9 @@ sealed class Binding<T> {
         internal set
 
     /**
-     * Creates instances in the requesting component
+     * Creates instances in the bound scope
      */
-    var unscoped = false
+    var scoped = false
         internal set
 
     internal var linkPerformed = false
@@ -65,7 +65,7 @@ sealed class Binding<T> {
             linked.linkPerformed = true
             linked.override = override
             linked.eager = eager
-            linked.unscoped = unscoped
+            linked.scoped = scoped
         }
         return linked
     }

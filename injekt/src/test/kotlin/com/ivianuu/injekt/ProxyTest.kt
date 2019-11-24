@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -35,7 +34,7 @@ class ProxyTest {
         val proxy = component.getBinding<CharSequence>(keyOf<CharSequence>())
 
         assertTrue(original === proxy)
-        assertFalse(original.unscoped)
+        assertTrue(original.scoped)
         assertTrue(original.override)
     }
 

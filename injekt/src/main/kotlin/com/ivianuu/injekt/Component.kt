@@ -153,7 +153,7 @@ class Component internal constructor(
 
     private fun <T> findExplicitBindingForDependency(key: Key): LinkedBinding<T>? {
         var binding = synchronized(allBindings) { allBindings[key] } as? Binding<T>
-        if (binding != null && !binding.unscoped) return binding.linkIfNeeded(key)
+        if (binding != null && binding.scoped) return binding.linkIfNeeded(key)
 
         for (dependency in dependencies) {
             binding = dependency.findExplicitBindingForDependency(key)
@@ -191,10 +191,10 @@ class Component internal constructor(
             return if (justInTimeLookup.scope != null) {
                 val component = findComponentForScope(justInTimeLookup.scope)
                     ?: error("Couldn't find component for ${justInTimeLookup.scope}")
-                binding = binding.asScoped()
+                binding = binding.asSingle()
+                binding.scoped = true
                 component.addJustInTimeBinding(key, binding)
             } else {
-                binding.unscoped = true
                 addJustInTimeBinding(key, binding)
             }
         }

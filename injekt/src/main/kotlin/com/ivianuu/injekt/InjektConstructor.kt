@@ -17,30 +17,8 @@
 package com.ivianuu.injekt
 
 /**
- * Marks the annotated class as a scope
- *
- * For example a scope for activities is declared like this
- *
- * @Scope annotation class ActivityScope
- *
- * The following code ensures that the same view model instance is reused in activity scoped [Component]s
- *
- * ´´´
- * @ActivityScope
- * @Inject
- * class MyViewModel
- * ´´´
- *
- * @see ComponentBuilder.scopes
+ * Marks the annotated constructor as the constructor to be used
+ * When creating instances of the class
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Scope
-
-/**
- * Used by generated code to provide the of the injectable
- *
- * @see CodegenJustInTimeLookupFactory
- */
-interface HasScope {
-    val scope: Any
-}
+@Target(AnnotationTarget.CONSTRUCTOR)
+annotation class InjektConstructor

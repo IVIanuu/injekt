@@ -66,7 +66,7 @@ data class BindingContext<T> internal constructor(
             binding = binding as Binding<Any?>,
             override = override,
             eager = binding.eager,
-            unscoped = binding.unscoped
+            scoped = binding.scoped
         )
 
         return this

@@ -79,7 +79,7 @@ class Module internal constructor() {
         key = keyOf(type, name),
         binding = definitionBinding(optimizing = true, definition = definition),
         override = override,
-        unscoped = true
+        scoped = false
     )
 
     inline fun <reified T> single(
@@ -115,10 +115,10 @@ class Module internal constructor() {
     ): BindingContext<T> =
         bind(
             key = keyOf(type, name),
-            binding = definitionBinding(optimizing = false, definition = definition).asScoped(),
+            binding = definitionBinding(optimizing = false, definition = definition).asSingle(),
             override = override,
             eager = eager,
-            unscoped = false
+            scoped = true
         )
 
     /**
@@ -140,7 +140,7 @@ class Module internal constructor() {
         key = keyOf(type, name),
         binding = LinkedInstanceBinding(instance),
         override = override,
-        unscoped = false
+        scoped = false
     )
 
     inline fun <reified T> withBinding(
@@ -189,7 +189,7 @@ class Module internal constructor() {
                 binding = it.value,
                 override = it.value.override,
                 eager = it.value.eager,
-                unscoped = it.value.unscoped
+                scoped = it.value.scoped
             )
         }
         mapBindings.putAll(module.mapBindings)
@@ -261,7 +261,7 @@ class Module internal constructor() {
      * @param binding the binding to add
      * @param override whether or not the binding can override existing bindings
      * @param eager whether a instance should be created when the component get's created
-     * @param unscoped whether instances should be created in the requesting scope
+     * @param scoped whether instances should be created in the requesting scope
      * @return the [BindingContext] to chain binding calls
      *
      * @see Component.get
@@ -274,7 +274,7 @@ class Module internal constructor() {
         binding: Binding<T>,
         override: Boolean = false,
         eager: Boolean = false,
-        unscoped: Boolean = true
+        scoped: Boolean = false
     ): BindingContext<T> {
         check(key !in bindings || override) {
             "Already declared binding for $binding.key"
@@ -282,7 +282,7 @@ class Module internal constructor() {
 
         binding.override = override
         binding.eager = eager
-        binding.unscoped = unscoped
+        binding.scoped = scoped
 
         bindings[key] = binding
 
