@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt.sample.data
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.android.ApplicationScope
 
 @ApplicationScope
+@Inject
 class Repository(
     private val api: Api,
     private val database: Database
