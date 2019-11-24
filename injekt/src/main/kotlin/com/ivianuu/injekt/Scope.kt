@@ -18,16 +18,22 @@ package com.ivianuu.injekt
 
 /**
  * Marks the annotated class as a scope
+ * Scopes are used to describe where to create instances
  *
  * For example a scope for activities is declared like this
  *
- * @Scope annotation class ActivityScope
+ * ´´´
+ * @Scope
+ * annotation class ActivityScope {
+ *     companion object
+ * }
+ * ´´´
  *
- * The following code ensures that the same view model instance is reused in activity scoped [Component]s
+ * The following code ensures that the view model will be instantiated in the activity scoped component
  *
  * ´´´
  * @ActivityScope
- * @Inject
+ * @Factory
  * class MyViewModel
  * ´´´
  *
