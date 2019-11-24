@@ -357,7 +357,7 @@ class ComponentTest {
         val componentA = component {
             modules(
                 module {
-                    factory { Context(get()) }
+                    single { Context(get()) }
                         .bindType<Environment>()
                 }
             )
