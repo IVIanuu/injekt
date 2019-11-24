@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.playground
 
+import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
@@ -31,13 +32,13 @@ annotation class Commands {
     companion object
 }
 
-@Inject
+@Factory
 class CommandOne : Command
 
-@Inject
+@Factory
 class CommandTwo : Command
 
-@Inject
+@Factory
 class CommandThree : Command
 
 val commandsModule = module {
@@ -48,19 +49,19 @@ val commandsModule = module {
     }
 }
 
-@Inject
+@Factory
 internal class InternalDep
 
-@Inject
+@Factory
 object ObjectDep
 
-@Inject
+@Factory
 class EmptyConstructorDep
 
-@Inject
+@Factory
 class OnlyParamsConstructorDep(@Param param: String, val lol: String)
 
-@Inject
+@Factory
 class MyDep(
     // default
     private val command: Command,
