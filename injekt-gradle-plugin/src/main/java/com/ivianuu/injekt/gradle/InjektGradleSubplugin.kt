@@ -50,8 +50,8 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 
     override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-        groupId = com.ivianuu.injekt.BuildConfig.GROUP_ID,
-        artifactId = com.ivianuu.injekt.BuildConfig.ARTIFACT_ID,
-        version = com.ivianuu.injekt.BuildConfig.VERSION
+        groupId = BuildConfig.GROUP_ID,
+        artifactId = BuildConfig.ARTIFACT_ID,
+        version = BuildConfig.VERSION
     )
 }

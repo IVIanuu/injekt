@@ -20,7 +20,7 @@ gradlePlugin {
 
 buildConfig {
     clsName = "BuildConfig"
-    packageName = "com.ivianuu.injekt"
+    packageName = "com.ivianuu.injekt.gradle"
 
     version = Publishing.version
     buildConfigField("String", "GROUP_ID", Publishing.groupId)

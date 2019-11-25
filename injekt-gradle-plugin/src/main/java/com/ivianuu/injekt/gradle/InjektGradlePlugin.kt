@@ -5,9 +5,5 @@ import org.gradle.api.Project
 
 open class InjektGradlePlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        project.extensions.create(
-            "injekt-compiler",
-            InjektGradlePlugin::class.java
-        )
     }
 }
