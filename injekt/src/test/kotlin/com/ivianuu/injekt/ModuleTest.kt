@@ -81,7 +81,7 @@ class ModuleTest {
 
         val moduleB = module { include(moduleA) }
 
-        val binding = moduleB.bindings.values.first()
+        val binding = moduleB.bindings.values.single()
         assertTrue(binding.override)
         assertTrue(binding.eager)
         assertTrue(binding.scoped)
