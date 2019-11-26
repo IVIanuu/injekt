@@ -34,7 +34,6 @@ class BindingContextTest {
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>(name = "name")
-        println("declared $declared aliased $aliased")
         assertTrue(declared === aliased)
     }
 
@@ -51,7 +50,6 @@ class BindingContextTest {
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>()
-        println("declared $declared aliased $aliased")
         assertTrue(declared === aliased)
     }
 
@@ -68,7 +66,6 @@ class BindingContextTest {
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<TestDep1>(name = "name")
-        println("declared $declared aliased $aliased")
         assertTrue(declared === aliased)
     }
 

@@ -36,11 +36,11 @@ class ModuleTest {
 
     @Test
     fun testAllowsExplicitOverride() {
-        val firstBinding = definitionBinding(false) { "value" }
+        val originalBinding = definitionBinding(false) { "value" }
         val overrideBinding = definitionBinding(false) { "overridden_value" }
 
         val module = module {
-            bind(key = keyOf<String>(), binding = firstBinding)
+            bind(key = keyOf<String>(), binding = originalBinding)
             bind(key = keyOf<String>(), binding = overrideBinding, override = true)
         }
 
