@@ -82,6 +82,8 @@ class MyDep(
     @Commands private val commandsSetLazy: Set<Lazy<Command>>,
     @Commands private val commandsSetProvider: Set<Provider<Command>>,
 
+    private val nullable: String?,
+
     private val adapter: Lazy<JsonAdapter<List<MyInterface>>>
 )
 
