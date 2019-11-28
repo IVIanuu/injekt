@@ -44,9 +44,9 @@ fun FqName.asClassName() = ClassName.bestGuess(asString()) // todo
 
 fun KotlinType.asTypeName(): TypeName {
     val type = constructor.declarationDescriptor!!.fqNameSafe.asClassName()
-    return if (arguments.isNotEmpty()) {
+    return (if (arguments.isNotEmpty()) {
         type.parameterizedBy(*arguments.map { it.type.asTypeName() }.toTypedArray())
-    } else type
+    } else type).copy(nullable = isMarkedNullable)
 }
 
 val FactoryAnnotation = FqName("com.ivianuu.injekt.Factory")

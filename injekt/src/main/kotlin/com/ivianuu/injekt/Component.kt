@@ -61,7 +61,6 @@ class Component internal constructor(
         noinline parameters: ParametersDefinition? = null
     ): T = get(type = typeOf(), name = name, parameters = parameters)
 
-
     fun <T> get(
         type: Type<T>,
         name: Any? = null,
