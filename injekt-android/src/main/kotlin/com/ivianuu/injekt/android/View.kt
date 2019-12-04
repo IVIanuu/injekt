@@ -115,5 +115,4 @@ private fun <T : View> T.internalViewModule(name: Any) = module {
 
     factory(override = true) { context }.bindName(name)
     factory(override = true) { resources }.bindName(name)
-
 }

@@ -68,7 +68,7 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         value: String,
         configuration: CompilerConfiguration
     ) {
-        when(option.optionName) {
+        when (option.optionName) {
             "outputDir" -> configuration.put(OutputDirKey, value)
         }
     }

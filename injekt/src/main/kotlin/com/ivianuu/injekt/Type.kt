@@ -64,7 +64,6 @@ class Type<T> internal constructor(
 
         return "${rawJava.name}${if (isNullable) "?" else ""}$params"
     }
-
 }
 
 inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()

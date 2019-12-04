@@ -125,5 +125,4 @@ internal class MapBindings {
         maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
 
     fun getAll(): Map<Key, BindingMap<*, *>> = maps
-
 }

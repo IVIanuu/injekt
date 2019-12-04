@@ -138,7 +138,7 @@ class SetTest {
 
         assertEquals("overridden_value", overriddenValueComponent.get<Set<String>>().single())
     }
-    
+
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnIllegalOverride() {
         component {
@@ -199,5 +199,4 @@ class SetTest {
             )
         }
     }
-
 }

@@ -146,8 +146,8 @@ class ComponentBuilder internal constructor() {
 
         instances.forEach { (key, binding) ->
             check(
-                (key !in allBindings
-                        && key !in dependencyBindingKeys) || binding.override
+                (key !in allBindings &&
+                        key !in dependencyBindingKeys) || binding.override
             ) {
                 "Already declared key $key"
             }
@@ -160,8 +160,8 @@ class ComponentBuilder internal constructor() {
         modules.forEach { module ->
             module.bindings.forEach { (key, binding) ->
                 check(
-                    (key !in allBindings
-                            && key !in dependencyBindingKeys) || binding.override
+                    (key !in allBindings &&
+                            key !in dependencyBindingKeys) || binding.override
                 ) {
                     "Already declared key $key"
                 }
@@ -307,5 +307,4 @@ class ComponentBuilder internal constructor() {
         dependencies.forEach { it.collectBindingKeys(keys) }
         keys += this.allBindings.keys
     }
-
 }

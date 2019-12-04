@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import java.util.*
+import java.util.UUID
 
 /**
  * Construct a [Module] with a lambda
@@ -309,5 +309,4 @@ class Module internal constructor() {
             binding = UnlinkedProxyBinding(originalKey = keyOf(type = type, name = name))
         )
     }
-
 }

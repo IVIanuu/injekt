@@ -68,5 +68,4 @@ class BindingContextTest {
         val aliased = component.get<TestDep1>(name = "name")
         assertTrue(declared === aliased)
     }
-
 }

@@ -70,7 +70,6 @@ sealed class Binding<T> {
         }
         return linked
     }
-
 }
 
 abstract class UnlinkedBinding<T> : Binding<T>()

@@ -42,5 +42,4 @@ object KoinTest : InjectionTest, KoinComponent {
     override fun shutdown() {
         stopKoin()
     }
-
 }

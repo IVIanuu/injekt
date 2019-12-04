@@ -42,5 +42,4 @@ object KodeinTest : InjectionTest {
 
     override fun shutdown() {
     }
-
 }

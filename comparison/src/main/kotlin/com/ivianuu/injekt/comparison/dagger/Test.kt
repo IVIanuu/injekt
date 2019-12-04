@@ -40,5 +40,4 @@ object DaggerTest : InjectionTest {
     override fun shutdown() {
         graph = null
     }
-
 }

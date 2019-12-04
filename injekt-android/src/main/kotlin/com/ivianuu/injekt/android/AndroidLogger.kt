@@ -40,5 +40,4 @@ class AndroidLogger : Logger {
     override fun error(msg: String) {
         Log.e(INJEKT_TAG, msg)
     }
-
 }

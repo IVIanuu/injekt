@@ -36,5 +36,4 @@ class ScopedTest {
 
         assertTrue(System.identityHashCode(value1) == System.identityHashCode(value2))
     }
-
 }

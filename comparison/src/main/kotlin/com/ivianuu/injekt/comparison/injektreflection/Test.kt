@@ -45,5 +45,4 @@ object InjektReflectionTest : InjectionTest {
         component = null
         InjektPlugins.justInTimeLookupFactory = DefaultJustInTimeLookupFactory
     }
-
 }

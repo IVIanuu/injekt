@@ -115,5 +115,4 @@ internal class SetBindings {
     }
 
     fun getAll(): Map<Key, BindingSet<*>> = sets
-
 }

@@ -41,5 +41,4 @@ object KatanaTest : InjectionTest {
     override fun shutdown() {
         component = null
     }
-
 }

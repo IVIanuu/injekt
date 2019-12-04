@@ -47,5 +47,4 @@ sealed class ArgDescriptor {
         override val argName: String,
         val index: Int
     ) : ArgDescriptor()
-
 }

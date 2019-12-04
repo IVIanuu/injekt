@@ -38,5 +38,4 @@ object CustomTest : InjectionTest {
     override fun shutdown() {
         DIContainer.unloadModules()
     }
-
 }

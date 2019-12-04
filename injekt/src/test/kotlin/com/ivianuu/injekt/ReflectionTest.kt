@@ -111,7 +111,6 @@ class ReflectionDepWithAnnotatedConstructor {
     constructor(testDep2: TestDep2) {
         arg = testDep2
     }
-
 }
 
 interface Memoized<T>

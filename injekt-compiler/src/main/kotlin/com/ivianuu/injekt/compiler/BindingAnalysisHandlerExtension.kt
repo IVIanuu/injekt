@@ -88,5 +88,4 @@ class BindingAnalysisHandlerExtension(
             AnalysisResult.compilationError(bindingTrace.bindingContext)
         }
     }
-
 }

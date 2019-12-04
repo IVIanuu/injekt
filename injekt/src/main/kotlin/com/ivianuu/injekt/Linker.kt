@@ -34,5 +34,4 @@ package com.ivianuu.injekt
      * @return the linked binding
      */
     fun <T> get(key: Key): LinkedBinding<T> = component.getBinding(key)
-
 }

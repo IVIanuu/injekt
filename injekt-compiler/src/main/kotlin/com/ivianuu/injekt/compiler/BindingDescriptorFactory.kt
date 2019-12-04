@@ -45,8 +45,8 @@ fun createBindingDescriptor(
 
     val isObject = descriptor.kind == ClassKind.OBJECT
 
-    if (descriptor.visibility != Visibilities.PUBLIC
-        && descriptor.visibility != Visibilities.INTERNAL
+    if (descriptor.visibility != Visibilities.PUBLIC &&
+        descriptor.visibility != Visibilities.INTERNAL
     ) {
         report(descriptor, trace) { CannotBePrivate }
         return null
@@ -97,8 +97,9 @@ fun createBindingDescriptor(
             .firstOrNull { it.annotations.hasAnnotation(InjektConstructorAnnotation) }
             ?: descriptor.constructors.first()
 
-        if (constructor.visibility != Visibilities.PUBLIC
-            && constructor.visibility != Visibilities.INTERNAL) {
+        if (constructor.visibility != Visibilities.PUBLIC &&
+            constructor.visibility != Visibilities.INTERNAL
+        ) {
             report(constructor, trace) { CannotBePrivate }
             return null
         }

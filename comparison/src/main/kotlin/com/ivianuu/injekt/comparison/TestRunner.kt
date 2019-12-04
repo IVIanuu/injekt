@@ -193,5 +193,4 @@ fun Map<String, Results>.print(config: Config) {
         }
 
     println()
-
 }

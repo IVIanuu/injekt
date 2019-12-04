@@ -38,5 +38,4 @@ object Dagger2Test : InjectionTest {
     override fun shutdown() {
         component = null
     }
-
 }

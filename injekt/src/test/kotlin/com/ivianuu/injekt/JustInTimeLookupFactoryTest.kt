@@ -48,7 +48,6 @@ class JustInTimeLookupFactoryTest {
             assertNull(lookup)
         }
     }
-
 }
 
 @Factory

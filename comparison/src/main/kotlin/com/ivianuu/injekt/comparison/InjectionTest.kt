@@ -27,5 +27,4 @@ interface InjectionTest {
     fun inject()
 
     fun shutdown()
-
 }

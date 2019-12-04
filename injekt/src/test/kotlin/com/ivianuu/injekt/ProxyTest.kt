@@ -37,5 +37,4 @@ class ProxyTest {
         assertTrue(original.scoped)
         assertTrue(original.override)
     }
-
 }

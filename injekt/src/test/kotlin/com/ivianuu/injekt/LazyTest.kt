@@ -35,5 +35,4 @@ class LazyTest {
         val value2 = lazy()
         assertTrue(value1 === value2)
     }
-
 }

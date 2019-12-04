@@ -40,5 +40,4 @@ object Dagger2ReflectTest : InjectionTest {
     override fun shutdown() {
         component = null
     }
-
 }

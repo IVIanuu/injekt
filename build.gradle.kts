@@ -30,6 +30,7 @@ buildscript {
         classpath(Deps.injektGradlePlugin)
         classpath(Deps.Kotlin.gradlePlugin)
         classpath(Deps.mavenGradlePlugin)
+        classpath(Deps.spotlessGradlePlugin)
     }
 }
 

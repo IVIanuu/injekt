@@ -30,7 +30,6 @@ interface Provider<T> {
      * @return the instance of type [T]
      */
     operator fun invoke(parameters: ParametersDefinition? = null): T
-
 }
 
 internal class KeyedProvider<T>(

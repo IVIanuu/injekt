@@ -86,7 +86,6 @@ class TypeTest {
                     assertEquals(a, b)
                 }
             }
-
         }
     }
 
@@ -103,5 +102,4 @@ class TypeTest {
         val nullableStringType = typeOf<String?>()
         assertFalse(stringType == nullableStringType)
     }
-
 }

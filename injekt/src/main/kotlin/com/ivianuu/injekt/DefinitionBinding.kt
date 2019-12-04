@@ -96,7 +96,6 @@ private class LinkedDefinitionBinding<T>(
 
     override fun invoke(parameters: ParametersDefinition?): T =
         definition(this, parameters?.invoke())
-
 }
 
 private class UnlinkedOptimizingDefinitionBinding<T>(
@@ -144,5 +143,4 @@ private class LinkedOptimizingDefinitionBinding<T>(
         currentIndex = 0
         return definition(this, parameters?.invoke())
     }
-
 }

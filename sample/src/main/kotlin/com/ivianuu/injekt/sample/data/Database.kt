@@ -22,7 +22,7 @@ import java.io.File
 
 @ApplicationScope
 @Single
-class Database(private val file: File) {
+class Database(@DatabaseFile private val file: File) {
 
     private var _cached: List<String>? = null
 
@@ -31,5 +31,4 @@ class Database(private val file: File) {
     fun setItems(items: List<String>) {
         _cached = items
     }
-
 }
