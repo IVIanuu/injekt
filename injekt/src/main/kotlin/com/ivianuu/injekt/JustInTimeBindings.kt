@@ -91,7 +91,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
             }
         }
 
-        InjektPlugins.logger?.warn("Used reflection to findBindingForKey a binding for key: $key")
+        InjektPlugins.logger?.warn("Used reflection to create binding for key: $key")
 
         return lookup as? JustInTimeLookup<T>
     }
