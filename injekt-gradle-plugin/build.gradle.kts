@@ -29,7 +29,8 @@ buildConfig {
 }
 
 dependencies {
-    api(Deps.processingX)
+    implementation(Deps.androidGradlePlugin)
+    implementation(Deps.Kotlin.gradlePluginApi)
+    implementation(Deps.processingX)
     kapt(Deps.processingX)
-    api(Deps.Kotlin.gradlePluginApi)
 }
