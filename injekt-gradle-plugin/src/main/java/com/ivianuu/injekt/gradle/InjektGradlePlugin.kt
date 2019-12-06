@@ -21,5 +21,4 @@ open class InjektGradlePlugin : Plugin<Project> {
             sourceSet.java.srcDir(outputDir)
         }
     }
-
 }
