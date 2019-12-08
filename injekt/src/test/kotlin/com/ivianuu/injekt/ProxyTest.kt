@@ -47,7 +47,7 @@ class ProxyTest {
     }
 
     @Test
-    fun testBridgingDoesNotModifeOriginalBindingStateOfLinkedJustInTimeBindings() {
+    fun testBridgingDoesNotModifyOriginalBindingStateOfLinkedJustInTimeBindings() {
         val component = component {
             scopes(TestScopeOne)
             modules(
