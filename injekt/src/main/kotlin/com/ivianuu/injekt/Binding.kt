@@ -76,5 +76,8 @@ abstract class UnlinkedBinding<T> : Binding<T>()
 
 abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
     final override fun link(linker: Linker): LinkedBinding<T> = this
-    final override fun performLink(linker: Linker): LinkedBinding<T> = this
+    final override fun performLink(linker: Linker): LinkedBinding<T> {
+        linkPerformed = true
+        return this
+    }
 }

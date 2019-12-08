@@ -19,6 +19,14 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
+class ProxyDep
+
+object ProxyDep__Binding : LinkedBinding<ProxyDep>(), HasScope, IsSingle {
+    override val scope: Any
+        get() = TestScopeOne.Companion
+    override fun invoke(parameters: ParametersDefinition?): ProxyDep = ProxyDep()
+}
+
 class ProxyTest {
 
     @Test
@@ -36,5 +44,24 @@ class ProxyTest {
         assertTrue(original === proxy)
         assertTrue(original.scoped)
         assertTrue(original.override)
+    }
+
+    @Test
+    fun testBridgingDoesNotModifeOriginalBindingStateOfLinkedJustInTimeBindings() {
+        val component = component {
+            scopes(TestScopeOne)
+            modules(
+                module {
+                    withBinding<ProxyDep> {
+                        bindType<Any>()
+                    }
+                }
+            )
+        }
+
+        val originalBinding = component.getBinding<ProxyDep>(keyOf<ProxyDep>())
+        assertTrue(originalBinding.scoped)
+        component.getBinding<Any>(keyOf<Any>())
+        assertTrue(originalBinding.scoped)
     }
 }
