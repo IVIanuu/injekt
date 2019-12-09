@@ -131,7 +131,7 @@ fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArra
 fun emptyParameters(): Parameters = Parameters(emptyArray())
 
 /**
- * Marks a the annotated constructor parameter in a @[Inject] annotated class as a parameter
+ * Marks a the annotated constructor parameter in a @[Factory] or @[Single] annotated class as a parameter
  * The generated binding will then use the provided [Parameters] to resolve the dependency
  *
  * Example usage:
@@ -145,7 +145,8 @@ fun emptyParameters(): Parameters = Parameters(emptyArray())
  * Note that [Parameters] will be retrieved in the same order they are specified in the constructor
  *
  * @see Parameters
- * @see Inject
+ * @see Factory
+ * @see Single
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Param

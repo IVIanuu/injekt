@@ -36,9 +36,9 @@ fun Module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder().apply(bloc
  */
 class ModuleBuilder internal constructor() {
 
-    internal val bindings = mutableMapOf<Key, Binding<*>>()
-    internal val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
-    internal val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
+    private val bindings = mutableMapOf<Key, Binding<*>>()
+    private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
+    private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
 
     inline fun <reified T> factory(
         name: Any? = null,
@@ -217,8 +217,7 @@ class ModuleBuilder internal constructor() {
     }
 
     /**
-     * Runs a lambda in the scope of a contributed binding map
-     * Creates and adds a new binding elements if it does not exist yet in this Module
+     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
      *
      * @param mapKeyType the type of the keys in the map
      * @param mapValueType the type of the values in the map
@@ -253,12 +252,11 @@ class ModuleBuilder internal constructor() {
     }
 
     /**
-     * Runs a lambda in the scope of a contributed binding elements
-     * Creates and adds a new binding elements if it does not exist yet in this Module
+     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
      *
-     * @param setElementType the type of the elements in the elements
-     * @param setName the name by which the elements can be retrieved later in the Component
-     * @param block the lambda to run in the context of the binding elements
+     * @param setElementType the type of the elements in the set
+     * @param setName the name by which the set can be retrieved later in the Component
+     * @param block the lambda to run in the context of the binding set
      *
      * @see MultiBindingSet
      */

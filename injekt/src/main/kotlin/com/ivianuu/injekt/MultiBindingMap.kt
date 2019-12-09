@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * A [BindingMap] is the description of a "multi binding map"
+ * A [MultiBindingMap] is the description of a "multi binding map"
  *
  * A multi binding map is a keyed collection of instances of the same type
  * This allows to inject a map of 'Map<K, V>'

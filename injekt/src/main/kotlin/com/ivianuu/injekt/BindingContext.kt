@@ -102,7 +102,7 @@ data class BindingContext<T> internal constructor(
         mapName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> = intoMap(
-        mapKeyType = typeOf<K>(),
+        mapKeyType = typeOf(),
         mapValueType = typeOf<V>(),
         entryKey = entryKey,
         mapName = mapName,
@@ -118,7 +118,8 @@ data class BindingContext<T> internal constructor(
      * @param mapName the name of the map
      * @param override whether or not this binding can override existing one's
      *
-     * @see BindingMap
+     * @see MultiBindingMap
+     * @see MultiBindingMapBuilder
      */
     fun <K, V> intoMap(
         mapKeyType: Type<K>,
@@ -148,13 +149,14 @@ data class BindingContext<T> internal constructor(
     )
 
     /**
-     * Contributes the [binding] into to the specified elements
+     * Contributes the [binding] into to the specified set
      *
-     * @param setElementType the type of the elements
-     * @param setName the name of the elements
+     * @param setElementType the type of the set
+     * @param setName the name of the set
      * @param override whether or not this binding can override existing one's
      *
-     * @see BindingSet
+     * @see MultiBindingSet
+     * @see MultiBindingSetBuilder
      */
     fun <E> intoSet(
         setElementType: Type<E>,

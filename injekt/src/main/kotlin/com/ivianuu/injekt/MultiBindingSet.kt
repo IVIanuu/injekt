@@ -17,24 +17,22 @@
 package com.ivianuu.injekt
 
 /**
- * A [BindingSet] is the description of a "multi binding elements"
+ * A [MultiBindingSet] is a set of bindings
+ * This allows to inject 'Set<E>'
  *
- * A elements multi binding is a collection of instances of the same type
- * This allows to inject a elements of 'Set<E>'
- *
- * The contents of the elements can come from different modules
+ * The contents of the set can come from different modules
  *
  * The following is a typical usage of multi binding sets:
  *
  * ´´´
  * val fabricModule = Module {
- *     elements<AnalyticsEventHandler> {
+ *     set<AnalyticsEventHandler> {
  *         add<FabricAnalyticsEventHandler>()
  *     }
  * }
  *
  * val firebaseModule = Module {
- *     elements<AnalyticsEventHandler> {
+ *     set<AnalyticsEventHandler> {
  *         add<FirebaseAnalyticsEventHandler>()
  *     }
  * }

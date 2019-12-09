@@ -46,7 +46,8 @@ package com.ivianuu.injekt
  * ´´´
  *
  * @see Component.get
- * @see Inject
+ * @see Factory
+ * @see Single
  */
 @Target(AnnotationTarget.CLASS)
 annotation class Name

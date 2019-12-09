@@ -77,7 +77,7 @@ class MyDep(
     @Commands private val commandsMapLazy: Map<String, Lazy<Command>>,
     @Commands private val commandsMapProvider: Map<String, Provider<Command>>,
 
-    // elements
+    // set
     @Commands private val commandsSet: Set<Command>,
     @Commands private val commandsSetLazy: Set<Lazy<Command>>,
     @Commands private val commandsSetProvider: Set<Provider<Command>>,
