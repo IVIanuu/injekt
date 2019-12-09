@@ -17,22 +17,18 @@
 package com.ivianuu.injekt
 
 /**
- * A Module is a collection of [Binding]s to drive [Component]s
+ * Used in multi binding collections
  *
- * A typical Module might look like this:
- *
- * ´´´
- * val myRepositoryModule = Module {
- *     single { MyRepository(api = get(), database = get()) }
- *     single { MyApi(serializer = get()) }
- *     single { MyDatabase(databaseFile = get()) }
- * }
- * ´´´
- *
- * @see ComponentBuilder.modules
+ * @see MultiBindingMap
+ * @see MultiBindingSetBuilder
  */
-class Module internal constructor(
-    internal val bindings: Map<Key, Binding<*>>,
-    internal val multiBindingMaps: Map<Key, MultiBindingMap<*, *>>,
-    internal val multiBindingSets: Map<Key, MultiBindingSet<*>>
+data class KeyWithOverrideInfo(
+    /**
+     * The key of the [Binding] this info is for
+     */
+    val key: Key,
+    /**
+     * Whether or not existing declarations can be overriden by this one
+     */
+    val override: Boolean
 )

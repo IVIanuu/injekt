@@ -54,21 +54,17 @@ package com.ivianuu.injekt
  *
  *
  * @see ModuleBuilder.map
+ * @see MultiBindingMapBuilder
  */
-class BindingMap<K, V> internal constructor(val entries: Map<K, Entry<V>>) {
-    data class Entry<V>(
-        val entryValueKey: Key,
-        val override: Boolean
-    )
-}
+typealias MultiBindingMap<K, V> = Map<K, KeyWithOverrideInfo>
 
 /**
- * Builder for a [BindingMap]
+ * Builder for a [MultiBindingSet]
  *
  * @see ModuleBuilder.map
  */
-class BindingMapBuilder<K, V> internal constructor(private val mapKey: Key) {
-    private val entries = mutableMapOf<K, BindingMap.Entry<V>>()
+class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key) {
+    private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
 
     inline fun <reified T : V> put(
         entryKey: K,
@@ -88,56 +84,31 @@ class BindingMapBuilder<K, V> internal constructor(private val mapKey: Key) {
         put(entryKey, entryValueKey, override)
     }
 
-    /**
-     * Contributes a binding into this map
-     *
-     * @param entryKey the key of the instance inside the map
-     * @param entryValueKey the key of the actual instance in the Component
-     * @param override whether or not existing bindings can be overridden
-     */
     fun put(
         entryKey: K,
         entryValueKey: Key,
         override: Boolean = false
     ) {
-        put(entryKey, BindingMap.Entry(entryValueKey, override))
+        put(entryKey, KeyWithOverrideInfo(entryValueKey, override))
     }
 
-    internal fun putAll(other: BindingMap<K, V>) {
-        other.entries.forEach { (key, entry) -> put(key, entry) }
-    }
-
-    internal fun build(): BindingMap<K, V> = BindingMap(entries)
-
-    private fun put(entryKey: K, entry: BindingMap.Entry<V>) {
+    /**
+     * Contributes a binding into this map
+     *
+     * @param entryKey the key of the instance inside the map
+     * @param entry the entry to add to this map
+     */
+    fun put(entryKey: K, entry: KeyWithOverrideInfo) {
         check(entry.override || entryKey !in entries) {
             "Already declared $entryKey in map $mapKey"
         }
         entries[entryKey] = entry
     }
 
-}
-
-internal class MapBindings(val maps: Map<Key, BindingMap<*, *>>)
-
-internal class MapBindingsBuilder {
-
-    private val mapBuilders: MutableMap<Key, BindingMapBuilder<*, *>> = mutableMapOf()
-
-    fun putAll(mapBindings: MapBindings) {
-        mapBindings.maps.forEach { (mapKey, map) ->
-            val builder = getOrPut<Any?, Any?>(mapKey)
-            builder.putAll(map as BindingMap<Any?, Any?>)
-        }
+    internal fun putAll(other: MultiBindingMap<K, V>) {
+        other.entries.forEach { (key, entry) -> put(key, entry) }
     }
 
-    fun <K, V> getOrPut(mapKey: Key): BindingMapBuilder<K, V> =
-        mapBuilders.getOrPut(mapKey) { BindingMapBuilder<K, V>(mapKey) } as BindingMapBuilder<K, V>
-
-    fun build(): MapBindings {
-        val maps = mapBuilders
-            .mapValues { it.value.build() }
-        return MapBindings(maps)
-    }
+    internal fun build(): MultiBindingMap<K, KeyWithOverrideInfo> = entries
 
 }

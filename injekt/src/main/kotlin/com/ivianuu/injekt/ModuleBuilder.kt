@@ -37,8 +37,8 @@ fun Module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder().apply(bloc
 class ModuleBuilder internal constructor() {
 
     internal val bindings = mutableMapOf<Key, Binding<*>>()
-    internal val mapBindingsBuilder = MapBindingsBuilder()
-    internal val setBindingsBuilder = SetBindingsBuilder()
+    internal val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
+    internal val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
 
     inline fun <reified T> factory(
         name: Any? = null,
@@ -191,13 +191,27 @@ class ModuleBuilder internal constructor() {
                 scoped = it.value.scoped
             )
         }
-        mapBindingsBuilder.putAll(module.mapBindings)
-        setBindingsBuilder.addAll(module.setBindings)
+
+        module.multiBindingMaps.forEach { (mapKey, map) ->
+            val builder = multiBindingMapBuilders.getOrPut(mapKey) {
+                MultiBindingMapBuilder<Any?, KeyWithOverrideInfo>(mapKey)
+            } as MultiBindingMapBuilder<Any?, Any?>
+            map.entries.forEach { (entryKey, entry) ->
+                builder.put(entryKey, entry)
+            }
+        }
+
+        module.multiBindingSets.forEach { (setKey, set) ->
+            val builder = multiBindingSetBuilders.getOrPut(setKey) {
+                MultiBindingSetBuilder<Any?>(setKey)
+            } as MultiBindingSetBuilder<Any?>
+            set.forEach { element -> builder.add(element) }
+        }
     }
 
     inline fun <reified K, reified V> map(
         mapName: Any? = null,
-        noinline block: BindingMapBuilder<K, V>.() -> Unit = {}
+        noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
         map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
     }
@@ -211,24 +225,29 @@ class ModuleBuilder internal constructor() {
      * @param mapName the name by which the map can be retrieved later in the Component
      * @param block the lambda to run in the context of the binding map
      *
-     * @see BindingMap
+     * @see MultiBindingMap
      */
     fun <K, V> map(
         mapKeyType: Type<K>,
         mapValueType: Type<V>,
         mapName: Any? = null,
-        block: BindingMapBuilder<K, V>.() -> Unit = {}
+        block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
         val mapKey = keyOf(
             type = typeOf<Any?>(Map::class, mapKeyType, mapValueType),
             name = mapName
         )
-        mapBindingsBuilder.getOrPut<K, V>(mapKey).apply(block)
+
+        val builder = multiBindingMapBuilders.getOrPut(mapKey) {
+            MultiBindingMapBuilder<Any?, KeyWithOverrideInfo>(mapKey)
+        } as MultiBindingMapBuilder<K, V>
+
+        builder.apply(block)
     }
 
     inline fun <reified E> set(
         setName: Any? = null,
-        noinline block: BindingSetBuilder<E>.() -> Unit = {}
+        noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
         set(setElementType = typeOf(), setName = setName, block = block)
     }
@@ -241,15 +260,20 @@ class ModuleBuilder internal constructor() {
      * @param setName the name by which the elements can be retrieved later in the Component
      * @param block the lambda to run in the context of the binding elements
      *
-     * @see BindingSet
+     * @see MultiBindingSet
      */
     fun <E> set(
         setElementType: Type<E>,
         setName: Any? = null,
-        block: BindingSetBuilder<E>.() -> Unit = {}
+        block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
         val setKey = keyOf(type = typeOf<Any?>(Set::class, setElementType), name = setName)
-        setBindingsBuilder.getOrPut<E>(setKey).apply(block)
+
+        val builder = multiBindingSetBuilders.getOrPut(setKey) {
+            MultiBindingSetBuilder<Any?>(setKey)
+        } as MultiBindingSetBuilder<E>
+
+        builder.apply(block)
     }
 
     /**
@@ -291,8 +315,8 @@ class ModuleBuilder internal constructor() {
     internal fun build(): Module {
         return Module(
             bindings = bindings,
-            mapBindings = mapBindingsBuilder.build(),
-            setBindings = setBindingsBuilder.build()
+            multiBindingMaps = multiBindingMapBuilders.mapValues { it.value.build() },
+            multiBindingSets = multiBindingSetBuilders.mapValues { it.value.build() }
         )
     }
 

@@ -57,22 +57,16 @@ package com.ivianuu.injekt
  *
  * @see ModuleBuilder.set
  */
-
-class BindingSet<E> internal constructor(val elements: Set<Element<E>>) {
-    data class Element<E>(
-        val key: Key,
-        val override: Boolean
-    )
-}
+typealias MultiBindingSet<E> = Set<KeyWithOverrideInfo>
 
 /**
- * Builder for a [BindingSet]
+ * Builder for a [MultiBindingSet]
  *
  * @see ModuleBuilder.set
  */
-class BindingSetBuilder<E> internal constructor(private val setKey: Key) {
+class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
 
-    private val elements = mutableSetOf<BindingSet.Element<E>>()
+    private val elements = mutableSetOf<KeyWithOverrideInfo>()
 
     inline fun <reified T : E> add(
         elementName: Any? = null,
@@ -89,21 +83,16 @@ class BindingSetBuilder<E> internal constructor(private val setKey: Key) {
         add(keyOf(elementType, elementName), override)
     }
 
-    /**
-     * Contributes a binding into this elements
-     *
-     * @param elementKey the key of the actual instance in the Component
-     * @param override whether or not existing bindings can be overridden
-     */
     fun add(elementKey: Key, override: Boolean = false) {
-        add(BindingSet.Element(elementKey, override))
+        add(KeyWithOverrideInfo(elementKey, override))
     }
 
-    internal fun addAll(other: BindingSet<E>) {
-        other.elements.forEach { add(it.key, it.override) }
-    }
-
-    private fun add(element: BindingSet.Element<E>) {
+    /**
+     * Contributes a binding into this set
+     *
+     * @param element the element to add to this set
+     */
+    fun add(element: KeyWithOverrideInfo) {
         check(element.override || elements.none { it.key == element.key }) {
             "Already declared ${element.key} in elements $setKey"
         }
@@ -111,30 +100,9 @@ class BindingSetBuilder<E> internal constructor(private val setKey: Key) {
         elements += element
     }
 
-    internal fun build(): BindingSet<E> = BindingSet(elements)
-}
-
-internal class SetBindings(val sets: Map<Key, BindingSet<*>>)
-
-internal class SetBindingsBuilder {
-
-    private val setBuilders: MutableMap<Key, BindingSetBuilder<*>> = mutableMapOf()
-
-    fun addAll(setBindings: SetBindings) {
-        setBindings.sets.forEach { (setKey, set) ->
-            val builder = getOrPut<Any?>(setKey)
-            builder.addAll(set as BindingSet<Any?>)
-        }
+    internal fun addAll(other: MultiBindingSet<E>) {
+        other.forEach { add(it) }
     }
 
-    fun <E> getOrPut(setKey: Key): BindingSetBuilder<E> {
-        return setBuilders.getOrPut(setKey) { BindingSetBuilder<Any?>(setKey) } as BindingSetBuilder<E>
-    }
-
-    fun build(): SetBindings {
-        val sets = setBuilders
-            .mapValues { it.value.build() }
-        return SetBindings(sets)
-    }
-
+    internal fun build(): MultiBindingSet<E> = elements
 }

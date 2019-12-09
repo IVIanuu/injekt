@@ -137,12 +137,33 @@ class ComponentBuilder internal constructor() {
         val allBindings = mutableMapOf<Key, Binding<*>>()
         val unscopedBindings = mutableMapOf<Key, Binding<*>>()
         val eagerBindings = mutableListOf<Key>()
-        val mapBindingsBuilder = MapBindingsBuilder()
-        val setBindingsBuilder = SetBindingsBuilder()
+        val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
+        val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
+
+        fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<*, *>) {
+            val builder = multiBindingMapBuilders.getOrPut(mapKey) {
+                MultiBindingMapBuilder<Any?, Any?>(mapKey)
+            } as MultiBindingMapBuilder<Any?, Any?>
+
+            builder.putAll(map as MultiBindingMap<Any?, Any?>)
+        }
+
+        fun addMultiBindingSet(setKey: Key, set: MultiBindingSet<*>) {
+            val builder = multiBindingSetBuilders.getOrPut(setKey) {
+                MultiBindingSetBuilder<Any?>(setKey)
+            } as MultiBindingSetBuilder<Any?>
+
+            builder.addAll(set)
+        }
 
         dependencies.forEach { dependency ->
-            mapBindingsBuilder.putAll(dependency.mapBindings)
-            setBindingsBuilder.addAll(dependency.setBindings)
+            dependency.multiBindingMaps.forEach { (mapKey, map) ->
+                addMultiBindingMap(mapKey, map)
+            }
+
+            dependency.multiBindingSets.forEach { (setKey, set) ->
+                addMultiBindingSet(setKey, set)
+            }
         }
 
         fun addBinding(key: Key, binding: Binding<*>) {
@@ -164,17 +185,27 @@ class ComponentBuilder internal constructor() {
                 addBinding(key, binding)
             }
 
-            mapBindingsBuilder.putAll(module.mapBindings)
-            setBindingsBuilder.addAll(module.setBindings)
+            module.multiBindingMaps.forEach { (mapKey, map) ->
+                addMultiBindingMap(mapKey, map)
+            }
+
+            module.multiBindingSets.forEach { (setKey, set) ->
+                addMultiBindingSet(setKey, set)
+            }
         }
 
-        val mapBindings = mapBindingsBuilder.build()
-        mapBindings.maps.forEach { (mapKey, map) ->
+        val multiBindingMaps = multiBindingMapBuilders.mapValues {
+            it.value.build()
+        }
+
+        multiBindingMaps.forEach { (mapKey, map) ->
             includeMapBindings(allBindings, mapKey, map)
         }
 
-        val setBindings = setBindingsBuilder.build()
-        setBindings.sets.forEach { (setKey, set) ->
+        val multiBindingSets = multiBindingSetBuilders.mapValues {
+            it.value.build()
+        }
+        multiBindingSets.forEach { (setKey, set) ->
             includeSetBindings(allBindings, setKey, set)
         }
 
@@ -185,8 +216,8 @@ class ComponentBuilder internal constructor() {
             allBindings = allBindings,
             unlinkedUnscopedBindings = unscopedBindings,
             eagerBindings = eagerBindings,
-            mapBindings = mapBindings,
-            setBindings = setBindings,
+            multiBindingMaps = multiBindingMaps,
+            multiBindingSets = multiBindingSets,
             dependencies = dependencies
         )
     }
@@ -226,10 +257,10 @@ class ComponentBuilder internal constructor() {
     private fun includeMapBindings(
         bindings: MutableMap<Key, Binding<*>>,
         mapKey: Key,
-        map: BindingMap<*, *>
+        map: MultiBindingMap<*, *>
     ) {
-        val bindingKeys = map.entries
-            .mapValues { it.value.entryValueKey }
+        val bindingKeys = map
+            .mapValues { it.value.key }
 
         val mapKeyType = mapKey.type.parameters[0]
         val mapValueType = mapKey.type.parameters[1]
@@ -265,9 +296,9 @@ class ComponentBuilder internal constructor() {
     private fun includeSetBindings(
         bindings: MutableMap<Key, Binding<*>>,
         setKey: Key,
-        set: BindingSet<*>
+        set: MultiBindingSet<*>
     ) {
-        val setKeys = set.elements.map { it.key }.toSet()
+        val setKeys = set.map { it.key }.toSet()
 
         val setElementType = setKey.type.parameters[0]
 
