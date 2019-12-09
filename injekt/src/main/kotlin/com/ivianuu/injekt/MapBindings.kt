@@ -53,10 +53,22 @@ package com.ivianuu.injekt
  * or a 'Map<K, Lazy<V>>'
  *
  *
- * @see Module.map
+ * @see ModuleBuilder.map
  */
-class BindingMap<K, V> internal constructor(private val mapKey: Key) {
-    private val entries = mutableMapOf<K, Entry>()
+class BindingMap<K, V> internal constructor(val entries: Map<K, Entry<V>>) {
+    data class Entry<V>(
+        val entryValueKey: Key,
+        val override: Boolean
+    )
+}
+
+/**
+ * Builder for a [BindingMap]
+ *
+ * @see ModuleBuilder.map
+ */
+class BindingMapBuilder<K, V> internal constructor(private val mapKey: Key) {
+    private val entries = mutableMapOf<K, BindingMap.Entry<V>>()
 
     inline fun <reified T : V> put(
         entryKey: K,
@@ -88,41 +100,44 @@ class BindingMap<K, V> internal constructor(private val mapKey: Key) {
         entryValueKey: Key,
         override: Boolean = false
     ) {
-        put(entryKey, Entry(entryValueKey, override))
+        put(entryKey, BindingMap.Entry(entryValueKey, override))
     }
-
-    internal fun getBindingMap(): Map<K, Key> = entries.mapValues { it.value.entryValueKey }
 
     internal fun putAll(other: BindingMap<K, V>) {
         other.entries.forEach { (key, entry) -> put(key, entry) }
     }
 
-    private fun put(entryKey: K, entry: Entry) {
+    internal fun build(): BindingMap<K, V> = BindingMap(entries)
+
+    private fun put(entryKey: K, entry: BindingMap.Entry<V>) {
         check(entry.override || entryKey !in entries) {
             "Already declared $entryKey in map $mapKey"
         }
         entries[entryKey] = entry
     }
 
-    private class Entry(
-        val entryValueKey: Key,
-        val override: Boolean
-    )
 }
 
-internal class MapBindings {
+internal class MapBindings(val maps: Map<Key, BindingMap<*, *>>)
 
-    private val maps: MutableMap<Key, BindingMap<*, *>> = mutableMapOf()
+internal class MapBindingsBuilder {
+
+    private val mapBuilders: MutableMap<Key, BindingMapBuilder<*, *>> = mutableMapOf()
 
     fun putAll(mapBindings: MapBindings) {
         mapBindings.maps.forEach { (mapKey, map) ->
-            val thisMap = get<Any?, Any?>(mapKey)
-            thisMap.putAll(map as BindingMap<Any?, Any?>)
+            val builder = getOrPut<Any?, Any?>(mapKey)
+            builder.putAll(map as BindingMap<Any?, Any?>)
         }
     }
 
-    fun <K, V> get(mapKey: Key): BindingMap<K, V> =
-        maps.getOrPut(mapKey) { BindingMap<K, V>(mapKey) } as BindingMap<K, V>
+    fun <K, V> getOrPut(mapKey: Key): BindingMapBuilder<K, V> =
+        mapBuilders.getOrPut(mapKey) { BindingMapBuilder<K, V>(mapKey) } as BindingMapBuilder<K, V>
 
-    fun getAll(): Map<Key, BindingMap<*, *>> = maps
+    fun build(): MapBindings {
+        val maps = mapBuilders
+            .mapValues { it.value.build() }
+        return MapBindings(maps)
+    }
+
 }

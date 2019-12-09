@@ -69,8 +69,8 @@ class ModuleTest {
         val moduleB = Module { include(moduleA) }
 
         assertTrue(keyOf<TestDep1>() in moduleB.bindings)
-        assertTrue(moduleB.mapBindings.getAll().containsKey(keyOf<Map<String, Any>>()))
-        assertTrue(moduleB.setBindings.getAll().containsKey(keyOf<Set<Any>>()))
+        assertTrue(moduleB.mapBindings.maps.containsKey(keyOf<Map<String, Any>>()))
+        assertTrue(moduleB.setBindings.sets.containsKey(keyOf<Set<Any>>()))
     }
 
     @Test

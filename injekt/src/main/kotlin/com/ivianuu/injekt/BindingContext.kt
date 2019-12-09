@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Result of call to [Module.bind]
+ * Result of call to [ModuleBuilder.bind]
  * This is allows to add additional aliases to the same declared binding
  *
  * E.g.
@@ -28,11 +28,12 @@ package com.ivianuu.injekt
  *     .bindName("my_name") // retrievable via Component.get<MyRepository>(name = "my_name")
  *```
  *
+ * @see ModuleBuilder
  */
 data class BindingContext<T> internal constructor(
     val binding: Binding<T>,
     val key: Key,
-    val module: Module
+    val moduleBuilder: ModuleBuilder
 ) {
 
     inline fun <reified S> bindAlias(
@@ -54,14 +55,14 @@ data class BindingContext<T> internal constructor(
      * @param name the alias name
      * @param override whether or not the alias binding can override existing bindings
      *
-     * @see Module.bind
+     * @see ModuleBuilder.bind
      */
     fun bindAlias(
         type: Type<*>,
         name: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
-        module.bind(
+        moduleBuilder.bind(
             key = keyOf(type, name),
             binding = binding as Binding<Any?>,
             override = override,
@@ -126,7 +127,7 @@ data class BindingContext<T> internal constructor(
         mapName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
-        module.map(mapKeyType, mapValueType, mapName) {
+        moduleBuilder.map(mapKeyType, mapValueType, mapName) {
             put(
                 entryKey = entryKey,
                 entryValueType = key.type as Type<V>,
@@ -147,10 +148,10 @@ data class BindingContext<T> internal constructor(
     )
 
     /**
-     * Contributes the [binding] into to the specified set
+     * Contributes the [binding] into to the specified elements
      *
-     * @param setElementType the type of the set
-     * @param setName the name of the set
+     * @param setElementType the type of the elements
+     * @param setName the name of the elements
      * @param override whether or not this binding can override existing one's
      *
      * @see BindingSet
@@ -160,7 +161,7 @@ data class BindingContext<T> internal constructor(
         setName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
-        module.set(setElementType, setName) {
+        moduleBuilder.set(setElementType, setName) {
             add(elementType = key.type as Type<E>, elementName = key.name, override = override)
         }
         return this

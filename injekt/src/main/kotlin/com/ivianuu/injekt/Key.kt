@@ -22,7 +22,7 @@ package com.ivianuu.injekt
  * This is used to identify bindings in [Component]s and [Module]s
  *
  * @see Component.get
- * @see Module.bind
+ * @see ModuleBuilder.bind
  */
 data class Key internal constructor(val type: Type<*>, val name: Any? = null)
 

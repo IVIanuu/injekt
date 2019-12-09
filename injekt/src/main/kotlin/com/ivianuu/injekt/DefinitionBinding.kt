@@ -26,8 +26,8 @@ typealias Definition<T> = DefinitionContext.(Parameters?) -> T
  *
  * Which allows the following syntax:
  *
- * @see Module.factory
- * @see Module.single
+ * @see ModuleBuilder.factory
+ * @see ModuleBuilder.single
  */
 interface DefinitionContext {
 
@@ -84,7 +84,7 @@ private class UnlinkedDefinitionBinding<T>(
  * Unlike [LinkedOptimizingDefinitionBinding] always looks up the bindings
  * because it will be only for singletons
  *
- * @see Module.single
+ * @see ModuleBuilder.single
  */
 private class LinkedDefinitionBinding<T>(
     private val component: Component,
@@ -109,7 +109,7 @@ private class UnlinkedOptimizingDefinitionBinding<T>(
  * Caches already retrieved bindings to avoid the lookup cost
  * because it will be used in factory bindings which will get called on each request
  *
- * @see Module.factory
+ * @see ModuleBuilder.factory
  */
 private class LinkedOptimizingDefinitionBinding<T>(
     private val component: Component,

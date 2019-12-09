@@ -17,24 +17,24 @@
 package com.ivianuu.injekt
 
 /**
- * A [BindingSet] is the description of a "multi binding set"
+ * A [BindingSet] is the description of a "multi binding elements"
  *
- * A set multi binding is a collection of instances of the same type
- * This allows to inject a set of 'Set<E>'
+ * A elements multi binding is a collection of instances of the same type
+ * This allows to inject a elements of 'Set<E>'
  *
- * The contents of the set can come from different modules
+ * The contents of the elements can come from different modules
  *
  * The following is a typical usage of multi binding sets:
  *
  * ´´´
  * val fabricModule = Module {
- *     set<AnalyticsEventHandler> {
+ *     elements<AnalyticsEventHandler> {
  *         add<FabricAnalyticsEventHandler>()
  *     }
  * }
  *
  * val firebaseModule = Module {
- *     set<AnalyticsEventHandler> {
+ *     elements<AnalyticsEventHandler> {
  *         add<FirebaseAnalyticsEventHandler>()
  *     }
  * }
@@ -55,11 +55,24 @@ package com.ivianuu.injekt
  * or a 'Set<Lazy<E>>'
  *
  *
- * @see Module.set
+ * @see ModuleBuilder.set
  */
-class BindingSet<E> internal constructor(private val setKey: Key) {
 
-    private val entries = mutableMapOf<Key, Entry>()
+class BindingSet<E> internal constructor(val elements: Set<Element<E>>) {
+    data class Element<E>(
+        val key: Key,
+        val override: Boolean
+    )
+}
+
+/**
+ * Builder for a [BindingSet]
+ *
+ * @see ModuleBuilder.set
+ */
+class BindingSetBuilder<E> internal constructor(private val setKey: Key) {
+
+    private val elements = mutableSetOf<BindingSet.Element<E>>()
 
     inline fun <reified T : E> add(
         elementName: Any? = null,
@@ -77,42 +90,51 @@ class BindingSet<E> internal constructor(private val setKey: Key) {
     }
 
     /**
-     * Contributes a binding into this set
+     * Contributes a binding into this elements
      *
      * @param elementKey the key of the actual instance in the Component
      * @param override whether or not existing bindings can be overridden
      */
     fun add(elementKey: Key, override: Boolean = false) {
-        check(override || elementKey !in entries) {
-            "Already declared $elementKey in set $setKey"
-        }
-
-        entries[elementKey] = Entry(override)
+        add(BindingSet.Element(elementKey, override))
     }
 
     internal fun addAll(other: BindingSet<E>) {
-        other.entries.forEach { (key, entry) -> add(key, entry.override) }
+        other.elements.forEach { add(it.key, it.override) }
     }
 
-    internal fun getBindingSet(): Set<Key> = entries.keys
+    private fun add(element: BindingSet.Element<E>) {
+        check(element.override || elements.none { it.key == element.key }) {
+            "Already declared ${element.key} in elements $setKey"
+        }
 
-    private class Entry(val override: Boolean)
+        elements += element
+    }
+
+    internal fun build(): BindingSet<E> = BindingSet(elements)
 }
 
-internal class SetBindings {
+internal class SetBindings(val sets: Map<Key, BindingSet<*>>)
 
-    private val sets: MutableMap<Key, BindingSet<*>> = mutableMapOf()
+internal class SetBindingsBuilder {
+
+    private val setBuilders: MutableMap<Key, BindingSetBuilder<*>> = mutableMapOf()
 
     fun addAll(setBindings: SetBindings) {
         setBindings.sets.forEach { (setKey, set) ->
-            val thisSet = get<Any?>(setKey)
-            thisSet.addAll(set as BindingSet<Any?>)
+            val builder = getOrPut<Any?>(setKey)
+            builder.addAll(set as BindingSet<Any?>)
         }
     }
 
-    fun <E> get(setKey: Key): BindingSet<E> {
-        return sets.getOrPut(setKey) { BindingSet<Any?>(setKey) } as BindingSet<E>
+    fun <E> getOrPut(setKey: Key): BindingSetBuilder<E> {
+        return setBuilders.getOrPut(setKey) { BindingSetBuilder<Any?>(setKey) } as BindingSetBuilder<E>
     }
 
-    fun getAll(): Map<Key, BindingSet<*>> = sets
+    fun build(): SetBindings {
+        val sets = setBuilders
+            .mapValues { it.value.build() }
+        return SetBindings(sets)
+    }
+
 }
