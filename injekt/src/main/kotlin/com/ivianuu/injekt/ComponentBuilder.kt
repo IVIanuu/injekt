@@ -107,7 +107,7 @@ class ComponentBuilder internal constructor() {
     ) {
         val key = keyOf(type, name)
 
-        check(key !in instances || override) {
+        check(override || key !in instances) {
             "Already declared binding for $key"
         }
 
@@ -125,9 +125,11 @@ class ComponentBuilder internal constructor() {
             .map { it.getAllBindingKeys() }
             .fold(mutableSetOf<Key>()) { acc, current ->
                 current.forEach { key ->
-                    check(acc.add(key)) {
+                    check(key !in acc) {
                         "Already declared binding for $key"
                     }
+
+                    acc += key
                 }
 
                 return@fold acc
@@ -144,30 +146,23 @@ class ComponentBuilder internal constructor() {
             setBindings.addAll(dependency.setBindings)
         }
 
-        instances.forEach { (key, binding) ->
+        fun addBinding(key: Key, binding: Binding<*>) {
             check(
-                (key !in allBindings &&
-                        key !in dependencyBindingKeys) || binding.override
+                binding.override || (key !in allBindings &&
+                        key !in dependencyBindingKeys)
             ) {
                 "Already declared key $key"
             }
             allBindings[key] = binding
-            if (!binding.scoped) {
-                unscopedBindings[key] = binding
-            }
+            if (!binding.scoped) unscopedBindings[key] = binding
+            if (binding.eager) eagerBindings += key
         }
+
+        instances.forEach { (key, binding) -> addBinding(key, binding) }
 
         modules.forEach { module ->
             module.bindings.forEach { (key, binding) ->
-                check(
-                    (key !in allBindings &&
-                            key !in dependencyBindingKeys) || binding.override
-                ) {
-                    "Already declared key $key"
-                }
-                allBindings[key] = binding
-                if (!binding.scoped) unscopedBindings[key] = binding
-                if (binding.eager) eagerBindings += key
+                addBinding(key, binding)
             }
 
             mapBindings.putAll(module.mapBindings)
@@ -198,19 +193,19 @@ class ComponentBuilder internal constructor() {
     private fun checkScopes() {
         val dependencyScopes = mutableSetOf<Any>()
 
-        dependencies
-            .flatMap { it.scopes }
-            .forEach {
-                if (!dependencyScopes.add(it)) {
-                    error("Duplicated scope $it")
-                }
+        fun addScope(scope: Any) {
+            check(scope !in dependencyScopes) {
+                "Duplicated scope $scope"
             }
 
-        scopes.forEach {
-            if (!dependencyScopes.add(it)) {
-                error("Duplicated scope $it")
-            }
+            dependencyScopes += scope
         }
+
+        dependencies
+            .flatMap { it.scopes }
+            .forEach { addScope(it) }
+
+        scopes.forEach { addScope(it) }
 
         check(scopes.isNotEmpty() || dependencyScopes.isEmpty()) {
             "Must have a scope if a dependency has a scope"

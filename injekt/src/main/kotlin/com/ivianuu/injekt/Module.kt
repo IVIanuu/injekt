@@ -284,7 +284,7 @@ class Module internal constructor() {
         scoped: Boolean = false,
         eager: Boolean = false
     ): BindingContext<T> {
-        check(key !in bindings || override) {
+        check(override || key !in bindings) {
             "Already declared binding for $binding.key"
         }
 

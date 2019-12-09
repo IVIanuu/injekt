@@ -98,7 +98,7 @@ class BindingMap<K, V> internal constructor(private val mapKey: Key) {
     }
 
     private fun put(entryKey: K, entry: Entry) {
-        check(entryKey !in entries || entry.override) {
+        check(entry.override || entryKey !in entries) {
             "Already declared $entryKey in map $mapKey"
         }
         entries[entryKey] = entry
