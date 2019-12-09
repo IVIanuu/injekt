@@ -24,21 +24,21 @@ class ReflectionTest {
 
     @Test
     fun testCreatesViaReflection() {
-        val component = component()
+        val component = Component()
         component.get<ReflectionDep>()
     }
 
     @Test
     fun testUsesParams() {
-        val component = component()
+        val component = Component()
         component.get<ReflectionDepWithParam> { parametersOf(1) }
     }
 
     @Test
     fun testUsesNamedParams() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory(PackageName) { "com.ivianuu.injekt" }
                 }
             )
@@ -49,11 +49,11 @@ class ReflectionTest {
 
     @Test
     fun testUsesScope() {
-        val testScopeComponent = component {
+        val testScopeComponent = Component {
             scopes(TestScopeOne)
         }
 
-        val component = component {
+        val component = Component {
             scopes(OtherScope)
             dependencies(testScopeComponent)
         }
@@ -66,15 +66,15 @@ class ReflectionTest {
 
     @Test
     fun testUsesAnnotatedConstructor() {
-        val component = component()
+        val component = Component()
         assertTrue(component.get<ReflectionDepWithAnnotatedConstructor>().arg is TestDep2)
     }
 
     @Test
     fun testResolvesParameterizedDeps() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     map<String, Memoized<String>>()
                 }
             )

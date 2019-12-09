@@ -24,8 +24,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class ReceiverScope {
@@ -37,13 +35,13 @@ annotation class ForReceiver {
     companion object
 }
 
-fun <T : BroadcastReceiver> T.receiverComponent(
+fun <T : BroadcastReceiver> T.ReceiverComponent(
     context: Context,
     block: (ComponentBuilder.() -> Unit)? = null
-): Component = component {
+): Component = Component {
     scopes(ReceiverScope)
     getClosestComponentOrNull(context)?.let { dependencies(it) }
-    modules(receiverModule(context))
+    modules(ReceiverModule(context))
     block?.invoke(this)
 }
 
@@ -51,15 +49,18 @@ fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
     getApplicationComponentOrNull(context)
 
 fun BroadcastReceiver.getClosestComponent(context: Context): Component =
-    getClosestComponentOrNull(context) ?: error("No close component found for $this")
+    getClosestComponentOrNull(context) ?: error("No close Component found for $this")
 
 fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component? =
     (context.applicationContext as? InjektTrait)?.component
 
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
-    getApplicationComponentOrNull(context) ?: error("No application component found for $this")
+    getApplicationComponentOrNull(context) ?: error("No application Component found for $this")
 
-fun <T : BroadcastReceiver> T.receiverModule(context: Context): Module = module {
-    instance(this@receiverModule)
+fun <T : BroadcastReceiver> T.ReceiverModule(context: Context): Module = Module {
+    instance(this@ReceiverModule)
         .bindType<BroadcastReceiver>()
+
+    factory(override = true) { context }
+        .bindName(name = ForReceiver)
 }

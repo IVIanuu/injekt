@@ -24,8 +24,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class ViewScope {
@@ -47,19 +45,19 @@ annotation class ForChildView {
     companion object
 }
 
-fun <T : View> T.viewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : View> T.ViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(ViewScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(viewModule())
+        modules(ViewModule())
         block?.invoke(this)
     }
 
-fun <T : View> T.childViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : View> T.ChildViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(ChildViewScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(childViewModule())
+        modules(ChildViewModule())
         block?.invoke(this)
     }
 
@@ -70,13 +68,13 @@ fun View.getClosestComponentOrNull(): Component? {
 }
 
 fun View.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+    getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun View.getParentViewComponentOrNull(): Component? =
     (parent as? InjektTrait)?.component
 
 fun View.getParentViewComponent(): Component =
-    getParentViewComponentOrNull() ?: error("No parent view component found for $this")
+    getParentViewComponentOrNull() ?: error("No parent view Component found for $this")
 
 fun View.getContextComponentOrNull(): Component? {
     var parentContext = context
@@ -91,24 +89,24 @@ fun View.getContextComponentOrNull(): Component? {
 }
 
 fun View.getContextComponent(): Component =
-    getContextComponentOrNull() ?: error("No context component found for $this")
+    getContextComponentOrNull() ?: error("No context Component found for $this")
 
 fun View.getApplicationComponentOrNull(): Component? =
     (context.applicationContext as? InjektTrait)?.component
 
 fun View.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+    getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
-fun <T : View> T.viewModule(): Module = module {
-    include(internalViewModule(ForView))
+fun <T : View> T.ViewModule(): Module = Module {
+    include(InternalViewModule(ForView))
 }
 
-fun <T : View> T.childViewModule(): Module = module {
-    include(internalViewModule(ForChildView))
+fun <T : View> T.ChildViewModule(): Module = Module {
+    include(InternalViewModule(ForChildView))
 }
 
-private fun <T : View> T.internalViewModule(name: Any) = module {
-    instance(instance = this@internalViewModule, override = true).apply {
+private fun <T : View> T.InternalViewModule(name: Any) = Module {
+    instance(instance = this@InternalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)
     }

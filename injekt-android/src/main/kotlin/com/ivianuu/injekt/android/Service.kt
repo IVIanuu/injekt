@@ -24,8 +24,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class ServiceScope {
@@ -37,11 +35,11 @@ annotation class ForService {
     companion object
 }
 
-fun <T : Service> T.serviceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : Service> T.ServiceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(ServiceScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(serviceModule())
+        modules(ServiceModule())
         block?.invoke(this)
     }
 
@@ -49,15 +47,15 @@ fun Service.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
 
 fun Service.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+    getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun Service.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
 fun Service.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+    getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
-fun <T : Service> T.serviceModule(): Module = module {
-    instance(this@serviceModule).apply {
+fun <T : Service> T.ServiceModule(): Module = Module {
+    instance(this@ServiceModule).apply {
         bindType<Service>()
         bindAlias<Context>(name = ForService, override = true)
         bindType<Context>(override = true)

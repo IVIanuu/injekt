@@ -20,13 +20,13 @@ import android.app.Application
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.AndroidLogger
-import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.sample.data.dataModule
 
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        applicationComponent {
+        ApplicationComponent {
             modules(dataModule)
         }
     }

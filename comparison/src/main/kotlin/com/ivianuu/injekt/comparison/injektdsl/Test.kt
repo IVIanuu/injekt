@@ -19,7 +19,6 @@ package com.ivianuu.injekt.comparison.injektdsl
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.component
 
 object InjektDslTest : InjectionTest {
     override val name = "Injekt Dsl"
@@ -31,7 +30,7 @@ object InjektDslTest : InjectionTest {
     }
 
     override fun setup() {
-        component = component { modules(injektDslModule) }
+        component = Component { modules(injektDslModule) }
     }
 
     override fun inject() {

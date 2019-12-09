@@ -21,20 +21,20 @@ import java.util.UUID
 /**
  * Construct a [Module] with a lambda
  *
- * @param block the block to configure the module
- * @return the constructed module
+ * @param block the block to configure the Module
+ * @return the constructed Module
  *
  * @see Module
  */
-fun module(block: Module.() -> Unit): Module = Module().apply(block)
+fun Module(block: Module.() -> Unit): Module = Module().apply(block)
 
 /**
- * A module is a collection of [Binding]s to drive [Component]s
+ * A Module is a collection of [Binding]s to drive [Component]s
  *
- * A typical module might look like this:
+ * A typical Module might look like this:
  *
  * ´´´
- * val myRepositoryModule = module {
+ * val myRepositoryModule = Module {
  *     single { MyRepository(api = get(), database = get()) }
  *     single { MyApi(serializer = get()) }
  *     single { MyDatabase(databaseFile = get()) }
@@ -102,13 +102,13 @@ class Module internal constructor() {
     )
 
     /**
-     * Contributes a binding which will be reused throughout the lifetime of the component it life's in
+     * Contributes a binding which will be reused throughout the lifetime of the Component it life's in
      *
      * @param type the of the instance
      * @param name the name of the instance
      * @param override whether or not the binding can override existing bindings
      * @param scoped whether or not to create instances in the added scope
-     * @param eager whether the instance should be created when the component get's created
+     * @param eager whether the instance should be created when the Component get's created
      * @param definition the definitions which creates instances
      *
      * @see bind
@@ -133,8 +133,8 @@ class Module internal constructor() {
      * Adds a binding for a already existing instance
      *
      * @param instance the instance to contribute
-     * @param type the type for the [Key] by which the binding can be retrieved later in the component
-     * @param name the type for the [Key] by which the binding can be retrieved later in the component
+     * @param type the type for the [Key] by which the binding can be retrieved later in the Component
+     * @param name the type for the [Key] by which the binding can be retrieved later in the Component
      * @return the [BindingContext] to chain binding calls
      *
      * @see bind
@@ -186,9 +186,9 @@ class Module internal constructor() {
     }
 
     /**
-     * Merges the contents of the other module into this one
+     * Merges the contents of the other Module into this one
      *
-     * @param module the module to merge
+     * @param module the Module to merge
      */
     fun include(module: Module) {
         module.bindings.forEach {
@@ -213,11 +213,11 @@ class Module internal constructor() {
 
     /**
      * Runs a lambda in the scope of a contributed binding map
-     * Creates and adds a new binding set if it does not exist yet in this module
+     * Creates and adds a new binding set if it does not exist yet in this Module
      *
      * @param mapKeyType the type of the keys in the map
      * @param mapValueType the type of the values in the map
-     * @param mapName the name by which the map can be retrieved later in the component
+     * @param mapName the name by which the map can be retrieved later in the Component
      * @param block the lambda to run in the context of the binding map
      *
      * @see BindingMap
@@ -244,10 +244,10 @@ class Module internal constructor() {
 
     /**
      * Runs a lambda in the scope of a contributed binding set
-     * Creates and adds a new binding set if it does not exist yet in this module
+     * Creates and adds a new binding set if it does not exist yet in this Module
      *
      * @param setElementType the type of the elements in the set
-     * @param setName the name by which the set can be retrieved later in the component
+     * @param setName the name by which the set can be retrieved later in the Component
      * @param block the lambda to run in the context of the binding set
      *
      * @see BindingSet
@@ -265,10 +265,10 @@ class Module internal constructor() {
      * Contributes the binding
      * This function is rarely used directly instead use [factory] or [single]
      *
-     * @param key the key by which the binding can be retrieved later in the component
+     * @param key the key by which the binding can be retrieved later in the Component
      * @param binding the binding to add
      * @param override whether or not the binding can override existing bindings
-     * @param eager whether a instance should be created when the component get's created
+     * @param eager whether a instance should be created when the Component get's created
      * @param scoped whether instances should be created in the requesting scope
      * @return the [BindingContext] to chain binding calls
      *
@@ -302,7 +302,7 @@ class Module internal constructor() {
         name: Any?
     ): BindingContext<T> {
         // we create a proxy binding which links to the original binding
-        // because we have no reference to the original one it's likely in another module or component
+        // because we have no reference to the original one it's likely in another Module or Component
         // we use a unique id here to make sure that the binding does not collide with any user config
         return bind(
             key = keyOf(type = type, name = UUID.randomUUID().toString()),

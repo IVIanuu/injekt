@@ -24,9 +24,9 @@ class ProviderTest {
 
     @Test
     fun testProviderNotReturnsSameValue() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory { TestDep1() }
                 }
             )
@@ -41,9 +41,9 @@ class ProviderTest {
     fun testProviderPassesParams() {
         var usedParams: Parameters? = null
 
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory {
                         usedParams = it
                         TestDep1()

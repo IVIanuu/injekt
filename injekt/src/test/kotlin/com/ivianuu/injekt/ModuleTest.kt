@@ -25,7 +25,7 @@ class ModuleTest {
     @Test
     fun testBind() {
         val binding = definitionBinding(false) { "value" }
-        val module = module {
+        val module = Module {
             bind(
                 key = keyOf<String>(),
                 binding = binding
@@ -39,7 +39,7 @@ class ModuleTest {
         val originalBinding = definitionBinding(false) { "value" }
         val overrideBinding = definitionBinding(false) { "overridden_value" }
 
-        val module = module {
+        val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
             bind(key = keyOf<String>(), binding = overrideBinding, override = true)
         }
@@ -52,7 +52,7 @@ class ModuleTest {
         val firstBinding = definitionBinding(false) { "value" }
         val overrideBinding = definitionBinding(false) { "overridden_value" }
 
-        module {
+        Module {
             bind(key = keyOf<String>(), binding = firstBinding)
             bind(key = keyOf<String>(), binding = overrideBinding, override = false)
         }
@@ -60,13 +60,13 @@ class ModuleTest {
 
     @Test
     fun testInclude() {
-        val moduleA = module {
+        val moduleA = Module {
             factory { TestDep1() }
             map<String, Any> { "key" to keyOf<TestDep1>() }
             set<Any> { add<TestDep1>() }
         }
 
-        val moduleB = module { include(moduleA) }
+        val moduleB = Module { include(moduleA) }
 
         assertTrue(keyOf<TestDep1>() in moduleB.bindings)
         assertTrue(moduleB.mapBindings.getAll().containsKey(keyOf<Map<String, Any>>()))
@@ -75,11 +75,11 @@ class ModuleTest {
 
     @Test
     fun testInheresAllAttributesWhenIncluding() {
-        val moduleA = module {
+        val moduleA = Module {
             single(override = true, eager = true) { TestDep1() }
         }
 
-        val moduleB = module { include(moduleA) }
+        val moduleB = Module { include(moduleA) }
 
         val binding = moduleB.bindings.values.single()
         assertTrue(binding.override)

@@ -19,19 +19,19 @@ package com.ivianuu.injekt
 /**
  * The heart of the library which provides instances
  * Dependencies can be requested by calling either [get] or [inject]
- * Use [ComponentBuilder] to construct component instances
+ * Use [ComponentBuilder] to construct Component instances
  *
- * Typical usage of a component looks like this:
+ * Typical usage of a Component looks like this:
  *
  * ´´´
- * val component = component {
+ * val Component = Component {
  *     scopes(Singleton)
  *     modules(networkModule)
  *     modules(databaseModule)
  * }
  *
- * val api = component.get<Api>()
- * val database = component.get<Database>()
+ * val api = Component.get<Api>()
+ * val database = Component.get<Database>()
  * ´´´
  *
  * @see get
@@ -192,7 +192,7 @@ class Component internal constructor(
                 .let { if (justInTimeLookup.isSingle) it.asSingle() else it }
             return if (justInTimeLookup.scope != null) {
                 val component = findComponentForScope(justInTimeLookup.scope)
-                    ?: error("Couldn't find component for ${justInTimeLookup.scope}")
+                    ?: error("Couldn't find Component for ${justInTimeLookup.scope}")
                 binding.scoped = true
                 component.addJustInTimeBinding(key, binding)
             } else {

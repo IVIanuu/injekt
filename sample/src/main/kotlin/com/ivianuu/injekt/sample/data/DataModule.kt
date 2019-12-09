@@ -17,9 +17,9 @@
 package com.ivianuu.injekt.sample.data
 
 import android.content.Context
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.module
 import java.io.File
 
 @Name
@@ -32,7 +32,7 @@ annotation class DatabaseFile {
     companion object
 }
 
-val dataModule = module {
+val dataModule = Module {
     single(name = WebApiUrl) { "https://baseurl/" }
     single(name = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
 }

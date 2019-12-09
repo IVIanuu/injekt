@@ -23,8 +23,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class ContentProviderScope {
@@ -36,11 +34,11 @@ annotation class ForContentProvider {
     companion object
 }
 
-fun <T : ContentProvider> T.contentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : ContentProvider> T.ContentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(ContentProviderScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(contentProviderModule())
+        modules(ContentProviderModule())
         block?.invoke(this)
     }
 
@@ -48,15 +46,18 @@ fun ContentProvider.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
 
 fun ContentProvider.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+    getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun ContentProvider.getApplicationComponentOrNull(): Component? =
     (context?.applicationContext as? InjektTrait)?.component
 
 fun ContentProvider.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+    getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
-fun <T : ContentProvider> T.contentProviderModule(): Module = module {
-    instance(this@contentProviderModule)
+fun <T : ContentProvider> T.ContentProviderModule(): Module = Module {
+    instance(this@ContentProviderModule)
         .bindType<ContentProvider>()
+
+    factory(override = true) { context }
+        .bindName(name = ForContentProvider)
 }

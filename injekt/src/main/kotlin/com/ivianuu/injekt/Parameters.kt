@@ -34,7 +34,7 @@ package com.ivianuu.injekt
  * class MyView : UiView() {
  *
  *     override onAttach() {
- *         val presenter = component.get<MyPresenter> {
+ *         val presenter = Component.get<MyPresenter> {
  *             parametersOf("user_id")
  *         }
  *

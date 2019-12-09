@@ -24,7 +24,7 @@ package com.ivianuu.injekt
  * ```
  * class MainActivity : Activity(), InjektTrait {
  *
- *     override val component = component { ... }
+ *     override val Component = Component { ... }
  *
  *     private val dep1: Dependency1 by inject()
  *     private val dep2: Dependency2 by inject()
@@ -36,7 +36,7 @@ package com.ivianuu.injekt
 interface InjektTrait {
 
     /**
-     * The component which will be used in the below functions
+     * The Component which will be used in the below functions
      */
     val component: Component
 

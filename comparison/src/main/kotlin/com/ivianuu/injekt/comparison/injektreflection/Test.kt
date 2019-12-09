@@ -22,7 +22,6 @@ import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.ReflectiveJustInTimeLookupFactory
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.component
 
 object InjektReflectionTest : InjectionTest {
     override val name = "Injekt Reflection"
@@ -34,7 +33,7 @@ object InjektReflectionTest : InjectionTest {
 
     override fun setup() {
         InjektPlugins.justInTimeLookupFactory = ReflectiveJustInTimeLookupFactory
-        component = component()
+        component = Component()
     }
 
     override fun inject() {

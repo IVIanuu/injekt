@@ -27,24 +27,24 @@ package com.ivianuu.injekt
  * The following is a typical usage of multi binding sets:
  *
  * ´´´
- * val fabricModule = module {
+ * val fabricModule = Module {
  *     set<AnalyticsEventHandler> {
  *         add<FabricAnalyticsEventHandler>()
  *     }
  * }
  *
- * val firebaseModule = module {
+ * val firebaseModule = Module {
  *     set<AnalyticsEventHandler> {
  *         add<FirebaseAnalyticsEventHandler>()
  *     }
  * }
  *
- * val component = component {
+ * val Component = Component {
  *     modules(fabricModule, firebaseModule)
  * }
  *
  * // will include both FabricAnalyticsEventHandler and FirebaseAnalyticsEventHandler
- * val analyticsEventHandlers = component.get<Set<AnalyticsEventHandler>>()
+ * val analyticsEventHandlers = Component.get<Set<AnalyticsEventHandler>>()
  *
  * analyticsEventHandlers.forEach { handler ->
  *     handler.handleEvent(MyEvent())
@@ -79,7 +79,7 @@ class BindingSet<E> internal constructor(private val setKey: Key) {
     /**
      * Contributes a binding into this set
      *
-     * @param elementKey the key of the actual instance in the component
+     * @param elementKey the key of the actual instance in the Component
      * @param override whether or not existing bindings can be overridden
      */
     fun add(elementKey: Key, override: Boolean = false) {

@@ -17,11 +17,11 @@
 package com.ivianuu.injekt.playground
 
 import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.keyOf
-import com.ivianuu.injekt.module
 import kotlin.reflect.KClass
 
 // kinds
@@ -41,7 +41,7 @@ class CommandTwo : Command
 @Factory
 class CommandThree : Command
 
-val commandsModule = module {
+val commandsModule = Module {
     map<KClass<out Command>, Command> {
         CommandOne::class to keyOf<CommandOne>()
         CommandOne::class to keyOf<CommandOne>()

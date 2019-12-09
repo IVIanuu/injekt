@@ -23,9 +23,9 @@ class LazyTest {
 
     @Test
     fun testLazyInstantiatesOnce() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory { TestDep1() }
                 }
             )

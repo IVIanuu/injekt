@@ -26,8 +26,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class FragmentScope {
@@ -49,19 +47,19 @@ annotation class ForChildFragment {
     companion object
 }
 
-fun <T : Fragment> T.fragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : Fragment> T.FragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(FragmentScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(fragmentModule())
+        modules(FragmentModule())
         block?.invoke(this)
     }
 
-fun <T : Fragment> T.childFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : Fragment> T.ChildFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(ChildFragmentScope)
         getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(childFragmentModule())
+        modules(ChildFragmentModule())
         block?.invoke(this)
     }
 
@@ -72,36 +70,36 @@ fun Fragment.getClosestComponentOrNull(): Component? {
 }
 
 fun Fragment.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+    getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun Fragment.getParentFragmentComponentOrNull(): Component? =
     (parentFragment as? InjektTrait)?.component
 
 fun Fragment.getParentFragmentComponent(): Component =
-    getParentFragmentComponentOrNull() ?: error("No parent fragment component found for $this")
+    getParentFragmentComponentOrNull() ?: error("No parent fragment Component found for $this")
 
 fun Fragment.getActivityComponentOrNull(): Component? =
     (activity as? InjektTrait)?.component
 
 fun Fragment.getActivityComponent(): Component =
-    getActivityComponentOrNull() ?: error("No activity component found for $this")
+    getActivityComponentOrNull() ?: error("No activity Component found for $this")
 
 fun Fragment.getApplicationComponentOrNull(): Component? =
     (activity?.application as? InjektTrait)?.component
 
 fun Fragment.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+    getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
-fun <T : Fragment> T.fragmentModule(): Module = module {
-    include(internalFragmentModule(ForFragment))
+fun <T : Fragment> T.FragmentModule(): Module = Module {
+    include(InternalFragmentModule(ForFragment))
 }
 
-fun <T : Fragment> T.childFragmentModule(): Module = module {
-    include(internalFragmentModule(ForChildFragment))
+fun <T : Fragment> T.ChildFragmentModule(): Module = Module {
+    include(InternalFragmentModule(ForChildFragment))
 }
 
-private fun <T : Fragment> T.internalFragmentModule(name: Any) = module {
-    instance(instance = this@internalFragmentModule, override = true).apply {
+private fun <T : Fragment> T.InternalFragmentModule(name: Any) = Module {
+    instance(instance = this@InternalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
         bindType<LifecycleOwner>()

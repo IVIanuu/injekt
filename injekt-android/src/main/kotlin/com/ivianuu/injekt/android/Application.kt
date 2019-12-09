@@ -23,8 +23,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class ApplicationScope {
@@ -36,15 +34,15 @@ annotation class ForApplication {
     companion object
 }
 
-fun <T : Application> T.applicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    component {
+fun <T : Application> T.ApplicationComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
+    Component {
         scopes(ApplicationScope)
-        modules(applicationModule())
+        modules(ApplicationModule())
         block?.invoke(this)
     }
 
-fun <T : Application> T.applicationModule(): Module = module {
-    instance(this@applicationModule).apply {
+fun <T : Application> T.ApplicationModule(): Module = Module {
+    instance(this@ApplicationModule).apply {
         bindType<Application>()
         bindType<Context>()
         bindAlias<Context>(ForApplication)

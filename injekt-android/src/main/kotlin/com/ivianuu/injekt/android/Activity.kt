@@ -30,8 +30,6 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.component
-import com.ivianuu.injekt.module
 
 @Scope
 annotation class ActivityScope {
@@ -43,12 +41,12 @@ annotation class ForActivity {
     companion object
 }
 
-fun <T : Activity> T.activityComponent(
+fun <T : Activity> T.ActivityComponent(
     block: (ComponentBuilder.() -> Unit)? = null
-): Component = component {
+): Component = Component {
     scopes(ActivityScope)
     getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(activityModule())
+    modules(ActivityModule())
     block?.invoke(this)
 }
 
@@ -56,31 +54,31 @@ fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
 
 fun Activity.getClosestComponent(): Component =
-    getClosestComponentOrNull() ?: error("No close component found for $this")
+    getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun Activity.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
 
 fun Activity.getApplicationComponent(): Component =
-    getApplicationComponentOrNull() ?: error("No application component found for $this")
+    getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
-fun <T : Activity> T.activityModule(): Module = module {
-    instance(instance = this@activityModule).apply {
+fun <T : Activity> T.ActivityModule(): Module = Module {
+    instance(instance = this@ActivityModule).apply {
         bindType<Activity>()
         bindAlias<Context>(name = ForActivity, override = true)
         bindType<Context>(override = true)
 
-        if (this@activityModule is ComponentActivity) bindType<ComponentActivity>()
-        if (this@activityModule is FragmentActivity) bindType<FragmentActivity>()
-        if (this@activityModule is AppCompatActivity) bindType<AppCompatActivity>()
-        if (this@activityModule is LifecycleOwner) {
+        if (this@ActivityModule is ComponentActivity) bindType<ComponentActivity>()
+        if (this@ActivityModule is FragmentActivity) bindType<FragmentActivity>()
+        if (this@ActivityModule is AppCompatActivity) bindType<AppCompatActivity>()
+        if (this@ActivityModule is LifecycleOwner) {
             bindType<LifecycleOwner>()
             bindAlias<LifecycleOwner>(name = ForActivity)
         }
-        if (this@activityModule is ViewModelStoreOwner) {
+        if (this@ActivityModule is ViewModelStoreOwner) {
             bindType<ViewModelStoreOwner>()
             bindAlias<ViewModelStoreOwner>(name = ForActivity)
         }
-        if (this@activityModule is SavedStateRegistryOwner) {
+        if (this@ActivityModule is SavedStateRegistryOwner) {
             bindType<SavedStateRegistryOwner>()
             bindAlias<SavedStateRegistryOwner>(name = ForActivity)
         }
@@ -89,22 +87,22 @@ fun <T : Activity> T.activityModule(): Module = module {
     factory(override = true) { resources }
         .bindName(ForActivity)
 
-    (this@activityModule as? LifecycleOwner)?.let {
+    (this@ActivityModule as? LifecycleOwner)?.let {
         factory(override = true) { lifecycle }
             .bindName(ForActivity)
     }
 
-    (this@activityModule as? ViewModelStoreOwner)?.let {
+    (this@ActivityModule as? ViewModelStoreOwner)?.let {
         factory(override = true) { viewModelStore }
             .bindName(ForActivity)
     }
 
-    (this@activityModule as? SavedStateRegistryOwner)?.let {
+    (this@ActivityModule as? SavedStateRegistryOwner)?.let {
         factory(override = true) { savedStateRegistry }
             .bindName(ForActivity)
     }
 
-    (this@activityModule as? FragmentActivity)?.let {
+    (this@ActivityModule as? FragmentActivity)?.let {
         factory(override = true) { supportFragmentManager }
             .bindName(ForActivity)
     }

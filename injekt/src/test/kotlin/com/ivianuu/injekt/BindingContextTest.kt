@@ -23,9 +23,9 @@ class BindingContextTest {
 
     @Test
     fun testBindAlias() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     single { TestDep1() }
                         .bindAlias<Any>(name = "name")
                 }
@@ -39,9 +39,9 @@ class BindingContextTest {
 
     @Test
     fun testBindType() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     single { TestDep1() }
                         .bindType<Any>()
                 }
@@ -55,9 +55,9 @@ class BindingContextTest {
 
     @Test
     fun testBindName() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     single { TestDep1() }
                         .bindName("name")
                 }

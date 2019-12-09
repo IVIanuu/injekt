@@ -19,18 +19,18 @@ package com.ivianuu.injekt
 /**
  * Construct a [Component] with a lambda
  *
- * @param block the block to configure the component
+ * @param block the block to configure the Component
  * @return the constructed [Component]
  *
  * @see Component
  */
-fun component(block: ComponentBuilder.() -> Unit = {}): Component =
+fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()
 
 /**
  * Builder for an [Component]
  *
- * @see component
+ * @see Component
  * @see Component
  */
 class ComponentBuilder internal constructor() {
@@ -45,7 +45,7 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Scope the component
+     * Scope the Component
      *
      * @param scopes the scopes to include
      */
@@ -62,9 +62,9 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Add component dependencies
+     * Add Component dependencies
      *
-     * This all make all bindings of the dependencies accessible in this component
+     * This all make all bindings of the dependencies accessible in this Component
      *
      * @param dependencies the dependencies to add
      */
@@ -81,7 +81,7 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Include all bindings of the modules in the component
+     * Include all bindings of the modules in the Component
      *
      * @param modules the modules to include
      *
@@ -96,8 +96,8 @@ class ComponentBuilder internal constructor() {
      * This is a shortcut to avoid the creation of a [Module] for just a single binding
      *
      * @param instance the instance to contribute
-     * @param type the type for the [Key] by which the binding can be retrieved later in the component
-     * @param name the type for the [Key] by which the binding can be retrieved later in the component
+     * @param type the type for the [Key] by which the binding can be retrieved later in the Component
+     * @param name the type for the [Key] by which the binding can be retrieved later in the Component
      */
     fun <T> instance(
         instance: T,

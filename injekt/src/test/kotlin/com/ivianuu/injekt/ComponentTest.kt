@@ -31,9 +31,9 @@ class ComponentTest {
         val typed = TestDep1()
         val named = TestDep1()
 
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory { typed }
                     factory(Named) { named }
                 }
@@ -49,26 +49,26 @@ class ComponentTest {
 
     @Test
     fun testGetNested() {
-        val componentA = component {
+        val componentA = Component {
             modules(
-                module {
+                Module {
                     factory { TestDep1() }
                 }
             )
         }
-        val componentB = component {
+        val componentB = Component {
             dependencies(componentA)
             modules(
-                module {
+                Module {
                     factory { TestDep2(get()) }
                 }
             )
         }
 
-        val componentC = component {
+        val componentC = Component {
             dependencies(componentB)
             modules(
-                module {
+                Module {
                     factory { TestDep3(get(), get()) }
                 }
             )
@@ -79,7 +79,7 @@ class ComponentTest {
 
     @Test(expected = IllegalStateException::class)
     fun testGetUnknownDefinitionThrows() {
-        val component = component()
+        val component = Component()
         component.get<Int>()
     }
 
@@ -87,9 +87,9 @@ class ComponentTest {
     fun testGetLazy() {
         var called = false
 
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory {
                         called = true
                         TestDep1()
@@ -108,9 +108,9 @@ class ComponentTest {
     @Test
     fun testGetProvider() {
         var called = 0
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory {
                         ++called
                         TestDep1()
@@ -130,32 +130,32 @@ class ComponentTest {
 
     @Test
     fun testExplicitOverride() {
-        val module1 = module {
+        val module1 = Module {
             factory { "my_value" }
         }
 
-        val module2 = module {
+        val module2 = Module {
             factory(override = true) { "my_overridden_value" }
         }
 
-        val component = component { modules(module1, module2) }
+        val component = Component { modules(module1, module2) }
 
         assertEquals("my_overridden_value", component.get<String>())
     }
 
     @Test
     fun testExplicitOverrideInNestedComponents() {
-        val parentComponent = component {
+        val parentComponent = Component {
             modules(
-                module {
+                Module {
                     factory { "my_value" }
                 }
             )
         }
 
-        val childComponent = component {
+        val childComponent = Component {
             modules(
-                module {
+                Module {
                     factory(override = true) { "my_overridden_value" }
                 }
             )
@@ -167,31 +167,31 @@ class ComponentTest {
 
     @Test(expected = IllegalStateException::class)
     fun testDisallowsImplicitOverride() {
-        val module1 = module {
+        val module1 = Module {
             factory { "my_value" }
         }
 
-        val module2 = module {
+        val module2 = Module {
             factory { "my_overridden_value" }
         }
 
-        component { modules(module1, module2) }
+        Component { modules(module1, module2) }
     }
 
     @Test(expected = IllegalStateException::class)
     fun testDisallowsNestedImplicitOverride() {
-        val componentA = component {
+        val componentA = Component {
             modules(
-                module {
+                Module {
                     factory { "my_value" }
                 }
             )
         }
 
-        component {
+        Component {
             dependencies(componentA)
             modules(
-                module {
+                Module {
                     factory { "my_overriden_value" }
                 }
             )
@@ -200,30 +200,30 @@ class ComponentTest {
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfDependenciesOverrideEachOther() {
-        val dependency1 = component {
+        val dependency1 = Component {
             modules(
-                module {
+                Module {
                     factory { "value_1" }
                 }
             )
         }
 
-        val dependency2 = component {
+        val dependency2 = Component {
             modules(
-                module {
+                Module {
                     factory { "value_2" }
                 }
             )
         }
 
-        component { dependencies(dependency1, dependency2) }
+        Component { dependencies(dependency1, dependency2) }
     }
 
     @Test
     fun testTypeDistinction() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory { listOf(1, 2, 3) }
                     factory { listOf("one", "two", "three") }
                 }
@@ -238,9 +238,9 @@ class ComponentTest {
 
     @Test
     fun testNullableDistinction() {
-        val component = component {
+        val component = Component {
             modules(
-                module {
+                Module {
                     factory { "string" }
                     factory<String?> { "nullable string" }
                 }
@@ -255,20 +255,20 @@ class ComponentTest {
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
-        val dependency = component {
+        val dependency = Component {
             scopes(TestScopeOne)
         }
 
-        component { dependencies(dependency) }
+        Component { dependencies(dependency) }
     }
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
-        val dependency = component {
+        val dependency = Component {
             scopes(TestScopeOne)
         }
 
-        component {
+        Component {
             scopes(TestScopeOne)
             dependencies(dependency)
         }
@@ -276,15 +276,15 @@ class ComponentTest {
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnDependenciesWithSameScope() {
-        val dependency1 = component {
+        val dependency1 = Component {
             scopes(TestScopeOne)
         }
 
-        val dependency2 = component {
+        val dependency2 = Component {
             scopes(TestScopeOne)
         }
 
-        component {
+        Component {
             scopes(TestScopeTwo)
             dependencies(dependency1, dependency2)
         }
@@ -292,8 +292,8 @@ class ComponentTest {
 
     @Test
     fun testImplicitComponentBindings() {
-        val componentA = component { scopes(TestScopeOne) }
-        val componentB = component {
+        val componentA = Component { scopes(TestScopeOne) }
+        val componentB = Component {
             scopes(TestScopeTwo)
             dependencies(componentA)
         }
@@ -308,16 +308,16 @@ class ComponentTest {
 
     @Test
     fun testReusesSingleBindings() {
-        val componentA = component {
+        val componentA = Component {
             modules(
-                module {
+                Module {
                     single { TestDep1() }
                 }
             )
         }
 
-        val componentB = component { dependencies(componentA) }
-        val componentC = component { dependencies(componentB) }
+        val componentB = Component { dependencies(componentA) }
+        val componentC = Component { dependencies(componentB) }
 
         val depA = componentA.get<TestDep1>()
         val depA2 = componentA.get<TestDep1>()
@@ -331,13 +331,13 @@ class ComponentTest {
 
     @Test
     fun testReusesSingleJustInTimeBindings() {
-        val componentA = component { scopes(TestScopeOne) }
+        val componentA = Component { scopes(TestScopeOne) }
 
-        val componentB = component {
+        val componentB = Component {
             scopes(TestScopeTwo)
             dependencies(componentA)
         }
-        val componentC = component {
+        val componentC = Component {
             scopes(TestScopeThree)
             dependencies(componentB)
         }
@@ -354,16 +354,16 @@ class ComponentTest {
 
     @Test
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
-        val componentA = component {
+        val componentA = Component {
             modules(
-                module {
+                Module {
                     single(scoped = false) { Context(get()) }
                         .bindType<Environment>()
                 }
             )
         }
-        val componentB = component { dependencies(componentA) }
-        val componentC = component { dependencies(componentB) }
+        val componentB = Component { dependencies(componentA) }
+        val componentC = Component { dependencies(componentB) }
 
         val contextA = componentA.get<Context>()
         val contextB = componentB.get<Context>()
@@ -388,7 +388,7 @@ class ComponentTest {
 
     @Test
     fun testComponentBuilderAddInstance() {
-        val component = component {
+        val component = Component {
             instance("string")
             instance(1)
         }
@@ -400,17 +400,17 @@ class ComponentTest {
     @Test
     fun testInstantiatesEagerBindingOnStart() {
         var called = false
-        component {
+        Component {
             modules(
-                module {
+                Module {
                     single(eager = false) { called = true }
                 }
             )
         }
         assertFalse(called)
-        component {
+        Component {
             modules(
-                module {
+                Module {
                     single(eager = true) { called = true }
                 }
             )

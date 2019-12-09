@@ -19,7 +19,6 @@ package com.ivianuu.injekt.comparison.injektcodegen
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.component
 
 object InjektCodegenTest : InjectionTest {
     override val name = "Injekt Codegen"
@@ -30,7 +29,7 @@ object InjektCodegenTest : InjectionTest {
     }
 
     override fun setup() {
-        component = component()
+        component = Component()
     }
 
     override fun inject() {

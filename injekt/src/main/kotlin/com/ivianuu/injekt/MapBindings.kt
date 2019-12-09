@@ -27,24 +27,24 @@ package com.ivianuu.injekt
  * The following is a typical usage of multi binding maps:
  *
  * ´´´
- * val creditcardModule = module {
+ * val creditcardModule = Module {
  *     map<String, PaymentHandler> {
  *         put("creditcard", typeOf<CreditcardPaymentHandler>())
  *     }
  * }
  *
- * val paypalModule = module {
+ * val paypalModule = Module {
  *     map<String, PaymentHandler> {
  *         put("paypal", typeOf<PaypalPaymentHandler>())
  *     }
  * }
  *
- * val component = component {
+ * val Component = Component {
  *     modules(creditcardModule, paypalModule)
  * }
  *
  * // will include both CreditcardPaymentHandler and PaypalPaymentHandler
- * val paymentHandlers = component.get<Map<String, PaymentHandler>>()
+ * val paymentHandlers = Component.get<Map<String, PaymentHandler>>()
  *
  * paymentHandlers.get(paymentMethod).processPayment(shoppingCart)
  * ´´´
@@ -80,7 +80,7 @@ class BindingMap<K, V> internal constructor(private val mapKey: Key) {
      * Contributes a binding into this map
      *
      * @param entryKey the key of the instance inside the map
-     * @param entryValueKey the key of the actual instance in the component
+     * @param entryValueKey the key of the actual instance in the Component
      * @param override whether or not existing bindings can be overridden
      */
     fun put(

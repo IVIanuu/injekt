@@ -31,12 +31,12 @@ class ProxyTest {
 
     @Test
     fun testBridgingDoesNotModifyOriginalBindingState() {
-        val module = module {
+        val module = Module {
             single(override = true, eager = true) { "value" }
             withBinding<String> { bindType<CharSequence>() }
         }
 
-        val component = component { modules(module) }
+        val component = Component { modules(module) }
 
         val original = component.getBinding<String>(keyOf<String>())
         val proxy = component.getBinding<CharSequence>(keyOf<CharSequence>())
@@ -48,10 +48,10 @@ class ProxyTest {
 
     @Test
     fun testBridgingDoesNotModifyOriginalBindingStateOfLinkedJustInTimeBindings() {
-        val component = component {
+        val component = Component {
             scopes(TestScopeOne)
             modules(
-                module {
+                Module {
                     withBinding<ProxyDep> {
                         bindType<Any>()
                     }
