@@ -106,4 +106,8 @@ fun <T : Activity> T.ActivityModule(): Module = Module {
         factory(override = true) { supportFragmentManager }
             .bindName(ForActivity)
     }
+
+    withBinding<Component>(name = ActivityScope) {
+        bindName(name = ForActivity)
+    }
 }

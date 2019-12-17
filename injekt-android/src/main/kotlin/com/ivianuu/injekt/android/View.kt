@@ -98,14 +98,14 @@ fun View.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
 fun <T : View> T.ViewModule(): Module = Module {
-    include(InternalViewModule(ForView))
+    include(InternalViewModule(scope = ViewScope, name = ForView))
 }
 
 fun <T : View> T.ChildViewModule(): Module = Module {
-    include(InternalViewModule(ForChildView))
+    include(InternalViewModule(scope = ChildViewScope, name = ForChildView))
 }
 
-private fun <T : View> T.InternalViewModule(name: Any) = Module {
+private fun <T : View> T.InternalViewModule(scope: Any, name: Any) = Module {
     instance(instance = this@InternalViewModule, override = true).apply {
         bindType<View>()
         bindAlias<View>(name)
@@ -113,4 +113,8 @@ private fun <T : View> T.InternalViewModule(name: Any) = Module {
 
     factory(override = true) { context }.bindName(name)
     factory(override = true) { resources }.bindName(name)
+
+    withBinding<Component>(name = scope) {
+        bindName(name = name)
+    }
 }

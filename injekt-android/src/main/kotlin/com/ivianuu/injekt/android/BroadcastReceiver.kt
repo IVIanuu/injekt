@@ -63,4 +63,8 @@ fun <T : BroadcastReceiver> T.ReceiverModule(context: Context): Module = Module 
 
     factory(override = true) { context }
         .bindName(name = ForReceiver)
+
+    withBinding<Component>(name = ReceiverScope) {
+        bindName(name = ForReceiver)
+    }
 }

@@ -53,4 +53,8 @@ fun <T : Application> T.ApplicationModule(): Module = Module {
         .bindName(ForApplication)
 
     factory { resources }.bindName(ForApplication)
+
+    withBinding<Component>(name = ApplicationScope) {
+        bindName(name = ForApplication)
+    }
 }

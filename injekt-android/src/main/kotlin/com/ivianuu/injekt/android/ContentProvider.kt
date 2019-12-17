@@ -60,4 +60,8 @@ fun <T : ContentProvider> T.ContentProviderModule(): Module = Module {
 
     factory(override = true) { context }
         .bindName(name = ForContentProvider)
+
+    withBinding<Component>(name = ContentProviderScope) {
+        bindName(name = ForContentProvider)
+    }
 }

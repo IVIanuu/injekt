@@ -91,14 +91,17 @@ fun Fragment.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
 fun <T : Fragment> T.FragmentModule(): Module = Module {
-    include(InternalFragmentModule(ForFragment))
+    include(InternalFragmentModule(scope = FragmentScope, name = ForFragment))
 }
 
 fun <T : Fragment> T.ChildFragmentModule(): Module = Module {
-    include(InternalFragmentModule(ForChildFragment))
+    include(InternalFragmentModule(scope = ChildFragmentScope, name = ForChildFragment))
 }
 
-private fun <T : Fragment> T.InternalFragmentModule(name: Any) = Module {
+private fun <T : Fragment> T.InternalFragmentModule(
+    scope: Any,
+    name: Any
+) = Module {
     instance(instance = this@InternalFragmentModule, override = true).apply {
         bindType<Fragment>()
         bindAlias<Fragment>(name)
@@ -116,4 +119,8 @@ private fun <T : Fragment> T.InternalFragmentModule(name: Any) = Module {
     factory(override = true) { viewModelStore }.bindName(name)
     factory(override = true) { savedStateRegistry }.bindName(name)
     factory(override = true) { childFragmentManager }.bindName(name)
+
+    withBinding<Component>(name = scope) {
+        bindName(name = name)
+    }
 }
