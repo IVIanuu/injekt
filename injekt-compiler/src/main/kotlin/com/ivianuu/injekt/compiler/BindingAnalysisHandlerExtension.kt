@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import java.io.File
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -28,7 +29,6 @@ import org.jetbrains.kotlin.psi.classRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
-import java.io.File
 
 class BindingAnalysisHandlerExtension(
     private val outputDir: File

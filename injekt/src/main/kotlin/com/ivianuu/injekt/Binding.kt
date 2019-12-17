@@ -53,7 +53,7 @@ sealed class Binding<T> {
      *
      * @param linker the linker where to get required bindings from
      *
-     * @see UnlinkedMapOfLazyBinding
+     * @see MapOfLazyBinding
      */
     protected abstract fun link(linker: Linker): LinkedBinding<T>
 

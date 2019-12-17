@@ -117,7 +117,11 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                                         .filterIsInstance<ArgDescriptor.Dependency>()
 
                                     dependencyArgs.forEachIndexed { i, param ->
-                                        add("${param.argName}Binding = linker.get(${param.argName}Key)")
+                                        if (param.isOptional) {
+                                            add("${param.argName}Binding = linker.getOrNull(${param.argName}Key)")
+                                        } else {
+                                            add("${param.argName}Binding = linker.get(${param.argName}Key)")
+                                        }
                                         if (i != dependencyArgs.lastIndex) {
                                             add(",\n")
                                         }
@@ -173,6 +177,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                                     addParameter(
                                         param.argName + "Binding",
                                         InjektClassNames.LinkedBinding.plusParameter(param.paramType)
+                                            .copy(nullable = param.isOptional)
                                     )
                                 }
                         }
@@ -185,7 +190,8 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         addProperty(
                             PropertySpec.builder(
                                 param.argName + "Binding",
-                                InjektClassNames.LinkedBinding.plusParameter(param.paramType),
+                                InjektClassNames.LinkedBinding.plusParameter(param.paramType)
+                                    .copy(nullable = param.isOptional),
                                 KModifier.PRIVATE
                             )
                                 .initializer(param.argName + "Binding")
@@ -217,7 +223,7 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
         }
         .apply {
             if (descriptor.hasParamArgs) {
-                addStatement("val params = parameters!!.invoke()")
+                addStatement("val params = parameters?.invoke() ?: error(\"Missing required parameters\")")
             }
         }
         .add("return %T(\n", descriptor.target)
@@ -229,7 +235,11 @@ class BindingGenerator(private val descriptor: BindingDescriptor) {
                         add("${param.argName} = params.get(${param.index})")
                     }
                     is ArgDescriptor.Dependency -> {
-                        add("${param.argName} = ${param.argName}Binding()")
+                        if (param.isOptional) {
+                            add("${param.argName} = ${param.argName}Binding?.invoke()")
+                        } else {
+                            add("${param.argName} = ${param.argName}Binding.invoke()")
+                        }
                     }
                 }
 

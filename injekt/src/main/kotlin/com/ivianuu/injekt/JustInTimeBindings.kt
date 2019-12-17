@@ -188,7 +188,9 @@ private class LinkedReflectiveBinding<T>(
     private val args: Array<Arg>
 ) : LinkedBinding<T>() {
     override fun invoke(parameters: ParametersDefinition?): T {
-        val initializedParameters by lazy(LazyThreadSafetyMode.NONE) { parameters!!.invoke() }
+        val initializedParameters by lazy(LazyThreadSafetyMode.NONE) {
+            parameters?.invoke() ?: error("Missing required parameters")
+        }
         val resolvedArgs = args
             .map { arg ->
                 when (arg) {

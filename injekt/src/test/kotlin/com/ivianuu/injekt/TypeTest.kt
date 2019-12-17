@@ -19,8 +19,8 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
-import org.junit.Test
 import kotlin.reflect.KClass
+import org.junit.Test
 
 class TypeTest {
 

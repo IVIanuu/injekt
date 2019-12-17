@@ -28,8 +28,8 @@ import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import com.ivianuu.injekt.comparison.toothpick.ToothpickTest
-import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
+import org.nield.kotlinstatistics.median
 
 val defaultConfig = Config(
     rounds = 100_000,

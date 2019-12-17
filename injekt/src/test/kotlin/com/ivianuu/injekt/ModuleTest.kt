@@ -24,7 +24,7 @@ class ModuleTest {
 
     @Test
     fun testBind() {
-        val binding = definitionBinding(false) { "value" }
+        val binding = DefinitionBinding { "value" }
         val module = Module {
             bind(
                 key = keyOf<String>(),
@@ -36,8 +36,8 @@ class ModuleTest {
 
     @Test
     fun testAllowsExplicitOverride() {
-        val originalBinding = definitionBinding(false) { "value" }
-        val overrideBinding = definitionBinding(false) { "overridden_value" }
+        val originalBinding = DefinitionBinding { "value" }
+        val overrideBinding = DefinitionBinding { "overridden_value" }
 
         val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
@@ -49,8 +49,8 @@ class ModuleTest {
 
     @Test(expected = IllegalStateException::class)
     fun testDisallowsImplicitOverride() {
-        val firstBinding = definitionBinding(false) { "value" }
-        val overrideBinding = definitionBinding(false) { "overridden_value" }
+        val firstBinding = DefinitionBinding { "value" }
+        val overrideBinding = DefinitionBinding { "overridden_value" }
 
         Module {
             bind(key = keyOf<String>(), binding = firstBinding)

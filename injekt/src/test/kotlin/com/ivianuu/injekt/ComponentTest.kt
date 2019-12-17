@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -81,6 +82,12 @@ class ComponentTest {
     fun testGetUnknownDefinitionThrows() {
         val component = Component()
         component.get<Int>()
+    }
+
+    @Test
+    fun testGetOrNullUnknownReturnsNull() {
+        val component = Component()
+        assertNull(component.getOrNull<Int>())
     }
 
     @Test

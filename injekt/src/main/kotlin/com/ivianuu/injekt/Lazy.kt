@@ -62,3 +62,11 @@ internal class KeyedLazy<T>(
         return value as T
     }
 }
+
+internal class LinkedLazyBinding<T>(
+    private val component: Component,
+    private val key: Key
+) : LinkedBinding<Lazy<T>>() {
+    override fun invoke(parameters: ParametersDefinition?): Lazy<T> =
+        KeyedLazy(component, key)
+}

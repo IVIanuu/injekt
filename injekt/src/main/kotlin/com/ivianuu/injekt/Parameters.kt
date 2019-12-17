@@ -60,6 +60,13 @@ package com.ivianuu.injekt
     operator fun <T> get(index: Int): T = values[index] as T
 
     /**
+     * Retrieve the parameter at the [index] or null
+     *
+     * @param index the index of the parameter
+     */
+    fun <T> getOrNull(index: Int): T? = values.getOrNull(index) as? T
+
+    /**
      * Retrieve the parameter at 0
      * Enables convenient syntax in definitions like this:
      *

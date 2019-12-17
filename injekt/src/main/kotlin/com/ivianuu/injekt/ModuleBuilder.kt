@@ -72,7 +72,7 @@ class ModuleBuilder internal constructor() {
         definition: Definition<T>
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
-        binding = definitionBinding(optimizing = true, definition = definition),
+        binding = DefinitionBinding(definition = definition),
         override = override,
         scoped = scoped
     )
@@ -114,7 +114,7 @@ class ModuleBuilder internal constructor() {
     ): BindingContext<T> =
         bind(
             key = keyOf(type, name),
-            binding = definitionBinding(optimizing = false, definition = definition).asSingle(),
+            binding = DefinitionBinding(definition = definition).asSingle(),
             override = override,
             scoped = scoped,
             eager = eager
@@ -137,7 +137,7 @@ class ModuleBuilder internal constructor() {
         override: Boolean = false
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
-        binding = LinkedInstanceBinding(instance),
+        binding = InstanceBinding(instance),
         override = override,
         scoped = false
     )
@@ -327,7 +327,16 @@ class ModuleBuilder internal constructor() {
         // we use a unique id here to make sure that the binding does not collide with any user config
         return bind(
             key = keyOf(type = type, name = UUID.randomUUID().toString()),
-            binding = UnlinkedProxyBinding(originalKey = keyOf(type = type, name = name))
+            binding = ProxyBinding(originalKey = keyOf(type = type, name = name))
         )
     }
+}
+
+internal class InstanceBinding<T>(private val value: T) : LinkedBinding<T>() {
+    override fun invoke(parameters: ParametersDefinition?) = value
+}
+
+private class ProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> =
+        linker.get(originalKey)
 }

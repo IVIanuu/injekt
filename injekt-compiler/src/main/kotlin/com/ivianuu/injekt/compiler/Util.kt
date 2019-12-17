@@ -52,6 +52,7 @@ fun KotlinType.asTypeName(): TypeName {
 val FactoryAnnotation = FqName("com.ivianuu.injekt.Factory")
 val InjektConstructorAnnotation = FqName("com.ivianuu.injekt.InjektConstructor")
 val NameAnnotation = FqName("com.ivianuu.injekt.Name")
+val OptionalAnnotation = FqName("com.ivianuu.injekt.Optional")
 val ParamAnnotation = FqName("com.ivianuu.injekt.Param")
 val ScopeAnnotation = FqName("com.ivianuu.injekt.Scope")
 val SingleAnnotation = FqName("com.ivianuu.injekt.Single")

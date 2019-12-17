@@ -34,4 +34,12 @@ package com.ivianuu.injekt
      * @return the linked binding
      */
     fun <T> get(key: Key): LinkedBinding<T> = component.getBinding(key)
+
+    /**
+     * Obtain a linked binding or null
+     *
+     * @param key the for the binding
+     * @return the linked binding
+     */
+    fun <T> getOrNull(key: Key): LinkedBinding<T>? = component.getBindingOrNull(key)
 }

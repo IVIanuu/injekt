@@ -77,6 +77,27 @@ class Component internal constructor(
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
         getBinding<T>(key)(parameters)
 
+    inline fun <reified T> getOrNull(
+        name: Any? = null,
+        noinline parameters: ParametersDefinition? = null
+    ): T? = getOrNull(type = typeOf(), name = name, parameters = parameters)
+
+    fun <T> getOrNull(
+        type: Type<T>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): T? = getOrNull(key = keyOf(type, name), parameters = parameters)
+
+    /**
+     * Retrieve a instance of type [T] or null
+     *
+     * @param key the of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance
+     */
+    fun <T> getOrNull(key: Key, parameters: ParametersDefinition? = null): T? =
+        getBindingOrNull<T>(key)?.invoke(parameters)
+
     inline fun <reified T> inject(
         name: Any? = null,
         noinline parameters: ParametersDefinition? = null
@@ -100,11 +121,34 @@ class Component internal constructor(
         get(type = type, name = name, parameters = parameters)
     }
 
+    inline fun <reified T> injectOrNull(
+        name: Any? = null,
+        noinline parameters: ParametersDefinition? = null
+    ): kotlin.Lazy<T?> = injectOrNull(type = typeOf(), name = name, parameters = parameters)
+
+    /**
+     * Lazy version of [getOrNull]
+     *
+     * @param type the type of key of the instance
+     * @param name the name of the of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance
+
+     * @see Component.getOrNull
+     */
+    fun <T> injectOrNull(
+        type: Type<T>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): kotlin.Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) {
+        getOrNull(type = type, name = name, parameters = parameters)
+    }
+
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
-        findBinding(key) ?: error("Couldn't find a binding for $key")
+        getBindingOrNull(key) ?: error("Couldn't find a binding for $key")
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key): LinkedBinding<T>? {
+    internal fun <T> getBindingOrNull(key: Key): LinkedBinding<T>? {
         var binding: Binding<T>?
 
         // providers, lazy
@@ -128,7 +172,7 @@ class Component internal constructor(
             when (key.type.raw) {
                 Provider::class -> {
                     val instanceKey = keyOf(key.type.parameters.single(), key.name)
-                    return LinkedProviderBinding<Any?>(this, instanceKey) as LinkedBinding<T>
+                    return ProviderBinding<Any?>(this, instanceKey) as LinkedBinding<T>
                 }
                 Lazy::class -> {
                     val instanceKey = keyOf(key.type.parameters.single(), key.name)

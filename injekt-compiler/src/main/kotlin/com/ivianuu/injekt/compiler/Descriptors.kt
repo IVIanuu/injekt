@@ -39,6 +39,7 @@ sealed class ArgDescriptor {
 
     data class Dependency(
         override val argName: String,
+        val isOptional: Boolean,
         val paramType: TypeName,
         val qualifierName: ClassName?
     ) : ArgDescriptor()

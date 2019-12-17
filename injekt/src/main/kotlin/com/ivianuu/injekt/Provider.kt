@@ -48,3 +48,11 @@ internal class KeyedProvider<T>(
         return binding(parameters)
     }
 }
+
+internal class ProviderBinding<T>(
+    private val component: Component,
+    private val key: Key
+) : LinkedBinding<Provider<T>>() {
+    override fun invoke(parameters: ParametersDefinition?): Provider<T> =
+        KeyedProvider(component, key)
+}

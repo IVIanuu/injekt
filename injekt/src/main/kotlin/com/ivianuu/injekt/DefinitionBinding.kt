@@ -46,6 +46,20 @@ interface DefinitionContext {
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T
 
     /**
+     * @see Component.getOrNull
+     */
+    fun <T> getOrNull(
+        type: Type<T>,
+        name: Any? = null,
+        parameters: ParametersDefinition? = null
+    ): T? = getOrNull(key = keyOf(type, name), parameters = parameters)
+
+    /**
+     * @see Component.getOrNull
+     */
+    fun <T> getOrNull(key: Key, parameters: ParametersDefinition? = null): T?
+
+    /**
      * Nullable version of [Parameters.component1]
      */
     operator fun <T> Parameters?.component1(): T = this!![0]
@@ -64,83 +78,33 @@ inline fun <reified T> DefinitionContext.get(
     noinline parameters: ParametersDefinition? = null
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
-internal fun <T> definitionBinding(
-    optimizing: Boolean,
-    definition: Definition<T>
-): Binding<T> {
-    return if (optimizing) UnlinkedOptimizingDefinitionBinding(definition)
-    else UnlinkedDefinitionBinding(definition)
-}
+/**
+ * @see Component.getOrNull
+ */
+inline fun <reified T> DefinitionContext.getOrNull(
+    name: Any? = null,
+    noinline parameters: ParametersDefinition? = null
+): T? = getOrNull(type = typeOf(), name = name, parameters = parameters)
 
-private class UnlinkedDefinitionBinding<T>(
+internal class DefinitionBinding<T>(
     private val definition: Definition<T>
 ) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> = LinkedDefinitionBinding(
+    override fun link(linker: Linker): LinkedBinding<T> = Linked(
         linker.component, definition
     )
-}
 
-/**
- * Unlike [LinkedOptimizingDefinitionBinding] always looks up the bindings
- * because it will be only for singletons
- *
- * @see ModuleBuilder.single
- */
-private class LinkedDefinitionBinding<T>(
-    private val component: Component,
-    private val definition: Definition<T>
-) : LinkedBinding<T>(), DefinitionContext {
+    private class Linked<T>(
+        private val component: Component,
+        private val definition: Definition<T>
+    ) : LinkedBinding<T>(), DefinitionContext {
 
-    override fun <T> get(key: Key, parameters: ParametersDefinition?): T =
-        component.get(key, parameters)
+        override fun <T> get(key: Key, parameters: ParametersDefinition?): T =
+            component.get(key = key, parameters = parameters)
 
-    override fun invoke(parameters: ParametersDefinition?): T =
-        definition(this, parameters?.invoke())
-}
+        override fun <T> getOrNull(key: Key, parameters: ParametersDefinition?): T? =
+            component.getOrNull(key = key, parameters = parameters)
 
-private class UnlinkedOptimizingDefinitionBinding<T>(
-    private val definition: Definition<T>
-) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> =
-        LinkedOptimizingDefinitionBinding(linker.component, definition)
-}
-
-/**
- * Caches already retrieved bindings to avoid the lookup cost
- * because it will be used in factory bindings which will get called on each request
- *
- * @see ModuleBuilder.factory
- */
-private class LinkedOptimizingDefinitionBinding<T>(
-    private val component: Component,
-    private val definition: Definition<T>
-) : LinkedBinding<T>(), DefinitionContext {
-
-    private var bindings = arrayOfNulls<LinkedBinding<*>>(5)
-    private var currentIndex = 0
-
-    override fun <T> get(key: Key, parameters: ParametersDefinition?): T {
-        return if (currentIndex > bindings.lastIndex) {
-            bindings = bindings.copyOf(currentIndex + 5)
-            val binding = component.linker.get<T>(key)
-            bindings[currentIndex] = binding
-            ++currentIndex
-            binding
-        } else {
-            var binding = bindings[currentIndex]
-            if (binding == null) {
-                binding = component.linker.get<T>(key)
-                bindings[currentIndex] = binding
-            }
-
-            ++currentIndex
-
-            binding
-        }(parameters) as T
-    }
-
-    override fun invoke(parameters: ParametersDefinition?): T {
-        currentIndex = 0
-        return definition(this, parameters?.invoke())
+        override fun invoke(parameters: ParametersDefinition?): T =
+            definition(this, parameters?.invoke())
     }
 }

@@ -40,9 +40,10 @@ fun report(
 val EitherFactoryOrSingle = error()
 val OnlyOneScope = error()
 val OnlyOneName = error()
-val EitherNameOrParam = error()
 val CannotBePrivate = error()
 val NeedsACompanionObject = error()
+val ParamCannotBeNamed = error()
+val ParamCannotBeOptional = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -64,16 +65,20 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
             "Can only have 1 name annotation"
         )
         map.put(
-            EitherNameOrParam,
-            "Can only have one of @Param or @Name"
-        )
-        map.put(
             CannotBePrivate,
             "Must be public or internal"
         )
         map.put(
             NeedsACompanionObject,
             "Needs a companion object"
+        )
+        map.put(
+            ParamCannotBeNamed,
+            "Parameters cannot be named"
+        )
+        map.put(
+            ParamCannotBeOptional,
+            "Parameters cannot be optional"
         )
     }
 }

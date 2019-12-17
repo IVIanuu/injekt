@@ -141,16 +141,31 @@ fun createBindingDescriptor(
                 } else null
 
                 if (paramIndex != null && nameType != null) {
-                    report(param, trace) { EitherNameOrParam }
+                    report(param, trace) { ParamCannotBeNamed }
+                    return null
+                }
+
+                val isOptional = param.annotations.hasAnnotation(OptionalAnnotation)
+
+                if (paramIndex != null && isOptional) {
+                    report(param, trace) { ParamCannotBeOptional }
                     return null
                 }
 
                 val paramType = param.type.asTypeName()
 
                 if (paramIndex != null) {
-                    ArgDescriptor.Parameter(paramName, paramIndex)
+                    ArgDescriptor.Parameter(
+                        argName = paramName,
+                        index = paramIndex
+                    )
                 } else {
-                    ArgDescriptor.Dependency(paramName, paramType, nameType)
+                    ArgDescriptor.Dependency(
+                        argName = paramName,
+                        isOptional = isOptional,
+                        paramType = paramType,
+                        qualifierName = nameType
+                    )
                 }
             }
     }

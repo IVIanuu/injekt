@@ -110,7 +110,7 @@ class ComponentBuilder internal constructor() {
             "Already declared binding for $key"
         }
 
-        val binding = LinkedInstanceBinding(instance)
+        val binding = InstanceBinding(instance)
         binding.override = override
         binding.scoped = true
 
@@ -245,13 +245,24 @@ class ComponentBuilder internal constructor() {
     }
 
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
-        val componentBinding = UnlinkedComponentBinding()
+        val componentBinding = ComponentBinding()
         componentBinding.scoped = true
         val componentKey = keyOf<Component>()
         bindings[componentKey] = componentBinding
         scopes
             .map { keyOf<Component>(it) }
             .forEach { bindings[it] = componentBinding }
+    }
+
+    private class ComponentBinding : UnlinkedBinding<Component>() {
+        override fun link(linker: Linker): LinkedBinding<Component> =
+            Linked(linker.component)
+
+        private class Linked(private val component: Component) :
+            LinkedBinding<Component>() {
+            override fun invoke(parameters: ParametersDefinition?): Component =
+                component
+        }
     }
 
     private fun includeMapBindings(
@@ -274,7 +285,7 @@ class ComponentBuilder internal constructor() {
             mapKey.name
         )
 
-        bindings[mapOfProviderKey] = UnlinkedMapOfProviderBinding<Any?, Any?>(bindingKeys)
+        bindings[mapOfProviderKey] = MapOfProviderBinding<Any?, Any?>(bindingKeys)
             .also { it.scoped = true }
 
         val mapOfLazyKey = keyOf(
@@ -286,10 +297,10 @@ class ComponentBuilder internal constructor() {
             mapKey.name
         )
 
-        bindings[mapOfLazyKey] = UnlinkedMapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapOfLazyKey] = MapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.scoped = true }
 
-        bindings[mapKey] = UnlinkedMapOfValueBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapKey] = MapOfValueBinding<Any?, Any?>(mapOfProviderKey)
             .also { it.scoped = true }
     }
 
@@ -310,7 +321,7 @@ class ComponentBuilder internal constructor() {
             setKey.name
         )
 
-        bindings[setOfProviderKey] = UnlinkedSetOfProviderBinding<Any?>(setKeys)
+        bindings[setOfProviderKey] = SetOfProviderBinding<Any?>(setKeys)
             .also { it.scoped = true }
 
         val setOfLazyKey = keyOf(
@@ -321,10 +332,10 @@ class ComponentBuilder internal constructor() {
             setKey.name
         )
 
-        bindings[setOfLazyKey] = UnlinkedSetOfLazyBinding<Any?>(setOfProviderKey)
+        bindings[setOfLazyKey] = SetOfLazyBinding<Any?>(setOfProviderKey)
             .also { it.scoped = true }
 
-        bindings[setKey] = UnlinkedSetOfValueBinding<Any?>(setOfProviderKey)
+        bindings[setKey] = SetOfValueBinding<Any?>(setOfProviderKey)
             .also { it.scoped = true }
     }
 
