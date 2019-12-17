@@ -34,7 +34,7 @@ package com.ivianuu.injekt
  * class MyView : UiView() {
  *
  *     override onAttach() {
- *         val presenter = Component.get<MyPresenter> {
+ *         val presenter = component.get<MyPresenter> {
  *             parametersOf("user_id")
  *         }
  *
@@ -142,6 +142,7 @@ fun emptyParameters(): Parameters = Parameters(emptyArray())
  * The generated binding will then use the provided [Parameters] to resolve the dependency
  *
  * Example usage:
+ *
  * ´´´
  * class MyViewModel(
  *     @Param private val id: String,

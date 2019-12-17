@@ -18,8 +18,8 @@ package com.ivianuu.injekt
 
 /**
  * A binding knows how to create a concrete instance of a type
- * It also holds additional information about the declaration
- * You typically don't access them directly but instead declare dependencies
+ * it also holds additional information about the declaration
+ * you typically don't access them directly but instead declare dependencies
  * via the [Module]s or annotating classes [Factory] [Single]
  *
  * @see Module

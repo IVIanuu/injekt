@@ -28,7 +28,7 @@ data class KeyWithOverrideInfo(
      */
     val key: Key,
     /**
-     * Whether or not existing declarations can be overriden by this one
+     * Whether or not existing declarations can be overridden by this one
      */
     val override: Boolean
 )

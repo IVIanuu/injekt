@@ -24,8 +24,6 @@ typealias Definition<T> = DefinitionContext.(Parameters?) -> T
 /**
  * The receiver scope for [Definition]s
  *
- * Which allows the following syntax:
- *
  * @see ModuleBuilder.factory
  * @see ModuleBuilder.single
  */

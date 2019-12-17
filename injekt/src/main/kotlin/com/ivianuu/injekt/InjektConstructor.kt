@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * Marks the annotated constructor as the constructor to be used
- * When generating a binding for it
+ * when generating a binding for it
  *
  * @see Factory
  * @see Single

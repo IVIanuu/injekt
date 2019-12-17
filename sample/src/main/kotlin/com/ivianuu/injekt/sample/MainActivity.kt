@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.sample
 
-import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.ActivityComponent
@@ -25,7 +24,4 @@ class MainActivity : AppCompatActivity(), InjektTrait {
 
     override val component by lazy { ActivityComponent() }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 }

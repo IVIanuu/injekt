@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * Result of call to [ModuleBuilder.bind]
- * This is allows to add additional aliases to the same declared binding
+ * this is allows to add additional aliases to the same declared binding
  *
  * E.g.
  *
