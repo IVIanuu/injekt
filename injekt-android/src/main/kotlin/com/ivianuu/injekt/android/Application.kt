@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.Module
@@ -47,6 +48,9 @@ fun <T : Application> T.ApplicationModule(): Module = Module {
         bindType<Context>()
         bindAlias<Context>(ForApplication)
     }
+
+    factory { ProcessLifecycleOwner.get() }
+        .bindName(ForApplication)
 
     factory { resources }.bindName(ForApplication)
 }

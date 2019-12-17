@@ -39,7 +39,7 @@ object Deps {
     const val androidGradlePlugin = "com.android.tools.build:gradle:3.5.1"
 
     const val androidxAppCompat = "androidx.appcompat:appcompat:1.1.0"
-
+    const val androidxLifecycleExtensions = "androidx.lifecycle:lifecycle-extensions:2.2.0-rc02"
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
 
