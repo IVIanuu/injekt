@@ -39,13 +39,13 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: List<Any>,
+    internal val scopes: Set<Any>,
     internal val allBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
-    eagerBindings: List<Key>,
+    eagerBindings: Set<Key>,
     internal val multiBindingMaps: Map<Key, MultiBindingMap<*, *>>,
     internal val multiBindingSets: Map<Key, MultiBindingSet<*>>,
-    internal val dependencies: List<Component>
+    internal val dependencies: Set<Component>
 ) {
 
     internal val linker = Linker(this)

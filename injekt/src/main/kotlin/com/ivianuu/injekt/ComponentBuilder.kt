@@ -34,13 +34,18 @@ fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder internal constructor() {
 
-    private val scopes = mutableListOf<Any>()
-    private val modules = mutableListOf<Module>()
+    private val scopes = mutableSetOf<Any>()
+    private val modules = mutableSetOf<Module>()
     private val instances = mutableMapOf<Key, Binding<*>>()
-    private val dependencies = mutableListOf<Component>()
+    private val dependencies = mutableSetOf<Component>()
 
     fun scopes(scope: Any) {
+        check(scope !in scopes) { "Duplicated scope $scope" }
         this.scopes += scope
+    }
+
+    fun scopes(vararg scopes: Any) {
+        scopes.forEach { scopes(it) }
     }
 
     /**
@@ -48,16 +53,17 @@ class ComponentBuilder internal constructor() {
      *
      * @param scopes the scopes to include
      */
-    fun scopes(vararg scopes: Any) {
-        this.scopes.addAll(scopes) // can't use += here?
+    fun scopes(vararg scopes: List<Any>) {
+        scopes.forEach { scopes(it) }
     }
 
     fun dependencies(dependency: Component) {
+        check(dependency !in dependencies) { "Duplicated dependency $dependency" }
         this.dependencies += dependency
     }
 
     fun dependencies(vararg dependencies: Component) {
-        this.dependencies += dependencies
+        dependencies.forEach { dependencies(it) }
     }
 
     /**
@@ -68,15 +74,16 @@ class ComponentBuilder internal constructor() {
      * @param dependencies the dependencies to add
      */
     fun dependencies(dependencies: List<Component>) {
-        this.dependencies += dependencies
+        dependencies.forEach { dependencies(it) }
     }
 
     fun modules(module: Module) {
+        check(module !in modules) { "Duplicated module $module" }
         this.modules += module
     }
 
     fun modules(vararg modules: Module) {
-        this.modules += modules
+        modules.forEach { modules(it) }
     }
 
     /**
@@ -87,7 +94,7 @@ class ComponentBuilder internal constructor() {
      * @see Module
      */
     fun modules(modules: List<Module>) {
-        this.modules += modules
+        modules.forEach { modules(it) }
     }
 
     /**
@@ -136,7 +143,7 @@ class ComponentBuilder internal constructor() {
 
         val allBindings = mutableMapOf<Key, Binding<*>>()
         val unscopedBindings = mutableMapOf<Key, Binding<*>>()
-        val eagerBindings = mutableListOf<Key>()
+        val eagerBindings = mutableSetOf<Key>()
         val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
         val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
 
