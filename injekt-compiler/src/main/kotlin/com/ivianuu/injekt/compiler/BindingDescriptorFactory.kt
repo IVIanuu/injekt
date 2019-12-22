@@ -30,6 +30,8 @@ fun createBindingDescriptor(
     descriptor: ClassDescriptor,
     trace: BindingTrace
 ): BindingDescriptor? {
+    if (descriptor.defaultType.asTypeName() == null) return null
+
     msg { "process $descriptor" }
 
     val isFactory = descriptor.annotations.hasAnnotation(FactoryAnnotation)
@@ -152,7 +154,7 @@ fun createBindingDescriptor(
                     return null
                 }
 
-                val paramType = param.type.asTypeName()
+                val paramType = param.type.asTypeName() ?: return null
 
                 if (paramIndex != null) {
                     ArgDescriptor.Parameter(

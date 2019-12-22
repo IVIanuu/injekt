@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.isError
 
 lateinit var messageCollector: MessageCollector
 
@@ -38,14 +39,15 @@ fun msg(block: () -> String) {
     messageCollector.report(CompilerMessageSeverity.WARNING, "inject: ${block()}")
 }
 
-fun ClassDescriptor.asClassName() = fqNameSafe.asClassName()
+fun ClassDescriptor.asClassName(): ClassName = ClassName.bestGuess(fqNameSafe.asString())
 
-fun FqName.asClassName() = ClassName.bestGuess(asString()) // todo
-
-fun KotlinType.asTypeName(): TypeName {
-    val type = constructor.declarationDescriptor!!.fqNameSafe.asClassName()
+fun KotlinType.asTypeName(): TypeName? {
+    if (isError) return null
+    val type = ClassName.bestGuess(constructor.declarationDescriptor!!.fqNameSafe.asString())
     return (if (arguments.isNotEmpty()) {
-        type.parameterizedBy(*arguments.map { it.type.asTypeName() }.toTypedArray())
+        val parameters = arguments.map { it.type.asTypeName() }
+        if (parameters.any { it == null }) return null
+        type.parameterizedBy(*parameters.toTypedArray().requireNoNulls())
     } else type).copy(nullable = isMarkedNullable)
 }
 
