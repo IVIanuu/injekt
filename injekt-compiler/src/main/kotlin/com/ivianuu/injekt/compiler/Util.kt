@@ -43,7 +43,8 @@ fun ClassDescriptor.asClassName(): ClassName = ClassName.bestGuess(fqNameSafe.as
 
 fun KotlinType.asTypeName(): TypeName? {
     if (isError) return null
-    val type = ClassName.bestGuess(constructor.declarationDescriptor!!.fqNameSafe.asString())
+    val type = ClassName.bestGuess(
+        constructor.declarationDescriptor?.fqNameSafe?.asString() ?: return null)
     return (if (arguments.isNotEmpty()) {
         val parameters = arguments.map { it.type.asTypeName() }
         if (parameters.any { it == null }) return null

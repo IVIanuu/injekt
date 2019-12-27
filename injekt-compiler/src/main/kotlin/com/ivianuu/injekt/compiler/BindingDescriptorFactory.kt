@@ -67,8 +67,8 @@ fun createBindingDescriptor(
         scopeAnnotations
             .map {
                 descriptor.module.findClassAcrossModuleDependencies(
-                    ClassId.topLevel(it.fqName!!)
-                )!!
+                    ClassId.topLevel(it.fqName ?: return null)
+                ) ?: return null
             }
             .first()
     }
@@ -129,8 +129,8 @@ fun createBindingDescriptor(
                     val namedAnnotation = nameAnnotations
                         .map {
                             descriptor.module.findClassAcrossModuleDependencies(
-                                ClassId.topLevel(it.fqName!!)
-                            )!!
+                                ClassId.topLevel(it.fqName ?: return null)
+                            ) ?: return null
                         }
                         .first()
 
