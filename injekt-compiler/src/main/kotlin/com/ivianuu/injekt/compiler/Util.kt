@@ -39,12 +39,20 @@ fun msg(block: () -> String) {
     messageCollector.report(CompilerMessageSeverity.WARNING, "inject: ${block()}")
 }
 
-fun ClassDescriptor.asClassName(): ClassName = ClassName.bestGuess(fqNameSafe.asString())
+fun ClassDescriptor.asClassName(): ClassName? = try {
+    ClassName.bestGuess(fqNameSafe.asString())
+}  catch (e: Exception) {
+    null
+}
 
 fun KotlinType.asTypeName(): TypeName? {
     if (isError) return null
-    val type = ClassName.bestGuess(
-        constructor.declarationDescriptor?.fqNameSafe?.asString() ?: return null)
+    val type = try {
+        ClassName.bestGuess(
+            constructor.declarationDescriptor?.fqNameSafe?.asString() ?: return null)
+    } catch (e: Exception) {
+        return null
+    }
     return (if (arguments.isNotEmpty()) {
         val parameters = arguments.map { it.type.asTypeName() }
         if (parameters.any { it == null }) return null

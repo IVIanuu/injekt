@@ -83,7 +83,7 @@ fun createBindingDescriptor(
 
     var currentParamsIndex = -1
 
-    val className = descriptor.asClassName()
+    val className = descriptor.asClassName() ?: return null
 
     val bindingName = ClassName(
         className.packageName,
