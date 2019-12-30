@@ -24,6 +24,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ServiceScope {
@@ -55,7 +56,7 @@ fun Service.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
 fun <T : Service> T.ServiceModule(): Module = Module {
-    instance(this@ServiceModule).apply {
+    instance(this@ServiceModule, type = typeOf(this@ServiceModule)).apply {
         bindType<Service>()
         bindAlias<Context>(name = ForService, override = true)
         bindType<Context>(override = true)

@@ -24,6 +24,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ReceiverScope {
@@ -58,7 +59,7 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application Component found for $this")
 
 fun <T : BroadcastReceiver> T.ReceiverModule(context: Context): Module = Module {
-    instance(this@ReceiverModule)
+    instance(this@ReceiverModule, type = typeOf(this@ReceiverModule))
         .bindType<BroadcastReceiver>()
 
     factory(override = true) { context }

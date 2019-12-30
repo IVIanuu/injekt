@@ -23,6 +23,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.typeOf
 
 @Scope
 annotation class ContentProviderScope {
@@ -55,7 +56,7 @@ fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
 
 fun <T : ContentProvider> T.ContentProviderModule(): Module = Module {
-    instance(this@ContentProviderModule)
+    instance(this@ContentProviderModule, type = typeOf(this@ContentProviderModule))
         .bindType<ContentProvider>()
 
     factory(override = true) { context }

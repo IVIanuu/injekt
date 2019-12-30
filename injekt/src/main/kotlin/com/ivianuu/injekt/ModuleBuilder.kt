@@ -120,6 +120,14 @@ class ModuleBuilder internal constructor() {
             eager = eager
         )
 
+    inline fun <reified T> instance(
+        instance: T,
+        name: Any? = null,
+        override: Boolean = false
+    ) {
+        instance(instance = instance, type = typeOf(), name = name, override = override)
+    }
+
     /**
      * Adds a binding for a already existing instance
      *
@@ -132,7 +140,7 @@ class ModuleBuilder internal constructor() {
      */
     fun <T> instance(
         instance: T,
-        type: Type<T> = typeOf(instance),
+        type: Type<T>,
         name: Any? = null,
         override: Boolean = false
     ): BindingContext<T> = bind(
