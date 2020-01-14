@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-import android.accessibilityservice.AccessibilityService
 import android.accounts.AccountManager
 import android.app.ActivityManager
 import android.app.AlarmManager
@@ -72,6 +71,7 @@ import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.view.LayoutInflater
 import android.view.WindowManager
+import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.CaptioningManager
 import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
