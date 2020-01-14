@@ -92,7 +92,7 @@ val SystemServiceModule = Module {
 
 @Suppress("DEPRECATION")
 private fun getSystemServices(): Set<KClass<*>> = mutableSetOf<KClass<out Any>>().apply {
-    this += AccessibilityService::class
+    this += AccessibilityManager::class
     this += AccountManager::class
     this += ActivityManager::class
     this += AlarmManager::class
