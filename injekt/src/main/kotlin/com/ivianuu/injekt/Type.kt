@@ -74,11 +74,11 @@ fun <T> typeOf(instance: T): Type<T> = typeOf((instance as Any)::class)
 internal fun <T> KType.asType(): Type<T> {
     val parameters = arrayOfNulls<Type<*>>(arguments.size)
     arguments.forEachIndexed { i, kType ->
-        parameters[i] = kType.type!!.asType<Any?>()
+        parameters[i] = kType.type?.asType<Any?>() ?: typeOf<Any?>()
     }
 
     return Type(
-        classifier as KClass<*>,
+        (classifier ?: Any::class) as KClass<*>,
         isMarkedNullable,
         parameters as Array<out Type<*>>
     )
