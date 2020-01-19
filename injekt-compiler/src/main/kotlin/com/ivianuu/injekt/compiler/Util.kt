@@ -16,49 +16,13 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.isError
-
-lateinit var messageCollector: MessageCollector
-
-fun msg(block: () -> String) {
-    messageCollector.report(CompilerMessageSeverity.WARNING, "inject: ${block()}")
-}
-
-fun ClassDescriptor.asClassName(): ClassName? = try {
-    ClassName.bestGuess(fqNameSafe.asString())
-}  catch (e: Exception) {
-    null
-}
-
-fun KotlinType.asTypeName(): TypeName? {
-    if (isError) return null
-    val type = try {
-        ClassName.bestGuess(
-            constructor.declarationDescriptor?.fqNameSafe?.asString() ?: return null)
-    } catch (e: Exception) {
-        return null
-    }
-    return (if (arguments.isNotEmpty()) {
-        val parameters = arguments.map { it.type.asTypeName() }
-        if (parameters.any { it == null }) return null
-        type.parameterizedBy(*parameters.toTypedArray().requireNoNulls())
-    } else type).copy(nullable = isMarkedNullable)
-}
 
 val FactoryAnnotation = FqName("com.ivianuu.injekt.Factory")
 val InjektConstructorAnnotation = FqName("com.ivianuu.injekt.InjektConstructor")
@@ -70,6 +34,9 @@ val SingleAnnotation = FqName("com.ivianuu.injekt.Single")
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
+
+fun DeclarationDescriptor.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+    annotations.filter { it.hasAnnotation(annotation, module) }
 
 fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
     val thisFqName = this.fqName ?: return false

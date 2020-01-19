@@ -40,10 +40,10 @@ fun report(
 val EitherFactoryOrSingle = error()
 val OnlyOneScope = error()
 val OnlyOneName = error()
-val CannotBePrivate = error()
 val NeedsACompanionObject = error()
 val ParamCannotBeNamed = error()
 val ParamCannotBeOptional = error()
+val OnlyOneInjektConstructor = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -79,6 +79,10 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             ParamCannotBeOptional,
             "Parameters cannot be optional"
+        )
+        map.put(
+            OnlyOneInjektConstructor,
+            "Only one constructor can be annotated"
         )
     }
 }

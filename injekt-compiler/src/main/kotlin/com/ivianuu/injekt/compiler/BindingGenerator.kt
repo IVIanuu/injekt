@@ -16,249 +16,80 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.LambdaTypeName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
+import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.addMember
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
+import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
+import org.jetbrains.kotlin.storage.LockBasedStorageManager
+import org.jetbrains.kotlin.utils.Printer
 
-class BindingGenerator(private val descriptor: BindingDescriptor) {
+class BindingGenerator(private val context: IrPluginContext) : IrElementVisitorVoid {
+    override fun visitElement(element: IrElement) {
+    }
 
-    fun generate() =
-        FileSpec.builder(descriptor.bindingName.packageName, descriptor.bindingName.simpleName)
-            .addType(binding())
-            .addImport("com.ivianuu.injekt", "keyOf")
-            .build()
+    override fun visitClass(declaration: IrClass) {
+        super.visitClass(declaration)
 
-    private fun binding() = TypeSpec.objectBuilder(descriptor.bindingName)
-        .apply {
-            if (descriptor.isInternal) addModifiers(KModifier.INTERNAL)
-        }
-        .apply {
-            if (descriptor.hasDependencyArgs) {
-                superclass(
-                    InjektClassNames.UnlinkedBinding.plusParameter(descriptor.target)
-                )
-            } else {
-                superclass(
-                    InjektClassNames.LinkedBinding.plusParameter(descriptor.target)
-                )
-            }
-        }
-        .apply {
-            if (descriptor.scope != null) {
-                addSuperinterface(InjektClassNames.HasScope)
-                addProperty(
-                    PropertySpec.builder(
-                        "scope",
-                        Any::class,
-                        KModifier.OVERRIDE
-                    )
-                        .apply {
-                            getter(
-                                FunSpec.getterBuilder()
-                                    .addStatement("return %T", descriptor.scope)
-                                    .build()
-                            )
-                        }
-                        .build()
-                )
-            }
-        }
-        .apply {
-            if (descriptor.isSingle) {
-                addSuperinterface(InjektClassNames.IsSingle)
-            }
-        }
-        .apply {
-            if (descriptor.hasDependencyArgs) {
-                descriptor.constructorArgs
-                    .filterIsInstance<ArgDescriptor.Dependency>()
-                    .forEach { param ->
-                        addProperty(
-                            PropertySpec.builder(
-                                "${param.argName}Key",
-                                InjektClassNames.Key,
-                                KModifier.PRIVATE
-                            )
-                                .apply {
-                                    if (param.qualifierName != null) {
-                                        initializer(
-                                            "keyOf<%T>(%T)",
-                                            param.paramType,
-                                            param.qualifierName
-                                        )
-                                    } else {
-                                        initializer("keyOf<%T>()", param.paramType)
-                                    }
-                                }
-                                .build()
-                        )
+        val descriptor = declaration.descriptor
+
+        if (descriptor.annotations.hasAnnotation(FactoryAnnotation) ||
+            descriptor.annotations.hasAnnotation(SingleAnnotation)) return
+
+        val linkedBinding = context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(InjektClassNames.UnlinkedBinding))!!
+
+        val bindingDescriptor = ClassDescriptorImpl(
+            descriptor,
+            Name.identifier("${descriptor.name}__Binding"),
+            Modality.FINAL,
+            ClassKind.OBJECT,
+            listOf(linkedBinding.defaultType),
+            SourceElement.NO_SOURCE,
+            false,
+            LockBasedStorageManager.NO_LOCKS
+        ).apply {
+            initialize(
+                object : MemberScopeImpl() {
+                    override fun printScopeStructure(p: Printer) {
                     }
-            }
-        }
-        .apply {
-            if (descriptor.hasDependencyArgs) {
-                addFunction(
-                    FunSpec.builder("link")
-                        .addModifiers(KModifier.OVERRIDE)
-                        .addParameter("linker", InjektClassNames.Linker)
-                        .returns(InjektClassNames.LinkedBinding.plusParameter(descriptor.target))
-                        .addCode(
-                            CodeBlock.builder()
-                                .add("return Linked(\n")
-                                .indent()
-                                .apply {
-                                    val dependencyArgs = descriptor.constructorArgs
-                                        .filterIsInstance<ArgDescriptor.Dependency>()
-
-                                    dependencyArgs.forEachIndexed { i, param ->
-                                        if (param.isOptional) {
-                                            add("${param.argName}Binding = linker.getOrNull(${param.argName}Key)")
-                                        } else {
-                                            add("${param.argName}Binding = linker.get(${param.argName}Key)")
-                                        }
-                                        if (i != dependencyArgs.lastIndex) {
-                                            add(",\n")
-                                        }
-                                    }
-                                }
-                                .unindent()
-                                .add("\n)\n")
-                                .build()
-                        )
-                        .build()
-                )
-            } else {
-                addFunction(
-                    FunSpec.builder("invoke")
-                        .addModifiers(KModifier.OVERRIDE)
-                        .addParameter(
-                            "parameters",
-                            LambdaTypeName.get(
-                                returnType = InjektClassNames.Parameters
-                            ).copy(nullable = true)
-                        )
-                        .returns(descriptor.target)
-                        .apply {
-                            if (descriptor.isObject) {
-                                addStatement("return %T", descriptor.target)
-                            } else {
-                                addCode(createBody())
-                            }
-                        }
-                        .build()
-                )
-            }
-        }
-        .apply {
-            if (descriptor.hasDependencyArgs) {
-                addType(linkedBinding())
-            }
-        }
-        .build()
-
-    private fun linkedBinding() =
-        (if (descriptor.hasDependencyArgs) TypeSpec.classBuilder("Linked")
-        else TypeSpec.objectBuilder("Linked"))
-            .addModifiers(KModifier.PRIVATE)
-            .superclass(InjektClassNames.LinkedBinding.plusParameter(descriptor.target))
-            .apply {
-                primaryConstructor(
-                    FunSpec.constructorBuilder()
-                        .apply {
-                            descriptor.constructorArgs
-                                .filterIsInstance<ArgDescriptor.Dependency>()
-                                .forEach { param ->
-                                    addParameter(
-                                        param.argName + "Binding",
-                                        InjektClassNames.LinkedBinding.plusParameter(param.paramType)
-                                            .copy(nullable = param.isOptional)
-                                    )
-                                }
-                        }
-                        .build()
-                )
-
-                descriptor.constructorArgs
-                    .filterIsInstance<ArgDescriptor.Dependency>()
-                    .forEach { param ->
-                        addProperty(
-                            PropertySpec.builder(
-                                param.argName + "Binding",
-                                InjektClassNames.LinkedBinding.plusParameter(param.paramType)
-                                    .copy(nullable = param.isOptional),
-                                KModifier.PRIVATE
-                            )
-                                .initializer(param.argName + "Binding")
-                                .build()
-                        )
-                    }
-            }
-            .addFunction(
-                FunSpec.builder("invoke")
-                    .addModifiers(KModifier.OVERRIDE)
-                    .addParameter(
-                        "parameters",
-                        LambdaTypeName.get(
-                            returnType = InjektClassNames.Parameters
-                        ).copy(nullable = true)
-                    )
-                    .returns(descriptor.target)
-                    .addCode(createBody())
-                    .build()
+                },
+                emptySet(),
+                null
             )
-            .build()
+        }
 
-    private fun createBody() = CodeBlock.builder()
-        .apply {
-            if (!descriptor.hasDependencyArgs && !descriptor.hasParamArgs) {
-                addStatement("return %T()", descriptor.target)
-                return@createBody build()
-            }
-        }
-        .apply {
-            if (descriptor.hasParamArgs) {
-                addStatement("val params = parameters?.invoke() ?: error(\"Missing required parameters\")")
-            }
-        }
-        .add("return %T(\n", descriptor.target)
-        .indent()
-        .apply {
-            descriptor.constructorArgs.forEachIndexed { i, param ->
-                when (param) {
-                    is ArgDescriptor.Parameter -> {
-                        add("${param.argName} = params.get(${param.index})")
-                    }
-                    is ArgDescriptor.Dependency -> {
-                        if (param.isOptional) {
-                            add("${param.argName} = ${param.argName}Binding?.invoke()")
-                        } else {
-                            add("${param.argName} = ${param.argName}Binding.invoke()")
-                        }
-                    }
-                }
+        val clazz = IrClassImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            InjektOrigin,
+            IrClassSymbolImpl(bindingDescriptor)
+        )
 
-                if (i != descriptor.constructorArgs.lastIndex) {
-                    add(",\n")
-                }
-            }
-        }
-        .unindent()
-        .add("\n)\n")
-        .build()
+        declaration.addMember(clazz)
+    }
 }
 
+private object InjektOrigin : IrDeclarationOrigin
+
 private object InjektClassNames {
-    val HasScope = ClassName("com.ivianuu.injekt", "HasScope")
-    val IsSingle = ClassName("com.ivianuu.injekt", "IsSingle")
-    val Key = ClassName("com.ivianuu.injekt", "Key")
-    val LinkedBinding = ClassName("com.ivianuu.injekt", "LinkedBinding")
-    val Linker = ClassName("com.ivianuu.injekt", "Linker")
-    val Parameters = ClassName("com.ivianuu.injekt", "Parameters")
-    val UnlinkedBinding = ClassName("com.ivianuu.injekt", "UnlinkedBinding")
+    val HasScope = FqName("com.ivianuu.injekt.HasScope")
+    val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
+    val Key = FqName("com.ivianuu.injekt.Key")
+    val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
+    val Linker = FqName("com.ivianuu.injekt.Linker")
+    val Parameters = FqName("com.ivianuu.injekt.Parameters")
+    val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
 }
