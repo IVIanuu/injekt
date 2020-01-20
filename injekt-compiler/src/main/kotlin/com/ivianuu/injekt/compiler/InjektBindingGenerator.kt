@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -37,7 +38,9 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -89,9 +92,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     }
 
     override fun visitClass(declaration: IrClass) {
-        if (declaration.name.asString().contains("Dir")) {
-            //error("declaration ${declaration.dump()}")
-        }
         val descriptor = declaration.descriptor
 
         if (!descriptor.annotations.hasAnnotation(FactoryAnnotation) &&
@@ -146,6 +146,36 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             ).toIrType()
 
             superTypes += unlinkedBindingWithType
+
+            if (descriptor.annotations.hasAnnotation(SingleAnnotation)) {
+                superTypes += context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(InjektClassNames.IsSingle))!!
+                    .defaultType.toIrType()
+            }
+
+            val scopeAnnotation = descriptor.getAnnotatedAnnotations(ScopeAnnotation).singleOrNull()
+            if (scopeAnnotation != null) {
+                val hasScope = context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(InjektClassNames.HasScope))!!
+                superTypes += hasScope.defaultType.toIrType()
+
+                val scopeCompanion = context.moduleDescriptor.findClassAcrossModuleDependencies(
+                    ClassId.topLevel(scopeAnnotation.fqName!!))!!.companionObjectDescriptor!!
+
+                addProperty {
+                    name = Name.identifier("scope")
+                }.apply {
+                    getter = buildFun {
+                        visibility = Visibilities.PUBLIC
+                        modality = Modality.FINAL
+                        name = Name.identifier("getScope")
+                        returnType = scopeCompanion.defaultType.toIrType()
+                    }.apply {
+                        dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
+                        body = DeclarationIrBuilder(context, symbol).irBlockBody {
+                            +irReturn(irGetObject(symbolTable.referenceClass(scopeCompanion)))
+                        }
+                    }
+                }
+            }
 
             addConstructor {
                 origin = InjektOrigin
@@ -468,8 +498,8 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             it.parent = this@createParameterDeclarations
         }
 
-        //dispatchReceiverParameter = descriptor.dispatchReceiverParameter?.irValueParameter()
-        //extensionReceiverParameter = descriptor.extensionReceiverParameter?.irValueParameter()
+        dispatchReceiverParameter = descriptor.dispatchReceiverParameter?.irValueParameter()
+        extensionReceiverParameter = descriptor.extensionReceiverParameter?.irValueParameter()
 
         assert(valueParameters.isEmpty()) { "params ${valueParameters.map { it.name }}" }
         descriptor.valueParameters.mapTo(valueParameters) { it.irValueParameter() }

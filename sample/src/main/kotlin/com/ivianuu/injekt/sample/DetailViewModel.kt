@@ -25,8 +25,4 @@ class DetailViewModel(
     @Param private val item: String,
     @ForActivity private val string: String,
     private val list: List<Map<String, CharSequence>>
-) {
-    fun copy(): DetailViewModel {
-        return DetailViewModel(item, string, list)
-    }
-}
+)
