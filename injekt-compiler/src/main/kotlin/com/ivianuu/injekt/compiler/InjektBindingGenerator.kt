@@ -98,7 +98,14 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         if (!descriptor.annotations.hasAnnotation(FactoryAnnotation) &&
             !descriptor.annotations.hasAnnotation(SingleAnnotation)) return
 
-        declaration.addMember(unlinkedBinding(declaration))
+        val injektConstructor = descriptor.findInjektConstructor()
+
+        if (injektConstructor.valueParameters.isEmpty()) {
+            declaration.addMember(linkedBinding(declaration, Name.identifier("Binding"), ClassKind.OBJECT))
+        } else {
+            declaration.addMember(unlinkedBinding(declaration))
+        }
+
         declaration.patchDeclarationParents(declaration.parent)
 
         //error("declaration ${declaration.dump()}")
@@ -262,7 +269,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                     it.valueParameters.first().type == key.defaultType
                 }
 
-            val linkedBindingClass = linkedBinding(declaration)
+            val linkedBindingClass = linkedBinding(declaration, Name.identifier("Linked"), ClassKind.CLASS)
 
             addFunction(
                 name = "link",
@@ -310,14 +317,18 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         }
     }
 
-    private fun linkedBinding(declaration: IrClass): IrClass {
+    private fun linkedBinding(
+        declaration: IrClass,
+        name: Name,
+        classKind: ClassKind
+    ): IrClass {
         val descriptor = declaration.descriptor
 
         val bindingDescriptor = ClassDescriptorImpl(
             descriptor,
-            Name.identifier("Linked"),
+            name,
             Modality.FINAL,
-            ClassKind.CLASS,
+            classKind,
             emptyList(),
             descriptor.source,
             false,
@@ -354,7 +365,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 .map { param ->
                     val fieldName = Name.identifier(param.name.asString() + "Binding")
                     addField {
-                        name = fieldName
+                        this.name = fieldName
                         type = KotlinTypeFactory.simpleType(
                             baseType = linkedBinding.defaultType,
                             arguments = listOf(param.type.asTypeProjection()),
@@ -373,7 +384,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 paramBindingFields.forEachIndexed { index, field ->
                     addValueParameter {
                         this.index = index
-                        name = field.name
+                        this.name = field.name
                         type = field.type
                     }
                 }
@@ -437,45 +448,50 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         )
                     } else null
 
-                    val newInstanceCall = irCall(
-                        callee = symbolTable.referenceConstructor(injektConstructor),
-                        type = injektConstructor.returnType.toIrType()
-                    ).apply {
-                        var paramIndex = 0
-                        injektConstructor.valueParameters.forEachIndexed { index, param ->
-                            val paramType = injektConstructor.valueParameters[index].type.toIrType()
-                            val expr = if (param.annotations.hasAnnotation(ParamAnnotation)) {
-                                DeclarationIrBuilder(context, symbol).irBlock {
-                                    +irCall(
-                                        callee = symbolTable.referenceSimpleFunction(parametersGet),
-                                        type = paramType
-                                    ).apply {
-                                        dispatchReceiver = irGet(parametersVar!!)
-                                        putTypeArgument(0, paramType)
-                                        putValueArgument(0, irInt(paramIndex))
-                                    }
-                                    ++paramIndex
-                                }
-                            } else {
-                                DeclarationIrBuilder(context, symbol).irBlock {
-                                    +irCall(
-                                        callee = symbolTable.referenceSimpleFunction(invoke),
-                                        type = paramType
-                                    ).apply {
-                                        dispatchReceiver = irGetField(irGet(dispatchReceiverParameter!!),
-                                            paramBindingFields.single { it.name.asString().startsWith(param.name.asString()) })
-                                    }
-                                }
-                            }
+                    val getInstanceCall = if (descriptor.kind == ClassKind.OBJECT) {
+                        irGetObject(symbolTable.referenceClass(descriptor))
+                    } else {
+                        irCall(
+                            callee = symbolTable.referenceConstructor(injektConstructor),
+                            type = injektConstructor.returnType.toIrType()
+                        ).apply {
 
-                            putValueArgument(
-                                index = index,
-                                valueArgument = expr
-                            )
+                            var paramIndex = 0
+                            injektConstructor.valueParameters.forEachIndexed { index, param ->
+                                val paramType = injektConstructor.valueParameters[index].type.toIrType()
+                                val expr = if (param.annotations.hasAnnotation(ParamAnnotation)) {
+                                    DeclarationIrBuilder(context, symbol).irBlock {
+                                        +irCall(
+                                            callee = symbolTable.referenceSimpleFunction(parametersGet),
+                                            type = paramType
+                                        ).apply {
+                                            dispatchReceiver = irGet(parametersVar!!)
+                                            putTypeArgument(0, paramType)
+                                            putValueArgument(0, irInt(paramIndex))
+                                        }
+                                        ++paramIndex
+                                    }
+                                } else {
+                                    DeclarationIrBuilder(context, symbol).irBlock {
+                                        +irCall(
+                                            callee = symbolTable.referenceSimpleFunction(invoke),
+                                            type = paramType
+                                        ).apply {
+                                            dispatchReceiver = irGetField(irGet(dispatchReceiverParameter!!),
+                                                paramBindingFields.single { it.name.asString().startsWith(param.name.asString()) })
+                                        }
+                                    }
+                                }
+
+                                putValueArgument(
+                                    index = index,
+                                    valueArgument = expr
+                                )
+                            }
                         }
                     }
 
-                    +irReturn(newInstanceCall)
+                    +irReturn(getInstanceCall)
                 }
             }
         }
