@@ -53,7 +53,7 @@ fun <T : Application> T.ApplicationModule(): Module = Module {
     factory { ProcessLifecycleOwner.get() }
         .bindName(ForApplication)
 
-    factory { resources }.bindName(ForApplication)
+    factory { resources!! }.bindName(ForApplication)
 
     withBinding<Component>(name = ApplicationScope) {
         bindName(name = ForApplication)
