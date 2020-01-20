@@ -57,7 +57,8 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
     }
 
     private fun findLookup(type: Class<*>) = try {
-        val bindingClass = Class.forName(type.name + "__Binding")
+        val bindingClass = type.declaredClasses
+            .first { UnlinkedBinding::class.java.isAssignableFrom(it) }
         val binding = bindingClass.declaredFields
             .first { it.type == bindingClass }
             .also { it.isAccessible = true }

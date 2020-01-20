@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.computeConstructorTypeParameters
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -169,6 +170,12 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         name = Name.identifier("getScope")
                         returnType = scopeCompanion.defaultType.toIrType()
                     }.apply {
+                        overriddenSymbols += symbolTable.referenceSimpleFunction(
+                            hasScope.unsubstitutedMemberScope
+                                .getContributedVariables(Name.identifier("scope"), NoLookupLocation.FROM_BACKEND)
+                                .single()
+                                .getter!!
+                        )
                         dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
                         body = DeclarationIrBuilder(context, symbol).irBlockBody {
                             +irReturn(irGetObject(symbolTable.referenceClass(scopeCompanion)))
@@ -208,15 +215,17 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             val paramKeyFields = injektConstructor.valueParameters
                 .filter { !it.annotations.hasAnnotation(ParamAnnotation) }
                 .map { param ->
-                    val nameClass = param.annotations.findAnnotation(NameAnnotation)?.let { nameAnnotation ->
-                        context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(nameAnnotation.fqName!!))
-                    }
+                    val nameClass = param.getAnnotatedAnnotations(NameAnnotation)
+                        .singleOrNull()
+                        ?.let { nameAnnotation ->
+                            context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(nameAnnotation.fqName!!))
+                        }?.companionObjectDescriptor
 
                     val fieldName = Name.identifier(param.name.asString() + "Key")
 
                     val field = addField {
                         name = fieldName
-                        type = param.type.toIrType()
+                        type = key.defaultType.toIrType()
                         visibility = Visibilities.PRIVATE
                     }.apply {
                         initializer = DeclarationIrBuilder(context, symbol).irExprBody(
@@ -225,7 +234,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                     callee = symbolTable.referenceSimpleFunction(keyOf),
                                     type = key.defaultType.toIrType()
                                 ).apply {
-                                    putTypeArgument(0, descriptor.defaultType.toIrType())
+                                    putTypeArgument(0, param.type.toIrType())
                                     if (nameClass != null) {
                                         putValueArgument(
                                             0,
