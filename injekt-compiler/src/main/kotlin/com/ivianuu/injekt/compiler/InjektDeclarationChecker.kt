@@ -102,7 +102,8 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { OnlyOneInjektConstructor }
         }
 
-        if (descriptor is ClassDescriptor &&
+        if (descriptor is ClassDescriptor && (descriptor.annotations.hasAnnotation(FactoryAnnotation) ||
+                    descriptor.annotations.hasAnnotation(SingleAnnotation)) &&
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektConstructorAnnotation) }) {
             report(
