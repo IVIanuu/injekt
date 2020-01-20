@@ -121,9 +121,7 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
                 ?.java
                 ?.declaredClasses
                 ?.firstOrNull()
-                ?.declaredFields
-                ?.first { it.type == it.declaringClass }
-                ?.also { it.isAccessible = true }
+                ?.getDeclaredField("INSTANCE")
                 ?.get(null)
 
             JustInTimeLookup(

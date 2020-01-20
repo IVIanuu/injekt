@@ -33,7 +33,7 @@ plugins {
     id("com.android.application")
     id("com.ivianuu.injekt")
     kotlin("android")
-    //kotlin("kapt")
+    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
@@ -58,10 +58,10 @@ dependencies {
     implementation(Deps.androidxAppCompat)
 
     implementation(files("libs/dagger-1-shadowed.jar"))
-    //kapt(files("libs/dagger-1-compiler-shadowed.jar"))
+    kapt(files("libs/dagger-1-compiler-shadowed.jar"))
 
     implementation(Deps.Dagger2.dagger2)
-    //kapt(Deps.Dagger2.compiler)
+    kapt(Deps.Dagger2.compiler)
 
     implementation(Deps.dagger2Reflect)
 
@@ -82,5 +82,5 @@ dependencies {
     implementation(Deps.kotlinStatistics)
 
     implementation(Deps.Toothpick.toothpick)
-    //kapt(Deps.Toothpick.compiler)
+    kapt(Deps.Toothpick.compiler)
 }
