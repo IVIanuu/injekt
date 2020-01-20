@@ -62,7 +62,7 @@ fun <T : Service> T.ServiceModule(): Module = Module {
         bindType<Context>(override = true)
     }
 
-    factory(override = true) { resources }.bindName(ForService)
+    factory(override = true) { resources!! }.bindName(ForService)
 
     withBinding<Component>(name = ServiceScope) {
         bindName(name = ForService)

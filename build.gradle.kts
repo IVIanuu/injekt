@@ -15,6 +15,11 @@
  */
 
 buildscript {
+    // todo remove
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor(0, java.util.concurrent.TimeUnit.SECONDS)
+    }
+
     repositories {
         mavenLocal()
         maven("https://dl.bintray.com/ivianuu/maven")
@@ -35,6 +40,18 @@ buildscript {
 }
 
 allprojects {
+    // todo move
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions {
+            useIR = true
+        }
+    }
+
+    // todo remove
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor(0, java.util.concurrent.TimeUnit.SECONDS)
+    }
+
     repositories {
         mavenLocal()
         maven("https://dl.bintray.com/ivianuu/maven")

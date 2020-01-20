@@ -20,7 +20,6 @@
       <module fileurl="file://$PROJECT_DIR$/ivianuu-studio-projects-injekt.iml" filepath="$PROJECT_DIR$/ivianuu-studio-projects-injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc.iml" />
       <module fileurl="file://$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc~1.iml" filepath="$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc~1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/comparison/ivianuu-studio-projects-injekt-comparison.iml" filepath="$PROJECT_DIR$/comparison/ivianuu-studio-projects-injekt-comparison.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt/ivianuu-studio-projects-injekt-injekt.iml" filepath="$PROJECT_DIR$/injekt/ivianuu-studio-projects-injekt-injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-android/ivianuu-studio-projects-injekt-injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/ivianuu-studio-projects-injekt-injekt-android.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-kapt/ivianuu-studio-projects-injekt-injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-kapt/ivianuu-studio-projects-injekt-injekt-compiler.iml" />

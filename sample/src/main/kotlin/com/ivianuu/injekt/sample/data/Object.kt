@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.sample.data
 
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.Param
-import com.ivianuu.injekt.android.ForActivity
 
 @Factory
-class DetailViewModel(
-    @Param private val item: String,
-    @ForActivity private val string: String,
-    private val list: List<Map<String, CharSequence>>
-)
+object ObjectDep
+
+@Factory
+class LolDep

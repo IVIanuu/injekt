@@ -59,7 +59,7 @@ fun <T : ContentProvider> T.ContentProviderModule(): Module = Module {
     instance(this@ContentProviderModule, type = typeOf(this@ContentProviderModule))
         .bindType<ContentProvider>()
 
-    factory(override = true) { context }
+    factory(override = true) { context!! }
         .bindName(name = ForContentProvider)
 
     withBinding<Component>(name = ContentProviderScope) {

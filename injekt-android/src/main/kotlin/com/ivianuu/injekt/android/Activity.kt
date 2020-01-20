@@ -85,7 +85,7 @@ fun <T : Activity> T.ActivityModule(): Module = Module {
         }
     }
 
-    factory(override = true) { resources }
+    factory(override = true) { resources!! }
         .bindName(ForActivity)
 
     (this@ActivityModule as? LifecycleOwner)?.let {

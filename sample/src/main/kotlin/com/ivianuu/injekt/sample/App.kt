@@ -17,22 +17,27 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.CodegenJustInTimeLookupFactory
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.sample.data.dataModule
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.sample.data.DataModule
+import com.ivianuu.injekt.sample.data.Repository
 
 class App : Application(), InjektTrait {
 
     override val component by lazy {
         ApplicationComponent {
-            modules(dataModule)
+            modules(DataModule)
         }
     }
 
     override fun onCreate() {
         super.onCreate()
+        InjektPlugins.justInTimeLookupFactory = CodegenJustInTimeLookupFactory
         InjektPlugins.logger = AndroidLogger()
+        get<Repository>()
     }
 }

@@ -19,12 +19,12 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class ProxyDep
-
-object ProxyDep__Binding : LinkedBinding<ProxyDep>(), HasScope, IsSingle {
-    override val scope: Any
-        get() = TestScopeOne.Companion
-    override fun invoke(parameters: ParametersDefinition?): ProxyDep = ProxyDep()
+class ProxyDep {
+    object Binding : LinkedBinding<ProxyDep>(), HasScope, IsSingle {
+        override val scope: Any
+            get() = TestScopeOne.Companion
+        override fun invoke(parameters: ParametersDefinition?): ProxyDep = ProxyDep()
+    }
 }
 
 class ProxyTest {

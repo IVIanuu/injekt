@@ -46,7 +46,7 @@ class Type<T> internal constructor(
 
     override fun hashCode(): Int {
         var result = rawJava.hashCode()
-        result = 31 * result + isNullable.hashCode()
+        result = 31 * result + isNullable.toString().hashCode() // todo ir use nullable.hash
         result = 31 * result + parameters.contentHashCode()
         return result
     }

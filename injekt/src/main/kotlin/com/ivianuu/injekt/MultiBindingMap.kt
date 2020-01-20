@@ -56,6 +56,7 @@ package com.ivianuu.injekt
  * @see ModuleBuilder.map
  * @see MultiBindingMapBuilder
  */
+// todo ir use * instead of Any?
 typealias MultiBindingMap<K, V> = Map<K, KeyWithOverrideInfo>
 
 /**

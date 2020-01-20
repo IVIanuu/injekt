@@ -85,7 +85,7 @@ val SystemServiceModule = Module {
     getSystemServices()
         .forEach { service ->
             factory(type = typeOf(service)) {
-                ContextCompat.getSystemService(get(), service.java)
+                ContextCompat.getSystemService(get(), service.java)!!
             }
         }
 }

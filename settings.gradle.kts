@@ -15,7 +15,7 @@
  */
 
 include(
-    ":comparison",
+    //":comparison",
     ":injekt",
     ":injekt-android",
     ":injekt-compiler",

@@ -55,6 +55,7 @@ package com.ivianuu.injekt
  *
  * @see ModuleBuilder.set
  */
+// todo ir use * instead of Any?
 typealias MultiBindingSet<E> = Set<KeyWithOverrideInfo>
 
 /**
