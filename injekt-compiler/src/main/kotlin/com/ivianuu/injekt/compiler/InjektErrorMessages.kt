@@ -44,6 +44,8 @@ val NeedsACompanionObject = error()
 val ParamCannotBeNamed = error()
 val ParamCannotBeOptional = error()
 val OnlyOneInjektConstructor = error()
+val NeedsPrimaryConstructorOrAnnotation = error()
+val OptionalMustBeNullable = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -65,10 +67,6 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
             "Can only have 1 name annotation"
         )
         map.put(
-            CannotBePrivate,
-            "Must be public or internal"
-        )
-        map.put(
             NeedsACompanionObject,
             "Needs a companion object"
         )
@@ -83,6 +81,14 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             OnlyOneInjektConstructor,
             "Only one constructor can be annotated"
+        )
+        map.put(
+            NeedsPrimaryConstructorOrAnnotation,
+            "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
+        )
+        map.put(
+            OptionalMustBeNullable,
+            "Optional parameter must be nullable"
         )
     }
 }

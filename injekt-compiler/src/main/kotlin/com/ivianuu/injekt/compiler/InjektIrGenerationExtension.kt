@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val bindingGenerator = BindingGenerator(pluginContext)
+        val bindingGenerator = InjektBindingGenerator(pluginContext)
         moduleFragment.files.forEach { file ->
             file.acceptChildrenVoid(bindingGenerator)
         }

@@ -33,6 +33,6 @@ package com.ivianuu.injekt
  */
 class Module internal constructor(
     internal val bindings: Map<Key, Binding<*>>,
-    internal val multiBindingMaps: Map<Key, MultiBindingMap<*, *>>,
-    internal val multiBindingSets: Map<Key, MultiBindingSet<*>>
+    internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
+    internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>
 )

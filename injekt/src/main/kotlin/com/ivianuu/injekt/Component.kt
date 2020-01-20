@@ -43,8 +43,8 @@ class Component internal constructor(
     internal val allBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
     eagerBindings: Set<Key>,
-    internal val multiBindingMaps: Map<Key, MultiBindingMap<*, *>>,
-    internal val multiBindingSets: Map<Key, MultiBindingSet<*>>,
+    internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
+    internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>,
     internal val dependencies: Set<Component>
 ) {
 

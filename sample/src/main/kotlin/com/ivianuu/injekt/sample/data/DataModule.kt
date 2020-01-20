@@ -32,7 +32,7 @@ annotation class DatabaseFile {
     companion object
 }
 
-val dataModule = Module {
+val DataModule = Module {
     single(name = WebApiUrl) { "https://baseurl/" }
     single(name = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
 }

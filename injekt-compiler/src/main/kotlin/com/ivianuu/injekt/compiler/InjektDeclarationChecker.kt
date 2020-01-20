@@ -21,7 +21,9 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -76,15 +78,15 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { OnlyOneName }
         }
 
-        if (descriptor.annotations.hasAnnotation(ParamAnnotation) ||
-                    descriptor.annotations.hasAnnotation(NameAnnotation)) {
+        if (descriptor.annotations.hasAnnotation(ParamAnnotation) &&
+            descriptor.annotations.hasAnnotation(NameAnnotation)) {
             report(
                 descriptor,
                 context.trace
             ) { ParamCannotBeNamed }
         }
 
-        if (descriptor.annotations.hasAnnotation(ParamAnnotation) ||
+        if (descriptor.annotations.hasAnnotation(ParamAnnotation) &&
             descriptor.annotations.hasAnnotation(OptionalAnnotation)) {
             report(
                 descriptor,
@@ -98,6 +100,24 @@ class InjektDeclarationChecker : DeclarationChecker {
                 descriptor,
                 context.trace
             ) { OnlyOneInjektConstructor }
+        }
+
+        if (descriptor is ClassDescriptor &&
+            !descriptor.hasPrimaryConstructor() &&
+            descriptor.constructors.none { it.annotations.hasAnnotation(InjektConstructorAnnotation) }) {
+            report(
+                descriptor,
+                context.trace
+            ) { NeedsPrimaryConstructorOrAnnotation }
+        }
+
+        if (descriptor is ValueParameterDescriptor &&
+                descriptor.annotations.hasAnnotation(OptionalAnnotation) &&
+                !descriptor.type.isMarkedNullable) {
+            report(
+                descriptor,
+                context.trace
+            ) { OptionalMustBeNullable }
         }
     }
 }

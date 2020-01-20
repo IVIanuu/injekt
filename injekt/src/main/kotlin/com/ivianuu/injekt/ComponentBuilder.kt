@@ -152,21 +152,20 @@ class ComponentBuilder internal constructor() {
         val allBindings = mutableMapOf<Key, Binding<*>>()
         val unscopedBindings = mutableMapOf<Key, Binding<*>>()
         val eagerBindings = mutableSetOf<Key>()
-        val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
-        val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
+        val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
+        val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
 
-        fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<*, *>) {
+        fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<Any?, Any?>) {
             val builder = multiBindingMapBuilders.getOrPut(mapKey) {
-                MultiBindingMapBuilder<Any?, Any?>(mapKey)
-            } as MultiBindingMapBuilder<Any?, Any?>
-
-            builder.putAll(map as MultiBindingMap<Any?, Any?>)
+                MultiBindingMapBuilder(mapKey)
+            }
+            builder.putAll(map)
         }
 
-        fun addMultiBindingSet(setKey: Key, set: MultiBindingSet<*>) {
+        fun addMultiBindingSet(setKey: Key, set: MultiBindingSet<Any?>) {
             val builder = multiBindingSetBuilders.getOrPut(setKey) {
-                MultiBindingSetBuilder<Any?>(setKey)
-            } as MultiBindingSetBuilder<Any?>
+                MultiBindingSetBuilder(setKey)
+            }
 
             builder.addAll(set)
         }

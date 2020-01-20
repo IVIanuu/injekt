@@ -37,8 +37,8 @@ fun Module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder().apply(bloc
 class ModuleBuilder internal constructor() {
 
     private val bindings = mutableMapOf<Key, Binding<*>>()
-    private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<*, *>>()
-    private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<*>>()
+    private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
+    private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
 
     inline fun <reified T> factory(
         name: Any? = null,
@@ -202,7 +202,7 @@ class ModuleBuilder internal constructor() {
 
         module.multiBindingMaps.forEach { (mapKey, map) ->
             val builder = multiBindingMapBuilders.getOrPut(mapKey) {
-                MultiBindingMapBuilder<Any?, KeyWithOverrideInfo>(mapKey)
+                MultiBindingMapBuilder(mapKey)
             } as MultiBindingMapBuilder<Any?, Any?>
             map.entries.forEach { (entryKey, entry) ->
                 builder.put(entryKey, entry)
@@ -211,8 +211,8 @@ class ModuleBuilder internal constructor() {
 
         module.multiBindingSets.forEach { (setKey, set) ->
             val builder = multiBindingSetBuilders.getOrPut(setKey) {
-                MultiBindingSetBuilder<Any?>(setKey)
-            } as MultiBindingSetBuilder<Any?>
+                MultiBindingSetBuilder(setKey)
+            }
             set.forEach { element -> builder.add(element) }
         }
     }
@@ -246,7 +246,7 @@ class ModuleBuilder internal constructor() {
         )
 
         val builder = multiBindingMapBuilders.getOrPut(mapKey) {
-            MultiBindingMapBuilder<Any?, KeyWithOverrideInfo>(mapKey)
+            MultiBindingMapBuilder(mapKey)
         } as MultiBindingMapBuilder<K, V>
 
         builder.apply(block)
@@ -276,7 +276,7 @@ class ModuleBuilder internal constructor() {
         val setKey = keyOf(type = typeOf<Any?>(Set::class, setElementType), name = setName)
 
         val builder = multiBindingSetBuilders.getOrPut(setKey) {
-            MultiBindingSetBuilder<Any?>(setKey)
+            MultiBindingSetBuilder(setKey)
         } as MultiBindingSetBuilder<E>
 
         builder.apply(block)

@@ -18,6 +18,15 @@ package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Param
+import com.ivianuu.injekt.android.ForActivity
 
 @Factory
-class DetailViewModel(@Param private val item: String)
+class DetailViewModel(
+    @Param private val item: String,
+    @ForActivity private val string: String,
+    private val list: List<Map<String, CharSequence>>
+) {
+    fun copy(): DetailViewModel {
+        return DetailViewModel(item, string, list)
+    }
+}
