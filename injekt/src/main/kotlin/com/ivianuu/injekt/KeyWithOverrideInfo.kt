@@ -20,7 +20,7 @@ package com.ivianuu.injekt
  * Used in multi binding collections
  *
  * @see MultiBindingMap
- * @see MultiBindingSetBuilder
+ * @see MultiBindingSet
  */
 data class KeyWithOverrideInfo(
     /**
