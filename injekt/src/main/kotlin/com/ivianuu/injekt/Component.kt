@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * The heart of the library which provides instances
- * Dependencies can be requested by calling either [get] or [inject]
+ * Dependencies can be requested by calling [get] or [getOrNull]
  * Use [ComponentBuilder] to construct Component instances
  *
  * Typical usage of a Component looks like this:
@@ -35,7 +35,7 @@ package com.ivianuu.injekt
  * ´´´
  *
  * @see get
- * @see inject
+ * @see getLazy
  * @see ComponentBuilder
  */
 class Component internal constructor(
@@ -93,56 +93,10 @@ class Component internal constructor(
      *
      * @param key the of the instance
      * @param parameters optional parameters to construct the instance
-     * @return the instance
+     * @return the instance or null
      */
     fun <T> getOrNull(key: Key, parameters: ParametersDefinition? = null): T? =
         getBindingOrNull<T>(key)?.invoke(parameters)
-
-    inline fun <reified T> inject(
-        name: Any? = null,
-        noinline parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T> = inject(type = typeOf(), name = name, parameters = parameters)
-
-    /**
-     * Lazy version of [get]
-     *
-     * @param type the type of key of the instance
-     * @param name the name of the of the instance
-     * @param parameters optional parameters to construct the instance
-     * @return the instance
-
-     * @see Component.get
-     */
-    fun <T> inject(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) {
-        get(type = type, name = name, parameters = parameters)
-    }
-
-    inline fun <reified T> injectOrNull(
-        name: Any? = null,
-        noinline parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T?> = injectOrNull(type = typeOf(), name = name, parameters = parameters)
-
-    /**
-     * Lazy version of [getOrNull]
-     *
-     * @param type the type of key of the instance
-     * @param name the name of the of the instance
-     * @param parameters optional parameters to construct the instance
-     * @return the instance
-
-     * @see Component.getOrNull
-     */
-    fun <T> injectOrNull(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) {
-        getOrNull(type = type, name = name, parameters = parameters)
-    }
 
     internal fun <T> getBinding(key: Key): LinkedBinding<T> =
         getBindingOrNull(key) ?: error("Couldn't find a binding for $key")

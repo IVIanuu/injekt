@@ -102,7 +102,6 @@ package com.ivianuu.injekt
  * Lazily returns [Parameters] for an instance
  *
  * @see Component.get
- * @see Component.inject
  */
 typealias ParametersDefinition = () -> Parameters
 

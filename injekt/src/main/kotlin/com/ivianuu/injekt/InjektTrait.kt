@@ -26,8 +26,8 @@ package com.ivianuu.injekt
  *
  *     override val Component = Component { ... }
  *
- *     private val dep1: Dependency1 by inject()
- *     private val dep2: Dependency2 by inject()
+ *     private val dep1: Dependency1 by getLazy()
+ *     private val dep2: Dependency2 by getLazy()
  *
  * }
  * ```
@@ -59,52 +59,55 @@ interface InjektTrait {
     ): T? = component.getOrNull(type, name, parameters)
 
     /**
-     * @see Component.inject
+     * Lazy version of [get]
+     *
+     * @param type the type of key of the instance
+     * @param name the name of the of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance
+
+     * @see Component.get
      */
-    fun <T> InjektTrait.inject(
+    fun <T> InjektTrait.getLazy(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
     ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }
 
     /**
-     * @see Component.injectOrNull
+     * Lazy version of [getOrNull]
+     *
+     * @param type the type of key of the instance
+     * @param name the name of the of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance or null
+
+     * @see Component.getOrNull
      */
-    fun <T> InjektTrait.injectOrNull(
+    fun <T> InjektTrait.getOrNullLazy(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
-    ): kotlin.Lazy<T?> = lazy(LazyThreadSafetyMode.NONE) { component.getOrNull(type, name, parameters) }
+    ): kotlin.Lazy<T?> =
+        lazy(LazyThreadSafetyMode.NONE) { component.getOrNull(type, name, parameters) }
 }
 
-/**
- * @see Component.get
- */
 inline fun <reified T> InjektTrait.get(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
-/**
- * @see Component.getOrNull
- */
 inline fun <reified T> InjektTrait.getOrNull(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
 ): T? = getOrNull(type = typeOf(), name = name, parameters = parameters)
 
-/**
- * @see Component.inject
- */
-inline fun <reified T> InjektTrait.inject(
+inline fun <reified T> InjektTrait.getLazy(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): kotlin.Lazy<T> = inject(type = typeOf(), name = name, parameters = parameters)
+): kotlin.Lazy<T> = getLazy(type = typeOf(), name = name, parameters = parameters)
 
-/**
- * @see Component.injectOrNull
- */
-inline fun <reified T> InjektTrait.injectOrNull(
+inline fun <reified T> InjektTrait.getOrNullLazy(
     name: Any? = null,
     noinline parameters: ParametersDefinition? = null
-): kotlin.Lazy<T?> = injectOrNull(type = typeOf(), name = name, parameters = parameters)
+): kotlin.Lazy<T?> = getOrNullLazy(type = typeOf(), name = name, parameters = parameters)
