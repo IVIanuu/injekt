@@ -121,8 +121,11 @@ object ReflectiveJustInTimeLookupFactory : JustInTimeLookupFactory {
                 ?.java
                 ?.declaredClasses
                 ?.firstOrNull()
-                ?.getDeclaredField("INSTANCE")
-                ?.get(null)
+                ?.let { companion ->
+                    companion.declaredFields
+                        ?.first { it.type == companion }
+                        ?.get(null)
+                }
 
             JustInTimeLookup(
                 binding = UnlinkedReflectiveBinding(constructor),
