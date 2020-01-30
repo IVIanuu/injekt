@@ -24,14 +24,14 @@ package com.ivianuu.injekt
  * Typical usage of a Component looks like this:
  *
  * ´´´
- * val Component = Component {
+ * val component = Component {
  *     scopes(Singleton)
  *     modules(networkModule)
  *     modules(databaseModule)
  * }
  *
- * val api = Component.get<Api>()
- * val database = Component.get<Database>()
+ * val api = component.get<Api>()
+ * val database = component.get<Database>()
  * ´´´
  *
  * @see get
