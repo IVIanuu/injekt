@@ -17,14 +17,14 @@
 package com.ivianuu.injekt
 
 /**
- * Holds a [Component] and allows for shorter syntax
+ * Holds a [Component] and allows for shorter syntax and lazy construction of a component
  *
  * Example:
  *
  * ```
  * class MainActivity : Activity(), InjektTrait {
  *
- *     override val Component = Component { ... }
+ *     override val component = Component { ... }
  *
  *     private val dep1: Dependency1 by getLazy()
  *     private val dep2: Dependency2 by getLazy()
@@ -36,7 +36,7 @@ package com.ivianuu.injekt
 interface InjektTrait {
 
     /**
-     * The Component which will be used in the below functions
+     * The [Component] which will be used to retrieve dependencies
      */
     val component: Component
 

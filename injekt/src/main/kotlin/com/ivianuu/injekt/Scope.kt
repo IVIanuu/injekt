@@ -29,7 +29,7 @@ package com.ivianuu.injekt
  * }
  * ´´´
  *
- * The following code ensures that the view model will be only instantiated in the activity scoped Component
+ * The following code ensures that the view model will be only instantiated in the activity scoped [Component]
  *
  * ´´´
  * @ActivityScope

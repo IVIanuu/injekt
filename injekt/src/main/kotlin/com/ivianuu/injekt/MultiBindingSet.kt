@@ -37,12 +37,12 @@ package com.ivianuu.injekt
  *     }
  * }
  *
- * val Component = Component {
+ * val component = Component {
  *     modules(fabricModule, firebaseModule)
  * }
  *
  * // will include both FabricAnalyticsEventHandler and FirebaseAnalyticsEventHandler
- * val analyticsEventHandlers = Component.get<Set<AnalyticsEventHandler>>()
+ * val analyticsEventHandlers = component.get<Set<AnalyticsEventHandler>>()
  *
  * analyticsEventHandlers.forEach { handler ->
  *     handler.handleEvent(MyEvent())

@@ -49,7 +49,7 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Scope the Component
+     * Scope the component
      *
      * @param scopes the scopes to include
      */
@@ -67,9 +67,9 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Add Component dependencies
+     * Add component dependencies
      *
-     * This all make all bindings of the dependencies accessible in this Component
+     * This all make all bindings of the dependencies accessible in this component
      *
      * @param dependencies the dependencies to add
      */
@@ -87,7 +87,7 @@ class ComponentBuilder internal constructor() {
     }
 
     /**
-     * Include all bindings of the modules in the Component
+     * Include all bindings of the modules in the component
      *
      * @param modules the modules to include
      *
@@ -110,8 +110,8 @@ class ComponentBuilder internal constructor() {
      * This is a shortcut to avoid the creation of a [Module] for just a single binding
      *
      * @param instance the instance to contribute
-     * @param type the type for the [Key] by which the binding can be retrieved later in the Component
-     * @param name the type for the [Key] by which the binding can be retrieved later in the Component
+     * @param type the type for the [Key] by which the binding can be retrieved later in the [Component]
+     * @param name the type for the [Key] by which the binding can be retrieved later in the [Component]
      */
     fun <T> instance(
         instance: T,

@@ -19,9 +19,9 @@ package com.ivianuu.injekt
 /**
  * The heart of the library which provides instances
  * Dependencies can be requested by calling [get] or [getOrNull]
- * Use [ComponentBuilder] to construct Component instances
+ * Use [ComponentBuilder] to construct [Component] instances
  *
- * Typical usage of a Component looks like this:
+ * Typical usage of a [Component] looks like this:
  *
  * ´´´
  * val component = Component {

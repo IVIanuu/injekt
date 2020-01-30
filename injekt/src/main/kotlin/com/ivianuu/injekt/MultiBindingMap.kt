@@ -39,7 +39,7 @@ package com.ivianuu.injekt
  *     }
  * }
  *
- * val Component = Component {
+ * val component = Component {
  *     modules(creditcardModule, paypalModule)
  * }
  *

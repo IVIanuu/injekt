@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * Makes the annotated class injectable and generates a single binding for it
- * The class will be created once per Component
+ * The class will be created once per [Component]
  *
  * @see Factory
  * @see Name

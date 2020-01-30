@@ -23,9 +23,9 @@ package com.ivianuu.injekt
  * E.g.
  *
  *```
- * factory { MyRepository() } // retrievable via Component.get<MyRepository>()
- *     .bindType<IRepository>() // retrievable via Component.get<IRepository>()
- *     .bindName("my_name") // retrievable via Component.get<MyRepository>(name = "my_name")
+ * factory { MyRepository() } // retrievable via component.get<MyRepository>()
+ *     .bindType<IRepository>() // retrievable via component.get<IRepository>()
+ *     .bindName("my_name") // retrievable via component.get<MyRepository>(name = "my_name")
  *```
  *
  * @see ModuleBuilder

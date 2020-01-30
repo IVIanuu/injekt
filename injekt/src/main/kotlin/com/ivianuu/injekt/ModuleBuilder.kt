@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import java.util.UUID
+import java.util.*
 
 /**
  * Construct a [Module] with a lambda
@@ -93,13 +93,13 @@ class ModuleBuilder internal constructor() {
     )
 
     /**
-     * Contributes a binding which will be reused throughout the lifetime of the Component it life's in
+     * Contributes a binding which will be reused throughout the lifetime of the [Component] it life's in
      *
      * @param type the of the instance
      * @param name the name of the instance
      * @param override whether or not the binding can override existing bindings
      * @param scoped whether or not to create instances in the added scope
-     * @param eager whether the instance should be created when the Component get's created
+     * @param eager whether the instance should be created when the [Component] get's created
      * @param definition the definitions which creates instances
      *
      * @see bind
@@ -132,8 +132,8 @@ class ModuleBuilder internal constructor() {
      * Adds a binding for a already existing instance
      *
      * @param instance the instance to contribute
-     * @param type the type for the [Key] by which the binding can be retrieved later in the Component
-     * @param name the type for the [Key] by which the binding can be retrieved later in the Component
+     * @param type the type for the [Key] by which the binding can be retrieved later in the [Component]
+     * @param name the type for the [Key] by which the binding can be retrieved later in the [Component]
      * @return the [BindingContext] to chain binding calls
      *
      * @see bind
@@ -229,7 +229,7 @@ class ModuleBuilder internal constructor() {
      *
      * @param mapKeyType the type of the keys in the map
      * @param mapValueType the type of the values in the map
-     * @param mapName the name by which the map can be retrieved later in the Component
+     * @param mapName the name by which the map can be retrieved later in the [Component]
      * @param block the lambda to run in the context of the binding map
      *
      * @see MultiBindingMap
@@ -263,7 +263,7 @@ class ModuleBuilder internal constructor() {
      * Runs a lambda in the scope of a [MultiBindingMapBuilder]
      *
      * @param setElementType the type of the elements in the set
-     * @param setName the name by which the set can be retrieved later in the Component
+     * @param setName the name by which the set can be retrieved later in the [Component]
      * @param block the lambda to run in the context of the binding set
      *
      * @see MultiBindingSet
@@ -286,10 +286,10 @@ class ModuleBuilder internal constructor() {
      * Contributes the binding
      * This function is rarely used directly instead use [factory] or [single]
      *
-     * @param key the key by which the binding can be retrieved later in the Component
+     * @param key the key by which the binding can be retrieved later in the [Component]
      * @param binding the binding to add
      * @param override whether or not the binding can override existing bindings
-     * @param eager whether a instance should be created when the Component get's created
+     * @param eager whether a instance should be created when the [Component] get's created
      * @param scoped whether instances should be created in the requesting scope
      * @return the [BindingContext] to chain binding calls
      *
@@ -331,7 +331,7 @@ class ModuleBuilder internal constructor() {
         name: Any?
     ): BindingContext<T> {
         // we create a proxy binding which links to the original binding
-        // because we have no reference to the original one it's likely in another Module or Component
+        // because we have no reference to the original one it's likely in another [Module] or [Component]
         // we use a unique id here to make sure that the binding does not collide with any user config
         return bind(
             key = keyOf(type = type, name = UUID.randomUUID().toString()),

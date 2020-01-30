@@ -35,7 +35,7 @@ sealed class Binding<T> {
         internal set
 
     /**
-     * Creates the instance in the moment the Component get's created
+     * Creates the instance in the moment the component get's created
      */
     var eager = false
         internal set
