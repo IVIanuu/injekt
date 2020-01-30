@@ -2,40 +2,15 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Injekt.iml" filepath="$PROJECT_DIR$/Injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/buildSrc/buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/buildSrc.iml" />
       <module fileurl="file://$PROJECT_DIR$/comparison/comparison.iml" filepath="$PROJECT_DIR$/comparison/comparison.iml" />
-      <module fileurl="file://$PROJECT_DIR$/home-ivianuu-studio-projects-injekt.iml" filepath="$PROJECT_DIR$/home-ivianuu-studio-projects-injekt.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt/injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt.iml" filepath="$PROJECT_DIR$/injekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" />
-      <module fileurl="file://$PROJECT_DIR$/buildSrc/injekt-buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/injekt-buildSrc.iml" group="injekt/buildSrc" />
-      <module fileurl="file://$PROJECT_DIR$/comparison/injekt-comparison.iml" filepath="$PROJECT_DIR$/comparison/injekt-comparison.iml" group="injekt/comparison" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-kapt/injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-kapt/injekt-compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-compiler/injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-compiler/injekt-compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/injekt-gradle-plugin/injekt-gradle-plugin.iml" filepath="$PROJECT_DIR$/injekt-gradle-plugin/injekt-gradle-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt/injekt-injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt-injekt.iml" group="injekt/injekt" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-injekt-android.iml" group="injekt/injekt-android" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-kapt/injekt-injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-kapt/injekt-injekt-compiler.iml" group="injekt/injekt-compiler" />
-      <module fileurl="file://$PROJECT_DIR$/playground/injekt-playground.iml" filepath="$PROJECT_DIR$/playground/injekt-playground.iml" />
-      <module fileurl="file://$PROJECT_DIR$/sample/injekt-sample.iml" filepath="$PROJECT_DIR$/sample/injekt-sample.iml" group="injekt/sample" />
-      <module fileurl="file://$PROJECT_DIR$/ivianuu-studio-projects-injekt.iml" filepath="$PROJECT_DIR$/ivianuu-studio-projects-injekt.iml" />
-      <module fileurl="file://$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc.iml" />
-      <module fileurl="file://$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc~1.iml" filepath="$PROJECT_DIR$/buildSrc/ivianuu-studio-projects-injekt-buildSrc~1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/comparison/ivianuu-studio-projects-injekt-comparison.iml" filepath="$PROJECT_DIR$/comparison/ivianuu-studio-projects-injekt-comparison.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt/ivianuu-studio-projects-injekt-injekt.iml" filepath="$PROJECT_DIR$/injekt/ivianuu-studio-projects-injekt-injekt.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-android/ivianuu-studio-projects-injekt-injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/ivianuu-studio-projects-injekt-injekt-android.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-kapt/ivianuu-studio-projects-injekt-injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-kapt/ivianuu-studio-projects-injekt-injekt-compiler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-compiler/ivianuu-studio-projects-injekt-injekt-compiler~1.iml" filepath="$PROJECT_DIR$/injekt-compiler/ivianuu-studio-projects-injekt-injekt-compiler~1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/sample/ivianuu-studio-projects-injekt-sample.iml" filepath="$PROJECT_DIR$/sample/ivianuu-studio-projects-injekt-sample.iml" />
-      <module fileurl="file://$PROJECT_DIR$/playground/playground.iml" filepath="$PROJECT_DIR$/playground/playground.iml" group="injekt/playground" />
+      <module fileurl="file://$PROJECT_DIR$/injekt/injekt-injekt.iml" filepath="$PROJECT_DIR$/injekt/injekt-injekt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/playground/playground.iml" filepath="$PROJECT_DIR$/playground/playground.iml" />
       <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" />
-      <module fileurl="file://$PROJECT_DIR$/studio-projects-injekt.iml" filepath="$PROJECT_DIR$/studio-projects-injekt.iml" group="injekt" />
-      <module fileurl="file://$PROJECT_DIR$/buildSrc/studio-projects-injekt-buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/studio-projects-injekt-buildSrc.iml" />
-      <module fileurl="file://$PROJECT_DIR$/comparison/studio-projects-injekt-comparison.iml" filepath="$PROJECT_DIR$/comparison/studio-projects-injekt-comparison.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt/studio-projects-injekt-injekt.iml" filepath="$PROJECT_DIR$/injekt/studio-projects-injekt-injekt.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-android/studio-projects-injekt-injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/studio-projects-injekt-injekt-android.iml" />
-      <module fileurl="file://$PROJECT_DIR$/injekt-kapt/studio-projects-injekt-injekt-compiler.iml" filepath="$PROJECT_DIR$/injekt-kapt/studio-projects-injekt-injekt-compiler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/playground/studio-projects-injekt-playground.iml" filepath="$PROJECT_DIR$/playground/studio-projects-injekt-playground.iml" />
-      <module fileurl="file://$PROJECT_DIR$/sample/studio-projects-injekt-sample.iml" filepath="$PROJECT_DIR$/sample/studio-projects-injekt-sample.iml" />
     </modules>
   </component>
 </project>
