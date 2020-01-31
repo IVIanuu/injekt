@@ -43,7 +43,7 @@ interface InjektTrait {
     /**
      * @see Component.get
      */
-    fun <T> InjektTrait.get(
+    fun <T> get(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
@@ -52,7 +52,7 @@ interface InjektTrait {
     /**
      * @see Component.getOrNull
      */
-    fun <T> InjektTrait.getOrNull(
+    fun <T> getOrNull(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
@@ -68,7 +68,7 @@ interface InjektTrait {
 
      * @see Component.get
      */
-    fun <T> InjektTrait.getLazy(
+    fun <T> getLazy(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
@@ -84,7 +84,7 @@ interface InjektTrait {
 
      * @see Component.getOrNull
      */
-    fun <T> InjektTrait.getOrNullLazy(
+    fun <T> getOrNullLazy(
         type: Type<T>,
         name: Any? = null,
         parameters: ParametersDefinition? = null
