@@ -40,8 +40,8 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     internal val scopes: Set<Any>,
-    internal val allBindings: MutableMap<Key, Binding<*>>,
-    internal val unlinkedUnscopedBindings: Map<Key, Binding<*>>,
+    internal val scopedBindings: MutableMap<Key, Binding<*>>,
+    internal val unlinkedUnscopedBindings: Map<Key, UnlinkedBinding<*>>,
     eagerBindings: Set<Key>,
     internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
     internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>,
@@ -97,14 +97,29 @@ class Component internal constructor(
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = findExplicitBinding(key)
+        binding = findScopedBinding(key)
         if (binding != null) return binding
 
         binding = findUnscopedBinding(key)
         if (binding != null) return binding
 
+        for (dependency in dependencies) {
+            binding = dependency.findBindingForChild(key)
+            if (binding != null) return binding
+        }
+
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
+
+        return null
+    }
+
+    private fun <T> findBindingForChild(key: Key): LinkedBinding<T>? {
+        findScopedBinding<T>(key)?.let { return it }
+
+        dependencies.forEach { dependency ->
+            dependency.findBindingForChild<T>(key)?.let { return it }
+        }
 
         return null
     }
@@ -126,50 +141,11 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findExplicitBinding(key: Key): LinkedBinding<T>? {
-        var binding = synchronized(allBindings) { allBindings[key] } as? Binding<T>
-        if (binding != null) return binding.linkIfNeeded(key)
+    private fun <T> findScopedBinding(key: Key): LinkedBinding<T>? =
+        synchronized(scopedBindings) { scopedBindings[key] }?.linkIfNeeded(key) as? LinkedBinding<T>
 
-        for (dependency in dependencies) {
-            binding = dependency.findExplicitBindingForDependency(key)
-            if (binding != null) return binding
-        }
-
-        return null
-    }
-
-    private fun <T> findExplicitBindingForDependency(key: Key): LinkedBinding<T>? {
-        var binding = synchronized(allBindings) { allBindings[key] } as? Binding<T>
-        if (binding != null && binding.scoped) return binding.linkIfNeeded(key)
-
-        for (dependency in dependencies) {
-            binding = dependency.findExplicitBindingForDependency(key)
-            if (binding != null) return binding
-        }
-
-        return null
-    }
-
-    private fun <T> findUnscopedBinding(key: Key): LinkedBinding<T>? {
-        for (dependency in dependencies) {
-            val binding = dependency.findUnscopedBindingForDependency<T>(key)
-            if (binding != null) return addJustInTimeBinding(key, binding)
-        }
-
-        return null
-    }
-
-    private fun <T> findUnscopedBindingForDependency(key: Key): Binding<T>? {
-        var binding = unlinkedUnscopedBindings[key] as? Binding<T>
-        if (binding != null) return binding
-
-        for (dependency in dependencies) {
-            binding = dependency.findUnscopedBindingForDependency(key)
-            if (binding != null) return binding
-        }
-
-        return null
-    }
+    private fun <T> findUnscopedBinding(key: Key): LinkedBinding<T>? =
+        unlinkedUnscopedBindings[key]?.linkIfNeeded(key) as? LinkedBinding<T>
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
         val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
@@ -194,7 +170,7 @@ class Component internal constructor(
         binding: Binding<T>
     ): LinkedBinding<T> {
         val linkedBinding = binding.performLink(linker)
-        synchronized(allBindings) { allBindings[key] = linkedBinding }
+        synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
         return linkedBinding
     }
 
@@ -204,7 +180,7 @@ class Component internal constructor(
         val linkedBinding = linkedBindingsByUnlinked.getOrPut(this) {
             performLink(linker)
         } as LinkedBinding<T>
-        synchronized(allBindings) { allBindings[key] = linkedBinding }
+        synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
         return linkedBinding
     }
 

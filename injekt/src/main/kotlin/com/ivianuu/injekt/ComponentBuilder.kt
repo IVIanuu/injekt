@@ -149,11 +149,33 @@ class ComponentBuilder internal constructor() {
                 return@fold acc
             }
 
-        val allBindings = mutableMapOf<Key, Binding<*>>()
-        val unscopedBindings = mutableMapOf<Key, Binding<*>>()
+        val scopedBindings = mutableMapOf<Key, Binding<*>>()
+        val unlinkedUnscopedBindings = mutableMapOf<Key, UnlinkedBinding<*>>()
         val eagerBindings = mutableSetOf<Key>()
         val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
         val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
+
+        fun addBinding(key: Key, binding: Binding<*>) {
+            check(
+                binding.override || (key !in scopedBindings &&
+                        key !in dependencyBindingKeys)
+            ) {
+                "Already declared key $key"
+            }
+            scopedBindings[key] = binding
+            if (!binding.scoped) unlinkedUnscopedBindings[key] = binding as UnlinkedBinding<*>
+            if (binding.eager) eagerBindings += key
+        }
+
+        fun addUnlinkedUnscopedDependencyBinding(key: Key, binding: UnlinkedBinding<*>) {
+            check(
+                binding.override || (key !in scopedBindings &&
+                        key !in unlinkedUnscopedBindings)
+            ) {
+                "Already declared key $key"
+            }
+            unlinkedUnscopedBindings[key] = binding
+        }
 
         fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<Any?, Any?>) {
             val builder = multiBindingMapBuilders.getOrPut(mapKey) {
@@ -171,6 +193,9 @@ class ComponentBuilder internal constructor() {
         }
 
         dependencies.forEach { dependency ->
+            dependency.unlinkedUnscopedBindings.forEach { (key, binding) ->
+                addUnlinkedUnscopedDependencyBinding(key, binding)
+            }
             dependency.multiBindingMaps.forEach { (mapKey, map) ->
                 addMultiBindingMap(mapKey, map)
             }
@@ -178,18 +203,6 @@ class ComponentBuilder internal constructor() {
             dependency.multiBindingSets.forEach { (setKey, set) ->
                 addMultiBindingSet(setKey, set)
             }
-        }
-
-        fun addBinding(key: Key, binding: Binding<*>) {
-            check(
-                binding.override || (key !in allBindings &&
-                        key !in dependencyBindingKeys)
-            ) {
-                "Already declared key $key"
-            }
-            allBindings[key] = binding
-            if (!binding.scoped) unscopedBindings[key] = binding
-            if (binding.eager) eagerBindings += key
         }
 
         instances.forEach { (key, binding) -> addBinding(key, binding) }
@@ -213,22 +226,22 @@ class ComponentBuilder internal constructor() {
         }
 
         multiBindingMaps.forEach { (mapKey, map) ->
-            includeMapBindings(allBindings, mapKey, map)
+            includeMapBindings(scopedBindings, mapKey, map)
         }
 
         val multiBindingSets = multiBindingSetBuilders.mapValues {
             it.value.build()
         }
         multiBindingSets.forEach { (setKey, set) ->
-            includeSetBindings(allBindings, setKey, set)
+            includeSetBindings(scopedBindings, setKey, set)
         }
 
-        includeComponentBindings(allBindings)
+        includeComponentBindings(scopedBindings)
 
         return Component(
             scopes = scopes,
-            allBindings = allBindings,
-            unlinkedUnscopedBindings = unscopedBindings,
+            scopedBindings = scopedBindings,
+            unlinkedUnscopedBindings = unlinkedUnscopedBindings,
             eagerBindings = eagerBindings,
             multiBindingMaps = multiBindingMaps,
             multiBindingSets = multiBindingSets,
@@ -358,6 +371,6 @@ class ComponentBuilder internal constructor() {
 
     private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
         dependencies.forEach { it.collectBindingKeys(keys) }
-        keys += this.allBindings.keys
+        keys += this.scopedBindings.keys
     }
 }
