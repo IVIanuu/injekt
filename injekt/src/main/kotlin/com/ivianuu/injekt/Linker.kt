@@ -19,7 +19,8 @@ package com.ivianuu.injekt
 /**
  * Used to retrieve all dependencies in a [UnlinkedBinding.link] call
  */
-inline class Linker(internal val component: Component) {
+// todo ir
+/* inline */ class Linker(internal val component: Component) {
 
     inline fun <reified T> get(name: Any? = null): LinkedBinding<T> =
         get(type = typeOf(), name = name)
