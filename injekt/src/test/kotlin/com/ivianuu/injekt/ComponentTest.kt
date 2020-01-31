@@ -78,13 +78,13 @@ class ComponentTest {
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testGetUnknownDefinitionThrows() {
+    fun testGetUnknownInstanceThrows() {
         val component = Component()
         component.get<Int>()
     }
 
     @Test
-    fun testGetNullableUnknownDefinitionDoesNotThrow() {
+    fun testGetNullableInstanceReturnsNonNullable() {
         val component = Component {
             modules(
                 Module {
@@ -92,7 +92,13 @@ class ComponentTest {
                 }
             )
         }
-        component.get<String?>()
+        assertEquals("string", component.get<String?>())
+    }
+
+    @Test
+    fun testGetUnknownNullableInstanceNotThrows() {
+        val component = Component()
+        assertEquals(null, component.get<String?>())
     }
 
     @Test
