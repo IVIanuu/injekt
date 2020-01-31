@@ -196,7 +196,7 @@ private class LinkedReflectiveBinding<T>(
         val resolvedArgs = args
             .map { arg ->
                 when (arg) {
-                    is Arg.Dependency -> arg.binding()
+                    is Arg.Dependency -> arg.provider()
                     is Arg.Parameter -> initializedParameters.get<Any?>(arg.index)
                 }
             }
@@ -206,7 +206,7 @@ private class LinkedReflectiveBinding<T>(
     }
 
     sealed class Arg {
-        data class Dependency(val binding: LinkedBinding<*>) : Arg()
+        data class Dependency(val provider: Provider<*>) : Arg()
         data class Parameter(val index: Int) : Arg()
     }
 }
