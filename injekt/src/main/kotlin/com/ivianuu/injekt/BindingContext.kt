@@ -128,7 +128,7 @@ data class BindingContext<T> internal constructor(
         mapName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
-        moduleBuilder.map(mapKeyType, mapValueType, mapName) {
+        moduleBuilder.map(mapKeyType = mapKeyType, mapValueType = mapValueType, mapName = mapName) {
             put(
                 entryKey = entryKey,
                 entryValueType = key.type as Type<V>,
@@ -163,7 +163,7 @@ data class BindingContext<T> internal constructor(
         setName: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
-        moduleBuilder.set(setElementType, setName) {
+        moduleBuilder.set(setElementType = setElementType, setName = setName) {
             add(elementType = key.type as Type<E>, elementName = key.name, override = override)
         }
         return this
