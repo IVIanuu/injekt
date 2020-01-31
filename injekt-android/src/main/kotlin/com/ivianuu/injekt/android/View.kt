@@ -107,15 +107,19 @@ fun <T : View> T.ChildViewModule(): Module = Module {
 }
 
 private fun <T : View> T.InternalViewModule(scope: Any, name: Any) = Module {
-    instance(instance = this@InternalViewModule, type = typeOf(this@InternalViewModule), override = true).apply {
-        bindType<View>()
+    instance(
+        instance = this@InternalViewModule,
+        type = typeOf(this@InternalViewModule),
+        override = true
+    ).apply {
+        bindAlias<View>()
         bindAlias<View>(name)
     }
 
-    factory(override = true) { context!! }.bindName(name)
-    factory(override = true) { resources!! }.bindName(name)
+    factory(override = true) { context!! }.bindAlias(name)
+    factory(override = true) { resources!! }.bindAlias(name)
 
     withBinding<Component>(name = scope) {
-        bindName(name = name)
+        bindAlias(name = name)
     }
 }

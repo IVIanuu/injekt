@@ -22,7 +22,7 @@ import org.junit.Test
 class BindingContextTest {
 
     @Test
-    fun testBindAlias() {
+    fun testBindAliasBoth() {
         val component = Component {
             modules(
                 Module {
@@ -38,12 +38,12 @@ class BindingContextTest {
     }
 
     @Test
-    fun testBindType() {
+    fun testBindAliasTypeOnly() {
         val component = Component {
             modules(
                 Module {
                     single { TestDep1() }
-                        .bindType<Any>()
+                        .bindAlias<Any>()
                 }
             )
         }
@@ -54,12 +54,12 @@ class BindingContextTest {
     }
 
     @Test
-    fun testBindName() {
+    fun testBindAliasNameOnly() {
         val component = Component {
             modules(
                 Module {
                     single { TestDep1() }
-                        .bindName("name")
+                        .bindAlias("name")
                 }
             )
         }

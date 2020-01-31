@@ -33,7 +33,7 @@ class ProxyTest {
     fun testBridgingDoesNotModifyOriginalBindingState() {
         val module = Module {
             single(override = true, eager = true) { "value" }
-            withBinding<String> { bindType<CharSequence>() }
+            withBinding<String> { bindAlias<CharSequence>() }
         }
 
         val component = Component { modules(module) }
@@ -53,7 +53,7 @@ class ProxyTest {
             modules(
                 Module {
                     withBinding<ProxyDep> {
-                        bindType<Any>()
+                        bindAlias<Any>()
                     }
                 }
             )

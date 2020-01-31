@@ -24,8 +24,8 @@ package com.ivianuu.injekt
  *
  *```
  * factory { MyRepository() } // retrievable via component.get<MyRepository>()
- *     .bindType<IRepository>() // retrievable via component.get<IRepository>()
- *     .bindName("my_name") // retrievable via component.get<MyRepository>(name = "my_name")
+ *     .bindAlias<IRepository>() // retrievable via component.get<IRepository>()
+ *     .bindAlias(name = "my_name") // retrievable via component.get<MyRepository>(name = "my_name")
  *```
  *
  * @see ModuleBuilder
@@ -44,6 +44,15 @@ data class BindingContext<T> internal constructor(
         return this
     }
 
+    @JvmName("bindName")
+    fun bindAlias(
+        name: Any? = null,
+        override: Boolean = binding.override
+    ): BindingContext<T> {
+        bindAlias(type = key.type, name = name, override = override)
+        return this
+    }
+
     /**
      * Binds the [binding] to [Module] with the alias params
      *
@@ -58,7 +67,7 @@ data class BindingContext<T> internal constructor(
      * @see ModuleBuilder.bind
      */
     fun bindAlias(
-        type: Type<*>,
+        type: Type<*> = key.type,
         name: Any? = null,
         override: Boolean = binding.override
     ): BindingContext<T> {
@@ -70,30 +79,6 @@ data class BindingContext<T> internal constructor(
             scoped = binding.scoped
         )
 
-        return this
-    }
-
-    inline fun <reified S> bindType(override: Boolean = binding.override): BindingContext<T> {
-        bindType(type = typeOf<S>(), override = override)
-        return this
-    }
-
-    /**
-     * @see bindAlias
-     */
-    fun bindType(
-        type: Type<*>,
-        override: Boolean = binding.override
-    ): BindingContext<T> {
-        bindAlias(type = type, override = override)
-        return this
-    }
-
-    /**
-     * @see bindAlias
-     */
-    fun bindName(name: Any, override: Boolean = binding.override): BindingContext<T> {
-        bindAlias(type = key.type, name = name, override = override)
         return this
     }
 

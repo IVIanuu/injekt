@@ -45,17 +45,17 @@ fun <T : Application> T.ApplicationComponent(block: (ComponentBuilder.() -> Unit
 
 fun <T : Application> T.ApplicationModule(): Module = Module {
     instance(this@ApplicationModule, type = typeOf(this@ApplicationModule)).apply {
-        bindType<Application>()
-        bindType<Context>()
-        bindAlias<Context>(ForApplication)
+        bindAlias<Application>()
+        bindAlias<Context>()
+        bindAlias<Context>(name = ForApplication)
     }
 
     factory { ProcessLifecycleOwner.get() }
-        .bindName(ForApplication)
+        .bindAlias(name = ForApplication)
 
-    factory { resources!! }.bindName(ForApplication)
+    factory { resources!! }.bindAlias(name = ForApplication)
 
     withBinding<Component>(name = ApplicationScope) {
-        bindName(name = ForApplication)
+        bindAlias(name = ForApplication)
     }
 }

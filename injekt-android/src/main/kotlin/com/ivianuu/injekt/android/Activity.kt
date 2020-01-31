@@ -64,51 +64,51 @@ fun Activity.getApplicationComponent(): Component =
 
 fun <T : Activity> T.ActivityModule(): Module = Module {
     instance(instance = this@ActivityModule, type = typeOf(this@ActivityModule)).apply {
-        bindType<Activity>()
+        bindAlias<Activity>()
         bindAlias<Context>(name = ForActivity, override = true)
-        bindType<Context>(override = true)
+        bindAlias<Context>(override = true)
 
-        if (this@ActivityModule is ComponentActivity) bindType<ComponentActivity>()
-        if (this@ActivityModule is FragmentActivity) bindType<FragmentActivity>()
-        if (this@ActivityModule is AppCompatActivity) bindType<AppCompatActivity>()
+        if (this@ActivityModule is ComponentActivity) bindAlias<ComponentActivity>()
+        if (this@ActivityModule is FragmentActivity) bindAlias<FragmentActivity>()
+        if (this@ActivityModule is AppCompatActivity) bindAlias<AppCompatActivity>()
         if (this@ActivityModule is LifecycleOwner) {
-            bindType<LifecycleOwner>()
+            bindAlias<LifecycleOwner>()
             bindAlias<LifecycleOwner>(name = ForActivity)
         }
         if (this@ActivityModule is ViewModelStoreOwner) {
-            bindType<ViewModelStoreOwner>()
+            bindAlias<ViewModelStoreOwner>()
             bindAlias<ViewModelStoreOwner>(name = ForActivity)
         }
         if (this@ActivityModule is SavedStateRegistryOwner) {
-            bindType<SavedStateRegistryOwner>()
+            bindAlias<SavedStateRegistryOwner>()
             bindAlias<SavedStateRegistryOwner>(name = ForActivity)
         }
     }
 
     factory(override = true) { resources!! }
-        .bindName(ForActivity)
+        .bindAlias(name = ForActivity)
 
     (this@ActivityModule as? LifecycleOwner)?.let {
         factory(override = true) { lifecycle }
-            .bindName(ForActivity)
+            .bindAlias(name = ForActivity)
     }
 
     (this@ActivityModule as? ViewModelStoreOwner)?.let {
         factory(override = true) { viewModelStore }
-            .bindName(ForActivity)
+            .bindAlias(name = ForActivity)
     }
 
     (this@ActivityModule as? SavedStateRegistryOwner)?.let {
         factory(override = true) { savedStateRegistry }
-            .bindName(ForActivity)
+            .bindAlias(name = ForActivity)
     }
 
     (this@ActivityModule as? FragmentActivity)?.let {
         factory(override = true) { supportFragmentManager }
-            .bindName(ForActivity)
+            .bindAlias(name = ForActivity)
     }
 
     withBinding<Component>(name = ActivityScope) {
-        bindName(name = ForActivity)
+        bindAlias(name = ForActivity)
     }
 }

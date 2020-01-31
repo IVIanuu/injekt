@@ -104,24 +104,24 @@ private fun <T : Fragment> T.InternalFragmentModule(
     name: Any
 ) = Module {
     instance(instance = this@InternalFragmentModule, type = typeOf(this@InternalFragmentModule), override = true).apply {
-        bindType<Fragment>()
+        bindAlias<Fragment>()
         bindAlias<Fragment>(name)
-        bindType<LifecycleOwner>()
+        bindAlias<LifecycleOwner>()
         bindAlias<LifecycleOwner>(name)
-        bindType<ViewModelStoreOwner>()
+        bindAlias<ViewModelStoreOwner>()
         bindAlias<ViewModelStoreOwner>(name)
-        bindType<SavedStateRegistryOwner>()
+        bindAlias<SavedStateRegistryOwner>()
         bindAlias<SavedStateRegistryOwner>(name)
     }
 
-    factory(override = true) { requireContext() }.bindName(name)
-    factory(override = true) { resources }.bindName(name)
-    factory(override = true) { lifecycle }.bindName(name)
-    factory(override = true) { viewModelStore }.bindName(name)
-    factory(override = true) { savedStateRegistry }.bindName(name)
-    factory(override = true) { childFragmentManager }.bindName(name)
+    factory(override = true) { requireContext() }.bindAlias(name = name)
+    factory(override = true) { resources }.bindAlias(name = name)
+    factory(override = true) { lifecycle }.bindAlias(name = name)
+    factory(override = true) { viewModelStore }.bindAlias(name = name)
+    factory(override = true) { savedStateRegistry }.bindAlias(name = name)
+    factory(override = true) { childFragmentManager }.bindAlias(name = name)
 
     withBinding<Component>(name = scope) {
-        bindName(name = name)
+        bindAlias(name = name)
     }
 }

@@ -57,12 +57,12 @@ fun ContentProvider.getApplicationComponent(): Component =
 
 fun <T : ContentProvider> T.ContentProviderModule(): Module = Module {
     instance(this@ContentProviderModule, type = typeOf(this@ContentProviderModule))
-        .bindType<ContentProvider>()
+        .bindAlias<ContentProvider>()
 
     factory(override = true) { context!! }
-        .bindName(name = ForContentProvider)
+        .bindAlias(name = ForContentProvider)
 
     withBinding<Component>(name = ContentProviderScope) {
-        bindName(name = ForContentProvider)
+        bindAlias(name = ForContentProvider)
     }
 }

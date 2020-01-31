@@ -167,7 +167,7 @@ class ModuleBuilder internal constructor() {
      *
      * ´´´
      * withBinding(type = typeOf<MyRepository>()) {
-     *     bindType<Repository>()
+     *     bindAlias<Repository>()
      * }
      *
      * ´´´

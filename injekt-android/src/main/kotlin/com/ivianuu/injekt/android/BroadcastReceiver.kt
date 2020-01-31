@@ -60,12 +60,12 @@ fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
 
 fun <T : BroadcastReceiver> T.ReceiverModule(context: Context): Module = Module {
     instance(this@ReceiverModule, type = typeOf(this@ReceiverModule))
-        .bindType<BroadcastReceiver>()
+        .bindAlias<BroadcastReceiver>()
 
     factory(override = true) { context }
-        .bindName(name = ForReceiver)
+        .bindAlias(name = ForReceiver)
 
     withBinding<Component>(name = ReceiverScope) {
-        bindName(name = ForReceiver)
+        bindAlias(name = ForReceiver)
     }
 }

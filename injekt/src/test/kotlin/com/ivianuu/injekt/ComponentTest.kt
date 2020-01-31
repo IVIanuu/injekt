@@ -365,7 +365,7 @@ class ComponentTest {
             modules(
                 Module {
                     single(scoped = false) { Context(get()) }
-                        .bindType<Environment>()
+                        .bindAlias<Environment>()
                 }
             )
         }

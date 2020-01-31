@@ -57,14 +57,14 @@ fun Service.getApplicationComponent(): Component =
 
 fun <T : Service> T.ServiceModule(): Module = Module {
     instance(this@ServiceModule, type = typeOf(this@ServiceModule)).apply {
-        bindType<Service>()
+        bindAlias<Service>()
         bindAlias<Context>(name = ForService, override = true)
-        bindType<Context>(override = true)
+        bindAlias<Context>(override = true)
     }
 
-    factory(override = true) { resources!! }.bindName(ForService)
+    factory(override = true) { resources!! }.bindAlias(name = ForService)
 
     withBinding<Component>(name = ServiceScope) {
-        bindName(name = ForService)
+        bindAlias(name = ForService)
     }
 }
