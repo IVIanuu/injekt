@@ -53,7 +53,7 @@ private class UnlinkedSingleBinding<T>(private val binding: Binding<T>) : Unlink
         LinkedSingleBinding(binding.performLink(linker))
 }
 
-private class LinkedSingleBinding<T>(private val binding: LinkedBinding<T>) : LinkedBinding<T>() {
+private class LinkedSingleBinding<T>(private val provider: Provider<T>) : LinkedBinding<T>() {
     private var _value: Any? = this
 
     override fun invoke(parameters: ParametersDefinition?): T {
@@ -62,7 +62,7 @@ private class LinkedSingleBinding<T>(private val binding: LinkedBinding<T>) : Li
             synchronized(this) {
                 value = _value
                 if (value === this) {
-                    _value = binding(parameters)
+                    _value = provider(parameters)
                     value = _value
                 }
             }

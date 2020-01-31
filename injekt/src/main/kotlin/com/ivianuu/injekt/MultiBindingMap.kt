@@ -130,7 +130,7 @@ internal class MapOfValueBinding<K, V>(
         Linked(linker.get(mapOfProviderKey))
 
     private class Linked<K, V>(
-        private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
+        private val mapOfProviderBinding: Provider<Map<K, Provider<V>>>
     ) : LinkedBinding<Map<K, V>>() {
         override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
             .mapValues { it.value() }
@@ -144,7 +144,7 @@ internal class MapOfLazyBinding<K, V>(
         Linked(linker.get(mapOfProviderKey))
 
     private class Linked<K, V>(
-        private val mapOfProviderBinding: LinkedBinding<Map<K, Provider<V>>>
+        private val mapOfProviderBinding: Provider<Map<K, Provider<V>>>
     ) : LinkedBinding<Map<K, Lazy<V>>>() {
         override fun invoke(parameters: ParametersDefinition?) = mapOfProviderBinding()
             .mapValues { ProviderLazy(it.value) }

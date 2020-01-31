@@ -58,7 +58,7 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev91"
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev92"
 
     const val junit = "junit:junit:4.12"
 

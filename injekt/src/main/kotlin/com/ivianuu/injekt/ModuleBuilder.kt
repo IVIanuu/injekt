@@ -340,8 +340,8 @@ class ModuleBuilder internal constructor() {
     }
 }
 
-internal class InstanceBinding<T>(private val value: T) : LinkedBinding<T>() {
-    override fun invoke(parameters: ParametersDefinition?) = value
+internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
+    override fun invoke(parameters: ParametersDefinition?) = instance
 }
 
 private class ProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
