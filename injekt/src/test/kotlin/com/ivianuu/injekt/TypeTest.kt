@@ -19,8 +19,8 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
-import kotlin.reflect.KClass
 import org.junit.Test
+import kotlin.reflect.KClass
 
 class TypeTest {
 
@@ -96,10 +96,4 @@ class TypeTest {
         assertFalse(listOfInts == listOfStrings)
     }
 
-    @Test
-    fun testNullableDistinction() {
-        val stringType = typeOf<String>()
-        val nullableStringType = typeOf<String?>()
-        assertFalse(stringType == nullableStringType)
-    }
 }

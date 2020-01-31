@@ -19,7 +19,6 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertNotSame
-import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -85,9 +84,15 @@ class ComponentTest {
     }
 
     @Test
-    fun testGetOrNullUnknownReturnsNull() {
-        val component = Component()
-        assertNull(component.getOrNull<Int>())
+    fun testGetNullableUnknownDefinitionDoesNotThrow() {
+        val component = Component {
+            modules(
+                Module {
+                    factory { "string" }
+                }
+            )
+        }
+        component.get<String?>()
     }
 
     @Test
@@ -241,23 +246,6 @@ class ComponentTest {
         val strings = component.get<List<String>>()
 
         assertNotSame(ints, strings)
-    }
-
-    @Test
-    fun testNullableDistinction() {
-        val component = Component {
-            modules(
-                Module {
-                    factory { "string" }
-                    factory<String?> { "nullable string" }
-                }
-            )
-        }
-
-        val string = component.get<String>()
-        assertEquals("string", string)
-        val nullableString = component.get<String?>()
-        assertEquals("nullable string", nullableString)
     }
 
     @Test(expected = IllegalStateException::class)

@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * The heart of the library which provides instances
- * Dependencies can be requested by calling [get] or [getOrNull]
+ * Dependencies can be requested by calling [get]
  * Use [ComponentBuilder] to construct [Component] instances
  *
  * Typical usage of a [Component] looks like this:
@@ -77,32 +77,20 @@ class Component internal constructor(
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
         getBinding<T>(key)(parameters)
 
-    inline fun <reified T> getOrNull(
-        name: Any? = null,
-        noinline parameters: ParametersDefinition? = null
-    ): T? = getOrNull(type = typeOf(), name = name, parameters = parameters)
+    internal fun <T> getBinding(key: Key): LinkedBinding<T> {
+        val binding = findBinding<T>(key)
+        if (binding != null) return binding
+        if (key.type.isNullable) {
+            val nullableKey = key.copy(type = key.type.copy(isNullable = true))
+            return findBinding(nullableKey) ?: NullBinding as LinkedBinding<T>
 
-    fun <T> getOrNull(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: ParametersDefinition? = null
-    ): T? = getOrNull(key = keyOf(type, name), parameters = parameters)
+        }
 
-    /**
-     * Retrieve a instance of type [T] or null
-     *
-     * @param key the of the instance
-     * @param parameters optional parameters to construct the instance
-     * @return the instance or null
-     */
-    fun <T> getOrNull(key: Key, parameters: ParametersDefinition? = null): T? =
-        getBindingOrNull<T>(key)?.invoke(parameters)
-
-    internal fun <T> getBinding(key: Key): LinkedBinding<T> =
-        getBindingOrNull(key) ?: error("Couldn't find a binding for $key")
+        error("Couldn't find a binding for $key")
+    }
 
     @Suppress("UNCHECKED_CAST")
-    internal fun <T> getBindingOrNull(key: Key): LinkedBinding<T>? {
+    private fun <T> findBinding(key: Key): LinkedBinding<T>? {
         var binding: Binding<T>?
 
         // providers, lazy
@@ -228,5 +216,9 @@ class Component internal constructor(
         }
 
         return null
+    }
+
+    private object NullBinding : LinkedBinding<Any?>() {
+        override fun invoke(parameters: ParametersDefinition?): Any? = null
     }
 }

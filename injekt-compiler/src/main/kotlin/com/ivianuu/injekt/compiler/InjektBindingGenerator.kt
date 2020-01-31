@@ -20,13 +20,38 @@ import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.*
-import org.jetbrains.kotlin.ir.builders.declarations.*
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irInt
+import org.jetbrains.kotlin.ir.builders.irReturn
+import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -240,11 +265,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                     it.valueParameters.first().type == key.defaultType
                 }
 
-            val getOrNull = linker.unsubstitutedMemberScope
-                .findFirstFunction("getOrNull") {
-                    it.valueParameters.first().type == key.defaultType
-                }
-
             val linkedBindingClass = linkedBinding(declaration, Name.identifier("Linked"), ClassKind.CLASS)
 
             addFunction(
@@ -264,16 +284,15 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         newFunction = constructor
                     ).apply {
                         paramKeyFields.forEachIndexed { index, (field, param) ->
-                            val optional = param.annotations.hasAnnotation(OptionalAnnotation)
                             putValueArgument(
                                 index,
                                 DeclarationIrBuilder(context, symbol).irBlock {
                                     +irCall(
-                                        callee = symbolTable.referenceSimpleFunction(if (optional) getOrNull else get),
+                                        callee = symbolTable.referenceSimpleFunction(get),
                                         type = KotlinTypeFactory.simpleType(
                                             baseType = linkedBinding.defaultType,
                                             arguments = listOf(param.type.asTypeProjection()),
-                                            nullable = optional
+                                            nullable = param.type.isMarkedNullable
                                         ).toIrType()
                                     ).apply {
                                         dispatchReceiver = irGet(valueParameters.first())
@@ -344,7 +363,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         type = KotlinTypeFactory.simpleType(
                             baseType = provider.defaultType,
                             arguments = listOf(param.type.asTypeProjection()),
-                            nullable = param.annotations.hasAnnotation(OptionalAnnotation)
+                            nullable = param.type.isMarkedNullable
                         ).toIrType()
                         visibility = Visibilities.PRIVATE
                     }

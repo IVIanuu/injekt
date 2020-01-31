@@ -45,7 +45,6 @@ val ParamCannotBeNamed = error()
 val ParamCannotBeOptional = error()
 val OnlyOneInjektConstructor = error()
 val NeedsPrimaryConstructorOrAnnotation = error()
-val OptionalMustBeNullable = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -75,20 +74,12 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
             "Parameters cannot be named"
         )
         map.put(
-            ParamCannotBeOptional,
-            "Parameters cannot be optional"
-        )
-        map.put(
             OnlyOneInjektConstructor,
             "Only one constructor can be annotated"
         )
         map.put(
             NeedsPrimaryConstructorOrAnnotation,
             "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
-        )
-        map.put(
-            OptionalMustBeNullable,
-            "Optional parameter must be nullable"
         )
     }
 }
