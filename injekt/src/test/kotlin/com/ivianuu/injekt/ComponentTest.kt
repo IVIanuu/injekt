@@ -337,10 +337,10 @@ class ComponentTest {
             dependencies(componentB)
         }
 
-        val depA = componentA.get<SingleJustInTimeBinding>()
-        val depA2 = componentA.get<SingleJustInTimeBinding>()
-        val depB = componentB.get<SingleJustInTimeBinding>()
-        val depC = componentC.get<SingleJustInTimeBinding>()
+        val depA = componentA.get<SingleJustInTimeDep>()
+        val depA2 = componentA.get<SingleJustInTimeDep>()
+        val depB = componentB.get<SingleJustInTimeDep>()
+        val depC = componentC.get<SingleJustInTimeDep>()
 
         assertEquals(depA, depA2)
         assertEquals(depA, depB)
@@ -420,4 +420,12 @@ interface Environment
 
 @TestScopeOne
 @Single
-class SingleJustInTimeBinding
+class SingleJustInTimeDep {
+    object Binding : LinkedBinding<SingleJustInTimeDep>(), IsSingle, HasScope {
+        override val scope: Any
+            get() = TestScopeOne.Companion
+
+        override fun invoke(parameters: ParametersDefinition?): SingleJustInTimeDep =
+            SingleJustInTimeDep()
+    }
+}

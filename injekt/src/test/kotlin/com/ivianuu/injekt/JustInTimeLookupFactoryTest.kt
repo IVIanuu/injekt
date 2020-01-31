@@ -25,28 +25,25 @@ class JustInTimeLookupFactoryTest {
 
     @Test
     fun testUnscoped() {
-        factories.forEach { factory ->
-            val lookup = factory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>())
-            assertNotNull(lookup)
-            assertNull(lookup!!.scope)
-        }
+        val lookup =
+            CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>())
+        assertNotNull(lookup)
+        assertNull(lookup!!.scope)
     }
 
     @Test
     fun testScoped() {
-        factories.forEach { factory ->
-            val lookup = factory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
-            assertNotNull(lookup)
-            assertEquals(TestScopeOne, lookup!!.scope)
-        }
+        val lookup =
+            CodegenJustInTimeLookupFactory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
+        assertNotNull(lookup)
+        assertEquals(TestScopeOne, lookup!!.scope)
     }
 
     @Test
     fun testCannotResolveNamed() {
-        factories.forEach { factory ->
-            val lookup = factory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
-            assertNull(lookup)
-        }
+        val lookup =
+            CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
+        assertNull(lookup)
     }
 }
 
@@ -67,9 +64,3 @@ class MyScopedDep {
         override fun invoke(parameters: ParametersDefinition?) = MyScopedDep()
     }
 }
-
-private val factories = listOf(
-    CodegenJustInTimeLookupFactory,
-    ReflectiveJustInTimeLookupFactory,
-    DefaultJustInTimeLookupFactory
-)
