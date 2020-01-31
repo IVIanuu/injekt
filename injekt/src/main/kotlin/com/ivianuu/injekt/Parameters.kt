@@ -106,14 +106,6 @@ package com.ivianuu.injekt
 typealias ParametersDefinition = () -> Parameters
 
 /**
- * Creates empty parameters
- *
- * @return empty parameters
- * @see emptyParameters
- */
-fun parametersOf(): Parameters = emptyParameters()
-
-/**
  * Creates parameters which contains all [values]
  *
  * @param values the provided parameters
@@ -128,13 +120,6 @@ fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<A
  * @return the newly constructed parameters
  */
 fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArray())
-
-/**
- * Creates empty parameters
- *
- * @return empty parameters
- */
-fun emptyParameters(): Parameters = Parameters(emptyArray())
 
 /**
  * Marks a the annotated constructor parameter in a @[Factory] or @[Single] annotated class as a parameter
