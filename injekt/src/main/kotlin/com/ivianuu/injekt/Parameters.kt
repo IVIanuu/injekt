@@ -103,14 +103,6 @@ typealias ParametersDefinition = () -> Parameters
 fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 
 /**
- * Creates parameters which contains all [values]
- *
- * @param values the provided parameters
- * @return the newly constructed parameters
- */
-fun parametersOf(values: List<Any?>): Parameters = Parameters(values.toTypedArray())
-
-/**
  * Marks a the annotated constructor parameter in a @[Factory] or @[Single] annotated class as a parameter
  * The generated binding will then use the provided [Parameters] to resolve the dependency
  *

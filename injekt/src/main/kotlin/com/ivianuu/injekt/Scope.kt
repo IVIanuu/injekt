@@ -43,7 +43,7 @@ package com.ivianuu.injekt
 annotation class Scope
 
 /**
- * Used by generated code to provide the of the injectable
+ * Used by generated code to provide the scope of the injectable
  *
  * @see CodegenJustInTimeLookupFactory
  */
