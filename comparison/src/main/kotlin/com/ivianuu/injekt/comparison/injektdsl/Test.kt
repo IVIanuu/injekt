@@ -30,7 +30,7 @@ object InjektDslTest : InjectionTest {
     }
 
     override fun setup() {
-        component = Component { modules(injektDslModule) }
+        component = Component { modules(InjektDslModule) }
     }
 
     override fun inject() {
