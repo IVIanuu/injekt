@@ -45,7 +45,7 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
-/*inline */ class Parameters(private val values: Array<Any?>) {
+inline class Parameters(private val values: Array<Any?>) {
 
     /**
      * The count of parameters
@@ -84,18 +84,6 @@ package com.ivianuu.injekt
     operator fun <T> component4(): T = get(3)
     operator fun <T> component5(): T = get(4)
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Parameters) return false
-
-        if (!values.contentEquals(other.values)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = values.contentHashCode()
-
-    override fun toString(): String = values.contentToString()
 }
 
 /**
