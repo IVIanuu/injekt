@@ -203,7 +203,7 @@ class ModuleBuilder internal constructor() {
         module.multiBindingMaps.forEach { (mapKey, map) ->
             val builder = multiBindingMapBuilders.getOrPut(mapKey) {
                 MultiBindingMapBuilder(mapKey)
-            } as MultiBindingMapBuilder<Any?, Any?>
+            }
             map.entries.forEach { (entryKey, entry) ->
                 builder.put(entryKey, entry)
             }
