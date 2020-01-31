@@ -29,5 +29,5 @@ object InjektPlugins {
     /**
      * The factory to use while looking up just in time bindings
      */
-    var justInTimeLookupFactory: JustInTimeLookupFactory = DefaultJustInTimeLookupFactory
+    var justInTimeLookupFactory: JustInTimeLookupFactory = CodegenJustInTimeLookupFactory
 }
