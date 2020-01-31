@@ -25,7 +25,7 @@ import kotlin.reflect.KType
 /**
  * Describes a injectable type [Type]
  */
-class Type<T> internal constructor(
+data class Type<T> internal constructor(
     val raw: KClass<*>,
     val isNullable: Boolean,
     val parameters: Array<out Type<*>>
@@ -38,7 +38,6 @@ class Type<T> internal constructor(
         if (other !is Type<*>) return false
 
         if (rawJava != other.rawJava) return false
-        if (isNullable != other.isNullable) return false
         if (!parameters.contentEquals(other.parameters)) return false
 
         return true
@@ -46,7 +45,6 @@ class Type<T> internal constructor(
 
     override fun hashCode(): Int {
         var result = rawJava.hashCode()
-        result = 31 * result + isNullable.toString().hashCode() // todo ir use nullable.hash
         result = 31 * result + parameters.contentHashCode()
         return result
     }

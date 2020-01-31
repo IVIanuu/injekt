@@ -44,20 +44,6 @@ interface DefinitionContext {
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T
 
     /**
-     * @see Component.getOrNull
-     */
-    fun <T> getOrNull(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: ParametersDefinition? = null
-    ): T? = getOrNull(key = keyOf(type, name), parameters = parameters)
-
-    /**
-     * @see Component.getOrNull
-     */
-    fun <T> getOrNull(key: Key, parameters: ParametersDefinition? = null): T?
-
-    /**
      * Nullable version of [Parameters.component1]
      */
     operator fun <T> Parameters?.component1(): T = this!![0]
@@ -76,14 +62,6 @@ inline fun <reified T> DefinitionContext.get(
     noinline parameters: ParametersDefinition? = null
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
-/**
- * @see Component.getOrNull
- */
-inline fun <reified T> DefinitionContext.getOrNull(
-    name: Any? = null,
-    noinline parameters: ParametersDefinition? = null
-): T? = getOrNull(type = typeOf(), name = name, parameters = parameters)
-
 internal class DefinitionBinding<T>(
     private val definition: Definition<T>
 ) : UnlinkedBinding<T>() {
@@ -98,9 +76,6 @@ internal class DefinitionBinding<T>(
 
         override fun <T> get(key: Key, parameters: ParametersDefinition?): T =
             component.get(key = key, parameters = parameters)
-
-        override fun <T> getOrNull(key: Key, parameters: ParametersDefinition?): T? =
-            component.getOrNull(key = key, parameters = parameters)
 
         override fun invoke(parameters: ParametersDefinition?): T =
             definition(this, parameters?.invoke())
