@@ -48,7 +48,7 @@ class Component internal constructor(
     internal val dependencies: Set<Component>
 ) {
 
-    internal val linker = Linker(this)
+    private val linker = Linker(this)
 
     private val linkedBindingsByUnlinked = mutableMapOf<UnlinkedBinding<*>, LinkedBinding<*>>()
 

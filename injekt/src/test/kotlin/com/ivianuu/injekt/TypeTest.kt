@@ -46,16 +46,17 @@ class TypeTest {
             val nullableReified = type.nullableReified
 
             val nonNullPrimitive = typeOf<Any?>(type.primitiveType)
-            val nullablePrimitive = typeOf<Any?>(type.primitiveType, true)
+            val nullablePrimitive = typeOf<Any?>(type.primitiveType, isNullable = true)
 
             val nonNullObject = typeOf<Any?>(type.primitiveType.javaObjectType)
-            val nullableObject = typeOf<Any?>(type.primitiveType.javaObjectType, true)
+            val nullableObject = typeOf<Any?>(type.primitiveType.javaObjectType, isNullable = true)
 
             val nonNullPrimitiveJava = typeOf<Any?>(type.primitiveType.java)
-            val nullablePrimitiveJava = typeOf<Any?>(type.primitiveType.java, true)
+            val nullablePrimitiveJava = typeOf<Any?>(type.primitiveType.java, isNullable = true)
 
             val nonNullObjectJava = typeOf<Any?>(type.primitiveType.javaObjectType)
-            val nullableObjectJava = typeOf<Any?>(type.primitiveType.javaObjectType, true)
+            val nullableObjectJava =
+                typeOf<Any?>(type.primitiveType.javaObjectType, isNullable = true)
 
             val pairs = listOf(
                 nonNullReified to nullableReified,

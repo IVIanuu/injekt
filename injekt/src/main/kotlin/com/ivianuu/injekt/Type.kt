@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.WildcardType
 import kotlin.jvm.internal.ClassBasedDeclarationContainer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -88,6 +90,38 @@ fun <T> typeOf(
 }
 
 fun <T> typeOf(instance: T): Type<T> = typeOf((instance as Any)::class)
+
+fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<T> {
+    if (type is WildcardType) {
+        if (type.upperBounds.isNotEmpty()) {
+            return typeOf(type.upperBounds.first(), isNullable)
+        } else if (type.lowerBounds.isNotEmpty()) {
+            return typeOf(type.lowerBounds.first(), isNullable)
+        }
+    }
+
+    if (type is ParameterizedType) {
+        return Type(
+            (type.rawType as Class<*>).kotlin,
+            isNullable,
+            (type as? ParameterizedType)
+                ?.actualTypeArguments
+                ?.map { typeOf<Any?>(it) }
+                ?.toTypedArray()
+                ?: emptyArray()
+        )
+    }
+
+    var kotlinType = (type as Class<*>).kotlin
+
+    kotlinType = if (isNullable) {
+        boxed(kotlinType)
+    } else {
+        unboxed(kotlinType)
+    }
+
+    return Type(kotlinType, isNullable, emptyArray())
+}
 
 private fun unboxed(type: KClass<*>): KClass<*> {
     val thisJClass = (type as ClassBasedDeclarationContainer).jClass
