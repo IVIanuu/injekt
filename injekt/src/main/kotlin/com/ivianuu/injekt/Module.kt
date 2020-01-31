@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * A Module is a collection of [Binding]s to drive [Component]s
  *
- * A typical Module might look like this:
+ * A typical [Module] declaration might look like this:
  *
  * ´´´
  * val myRepositoryModule = Module {

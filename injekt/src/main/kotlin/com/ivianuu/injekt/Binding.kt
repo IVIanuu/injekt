@@ -52,8 +52,6 @@ sealed class Binding<T> {
      * Returns a [LinkedBinding] and get's all required dependencies from the [linker]
      *
      * @param linker the linker where to get required bindings from
-     *
-     * @see MapOfLazyBinding
      */
     protected abstract fun link(linker: Linker): LinkedBinding<T>
 

@@ -20,6 +20,9 @@ package com.ivianuu.injekt
  * Marks a the annotated constructor parameter in a @[Factory] or @[Single] annotated class
  * as a optional
  *
+ * Generated bindings will use [Component.getOrNull] instead of [Component.get]
+ * to resolve dependencies
+ *
  * @see Factory
  * @see Single
  */
