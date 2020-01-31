@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import java.util.*
+import java.util.UUID
 
 /**
  * Construct a [Module] with a lambda
@@ -245,6 +245,21 @@ class ModuleBuilder internal constructor() {
             name = mapName
         )
 
+        map(mapKey = mapKey, block = block)
+    }
+
+    /**
+     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
+     *
+     * @param mapKey the key of the map
+     * @param block the lambda to run in the context of the binding map
+     *
+     * @see MultiBindingMap
+     */
+    fun <K, V> map(
+        mapKey: Key,
+        block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
+    ) {
         val builder = multiBindingMapBuilders.getOrPut(mapKey) {
             MultiBindingMapBuilder(mapKey)
         } as MultiBindingMapBuilder<K, V>
@@ -259,22 +274,27 @@ class ModuleBuilder internal constructor() {
         set(setElementType = typeOf(), setName = setName, block = block)
     }
 
-    /**
-     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
-     *
-     * @param setElementType the type of the elements in the set
-     * @param setName the name by which the set can be retrieved later in the [Component]
-     * @param block the lambda to run in the context of the binding set
-     *
-     * @see MultiBindingSet
-     */
     fun <E> set(
         setElementType: Type<E>,
         setName: Any? = null,
         block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
         val setKey = keyOf(type = typeOf<Any?>(Set::class, setElementType), name = setName)
+        set(setKey = setKey, block = block)
+    }
 
+    /**
+     * Runs a lambda in the scope of a [MultiBindingSetBuilder]
+     *
+     * @param setKey the key of the set
+     * @param block the lambda to run in the context of the binding set
+     *
+     * @see MultiBindingSet
+     */
+    fun <E> set(
+        setKey: Key,
+        block: MultiBindingSetBuilder<E>.() -> Unit = {}
+    ) {
         val builder = multiBindingSetBuilders.getOrPut(setKey) {
             MultiBindingSetBuilder(setKey)
         } as MultiBindingSetBuilder<E>
