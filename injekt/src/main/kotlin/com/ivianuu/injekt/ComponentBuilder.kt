@@ -135,15 +135,15 @@ class ComponentBuilder internal constructor() {
     internal fun build(): Component {
         checkScopes()
 
-        val dependencyBindingKeys = dependencies
-            .map { it.getAllBindingKeys() }
-            .fold(mutableSetOf<Key>()) { acc, current ->
-                current.forEach { key ->
+        val dependencyBindings = dependencies
+            .map { it.getAllBindings() }
+            .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
+                current.forEach { (key, binding) ->
                     check(key !in acc) {
                         "Already declared binding for $key"
                     }
 
-                    acc += key
+                    acc[key] = binding
                 }
 
                 return@fold acc
@@ -158,7 +158,7 @@ class ComponentBuilder internal constructor() {
         fun addBinding(key: Key, binding: Binding<*>) {
             check(
                 binding.override || (key !in scopedBindings &&
-                        key !in dependencyBindingKeys)
+                        key !in dependencyBindings)
             ) {
                 "Already declared key $key"
             }
@@ -366,11 +366,11 @@ class ComponentBuilder internal constructor() {
             .also { it.scoped = true }
     }
 
-    private fun Component.getAllBindingKeys(): Set<Key> =
-        mutableSetOf<Key>().also { collectBindingKeys(it) }
+    private fun Component.getAllBindings(): Map<Key, Binding<*>> =
+        mutableMapOf<Key, Binding<*>>().also { collectBindings(it) }
 
-    private fun Component.collectBindingKeys(keys: MutableSet<Key>) {
-        dependencies.forEach { it.collectBindingKeys(keys) }
-        keys += this.scopedBindings.keys
+    private fun Component.collectBindings(bindings: MutableMap<Key, Binding<*>>) {
+        dependencies.forEach { it.collectBindings(bindings) }
+        bindings += this.scopedBindings
     }
 }
