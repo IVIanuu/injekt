@@ -26,7 +26,70 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
+
+inline fun <reified T : Fragment> FragmentComponent(
+    instance: T,
+    scope: Any = FragmentScope,
+    name: Any = ForFragment,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = FragmentComponent(
+    instance = instance,
+    type = typeOf(),
+    scope = scope,
+    name = name,
+    block = block
+)
+
+inline fun <T : Fragment> FragmentComponent(
+    instance: T,
+    type: Type<T>,
+    scope: Any = FragmentScope,
+    name: Any = ForFragment,
+    block: ComponentBuilder.() -> Unit = {}
+): Component =
+    Component {
+        scopes(scope)
+        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        modules(FragmentModule(instance, type, scope, name))
+        block()
+    }
+
+inline fun <reified T : Fragment> FragmentModule(
+    instance: T,
+    scope: Any = FragmentScope,
+    name: Any = ForFragment
+): Module = FragmentModule(instance = instance, type = typeOf(), scope = scope, name = name)
+
+fun <T : Fragment> FragmentModule(
+    instance: T,
+    type: Type<T>,
+    scope: Any = FragmentScope,
+    name: Any = ForFragment
+) = Module {
+    instance(instance = instance, type = type, override = true).apply {
+        bindAlias<Fragment>()
+        bindAlias<Fragment>(name)
+        bindAlias<LifecycleOwner>()
+        bindAlias<LifecycleOwner>(name)
+        bindAlias<ViewModelStoreOwner>()
+        bindAlias<ViewModelStoreOwner>(name)
+        bindAlias<SavedStateRegistryOwner>()
+        bindAlias<SavedStateRegistryOwner>(name)
+    }
+
+    factory(override = true) { instance.requireContext() }.bindAlias(name = name)
+    factory(override = true) { instance.resources }.bindAlias(name = name)
+    factory(override = true) { instance.lifecycle }.bindAlias(name = name)
+    factory(override = true) { instance.viewModelStore }.bindAlias(name = name)
+    factory(override = true) { instance.savedStateRegistry }.bindAlias(name = name)
+    factory(override = true) { instance.childFragmentManager }.bindAlias(name = name)
+
+    withBinding<Component>(name = scope) {
+        bindAlias(name = name)
+    }
+}
 
 @Scope
 annotation class FragmentScope {
@@ -47,22 +110,6 @@ annotation class ForFragment {
 annotation class ForChildFragment {
     companion object
 }
-
-fun <T : Fragment> T.FragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    Component {
-        scopes(FragmentScope)
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(FragmentModule())
-        block?.invoke(this)
-    }
-
-fun <T : Fragment> T.ChildFragmentComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    Component {
-        scopes(ChildFragmentScope)
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ChildFragmentModule())
-        block?.invoke(this)
-    }
 
 fun Fragment.getClosestComponentOrNull(): Component? {
     return getParentFragmentComponentOrNull()
@@ -90,38 +137,3 @@ fun Fragment.getApplicationComponentOrNull(): Component? =
 
 fun Fragment.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
-
-fun <T : Fragment> T.FragmentModule(): Module = Module {
-    include(InternalFragmentModule(scope = FragmentScope, name = ForFragment))
-}
-
-fun <T : Fragment> T.ChildFragmentModule(): Module = Module {
-    include(InternalFragmentModule(scope = ChildFragmentScope, name = ForChildFragment))
-}
-
-private fun <T : Fragment> T.InternalFragmentModule(
-    scope: Any,
-    name: Any
-) = Module {
-    instance(instance = this@InternalFragmentModule, type = typeOf(this@InternalFragmentModule), override = true).apply {
-        bindAlias<Fragment>()
-        bindAlias<Fragment>(name)
-        bindAlias<LifecycleOwner>()
-        bindAlias<LifecycleOwner>(name)
-        bindAlias<ViewModelStoreOwner>()
-        bindAlias<ViewModelStoreOwner>(name)
-        bindAlias<SavedStateRegistryOwner>()
-        bindAlias<SavedStateRegistryOwner>(name)
-    }
-
-    factory(override = true) { requireContext() }.bindAlias(name = name)
-    factory(override = true) { resources }.bindAlias(name = name)
-    factory(override = true) { lifecycle }.bindAlias(name = name)
-    factory(override = true) { viewModelStore }.bindAlias(name = name)
-    factory(override = true) { savedStateRegistry }.bindAlias(name = name)
-    factory(override = true) { childFragmentManager }.bindAlias(name = name)
-
-    withBinding<Component>(name = scope) {
-        bindAlias(name = name)
-    }
-}

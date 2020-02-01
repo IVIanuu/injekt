@@ -18,14 +18,13 @@ package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
 import org.junit.Test
 import kotlin.reflect.KClass
 
 class TypeTest {
 
     private enum class Primitive(
-        val primitiveType: KClass<*>,
+        val primitiveClassifier: KClass<*>,
         val nonNullReified: Type<*>,
         val nullableReified: Type<*>
     ) {
@@ -45,18 +44,19 @@ class TypeTest {
             val nonNullReified = type.nonNullReified
             val nullableReified = type.nullableReified
 
-            val nonNullPrimitive = typeOf<Any?>(type.primitiveType)
-            val nullablePrimitive = typeOf<Any?>(type.primitiveType, isNullable = true)
+            val nonNullPrimitive = typeOf<Any?>(type.primitiveClassifier)
+            val nullablePrimitive = typeOf<Any?>(type.primitiveClassifier, isNullable = true)
 
-            val nonNullObject = typeOf<Any?>(type.primitiveType.javaObjectType)
-            val nullableObject = typeOf<Any?>(type.primitiveType.javaObjectType, isNullable = true)
+            val nonNullObject = typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
+            val nullableObject =
+                typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin, isNullable = true)
 
-            val nonNullPrimitiveJava = typeOf<Any?>(type.primitiveType.java)
-            val nullablePrimitiveJava = typeOf<Any?>(type.primitiveType.java, isNullable = true)
+            val nonNullPrimitiveJava = typeOf<Any?>(type.primitiveClassifier)
+            val nullablePrimitiveJava = typeOf<Any?>(type.primitiveClassifier, isNullable = true)
 
-            val nonNullObjectJava = typeOf<Any?>(type.primitiveType.javaObjectType)
+            val nonNullObjectJava = typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
             val nullableObjectJava =
-                typeOf<Any?>(type.primitiveType.javaObjectType, isNullable = true)
+                typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin, isNullable = true)
 
             val pairs = listOf(
                 nonNullReified to nullableReified,
@@ -66,7 +66,7 @@ class TypeTest {
                 nonNullObjectJava to nullableObjectJava
             )
 
-            pairs.forEach { (nonNull, nullable) -> assertTrue(nonNull != nullable) }
+            // todo not supported for now pairs.forEach { (nonNull, nullable) -> assertTrue(nonNull != nullable) }
 
             val nonNulls = pairs.map { it.first }
 
@@ -91,10 +91,29 @@ class TypeTest {
     }
 
     @Test
-    fun testParameterDistinction() {
+    fun testArgumentDistinction() {
         val listOfInts = typeOf<List<Int>>()
         val listOfStrings = typeOf<List<String>>()
         assertFalse(listOfInts == listOfStrings)
     }
 
+    // todo not supported yet @Test
+    fun testAnnotationDistinction() {
+        val typeA = typeOf<@TypeAnnotationOne String>()
+        val typeB = typeOf<@TypeAnnotationTwo String>()
+        println("type a $typeA type b $typeB")
+        assertFalse(typeA == typeB)
+    }
+
+    // todo not supported for now @Test
+    fun testNullableDistinction() {
+        val nonNull = typeOf<String>()
+        val nullable = typeOf<String?>()
+        assertFalse(nonNull == nullable)
+    }
 }
+
+
+private annotation class TypeAnnotationOne
+
+private annotation class TypeAnnotationTwo

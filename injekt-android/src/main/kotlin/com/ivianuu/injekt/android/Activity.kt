@@ -30,7 +30,82 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
+
+inline fun <reified T : Activity> ActivityComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ActivityComponent(instance = instance, type = typeOf(), block = block)
+
+inline fun <T : Activity> ActivityComponent(
+    instance: T,
+    type: Type<T>,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = Component {
+    scopes(ActivityScope)
+    instance.getClosestComponentOrNull()?.let { dependencies(it) }
+    modules(ActivityModule(instance, type))
+    block()
+}
+
+inline fun <reified T : Activity> ActivityModule(
+    instance: T
+): Module = ActivityModule(instance = instance, type = typeOf())
+
+fun <T : Activity> ActivityModule(
+    instance: T,
+    type: Type<T>
+): Module = Module {
+    instance(instance = instance, type = type).apply {
+        bindAlias<Activity>()
+        bindAlias<Context>(name = ForActivity, override = true)
+        bindAlias<Context>(override = true)
+
+        if (instance is ComponentActivity) bindAlias<ComponentActivity>()
+        if (instance is FragmentActivity) bindAlias<FragmentActivity>()
+        if (instance is AppCompatActivity) bindAlias<AppCompatActivity>()
+        if (instance is LifecycleOwner) {
+            bindAlias<LifecycleOwner>()
+            bindAlias<LifecycleOwner>(name = ForActivity)
+        }
+        if (instance is ViewModelStoreOwner) {
+            bindAlias<ViewModelStoreOwner>()
+            bindAlias<ViewModelStoreOwner>(name = ForActivity)
+        }
+        if (instance is SavedStateRegistryOwner) {
+            bindAlias<SavedStateRegistryOwner>()
+            bindAlias<SavedStateRegistryOwner>(name = ForActivity)
+        }
+    }
+
+    factory(override = true) { instance.resources!! }
+        .bindAlias(name = ForActivity)
+
+    (instance as? LifecycleOwner)?.let {
+        factory(override = true) { instance.lifecycle }
+            .bindAlias(name = ForActivity)
+    }
+
+    (instance as? ViewModelStoreOwner)?.let {
+        factory(override = true) { instance.viewModelStore }
+            .bindAlias(name = ForActivity)
+    }
+
+    (instance as? SavedStateRegistryOwner)?.let {
+        factory(override = true) { instance.savedStateRegistry }
+            .bindAlias(name = ForActivity)
+    }
+
+    (instance as? FragmentActivity)?.let {
+        factory(override = true) { instance.supportFragmentManager }
+            .bindAlias(name = ForActivity)
+    }
+
+    withBinding<Component>(name = ActivityScope) {
+        bindAlias(name = ForActivity)
+    }
+}
 
 @Scope
 annotation class ActivityScope {
@@ -40,15 +115,6 @@ annotation class ActivityScope {
 @Name
 annotation class ForActivity {
     companion object
-}
-
-fun <T : Activity> T.ActivityComponent(
-    block: (ComponentBuilder.() -> Unit)? = null
-): Component = Component {
-    scopes(ActivityScope)
-    getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(ActivityModule())
-    block?.invoke(this)
 }
 
 fun Activity.getClosestComponentOrNull(): Component? =
@@ -61,54 +127,3 @@ fun Activity.getApplicationComponentOrNull(): Component? = (application as? Inje
 
 fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
-
-fun <T : Activity> T.ActivityModule(): Module = Module {
-    instance(instance = this@ActivityModule, type = typeOf(this@ActivityModule)).apply {
-        bindAlias<Activity>()
-        bindAlias<Context>(name = ForActivity, override = true)
-        bindAlias<Context>(override = true)
-
-        if (this@ActivityModule is ComponentActivity) bindAlias<ComponentActivity>()
-        if (this@ActivityModule is FragmentActivity) bindAlias<FragmentActivity>()
-        if (this@ActivityModule is AppCompatActivity) bindAlias<AppCompatActivity>()
-        if (this@ActivityModule is LifecycleOwner) {
-            bindAlias<LifecycleOwner>()
-            bindAlias<LifecycleOwner>(name = ForActivity)
-        }
-        if (this@ActivityModule is ViewModelStoreOwner) {
-            bindAlias<ViewModelStoreOwner>()
-            bindAlias<ViewModelStoreOwner>(name = ForActivity)
-        }
-        if (this@ActivityModule is SavedStateRegistryOwner) {
-            bindAlias<SavedStateRegistryOwner>()
-            bindAlias<SavedStateRegistryOwner>(name = ForActivity)
-        }
-    }
-
-    factory(override = true) { resources!! }
-        .bindAlias(name = ForActivity)
-
-    (this@ActivityModule as? LifecycleOwner)?.let {
-        factory(override = true) { lifecycle }
-            .bindAlias(name = ForActivity)
-    }
-
-    (this@ActivityModule as? ViewModelStoreOwner)?.let {
-        factory(override = true) { viewModelStore }
-            .bindAlias(name = ForActivity)
-    }
-
-    (this@ActivityModule as? SavedStateRegistryOwner)?.let {
-        factory(override = true) { savedStateRegistry }
-            .bindAlias(name = ForActivity)
-    }
-
-    (this@ActivityModule as? FragmentActivity)?.let {
-        factory(override = true) { supportFragmentManager }
-            .bindAlias(name = ForActivity)
-    }
-
-    withBinding<Component>(name = ActivityScope) {
-        bindAlias(name = ForActivity)
-    }
-}

@@ -24,7 +24,52 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
+
+inline fun <reified T : BroadcastReceiver> ReceiverComponent(
+    context: Context,
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ReceiverComponent(
+    context = context,
+    instance = instance,
+    type = typeOf(),
+    block = block
+)
+
+inline fun <T : BroadcastReceiver> ReceiverComponent(
+    context: Context,
+    instance: T,
+    type: Type<T>,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = Component {
+    scopes(ReceiverScope)
+    instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
+    modules(ReceiverModule(context, instance, type))
+    block()
+}
+
+inline fun <reified T : BroadcastReceiver> ReceiverModule(
+    context: Context,
+    instance: T
+): Module = ReceiverModule(context = context, instance = instance, type = typeOf())
+
+fun <T : BroadcastReceiver> ReceiverModule(
+    context: Context,
+    instance: T,
+    type: Type<T>
+): Module = Module {
+    instance(instance, type = type)
+        .bindAlias<BroadcastReceiver>()
+
+    factory(override = true) { context }
+        .bindAlias(name = ForReceiver)
+
+    withBinding<Component>(name = ReceiverScope) {
+        bindAlias(name = ForReceiver)
+    }
+}
 
 @Scope
 annotation class ReceiverScope {
@@ -34,16 +79,6 @@ annotation class ReceiverScope {
 @Name
 annotation class ForReceiver {
     companion object
-}
-
-fun <T : BroadcastReceiver> T.ReceiverComponent(
-    context: Context,
-    block: (ComponentBuilder.() -> Unit)? = null
-): Component = Component {
-    scopes(ReceiverScope)
-    getClosestComponentOrNull(context)?.let { dependencies(it) }
-    modules(ReceiverModule(context))
-    block?.invoke(this)
 }
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
@@ -57,15 +92,3 @@ fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component
 
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application Component found for $this")
-
-fun <T : BroadcastReceiver> T.ReceiverModule(context: Context): Module = Module {
-    instance(this@ReceiverModule, type = typeOf(this@ReceiverModule))
-        .bindAlias<BroadcastReceiver>()
-
-    factory(override = true) { context }
-        .bindAlias(name = ForReceiver)
-
-    withBinding<Component>(name = ReceiverScope) {
-        bindAlias(name = ForReceiver)
-    }
-}

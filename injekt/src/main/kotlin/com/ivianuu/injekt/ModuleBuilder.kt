@@ -27,14 +27,14 @@ import java.util.UUID
  * @see Module
  * @see ModuleBuilder
  */
-fun Module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder().apply(block).build()
+inline fun Module(block: ModuleBuilder.() -> Unit): Module = ModuleBuilder().apply(block).build()
 
 /**
  * Builder for a [Module]
  *
  * @see Module
  */
-class ModuleBuilder internal constructor() {
+class ModuleBuilder {
 
     private val bindings = mutableMapOf<Key, Binding<*>>()
     private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
@@ -241,7 +241,7 @@ class ModuleBuilder internal constructor() {
         block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
         val mapKey = keyOf(
-            type = typeOf<Any?>(Map::class, mapKeyType, mapValueType),
+            type = typeOf<Any?>(Map::class, listOf(mapKeyType, mapValueType)),
             name = mapName
         )
 
@@ -279,7 +279,7 @@ class ModuleBuilder internal constructor() {
         setName: Any? = null,
         block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
-        val setKey = keyOf(type = typeOf<Any?>(Set::class, setElementType), name = setName)
+        val setKey = keyOf(type = typeOf<Any?>(Set::class, listOf(setElementType)), name = setName)
         set(setKey = setKey, block = block)
     }
 
@@ -338,7 +338,10 @@ class ModuleBuilder internal constructor() {
         return BindingContext(binding = binding, key = key, moduleBuilder = this)
     }
 
-    internal fun build(): Module {
+    /**
+     * Create a new [Module] instance.
+     */
+    fun build(): Module {
         return Module(
             bindings = bindings,
             multiBindingMaps = multiBindingMapBuilders.mapValues { it.value.build() },

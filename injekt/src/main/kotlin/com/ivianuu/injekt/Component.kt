@@ -129,14 +129,14 @@ class Component internal constructor(
     }
 
     private fun <T> findSpecialBinding(key: Key): LinkedBinding<T>? {
-        if (key.type.parameters.size == 1) {
-            when (key.type.raw) {
+        if (key.type.arguments.size == 1) {
+            when (key.type.classifier) {
                 Provider::class -> {
-                    val instanceKey = keyOf(key.type.parameters.single(), key.name)
+                    val instanceKey = keyOf(key.type.arguments.single(), key.name)
                     return ProviderBinding<Any?>(this, instanceKey) as LinkedBinding<T>
                 }
                 Lazy::class -> {
-                    val instanceKey = keyOf(key.type.parameters.single(), key.name)
+                    val instanceKey = keyOf(key.type.arguments.single(), key.name)
                     return LinkedLazyBinding<Any?>(this, instanceKey) as LinkedBinding<T>
                 }
             }

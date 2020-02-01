@@ -24,7 +24,50 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
+
+inline fun <reified T : Service> ServiceComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ServiceComponent(instance = instance, type = typeOf(), block = block)
+
+inline fun <T : Service> ServiceComponent(
+    instance: T,
+    type: Type<T>,
+    block: ComponentBuilder.() -> Unit = {}
+): Component =
+    Component {
+        scopes(ServiceScope)
+        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        modules(ServiceModule(instance, type))
+        block()
+    }
+
+inline fun <reified T : Service> ServiceModule(
+    instance: T,
+    scope: Any = ServiceScope,
+    name: Any = ForService
+): Module = ServiceModule(instance = instance, type = typeOf(), scope = scope, name = name)
+
+fun <T : Service> ServiceModule(
+    instance: T,
+    type: Type<T>,
+    scope: Any = ServiceScope,
+    name: Any = ForService
+): Module = Module {
+    instance(instance, type = type).apply {
+        bindAlias<Service>()
+        bindAlias<Context>(name = name, override = true)
+        bindAlias<Context>(override = true)
+    }
+
+    factory(override = true) { instance.resources!! }.bindAlias(name = name)
+
+    withBinding<Component>(name = scope) {
+        bindAlias(name = name)
+    }
+}
 
 @Scope
 annotation class ServiceScope {
@@ -36,14 +79,6 @@ annotation class ForService {
     companion object
 }
 
-fun <T : Service> T.ServiceComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    Component {
-        scopes(ServiceScope)
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ServiceModule())
-        block?.invoke(this)
-    }
-
 fun Service.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
 
@@ -54,17 +89,3 @@ fun Service.getApplicationComponentOrNull(): Component? = (application as? Injek
 
 fun Service.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
-
-fun <T : Service> T.ServiceModule(): Module = Module {
-    instance(this@ServiceModule, type = typeOf(this@ServiceModule)).apply {
-        bindAlias<Service>()
-        bindAlias<Context>(name = ForService, override = true)
-        bindAlias<Context>(override = true)
-    }
-
-    factory(override = true) { resources!! }.bindAlias(name = ForService)
-
-    withBinding<Component>(name = ServiceScope) {
-        bindAlias(name = ForService)
-    }
-}

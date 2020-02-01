@@ -24,7 +24,7 @@ package com.ivianuu.injekt
  *
  * @see Component
  */
-fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
+inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
     ComponentBuilder().apply(block).build()
 
 /**
@@ -32,7 +32,7 @@ fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  *
  * @see Component
  */
-class ComponentBuilder internal constructor() {
+class ComponentBuilder {
 
     private val scopes = mutableSetOf<Any>()
     private val modules = mutableSetOf<Module>()
@@ -132,7 +132,10 @@ class ComponentBuilder internal constructor() {
         instances[key] = binding
     }
 
-    internal fun build(): Component {
+    /**
+     * Create a new [Component] instance.
+     */
+    fun build(): Component {
         checkScopes()
 
         val dependencyBindings = dependencies
@@ -300,14 +303,16 @@ class ComponentBuilder internal constructor() {
         val bindingKeys = map
             .mapValues { it.value.key }
 
-        val mapKeyType = mapKey.type.parameters[0]
-        val mapValueType = mapKey.type.parameters[1]
+        val mapKeyType = mapKey.type.arguments[0]
+        val mapValueType = mapKey.type.arguments[1]
 
         val mapOfProviderKey = keyOf(
             typeOf<Any?>(
                 Map::class,
-                mapKeyType,
-                typeOf<Provider<*>>(Provider::class, mapValueType)
+                listOf(
+                    mapKeyType,
+                    typeOf<Provider<*>>(Provider::class, listOf(mapValueType))
+                )
             ),
             mapKey.name
         )
@@ -318,8 +323,10 @@ class ComponentBuilder internal constructor() {
         val mapOfLazyKey = keyOf(
             typeOf<Any?>(
                 Map::class,
-                mapKeyType,
-                typeOf<Lazy<*>>(Lazy::class, mapValueType)
+                listOf(
+                    mapKeyType,
+                    typeOf<Lazy<*>>(Lazy::class, listOf(mapValueType))
+                )
             ),
             mapKey.name
         )
@@ -338,12 +345,14 @@ class ComponentBuilder internal constructor() {
     ) {
         val setKeys = set.map { it.key }.toSet()
 
-        val setElementType = setKey.type.parameters[0]
+        val setElementType = setKey.type.arguments[0]
 
         val setOfProviderKey = keyOf(
             typeOf<Any?>(
                 Set::class,
-                typeOf<Provider<*>>(Provider::class, setElementType)
+                listOf(
+                    typeOf<Provider<*>>(Provider::class, listOf(setElementType))
+                )
             ),
             setKey.name
         )
@@ -354,7 +363,9 @@ class ComponentBuilder internal constructor() {
         val setOfLazyKey = keyOf(
             typeOf<Any?>(
                 Set::class,
-                typeOf<Lazy<*>>(Lazy::class, setElementType)
+                listOf(
+                    typeOf<Lazy<*>>(Lazy::class, listOf(setElementType))
+                )
             ),
             setKey.name
         )

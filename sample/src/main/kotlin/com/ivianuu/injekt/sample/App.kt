@@ -27,7 +27,7 @@ import com.ivianuu.injekt.sample.data.DataModule
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        ApplicationComponent {
+        ApplicationComponent(this) {
             modules(DataModule)
         }
     }

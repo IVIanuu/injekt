@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.WildcardType
 import kotlin.jvm.internal.ClassBasedDeclarationContainer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -26,32 +24,42 @@ import kotlin.reflect.KType
  * Describes a injectable type [Type]
  */
 data class Type<T> internal constructor(
-    val raw: KClass<*>,
+    val classifier: KClass<*>,
     val isNullable: Boolean,
-    val parameters: Array<out Type<*>>
+    val arguments: List<Type<*>>,
+    val annotations: List<KClass<*>>
 ) {
-
-    val rawJava = raw.java
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is Type<*>) return false
+        if (javaClass != other?.javaClass) return false
 
-        if (rawJava != other.rawJava) return false
-        if (!parameters.contentEquals(other.parameters)) return false
+        other as Type<*>
+
+        if (classifier != other.classifier) return false
+        // todo if (isNullable != other.isNullable) return false
+        if (arguments != other.arguments) return false
+        // todo if (annotations != other.annotations) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = rawJava.hashCode()
-        result = 31 * result + parameters.contentHashCode()
+        var result = classifier.hashCode()
+        // todo result = 31 * result + isNullable.hashCode()
+        result = 31 * result + arguments.hashCode()
+        // todo result = 31 * result + annotations.hashCode()
         return result
     }
 
     override fun toString(): String {
-        val params = if (parameters.isNotEmpty()) {
-            parameters.joinToString(
+        val annotations = if (annotations.isNotEmpty()) {
+            "${annotations.joinToString(" ")} "
+        } else {
+            ""
+        }
+        val params = if (arguments.isNotEmpty()) {
+            arguments.joinToString(
                 separator = ", ",
                 prefix = "<",
                 postfix = ">"
@@ -60,7 +68,7 @@ data class Type<T> internal constructor(
             ""
         }
 
-        return "${rawJava.name}${if (isNullable) "?" else ""}$params"
+        return "$annotations${classifier.java.name}${if (isNullable) "?" else ""}$params"
     }
 }
 
@@ -68,59 +76,32 @@ inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
 @PublishedApi
 internal fun <T> KType.asType(): Type<T> {
-    val parameters = arrayOfNulls<Type<*>>(arguments.size)
-    arguments.forEachIndexed { i, kType ->
-        parameters[i] = kType.type?.asType<Any?>() ?: typeOf<Any?>()
-    }
-
     return Type(
-        (classifier ?: Any::class) as KClass<*>,
-        isMarkedNullable,
-        parameters as Array<out Type<*>>
+        classifier = (classifier ?: Any::class) as KClass<*>,
+        arguments = arguments.map { kType -> kType.type?.asType() ?: typeOf<Any?>() },
+        isNullable = isMarkedNullable,
+        annotations = annotations
+            .map { it.annotationClass }
+            .filter { annotation ->
+                annotation.annotations.any { false } // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
+            }
     )
 }
 
 fun <T> typeOf(
-    raw: KClass<*>,
-    vararg parameters: Type<*>,
-    isNullable: Boolean = false
+    classifier: KClass<*>,
+    arguments: List<Type<*>> = emptyList(),
+    isNullable: Boolean = false,
+    annotations: List<KClass<*>> = emptyList()
 ): Type<T> {
-    val finalRaw = if (isNullable) boxed(raw) else unboxed(raw)
-    return Type(raw = finalRaw, isNullable = isNullable, parameters = parameters)
-}
-
-fun <T> typeOf(instance: T): Type<T> = typeOf((instance as Any)::class)
-
-fun <T> typeOf(type: java.lang.reflect.Type, isNullable: Boolean = false): Type<T> {
-    if (type is WildcardType) {
-        if (type.upperBounds.isNotEmpty()) {
-            return typeOf(type.upperBounds.first(), isNullable)
-        } else if (type.lowerBounds.isNotEmpty()) {
-            return typeOf(type.lowerBounds.first(), isNullable)
-        }
-    }
-
-    if (type is ParameterizedType) {
-        return Type(
-            (type.rawType as Class<*>).kotlin,
-            isNullable,
-            (type as? ParameterizedType)
-                ?.actualTypeArguments
-                ?.map { typeOf<Any?>(it) }
-                ?.toTypedArray()
-                ?: emptyArray()
-        )
-    }
-
-    var kotlinType = (type as Class<*>).kotlin
-
-    kotlinType = if (isNullable) {
-        boxed(kotlinType)
-    } else {
-        unboxed(kotlinType)
-    }
-
-    return Type(kotlinType, isNullable, emptyArray())
+    // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
+    val finalClassifier = if (isNullable) boxed(classifier) else unboxed(classifier)
+    return Type(
+        classifier = finalClassifier,
+        arguments = arguments,
+        isNullable = isNullable,
+        annotations = annotations
+    )
 }
 
 private fun unboxed(type: KClass<*>): KClass<*> {

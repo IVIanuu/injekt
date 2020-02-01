@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 data class JustInTimeLookup<T>(
     val binding: Binding<T>,
     val scope: Any?,
@@ -37,7 +39,7 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
         var lookup = synchronized(lookups) { lookups[type] }
 
         if (lookup == null) {
-            lookup = findLookup(type.rawJava)
+            lookup = findLookup(type.classifier)
             if (lookup != null) {
                 synchronized(lookups) {
                     lookups[type] = lookup
@@ -48,8 +50,8 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
         return lookup as? JustInTimeLookup<T>
     }
 
-    private fun findLookup(type: Class<*>) = try {
-        val bindingClass = type.declaredClasses
+    private fun findLookup(classifier: KClass<*>) = try {
+        val bindingClass = classifier.java.declaredClasses
             .first { Binding::class.java.isAssignableFrom(it) }
         val binding = bindingClass.declaredFields
             .first { it.type == bindingClass }

@@ -24,7 +24,59 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
+
+inline fun <reified T : View> ViewComponent(
+    instance: T,
+    scope: Any = ViewScope,
+    name: Any = ForView,
+    block: ComponentBuilder.() -> Unit = {}
+): Component =
+    ViewComponent(instance = instance, type = typeOf(), scope = scope, name = name, block = block)
+
+inline fun <T : View> ViewComponent(
+    instance: T,
+    type: Type<T>,
+    scope: Any = ViewScope,
+    name: Any = ForView,
+    block: ComponentBuilder.() -> Unit = {}
+): Component =
+    Component {
+        scopes(scope)
+        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        modules(ViewModule(instance = instance, type = type, scope = scope, name = name))
+        block()
+    }
+
+inline fun <reified T : View> ViewModule(
+    instance: T,
+    scope: Any = ViewScope,
+    name: Any = ForView
+) = ViewModule(instance = instance, type = typeOf(), scope = scope, name = name)
+
+fun <T : View> ViewModule(
+    instance: T,
+    type: Type<T>,
+    scope: Any = ViewScope,
+    name: Any = ForView
+) = Module {
+    instance(
+        instance = instance,
+        type = type,
+        override = true
+    ).apply {
+        bindAlias<View>()
+        bindAlias<View>(name)
+    }
+
+    factory(override = true) { instance.context!! }.bindAlias(name)
+    factory(override = true) { instance.resources!! }.bindAlias(name)
+
+    withBinding<Component>(name = scope) {
+        bindAlias(name = name)
+    }
+}
 
 @Scope
 annotation class ViewScope {
@@ -45,22 +97,6 @@ annotation class ForView {
 annotation class ForChildView {
     companion object
 }
-
-fun <T : View> T.ViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    Component {
-        scopes(ViewScope)
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ViewModule())
-        block?.invoke(this)
-    }
-
-fun <T : View> T.ChildViewComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    Component {
-        scopes(ChildViewScope)
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ChildViewModule())
-        block?.invoke(this)
-    }
 
 fun View.getClosestComponentOrNull(): Component? {
     return getParentViewComponentOrNull()
@@ -97,29 +133,3 @@ fun View.getApplicationComponentOrNull(): Component? =
 
 fun View.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
-
-fun <T : View> T.ViewModule(): Module = Module {
-    include(InternalViewModule(scope = ViewScope, name = ForView))
-}
-
-fun <T : View> T.ChildViewModule(): Module = Module {
-    include(InternalViewModule(scope = ChildViewScope, name = ForChildView))
-}
-
-private fun <T : View> T.InternalViewModule(scope: Any, name: Any) = Module {
-    instance(
-        instance = this@InternalViewModule,
-        type = typeOf(this@InternalViewModule),
-        override = true
-    ).apply {
-        bindAlias<View>()
-        bindAlias<View>(name)
-    }
-
-    factory(override = true) { context!! }.bindAlias(name)
-    factory(override = true) { resources!! }.bindAlias(name)
-
-    withBinding<Component>(name = scope) {
-        bindAlias(name = name)
-    }
-}

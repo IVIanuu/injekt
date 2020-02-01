@@ -23,7 +23,44 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
+
+inline fun <reified T : ContentProvider> ContentProviderComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ContentProviderComponent(instance = instance, type = typeOf(), block = block)
+
+inline fun <T : ContentProvider> ContentProviderComponent(
+    instance: T,
+    type: Type<T>,
+    block: ComponentBuilder.() -> Unit = {}
+): Component =
+    Component {
+        scopes(ContentProviderScope)
+        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        modules(ContentProviderModule(instance, type))
+        block()
+    }
+
+inline fun <reified T : ContentProvider> ContentProviderModule(
+    instance: T
+): Module = ContentProviderModule(instance = instance, type = typeOf())
+
+fun <T : ContentProvider> ContentProviderModule(
+    instance: T,
+    type: Type<T>
+): Module = Module {
+    instance(instance, type = type)
+        .bindAlias<ContentProvider>()
+
+    factory(override = true) { instance.context!! }
+        .bindAlias(name = ForContentProvider)
+
+    withBinding<Component>(name = ContentProviderScope) {
+        bindAlias(name = ForContentProvider)
+    }
+}
 
 @Scope
 annotation class ContentProviderScope {
@@ -34,14 +71,6 @@ annotation class ContentProviderScope {
 annotation class ForContentProvider {
     companion object
 }
-
-fun <T : ContentProvider> T.ContentProviderComponent(block: (ComponentBuilder.() -> Unit)? = null): Component =
-    Component {
-        scopes(ContentProviderScope)
-        getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ContentProviderModule())
-        block?.invoke(this)
-    }
 
 fun ContentProvider.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()
@@ -54,15 +83,3 @@ fun ContentProvider.getApplicationComponentOrNull(): Component? =
 
 fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
-
-fun <T : ContentProvider> T.ContentProviderModule(): Module = Module {
-    instance(this@ContentProviderModule, type = typeOf(this@ContentProviderModule))
-        .bindAlias<ContentProvider>()
-
-    factory(override = true) { context!! }
-        .bindAlias(name = ForContentProvider)
-
-    withBinding<Component>(name = ContentProviderScope) {
-        bindAlias(name = ForContentProvider)
-    }
-}

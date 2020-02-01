@@ -22,6 +22,6 @@ import com.ivianuu.injekt.android.ActivityComponent
 
 class MainActivity : AppCompatActivity(), InjektTrait {
 
-    override val component by lazy { ActivityComponent() }
+    override val component by lazy { ActivityComponent(this) }
 
 }
