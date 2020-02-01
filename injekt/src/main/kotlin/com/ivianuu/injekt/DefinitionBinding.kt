@@ -19,55 +19,17 @@ package com.ivianuu.injekt
 /**
  * Creates instances of type [T]
  */
-typealias Definition<T> = DefinitionContext.(Parameters) -> T
-
-/**
- * The receiver scope for [Definition]s
- *
- * @see ModuleBuilder.factory
- * @see ModuleBuilder.single
- */
-interface DefinitionContext {
-
-    /**
-     * @see Component.get
-     */
-    fun <T> get(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: Parameters = emptyParameters()
-    ): T = get(key = keyOf(type, name), parameters = parameters)
-
-    /**
-     * @see Component.get
-     */
-    fun <T> get(key: Key, parameters: Parameters = emptyParameters()): T
-}
-
-/**
- * @see Component.get
- */
-inline fun <reified T> DefinitionContext.get(
-    name: Any? = null,
-    parameters: Parameters = emptyParameters()
-): T = get(type = typeOf(), name = name, parameters = parameters)
+typealias Definition<T> = Component.(Parameters) -> T
 
 internal class DefinitionBinding<T>(
     private val definition: Definition<T>
 ) : UnlinkedBinding<T>() {
-    override fun link(component: Component): LinkedBinding<T> = Linked(
-        component, definition
-    )
-
+    override fun link(component: Component): LinkedBinding<T> = Linked(component, definition)
     private class Linked<T>(
         private val component: Component,
         private val definition: Definition<T>
-    ) : LinkedBinding<T>(), DefinitionContext {
-
-        override fun <T> get(key: Key, parameters: Parameters): T =
-            component.get(key = key, parameters = parameters)
-
+    ) : LinkedBinding<T>() {
         override fun invoke(parameters: Parameters): T =
-            definition(this, parameters)
+            definition(component, parameters)
     }
 }
