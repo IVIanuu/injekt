@@ -42,7 +42,6 @@ class Component internal constructor(
     internal val scopes: Set<Any>,
     internal val scopedBindings: MutableMap<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, UnlinkedBinding<*>>,
-    eagerBindings: Set<Key>,
     internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
     internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>,
     internal val dependencies: Set<Component>
@@ -51,7 +50,9 @@ class Component internal constructor(
     private val linkedBindingsByUnlinked = mutableMapOf<UnlinkedBinding<*>, LinkedBinding<*>>()
 
     init {
-        eagerBindings.forEach { get(it) }
+        scopedBindings
+            .filter { it.value.eager }
+            .forEach { get(it.key) }
     }
 
     inline fun <reified T> get(

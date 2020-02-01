@@ -154,7 +154,6 @@ class ComponentBuilder {
 
         val scopedBindings = mutableMapOf<Key, Binding<*>>()
         val unlinkedUnscopedBindings = mutableMapOf<Key, UnlinkedBinding<*>>()
-        val eagerBindings = mutableSetOf<Key>()
         val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
         val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
 
@@ -167,7 +166,6 @@ class ComponentBuilder {
             }
             scopedBindings[key] = binding
             if (!binding.scoped) unlinkedUnscopedBindings[key] = binding as UnlinkedBinding<*>
-            if (binding.eager) eagerBindings += key
         }
 
         fun addUnlinkedUnscopedDependencyBinding(key: Key, binding: UnlinkedBinding<*>) {
@@ -245,7 +243,6 @@ class ComponentBuilder {
             scopes = scopes,
             scopedBindings = scopedBindings,
             unlinkedUnscopedBindings = unlinkedUnscopedBindings,
-            eagerBindings = eagerBindings,
             multiBindingMaps = multiBindingMaps,
             multiBindingSets = multiBindingSets,
             dependencies = dependencies
