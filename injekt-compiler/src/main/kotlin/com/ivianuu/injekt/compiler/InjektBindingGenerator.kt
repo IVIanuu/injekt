@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrElement
@@ -51,7 +50,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
-import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -80,7 +78,6 @@ import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
-import org.jetbrains.kotlin.types.typeUtil.makeNullable
 
 class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVisitorVoid {
 
@@ -402,10 +399,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             val invoke = linkedBinding.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("invoke"))
 
-            val parametersDefinition =
-                context.moduleDescriptor.findTypeAliasAcrossModuleDependencies(ClassId.topLevel(InjektClassNames.ParametersDefinition))!!
-            val parametersDefinitionInvoke = parametersDefinition.classDescriptor!!.unsubstitutedMemberScope
-                .findSingleFunction(Name.identifier("invoke"))
             val parametersGet = parameters.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("get"))
 
@@ -420,27 +413,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 overriddenSymbols += symbolTable.referenceSimpleFunction(invoke)
                 createParameterDeclarations(invoke)
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                    val parametersVar = if (injektConstructor.valueParameters.any {
-                            it.annotations.hasAnnotation(ParamAnnotation)
-                        }) {
-                        irTemporary(
-                            irCall(
-                                callee = context.irBuiltIns.checkNotNullSymbol,
-                                type = parameters.defaultType.toIrType()
-                            ).apply {
-                                putValueArgument(
-                                    0,
-                                    irCall(
-                                        callee = symbolTable.referenceSimpleFunction(parametersDefinitionInvoke),
-                                        type = parameters.defaultType.makeNullable().toIrType()
-                                    ).apply {
-                                        dispatchReceiver = irGet(valueParameters.first())
-                                    }
-                                )
-                            }
-                        )
-                    } else null
-
                     val getInstanceCall = if (descriptor.kind == ClassKind.OBJECT) {
                         irGetObject(symbolTable.referenceClass(descriptor))
                     } else {
@@ -458,7 +430,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                             callee = symbolTable.referenceSimpleFunction(parametersGet),
                                             type = paramType
                                         ).apply {
-                                            dispatchReceiver = irGet(parametersVar!!)
+                                            dispatchReceiver = irGet(valueParameters.first())
                                             putTypeArgument(0, paramType)
                                             putValueArgument(0, irInt(paramIndex))
                                         }
@@ -537,7 +509,6 @@ private object InjektClassNames {
     val Key = FqName("com.ivianuu.injekt.Key")
     val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val ParametersDefinition = FqName("com.ivianuu.injekt.ParametersDefinition")
     val Provider = FqName("com.ivianuu.injekt.Provider")
     val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
 }

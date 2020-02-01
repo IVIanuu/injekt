@@ -56,13 +56,13 @@ class Component internal constructor(
 
     inline fun <reified T> get(
         name: Any? = null,
-        noinline parameters: ParametersDefinition? = null
+        parameters: Parameters? = null
     ): T = get(type = typeOf(), name = name, parameters = parameters)
 
     fun <T> get(
         type: Type<T>,
         name: Any? = null,
-        parameters: ParametersDefinition? = null
+        parameters: Parameters? = null
     ): T = get(key = keyOf(type, name), parameters = parameters)
 
     /**
@@ -72,7 +72,7 @@ class Component internal constructor(
      * @param parameters optional parameters to construct the instance
      * @return the instance
      */
-    fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
+    fun <T> get(key: Key, parameters: Parameters? = null): T =
         getBinding<T>(key)(parameters)
 
     /**
@@ -199,6 +199,6 @@ class Component internal constructor(
     }
 
     private object NullBinding : LinkedBinding<Any?>() {
-        override fun invoke(parameters: ParametersDefinition?): Any? = null
+        override fun invoke(parameters: Parameters?): Any? = null
     }
 }

@@ -241,7 +241,7 @@ class ModuleBuilder {
         block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
         val mapKey = keyOf(
-            type = typeOf<Any?>(Map::class, listOf(mapKeyType, mapValueType)),
+            type = typeOf<Any?>(Map::class, arrayOf(mapKeyType, mapValueType)),
             name = mapName
         )
 
@@ -279,7 +279,7 @@ class ModuleBuilder {
         setName: Any? = null,
         block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
-        val setKey = keyOf(type = typeOf<Any?>(Set::class, listOf(setElementType)), name = setName)
+        val setKey = keyOf(type = typeOf<Any?>(Set::class, arrayOf(setElementType)), name = setName)
         set(setKey = setKey, block = block)
     }
 
@@ -364,7 +364,7 @@ class ModuleBuilder {
 }
 
 internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
-    override fun invoke(parameters: ParametersDefinition?) = instance
+    override fun invoke(parameters: Parameters?) = instance
 }
 
 private class ProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {

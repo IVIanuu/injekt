@@ -88,13 +88,6 @@ package com.ivianuu.injekt
 }
 
 /**
- * Lazily returns [Parameters] for an instance
- *
- * @see Component.get
- */
-typealias ParametersDefinition = () -> Parameters
-
-/**
  * Creates parameters which contains all [values]
  *
  * @param values the provided parameters

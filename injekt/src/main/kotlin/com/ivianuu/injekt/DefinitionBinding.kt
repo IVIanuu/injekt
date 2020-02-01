@@ -35,13 +35,13 @@ interface DefinitionContext {
     fun <T> get(
         type: Type<T>,
         name: Any? = null,
-        parameters: ParametersDefinition? = null
+        parameters: Parameters? = null
     ): T = get(key = keyOf(type, name), parameters = parameters)
 
     /**
      * @see Component.get
      */
-    fun <T> get(key: Key, parameters: ParametersDefinition? = null): T
+    fun <T> get(key: Key, parameters: Parameters? = null): T
 
     /**
      * Nullable version of [Parameters.component1]
@@ -59,7 +59,7 @@ interface DefinitionContext {
  */
 inline fun <reified T> DefinitionContext.get(
     name: Any? = null,
-    noinline parameters: ParametersDefinition? = null
+    parameters: Parameters? = null
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
 internal class DefinitionBinding<T>(
@@ -74,10 +74,10 @@ internal class DefinitionBinding<T>(
         private val definition: Definition<T>
     ) : LinkedBinding<T>(), DefinitionContext {
 
-        override fun <T> get(key: Key, parameters: ParametersDefinition?): T =
+        override fun <T> get(key: Key, parameters: Parameters?): T =
             component.get(key = key, parameters = parameters)
 
-        override fun invoke(parameters: ParametersDefinition?): T =
-            definition(this, parameters?.invoke())
+        override fun invoke(parameters: Parameters?): T =
+            definition(this, parameters)
     }
 }

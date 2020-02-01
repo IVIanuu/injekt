@@ -24,7 +24,7 @@ interface Lazy<T> : Provider<T>
 internal class ProviderLazy<T>(private val provider: Provider<T>) : Lazy<T> {
     private var _value: Any? = this
 
-    override fun invoke(parameters: ParametersDefinition?): T {
+    override fun invoke(parameters: Parameters?): T {
         var value = _value
         if (value === this) {
             synchronized(this) {
@@ -47,7 +47,7 @@ internal class KeyedLazy<T>(
 
     private var _value: Any? = this
 
-    override fun invoke(parameters: ParametersDefinition?): T {
+    override fun invoke(parameters: Parameters?): T {
         var value = _value
         if (value === this) {
             synchronized(this) {
@@ -67,6 +67,6 @@ internal class LinkedLazyBinding<T>(
     private val component: Component,
     private val key: Key
 ) : LinkedBinding<Lazy<T>>() {
-    override fun invoke(parameters: ParametersDefinition?): Lazy<T> =
+    override fun invoke(parameters: Parameters?): Lazy<T> =
         KeyedLazy(component, key)
 }

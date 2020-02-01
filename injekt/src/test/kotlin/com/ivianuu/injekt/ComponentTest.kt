@@ -343,7 +343,7 @@ class SingleJustInTimeDep {
         override val scope: Any
             get() = TestScopeOne.Companion
 
-        override fun invoke(parameters: ParametersDefinition?): SingleJustInTimeDep =
+        override fun invoke(parameters: Parameters?): SingleJustInTimeDep =
             SingleJustInTimeDep()
     }
 }

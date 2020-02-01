@@ -26,9 +26,11 @@ import kotlin.reflect.KType
 data class Type<T> internal constructor(
     val classifier: KClass<*>,
     val isNullable: Boolean,
-    val arguments: List<Type<*>>,
-    val annotations: List<KClass<*>>
+    val arguments: Array<Type<*>>,
+    val annotations: Array<KClass<*>>
 ) {
+
+    private val javaClassifier = classifier.java
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -36,19 +38,19 @@ data class Type<T> internal constructor(
 
         other as Type<*>
 
-        if (classifier != other.classifier) return false
+        if (javaClassifier != other.javaClassifier) return false
         // todo if (isNullable != other.isNullable) return false
-        if (arguments != other.arguments) return false
-        // todo if (annotations != other.annotations) return false
+        if (!arguments.contentEquals(other.arguments)) return false
+        // todo if (!annotations.contentEquals(other.annotations)) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = classifier.hashCode()
+        var result = javaClassifier.hashCode()
         // todo result = 31 * result + isNullable.hashCode()
-        result = 31 * result + arguments.hashCode()
-        // todo result = 31 * result + annotations.hashCode()
+        result = 31 * result + arguments.contentHashCode()
+        // todo result = 31 * result + annotations.contentHashCode()
         return result
     }
 
@@ -76,23 +78,29 @@ inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
 @PublishedApi
 internal fun <T> KType.asType(): Type<T> {
+    val args = arrayOfNulls<Type<Any?>>(arguments.size)
+
+    arguments.forEachIndexed { index, kTypeProjection ->
+        args[index] = kTypeProjection.type?.asType() ?: typeOf()
+    }
+
     return Type(
         classifier = (classifier ?: Any::class) as KClass<*>,
-        arguments = arguments.map { kType -> kType.type?.asType() ?: typeOf<Any?>() },
+        arguments = args as Array<Type<*>>,
         isNullable = isMarkedNullable,
-        annotations = annotations
+        annotations = emptyArray()/*annotations
             .map { it.annotationClass }
             .filter { annotation ->
                 annotation.annotations.any { false } // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
-            }
+            }*/
     )
 }
 
 fun <T> typeOf(
     classifier: KClass<*>,
-    arguments: List<Type<*>> = emptyList(),
+    arguments: Array<Type<*>> = emptyArray(),
     isNullable: Boolean = false,
-    annotations: List<KClass<*>> = emptyList()
+    annotations: Array<KClass<*>> = emptyArray()
 ): Type<T> {
     // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
     val finalClassifier = if (isNullable) boxed(classifier) else unboxed(classifier)

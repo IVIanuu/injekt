@@ -290,7 +290,7 @@ class ComponentBuilder {
 
         private class Linked(private val component: Component) :
             LinkedBinding<Component>() {
-            override fun invoke(parameters: ParametersDefinition?): Component =
+            override fun invoke(parameters: Parameters?): Component =
                 component
         }
     }
@@ -309,9 +309,9 @@ class ComponentBuilder {
         val mapOfProviderKey = keyOf(
             typeOf<Any?>(
                 Map::class,
-                listOf(
+                arrayOf(
                     mapKeyType,
-                    typeOf<Provider<*>>(Provider::class, listOf(mapValueType))
+                    typeOf<Provider<*>>(Provider::class, arrayOf(mapValueType))
                 )
             ),
             mapKey.name
@@ -323,9 +323,9 @@ class ComponentBuilder {
         val mapOfLazyKey = keyOf(
             typeOf<Any?>(
                 Map::class,
-                listOf(
+                arrayOf(
                     mapKeyType,
-                    typeOf<Lazy<*>>(Lazy::class, listOf(mapValueType))
+                    typeOf<Lazy<*>>(Lazy::class, arrayOf(mapValueType))
                 )
             ),
             mapKey.name
@@ -350,8 +350,8 @@ class ComponentBuilder {
         val setOfProviderKey = keyOf(
             typeOf<Any?>(
                 Set::class,
-                listOf(
-                    typeOf<Provider<*>>(Provider::class, listOf(setElementType))
+                arrayOf(
+                    typeOf<Provider<*>>(Provider::class, arrayOf(setElementType))
                 )
             ),
             setKey.name
@@ -363,8 +363,8 @@ class ComponentBuilder {
         val setOfLazyKey = keyOf(
             typeOf<Any?>(
                 Set::class,
-                listOf(
-                    typeOf<Lazy<*>>(Lazy::class, listOf(setElementType))
+                arrayOf(
+                    typeOf<Lazy<*>>(Lazy::class, arrayOf(setElementType))
                 )
             ),
             setKey.name

@@ -56,7 +56,7 @@ class ProviderTest {
 
         val provider = component.get<Provider<TestDep1>>()
 
-        provider { parameters }
+        provider(parameters)
 
         assertEquals(parameters, usedParams)
     }
