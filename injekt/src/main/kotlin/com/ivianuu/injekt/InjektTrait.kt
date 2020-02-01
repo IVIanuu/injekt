@@ -62,8 +62,8 @@ interface InjektTrait {
     fun <T> getLazy(
         type: Type<T>,
         name: Any? = null,
-        parameters: Parameters = emptyParameters()
-    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters) }
+        parameters: () -> Parameters = { emptyParameters() }
+    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters()) }
 
 }
 
@@ -74,5 +74,5 @@ inline fun <reified T> InjektTrait.get(
 
 inline fun <reified T> InjektTrait.getLazy(
     name: Any? = null,
-    parameters: Parameters = emptyParameters()
+    noinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = getLazy(type = typeOf(), name = name, parameters = parameters)
