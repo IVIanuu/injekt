@@ -23,7 +23,7 @@ class ProxyDep {
     object Binding : LinkedBinding<ProxyDep>(), HasScope, IsSingle {
         override val scope: Any
             get() = TestScopeOne.Companion
-        override fun invoke(parameters: Parameters?): ProxyDep = ProxyDep()
+        override fun invoke(parameters: Parameters): ProxyDep = ProxyDep()
     }
 }
 

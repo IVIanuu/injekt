@@ -127,7 +127,7 @@ internal class SetOfValueBinding<E>(
     private class Linked<E>(
         private val setOfProviderBinding: Provider<Set<Provider<E>>>
     ) : LinkedBinding<Set<E>>() {
-        override fun invoke(parameters: Parameters?): Set<E> {
+        override fun invoke(parameters: Parameters): Set<E> {
             return setOfProviderBinding()
                 .map { it() }
                 .toSet()
@@ -144,7 +144,7 @@ internal class SetOfLazyBinding<E>(
     private class LinkedSetOfLazyBinding<E>(
         private val setOfProviderBinding: Provider<Set<Provider<E>>>
     ) : LinkedBinding<Set<Lazy<E>>>() {
-        override fun invoke(parameters: Parameters?): Set<Lazy<E>> {
+        override fun invoke(parameters: Parameters): Set<Lazy<E>> {
             return setOfProviderBinding()
                 .map { ProviderLazy(it) }
                 .toSet()

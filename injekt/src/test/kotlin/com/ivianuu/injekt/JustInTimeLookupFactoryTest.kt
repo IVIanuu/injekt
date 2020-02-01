@@ -50,7 +50,7 @@ class JustInTimeLookupFactoryTest {
 @Factory
 class MyUnscopedDep {
     object Binding : LinkedBinding<MyUnscopedDep>() {
-        override fun invoke(parameters: Parameters?): MyUnscopedDep = MyUnscopedDep()
+        override fun invoke(parameters: Parameters): MyUnscopedDep = MyUnscopedDep()
     }
 }
 
@@ -61,6 +61,6 @@ class MyScopedDep {
         override val scope: Any
             get() = TestScopeOne
 
-        override fun invoke(parameters: Parameters?) = MyScopedDep()
+        override fun invoke(parameters: Parameters) = MyScopedDep()
     }
 }

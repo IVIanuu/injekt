@@ -29,7 +29,7 @@ interface Provider<T> {
      * @param parameters optional parameters for constructing the instance
      * @return the instance of type [T]
      */
-    operator fun invoke(parameters: Parameters? = null): T
+    operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
 internal class KeyedProvider<T>(
@@ -39,7 +39,7 @@ internal class KeyedProvider<T>(
 
     private var _provider: Provider<T>? = null
 
-    override fun invoke(parameters: Parameters?): T {
+    override fun invoke(parameters: Parameters): T {
         var provider = _provider
         if (provider == null) {
             provider = component.getBinding(key)
@@ -53,6 +53,6 @@ internal class ProviderBinding<T>(
     private val component: Component,
     private val key: Key
 ) : LinkedBinding<Provider<T>>() {
-    override fun invoke(parameters: Parameters?): Provider<T> =
+    override fun invoke(parameters: Parameters): Provider<T> =
         KeyedProvider(component, key)
 }

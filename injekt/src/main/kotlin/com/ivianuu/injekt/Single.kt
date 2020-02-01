@@ -56,7 +56,7 @@ private class UnlinkedSingleBinding<T>(private val binding: Binding<T>) : Unlink
 private class LinkedSingleBinding<T>(private val provider: Provider<T>) : LinkedBinding<T>() {
     private var _value: Any? = this
 
-    override fun invoke(parameters: Parameters?): T {
+    override fun invoke(parameters: Parameters): T {
         var value = _value
         if (value === this) {
             synchronized(this) {

@@ -287,7 +287,7 @@ class ComponentBuilder {
 
         private class Linked(private val component: Component) :
             LinkedBinding<Component>() {
-            override fun invoke(parameters: Parameters?): Component =
+            override fun invoke(parameters: Parameters): Component =
                 component
         }
     }

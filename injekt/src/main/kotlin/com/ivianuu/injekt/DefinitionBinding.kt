@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Creates instances of type [T]
  */
-typealias Definition<T> = DefinitionContext.(Parameters?) -> T
+typealias Definition<T> = DefinitionContext.(Parameters) -> T
 
 /**
  * The receiver scope for [Definition]s
@@ -35,23 +35,13 @@ interface DefinitionContext {
     fun <T> get(
         type: Type<T>,
         name: Any? = null,
-        parameters: Parameters? = null
+        parameters: Parameters = emptyParameters()
     ): T = get(key = keyOf(type, name), parameters = parameters)
 
     /**
      * @see Component.get
      */
-    fun <T> get(key: Key, parameters: Parameters? = null): T
-
-    /**
-     * Nullable version of [Parameters.component1]
-     */
-    operator fun <T> Parameters?.component1(): T = this!![0]
-
-    operator fun <T> Parameters?.component2(): T = this!![1]
-    operator fun <T> Parameters?.component3(): T = this!![2]
-    operator fun <T> Parameters?.component4(): T = this!![3]
-    operator fun <T> Parameters?.component5(): T = this!![4]
+    fun <T> get(key: Key, parameters: Parameters = emptyParameters()): T
 }
 
 /**
@@ -59,7 +49,7 @@ interface DefinitionContext {
  */
 inline fun <reified T> DefinitionContext.get(
     name: Any? = null,
-    parameters: Parameters? = null
+    parameters: Parameters = emptyParameters()
 ): T = get(type = typeOf(), name = name, parameters = parameters)
 
 internal class DefinitionBinding<T>(
@@ -74,10 +64,10 @@ internal class DefinitionBinding<T>(
         private val definition: Definition<T>
     ) : LinkedBinding<T>(), DefinitionContext {
 
-        override fun <T> get(key: Key, parameters: Parameters?): T =
+        override fun <T> get(key: Key, parameters: Parameters): T =
             component.get(key = key, parameters = parameters)
 
-        override fun invoke(parameters: Parameters?): T =
+        override fun invoke(parameters: Parameters): T =
             definition(this, parameters)
     }
 }
