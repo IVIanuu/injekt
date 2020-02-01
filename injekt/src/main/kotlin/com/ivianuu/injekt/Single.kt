@@ -49,8 +49,8 @@ fun <T> Binding<T>.asSingle(): Binding<T> = when (this) {
 }
 
 private class UnlinkedSingleBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> =
-        LinkedSingleBinding(binding.performLink(linker))
+    override fun link(component: Component): LinkedBinding<T> =
+        LinkedSingleBinding(binding.performLink(component))
 }
 
 private class LinkedSingleBinding<T>(private val provider: Provider<T>) : LinkedBinding<T>() {

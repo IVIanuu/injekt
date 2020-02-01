@@ -282,8 +282,8 @@ class ComponentBuilder internal constructor() {
     }
 
     private class ComponentBinding : UnlinkedBinding<Component>() {
-        override fun link(linker: Linker): LinkedBinding<Component> =
-            Linked(linker.component)
+        override fun link(component: Component): LinkedBinding<Component> =
+            Linked(component)
 
         private class Linked(private val component: Component) :
             LinkedBinding<Component>() {

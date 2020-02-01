@@ -48,8 +48,6 @@ class Component internal constructor(
     internal val dependencies: Set<Component>
 ) {
 
-    private val linker = Linker(this)
-
     private val linkedBindingsByUnlinked = mutableMapOf<UnlinkedBinding<*>, LinkedBinding<*>>()
 
     init {
@@ -77,7 +75,13 @@ class Component internal constructor(
     fun <T> get(key: Key, parameters: ParametersDefinition? = null): T =
         getBinding<T>(key)(parameters)
 
-    internal fun <T> getBinding(key: Key): LinkedBinding<T> {
+    /**
+     * Retrieve a binding of type [T]
+     *
+     * @param key the of the instance
+     * @return the instance
+     */
+    fun <T> getBinding(key: Key): LinkedBinding<T> {
         val binding = findBinding<T>(key)
         if (binding != null) return binding
         if (key.type.isNullable) {
@@ -169,7 +173,7 @@ class Component internal constructor(
         key: Key,
         binding: Binding<T>
     ): LinkedBinding<T> {
-        val linkedBinding = binding.performLink(linker)
+        val linkedBinding = binding.performLink(this)
         synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
         return linkedBinding
     }
@@ -178,7 +182,7 @@ class Component internal constructor(
         if (this is LinkedBinding) return this
         this as UnlinkedBinding
         val linkedBinding = linkedBindingsByUnlinked.getOrPut(this) {
-            performLink(linker)
+            performLink(this@Component)
         } as LinkedBinding<T>
         synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
         return linkedBinding

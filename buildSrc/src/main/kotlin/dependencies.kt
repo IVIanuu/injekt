@@ -47,12 +47,12 @@ object Deps {
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
     object Dagger2 {
-        private const val version = "2.24"
+        private const val version = "2.26"
         const val dagger2 = "com.google.dagger:dagger:$version"
         const val compiler = "com.google.dagger:dagger-compiler:$version"
     }
 
-    const val dagger2Reflect = "com.jakewharton.dagger:dagger-reflect:0.1.0-SNAPSHOT"
+    const val dagger2Reflect = "com.jakewharton.dagger:dagger-reflect:0.2.0"
 
     const val guava = "com.google.guava:guava:27.1-android"
 
@@ -62,9 +62,9 @@ object Deps {
 
     const val junit = "junit:junit:4.12"
 
-    const val katana = "org.rewedigital.katana:katana-core:1.8.1"
+    const val katana = "org.rewedigital.katana:katana-core:1.12.1"
 
-    const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.4.1"
+    const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.5.1"
 
     const val koin = "org.koin:koin-core:2.0.1"
 

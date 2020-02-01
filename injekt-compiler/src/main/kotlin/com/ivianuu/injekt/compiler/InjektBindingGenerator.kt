@@ -91,11 +91,11 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private fun getClass(fqName: FqName) =
         context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
+    private val component = getClass(InjektClassNames.Component)
     private val hasScope = getClass(InjektClassNames.HasScope)
     private val isSingle = getClass(InjektClassNames.IsSingle)
     private val key = getClass(InjektClassNames.Key)
     private val linkedBinding = getClass(InjektClassNames.LinkedBinding)
-    private val linker = getClass(InjektClassNames.Linker)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val provider = getClass(InjektClassNames.Provider)
     private val unlinkedBinding = getClass(InjektClassNames.UnlinkedBinding)
@@ -260,12 +260,13 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             val link = unlinkedBinding.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("link"))
 
-            val get = linker.unsubstitutedMemberScope
-                .findFirstFunction("get") {
+            val getBinding = component.unsubstitutedMemberScope
+                .findFirstFunction("getBinding") {
                     it.valueParameters.first().type == key.defaultType
                 }
 
-            val linkedBindingClass = linkedBinding(declaration, Name.identifier("Linked"), ClassKind.CLASS)
+            val linkedBindingClass =
+                linkedBinding(declaration, Name.identifier("Linked"), ClassKind.CLASS)
 
             addFunction(
                 name = "link",
@@ -288,7 +289,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 index,
                                 DeclarationIrBuilder(context, symbol).irBlock {
                                     +irCall(
-                                        callee = symbolTable.referenceSimpleFunction(get),
+                                        callee = symbolTable.referenceSimpleFunction(getBinding),
                                         type = KotlinTypeFactory.simpleType(
                                             baseType = linkedBinding.defaultType,
                                             arguments = listOf(param.type.asTypeProjection()),
@@ -530,11 +531,11 @@ private object InjektOrigin : IrDeclarationOrigin
 
 private object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val Component = FqName("com.ivianuu.injekt.Component")
     val HasScope = FqName("com.ivianuu.injekt.HasScope")
     val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
     val Key = FqName("com.ivianuu.injekt.Key")
     val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
-    val Linker = FqName("com.ivianuu.injekt.Linker")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val ParametersDefinition = FqName("com.ivianuu.injekt.ParametersDefinition")
     val Provider = FqName("com.ivianuu.injekt.Provider")

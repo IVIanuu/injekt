@@ -109,10 +109,10 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
 internal class SetOfProviderBinding<E>(
     private val elementKeys: Set<Key>
 ) : UnlinkedBinding<Set<Provider<E>>>() {
-    override fun link(linker: Linker): LinkedBinding<Set<Provider<E>>> {
+    override fun link(component: Component): LinkedBinding<Set<Provider<E>>> {
         return InstanceBinding(
             elementKeys
-                .map { linker.get<E>(it) }
+                .map { component.getBinding<E>(it) }
                 .toSet()
         )
     }
@@ -121,8 +121,8 @@ internal class SetOfProviderBinding<E>(
 internal class SetOfValueBinding<E>(
     private val setOfProviderKey: Key
 ) : UnlinkedBinding<Set<Lazy<E>>>() {
-    override fun link(linker: Linker): LinkedBinding<Set<Lazy<E>>> =
-        Linked(linker.get(setOfProviderKey))
+    override fun link(component: Component): LinkedBinding<Set<Lazy<E>>> =
+        Linked(component.getBinding(setOfProviderKey))
 
     private class Linked<E>(
         private val setOfProviderBinding: Provider<Set<Provider<E>>>
@@ -138,8 +138,8 @@ internal class SetOfValueBinding<E>(
 internal class SetOfLazyBinding<E>(
     private val setOfProviderKey: Key
 ) : UnlinkedBinding<Set<Lazy<E>>>() {
-    override fun link(linker: Linker): LinkedBinding<Set<Lazy<E>>> =
-        LinkedSetOfLazyBinding(linker.get(setOfProviderKey))
+    override fun link(component: Component): LinkedBinding<Set<Lazy<E>>> =
+        LinkedSetOfLazyBinding(component.getBinding(setOfProviderKey))
 
     private class LinkedSetOfLazyBinding<E>(
         private val setOfProviderBinding: Provider<Set<Provider<E>>>

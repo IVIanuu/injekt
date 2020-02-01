@@ -116,9 +116,9 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key)
 internal class MapOfProviderBinding<K, V>(
     private val entryKeys: Map<K, Key>
 ) : UnlinkedBinding<Map<K, Provider<V>>>() {
-    override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> {
+    override fun link(component: Component): LinkedBinding<Map<K, Provider<V>>> {
         return InstanceBinding(
-            entryKeys.mapValues { linker.get(it.value) }
+            entryKeys.mapValues { component.getBinding(it.value) }
         )
     }
 }
@@ -126,8 +126,8 @@ internal class MapOfProviderBinding<K, V>(
 internal class MapOfValueBinding<K, V>(
     private val mapOfProviderKey: Key
 ) : UnlinkedBinding<Map<K, Lazy<V>>>() {
-    override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
-        Linked(linker.get(mapOfProviderKey))
+    override fun link(component: Component): LinkedBinding<Map<K, Lazy<V>>> =
+        Linked(component.getBinding(mapOfProviderKey))
 
     private class Linked<K, V>(
         private val mapOfProviderBinding: Provider<Map<K, Provider<V>>>
@@ -140,8 +140,8 @@ internal class MapOfValueBinding<K, V>(
 internal class MapOfLazyBinding<K, V>(
     private val mapOfProviderKey: Key
 ) : UnlinkedBinding<Map<K, Lazy<V>>>() {
-    override fun link(linker: Linker): LinkedBinding<Map<K, Lazy<V>>> =
-        Linked(linker.get(mapOfProviderKey))
+    override fun link(component: Component): LinkedBinding<Map<K, Lazy<V>>> =
+        Linked(component.getBinding(mapOfProviderKey))
 
     private class Linked<K, V>(
         private val mapOfProviderBinding: Provider<Map<K, Provider<V>>>

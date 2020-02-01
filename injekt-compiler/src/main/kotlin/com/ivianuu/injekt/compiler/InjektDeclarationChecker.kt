@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
 import org.jetbrains.kotlin.platform.TargetPlatform
@@ -86,14 +85,6 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { ParamCannotBeNamed }
         }
 
-        if (descriptor.annotations.hasAnnotation(ParamAnnotation) &&
-            descriptor.annotations.hasAnnotation(OptionalAnnotation)) {
-            report(
-                descriptor,
-                context.trace
-            ) { ParamCannotBeOptional }
-        }
-
         if (descriptor is ClassDescriptor && descriptor.constructors.filter { it.annotations.hasAnnotation(
                 InjektConstructorAnnotation) }.size > 1) {
             report(
@@ -110,15 +101,6 @@ class InjektDeclarationChecker : DeclarationChecker {
                 descriptor,
                 context.trace
             ) { NeedsPrimaryConstructorOrAnnotation }
-        }
-
-        if (descriptor is ValueParameterDescriptor &&
-                descriptor.annotations.hasAnnotation(OptionalAnnotation) &&
-                !descriptor.type.isMarkedNullable) {
-            report(
-                descriptor,
-                context.trace
-            ) { OptionalMustBeNullable }
         }
     }
 }

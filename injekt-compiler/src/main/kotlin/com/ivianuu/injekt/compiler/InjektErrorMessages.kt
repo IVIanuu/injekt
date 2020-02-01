@@ -42,7 +42,6 @@ val OnlyOneScope = error()
 val OnlyOneName = error()
 val NeedsACompanionObject = error()
 val ParamCannotBeNamed = error()
-val ParamCannotBeOptional = error()
 val OnlyOneInjektConstructor = error()
 val NeedsPrimaryConstructorOrAnnotation = error()
 

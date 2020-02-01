@@ -49,14 +49,14 @@ sealed class Binding<T> {
     internal var linkPerformed = false
 
     /**
-     * Returns a [LinkedBinding] and get's all required dependencies from the [linker]
+     * Returns a [LinkedBinding] and get's all required dependencies from the [component]
      *
-     * @param linker the linker where to get required bindings from
+     * @param component the linker where to get required bindings from
      */
-    protected abstract fun link(linker: Linker): LinkedBinding<T>
+    protected abstract fun link(component: Component): LinkedBinding<T>
 
-    internal open fun performLink(linker: Linker): LinkedBinding<T> {
-        val linked = link(linker)
+    internal open fun performLink(component: Component): LinkedBinding<T> {
+        val linked = link(component)
         // some bindings such as the proxy binding are unlinked bindings only
         // they return existing linked bindings
         // we only copy the state if it's the first link
@@ -73,8 +73,8 @@ sealed class Binding<T> {
 abstract class UnlinkedBinding<T> : Binding<T>()
 
 abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
-    final override fun link(linker: Linker): LinkedBinding<T> = this
-    final override fun performLink(linker: Linker): LinkedBinding<T> {
+    final override fun link(component: Component): LinkedBinding<T> = this
+    final override fun performLink(component: Component): LinkedBinding<T> {
         linkPerformed = true
         return this
     }

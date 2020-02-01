@@ -65,8 +65,8 @@ inline fun <reified T> DefinitionContext.get(
 internal class DefinitionBinding<T>(
     private val definition: Definition<T>
 ) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> = Linked(
-        linker.component, definition
+    override fun link(component: Component): LinkedBinding<T> = Linked(
+        component, definition
     )
 
     private class Linked<T>(
