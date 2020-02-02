@@ -24,7 +24,18 @@ package com.ivianuu.injekt
  * @see Component.get
  * @see ModuleBuilder.bind
  */
-data class Key internal constructor(val type: Type<*>, val name: Any? = null)
+data class Key internal constructor(val type: Type<*>, val name: Any? = null) {
+
+    private val hashCode = generateHashcode()
+
+    override fun hashCode() = hashCode
+
+    private fun generateHashcode(): Int {
+        var result = type.hashCode()
+        result = 31 * result + (name?.hashCode() ?: 0)
+        return result
+    }
+}
 
 inline fun <reified T> keyOf(name: Any? = null): Key = keyOf(typeOf<T>(), name)
 
