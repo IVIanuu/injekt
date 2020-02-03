@@ -125,16 +125,10 @@ class ComponentBuilder {
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
         val key = keyOf(type, name)
-        if (overrideStrategy.check(
-                existsPredicate = { key in instances },
-                errorMessage = { "Already declared binding for $key" }
-            )
-        ) {
-            val binding = InstanceBinding(instance)
-            binding.overrideStrategy = overrideStrategy
-            binding.scoped = true
-            instances[key] = binding
-        }
+        val binding = InstanceBinding(instance)
+        binding.overrideStrategy = overrideStrategy
+        binding.scoped = true
+        instances[key] = binding
     }
 
     /**
@@ -279,10 +273,6 @@ class ComponentBuilder {
             .forEach { addScope(it) }
 
         scopes.forEach { addScope(it) }
-
-        check(scopes.isNotEmpty() || dependencyScopes.isEmpty()) {
-            "Must have a scope if a dependency has a scope"
-        }
     }
 
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {

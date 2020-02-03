@@ -32,7 +32,6 @@ class ComponentBuilderTest {
         assertEquals(1, component.get<Int>())
     }
 
-
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
         val dependency = Component {

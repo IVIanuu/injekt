@@ -365,4 +365,3 @@ class ModuleBuilder {
 internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
     override fun invoke(parameters: Parameters) = instance
 }
-
