@@ -20,8 +20,7 @@ import kotlin.reflect.KClass
 
 data class JustInTimeLookup<T>(
     val binding: Binding<T>,
-    val scope: Any?,
-    val isSingle: Boolean
+    val scope: Any?
 )
 
 interface JustInTimeLookupFactory {
@@ -59,8 +58,7 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
             .get(null) as Binding<*>
         JustInTimeLookup(
             binding = binding,
-            scope = (binding as? HasScope)?.scope,
-            isSingle = binding is IsSingle
+            scope = (binding as? HasScope)?.scope
         )
     } catch (e: Exception) {
         null

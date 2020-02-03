@@ -24,7 +24,7 @@ class ModuleTest {
 
     @Test
     fun testBind() {
-        val binding = DefinitionBinding { "value" }
+        val binding = DefinitionBinding(kind = FactoryKind) { "value" }
         val module = Module {
             bind(
                 key = keyOf<String>(),
@@ -36,9 +36,12 @@ class ModuleTest {
 
     @Test
     fun testOverride() {
-        val originalBinding = DefinitionBinding { "value" }
+        val originalBinding = DefinitionBinding(kind = FactoryKind) { "value" }
         val overrideBinding =
-            DefinitionBinding(overrideStrategy = OverrideStrategy.Override) { "overridden_value" }
+            DefinitionBinding(
+                kind = FactoryKind,
+                overrideStrategy = OverrideStrategy.Override
+            ) { "overridden_value" }
 
         val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
@@ -53,9 +56,12 @@ class ModuleTest {
 
     @Test
     fun testOverrideDrop() {
-        val originalBinding = DefinitionBinding { "value" }
+        val originalBinding = DefinitionBinding(kind = FactoryKind) { "value" }
         val overrideBinding =
-            DefinitionBinding(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }
+            DefinitionBinding(
+                kind = FactoryKind,
+                overrideStrategy = OverrideStrategy.Drop
+            ) { "overridden_value" }
 
         val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
@@ -70,9 +76,12 @@ class ModuleTest {
 
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
-        val firstBinding = DefinitionBinding { "value" }
+        val firstBinding = DefinitionBinding(kind = FactoryKind) { "value" }
         val overrideBinding =
-            DefinitionBinding(overrideStrategy = OverrideStrategy.Fail) { "overridden_value" }
+            DefinitionBinding(
+                kind = FactoryKind,
+                overrideStrategy = OverrideStrategy.Fail
+            ) { "overridden_value" }
 
         Module {
             bind(key = keyOf<String>(), binding = firstBinding)

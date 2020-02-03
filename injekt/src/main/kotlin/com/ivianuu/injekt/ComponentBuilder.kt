@@ -273,6 +273,7 @@ class ComponentBuilder {
     }
 
     private class ComponentBinding : Binding<Component>(
+        kind = FactoryKind,
         scoped = true,
         overrideStrategy = OverrideStrategy.Override
     ) {

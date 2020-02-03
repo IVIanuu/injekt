@@ -65,6 +65,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.irConstructorCall
+import org.jetbrains.kotlin.ir.util.module
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
@@ -73,11 +74,14 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVisitorVoid {
 
@@ -92,7 +96,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private val binding = getClass(InjektClassNames.Binding)
     private val component = getClass(InjektClassNames.Component)
     private val hasScope = getClass(InjektClassNames.HasScope)
-    private val isSingle = getClass(InjektClassNames.IsSingle)
     private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val provider = getClass(InjektClassNames.Provider)
@@ -103,9 +106,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     override fun visitClass(declaration: IrClass) {
         val descriptor = declaration.descriptor
 
-        if (!descriptor.annotations.hasAnnotation(FactoryAnnotation) &&
-            !descriptor.annotations.hasAnnotation(SingleAnnotation)
-        ) return
+        if (!descriptor.hasAnnotatedAnnotations(KindMarkerAnnotation)) return
 
         declaration.addMember(binding(declaration))
         declaration.patchDeclarationParents(declaration.parent)
@@ -153,10 +154,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
             superTypes += bindingWithType
 
-            if (descriptor.annotations.hasAnnotation(SingleAnnotation)) {
-                superTypes += isSingle.defaultType.toIrType()
-            }
-
             val scopeAnnotation = descriptor.getAnnotatedAnnotations(ScopeAnnotation).singleOrNull()
             if (scopeAnnotation != null) {
                 superTypes += hasScope.defaultType.toIrType()
@@ -200,6 +197,20 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         )
                     ).apply {
                         putTypeArgument(0, descriptor.defaultType.toIrType())
+
+                        val kind = descriptor.getAnnotatedAnnotations(KindMarkerAnnotation)
+                            .single()
+                            .annotationClass!!
+                            .annotations
+                            .findAnnotation(KindMarkerAnnotation)!!
+                            .allValueArguments[Name.identifier("type")]!!
+                            .cast<KClassValue>()
+                            .getArgumentType(module)
+                            .constructor
+                            .declarationDescriptor
+                            .cast<ClassDescriptor>()
+
+                        putValueArgument(0, irGetObject(symbolTable.referenceClass(kind)))
                     }
                     +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
                 }

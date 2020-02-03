@@ -40,91 +40,6 @@ class ModuleBuilder {
     private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
     private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
 
-    inline fun <reified T> factory(
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = false,
-        noinline definition: Definition<T>
-    ): BindingContext<T> = factory(
-        type = typeOf(),
-        name = name,
-        overrideStrategy = overrideStrategy,
-        scoped = scoped,
-        definition = definition
-    )
-
-    /**
-     * Contributes a binding which will be instantiated on each request
-     *
-     * @param type the of the instance
-     * @param name the name of the instance
-     * @param overrideStrategy the strategy for handling overrides
-     * @param scoped whether or not to create instances in the added scope
-     * @param definition the definitions which creates instances
-     *
-     * @see bind
-     */
-    fun <T> factory(
-        type: Type<T>,
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = false,
-        definition: Definition<T>
-    ): BindingContext<T> = bind(
-        key = keyOf(type, name),
-        binding = DefinitionBinding(
-            overrideStrategy = overrideStrategy,
-            scoped = scoped,
-            definition = definition
-        )
-    )
-
-    inline fun <reified T> single(
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = true,
-        eager: Boolean = false,
-        noinline definition: Definition<T>
-    ): BindingContext<T> = single(
-        type = typeOf(),
-        name = name,
-        overrideStrategy = overrideStrategy,
-        scoped = scoped,
-        eager = eager,
-        definition = definition
-    )
-
-    /**
-     * Contributes a binding which will be reused throughout the lifetime of the [Component] it life's in
-     *
-     * @param type the of the instance
-     * @param name the name of the instance
-     * @param overrideStrategy the strategy for handling overrides
-     * @param scoped whether or not to create instances in the added scope
-     * @param eager whether the instance should be created when the [Component] get's created
-     * @param definition the definitions which creates instances
-     *
-     * @see bind
-     */
-    fun <T> single(
-        type: Type<T>,
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = true,
-        eager: Boolean = false,
-        definition: Definition<T>
-    ): BindingContext<T> =
-        bind(
-            key = keyOf(type, name),
-            binding = DefinitionBinding(
-                overrideStrategy = overrideStrategy,
-                eager = eager,
-                scoped = scoped,
-                single = true,
-                definition = definition
-            )
-        )
-
     inline fun <reified T> instance(
         instance: T,
         name: Any? = null,
@@ -358,10 +273,10 @@ class ModuleBuilder {
 
 internal class InstanceBinding<T>(
     val instance: T,
-    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     eager: Boolean = false,
-    scoped: Boolean = false
-) : Binding<T>(overrideStrategy, eager, scoped) {
+    scoped: Boolean = false,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+) : Binding<T>(FactoryKind, eager, scoped, overrideStrategy) {
     override fun link(component: Component): Provider<T> = InstanceProvider(instance)
 
     class InstanceProvider<T>(private val instance: T) : Provider<T> {

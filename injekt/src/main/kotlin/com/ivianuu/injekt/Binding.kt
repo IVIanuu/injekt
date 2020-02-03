@@ -27,10 +27,14 @@ package com.ivianuu.injekt
  * @see Single
  */
 abstract class Binding<T>(
-    /**
-     * Overrides existing bindings with the same key
+    /*/**
+     * The key used to store and retrieve this binding
      */
-    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    val key: Key,*/
+    /**
+     * The kind of this binding
+     */
+    val kind: Kind,
     /**
      * Creates the instance in the moment the component get's created
      */
@@ -38,12 +42,24 @@ abstract class Binding<T>(
     /**
      * Creates instances in the bound scope
      */
-    val scoped: Boolean = false
+    val scoped: Boolean = false,
+    /**
+     * Overrides existing bindings with the same key
+     */
+    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
 ) {
     /**
      * Returns a [Provider] to retrieve instances of [T]
      *
      * @param component the component which is used to fulfill dependencies
      */
-    abstract fun link(component: Component): Provider<T>
+    // todo rename
+    protected abstract fun link(component: Component): Provider<T>
+
+    fun performLink(key: Key, component: Component): Provider<T> = kind.wrap(
+        key = key,
+        binding = this,
+        provider = link(component),
+        component = component
+    )
 }

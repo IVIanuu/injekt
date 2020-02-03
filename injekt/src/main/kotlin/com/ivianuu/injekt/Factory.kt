@@ -26,5 +26,57 @@ package com.ivianuu.injekt
  * @see InjektConstructor
  * @see ModuleBuilder.factory
  */
+@KindMarker(FactoryKind::class)
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Factory
+
+object FactoryKind : Kind {
+    override fun <T> wrap(
+        key: Key,
+        binding: Binding<T>,
+        provider: Provider<T>,
+        component: Component
+    ): Provider<T> = provider
+
+    override fun toString(): String = "Factory"
+}
+
+inline fun <reified T> ModuleBuilder.factory(
+    name: Any? = null,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    scoped: Boolean = false,
+    noinline definition: Definition<T>
+): BindingContext<T> = factory(
+    type = typeOf(),
+    name = name,
+    overrideStrategy = overrideStrategy,
+    scoped = scoped,
+    definition = definition
+)
+
+/**
+ * Contributes a binding which will be instantiated on each request
+ *
+ * @param type the of the instance
+ * @param name the name of the instance
+ * @param overrideStrategy the strategy for handling overrides
+ * @param scoped whether or not to create instances in the added scope
+ * @param definition the definitions which creates instances
+ *
+ * @see ModuleBuilder.bind
+ */
+fun <T> ModuleBuilder.factory(
+    type: Type<T>,
+    name: Any? = null,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    scoped: Boolean = false,
+    definition: Definition<T>
+): BindingContext<T> = bind(
+    key = keyOf(type, name),
+    binding = DefinitionBinding(
+        kind = FactoryKind,
+        overrideStrategy = overrideStrategy,
+        scoped = scoped,
+        definition = definition
+    )
+)

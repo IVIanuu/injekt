@@ -111,7 +111,7 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
 
 internal class SetOfProviderBinding<E>(
     private val elementKeys: Set<Key>
-) : Binding<Set<Provider<E>>>(scoped = true) {
+) : Binding<Set<Provider<E>>>(kind = FactoryKind, scoped = true) {
     override fun link(component: Component): Provider<Set<Provider<E>>> {
         return InstanceBinding.InstanceProvider(
             elementKeys
@@ -123,7 +123,7 @@ internal class SetOfProviderBinding<E>(
 
 internal class SetOfValueBinding<E>(
     private val setOfProviderKey: Key
-) : Binding<Set<Lazy<E>>>(scoped = true) {
+) : Binding<Set<Lazy<E>>>(kind = FactoryKind, scoped = true) {
     override fun link(component: Component): Provider<Set<Lazy<E>>> =
         Linked(component.getProvider(setOfProviderKey))
 
@@ -140,7 +140,7 @@ internal class SetOfValueBinding<E>(
 
 internal class SetOfLazyBinding<E>(
     private val setOfProviderKey: Key
-) : Binding<Set<Lazy<E>>>(scoped = true) {
+) : Binding<Set<Lazy<E>>>(kind = FactoryKind, scoped = true) {
     override fun link(component: Component): Provider<Set<Lazy<E>>> =
         LinkedSetOfLazyBinding(component.getProvider(setOfProviderKey))
 

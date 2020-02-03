@@ -19,14 +19,17 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class InjektStorageComponentContainerContributorExtension : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -45,12 +48,11 @@ class InjektDeclarationChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor.annotations.hasAnnotation(FactoryAnnotation) &&
-            descriptor.annotations.hasAnnotation(SingleAnnotation)) {
+        if (descriptor.getAnnotatedAnnotations(KindMarkerAnnotation).size > 1) {
             report(
                 descriptor,
                 context.trace
-            ) { EitherFactoryOrSingle }
+            ) { OnlyOneKind }
         }
 
         if (descriptor is ClassDescriptor &&
@@ -85,22 +87,38 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { ParamCannotBeNamed }
         }
 
-        if (descriptor is ClassDescriptor && descriptor.constructors.filter { it.annotations.hasAnnotation(
-                InjektConstructorAnnotation) }.size > 1) {
+        if (descriptor is ClassDescriptor && descriptor.constructors.filter {
+                it.annotations.hasAnnotation(
+                    InjektConstructorAnnotation
+                )
+            }.size > 1) {
             report(
                 descriptor,
                 context.trace
             ) { OnlyOneInjektConstructor }
         }
 
-        if (descriptor is ClassDescriptor && (descriptor.annotations.hasAnnotation(FactoryAnnotation) ||
-                    descriptor.annotations.hasAnnotation(SingleAnnotation)) &&
+        if (descriptor is ClassDescriptor &&
+            (descriptor.hasAnnotatedAnnotations(KindMarkerAnnotation)) &&
             !descriptor.hasPrimaryConstructor() &&
-            descriptor.constructors.none { it.annotations.hasAnnotation(InjektConstructorAnnotation) }) {
+            descriptor.constructors.none { it.annotations.hasAnnotation(InjektConstructorAnnotation) }
+        ) {
             report(
                 descriptor,
                 context.trace
             ) { NeedsPrimaryConstructorOrAnnotation }
+        }
+
+        if (descriptor.annotations.hasAnnotation(KindMarkerAnnotation)) {
+            val kindType = descriptor.annotations.findAnnotation(KindMarkerAnnotation)!!
+                .allValueArguments[Name.identifier("type")]!!.getType(descriptor.module)
+            val kindDescriptor = kindType.constructor.declarationDescriptor!! as ClassDescriptor
+            if (kindDescriptor.kind != ClassKind.OBJECT) {
+                report(
+                    descriptor,
+                    context.trace
+                ) { MustBeAObject }
+            }
         }
     }
 }

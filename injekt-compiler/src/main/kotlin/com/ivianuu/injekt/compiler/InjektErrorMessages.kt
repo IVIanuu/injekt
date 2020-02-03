@@ -37,13 +37,14 @@ fun report(
     }
 }
 
-val EitherFactoryOrSingle = error()
-val OnlyOneScope = error()
-val OnlyOneName = error()
+val MustBeAObject = error()
 val NeedsACompanionObject = error()
-val ParamCannotBeNamed = error()
-val OnlyOneInjektConstructor = error()
 val NeedsPrimaryConstructorOrAnnotation = error()
+val OnlyOneInjektConstructor = error()
+val OnlyOneKind = error()
+val OnlyOneName = error()
+val OnlyOneScope = error()
+val ParamCannotBeNamed = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -53,32 +54,36 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
 
     init {
         map.put(
-            EitherFactoryOrSingle,
-            "Can only have one of @Factory or @Single"
-        )
-        map.put(
-            OnlyOneScope,
-            "Can only have one 1 scope ammptatopm"
-        )
-        map.put(
-            OnlyOneName,
-            "Can only have 1 name annotation"
+            MustBeAObject,
+            "Must be a object"
         )
         map.put(
             NeedsACompanionObject,
             "Needs a companion object"
         )
         map.put(
-            ParamCannotBeNamed,
-            "Parameters cannot be named"
+            NeedsPrimaryConstructorOrAnnotation,
+            "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
         )
         map.put(
             OnlyOneInjektConstructor,
             "Only one constructor can be annotated"
         )
         map.put(
-            NeedsPrimaryConstructorOrAnnotation,
-            "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
+            OnlyOneKind,
+            "Can only have one @KindMarker annotated annotation"
+        )
+        map.put(
+            OnlyOneScope,
+            "Can only have one 1 scope annotation"
+        )
+        map.put(
+            OnlyOneName,
+            "Can only have 1 name annotation"
+        )
+        map.put(
+            ParamCannotBeNamed,
+            "Parameters cannot be named"
         )
     }
 }

@@ -118,7 +118,7 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key)
 
 internal class MapOfProviderBinding<K, V>(
     private val entryKeys: Map<K, Key>
-) : Binding<Map<K, Provider<V>>>(scoped = true) {
+) : Binding<Map<K, Provider<V>>>(kind = FactoryKind, scoped = true) {
     override fun link(component: Component): Provider<Map<K, Provider<V>>> {
         return InstanceBinding.InstanceProvider(
             entryKeys.mapValues { component.getProvider(it.value) }
@@ -128,7 +128,7 @@ internal class MapOfProviderBinding<K, V>(
 
 internal class MapOfValueBinding<K, V>(
     private val mapOfProviderKey: Key
-) : Binding<Map<K, Lazy<V>>>(scoped = true) {
+) : Binding<Map<K, Lazy<V>>>(kind = FactoryKind, scoped = true) {
     override fun link(component: Component): Provider<Map<K, Lazy<V>>> =
         Linked(component.getProvider(mapOfProviderKey))
 
@@ -142,7 +142,7 @@ internal class MapOfValueBinding<K, V>(
 
 internal class MapOfLazyBinding<K, V>(
     private val mapOfProviderKey: Key
-) : Binding<Map<K, Lazy<V>>>(scoped = true) {
+) : Binding<Map<K, Lazy<V>>>(kind = FactoryKind, scoped = true) {
     override fun link(component: Component): Provider<Map<K, Lazy<V>>> =
         Linked(component.getProvider(mapOfProviderKey))
 

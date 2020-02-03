@@ -50,7 +50,7 @@ class Component internal constructor(
 
     init {
         bindings.forEach { (key, binding) ->
-            providers[key] = binding.link(this)
+            providers[key] = binding.performLink(key, this)
         }
 
         bindings
@@ -145,8 +145,7 @@ class Component internal constructor(
         ) return null
 
         val provider = justInTimeLookup.binding
-            .link(this)
-            .let { if (justInTimeLookup.isSingle) SingleProvider(it) else it }
+            .performLink(key, this)
 
         synchronized(providers) { providers[key] = provider }
         return provider

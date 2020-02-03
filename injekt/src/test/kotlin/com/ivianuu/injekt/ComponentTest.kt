@@ -493,7 +493,7 @@ interface Environment
 @TestScopeOne
 @Single
 class SingleJustInTimeDep {
-    object Binding : com.ivianuu.injekt.Binding<SingleJustInTimeDep>(), IsSingle, HasScope {
+    object Binding : com.ivianuu.injekt.Binding<SingleJustInTimeDep>(kind = SingleKind), HasScope {
         override val scope: Any
             get() = TestScopeOne.Companion
 
