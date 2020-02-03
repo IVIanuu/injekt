@@ -40,14 +40,23 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     internal val scopes: Set<Any>,
-    internal val scopedBindings: MutableMap<Key, Binding<*>>,
+    internal val scopedBindings: Map<Key, Binding<*>>,
     internal val unlinkedUnscopedBindings: Map<Key, UnlinkedBinding<*>>,
     internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
     internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>,
     internal val dependencies: Set<Component>
 ) {
 
+    private val linkedBindings = mutableMapOf<Key, LinkedBinding<*>>()
+
     init {
+        scopedBindings.forEach { (key, binding) ->
+            linkedBindings[key] = binding.performLink(this)
+        }
+        unlinkedUnscopedBindings.forEach { (key, binding) ->
+            linkedBindings[key] = binding.performLink(this)
+        }
+
         scopedBindings
             .filter { it.value.eager }
             .forEach { get(it.key) }
@@ -99,10 +108,7 @@ class Component internal constructor(
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = findScopedBinding(key)
-        if (binding != null) return binding
-
-        binding = findUnscopedBinding(key)
+        binding = findBindingInThisComponent(key)
         if (binding != null) return binding
 
         binding = findJustInTimeBinding(key)
@@ -133,11 +139,8 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findScopedBinding(key: Key): LinkedBinding<T>? =
-        synchronized(scopedBindings) { scopedBindings[key] }?.linkIfNeeded(key) as? LinkedBinding<T>
-
-    private fun <T> findUnscopedBinding(key: Key): LinkedBinding<T>? =
-        unlinkedUnscopedBindings[key]?.linkIfNeeded(key) as? LinkedBinding<T>
+    private fun <T> findBindingInThisComponent(key: Key): LinkedBinding<T>? =
+        synchronized(linkedBindings) { linkedBindings.get(key) } as? LinkedBinding<T>
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
         val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
@@ -150,15 +153,8 @@ class Component internal constructor(
             .let { if (justInTimeLookup.isSingle) it.asSingle() else it } as LinkedBinding<T>
 
         binding.scoped = justInTimeLookup.scope != null
-        synchronized(scopedBindings) { scopedBindings[key] = binding }
+        synchronized(linkedBindings) { linkedBindings[key] = binding }
         return binding
-    }
-
-    private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
-        if (this is LinkedBinding) return this
-        val linkedBinding = performLink(this@Component)
-        synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
-        return linkedBinding
     }
 
     private object NullBinding : LinkedBinding<Any?>() {
