@@ -34,7 +34,6 @@ class TypeTest {
     fun testAnnotationDistinction() {
         val typeA = typeOf<@TypeAnnotationOne String>()
         val typeB = typeOf<@TypeAnnotationTwo String>()
-        println("type a $typeA type b $typeB")
         assertFalse(typeA == typeB)
     }
 
