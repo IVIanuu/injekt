@@ -143,28 +143,17 @@ class Component internal constructor(
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
         val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
-        if (justInTimeLookup != null) {
-            val binding = justInTimeLookup.binding
-                .let { if (justInTimeLookup.isSingle) it.asSingle() else it }
-            if (justInTimeLookup.scope != null && justInTimeLookup.scope !in scopes) return null
-            return if (justInTimeLookup.scope != null) {
-                binding.scoped = true
-                addJustInTimeBinding(key, binding)
-            } else {
-                addJustInTimeBinding(key, binding)
-            }
-        }
+        if (justInTimeLookup == null ||
+            (justInTimeLookup.scope != null && justInTimeLookup.scope !in scopes)
+        ) return null
 
-        return null
-    }
+        val binding = justInTimeLookup.binding
+            .performLink(this)
+            .let { if (justInTimeLookup.isSingle) it.asSingle() else it } as LinkedBinding<T>
 
-    private fun <T> addJustInTimeBinding(
-        key: Key,
-        binding: Binding<T>
-    ): LinkedBinding<T> {
-        val linkedBinding = binding.performLink(this)
-        synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
-        return linkedBinding
+        binding.scoped = justInTimeLookup.scope != null
+        synchronized(scopedBindings) { scopedBindings[key] = binding }
+        return binding
     }
 
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
