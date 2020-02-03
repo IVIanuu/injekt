@@ -40,6 +40,13 @@ internal class ProviderLazy<T>(private val provider: Provider<T>) : Lazy<T> {
     }
 }
 
+internal class LazyProvider<T>(
+    private val component: Component,
+    private val key: Key
+) : Provider<Lazy<T>> {
+    override fun invoke(parameters: Parameters): Lazy<T> = KeyedLazy(component, key)
+}
+
 internal class KeyedLazy<T>(
     private val component: Component,
     private val key: Key
@@ -61,12 +68,4 @@ internal class KeyedLazy<T>(
 
         return value as T
     }
-}
-
-internal class LinkedLazyBinding<T>(
-    private val component: Component,
-    private val key: Key
-) : LinkedBinding<Lazy<T>>() {
-    override fun invoke(parameters: Parameters): Lazy<T> =
-        KeyedLazy(component, key)
 }

@@ -37,14 +37,14 @@ class ModuleTest {
     @Test
     fun testOverride() {
         val originalBinding = DefinitionBinding { "value" }
-        val overrideBinding = DefinitionBinding { "overridden_value" }
+        val overrideBinding =
+            DefinitionBinding(overrideStrategy = OverrideStrategy.Override) { "overridden_value" }
 
         val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
             bind(
                 key = keyOf<String>(),
-                binding = overrideBinding,
-                overrideStrategy = OverrideStrategy.Override
+                binding = overrideBinding
             )
         }
 
@@ -54,14 +54,14 @@ class ModuleTest {
     @Test
     fun testOverrideDrop() {
         val originalBinding = DefinitionBinding { "value" }
-        val overrideBinding = DefinitionBinding { "overridden_value" }
+        val overrideBinding =
+            DefinitionBinding(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }
 
         val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
             bind(
                 key = keyOf<String>(),
-                binding = overrideBinding,
-                overrideStrategy = OverrideStrategy.Drop
+                binding = overrideBinding
             )
         }
 
@@ -71,14 +71,14 @@ class ModuleTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         val firstBinding = DefinitionBinding { "value" }
-        val overrideBinding = DefinitionBinding { "overridden_value" }
+        val overrideBinding =
+            DefinitionBinding(overrideStrategy = OverrideStrategy.Fail) { "overridden_value" }
 
         Module {
             bind(key = keyOf<String>(), binding = firstBinding)
             bind(
                 key = keyOf<String>(),
-                binding = overrideBinding,
-                overrideStrategy = OverrideStrategy.Fail
+                binding = overrideBinding
             )
         }
     }
@@ -98,17 +98,4 @@ class ModuleTest {
         assertTrue(keyOf<Set<Any>>() in moduleB.multiBindingSets)
     }
 
-    @Test
-    fun testInheresAllAttributesWhenIncluding() {
-        val moduleA = Module {
-            single(overrideStrategy = OverrideStrategy.Override, eager = true) { TestDep1() }
-        }
-
-        val moduleB = Module { include(moduleA) }
-
-        val binding = moduleB.bindings.values.single()
-        assertEquals(OverrideStrategy.Override, binding.overrideStrategy)
-        assertTrue(binding.eager)
-        assertTrue(binding.scoped)
-    }
 }

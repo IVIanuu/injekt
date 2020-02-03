@@ -22,13 +22,21 @@ package com.ivianuu.injekt
 typealias Definition<T> = Component.(Parameters) -> T
 
 internal class DefinitionBinding<T>(
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    eager: Boolean = false,
+    scoped: Boolean = false,
+    val single: Boolean = false,
     private val definition: Definition<T>
-) : UnlinkedBinding<T>() {
-    override fun link(component: Component): LinkedBinding<T> = Linked(component, definition)
-    private class Linked<T>(
+) : Binding<T>(overrideStrategy = overrideStrategy, eager = eager, scoped = scoped) {
+    override fun link(component: Component): Provider<T> {
+        val provider = DefinitionProvider(component, definition)
+        return if (single) SingleProvider(provider) else provider
+    }
+
+    private class DefinitionProvider<T>(
         private val component: Component,
         private val definition: Definition<T>
-    ) : LinkedBinding<T>() {
+    ) : Provider<T> {
         override fun invoke(parameters: Parameters): T =
             definition(component, parameters)
     }

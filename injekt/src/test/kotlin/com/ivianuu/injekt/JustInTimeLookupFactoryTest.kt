@@ -49,18 +49,34 @@ class JustInTimeLookupFactoryTest {
 
 @Factory
 class MyUnscopedDep {
-    object Binding : LinkedBinding<MyUnscopedDep>() {
-        override fun invoke(parameters: Parameters): MyUnscopedDep = MyUnscopedDep()
+    object Binding : com.ivianuu.injekt.Binding<MyUnscopedDep>() {
+        override fun link(component: Component): com.ivianuu.injekt.Provider<MyUnscopedDep> {
+            return Provider()
+        }
+
+        private class Provider : com.ivianuu.injekt.Provider<MyUnscopedDep> {
+            override fun invoke(parameters: Parameters): MyUnscopedDep {
+                return MyUnscopedDep()
+            }
+        }
     }
 }
 
 @TestScopeOne
 @Single
 class MyScopedDep {
-    object Binding : LinkedBinding<MyScopedDep>(), HasScope {
+    object Binding : com.ivianuu.injekt.Binding<MyScopedDep>(), HasScope {
         override val scope: Any
-            get() = TestScopeOne
+            get() = TestScopeOne.Companion
 
-        override fun invoke(parameters: Parameters) = MyScopedDep()
+        override fun link(component: Component): com.ivianuu.injekt.Provider<MyScopedDep> {
+            return Provider()
+        }
+
+        private class Provider : com.ivianuu.injekt.Provider<MyScopedDep> {
+            override fun invoke(parameters: Parameters): MyScopedDep {
+                return MyScopedDep()
+            }
+        }
     }
 }

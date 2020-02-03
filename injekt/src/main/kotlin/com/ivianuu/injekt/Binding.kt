@@ -26,45 +26,24 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-sealed class Binding<T> {
-
+abstract class Binding<T>(
     /**
      * Overrides existing bindings with the same key
      */
-    var overrideStrategy = OverrideStrategy.Fail
-        internal set
-
+    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     /**
      * Creates the instance in the moment the component get's created
      */
-    var eager = false
-        internal set
-
+    val eager: Boolean = false,
     /**
      * Creates instances in the bound scope
      */
-    var scoped = false
-        internal set
-
+    val scoped: Boolean = false
+) {
     /**
-     * Returns a [LinkedBinding] and get's all required dependencies from the [component]
+     * Returns a [Provider] to retrieve instances of [T]
      *
-     * @param component the linker where to get required bindings from
+     * @param component the component which is used to fulfill dependencies
      */
-    protected abstract fun link(component: Component): LinkedBinding<T>
-
-    internal open fun performLink(component: Component): LinkedBinding<T> {
-        val linked = link(component)
-        linked.overrideStrategy = overrideStrategy
-        linked.eager = eager
-        linked.scoped = scoped
-        return linked
-    }
-}
-
-abstract class UnlinkedBinding<T> : Binding<T>()
-
-abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
-    final override fun link(component: Component): LinkedBinding<T> = this
-    final override fun performLink(component: Component): LinkedBinding<T> = this
+    abstract fun link(component: Component): Provider<T>
 }

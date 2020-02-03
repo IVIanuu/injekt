@@ -118,23 +118,23 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key)
 
 internal class MapOfProviderBinding<K, V>(
     private val entryKeys: Map<K, Key>
-) : UnlinkedBinding<Map<K, Provider<V>>>() {
-    override fun link(component: Component): LinkedBinding<Map<K, Provider<V>>> {
-        return InstanceBinding(
-            entryKeys.mapValues { component.getBinding(it.value) }
+) : Binding<Map<K, Provider<V>>>(scoped = true) {
+    override fun link(component: Component): Provider<Map<K, Provider<V>>> {
+        return InstanceBinding.InstanceProvider(
+            entryKeys.mapValues { component.getProvider(it.value) }
         )
     }
 }
 
 internal class MapOfValueBinding<K, V>(
     private val mapOfProviderKey: Key
-) : UnlinkedBinding<Map<K, Lazy<V>>>() {
-    override fun link(component: Component): LinkedBinding<Map<K, Lazy<V>>> =
-        Linked(component.getBinding(mapOfProviderKey))
+) : Binding<Map<K, Lazy<V>>>(scoped = true) {
+    override fun link(component: Component): Provider<Map<K, Lazy<V>>> =
+        Linked(component.getProvider(mapOfProviderKey))
 
     private class Linked<K, V>(
         private val mapOfProviderBinding: Provider<Map<K, Provider<V>>>
-    ) : LinkedBinding<Map<K, V>>() {
+    ) : Provider<Map<K, V>> {
         override fun invoke(parameters: Parameters) = mapOfProviderBinding()
             .mapValues { it.value() }
     }
@@ -142,13 +142,13 @@ internal class MapOfValueBinding<K, V>(
 
 internal class MapOfLazyBinding<K, V>(
     private val mapOfProviderKey: Key
-) : UnlinkedBinding<Map<K, Lazy<V>>>() {
-    override fun link(component: Component): LinkedBinding<Map<K, Lazy<V>>> =
-        Linked(component.getBinding(mapOfProviderKey))
+) : Binding<Map<K, Lazy<V>>>(scoped = true) {
+    override fun link(component: Component): Provider<Map<K, Lazy<V>>> =
+        Linked(component.getProvider(mapOfProviderKey))
 
     private class Linked<K, V>(
         private val mapOfProviderBinding: Provider<Map<K, Provider<V>>>
-    ) : LinkedBinding<Map<K, Lazy<V>>>() {
+    ) : Provider<Map<K, Lazy<V>>> {
         override fun invoke(parameters: Parameters) = mapOfProviderBinding()
             .mapValues { ProviderLazy(it.value) }
     }

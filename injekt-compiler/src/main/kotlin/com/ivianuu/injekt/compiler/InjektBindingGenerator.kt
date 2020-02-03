@@ -88,14 +88,14 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private fun getClass(fqName: FqName) =
         context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
+    private val abstractProvider = getClass(InjektClassNames.AbstractProvider)
+    private val binding = getClass(InjektClassNames.Binding)
     private val component = getClass(InjektClassNames.Component)
     private val hasScope = getClass(InjektClassNames.HasScope)
     private val isSingle = getClass(InjektClassNames.IsSingle)
     private val key = getClass(InjektClassNames.Key)
-    private val linkedBinding = getClass(InjektClassNames.LinkedBinding)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val provider = getClass(InjektClassNames.Provider)
-    private val unlinkedBinding = getClass(InjektClassNames.UnlinkedBinding)
 
     override fun visitElement(element: IrElement) {
     }
@@ -107,20 +107,13 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             !descriptor.annotations.hasAnnotation(SingleAnnotation)
         ) return
 
-        val injektConstructor = descriptor.findInjektConstructor()
-
-        if (injektConstructor.valueParameters.isEmpty()) {
-            declaration.addMember(linkedBinding(declaration, Name.identifier("Binding"), ClassKind.OBJECT))
-        } else {
-            declaration.addMember(unlinkedBinding(declaration))
-        }
-
+        declaration.addMember(binding(declaration))
         declaration.patchDeclarationParents(declaration.parent)
 
         //error("declaration ${declaration.dump()}")
     }
 
-    private fun unlinkedBinding(declaration: IrClass): IrClass {
+    private fun binding(declaration: IrClass): IrClass {
         val descriptor = declaration.descriptor
 
         val bindingDescriptor = ClassDescriptorImpl(
@@ -148,17 +141,17 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         ).apply clazz@ {
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val unlinkedBindingWithType = KotlinTypeFactory.simpleType(
-                baseType = unlinkedBinding.defaultType,
+            val bindingWithType = KotlinTypeFactory.simpleType(
+                baseType = binding.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
-            val linkedBindingWithType = KotlinTypeFactory.simpleType(
-                baseType = linkedBinding.defaultType,
+            val providerWithType = KotlinTypeFactory.simpleType(
+                baseType = provider.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
-            superTypes += unlinkedBindingWithType
+            superTypes += bindingWithType
 
             if (descriptor.annotations.hasAnnotation(SingleAnnotation)) {
                 superTypes += isSingle.defaultType.toIrType()
@@ -203,7 +196,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         startOffset, endOffset,
                         context.irBuiltIns.unitType,
                         symbolTable.referenceConstructor(
-                            unlinkedBinding.unsubstitutedPrimaryConstructor!!
+                            binding.unsubstitutedPrimaryConstructor!!
                         )
                     ).apply {
                         putTypeArgument(0, descriptor.defaultType.toIrType())
@@ -254,20 +247,19 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                     field to param
                 }
 
-            val link = unlinkedBinding.unsubstitutedMemberScope
+            val link = binding.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("link"))
 
-            val getBinding = component.unsubstitutedMemberScope
-                .findFirstFunction("getBinding") {
+            val getProvider = component.unsubstitutedMemberScope
+                .findFirstFunction("getProvider") {
                     it.valueParameters.first().type == key.defaultType
                 }
 
-            val linkedBindingClass =
-                linkedBinding(declaration, Name.identifier("Linked"), ClassKind.CLASS)
+            val providerClass = provider(declaration)
 
             addFunction(
                 name = "link",
-                returnType = linkedBindingWithType,
+                returnType = providerWithType,
                 modality = Modality.FINAL,
                 isStatic = false,
                 isSuspend = false,
@@ -276,8 +268,8 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 overriddenSymbols += symbolTable.referenceSimpleFunction(link)
                 createParameterDeclarations(link)
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                    val constructor = linkedBindingClass.constructors.first()
-                    val newLinkedBindingCall = irConstructorCall(
+                    val constructor = providerClass.constructors.first()
+                    val newProviderCall = irConstructorCall(
                         call = irCall(constructor),
                         newFunction = constructor
                     ).apply {
@@ -286,9 +278,9 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 index,
                                 DeclarationIrBuilder(context, symbol).irBlock {
                                     +irCall(
-                                        callee = symbolTable.referenceSimpleFunction(getBinding),
+                                        callee = symbolTable.referenceSimpleFunction(getProvider),
                                         type = KotlinTypeFactory.simpleType(
-                                            baseType = linkedBinding.defaultType,
+                                            baseType = provider.defaultType,
                                             arguments = listOf(param.type.asTypeProjection()),
                                             nullable = param.type.isMarkedNullable
                                         ).toIrType()
@@ -302,26 +294,22 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         }
                     }
 
-                    +irReturn(newLinkedBindingCall)
+                    +irReturn(newProviderCall)
                 }
             }
 
-            addMember(linkedBindingClass)
+            addMember(providerClass)
         }
     }
 
-    private fun linkedBinding(
-        declaration: IrClass,
-        name: Name,
-        classKind: ClassKind
-    ): IrClass {
+    private fun provider(declaration: IrClass): IrClass {
         val descriptor = declaration.descriptor
 
-        val bindingDescriptor = ClassDescriptorImpl(
+        val providerDescriptor = ClassDescriptorImpl(
             descriptor,
-            name,
+            Name.identifier("Provider"),
             Modality.FINAL,
-            classKind,
+            ClassKind.CLASS,
             emptyList(),
             descriptor.source,
             false,
@@ -338,17 +326,16 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
             InjektOrigin,
-            IrClassSymbolImpl(bindingDescriptor)
+            IrClassSymbolImpl(providerDescriptor)
         ).apply clazz@ {
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-
-            val linkedBindingWithType = KotlinTypeFactory.simpleType(
-                baseType = linkedBinding.defaultType,
+            val providerWithType = KotlinTypeFactory.simpleType(
+                baseType = abstractProvider.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
-            superTypes += linkedBindingWithType
+            superTypes += providerWithType
 
             val injektConstructor = descriptor.findInjektConstructor()
 
@@ -371,7 +358,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 origin = InjektOrigin
                 isPrimary = true
                 visibility = Visibilities.PRIVATE
-
             }.apply {
                 paramBindingFields.forEachIndexed { index, field ->
                     addValueParameter {
@@ -385,7 +371,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                     +IrDelegatingConstructorCallImpl(
                         startOffset, endOffset,
                         context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(linkedBinding.unsubstitutedPrimaryConstructor!!)
+                        symbolTable.referenceConstructor(abstractProvider.unsubstitutedPrimaryConstructor!!)
                     ).apply {
                         putTypeArgument(0, descriptor.defaultType.toIrType())
                     }
@@ -396,7 +382,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 }
             }
 
-            val invoke = linkedBinding.unsubstitutedMemberScope
+            val invoke = abstractProvider.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("invoke"))
 
             val parametersGet = parameters.unsubstitutedMemberScope
@@ -502,13 +488,13 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 private object InjektOrigin : IrDeclarationOrigin
 
 private object InjektClassNames {
+    val AbstractProvider = FqName("com.ivianuu.injekt.AbstractProvider")
+    val Binding = FqName("com.ivianuu.injekt.Binding")
     val InjektPackage = FqName("com.ivianuu.injekt")
     val Component = FqName("com.ivianuu.injekt.Component")
     val HasScope = FqName("com.ivianuu.injekt.HasScope")
     val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
     val Key = FqName("com.ivianuu.injekt.Key")
-    val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Provider = FqName("com.ivianuu.injekt.Provider")
-    val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
 }

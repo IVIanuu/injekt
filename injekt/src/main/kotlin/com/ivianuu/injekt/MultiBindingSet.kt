@@ -111,11 +111,11 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
 
 internal class SetOfProviderBinding<E>(
     private val elementKeys: Set<Key>
-) : UnlinkedBinding<Set<Provider<E>>>() {
-    override fun link(component: Component): LinkedBinding<Set<Provider<E>>> {
-        return InstanceBinding(
+) : Binding<Set<Provider<E>>>(scoped = true) {
+    override fun link(component: Component): Provider<Set<Provider<E>>> {
+        return InstanceBinding.InstanceProvider(
             elementKeys
-                .map { component.getBinding<E>(it) }
+                .map { component.getProvider<E>(it) }
                 .toSet()
         )
     }
@@ -123,13 +123,13 @@ internal class SetOfProviderBinding<E>(
 
 internal class SetOfValueBinding<E>(
     private val setOfProviderKey: Key
-) : UnlinkedBinding<Set<Lazy<E>>>() {
-    override fun link(component: Component): LinkedBinding<Set<Lazy<E>>> =
-        Linked(component.getBinding(setOfProviderKey))
+) : Binding<Set<Lazy<E>>>(scoped = true) {
+    override fun link(component: Component): Provider<Set<Lazy<E>>> =
+        Linked(component.getProvider(setOfProviderKey))
 
     private class Linked<E>(
         private val setOfProviderBinding: Provider<Set<Provider<E>>>
-    ) : LinkedBinding<Set<E>>() {
+    ) : Provider<Set<E>> {
         override fun invoke(parameters: Parameters): Set<E> {
             return setOfProviderBinding()
                 .map { it() }
@@ -140,13 +140,13 @@ internal class SetOfValueBinding<E>(
 
 internal class SetOfLazyBinding<E>(
     private val setOfProviderKey: Key
-) : UnlinkedBinding<Set<Lazy<E>>>() {
-    override fun link(component: Component): LinkedBinding<Set<Lazy<E>>> =
-        LinkedSetOfLazyBinding(component.getBinding(setOfProviderKey))
+) : Binding<Set<Lazy<E>>>(scoped = true) {
+    override fun link(component: Component): Provider<Set<Lazy<E>>> =
+        LinkedSetOfLazyBinding(component.getProvider(setOfProviderKey))
 
     private class LinkedSetOfLazyBinding<E>(
         private val setOfProviderBinding: Provider<Set<Provider<E>>>
-    ) : LinkedBinding<Set<Lazy<E>>>() {
+    ) : Provider<Set<Lazy<E>>> {
         override fun invoke(parameters: Parameters): Set<Lazy<E>> {
             return setOfProviderBinding()
                 .map { ProviderLazy(it) }

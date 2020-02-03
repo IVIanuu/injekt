@@ -493,11 +493,18 @@ interface Environment
 @TestScopeOne
 @Single
 class SingleJustInTimeDep {
-    object Binding : LinkedBinding<SingleJustInTimeDep>(), IsSingle, HasScope {
+    object Binding : com.ivianuu.injekt.Binding<SingleJustInTimeDep>(), IsSingle, HasScope {
         override val scope: Any
             get() = TestScopeOne.Companion
 
-        override fun invoke(parameters: Parameters): SingleJustInTimeDep =
-            SingleJustInTimeDep()
+        override fun link(component: Component): com.ivianuu.injekt.Provider<SingleJustInTimeDep> {
+            return Provider()
+        }
+
+        private class Provider : com.ivianuu.injekt.Provider<SingleJustInTimeDep> {
+            override fun invoke(parameters: Parameters): SingleJustInTimeDep {
+                return SingleJustInTimeDep()
+            }
+        }
     }
 }

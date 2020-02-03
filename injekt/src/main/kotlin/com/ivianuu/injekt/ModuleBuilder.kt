@@ -72,9 +72,11 @@ class ModuleBuilder {
         definition: Definition<T>
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
-        binding = DefinitionBinding(definition = definition),
-        overrideStrategy = overrideStrategy,
-        scoped = scoped
+        binding = DefinitionBinding(
+            overrideStrategy = overrideStrategy,
+            scoped = scoped,
+            definition = definition
+        )
     )
 
     inline fun <reified T> single(
@@ -114,10 +116,13 @@ class ModuleBuilder {
     ): BindingContext<T> =
         bind(
             key = keyOf(type, name),
-            binding = DefinitionBinding(definition = definition).asSingle(),
-            overrideStrategy = overrideStrategy,
-            scoped = scoped,
-            eager = eager
+            binding = DefinitionBinding(
+                overrideStrategy = overrideStrategy,
+                eager = eager,
+                scoped = scoped,
+                single = true,
+                definition = definition
+            )
         )
 
     inline fun <reified T> instance(
@@ -150,9 +155,11 @@ class ModuleBuilder {
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
-        binding = InstanceBinding(instance),
-        overrideStrategy = overrideStrategy,
-        scoped = false
+        binding = InstanceBinding(
+            instance = instance,
+            overrideStrategy = overrideStrategy,
+            scoped = false
+        )
     )
 
     inline fun <reified T> withBinding(
@@ -200,13 +207,7 @@ class ModuleBuilder {
      */
     fun include(module: Module) {
         module.bindings.forEach {
-            bind(
-                key = it.key,
-                binding = it.value,
-                overrideStrategy = it.value.overrideStrategy,
-                eager = it.value.eager,
-                scoped = it.value.scoped
-            )
+            bind(key = it.key, binding = it.value)
         }
 
         module.multiBindingMaps.forEach { (mapKey, map) ->
@@ -329,16 +330,9 @@ class ModuleBuilder {
      */
     fun <T> bind(
         key: Key,
-        binding: Binding<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = false,
-        eager: Boolean = false
+        binding: Binding<T>
     ): BindingContext<T> {
-        binding.overrideStrategy = overrideStrategy
-        binding.eager = eager
-        binding.scoped = scoped
-
-        if (overrideStrategy.check(
+        if (binding.overrideStrategy.check(
                 existsPredicate = { key in bindings },
                 errorMessage = { "Already declared binding for $key" }
             )
@@ -362,6 +356,15 @@ class ModuleBuilder {
 
 }
 
-internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
-    override fun invoke(parameters: Parameters) = instance
+internal class InstanceBinding<T>(
+    val instance: T,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    eager: Boolean = false,
+    scoped: Boolean = false
+) : Binding<T>(overrideStrategy, eager, scoped) {
+    override fun link(component: Component): Provider<T> = InstanceProvider(instance)
+
+    class InstanceProvider<T>(private val instance: T) : Provider<T> {
+        override fun invoke(parameters: Parameters): T = instance
+    }
 }
