@@ -88,7 +88,6 @@ class Component internal constructor(
         if (key.type.isNullable) {
             val nullableKey = key.copy(type = key.type.copy(isNullable = true))
             return findBinding(nullableKey) ?: NullBinding as LinkedBinding<T>
-
         }
 
         error("Couldn't find a binding for $key")
