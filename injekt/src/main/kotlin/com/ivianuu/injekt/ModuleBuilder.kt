@@ -233,9 +233,6 @@ class ModuleBuilder {
      *
      * @param key the key by which the binding can be retrieved later in the [Component]
      * @param binding the binding to add
-     * @param overrideStrategy the strategy for handling overrides
-     * @param eager whether a instance should be created when the [Component] get's created
-     * @param scoped whether instances should be created in the requesting scope
      * @return the [BindingContext] to chain binding calls
      *
      * @see Component.get
