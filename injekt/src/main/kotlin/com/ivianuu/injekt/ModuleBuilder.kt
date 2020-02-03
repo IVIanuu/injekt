@@ -374,7 +374,7 @@ internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() 
     override fun invoke(parameters: Parameters) = instance
 }
 
-private class ProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
+internal class ProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
     override fun link(component: Component): LinkedBinding<T> =
         component.getBinding(originalKey)
 }
