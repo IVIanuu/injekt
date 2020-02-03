@@ -141,7 +141,6 @@ class ComponentBuilder {
             .map { it.getAllBindings() }
             .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
                 current.forEach { (key, binding) ->
-                    println("$key $binding acc $acc")
                     if (binding.overrideStrategy.check(
                             existsPredicate = { key in acc },
                             errorMessage = { "Already declared binding for $key" }
