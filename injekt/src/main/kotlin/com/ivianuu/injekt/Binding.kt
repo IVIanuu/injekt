@@ -31,7 +31,7 @@ sealed class Binding<T> {
     /**
      * Overrides existing bindings with the same key
      */
-    var override = false
+    var overrideStrategy = OverrideStrategy.Fail
         internal set
 
     /**
@@ -62,7 +62,7 @@ sealed class Binding<T> {
         // we only copy the state if it's the first link
         if (!linked.linkPerformed) {
             linked.linkPerformed = true
-            linked.override = override
+            linked.overrideStrategy = overrideStrategy
             linked.eager = eager
             linked.scoped = scoped
         }

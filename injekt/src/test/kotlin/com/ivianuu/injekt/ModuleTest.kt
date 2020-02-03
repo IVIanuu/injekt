@@ -35,26 +35,51 @@ class ModuleTest {
     }
 
     @Test
-    fun testAllowsExplicitOverride() {
+    fun testOverride() {
         val originalBinding = DefinitionBinding { "value" }
         val overrideBinding = DefinitionBinding { "overridden_value" }
 
         val module = Module {
             bind(key = keyOf<String>(), binding = originalBinding)
-            bind(key = keyOf<String>(), binding = overrideBinding, override = true)
+            bind(
+                key = keyOf<String>(),
+                binding = overrideBinding,
+                overrideStrategy = OverrideStrategy.Override
+            )
         }
 
         assertEquals(module.bindings[keyOf<String>()], overrideBinding)
     }
 
+    @Test
+    fun testOverrideDrop() {
+        val originalBinding = DefinitionBinding { "value" }
+        val overrideBinding = DefinitionBinding { "overridden_value" }
+
+        val module = Module {
+            bind(key = keyOf<String>(), binding = originalBinding)
+            bind(
+                key = keyOf<String>(),
+                binding = overrideBinding,
+                overrideStrategy = OverrideStrategy.Drop
+            )
+        }
+
+        assertEquals(module.bindings[keyOf<String>()], originalBinding)
+    }
+
     @Test(expected = IllegalStateException::class)
-    fun testDisallowsImplicitOverride() {
+    fun testOverrideFail() {
         val firstBinding = DefinitionBinding { "value" }
         val overrideBinding = DefinitionBinding { "overridden_value" }
 
         Module {
             bind(key = keyOf<String>(), binding = firstBinding)
-            bind(key = keyOf<String>(), binding = overrideBinding, override = false)
+            bind(
+                key = keyOf<String>(),
+                binding = overrideBinding,
+                overrideStrategy = OverrideStrategy.Fail
+            )
         }
     }
 
@@ -76,13 +101,13 @@ class ModuleTest {
     @Test
     fun testInheresAllAttributesWhenIncluding() {
         val moduleA = Module {
-            single(override = true, eager = true) { TestDep1() }
+            single(overrideStrategy = OverrideStrategy.Override, eager = true) { TestDep1() }
         }
 
         val moduleB = Module { include(moduleA) }
 
         val binding = moduleB.bindings.values.single()
-        assertTrue(binding.override)
+        assertEquals(OverrideStrategy.Override, binding.overrideStrategy)
         assertTrue(binding.eager)
         assertTrue(binding.scoped)
     }

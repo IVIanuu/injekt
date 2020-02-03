@@ -26,11 +26,11 @@ class MapTest {
         val component = Component {
             modules(
                 Module {
-                    factory(NameOne) { "value_one" }
+                    factory(name = NameOne) { "value_one" }
                         .intoMap<String, CharSequence>("key_one", mapName = Values)
-                    factory(NameTwo) { "value_two" }
+                    factory(name = NameTwo) { "value_two" }
                         .intoMap<String, CharSequence>("key_two", mapName = Values)
-                    factory(NameThree) { "value_three" }
+                    factory(name = NameThree) { "value_three" }
                         .intoMap<String, CharSequence>("key_three", mapName = Values)
                 }
             )
@@ -79,7 +79,7 @@ class MapTest {
         val componentA = Component {
             modules(
                 Module {
-                    factory(NameOne) { "value_one" }
+                    factory(name = NameOne) { "value_one" }
                         .intoMap<String, String>("key_one")
                 }
             )
@@ -94,7 +94,7 @@ class MapTest {
 
             modules(
                 Module {
-                    factory(NameTwo) { "value_two" }
+                    factory(name = NameTwo) { "value_two" }
                         .intoMap<String, String>("key_two")
                 }
             )
@@ -110,7 +110,7 @@ class MapTest {
 
             modules(
                 Module {
-                    factory(NameThree) { "value_three" }
+                    factory(name = NameThree) { "value_three" }
                         .intoMap<String, String>("key_three")
                 }
             )
@@ -124,14 +124,17 @@ class MapTest {
     }
 
     @Test
-    fun testOverridesLegalOverride() {
+    fun testOverride() {
         val component = Component {
             modules(
                 Module {
-                    factory(NameOne) { "value" }
+                    factory(name = NameOne) { "value" }
                         .intoMap<String, String>("key")
-                    factory(NameTwo) { "overridden_value" }
-                        .intoMap<String, String>("key", override = true)
+                    factory(name = NameTwo) { "overridden_value" }
+                        .intoMap<String, String>(
+                            "key",
+                            overrideStrategy = OverrideStrategy.Override
+                        )
                 }
             )
         }
@@ -142,8 +145,27 @@ class MapTest {
         )
     }
 
+    @Test
+    fun testOverrideDrop() {
+        val component = Component {
+            modules(
+                Module {
+                    factory(name = NameOne) { "value" }
+                        .intoMap<String, String>("key")
+                    factory(name = NameTwo) { "overridden_value" }
+                        .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
+                }
+            )
+        }
+
+        assertEquals(
+            "value",
+            component.get<Map<String, String>>()["key"]
+        )
+    }
+
     @Test(expected = IllegalStateException::class)
-    fun testThrowsOnIllegalOverride() {
+    fun testOverrideFail() {
         Component {
             Module {
                 factory { "value" }.intoMap<String, String>("key")
@@ -153,7 +175,7 @@ class MapTest {
     }
 
     @Test
-    fun testOverridesLegalNestedOverride() {
+    fun testNestedOverride() {
         val componentA = Component {
             modules(
                 Module {
@@ -167,8 +189,11 @@ class MapTest {
 
             modules(
                 Module {
-                    factory(NameOne) { "overridden_value" }
-                        .intoMap<String, String>("key", override = true)
+                    factory(name = NameOne) { "overridden_value" }
+                        .intoMap<String, String>(
+                            "key",
+                            overrideStrategy = OverrideStrategy.Override
+                        )
                 }
             )
         }
@@ -179,8 +204,8 @@ class MapTest {
         assertEquals("overridden_value", mapB["key"])
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun testThrowsOnIllegalNestedOverride() {
+    @Test
+    fun testNestedOverrideDrop() {
         val componentA = Component {
             modules(
                 Module {
@@ -194,7 +219,34 @@ class MapTest {
 
             modules(
                 Module {
-                    factory(NameOne) { "overridden_value" }
+                    factory(name = NameOne) { "overridden_value" }
+                        .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
+                }
+            )
+        }
+
+        val mapA = componentA.get<Map<String, String>>()
+        assertEquals("value", mapA["key"])
+        val mapB = componentB.get<Map<String, String>>()
+        assertEquals("value", mapB["key"])
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testNestedOverrideFail() {
+        val componentA = Component {
+            modules(
+                Module {
+                    factory { "value" }
+                        .intoMap<String, String>("key")
+                }
+            )
+        }
+        val componentB = Component {
+            dependencies(componentA)
+
+            modules(
+                Module {
+                    factory(name = NameOne) { "overridden_value" }
                         .intoMap<String, String>("key")
                 }
             )
