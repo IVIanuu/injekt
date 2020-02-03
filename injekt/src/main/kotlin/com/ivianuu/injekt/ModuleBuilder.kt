@@ -186,7 +186,11 @@ class ModuleBuilder {
         name: Any? = null,
         block: BindingContext<T>.() -> Unit
     ) {
-        bindProxy(type = type, name = name).block()
+        // we create a proxy binding which links to the original binding
+        // because we have no reference to the original one it's likely in another [Module] or [Component]
+        // we use a unique id here to make sure that the binding does not collide with any user config
+        factory(type = type, name = UUID.randomUUID().toString()) { get(type = type, name = name) }
+            .block()
     }
 
     /**
@@ -356,25 +360,9 @@ class ModuleBuilder {
         )
     }
 
-    private fun <T> bindProxy(
-        type: Type<T>,
-        name: Any?
-    ): BindingContext<T> {
-        // we create a proxy binding which links to the original binding
-        // because we have no reference to the original one it's likely in another [Module] or [Component]
-        // we use a unique id here to make sure that the binding does not collide with any user config
-        return bind(
-            key = keyOf(type = type, name = UUID.randomUUID().toString()),
-            binding = ProxyBinding(originalKey = keyOf(type = type, name = name))
-        )
-    }
 }
 
 internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
     override fun invoke(parameters: Parameters) = instance
 }
 
-internal class ProxyBinding<T>(private val originalKey: Key) : UnlinkedBinding<T>() {
-    override fun link(component: Component): LinkedBinding<T> =
-        component.getBinding(originalKey)
-}

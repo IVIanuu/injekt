@@ -47,8 +47,6 @@ class Component internal constructor(
     internal val dependencies: Set<Component>
 ) {
 
-    private val linkedBindingsByUnlinked = mutableMapOf<UnlinkedBinding<*>, LinkedBinding<*>>()
-
     init {
         scopedBindings
             .filter { it.value.eager }
@@ -158,10 +156,7 @@ class Component internal constructor(
 
     private fun <T> Binding<T>.linkIfNeeded(key: Key): LinkedBinding<T> {
         if (this is LinkedBinding) return this
-        this as UnlinkedBinding
-        val linkedBinding = linkedBindingsByUnlinked.getOrPut(this) {
-            performLink(this@Component)
-        } as LinkedBinding<T>
+        val linkedBinding = performLink(this@Component)
         synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
         return linkedBinding
     }

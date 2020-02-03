@@ -55,12 +55,9 @@ sealed class Binding<T> {
 
     internal open fun performLink(component: Component): LinkedBinding<T> {
         val linked = link(component)
-        if (this !is ProxyBinding) {
-            linked.overrideStrategy = overrideStrategy
-            linked.eager = eager
-            linked.scoped = scoped
-        }
-
+        linked.overrideStrategy = overrideStrategy
+        linked.eager = eager
+        linked.scoped = scoped
         return linked
     }
 }

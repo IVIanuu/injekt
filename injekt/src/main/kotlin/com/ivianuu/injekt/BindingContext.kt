@@ -71,13 +71,11 @@ data class BindingContext<T> internal constructor(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        moduleBuilder.bind(
-            key = keyOf(type, name),
-            binding = binding as Binding<Any?>,
-            overrideStrategy = overrideStrategy,
-            eager = binding.eager,
-            scoped = binding.scoped
-        )
+        moduleBuilder.factory(
+            type = type as Type<Any?>,
+            name = name,
+            overrideStrategy = overrideStrategy
+        ) { get(type = key.type as Type<Any?>, name = key.name) }
 
         return this
     }
