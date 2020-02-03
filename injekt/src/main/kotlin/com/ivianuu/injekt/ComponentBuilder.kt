@@ -100,9 +100,14 @@ class ComponentBuilder {
     inline fun <reified T> instance(
         instance: T,
         name: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        instance(instance = instance, type = typeOf(), name = name, override = override)
+        instance(
+            instance = instance,
+            type = typeOf(),
+            name = name,
+            overrideStrategy = overrideStrategy
+        )
     }
 
     /**
@@ -117,19 +122,19 @@ class ComponentBuilder {
         instance: T,
         type: Type<T>,
         name: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
         val key = keyOf(type, name)
-
-        check(override || key !in instances) {
-            "Already declared binding for $key"
+        if (overrideStrategy.check(
+                existsPredicate = { key in instances },
+                errorMessage = { "Already declared binding for $key" }
+            )
+        ) {
+            val binding = InstanceBinding(instance)
+            binding.overrideStrategy = overrideStrategy
+            binding.scoped = true
+            instances[key] = binding
         }
-
-        val binding = InstanceBinding(instance)
-        binding.override = override
-        binding.scoped = true
-
-        instances[key] = binding
     }
 
     /**
@@ -142,11 +147,14 @@ class ComponentBuilder {
             .map { it.getAllBindings() }
             .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
                 current.forEach { (key, binding) ->
-                    check(key !in acc) {
-                        "Already declared binding for $key"
+                    println("$key $binding acc $acc")
+                    if (binding.overrideStrategy.check(
+                            existsPredicate = { key in acc },
+                            errorMessage = { "Already declared binding for $key" }
+                        )
+                    ) {
+                        acc[key] = binding
                     }
-
-                    acc[key] = binding
                 }
 
                 return@fold acc
@@ -158,24 +166,30 @@ class ComponentBuilder {
         val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
 
         fun addBinding(key: Key, binding: Binding<*>) {
-            check(
-                binding.override || (key !in scopedBindings &&
-                        key !in dependencyBindings)
+            if (binding.overrideStrategy.check(
+                    existsPredicate = {
+                        key in scopedBindings ||
+                                key in dependencyBindings
+                    },
+                    errorMessage = { "Already declared key $key" }
+                )
             ) {
-                "Already declared key $key"
+                scopedBindings[key] = binding
+                if (!binding.scoped) unlinkedUnscopedBindings[key] = binding as UnlinkedBinding<*>
             }
-            scopedBindings[key] = binding
-            if (!binding.scoped) unlinkedUnscopedBindings[key] = binding as UnlinkedBinding<*>
         }
 
         fun addUnlinkedUnscopedDependencyBinding(key: Key, binding: UnlinkedBinding<*>) {
-            check(
-                binding.override || (key !in scopedBindings &&
-                        key !in unlinkedUnscopedBindings)
+            if (binding.overrideStrategy.check(
+                    existsPredicate = {
+                        key in scopedBindings ||
+                                key in unlinkedUnscopedBindings
+                    },
+                    errorMessage = { "Already declared key $key" }
+                )
             ) {
-                "Already declared key $key"
+                unlinkedUnscopedBindings[key] = binding
             }
-            unlinkedUnscopedBindings[key] = binding
         }
 
         fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<Any?, Any?>) {
@@ -274,6 +288,7 @@ class ComponentBuilder {
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
         val componentBinding = ComponentBinding()
         componentBinding.scoped = true
+        componentBinding.overrideStrategy = OverrideStrategy.Override
         val componentKey = keyOf<Component>()
         bindings[componentKey] = componentBinding
         scopes

@@ -20,6 +20,7 @@ package com.ivianuu.injekt
  * A [MultiBindingSet] is a set of bindings
  * This allows to inject 'Set<E>'
  *
+
  * The contents of the set can come from different modules
  *
  * The following is a typical usage of multi binding sets:
@@ -69,21 +70,21 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
 
     inline fun <reified T : E> add(
         elementName: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        add<T>(typeOf(), elementName, override)
+        add<T>(typeOf(), elementName, overrideStrategy)
     }
 
     fun <T : E> add(
         elementType: Type<T>,
         elementName: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        add(keyOf(elementType, elementName), override)
+        add(keyOf(elementType, elementName), overrideStrategy)
     }
 
-    fun add(elementKey: Key, override: Boolean = false) {
-        add(KeyWithOverrideInfo(elementKey, override))
+    fun add(elementKey: Key, overrideStrategy: OverrideStrategy = OverrideStrategy.Fail) {
+        add(KeyWithOverrideInfo(elementKey, overrideStrategy))
     }
 
     /**
@@ -92,11 +93,13 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
      * @param element the element to add to this set
      */
     fun add(element: KeyWithOverrideInfo) {
-        check(element.override || elements.none { it.key == element.key }) {
-            "Already declared ${element.key} in elements $setKey"
+        if (element.overrideStrategy.check(
+                existsPredicate = { elements.any { it.key == element.key } },
+                errorMessage = { "Already declared ${element.key} in elements $setKey" }
+            )
+        ) {
+            elements += element
         }
-
-        elements += element
     }
 
     internal fun addAll(other: MultiBindingSet<E>) {

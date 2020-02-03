@@ -17,18 +17,22 @@
 package com.ivianuu.injekt
 
 /**
- * Used in multi binding collections
- *
- * @see MultiBindingMap
- * @see MultiBindingSet
+ * All strategies for handling overrides
  */
-data class KeyWithOverrideInfo(
-    /**
-     * The key of the [Binding] this info is for
-     */
-    val key: Key,
-    /**
-     * How overrides should be handled
-     */
-    val overrideStrategy: OverrideStrategy
-)
+enum class OverrideStrategy {
+    /** Overrides the existing binding */
+    Override,
+    /** Throws an exception if there's an existing binding */
+    Fail,
+    /** Keeps the existing binding and drops this one */
+    Drop;
+
+    internal inline fun check(
+        existsPredicate: () -> Boolean,
+        errorMessage: () -> String
+    ): Boolean = when (this) {
+        Override -> true
+        Fail -> check(!existsPredicate(), errorMessage).let { true }
+        Drop -> !existsPredicate()
+    }
+}

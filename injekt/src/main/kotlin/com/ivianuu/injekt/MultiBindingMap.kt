@@ -70,27 +70,27 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key)
     inline fun <reified T : V> put(
         entryKey: K,
         entryValueName: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        put<T>(entryKey, typeOf(), entryValueName, override)
+        put<T>(entryKey, typeOf(), entryValueName, overrideStrategy)
     }
 
     fun <T : V> put(
         entryKey: K,
         entryValueType: Type<T>,
         entryValueName: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
         val entryValueKey = keyOf(entryValueType, entryValueName)
-        put(entryKey, entryValueKey, override)
+        put(entryKey, entryValueKey, overrideStrategy)
     }
 
     fun put(
         entryKey: K,
         entryValueKey: Key,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        put(entryKey, KeyWithOverrideInfo(entryValueKey, override))
+        put(entryKey, KeyWithOverrideInfo(entryValueKey, overrideStrategy))
     }
 
     /**
@@ -100,10 +100,13 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key)
      * @param entry the entry to add to this map
      */
     fun put(entryKey: K, entry: KeyWithOverrideInfo) {
-        check(entry.override || entryKey !in entries) {
-            "Already declared $entryKey in map $mapKey"
+        if (entry.overrideStrategy.check(
+                existsPredicate = { entryKey in entries },
+                errorMessage = { "Already declared $entryKey in map $mapKey" }
+            )
+        ) {
+            entries[entryKey] = entry
         }
-        entries[entryKey] = entry
     }
 
     internal fun putAll(other: MultiBindingMap<K, V>) {

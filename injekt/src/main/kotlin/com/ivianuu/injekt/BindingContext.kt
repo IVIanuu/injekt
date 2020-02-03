@@ -38,18 +38,18 @@ data class BindingContext<T> internal constructor(
 
     inline fun <reified S> bindAlias(
         name: Any? = null,
-        override: Boolean = binding.override
+        overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        bindAlias(type = typeOf<S>(), name = name, override = override)
+        bindAlias(type = typeOf<S>(), name = name, overrideStrategy = overrideStrategy)
         return this
     }
 
     @JvmName("bindName")
     fun bindAlias(
         name: Any? = null,
-        override: Boolean = binding.override
+        overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        bindAlias(type = key.type, name = name, override = override)
+        bindAlias(type = key.type, name = name, overrideStrategy = overrideStrategy)
         return this
     }
 
@@ -69,12 +69,12 @@ data class BindingContext<T> internal constructor(
     fun bindAlias(
         type: Type<*> = key.type,
         name: Any? = null,
-        override: Boolean = binding.override
+        overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
         moduleBuilder.bind(
             key = keyOf(type, name),
             binding = binding as Binding<Any?>,
-            override = override,
+            overrideStrategy = overrideStrategy,
             eager = binding.eager,
             scoped = binding.scoped
         )
@@ -85,13 +85,13 @@ data class BindingContext<T> internal constructor(
     inline fun <reified K, reified V> intoMap(
         entryKey: K,
         mapName: Any? = null,
-        override: Boolean = binding.override
+        overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> = intoMap(
         mapKeyType = typeOf(),
         mapValueType = typeOf<V>(),
         entryKey = entryKey,
         mapName = mapName,
-        override = override
+        overrideStrategy = overrideStrategy
     )
 
     /**
@@ -111,14 +111,14 @@ data class BindingContext<T> internal constructor(
         mapValueType: Type<V>,
         entryKey: K,
         mapName: Any? = null,
-        override: Boolean = binding.override
+        overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
         moduleBuilder.map(mapKeyType = mapKeyType, mapValueType = mapValueType, mapName = mapName) {
             put(
                 entryKey = entryKey,
                 entryValueType = key.type as Type<V>,
                 entryValueName = key.name,
-                override = override
+                overrideStrategy = overrideStrategy
             )
         }
         return this
@@ -126,11 +126,11 @@ data class BindingContext<T> internal constructor(
 
     inline fun <reified E> intoSet(
         setName: Any? = null,
-        override: Boolean = false
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ): BindingContext<T> = intoSet(
         setElementType = typeOf<E>(),
         setName = setName,
-        override = override
+        overrideStrategy = overrideStrategy
     )
 
     /**
@@ -146,10 +146,14 @@ data class BindingContext<T> internal constructor(
     fun <E> intoSet(
         setElementType: Type<E>,
         setName: Any? = null,
-        override: Boolean = binding.override
+        overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
         moduleBuilder.set(setElementType = setElementType, setName = setName) {
-            add(elementType = key.type as Type<E>, elementName = key.name, override = override)
+            add(
+                elementType = key.type as Type<E>,
+                elementName = key.name,
+                overrideStrategy = overrideStrategy
+            )
         }
         return this
     }

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -32,7 +33,7 @@ class ProxyTest {
     @Test
     fun testBridgingDoesNotModifyOriginalBindingState() {
         val module = Module {
-            single(override = true, eager = true) { "value" }
+            single(overrideStrategy = OverrideStrategy.Override, eager = true) { "value" }
             withBinding<String> { bindAlias<CharSequence>() }
         }
 
@@ -43,7 +44,7 @@ class ProxyTest {
 
         assertTrue(original === proxy)
         assertTrue(original.scoped)
-        assertTrue(original.override)
+        assertEquals(OverrideStrategy.Override, original.overrideStrategy)
     }
 
     @Test
