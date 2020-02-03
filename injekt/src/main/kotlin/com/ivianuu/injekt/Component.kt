@@ -108,22 +108,12 @@ class Component internal constructor(
         binding = findUnscopedBinding(key)
         if (binding != null) return binding
 
-        for (dependency in dependencies) {
-            binding = dependency.findBindingForChild(key)
-            if (binding != null) return binding
-        }
-
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
 
-        return null
-    }
-
-    private fun <T> findBindingForChild(key: Key): LinkedBinding<T>? {
-        findScopedBinding<T>(key)?.let { return it }
-
-        dependencies.forEach { dependency ->
-            dependency.findBindingForChild<T>(key)?.let { return it }
+        for (dependency in dependencies) {
+            binding = dependency.findBinding(key)
+            if (binding != null) return binding
         }
 
         return null
@@ -157,11 +147,10 @@ class Component internal constructor(
         if (justInTimeLookup != null) {
             val binding = justInTimeLookup.binding
                 .let { if (justInTimeLookup.isSingle) it.asSingle() else it }
+            if (justInTimeLookup.scope != null && justInTimeLookup.scope !in scopes) return null
             return if (justInTimeLookup.scope != null) {
-                val component = findComponentForScope(justInTimeLookup.scope)
-                    ?: error("Couldn't find Component for ${justInTimeLookup.scope}")
                 binding.scoped = true
-                component.addJustInTimeBinding(key, binding)
+                addJustInTimeBinding(key, binding)
             } else {
                 addJustInTimeBinding(key, binding)
             }
@@ -187,16 +176,6 @@ class Component internal constructor(
         } as LinkedBinding<T>
         synchronized(scopedBindings) { scopedBindings[key] = linkedBinding }
         return linkedBinding
-    }
-
-    private fun findComponentForScope(scope: Any): Component? {
-        if (scope in scopes) return this
-        for (dependency in dependencies) {
-            dependency.findComponentForScope(scope)
-                ?.let { return@findComponentForScope it }
-        }
-
-        return null
     }
 
     private object NullBinding : LinkedBinding<Any?>() {
