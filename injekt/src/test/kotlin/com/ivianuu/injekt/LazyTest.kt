@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import org.junit.Assert
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -34,5 +35,29 @@ class LazyTest {
         val value1 = lazy()
         val value2 = lazy()
         assertTrue(value1 === value2)
+    }
+
+    @Test
+    fun testLazyPassesParams() {
+        var usedParams: Parameters? = null
+
+        val component = Component {
+            modules(
+                Module {
+                    factory {
+                        usedParams = it
+                        TestDep1()
+                    }
+                }
+            )
+        }
+
+        val parameters = parametersOf("one", "two")
+
+        val lazy = component.get<Lazy<TestDep1>>()
+
+        lazy(parameters)
+
+        Assert.assertEquals(parameters, usedParams)
     }
 }

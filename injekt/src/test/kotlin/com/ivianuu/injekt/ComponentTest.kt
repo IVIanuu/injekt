@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -96,9 +97,9 @@ class ComponentTest {
     }
 
     @Test
-    fun testGetUnknownNullableInstanceNotThrows() {
+    fun testGetUnknownNullableInstanceReturnsNull() {
         val component = Component()
-        assertEquals(null, component.get<String?>())
+        assertNull(component.get<String?>())
     }
 
     @Test
@@ -361,6 +362,8 @@ class ComponentTest {
         val ints = component.get<List<Int>>()
         val strings = component.get<List<String>>()
 
+        assertEquals(listOf(1, 2, 3), ints)
+        assertEquals(listOf("one", "two", "three"), strings)
         assertNotSame(ints, strings)
     }
 

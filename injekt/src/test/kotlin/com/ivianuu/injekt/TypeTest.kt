@@ -23,6 +23,28 @@ import kotlin.reflect.KClass
 
 class TypeTest {
 
+    @Test
+    fun testArgumentDistinction() {
+        val listOfInts = typeOf<List<Int>>()
+        val listOfStrings = typeOf<List<String>>()
+        assertFalse(listOfInts == listOfStrings)
+    }
+
+    // todo not supported yet @Test
+    fun testAnnotationDistinction() {
+        val typeA = typeOf<@TypeAnnotationOne String>()
+        val typeB = typeOf<@TypeAnnotationTwo String>()
+        println("type a $typeA type b $typeB")
+        assertFalse(typeA == typeB)
+    }
+
+    // todo not supported for now @Test
+    fun testNullableDistinction() {
+        val nonNull = typeOf<String>()
+        val nullable = typeOf<String?>()
+        assertFalse(nonNull == nullable)
+    }
+
     private enum class Primitive(
         val primitiveClassifier: KClass<*>,
         val nonNullReified: Type<*>,
@@ -88,28 +110,6 @@ class TypeTest {
                 }
             }
         }
-    }
-
-    @Test
-    fun testArgumentDistinction() {
-        val listOfInts = typeOf<List<Int>>()
-        val listOfStrings = typeOf<List<String>>()
-        assertFalse(listOfInts == listOfStrings)
-    }
-
-    // todo not supported yet @Test
-    fun testAnnotationDistinction() {
-        val typeA = typeOf<@TypeAnnotationOne String>()
-        val typeB = typeOf<@TypeAnnotationTwo String>()
-        println("type a $typeA type b $typeB")
-        assertFalse(typeA == typeB)
-    }
-
-    // todo not supported for now @Test
-    fun testNullableDistinction() {
-        val nonNull = typeOf<String>()
-        val nullable = typeOf<String?>()
-        assertFalse(nonNull == nullable)
     }
 }
 

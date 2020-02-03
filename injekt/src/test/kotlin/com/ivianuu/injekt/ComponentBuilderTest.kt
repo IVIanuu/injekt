@@ -33,15 +33,6 @@ class ComponentBuilderTest {
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testThrowsIfScopeIsNullWhileDependencyHasScope() {
-        val dependency = Component {
-            scopes(TestScopeOne)
-        }
-
-        Component { dependencies(dependency) }
-    }
-
-    @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val dependency = Component {
             scopes(TestScopeOne)
