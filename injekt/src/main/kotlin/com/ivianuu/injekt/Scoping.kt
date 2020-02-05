@@ -16,24 +16,10 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertTrue
-import org.junit.Test
-
-class ScopedTest {
-
-    @Test
-    fun testInstantiatesOnlyOnce() {
-        val component = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                }
-            )
-        }
-
-        val value1 = component.get<TestDep1>()
-        val value2 = component.get<TestDep1>()
-
-        assertTrue(System.identityHashCode(value1) == System.identityHashCode(value2))
-    }
+/**
+ * All possible scoping models
+ */
+sealed class Scoping {
+    data class Scoped(val name: Any? = null) : Scoping()
+    object Unscoped : Scoping()
 }

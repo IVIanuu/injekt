@@ -21,24 +21,28 @@ package com.ivianuu.injekt
  */
 typealias Definition<T> = Component.(Parameters) -> T
 
-internal class DefinitionBinding<T>(
-    kind: Kind,
+fun <T> DefinitionBinding(
+    key: Key,
+    kind: Kind = FactoryKind,
+    scoping: Scoping = Scoping.Unscoped,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    eager: Boolean = false,
-    scoped: Boolean = false,
-    private val definition: Definition<T>
-) : Binding<T>(
+    definition: Definition<T>
+) = Binding(
+    key = key,
     kind = kind,
+    scoping = scoping,
     overrideStrategy = overrideStrategy,
-    eager = eager,
-    scoped = scoped
-) {
-    override fun link(component: Component): Provider<T> = DefinitionProvider(component, definition)
-    private class DefinitionProvider<T>(
-        private val component: Component,
-        private val definition: Definition<T>
-    ) : Provider<T> {
-        override fun invoke(parameters: Parameters): T =
-            definition(component, parameters)
-    }
+    instanceFactory = DefinitionInstanceFactory(definition)
+)
+
+private class DefinitionInstanceFactory<T>(
+    private val definition: Definition<T>
+) : InstanceFactory<T> {
+    override fun create(): Instance<T> = DefinitionInstance(definition)
+}
+
+private class DefinitionInstance<T>(private val definition: Component.(Parameters) -> T) :
+    Instance<T> {
+    override fun resolve(component: Component, parameters: Parameters): T =
+        definition.invoke(component, parameters)
 }

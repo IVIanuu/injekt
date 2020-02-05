@@ -18,20 +18,15 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-data class JustInTimeLookup<T>(
-    val binding: Binding<T>,
-    val scope: Any?
-)
-
 interface JustInTimeLookupFactory {
-    fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>?
+    fun <T> findBindingForKey(key: Key): Binding<T>?
 }
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = mutableMapOf<Type<*>, JustInTimeLookup<*>>()
+    private val lookups = mutableMapOf<Type<*>, Binding<*>>()
 
-    override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? {
+    override fun <T> findBindingForKey(key: Key): Binding<T>? {
         if (key.name != null) return null
         val type = key.type
 
@@ -46,20 +41,18 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
             }
         }
 
-        return lookup as? JustInTimeLookup<T>
+        return lookup as? Binding<T>
     }
 
     private fun findLookup(classifier: KClass<*>) = try {
         val bindingClass = classifier.java.declaredClasses
-            .first { Binding::class.java.isAssignableFrom(it) }
-        val binding = bindingClass.declaredFields
+            .first { BindingFactory::class.java.isAssignableFrom(it) }
+        bindingClass.declaredFields
             .first { it.type == bindingClass }
             .also { it.isAccessible = true }
-            .get(null) as Binding<*>
-        JustInTimeLookup(
-            binding = binding,
-            scope = (binding as? HasScope)?.scope
-        )
+            .get(null)
+            .let { it as BindingFactory<*> }
+            .create()
     } catch (e: Exception) {
         null
     }

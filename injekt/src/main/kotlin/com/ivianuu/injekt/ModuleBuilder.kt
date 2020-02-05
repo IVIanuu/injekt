@@ -69,11 +69,10 @@ class ModuleBuilder {
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ): BindingContext<T> = bind(
-        key = keyOf(type, name),
         binding = InstanceBinding(
+            key = keyOf(type, name),
             instance = instance,
-            overrideStrategy = overrideStrategy,
-            scoped = false
+            overrideStrategy = overrideStrategy
         )
     )
 
@@ -121,9 +120,7 @@ class ModuleBuilder {
      * @param module the Module to merge
      */
     fun include(module: Module) {
-        module.bindings.forEach {
-            bind(key = it.key, binding = it.value)
-        }
+        module.bindings.forEach { bind(binding = it.value) }
 
         module.multiBindingMaps.forEach { (mapKey, map) ->
             val builder = multiBindingMapBuilders.getOrPut(mapKey) {
@@ -240,19 +237,16 @@ class ModuleBuilder {
      * @see factory
      * @see single
      */
-    fun <T> bind(
-        key: Key,
-        binding: Binding<T>
-    ): BindingContext<T> {
+    fun <T> bind(binding: Binding<T>): BindingContext<T> {
         if (binding.overrideStrategy.check(
-                existsPredicate = { key in bindings },
-                errorMessage = { "Already declared binding for $key" }
+                existsPredicate = { binding.key in bindings },
+                errorMessage = { "Already declared binding for ${binding.key}" }
             )
         ) {
-            bindings[key] = binding
+            bindings[binding.key] = binding
         }
 
-        return BindingContext(binding = binding, key = key, moduleBuilder = this)
+        return BindingContext(binding = binding, moduleBuilder = this)
     }
 
     /**
@@ -266,17 +260,4 @@ class ModuleBuilder {
         )
     }
 
-}
-
-internal class InstanceBinding<T>(
-    val instance: T,
-    eager: Boolean = false,
-    scoped: Boolean = false,
-    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-) : Binding<T>(FactoryKind, eager, scoped, overrideStrategy) {
-    override fun link(component: Component): Provider<T> = InstanceProvider(instance)
-
-    class InstanceProvider<T>(private val instance: T) : Provider<T> {
-        override fun invoke(parameters: Parameters): T = instance
-    }
 }

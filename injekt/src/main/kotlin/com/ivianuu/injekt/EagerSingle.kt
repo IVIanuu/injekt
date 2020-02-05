@@ -16,55 +16,22 @@
 
 package com.ivianuu.injekt
 
-/**
- * Makes the annotated class injectable and generates a single binding for it
- * The class will be created once per [Component]
- *
- * @see Factory
- * @see Name
- * @see Scope
- * @see InjektConstructor
- * @see ModuleBuilder.single
- */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
-@KindMarker(SingleKind::class)
-annotation class Single
-
-object SingleKind : Kind {
+object EagerSingleKind : Kind {
     override fun <T> wrap(
         binding: Binding<T>,
         instance: Instance<T>,
         component: Component
-    ): Instance<T> = SingleInstance(instance)
+    ): Instance<T> = EagerSingleInstance(SingleKind.wrap(binding, instance, component))
 
-    override fun toString(): String = "Single"
+    override fun toString(): String = "EagerSingle"
 }
 
-private class SingleInstance<T>(private val instance: Instance<T>) : Instance<T> {
-    private var _value: Any? = this
-
-    override fun resolve(component: Component, parameters: Parameters): T {
-        var value = _value
-        if (value === this) {
-            synchronized(this) {
-                value = _value
-                if (value === this) {
-                    _value = instance.resolve(component, parameters)
-                    value = _value
-                }
-            }
-        }
-
-        return value as T
-    }
-}
-
-inline fun <reified T> ModuleBuilder.single(
+inline fun <reified T> ModuleBuilder.eagerSingle(
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     scoping: Scoping = Scoping.Scoped(),
     noinline definition: Definition<T>
-): BindingContext<T> = single(
+): BindingContext<T> = eagerSingle(
     type = typeOf(),
     name = name,
     overrideStrategy = overrideStrategy,
@@ -79,12 +46,11 @@ inline fun <reified T> ModuleBuilder.single(
  * @param name the name of the instance
  * @param overrideStrategy the strategy for handling overrides
  * @param scoped whether or not to create instances in the added scope
- * @param eager whether the instance should be created when the [Component] get's created
  * @param definition the definitions which creates instances
  *
  * @see ModuleBuilder.bind
  */
-fun <T> ModuleBuilder.single(
+fun <T> ModuleBuilder.eagerSingle(
     type: Type<T>,
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
@@ -94,9 +60,21 @@ fun <T> ModuleBuilder.single(
     bind(
         binding = DefinitionBinding(
             key = keyOf(type, name),
-            kind = SingleKind,
+            kind = EagerSingleKind,
             scoping = scoping,
             overrideStrategy = overrideStrategy,
             definition = definition
         )
     )
+
+private class EagerSingleInstance<T>(
+    private val instance: Instance<T>
+) : Instance<T> {
+    override fun resolve(component: Component, parameters: Parameters): T =
+        instance.resolve(component, parameters)
+
+    override fun onAttach(component: Component) {
+        super.onAttach(component)
+        resolve(component)
+    }
+}

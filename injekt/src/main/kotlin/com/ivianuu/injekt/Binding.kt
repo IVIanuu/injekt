@@ -26,40 +26,34 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-abstract class Binding<T>(
-    /*/**
+class Binding<T>(
+    /**
      * The key used to store and retrieve this binding
      */
-    val key: Key,*/
+    val key: Key,
     /**
      * The kind of this binding
      */
     val kind: Kind,
     /**
-     * Creates the instance in the moment the component get's created
+     * The scoping for this binding
      */
-    val eager: Boolean = false,
-    /**
-     * Creates instances in the bound scope
-     */
-    val scoped: Boolean = false,
+    val scoping: Scoping = Scoping.Unscoped,
     /**
      * Overrides existing bindings with the same key
      */
-    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-) {
-    /**
-     * Returns a [Provider] to retrieve instances of [T]
-     *
-     * @param component the component which is used to fulfill dependencies
-     */
-    // todo rename
-    protected abstract fun link(component: Component): Provider<T>
+    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
 
-    fun performLink(key: Key, component: Component): Provider<T> = kind.wrap(
-        key = key,
-        binding = this,
-        provider = link(component),
-        component = component
+    /**
+     * The factory which creates instances for this binding
+     */
+    val instanceFactory: InstanceFactory<T>
+) {
+    fun createInstance(component: Component) = kind.wrap(
+        binding = this, instance = instanceFactory.create(), component = component
     )
+}
+
+interface BindingFactory<T> {
+    fun create(): Binding<T>
 }

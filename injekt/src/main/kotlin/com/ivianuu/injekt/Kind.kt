@@ -20,11 +20,10 @@ import kotlin.reflect.KClass
 
 interface Kind {
     fun <T> wrap(
-        key: Key,
         binding: Binding<T>,
-        provider: Provider<T>,
+        instance: Instance<T>,
         component: Component
-    ): Provider<T>
+    ): Instance<T>
 
     override fun toString(): String
 }

@@ -16,29 +16,22 @@
 
 package com.ivianuu.injekt
 
-/**
- * Marks the annotated class as a scope
- * Scopes are used to describe where to create instances
- *
- * For example a scope for activities is declared like this
- *
- * ´´´
- * @Scope
- * annotation class ActivityScope {
- *     companion object
- * }
- * ´´´
- *
- * The following code ensures that the view model will be only instantiated in the activity scoped [Component]
- *
- * ´´´
- * @ActivityScope
- * @Factory
- * class MyViewModel
- * ´´´
- *
- * @see ComponentBuilder.scopes
- */
-// todo rename to ScopeNameMarker
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Scope
+import junit.framework.Assert.assertTrue
+import org.junit.Test
+
+class EagerSingleTest {
+
+    @Test
+    fun testInstantiatesEagerBindingOnStart() {
+        var called = false
+        Component {
+            modules(
+                Module {
+                    eagerSingle { called = true }
+                }
+            )
+        }
+        assertTrue(called)
+    }
+
+}

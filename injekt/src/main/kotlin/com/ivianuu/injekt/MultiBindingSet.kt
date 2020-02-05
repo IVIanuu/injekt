@@ -109,48 +109,38 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
     internal fun build(): MultiBindingSet<E> = elements
 }
 
-internal class SetOfProviderBinding<E>(
-    private val elementKeys: Set<Key>
-) : Binding<Set<Provider<E>>>(kind = FactoryKind, scoped = true) {
-    override fun link(component: Component): Provider<Set<Provider<E>>> {
-        return InstanceBinding.InstanceProvider(
-            elementKeys
-                .map { component.getProvider<E>(it) }
-                .toSet()
+internal fun <E> SetOfProviderBinding(
+    key: Key,
+    elementKeys: Set<Key>
+) = DefinitionBinding(key = key, scoping = Scoping.Scoped()) {
+    elementKeys.map { elementKey ->
+        get<Provider<E>>(
+            keyOf(
+                type = typeOf<Provider<E>>(
+                    Provider::class, arrayOf(elementKey.type)
+                ),
+                name = elementKey.name
+            )
         )
-    }
+    }.toSet()
 }
 
-internal class SetOfValueBinding<E>(
-    private val setOfProviderKey: Key
-) : Binding<Set<Lazy<E>>>(kind = FactoryKind, scoped = true) {
-    override fun link(component: Component): Provider<Set<Lazy<E>>> =
-        Linked(component.getProvider(setOfProviderKey))
+// todo refactor
 
-    private class Linked<E>(
-        private val setOfProviderBinding: Provider<Set<Provider<E>>>
-    ) : Provider<Set<E>> {
-        override fun invoke(parameters: Parameters): Set<E> {
-            return setOfProviderBinding()
-                .map { it() }
-                .toSet()
-        }
-    }
+internal fun <E> SetOfValueBinding(
+    key: Key,
+    setOfProviderKey: Key
+) = DefinitionBinding(key = key, scoping = Scoping.Scoped()) {
+    get<Set<Provider<E>>>(setOfProviderKey)
+        .map { it() }
+        .toSet()
 }
 
-internal class SetOfLazyBinding<E>(
-    private val setOfProviderKey: Key
-) : Binding<Set<Lazy<E>>>(kind = FactoryKind, scoped = true) {
-    override fun link(component: Component): Provider<Set<Lazy<E>>> =
-        LinkedSetOfLazyBinding(component.getProvider(setOfProviderKey))
-
-    private class LinkedSetOfLazyBinding<E>(
-        private val setOfProviderBinding: Provider<Set<Provider<E>>>
-    ) : Provider<Set<Lazy<E>>> {
-        override fun invoke(parameters: Parameters): Set<Lazy<E>> {
-            return setOfProviderBinding()
-                .map { ProviderLazy(it) }
-                .toSet()
-        }
-    }
+internal fun <E> SetOfLazyBinding(
+    key: Key,
+    setOfProviderKey: Key
+) = DefinitionBinding(key = key, scoping = Scoping.Scoped()) {
+    get<Set<Provider<E>>>(setOfProviderKey)
+        .map { ProviderLazy(it) as Lazy<E> }
+        .toSet()
 }

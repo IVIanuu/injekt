@@ -25,58 +25,47 @@ class JustInTimeLookupFactoryTest {
 
     @Test
     fun testUnscoped() {
-        val lookup =
+        val binding =
             CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>())
-        assertNotNull(lookup)
-        assertNull(lookup!!.scope)
+        assertNotNull(binding)
+        assertEquals(Scoping.Unscoped, binding!!.scoping)
     }
 
     @Test
     fun testScoped() {
-        val lookup =
+        val binding =
             CodegenJustInTimeLookupFactory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
-        assertNotNull(lookup)
-        assertEquals(TestScopeOne, lookup!!.scope)
+        assertNotNull(binding)
+        assertEquals(TestScopeOne, (binding!!.scoping as? Scoping.Scoped)?.name)
     }
 
     @Test
     fun testCannotResolveNamed() {
-        val lookup =
+        val binding =
             CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
-        assertNull(lookup)
+        assertNull(binding)
     }
 }
 
 @Factory
 class MyUnscopedDep {
-    object Binding : com.ivianuu.injekt.Binding<MyUnscopedDep>(kind = FactoryKind) {
-        override fun link(component: Component): com.ivianuu.injekt.Provider<MyUnscopedDep> {
-            return Provider()
-        }
-
-        private class Provider : com.ivianuu.injekt.Provider<MyUnscopedDep> {
-            override fun invoke(parameters: Parameters): MyUnscopedDep {
-                return MyUnscopedDep()
-            }
-        }
+    object BindingFactory : com.ivianuu.injekt.BindingFactory<MyUnscopedDep> {
+        override fun create(): Binding<MyUnscopedDep> = DefinitionBinding(
+            key = keyOf<MyUnscopedDep>()
+        ) { MyUnscopedDep() }
     }
 }
 
 @TestScopeOne
 @Single
 class MyScopedDep {
-    object Binding : com.ivianuu.injekt.Binding<MyScopedDep>(kind = SingleKind), HasScope {
-        override val scope: Any
-            get() = TestScopeOne.Companion
-
-        override fun link(component: Component): com.ivianuu.injekt.Provider<MyScopedDep> {
-            return Provider()
-        }
-
-        private class Provider : com.ivianuu.injekt.Provider<MyScopedDep> {
-            override fun invoke(parameters: Parameters): MyScopedDep {
-                return MyScopedDep()
-            }
+    object BindingFactory : com.ivianuu.injekt.BindingFactory<MyScopedDep> {
+        override fun create(): Binding<MyScopedDep> {
+            return DefinitionBinding(
+                key = keyOf<MyScopedDep>(),
+                kind = SingleKind,
+                scoping = Scoping.Scoped(TestScopeOne)
+            ) { MyScopedDep() }
         }
     }
 }

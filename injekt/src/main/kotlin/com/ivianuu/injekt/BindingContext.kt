@@ -32,7 +32,6 @@ package com.ivianuu.injekt
  */
 data class BindingContext<T> internal constructor(
     val binding: Binding<T>,
-    val key: Key,
     val moduleBuilder: ModuleBuilder
 ) {
 
@@ -49,7 +48,7 @@ data class BindingContext<T> internal constructor(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        bindAlias(type = key.type, name = name, overrideStrategy = overrideStrategy)
+        bindAlias(type = binding.key.type, name = name, overrideStrategy = overrideStrategy)
         return this
     }
 
@@ -67,7 +66,7 @@ data class BindingContext<T> internal constructor(
      * @see ModuleBuilder.bind
      */
     fun bindAlias(
-        type: Type<*> = key.type,
+        type: Type<*> = binding.key.type,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
@@ -75,7 +74,7 @@ data class BindingContext<T> internal constructor(
             type = type as Type<Any?>,
             name = name,
             overrideStrategy = overrideStrategy
-        ) { get(type = key.type as Type<Any?>, name = key.name) }
+        ) { get(type = binding.key.type as Type<Any?>, name = binding.key.name) }
 
         return this
     }
@@ -114,8 +113,8 @@ data class BindingContext<T> internal constructor(
         moduleBuilder.map(mapKeyType = mapKeyType, mapValueType = mapValueType, mapName = mapName) {
             put(
                 entryKey = entryKey,
-                entryValueType = key.type as Type<V>,
-                entryValueName = key.name,
+                entryValueType = binding.key.type as Type<V>,
+                entryValueName = binding.key.name,
                 overrideStrategy = overrideStrategy
             )
         }
@@ -148,8 +147,8 @@ data class BindingContext<T> internal constructor(
     ): BindingContext<T> {
         moduleBuilder.set(setElementType = setElementType, setName = setName) {
             add(
-                elementType = key.type as Type<E>,
-                elementName = key.name,
+                elementType = binding.key.type as Type<E>,
+                elementName = binding.key.name,
                 overrideStrategy = overrideStrategy
             )
         }

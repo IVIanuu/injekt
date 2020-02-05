@@ -32,11 +32,10 @@ annotation class Factory
 
 object FactoryKind : Kind {
     override fun <T> wrap(
-        key: Key,
         binding: Binding<T>,
-        provider: Provider<T>,
+        instance: Instance<T>,
         component: Component
-    ): Provider<T> = provider
+    ): Instance<T> = instance
 
     override fun toString(): String = "Factory"
 }
@@ -44,13 +43,13 @@ object FactoryKind : Kind {
 inline fun <reified T> ModuleBuilder.factory(
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    scoped: Boolean = false,
+    scoping: Scoping = Scoping.Unscoped,
     noinline definition: Definition<T>
 ): BindingContext<T> = factory(
     type = typeOf(),
     name = name,
     overrideStrategy = overrideStrategy,
-    scoped = scoped,
+    scoping = scoping,
     definition = definition
 )
 
@@ -60,7 +59,7 @@ inline fun <reified T> ModuleBuilder.factory(
  * @param type the of the instance
  * @param name the name of the instance
  * @param overrideStrategy the strategy for handling overrides
- * @param scoped whether or not to create instances in the added scope
+ * @param scoping whether or not to create instances in the added scope
  * @param definition the definitions which creates instances
  *
  * @see ModuleBuilder.bind
@@ -69,14 +68,14 @@ fun <T> ModuleBuilder.factory(
     type: Type<T>,
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    scoped: Boolean = false,
+    scoping: Scoping = Scoping.Unscoped,
     definition: Definition<T>
 ): BindingContext<T> = bind(
-    key = keyOf(type, name),
     binding = DefinitionBinding(
+        key = keyOf(type, name),
         kind = FactoryKind,
         overrideStrategy = overrideStrategy,
-        scoped = scoped,
+        scoping = scoping,
         definition = definition
     )
 )

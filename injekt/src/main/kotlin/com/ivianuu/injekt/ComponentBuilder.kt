@@ -126,7 +126,7 @@ class ComponentBuilder {
     ) {
         val key = keyOf(type, name)
         val binding =
-            InstanceBinding(instance = instance, overrideStrategy = overrideStrategy, scoped = true)
+            InstanceBinding(key = key, instance = instance, overrideStrategy = overrideStrategy)
         instances[key] = binding
     }
 
@@ -161,6 +161,14 @@ class ComponentBuilder {
             binding: Binding<*>,
             fromDependency: Boolean
         ) {
+            check(
+                binding.scoping == Scoping.Unscoped ||
+                        ((binding.scoping as Scoping.Scoped).name == null ||
+                                binding.scoping.name in scopes)
+            ) {
+                "Unsupported scope ${(binding.scoping as Scoping.Scoped).name}"
+            }
+
             if (binding.overrideStrategy.check(
                     existsPredicate = {
                         key in bindings ||
@@ -190,7 +198,7 @@ class ComponentBuilder {
 
         dependencies.forEach { dependency ->
             dependency.bindings
-                .filterNot { it.value.scoped }
+                .filter { it.value.scoping == Scoping.Unscoped }
                 .forEach { (key, binding) ->
                     addBinding(key, binding, true)
                 }
@@ -264,27 +272,16 @@ class ComponentBuilder {
     }
 
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
-        val componentBinding = ComponentBinding()
-        val componentKey = keyOf<Component>()
-        bindings[componentKey] = componentBinding
-        scopes
-            .map { keyOf<Component>(it) }
-            .forEach { bindings[it] = componentBinding }
-    }
-
-    private class ComponentBinding : Binding<Component>(
-        kind = FactoryKind,
-        scoped = true,
-        overrideStrategy = OverrideStrategy.Override
-    ) {
-        override fun link(component: Component): Provider<Component> =
-            ComponentProvider(component)
-
-        private class ComponentProvider(private val component: Component) :
-            Provider<Component> {
-            override fun invoke(parameters: Parameters): Component =
-                component
-        }
+        (listOf(null) + scopes)
+            .map { keyOf<Component>(name = it) }
+            .forEach { key ->
+                bindings[key] = DefinitionBinding(
+                    key = key,
+                    kind = FactoryKind,
+                    scoping = Scoping.Scoped(),
+                    overrideStrategy = OverrideStrategy.Override
+                ) { this }
+            }
     }
 
     private fun includeMapBindings(
@@ -309,7 +306,7 @@ class ComponentBuilder {
             mapKey.name
         )
 
-        bindings[mapOfProviderKey] = MapOfProviderBinding<Any?, Any?>(bindingKeys)
+        bindings[mapOfProviderKey] = MapOfProviderBinding<Any?, Any?>(mapOfProviderKey, bindingKeys)
 
         val mapOfLazyKey = keyOf(
             typeOf<Any?>(
@@ -322,9 +319,9 @@ class ComponentBuilder {
             mapKey.name
         )
 
-        bindings[mapOfLazyKey] = MapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapOfLazyKey] = MapOfLazyBinding<Any?, Any?>(mapOfLazyKey, mapOfProviderKey)
 
-        bindings[mapKey] = MapOfValueBinding<Any?, Any?>(mapOfProviderKey)
+        bindings[mapKey] = MapOfValueBinding<Any?, Any?>(mapKey, mapOfProviderKey)
     }
 
     private fun includeSetBindings(
@@ -346,7 +343,7 @@ class ComponentBuilder {
             setKey.name
         )
 
-        bindings[setOfProviderKey] = SetOfProviderBinding<Any?>(setKeys)
+        bindings[setOfProviderKey] = SetOfProviderBinding<Any?>(setOfProviderKey, setKeys)
 
         val setOfLazyKey = keyOf(
             typeOf<Any?>(
@@ -358,9 +355,9 @@ class ComponentBuilder {
             setKey.name
         )
 
-        bindings[setOfLazyKey] = SetOfLazyBinding<Any?>(setOfProviderKey)
+        bindings[setOfLazyKey] = SetOfLazyBinding<Any?>(setOfLazyKey, setOfProviderKey)
 
-        bindings[setKey] = SetOfValueBinding<Any?>(setOfProviderKey)
+        bindings[setKey] = SetOfValueBinding<Any?>(setKey, setOfProviderKey)
     }
 
     private fun Component.getAllBindings(): Map<Key, Binding<*>> =

@@ -31,29 +31,24 @@ interface Provider<T> {
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
-abstract class AbstractProvider<T> : Provider<T>
-
 internal class KeyedProvider<T>(
     private val component: Component,
     private val key: Key
 ) : Provider<T> {
 
-    private var _provider: Provider<T>? = null
+    private var _instance: Instance<T>? = null
 
     override fun invoke(parameters: Parameters): T {
-        var provider = _provider
-        if (provider == null) {
-            provider = component.getProvider(key)
-            _provider = provider
+        var instance = _instance
+        if (instance == null) {
+            instance = component.getInstance(key)
+            _instance = instance
         }
-        return provider(parameters)
+        return instance.resolve(component, parameters)
     }
 }
 
-internal class ProviderProvider<T>(
-    private val component: Component,
-    private val key: Key
-) : Provider<Provider<T>> {
-    override fun invoke(parameters: Parameters): Provider<T> =
+internal class ProviderInstance<T>(private val key: Key) : Instance<Provider<T>> {
+    override fun resolve(component: Component, parameters: Parameters): Provider<T> =
         KeyedProvider(component, key)
 }

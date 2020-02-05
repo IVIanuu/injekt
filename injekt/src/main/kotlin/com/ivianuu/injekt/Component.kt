@@ -46,16 +46,14 @@ class Component internal constructor(
     internal val dependencies: Set<Component>
 ) {
 
-    internal val providers = mutableMapOf<Key, Provider<*>>()
+    internal val instances = mutableMapOf<Key, Instance<*>>()
 
     init {
         bindings.forEach { (key, binding) ->
-            providers[key] = binding.performLink(key, this)
+            instances[key] = binding.createInstance(this)
         }
 
-        bindings
-            .filter { it.value.eager }
-            .forEach { get(it.key) }
+        instances.forEach { it.value.onAttach(this) }
     }
 
     inline fun <reified T> get(
@@ -77,57 +75,57 @@ class Component internal constructor(
      * @return the instance
      */
     fun <T> get(key: Key, parameters: Parameters = emptyParameters()): T =
-        getProvider<T>(key)(parameters)
+        getInstance<T>(key).resolve(this, parameters) // todo do pass the correct component
 
     /**
-     * Retrieve a binding of type [T]
+     * Retrieve a instance of type [T]
      *
      * @param key the of the instance
      * @return the instance
      */
-    fun <T> getProvider(key: Key): Provider<T> {
-        val binding = findProvider<T>(key)
-        if (binding != null) return binding
+    fun <T> getInstance(key: Key): Instance<T> {
+        val instance = findInstance<T>(key)
+        if (instance != null) return instance
         if (key.type.isNullable) {
             val nullableKey = key.copy(type = key.type.copy(isNullable = true))
-            return findProvider(nullableKey) ?: NullProvider as Provider<T>
+            return findInstance(nullableKey) ?: NullInstance as Instance<T>
         }
 
         error("Couldn't find a binding for $key")
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findProvider(key: Key): Provider<T>? {
-        var provider: Provider<T>?
+    private fun <T> findInstance(key: Key): Instance<T>? {
+        var instance: Instance<T>?
 
         // providers, lazy
-        provider = findSpecialProvider(key)
-        if (provider != null) return provider
+        instance = findSpecialInstance(key)
+        if (instance != null) return instance
 
-        provider = findBindingInThisComponent(key)
-        if (provider != null) return provider
+        instance = findInstanceInThisComponent(key)
+        if (instance != null) return instance
 
-        provider = findJustInTimeBinding(key)
-        if (provider != null) return provider
+        instance = findJustInTimeInstance(key)
+        if (instance != null) return instance
 
         for (dependency in dependencies) {
-            provider = dependency.findProvider(key)
-            if (provider != null) return provider
+            instance = dependency.findInstance(key)
+            if (instance != null) return instance
         }
 
         return null
     }
 
-    private fun <T> findSpecialProvider(key: Key): Provider<T>? {
+    private fun <T> findSpecialInstance(key: Key): Instance<T>? {
         if (key.type.arguments.size == 1) {
             when (key.type.classifier) {
                 Provider::class -> {
                     val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return ProviderProvider<Any?>(this, instanceKey) as Provider<T>
+                    return ProviderInstance<T>(instanceKey) as Instance<T>
                 }
                 Lazy::class -> {
                     val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return LazyProvider<Any?>(this, instanceKey) as Provider<T>
+                    return LazyInstance<T>(instanceKey) as Instance<T>
                 }
             }
         }
@@ -135,23 +133,21 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findBindingInThisComponent(key: Key): Provider<T>? =
-        synchronized(providers) { providers[key] } as? Provider<T>
+    private fun <T> findInstanceInThisComponent(key: Key): Instance<T>? =
+        synchronized(instances) { instances[key] } as? Instance<T>
 
-    private fun <T> findJustInTimeBinding(key: Key): Provider<T>? {
-        val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
-        if (justInTimeLookup == null ||
-            (justInTimeLookup.scope != null && justInTimeLookup.scope !in scopes)
+    private fun <T> findJustInTimeInstance(key: Key): Instance<T>? {
+        val binding = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
+        if (binding == null ||
+            (binding.scoping is Scoping.Scoped && binding.scoping.name !in scopes)
         ) return null
-
-        val provider = justInTimeLookup.binding
-            .performLink(key, this)
-
-        synchronized(providers) { providers[key] = provider }
-        return provider
+        val instance = binding.createInstance(this)
+        synchronized(instances) { instances[key] = instance }
+        return instance
     }
 
-    private object NullProvider : Provider<Any?> {
-        override fun invoke(parameters: Parameters): Any? = null
+    private object NullInstance : Instance<Any?> {
+        override fun resolve(component: Component, parameters: Parameters): Any? = null
     }
+
 }

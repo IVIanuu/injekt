@@ -24,31 +24,23 @@ class ModuleTest {
 
     @Test
     fun testBind() {
-        val binding = DefinitionBinding(kind = FactoryKind) { "value" }
-        val module = Module {
-            bind(
-                key = keyOf<String>(),
-                binding = binding
-            )
-        }
+        val binding = DefinitionBinding(key = keyOf<String>()) { "value" }
+        val module = Module { bind(binding) }
         assertTrue(binding in module.bindings.values)
     }
 
     @Test
     fun testOverride() {
-        val originalBinding = DefinitionBinding(kind = FactoryKind) { "value" }
+        val originalBinding = DefinitionBinding(key = keyOf<String>()) { "value" }
         val overrideBinding =
             DefinitionBinding(
-                kind = FactoryKind,
+                key = keyOf<String>(),
                 overrideStrategy = OverrideStrategy.Override
             ) { "overridden_value" }
 
         val module = Module {
-            bind(key = keyOf<String>(), binding = originalBinding)
-            bind(
-                key = keyOf<String>(),
-                binding = overrideBinding
-            )
+            bind(originalBinding)
+            bind(overrideBinding)
         }
 
         assertEquals(module.bindings[keyOf<String>()], overrideBinding)
@@ -56,19 +48,16 @@ class ModuleTest {
 
     @Test
     fun testOverrideDrop() {
-        val originalBinding = DefinitionBinding(kind = FactoryKind) { "value" }
+        val originalBinding = DefinitionBinding(key = keyOf<String>()) { "value" }
         val overrideBinding =
             DefinitionBinding(
-                kind = FactoryKind,
+                key = keyOf<String>(),
                 overrideStrategy = OverrideStrategy.Drop
             ) { "overridden_value" }
 
         val module = Module {
-            bind(key = keyOf<String>(), binding = originalBinding)
-            bind(
-                key = keyOf<String>(),
-                binding = overrideBinding
-            )
+            bind(originalBinding)
+            bind(binding = overrideBinding)
         }
 
         assertEquals(module.bindings[keyOf<String>()], originalBinding)
@@ -76,19 +65,16 @@ class ModuleTest {
 
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
-        val firstBinding = DefinitionBinding(kind = FactoryKind) { "value" }
+        val originalBinding = DefinitionBinding(key = keyOf<String>()) { "value" }
         val overrideBinding =
             DefinitionBinding(
-                kind = FactoryKind,
+                key = keyOf<String>(),
                 overrideStrategy = OverrideStrategy.Fail
             ) { "overridden_value" }
 
         Module {
-            bind(key = keyOf<String>(), binding = firstBinding)
-            bind(
-                key = keyOf<String>(),
-                binding = overrideBinding
-            )
+            bind(originalBinding)
+            bind(overrideBinding)
         }
     }
 

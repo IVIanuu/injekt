@@ -148,207 +148,6 @@ class ComponentTest {
     }
 
     @Test
-    fun testOverride() {
-        val module1 = Module {
-            factory { "my_value" }
-        }
-
-        val module2 = Module {
-            factory(overrideStrategy = OverrideStrategy.Override) { "my_overridden_value" }
-        }
-
-        val component = Component { modules(module1, module2) }
-
-        assertEquals("my_overridden_value", component.get<String>())
-    }
-
-    @Test
-    fun testOverrideDrop() {
-        val module1 = Module {
-            factory { "my_value" }
-        }
-
-        val module2 = Module {
-            factory(overrideStrategy = OverrideStrategy.Drop) { "my_overridden_value" }
-        }
-
-        val component = Component { modules(module1, module2) }
-
-        assertEquals("my_value", component.get<String>())
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testOverrideFail() {
-        val module1 = Module {
-            factory { "my_value" }
-        }
-
-        val module2 = Module {
-            factory { "my_overridden_value" }
-        }
-
-        Component { modules(module1, module2) }
-    }
-
-    @Test
-    fun testNestedOverride() {
-        val parentComponent = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(parentComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "my_overridden_value" }
-                }
-            )
-        }
-
-        assertEquals("my_value", parentComponent.get<String>())
-        assertEquals("my_overridden_value", childComponent.get<String>())
-    }
-
-    @Test
-    fun testNestedOverrideDrop() {
-        val parentComponent = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(parentComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Drop) { "my_overridden_value" }
-                }
-            )
-        }
-
-        assertEquals("my_value", parentComponent.get<String>())
-        assertEquals("my_value", childComponent.get<String>())
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testNestedOverrideFail() {
-        val parentComponent = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(parentComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "my_overridden_value" }
-                }
-            )
-        }
-    }
-
-    @Test
-    fun testDependencyOverride() {
-        val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory { "value_a" }
-                }
-            )
-        }
-        val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "value_b" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
-        }
-
-        assertEquals("value_b", childComponent.get<String>())
-    }
-
-    @Test
-    fun testDependencyOverrideDrop() {
-        val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory { "value_a" }
-                }
-            )
-        }
-        val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Drop) { "value_b" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
-        }
-
-        assertEquals("value_a", childComponent.get<String>())
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testDependencyOverrideFail() {
-        val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory { "value_a" }
-                }
-            )
-        }
-        val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "value_b" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
-        }
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testReverseDependencyOverrideFail() {
-        val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "value_a" }
-                }
-            )
-        }
-        val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "value_b" }
-                }
-            )
-        }
-
-        val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
-        }
-    }
-
-    @Test
     fun testTypeDistinction() {
         val component = Component {
             modules(
@@ -385,57 +184,11 @@ class ComponentTest {
     }
 
     @Test
-    fun testReusesSingleBindings() {
-        val componentA = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                }
-            )
-        }
-
-        val componentB = Component { dependencies(componentA) }
-        val componentC = Component { dependencies(componentB) }
-
-        val depA = componentA.get<TestDep1>()
-        val depA2 = componentA.get<TestDep1>()
-        val depB = componentB.get<TestDep1>()
-        val depC = componentC.get<TestDep1>()
-
-        assertEquals(depA, depA2)
-        assertEquals(depA, depB)
-        assertEquals(depA, depC)
-    }
-
-    @Test
-    fun testReusesSingleJustInTimeBindings() {
-        val componentA = Component { scopes(TestScopeOne) }
-
-        val componentB = Component {
-            scopes(TestScopeTwo)
-            dependencies(componentA)
-        }
-        val componentC = Component {
-            scopes(TestScopeThree)
-            dependencies(componentB)
-        }
-
-        val depA = componentA.get<SingleJustInTimeDep>()
-        val depA2 = componentA.get<SingleJustInTimeDep>()
-        val depB = componentB.get<SingleJustInTimeDep>()
-        val depC = componentC.get<SingleJustInTimeDep>()
-
-        assertEquals(depA, depA2)
-        assertEquals(depA, depB)
-        assertEquals(depA, depC)
-    }
-
-    @Test
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = Component {
             modules(
                 Module {
-                    single(scoped = false) { Context(get()) }
+                    single(scoping = Scoping.Unscoped) { Context(get()) }
                         .bindAlias<Environment>()
                 }
             )
@@ -464,47 +217,12 @@ class ComponentTest {
         assertEquals(componentC, environmentC.component)
     }
 
-    @Test
-    fun testInstantiatesEagerBindingOnStart() {
-        var called = false
-        Component {
-            modules(
-                Module {
-                    single(eager = false) { called = true }
-                }
-            )
-        }
-        assertFalse(called)
-        Component {
-            modules(
-                Module {
-                    single(eager = true) { called = true }
-                }
-            )
-        }
-        assertTrue(called)
-    }
+    // todo test scoped binding without name is scoped per component
+
+    // todo test scoped binding with name
+
 }
 
 class Context(val component: Component) : Environment
 
 interface Environment
-
-@TestScopeOne
-@Single
-class SingleJustInTimeDep {
-    object Binding : com.ivianuu.injekt.Binding<SingleJustInTimeDep>(kind = SingleKind), HasScope {
-        override val scope: Any
-            get() = TestScopeOne.Companion
-
-        override fun link(component: Component): com.ivianuu.injekt.Provider<SingleJustInTimeDep> {
-            return Provider()
-        }
-
-        private class Provider : com.ivianuu.injekt.Provider<SingleJustInTimeDep> {
-            override fun invoke(parameters: Parameters): SingleJustInTimeDep {
-                return SingleJustInTimeDep()
-            }
-        }
-    }
-}
