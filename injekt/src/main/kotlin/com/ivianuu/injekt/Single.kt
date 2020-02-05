@@ -78,8 +78,7 @@ inline fun <reified T> ModuleBuilder.single(
  * @param type the of the instance
  * @param name the name of the instance
  * @param overrideStrategy the strategy for handling overrides
- * @param scoped whether or not to create instances in the added scope
- * @param eager whether the instance should be created when the [Component] get's created
+ * @param scoping the scoping definition for this binding
  * @param definition the definitions which creates instances
  *
  * @see ModuleBuilder.bind

@@ -59,7 +59,7 @@ inline fun <reified T> ModuleBuilder.factory(
  * @param type the of the instance
  * @param name the name of the instance
  * @param overrideStrategy the strategy for handling overrides
- * @param scoping whether or not to create instances in the added scope
+ * @param scoping the scoping definition for this binding
  * @param definition the definitions which creates instances
  *
  * @see ModuleBuilder.bind

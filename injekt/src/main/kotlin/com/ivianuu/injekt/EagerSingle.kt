@@ -45,7 +45,7 @@ inline fun <reified T> ModuleBuilder.eagerSingle(
  * @param type the of the instance
  * @param name the name of the instance
  * @param overrideStrategy the strategy for handling overrides
- * @param scoped whether or not to create instances in the added scope
+ * @param scoping the scoping definition for this binding
  * @param definition the definitions which creates instances
  *
  * @see ModuleBuilder.bind
