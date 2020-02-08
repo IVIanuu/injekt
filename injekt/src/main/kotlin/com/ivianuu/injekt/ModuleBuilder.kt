@@ -152,7 +152,7 @@ class ModuleBuilder {
         key = keyOf(type, name),
         binding = InstanceBinding(instance),
         overrideStrategy = overrideStrategy,
-        scoped = false
+        scoped = true
     )
 
     inline fun <reified T> withBinding(
