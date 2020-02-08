@@ -29,6 +29,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -59,8 +60,8 @@ fun <T : Activity> ActivityModule(
 ): Module = Module {
     instance(instance = instance, type = type).apply {
         bindAlias<Activity>()
-        bindAlias<Context>(name = ForActivity, override = true)
-        bindAlias<Context>(override = true)
+        bindAlias<Context>(name = ForActivity, overrideStrategy = OverrideStrategy.Override)
+        bindAlias<Context>(overrideStrategy = OverrideStrategy.Override)
 
         if (instance is ComponentActivity) bindAlias<ComponentActivity>()
         if (instance is FragmentActivity) bindAlias<FragmentActivity>()
@@ -79,26 +80,26 @@ fun <T : Activity> ActivityModule(
         }
     }
 
-    factory(override = true) { instance.resources!! }
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources!! }
         .bindAlias(name = ForActivity)
 
     (instance as? LifecycleOwner)?.let {
-        factory(override = true) { instance.lifecycle }
+        factory(overrideStrategy = OverrideStrategy.Override) { instance.lifecycle }
             .bindAlias(name = ForActivity)
     }
 
     (instance as? ViewModelStoreOwner)?.let {
-        factory(override = true) { instance.viewModelStore }
+        factory(overrideStrategy = OverrideStrategy.Override) { instance.viewModelStore }
             .bindAlias(name = ForActivity)
     }
 
     (instance as? SavedStateRegistryOwner)?.let {
-        factory(override = true) { instance.savedStateRegistry }
+        factory(overrideStrategy = OverrideStrategy.Override) { instance.savedStateRegistry }
             .bindAlias(name = ForActivity)
     }
 
     (instance as? FragmentActivity)?.let {
-        factory(override = true) { instance.supportFragmentManager }
+        factory(overrideStrategy = OverrideStrategy.Override) { instance.supportFragmentManager }
             .bindAlias(name = ForActivity)
     }
 

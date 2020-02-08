@@ -25,6 +25,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -68,7 +69,7 @@ fun <T : Fragment> FragmentModule(
     scope: Any = FragmentScope,
     name: Any = ForFragment
 ) = Module {
-    instance(instance = instance, type = type, override = true).apply {
+    instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override).apply {
         bindAlias<Fragment>()
         bindAlias<Fragment>(name)
         bindAlias<LifecycleOwner>()
@@ -79,12 +80,18 @@ fun <T : Fragment> FragmentModule(
         bindAlias<SavedStateRegistryOwner>(name)
     }
 
-    factory(override = true) { instance.requireContext() }.bindAlias(name = name)
-    factory(override = true) { instance.resources }.bindAlias(name = name)
-    factory(override = true) { instance.lifecycle }.bindAlias(name = name)
-    factory(override = true) { instance.viewModelStore }.bindAlias(name = name)
-    factory(override = true) { instance.savedStateRegistry }.bindAlias(name = name)
-    factory(override = true) { instance.childFragmentManager }.bindAlias(name = name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.requireContext() }.bindAlias(
+        name = name
+    )
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources }.bindAlias(name = name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.lifecycle }.bindAlias(name = name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.viewModelStore }.bindAlias(name = name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.savedStateRegistry }.bindAlias(
+        name = name
+    )
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.childFragmentManager }.bindAlias(
+        name = name
+    )
 
     withBinding<Component>(name = scope) {
         bindAlias(name = name)

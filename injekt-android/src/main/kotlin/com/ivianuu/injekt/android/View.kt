@@ -23,6 +23,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -64,14 +65,14 @@ fun <T : View> ViewModule(
     instance(
         instance = instance,
         type = type,
-        override = true
+        overrideStrategy = OverrideStrategy.Override
     ).apply {
         bindAlias<View>()
         bindAlias<View>(name)
     }
 
-    factory(override = true) { instance.context!! }.bindAlias(name)
-    factory(override = true) { instance.resources!! }.bindAlias(name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.context!! }.bindAlias(name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources!! }.bindAlias(name)
 
     withBinding<Component>(name = scope) {
         bindAlias(name = name)

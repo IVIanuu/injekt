@@ -23,6 +23,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -58,11 +59,11 @@ fun <T : Service> ServiceModule(
 ): Module = Module {
     instance(instance, type = type).apply {
         bindAlias<Service>()
-        bindAlias<Context>(name = name, override = true)
-        bindAlias<Context>(override = true)
+        bindAlias<Context>(name = name, overrideStrategy = OverrideStrategy.Override)
+        bindAlias<Context>(overrideStrategy = OverrideStrategy.Override)
     }
 
-    factory(override = true) { instance.resources!! }.bindAlias(name = name)
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources!! }.bindAlias(name = name)
 
     withBinding<Component>(name = scope) {
         bindAlias(name = name)
