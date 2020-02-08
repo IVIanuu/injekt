@@ -158,15 +158,15 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
-            superTypes += unlinkedBindingWithType
+            superTypes = superTypes + unlinkedBindingWithType
 
             if (descriptor.annotations.hasAnnotation(SingleAnnotation)) {
-                superTypes += isSingle.defaultType.toIrType()
+                superTypes = superTypes + isSingle.defaultType.toIrType()
             }
 
             val scopeAnnotation = descriptor.getAnnotatedAnnotations(ScopeAnnotation).singleOrNull()
             if (scopeAnnotation != null) {
-                superTypes += hasScope.defaultType.toIrType()
+                superTypes = superTypes + hasScope.defaultType.toIrType()
 
                 val scopeCompanion = getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
 
@@ -179,9 +179,12 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         name = Name.identifier("getScope")
                         returnType = scopeCompanion.defaultType.toIrType()
                     }.apply {
-                        overriddenSymbols += symbolTable.referenceSimpleFunction(
+                        overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(
                             hasScope.unsubstitutedMemberScope
-                                .getContributedVariables(Name.identifier("scope"), NoLookupLocation.FROM_BACKEND)
+                                .getContributedVariables(
+                                    Name.identifier("scope"),
+                                    NoLookupLocation.FROM_BACKEND
+                                )
                                 .single()
                                 .getter!!
                         )
@@ -492,10 +495,10 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         extensionReceiverParameter = descriptor.extensionReceiverParameter?.irValueParameter()
 
         assert(valueParameters.isEmpty()) { "params ${valueParameters.map { it.name }}" }
-        descriptor.valueParameters.mapTo(valueParameters) { it.irValueParameter() }
+        valueParameters = descriptor.valueParameters.map { it.irValueParameter() }
 
         assert(typeParameters.isEmpty()) { "types ${typeParameters.map { it.name }}" }
-        descriptor.typeParameters.mapTo(typeParameters) { it.irTypeParameter() }
+        typeParameters + descriptor.typeParameters.map { it.irTypeParameter() }
     }
 }
 
