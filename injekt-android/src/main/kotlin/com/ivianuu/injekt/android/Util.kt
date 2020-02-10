@@ -25,6 +25,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ModuleBuilder
 import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.factory
 import kotlinx.coroutines.CoroutineScope
 
 internal fun ModuleBuilder.maybeLifecycleBindings(

@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.typeOf
 
 inline fun <reified T : Fragment> FragmentComponent(
