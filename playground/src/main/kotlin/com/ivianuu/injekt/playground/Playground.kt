@@ -83,7 +83,6 @@ class MyDep(
     @Commands private val commandsSetProvider: Set<Provider<Command>>,
 
     private val nullable: String?,
-    @Optional private val optional: String?,
 
     @Param private val param: String,
 
