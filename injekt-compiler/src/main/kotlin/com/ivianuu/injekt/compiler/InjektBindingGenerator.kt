@@ -276,7 +276,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 isSuspend = false,
                 origin = InjektOrigin
             ).apply {
-                overriddenSymbols += symbolTable.referenceSimpleFunction(link)
+                overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(link)
                 createParameterDeclarations(link)
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     val constructor = linkedBindingClass.constructors.first()
@@ -351,7 +351,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
-            superTypes += linkedBindingWithType
+            superTypes = superTypes + linkedBindingWithType
 
             val injektConstructor = descriptor.findInjektConstructor()
 
@@ -413,7 +413,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 isSuspend = false,
                 origin = InjektOrigin
             ).apply {
-                overriddenSymbols += symbolTable.referenceSimpleFunction(invoke)
+                overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(invoke)
                 createParameterDeclarations(invoke)
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     val getInstanceCall = if (descriptor.kind == ClassKind.OBJECT) {
