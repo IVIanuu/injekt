@@ -17,14 +17,12 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -68,27 +66,20 @@ fun <T : Fragment> FragmentModule(
     scope: Any = FragmentScope,
     name: Any = ForFragment
 ) = Module {
-    instance(instance = instance, type = type, override = true).apply {
-        bindAlias<Fragment>()
-        bindAlias<Fragment>(name)
-        bindAlias<LifecycleOwner>()
-        bindAlias<LifecycleOwner>(name)
-        bindAlias<ViewModelStoreOwner>()
-        bindAlias<ViewModelStoreOwner>(name)
-        bindAlias<SavedStateRegistryOwner>()
-        bindAlias<SavedStateRegistryOwner>(name)
-    }
+    instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override)
+        .bindAlias<Fragment>()
+        .bindAlias<Fragment>(name = name)
 
-    factory(override = true) { instance.requireContext() }.bindAlias(name = name)
-    factory(override = true) { instance.resources }.bindAlias(name = name)
-    factory(override = true) { instance.lifecycle }.bindAlias(name = name)
-    factory(override = true) { instance.viewModelStore }.bindAlias(name = name)
-    factory(override = true) { instance.savedStateRegistry }.bindAlias(name = name)
-    factory(override = true) { instance.childFragmentManager }.bindAlias(name = name)
+    maybeLifecycleBindings(instance, name)
+    maybeViewModelStoreBindings(instance, name)
+    maybeSavedStateBindings(instance, name)
 
-    withBinding<Component>(name = scope) {
-        bindAlias(name = name)
-    }
+    contextBindings(name) { instance.requireContext() }
+    factory(overrideStrategy = OverrideStrategy.Override) { instance.childFragmentManager }.bindAlias(
+        name = name
+    )
+
+    componentAlias(scope)
 }
 
 @Scope

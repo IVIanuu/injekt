@@ -32,14 +32,22 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev92"
+    const val version = "${Build.versionName}-dev94"
 }
 
 object Deps {
     const val androidGradlePlugin = "com.android.tools.build:gradle:3.5.1"
 
-    const val androidxAppCompat = "androidx.appcompat:appcompat:1.1.0"
-    const val androidxLifecycleExtensions = "androidx.lifecycle:lifecycle-extensions:2.2.0-rc02"
+    object AndroidX {
+        const val appCompat = "androidx.appcompat:appcompat:1.1.0"
+
+        object Lifecycle {
+            private const val version = "2.2.0-rc02"
+            const val extensions = "androidx.lifecycle:lifecycle-extensions:$version"
+            const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
+        }
+    }
+
     const val bintrayGradlePlugin =
         "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
 
@@ -58,7 +66,7 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev92"
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev93"
 
     const val junit = "junit:junit:4.12"
 

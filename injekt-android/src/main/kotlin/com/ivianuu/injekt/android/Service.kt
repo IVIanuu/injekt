@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
-import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
@@ -45,28 +44,17 @@ inline fun <T : Service> ServiceComponent(
     }
 
 inline fun <reified T : Service> ServiceModule(
-    instance: T,
-    scope: Any = ServiceScope,
-    name: Any = ForService
-): Module = ServiceModule(instance = instance, type = typeOf(), scope = scope, name = name)
+    instance: T
+): Module = ServiceModule(instance = instance, type = typeOf())
 
 fun <T : Service> ServiceModule(
     instance: T,
-    type: Type<T>,
-    scope: Any = ServiceScope,
-    name: Any = ForService
+    type: Type<T>
 ): Module = Module {
-    instance(instance, type = type).apply {
-        bindAlias<Service>()
-        bindAlias<Context>(name = name, override = true)
-        bindAlias<Context>(override = true)
-    }
-
-    factory(override = true) { instance.resources!! }.bindAlias(name = name)
-
-    withBinding<Component>(name = scope) {
-        bindAlias(name = name)
-    }
+    instance(instance, type = type)
+        .bindAlias<Service>()
+    contextBindings(ForService) { instance }
+    componentAlias(ServiceScope)
 }
 
 @Scope

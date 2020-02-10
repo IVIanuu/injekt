@@ -53,13 +53,8 @@ fun <T : ContentProvider> ContentProviderModule(
 ): Module = Module {
     instance(instance, type = type)
         .bindAlias<ContentProvider>()
-
-    factory(override = true) { instance.context!! }
-        .bindAlias(name = ForContentProvider)
-
-    withBinding<Component>(name = ContentProviderScope) {
-        bindAlias(name = ForContentProvider)
-    }
+    contextBindings(ForContentProvider) { instance.context!! }
+    componentAlias(ContentProviderScope)
 }
 
 @Scope

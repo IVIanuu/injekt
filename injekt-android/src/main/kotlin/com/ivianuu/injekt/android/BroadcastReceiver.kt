@@ -62,13 +62,8 @@ fun <T : BroadcastReceiver> ReceiverModule(
 ): Module = Module {
     instance(instance, type = type)
         .bindAlias<BroadcastReceiver>()
-
-    factory(override = true) { context }
-        .bindAlias(name = ForReceiver)
-
-    withBinding<Component>(name = ReceiverScope) {
-        bindAlias(name = ForReceiver)
-    }
+    contextBindings(ForReceiver) { context }
+    componentAlias(ReceiverScope)
 }
 
 @Scope
