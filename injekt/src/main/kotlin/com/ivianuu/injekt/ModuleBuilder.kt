@@ -124,8 +124,8 @@ class ModuleBuilder {
         instance: T,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ) {
-        instance(
+    ): BindingContext<T> {
+        return instance(
             instance = instance,
             type = typeOf(),
             name = name,
