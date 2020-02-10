@@ -25,3 +25,6 @@ interface BindingProvider<T> {
     fun onAttach(component: Component) {
     }
 }
+
+// todo remove once codegen is fixed
+abstract class AbstractBindingProvider<T> : BindingProvider<T>

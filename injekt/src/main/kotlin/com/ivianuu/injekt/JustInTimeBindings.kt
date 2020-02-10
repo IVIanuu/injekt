@@ -45,15 +45,16 @@ object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
     }
 
     private fun findLookup(classifier: KClass<*>) = try {
-        val bindingClass = classifier.java.declaredClasses
+        val bindingFactoryClass = classifier.java.declaredClasses
             .first { BindingFactory::class.java.isAssignableFrom(it) }
-        bindingClass.declaredFields
-            .first { it.type == bindingClass }
+        bindingFactoryClass.declaredFields
+            .first { it.type == bindingFactoryClass }
             .also { it.isAccessible = true }
             .get(null)
             .let { it as BindingFactory<*> }
             .create()
     } catch (e: Exception) {
+        e.printStackTrace()
         null
     }
 }

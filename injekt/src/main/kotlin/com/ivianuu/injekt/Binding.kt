@@ -52,3 +52,6 @@ class Binding<T>(
 interface BindingFactory<T> {
     fun create(): Binding<T>
 }
+
+// todo remove once codegen is fixed
+abstract class AbstractBindingFactory<T> : BindingFactory<T>

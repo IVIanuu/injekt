@@ -77,6 +77,7 @@ import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.typeOf
 import kotlin.reflect.KClass

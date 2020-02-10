@@ -16,7 +16,7 @@
 
 plugins {
     id("com.android.application")
-    //id("com.ivianuu.injekt")
+    id("com.ivianuu.injekt")
     kotlin("android")
     kotlin("kapt")
 }

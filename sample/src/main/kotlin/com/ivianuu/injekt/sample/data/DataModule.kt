@@ -20,6 +20,7 @@ import android.content.Context
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.single
 import java.io.File
 
 @Name

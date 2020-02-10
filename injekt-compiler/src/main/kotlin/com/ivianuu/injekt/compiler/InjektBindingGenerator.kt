@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -31,25 +30,17 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addProperty
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -59,14 +50,15 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.expressions.putValueArgument
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.irConstructorCall
 import org.jetbrains.kotlin.ir.util.module
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.name.ClassId
@@ -92,13 +84,15 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private fun getClass(fqName: FqName) =
         context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
-    private val abstractProvider = getClass(InjektClassNames.AbstractProvider)
+    private val abstractBindingFactory = getClass(InjektClassNames.AbstractBindingFactory)
+    private val abstractProvider = getClass(InjektClassNames.AbstractBindingProvider)
     private val binding = getClass(InjektClassNames.Binding)
     private val component = getClass(InjektClassNames.Component)
-    private val hasScope = getClass(InjektClassNames.HasScope)
     private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
-    private val provider = getClass(InjektClassNames.Provider)
+    private val scoped = getClass(InjektClassNames.Scoping)
+        .sealedSubclasses
+        .single { it.name.asString() == "Scoped" }
 
     override fun visitElement(element: IrElement) {
     }
@@ -108,18 +102,18 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
         if (!descriptor.hasAnnotatedAnnotations(KindMarkerAnnotation)) return
 
-        declaration.addMember(binding(declaration))
+        declaration.addMember(bindingFactory(declaration))
         declaration.patchDeclarationParents(declaration.parent)
 
         //error("declaration ${declaration.dump()}")
     }
 
-    private fun binding(declaration: IrClass): IrClass {
+    private fun bindingFactory(declaration: IrClass): IrClass {
         val descriptor = declaration.descriptor
 
         val bindingDescriptor = ClassDescriptorImpl(
             descriptor,
-            Name.identifier("Binding"),
+            Name.identifier("BindingFactory"),
             Modality.FINAL,
             ClassKind.OBJECT,
             emptyList(),
@@ -142,53 +136,12 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         ).apply clazz@ {
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val bindingWithType = KotlinTypeFactory.simpleType(
-                baseType = binding.defaultType,
+            val bindingFactoryWithType = KotlinTypeFactory.simpleType(
+                baseType = abstractBindingFactory.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
-            val providerWithType = KotlinTypeFactory.simpleType(
-                baseType = provider.defaultType,
-                arguments = listOf(descriptor.defaultType.asTypeProjection())
-            ).toIrType()
-
-            superTypes = superTypes + bindingWithType
-
-            if (descriptor.annotations.hasAnnotation(SingleAnnotation)) {
-                superTypes = superTypes + isSingle.defaultType.toIrType()
-            }
-
-            val scopeAnnotation = descriptor.getAnnotatedAnnotations(ScopeAnnotation).singleOrNull()
-            if (scopeAnnotation != null) {
-                superTypes = superTypes + hasScope.defaultType.toIrType()
-
-                val scopeCompanion = getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
-
-                addProperty {
-                    name = Name.identifier("scope")
-                }.apply {
-                    getter = buildFun {
-                        visibility = Visibilities.PUBLIC
-                        modality = Modality.FINAL
-                        name = Name.identifier("getScope")
-                        returnType = scopeCompanion.defaultType.toIrType()
-                    }.apply {
-                        overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(
-                            hasScope.unsubstitutedMemberScope
-                                .getContributedVariables(
-                                    Name.identifier("scope"),
-                                    NoLookupLocation.FROM_BACKEND
-                                )
-                                .single()
-                                .getter!!
-                        )
-                        dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
-                        body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                            +irReturn(irGetObject(symbolTable.referenceClass(scopeCompanion)))
-                        }
-                    }
-                }
-            }
+            superTypes = superTypes + bindingFactoryWithType
 
             addConstructor {
                 origin = InjektOrigin
@@ -199,135 +152,123 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                     +IrDelegatingConstructorCallImpl(
                         startOffset, endOffset,
                         context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            binding.unsubstitutedPrimaryConstructor!!
-                        )
+                        symbolTable.referenceConstructor(abstractBindingFactory.unsubstitutedPrimaryConstructor!!)
+                    ).apply {
+                        putTypeArgument(0, descriptor.defaultType.toIrType())
+                    }
+                    +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
+                }
+            }
+
+            val bindingProvider = bindingProvider(declaration)
+
+            val create = abstractBindingFactory.unsubstitutedMemberScope
+                .findSingleFunction(Name.identifier("create"))
+
+            val bindingWithType = KotlinTypeFactory.simpleType(
+                baseType = binding.defaultType,
+                arguments = listOf(descriptor.defaultType.asTypeProjection())
+            ).toIrType()
+
+            addFunction(
+                name = "create",
+                returnType = bindingWithType,
+                modality = Modality.FINAL,
+                isStatic = false,
+                isSuspend = false,
+                origin = InjektOrigin
+            ).apply {
+                overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(create)
+                createParameterDeclarations(create)
+                body = DeclarationIrBuilder(context, symbol).irBlockBody {
+                    val constructor = symbolTable.referenceConstructor(binding.constructors.first())
+                    val newBindingCall = irCall(
+                        callee = constructor,
+                        type = bindingWithType
                     ).apply {
                         putTypeArgument(0, descriptor.defaultType.toIrType())
 
+                        fun parameter(name: String) = binding.constructors
+                            .first().valueParameters.single { it.name.asString() == name }
+
+                        val keyOf = this@InjektBindingGenerator.context.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
+                            .memberScope.findFirstFunction("keyOf") {
+                            it.valueParameters.size == 1
+                        }
+
+                        // key
+                        putValueArgument(
+                            parameter("key"),
+                            irCall(
+                                callee = symbolTable.referenceFunction(keyOf),
+                                type = key.defaultType.toIrType()
+                            ).apply {
+                                putTypeArgument(0, descriptor.defaultType.toIrType())
+                            }
+                        )
+
+                        // kind
                         val kind = descriptor.getAnnotatedAnnotations(KindMarkerAnnotation)
                             .single()
                             .annotationClass!!
                             .annotations
                             .findAnnotation(KindMarkerAnnotation)!!
-                            .allValueArguments[Name.identifier("type")]!!
+                            .allValueArguments[Name.identifier("type")]
                             .cast<KClassValue>()
                             .getArgumentType(module)
                             .constructor
                             .declarationDescriptor
                             .cast<ClassDescriptor>()
 
-                        putValueArgument(0, irGetObject(symbolTable.referenceClass(kind)))
-                    }
-                    +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
-                }
-            }
-
-            val injektConstructor = descriptor.findInjektConstructor()
-
-            val keyOf = context.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
-                .memberScope.findFirstFunction("keyOf") {
-                it.valueParameters.size == 1
-            }
-
-            val paramKeyFields = injektConstructor.valueParameters
-                .filter { !it.annotations.hasAnnotation(ParamAnnotation) }
-                .map { param ->
-                    val nameClass = param.getAnnotatedAnnotations(NameAnnotation)
-                        .singleOrNull()
-                        ?.let { nameAnnotation -> getClass(nameAnnotation.fqName!!) }
-                        ?.companionObjectDescriptor
-
-                    val fieldName = Name.identifier(param.name.asString() + "Key")
-
-                    val field = addField {
-                        name = fieldName
-                        type = key.defaultType.toIrType()
-                        visibility = Visibilities.PRIVATE
-                    }.apply {
-                        initializer = DeclarationIrBuilder(context, symbol).irExprBody(
-                            DeclarationIrBuilder(context, symbol).irBlock {
-                                +irCall(
-                                    callee = symbolTable.referenceSimpleFunction(keyOf),
-                                    type = key.defaultType.toIrType()
-                                ).apply {
-                                    putTypeArgument(0, param.type.toIrType())
-                                    if (nameClass != null) {
-                                        putValueArgument(
-                                            0,
-                                            irGetObject(symbolTable.referenceClass(nameClass))
-                                        )
-                                    }
-                                }
-                            }
+                        putValueArgument(
+                            parameter("kind"),
+                            irGetObject(symbolTable.referenceClass(kind))
                         )
-                    }
-                    field to param
-                }
 
-            val link = binding.unsubstitutedMemberScope
-                .findSingleFunction(Name.identifier("link"))
-
-            val getProvider = component.unsubstitutedMemberScope
-                .findFirstFunction("getProvider") {
-                    it.valueParameters.first().type == key.defaultType
-                }
-
-            val providerClass = provider(declaration)
-
-            addFunction(
-                name = "link",
-                returnType = providerWithType,
-                modality = Modality.FINAL,
-                isStatic = false,
-                isSuspend = false,
-                origin = InjektOrigin
-            ).apply {
-                overriddenSymbols += symbolTable.referenceSimpleFunction(link)
-                createParameterDeclarations(link)
-                body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                    val constructor = providerClass.constructors.first()
-                    val newProviderCall = irConstructorCall(
-                        call = irCall(constructor),
-                        newFunction = constructor
-                    ).apply {
-                        paramKeyFields.forEachIndexed { index, (field, param) ->
+                        // scoping
+                        val scopeAnnotation = descriptor.getAnnotatedAnnotations(ScopeAnnotation).singleOrNull()
+                        if (scopeAnnotation != null) {
+                            val scopeObject =
+                                getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                            val scopedConstructor =
+                                symbolTable.referenceConstructor(scoped.constructors.first())
                             putValueArgument(
-                                index,
-                                DeclarationIrBuilder(context, symbol).irBlock {
-                                    +irCall(
-                                        callee = symbolTable.referenceSimpleFunction(getProvider),
-                                        type = KotlinTypeFactory.simpleType(
-                                            baseType = provider.defaultType,
-                                            arguments = listOf(param.type.asTypeProjection()),
-                                            nullable = param.type.isMarkedNullable
-                                        ).toIrType()
-                                    ).apply {
-                                        dispatchReceiver = irGet(valueParameters.first())
-                                        putTypeArgument(0, param.type.toIrType())
-                                        putValueArgument(0, irGetField(irGet(dispatchReceiverParameter!!), field))
-                                    }
+                                parameter("scoping"),
+                                irCall(
+                                    callee = scopedConstructor,
+                                    type = scoped.defaultType.toIrType()
+                                ).apply {
+                                    putValueArgument(
+                                        0,
+                                        irGetObject(symbolTable.referenceClass(scopeObject))
+                                    )
                                 }
                             )
                         }
+
+                        // provider
+                        putValueArgument(
+                            parameter("provider"),
+                            irGetObject(bindingProvider.symbol)
+                        )
                     }
 
-                    +irReturn(newProviderCall)
+                    +irReturn(newBindingCall)
                 }
             }
 
-            addMember(providerClass)
+            addMember(bindingProvider)
         }
     }
 
-    private fun provider(declaration: IrClass): IrClass {
+    private fun bindingProvider(declaration: IrClass): IrClass {
         val descriptor = declaration.descriptor
 
         val providerDescriptor = ClassDescriptorImpl(
             descriptor,
-            Name.identifier("Provider"),
+            Name.identifier("BindingProvider"),
             Modality.FINAL,
-            ClassKind.CLASS,
+            ClassKind.OBJECT,
             emptyList(),
             descriptor.source,
             false,
@@ -348,43 +289,16 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         ).apply clazz@ {
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val providerWithType = KotlinTypeFactory.simpleType(
+            val abstractProviderWithType = KotlinTypeFactory.simpleType(
                 baseType = abstractProvider.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
-
-            superTypes += providerWithType
-
-            val injektConstructor = descriptor.findInjektConstructor()
-
-            val paramBindingFields = injektConstructor.valueParameters
-                .filter { !it.annotations.hasAnnotation(ParamAnnotation) }
-                .map { param ->
-                    val fieldName = Name.identifier(param.name.asString() + "Provider")
-                    addField {
-                        this.name = fieldName
-                        type = KotlinTypeFactory.simpleType(
-                            baseType = provider.defaultType,
-                            arguments = listOf(param.type.asTypeProjection()),
-                            nullable = param.type.isMarkedNullable
-                        ).toIrType()
-                        visibility = Visibilities.PRIVATE
-                    }
-                }
 
             addConstructor {
                 origin = InjektOrigin
                 isPrimary = true
                 visibility = Visibilities.PRIVATE
             }.apply {
-                paramBindingFields.forEachIndexed { index, field ->
-                    addValueParameter {
-                        this.index = index
-                        this.name = field.name
-                        type = field.type
-                    }
-                }
-
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     +IrDelegatingConstructorCallImpl(
                         startOffset, endOffset,
@@ -394,28 +308,34 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         putTypeArgument(0, descriptor.defaultType.toIrType())
                     }
                     +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
-                    paramBindingFields.forEachIndexed { index, field ->
-                        +irSetField(irGet(thisReceiver!!), field, irGet(valueParameters[index]))
-                    }
                 }
             }
 
-            val invoke = abstractProvider.unsubstitutedMemberScope
-                .findSingleFunction(Name.identifier("invoke"))
+            superTypes = superTypes + abstractProviderWithType
+
+            val injektConstructor = descriptor.findInjektConstructor()
+
+            val resolve = abstractProvider.unsubstitutedMemberScope
+                .findSingleFunction(Name.identifier("resolve"))
+
+            val componentGet = component.unsubstitutedMemberScope
+                .findFirstFunction("get") {
+                    it.valueParameters.first().name.asString() == "name"
+                }
 
             val parametersGet = parameters.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("get"))
 
             addFunction(
-                name = "invoke",
+                name = "resolve",
                 returnType = declaration.defaultType,
                 modality = Modality.FINAL,
                 isStatic = false,
                 isSuspend = false,
                 origin = InjektOrigin
             ).apply {
-                overriddenSymbols += symbolTable.referenceSimpleFunction(invoke)
-                createParameterDeclarations(invoke)
+                overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(resolve)
+                createParameterDeclarations(resolve)
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     val getInstanceCall = if (descriptor.kind == ClassKind.OBJECT) {
                         irGetObject(symbolTable.referenceClass(descriptor))
@@ -424,7 +344,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                             callee = symbolTable.referenceConstructor(injektConstructor),
                             type = injektConstructor.returnType.toIrType()
                         ).apply {
-
                             var paramIndex = 0
                             injektConstructor.valueParameters.forEachIndexed { index, param ->
                                 val paramType = injektConstructor.valueParameters[index].type.toIrType()
@@ -434,7 +353,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                             callee = symbolTable.referenceSimpleFunction(parametersGet),
                                             type = paramType
                                         ).apply {
-                                            dispatchReceiver = irGet(valueParameters.first())
+                                            dispatchReceiver = irGet(valueParameters[1])
                                             putTypeArgument(0, paramType)
                                             putValueArgument(0, irInt(paramIndex))
                                         }
@@ -443,11 +362,22 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 } else {
                                     DeclarationIrBuilder(context, symbol).irBlock {
                                         +irCall(
-                                            callee = symbolTable.referenceSimpleFunction(invoke),
+                                            callee = symbolTable.referenceSimpleFunction(componentGet),
                                             type = paramType
                                         ).apply {
-                                            dispatchReceiver = irGetField(irGet(dispatchReceiverParameter!!),
-                                                paramBindingFields.single { it.name.asString().startsWith(param.name.asString()) })
+                                            dispatchReceiver = irGet(valueParameters[0])
+                                            putTypeArgument(0, paramType)
+                                            val nameObject = param.getAnnotatedAnnotations(NameAnnotation)
+                                                .singleOrNull()
+                                                ?.let { nameAnnotation -> getClass(nameAnnotation.fqName!!) }
+                                                ?.companionObjectDescriptor
+
+                                            if (nameObject != null) {
+                                                putValueArgument(
+                                                    0,
+                                                    irGetObject(symbolTable.referenceClass(nameObject))
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -506,13 +436,12 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 private object InjektOrigin : IrDeclarationOrigin
 
 private object InjektClassNames {
-    val AbstractProvider = FqName("com.ivianuu.injekt.AbstractProvider")
+    val AbstractBindingFactory = FqName("com.ivianuu.injekt.AbstractBindingFactory")
+    val AbstractBindingProvider = FqName("com.ivianuu.injekt.AbstractBindingProvider")
     val Binding = FqName("com.ivianuu.injekt.Binding")
-    val InjektPackage = FqName("com.ivianuu.injekt")
     val Component = FqName("com.ivianuu.injekt.Component")
-    val HasScope = FqName("com.ivianuu.injekt.HasScope")
-    val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
+    val InjektPackage = FqName("com.ivianuu.injekt")
     val Key = FqName("com.ivianuu.injekt.Key")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val Provider = FqName("com.ivianuu.injekt.Provider")
+    val Scoping = FqName("com.ivianuu.injekt.Scoping")
 }

@@ -16,13 +16,19 @@
 
 package com.ivianuu.injekt
 
+object InstanceKind : Kind {
+    override fun <T> wrap(binding: Binding<T>, provider: BindingProvider<T>): BindingProvider<T> =
+        provider
+    override fun toString(): String = "Instance"
+}
+
 fun <T> InstanceBinding(
     key: Key,
     instance: T,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
 ) = Binding(
     key = key,
-    kind = FactoryKind, // todo use instance kind
+    kind = InstanceKind,
     scoping = Scoping.Scoped(),
     overrideStrategy = overrideStrategy,
     provider = InstanceBindingProvider(instance)
