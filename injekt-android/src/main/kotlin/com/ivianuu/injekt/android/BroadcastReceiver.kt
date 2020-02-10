@@ -23,7 +23,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -63,13 +62,8 @@ fun <T : BroadcastReceiver> ReceiverModule(
 ): Module = Module {
     instance(instance, type = type)
         .bindAlias<BroadcastReceiver>()
-
-    factory(overrideStrategy = OverrideStrategy.Override) { context }
-        .bindAlias(name = ForReceiver)
-
-    withBinding<Component>(name = ReceiverScope) {
-        bindAlias(name = ForReceiver)
-    }
+    contextBindings(ForReceiver) { context }
+    componentAlias(ReceiverScope)
 }
 
 @Scope

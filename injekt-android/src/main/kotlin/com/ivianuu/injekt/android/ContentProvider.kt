@@ -22,7 +22,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
 import com.ivianuu.injekt.typeOf
@@ -54,13 +53,8 @@ fun <T : ContentProvider> ContentProviderModule(
 ): Module = Module {
     instance(instance, type = type)
         .bindAlias<ContentProvider>()
-
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.context!! }
-        .bindAlias(name = ForContentProvider)
-
-    withBinding<Component>(name = ContentProviderScope) {
-        bindAlias(name = ForContentProvider)
-    }
+    contextBindings(ForContentProvider) { instance.context!! }
+    componentAlias(ContentProviderScope)
 }
 
 @Scope

@@ -28,7 +28,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
 dependencies {
-    implementation(Deps.androidxAppCompat)
+    implementation(Deps.AndroidX.appCompat)
     implementation(project(":injekt"))
     implementation(project(":injekt-android"))
 }

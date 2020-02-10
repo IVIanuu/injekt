@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
@@ -51,20 +50,14 @@ fun <T : Application> ApplicationModule(
     instance: T,
     type: Type<T>
 ): Module = Module {
-    instance(instance, type = type).apply {
-        bindAlias<Application>()
-        bindAlias<Context>()
-        bindAlias<Context>(name = ForApplication)
-    }
-
-    factory { ProcessLifecycleOwner.get() }
-        .bindAlias(name = ForApplication)
-
-    factory { instance.resources!! }.bindAlias(name = ForApplication)
-
-    withBinding<Component>(name = ApplicationScope) {
-        bindAlias(name = ForApplication)
-    }
+    instance(instance, type = type)
+        .bindAlias<Application>()
+    contextBindings(ForApplication) { instance }
+    maybeLifecycleBindings(
+        ProcessLifecycleOwner.get(),
+        ForApplication
+    )
+    componentAlias(ApplicationScope)
 }
 
 @Scope

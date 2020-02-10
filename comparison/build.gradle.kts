@@ -40,7 +40,7 @@ android {
 }
 
 dependencies {
-    implementation(Deps.androidxAppCompat)
+    implementation(Deps.AndroidX.appCompat)
 
     implementation(files("libs/dagger-1-shadowed.jar"))
     kapt(files("libs/dagger-1-compiler-shadowed.jar"))

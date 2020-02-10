@@ -17,9 +17,6 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
@@ -69,33 +66,20 @@ fun <T : Fragment> FragmentModule(
     scope: Any = FragmentScope,
     name: Any = ForFragment
 ) = Module {
-    instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override).apply {
-        bindAlias<Fragment>()
-        bindAlias<Fragment>(name)
-        bindAlias<LifecycleOwner>()
-        bindAlias<LifecycleOwner>(name)
-        bindAlias<ViewModelStoreOwner>()
-        bindAlias<ViewModelStoreOwner>(name)
-        bindAlias<SavedStateRegistryOwner>()
-        bindAlias<SavedStateRegistryOwner>(name)
-    }
+    instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override)
+        .bindAlias<Fragment>()
+        .bindAlias<Fragment>(name = name)
 
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.requireContext() }.bindAlias(
-        name = name
-    )
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources }.bindAlias(name = name)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.lifecycle }.bindAlias(name = name)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.viewModelStore }.bindAlias(name = name)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.savedStateRegistry }.bindAlias(
-        name = name
-    )
+    maybeLifecycleBindings(instance, name)
+    maybeViewModelStoreBindings(instance, name)
+    maybeSavedStateBindings(instance, name)
+
+    contextBindings(name) { instance.requireContext() }
     factory(overrideStrategy = OverrideStrategy.Override) { instance.childFragmentManager }.bindAlias(
         name = name
     )
 
-    withBinding<Component>(name = scope) {
-        bindAlias(name = name)
-    }
+    componentAlias(scope)
 }
 
 @Scope

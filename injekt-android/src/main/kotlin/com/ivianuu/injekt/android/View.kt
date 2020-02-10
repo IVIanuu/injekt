@@ -66,17 +66,10 @@ fun <T : View> ViewModule(
         instance = instance,
         type = type,
         overrideStrategy = OverrideStrategy.Override
-    ).apply {
-        bindAlias<View>()
-        bindAlias<View>(name)
-    }
+    ).bindAlias<View>().bindAlias<View>(name)
 
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.context!! }.bindAlias(name)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources!! }.bindAlias(name)
-
-    withBinding<Component>(name = scope) {
-        bindAlias(name = name)
-    }
+    contextBindings(name) { instance.context!! }
+    componentAlias(scope)
 }
 
 @Scope

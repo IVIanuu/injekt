@@ -17,13 +17,9 @@
 package com.ivianuu.injekt.android
 
 import android.app.Activity
-import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
@@ -58,54 +54,24 @@ fun <T : Activity> ActivityModule(
     instance: T,
     type: Type<T>
 ): Module = Module {
-    instance(instance = instance, type = type).apply {
-        bindAlias<Activity>()
-        bindAlias<Context>(name = ForActivity, overrideStrategy = OverrideStrategy.Override)
-        bindAlias<Context>(overrideStrategy = OverrideStrategy.Override)
-
-        if (instance is ComponentActivity) bindAlias<ComponentActivity>()
-        if (instance is FragmentActivity) bindAlias<FragmentActivity>()
-        if (instance is AppCompatActivity) bindAlias<AppCompatActivity>()
-        if (instance is LifecycleOwner) {
-            bindAlias<LifecycleOwner>()
-            bindAlias<LifecycleOwner>(name = ForActivity)
+    instance(instance = instance, type = type)
+        .bindAlias<Activity>()
+        .apply {
+            if (instance is ComponentActivity) bindAlias<ComponentActivity>()
+            if (instance is FragmentActivity) bindAlias<FragmentActivity>()
+            if (instance is AppCompatActivity) bindAlias<AppCompatActivity>()
         }
-        if (instance is ViewModelStoreOwner) {
-            bindAlias<ViewModelStoreOwner>()
-            bindAlias<ViewModelStoreOwner>(name = ForActivity)
-        }
-        if (instance is SavedStateRegistryOwner) {
-            bindAlias<SavedStateRegistryOwner>()
-            bindAlias<SavedStateRegistryOwner>(name = ForActivity)
-        }
-    }
-
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.resources!! }
-        .bindAlias(name = ForActivity)
-
-    (instance as? LifecycleOwner)?.let {
-        factory(overrideStrategy = OverrideStrategy.Override) { instance.lifecycle }
-            .bindAlias(name = ForActivity)
-    }
-
-    (instance as? ViewModelStoreOwner)?.let {
-        factory(overrideStrategy = OverrideStrategy.Override) { instance.viewModelStore }
-            .bindAlias(name = ForActivity)
-    }
-
-    (instance as? SavedStateRegistryOwner)?.let {
-        factory(overrideStrategy = OverrideStrategy.Override) { instance.savedStateRegistry }
-            .bindAlias(name = ForActivity)
-    }
 
     (instance as? FragmentActivity)?.let {
         factory(overrideStrategy = OverrideStrategy.Override) { instance.supportFragmentManager }
             .bindAlias(name = ForActivity)
     }
 
-    withBinding<Component>(name = ActivityScope) {
-        bindAlias(name = ForActivity)
-    }
+    contextBindings(ForActivity) { instance }
+    maybeLifecycleBindings(instance, ForActivity)
+    maybeViewModelStoreBindings(instance, ForActivity)
+    maybeSavedStateBindings(instance, ForActivity)
+    componentAlias(ActivityScope)
 }
 
 @Scope
