@@ -33,9 +33,8 @@ annotation class Factory
 object FactoryKind : Kind {
     override fun <T> wrap(
         binding: Binding<T>,
-        instance: Instance<T>,
-        component: Component
-    ): Instance<T> = instance
+        provider: BindingProvider<T>
+    ): BindingProvider<T> = provider
 
     override fun toString(): String = "Factory"
 }

@@ -16,36 +16,20 @@
 
 package com.ivianuu.injekt
 
-interface Instance<T> {
-    fun resolve(
-        component: Component,
-        parameters: Parameters = emptyParameters()
-    ): T
-
-    fun onAttach(component: Component) {
-    }
-}
-
-interface InstanceFactory<T> {
-    fun create(): Instance<T>
-}
-
 fun <T> InstanceBinding(
     key: Key,
     instance: T,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
 ) = Binding(
     key = key,
-    kind = FactoryKind,
-    scoping = Scoping.Unscoped,
+    kind = FactoryKind, // todo use instance kind
+    scoping = Scoping.Scoped(),
     overrideStrategy = overrideStrategy,
-    instanceFactory = InstanceInstanceFactory(instance)
+    provider = InstanceBindingProvider(instance)
 )
 
-private class InstanceInstanceFactory<T>(private val instance: T) : InstanceFactory<T> {
-    override fun create(): Instance<T> = InstanceInstance(instance)
-}
-
-private class InstanceInstance<T>(val instance: T) : Instance<T> {
+private class InstanceBindingProvider<T>(
+    private val instance: T
+) : BindingProvider<T> {
     override fun resolve(component: Component, parameters: Parameters): T = instance
 }

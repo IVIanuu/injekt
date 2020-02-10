@@ -33,14 +33,14 @@ annotation class Single
 object SingleKind : Kind {
     override fun <T> wrap(
         binding: Binding<T>,
-        instance: Instance<T>,
-        component: Component
-    ): Instance<T> = SingleInstance(instance)
+        provider: BindingProvider<T>
+    ): BindingProvider<T> = SingleBindingProvider(provider)
 
     override fun toString(): String = "Single"
 }
 
-private class SingleInstance<T>(private val instance: Instance<T>) : Instance<T> {
+private class SingleBindingProvider<T>(private val provider: BindingProvider<T>) :
+    BindingProvider<T> {
     private var _value: Any? = this
 
     override fun resolve(component: Component, parameters: Parameters): T {
@@ -49,7 +49,7 @@ private class SingleInstance<T>(private val instance: Instance<T>) : Instance<T>
             synchronized(this) {
                 value = _value
                 if (value === this) {
-                    _value = instance.resolve(component, parameters)
+                    _value = provider.resolve(component, parameters)
                     value = _value
                 }
             }

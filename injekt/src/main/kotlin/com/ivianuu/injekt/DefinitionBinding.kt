@@ -32,17 +32,12 @@ fun <T> DefinitionBinding(
     kind = kind,
     scoping = scoping,
     overrideStrategy = overrideStrategy,
-    instanceFactory = DefinitionInstanceFactory(definition)
+    provider = DefinitionBindingProvider(definition)
 )
 
-private class DefinitionInstanceFactory<T>(
+private class DefinitionBindingProvider<T>(
     private val definition: Definition<T>
-) : InstanceFactory<T> {
-    override fun create(): Instance<T> = DefinitionInstance(definition)
-}
-
-private class DefinitionInstance<T>(private val definition: Component.(Parameters) -> T) :
-    Instance<T> {
+) : BindingProvider<T> {
     override fun resolve(component: Component, parameters: Parameters): T =
         definition.invoke(component, parameters)
 }

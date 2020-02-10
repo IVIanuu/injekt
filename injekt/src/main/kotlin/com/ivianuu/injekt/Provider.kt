@@ -36,19 +36,19 @@ internal class KeyedProvider<T>(
     private val key: Key
 ) : Provider<T> {
 
-    private var _instance: Instance<T>? = null
+    private var _provider: BindingProvider<T>? = null
 
     override fun invoke(parameters: Parameters): T {
-        var instance = _instance
+        var instance = _provider
         if (instance == null) {
-            instance = component.getInstance(key)
-            _instance = instance
+            instance = component.getProvider(key)
+            _provider = instance
         }
         return instance.resolve(component, parameters)
     }
 }
 
-internal class ProviderInstance<T>(private val key: Key) : Instance<Provider<T>> {
+internal class BindingProviderProvider<T>(private val key: Key) : BindingProvider<Provider<T>> {
     override fun resolve(component: Component, parameters: Parameters): Provider<T> =
         KeyedProvider(component, key)
 }

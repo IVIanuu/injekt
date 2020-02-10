@@ -16,16 +16,12 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+interface BindingProvider<T> {
+    fun resolve(
+        component: Component,
+        parameters: Parameters = emptyParameters()
+    ): T
 
-interface Kind {
-    fun <T> wrap(
-        binding: Binding<T>,
-        provider: BindingProvider<T>
-    ): BindingProvider<T>
-
-    override fun toString(): String
+    fun onAttach(component: Component) {
+    }
 }
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class KindMarker(val type: KClass<out Kind>)

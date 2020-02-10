@@ -19,9 +19,8 @@ package com.ivianuu.injekt
 object EagerSingleKind : Kind {
     override fun <T> wrap(
         binding: Binding<T>,
-        instance: Instance<T>,
-        component: Component
-    ): Instance<T> = EagerSingleInstance(SingleKind.wrap(binding, instance, component))
+        provider: BindingProvider<T>
+    ): BindingProvider<T> = EagerSingleBindingProvider(SingleKind.wrap(binding, provider))
 
     override fun toString(): String = "EagerSingle"
 }
@@ -67,11 +66,11 @@ fun <T> ModuleBuilder.eagerSingle(
         )
     )
 
-private class EagerSingleInstance<T>(
-    private val instance: Instance<T>
-) : Instance<T> {
+private class EagerSingleBindingProvider<T>(
+    private val provider: BindingProvider<T>
+) : BindingProvider<T> {
     override fun resolve(component: Component, parameters: Parameters): T =
-        instance.resolve(component, parameters)
+        provider.resolve(component, parameters)
 
     override fun onAttach(component: Component) {
         super.onAttach(component)

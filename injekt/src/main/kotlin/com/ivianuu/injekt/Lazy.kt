@@ -63,9 +63,9 @@ internal class KeyedLazy<T>(
     }
 }
 
-internal class LazyInstance<T>(
+internal class LazyBindingProvider<T>(
     private val key: Key
-) : Instance<Lazy<T>> {
+) : BindingProvider<Lazy<T>> {
     override fun resolve(component: Component, parameters: Parameters): Lazy<T> =
         KeyedLazy(component, key)
 }

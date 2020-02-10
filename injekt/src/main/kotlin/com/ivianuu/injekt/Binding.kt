@@ -43,16 +43,11 @@ class Binding<T>(
      * Overrides existing bindings with the same key
      */
     val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-
     /**
-     * The factory which creates instances for this binding
+     * Provides instances of [T]
      */
-    val instanceFactory: InstanceFactory<T>
-) {
-    fun createInstance(component: Component) = kind.wrap(
-        binding = this, instance = instanceFactory.create(), component = component
-    )
-}
+    val provider: BindingProvider<T>
+)
 
 interface BindingFactory<T> {
     fun create(): Binding<T>
