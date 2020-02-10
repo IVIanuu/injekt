@@ -84,8 +84,8 @@ class Component internal constructor(
      * @return the instance
      */
     fun <T> getProvider(key: Key): BindingProvider<T> {
-        val instance = findProvider<T>(key)
-        if (instance != null) return instance
+        val provider = findProvider<T>(key)
+        if (provider != null) return provider
         if (key.type.isNullable) {
             val nullableKey = key.copy(type = key.type.copy(isNullable = true))
             return findProvider(nullableKey) ?: NullBindingProvider as BindingProvider<T>
