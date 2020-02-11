@@ -15,14 +15,15 @@
  */
 
 plugins {
-    id("com.ivianuu.injekt")
     kotlin("jvm")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+apply(from = "${rootDir}/gradle/kt-plugin-conf.gradle")
 
 dependencies {
     implementation(project(":injekt"))
+    add("kotlinPlugin", project(":injekt-compiler"))
 }

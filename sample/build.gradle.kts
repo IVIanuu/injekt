@@ -16,7 +16,6 @@
 
 plugins {
     id("com.android.application")
-    id("com.ivianuu.injekt")
     kotlin("android")
 }
 
@@ -25,10 +24,12 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/an
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+apply(from = "${rootDir}/gradle/kt-plugin-conf.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
 dependencies {
     implementation(Deps.AndroidX.appCompat)
     implementation(project(":injekt"))
     implementation(project(":injekt-android"))
+    add("kotlinPlugin", project(":injekt-compiler"))
 }
