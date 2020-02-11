@@ -45,8 +45,9 @@ class InjektDeclarationChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor.annotations.hasAnnotation(FactoryAnnotation) &&
-            descriptor.annotations.hasAnnotation(SingleAnnotation)) {
+        if (descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.Single)
+        ) {
             report(
                 descriptor,
                 context.trace
@@ -54,49 +55,55 @@ class InjektDeclarationChecker : DeclarationChecker {
         }
 
         if (descriptor is ClassDescriptor &&
-            (descriptor.annotations.hasAnnotation(NameAnnotation) ||
-                    descriptor.annotations.hasAnnotation(ScopeAnnotation)) &&
-                descriptor.companionObjectDescriptor == null) {
+            (descriptor.annotations.hasAnnotation(InjektClassNames.Name) ||
+                    descriptor.annotations.hasAnnotation(InjektClassNames.Scope)) &&
+            descriptor.companionObjectDescriptor == null
+        ) {
             report(
                 descriptor,
                 context.trace
             ) { NeedsACompanionObject }
         }
 
-        if (descriptor.getAnnotatedAnnotations(ScopeAnnotation).size > 1) {
+        if (descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).size > 1) {
             report(
                 descriptor,
                 context.trace
             ) { OnlyOneScope }
         }
 
-        if (descriptor.getAnnotatedAnnotations(NameAnnotation).size > 1) {
+        if (descriptor.getAnnotatedAnnotations(InjektClassNames.Name).size > 1) {
             report(
                 descriptor,
                 context.trace
             ) { OnlyOneName }
         }
 
-        if (descriptor.annotations.hasAnnotation(ParamAnnotation) &&
-            descriptor.annotations.hasAnnotation(NameAnnotation)) {
+        if (descriptor.annotations.hasAnnotation(InjektClassNames.Param) &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.Name)
+        ) {
             report(
                 descriptor,
                 context.trace
             ) { ParamCannotBeNamed }
         }
 
-        if (descriptor is ClassDescriptor && descriptor.constructors.filter { it.annotations.hasAnnotation(
-                InjektConstructorAnnotation) }.size > 1) {
+        if (descriptor is ClassDescriptor && descriptor.constructors.filter {
+                it.annotations.hasAnnotation(
+                    InjektClassNames.InjektConstructor
+                )
+            }.size > 1) {
             report(
                 descriptor,
                 context.trace
             ) { OnlyOneInjektConstructor }
         }
 
-        if (descriptor is ClassDescriptor && (descriptor.annotations.hasAnnotation(FactoryAnnotation) ||
-                    descriptor.annotations.hasAnnotation(SingleAnnotation)) &&
+        if (descriptor is ClassDescriptor && (descriptor.annotations.hasAnnotation(InjektClassNames.Factory) ||
+                    descriptor.annotations.hasAnnotation(InjektClassNames.Single)) &&
             !descriptor.hasPrimaryConstructor() &&
-            descriptor.constructors.none { it.annotations.hasAnnotation(InjektConstructorAnnotation) }) {
+            descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
+        ) {
             report(
                 descriptor,
                 context.trace

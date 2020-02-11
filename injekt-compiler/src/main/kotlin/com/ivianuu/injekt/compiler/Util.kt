@@ -24,12 +24,23 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
-val FactoryAnnotation = FqName("com.ivianuu.injekt.Factory")
-val InjektConstructorAnnotation = FqName("com.ivianuu.injekt.InjektConstructor")
-val NameAnnotation = FqName("com.ivianuu.injekt.Name")
-val ParamAnnotation = FqName("com.ivianuu.injekt.Param")
-val ScopeAnnotation = FqName("com.ivianuu.injekt.Scope")
-val SingleAnnotation = FqName("com.ivianuu.injekt.Single")
+object InjektClassNames {
+    val InjektPackage = FqName("com.ivianuu.injekt")
+    val Component = FqName("com.ivianuu.injekt.Component")
+    val Factory = FqName("com.ivianuu.injekt.Factory")
+    val HasScope = FqName("com.ivianuu.injekt.HasScope")
+    val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
+    val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
+    val Key = FqName("com.ivianuu.injekt.Key")
+    val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
+    val Name = FqName("com.ivianuu.injekt.Name")
+    val Param = FqName("com.ivianuu.injekt.Param")
+    val Parameters = FqName("com.ivianuu.injekt.Parameters")
+    val Provider = FqName("com.ivianuu.injekt.Provider")
+    val Scope = FqName("com.ivianuu.injekt.Scope")
+    val Single = FqName("com.ivianuu.injekt.Single")
+    val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
+}
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }

@@ -103,14 +103,20 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     override fun visitClass(declaration: IrClass) {
         val descriptor = declaration.descriptor
 
-        if (!descriptor.annotations.hasAnnotation(FactoryAnnotation) &&
-            !descriptor.annotations.hasAnnotation(SingleAnnotation)
+        if (!descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
+            !descriptor.annotations.hasAnnotation(InjektClassNames.Single)
         ) return
 
         val injektConstructor = descriptor.findInjektConstructor()
 
         if (injektConstructor.valueParameters.isEmpty()) {
-            declaration.addMember(linkedBinding(declaration, Name.identifier("Binding"), ClassKind.OBJECT))
+            declaration.addMember(
+                linkedBinding(
+                    declaration,
+                    Name.identifier("Binding"),
+                    ClassKind.OBJECT
+                )
+            )
         } else {
             declaration.addMember(unlinkedBinding(declaration))
         }
@@ -160,11 +166,12 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
             superTypes = superTypes + unlinkedBindingWithType
 
-            if (descriptor.annotations.hasAnnotation(SingleAnnotation)) {
+            if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
                 superTypes = superTypes + isSingle.defaultType.toIrType()
             }
 
-            val scopeAnnotation = descriptor.getAnnotatedAnnotations(ScopeAnnotation).singleOrNull()
+            val scopeAnnotation =
+                descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).singleOrNull()
             if (scopeAnnotation != null) {
                 superTypes = superTypes + hasScope.defaultType.toIrType()
 
@@ -223,9 +230,9 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             }
 
             val paramKeyFields = injektConstructor.valueParameters
-                .filter { !it.annotations.hasAnnotation(ParamAnnotation) }
+                .filter { !it.annotations.hasAnnotation(InjektClassNames.Param) }
                 .map { param ->
-                    val nameClass = param.getAnnotatedAnnotations(NameAnnotation)
+                    val nameClass = param.getAnnotatedAnnotations(InjektClassNames.Name)
                         .singleOrNull()
                         ?.let { nameAnnotation -> getClass(nameAnnotation.fqName!!) }
                         ?.companionObjectDescriptor
@@ -356,7 +363,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             val injektConstructor = descriptor.findInjektConstructor()
 
             val paramBindingFields = injektConstructor.valueParameters
-                .filter { !it.annotations.hasAnnotation(ParamAnnotation) }
+                .filter { !it.annotations.hasAnnotation(InjektClassNames.Param) }
                 .map { param ->
                     val fieldName = Name.identifier(param.name.asString() + "Provider")
                     addField {
@@ -426,18 +433,22 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
                             var paramIndex = 0
                             injektConstructor.valueParameters.forEachIndexed { index, param ->
-                                val paramType = injektConstructor.valueParameters[index].type.toIrType()
-                                val expr = if (param.annotations.hasAnnotation(ParamAnnotation)) {
-                                    DeclarationIrBuilder(context, symbol).irBlock {
-                                        +irCall(
-                                            callee = symbolTable.referenceSimpleFunction(parametersGet),
-                                            type = paramType
-                                        ).apply {
-                                            dispatchReceiver = irGet(valueParameters.first())
-                                            putTypeArgument(0, paramType)
-                                            putValueArgument(0, irInt(paramIndex))
-                                        }
-                                        ++paramIndex
+                                val paramType =
+                                    injektConstructor.valueParameters[index].type.toIrType()
+                                val expr =
+                                    if (param.annotations.hasAnnotation(InjektClassNames.Param)) {
+                                        DeclarationIrBuilder(context, symbol).irBlock {
+                                            +irCall(
+                                                callee = symbolTable.referenceSimpleFunction(
+                                                    parametersGet
+                                                ),
+                                                type = paramType
+                                            ).apply {
+                                                dispatchReceiver = irGet(valueParameters.first())
+                                                putTypeArgument(0, paramType)
+                                                putValueArgument(0, irInt(paramIndex))
+                                            }
+                                            ++paramIndex
                                     }
                                 } else {
                                     DeclarationIrBuilder(context, symbol).irBlock {
@@ -466,7 +477,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     }
 
     private fun ClassDescriptor.findInjektConstructor(): ClassConstructorDescriptor {
-        return constructors.singleOrNull { it.annotations.hasAnnotation(InjektConstructorAnnotation) }
+        return constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
             ?: unsubstitutedPrimaryConstructor!!
     }
 
@@ -502,16 +513,5 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     }
 }
 
-private object InjektOrigin : IrDeclarationOrigin
+object InjektOrigin : IrDeclarationOrigin
 
-private object InjektClassNames {
-    val InjektPackage = FqName("com.ivianuu.injekt")
-    val Component = FqName("com.ivianuu.injekt.Component")
-    val HasScope = FqName("com.ivianuu.injekt.HasScope")
-    val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
-    val Key = FqName("com.ivianuu.injekt.Key")
-    val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
-    val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val Provider = FqName("com.ivianuu.injekt.Provider")
-    val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
-}
