@@ -15,7 +15,14 @@
  */
 
 plugins {
+    id("com.ivianuu.injekt")
     kotlin("jvm")
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        verbose = true
+    }
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
