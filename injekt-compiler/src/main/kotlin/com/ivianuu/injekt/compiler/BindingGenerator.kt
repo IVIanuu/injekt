@@ -23,16 +23,11 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -52,60 +47,42 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.addMember
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.irConstructorCall
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.startOffset
-import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
-class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVisitorVoid {
+class InjektBindingGenerator(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
-    private val symbolTable = context.symbolTable
-    private val typeTranslator = context.typeTranslator
-    private fun KotlinType.toIrType() = typeTranslator.translateType(this)
+    private val component = getTopLevelClass(InjektClassNames.Component)
+    private val hasScope = getTopLevelClass(InjektClassNames.HasScope)
+    private val isSingle = getTopLevelClass(InjektClassNames.IsSingle)
+    private val key = getTopLevelClass(InjektClassNames.Key)
+    private val linkedBinding = getTopLevelClass(InjektClassNames.LinkedBinding)
+    private val parameters = getTopLevelClass(InjektClassNames.Parameters)
+    private val provider = getTopLevelClass(InjektClassNames.Provider)
+    private val unlinkedBinding = getTopLevelClass(InjektClassNames.UnlinkedBinding)
 
-    private fun getClass(fqName: FqName) =
-        context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
-
-    private val component = getClass(InjektClassNames.Component)
-    private val hasScope = getClass(InjektClassNames.HasScope)
-    private val isSingle = getClass(InjektClassNames.IsSingle)
-    private val key = getClass(InjektClassNames.Key)
-    private val linkedBinding = getClass(InjektClassNames.LinkedBinding)
-    private val parameters = getClass(InjektClassNames.Parameters)
-    private val provider = getClass(InjektClassNames.Provider)
-    private val unlinkedBinding = getClass(InjektClassNames.UnlinkedBinding)
-
-    override fun visitElement(element: IrElement) {
-    }
-
-    override fun visitClass(declaration: IrClass) {
+    override fun visitClass(declaration: IrClass): IrStatement {
+        println("visit class ${declaration.symbol.descriptor.fqNameSafe}")
         val descriptor = declaration.descriptor
 
         if (!descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
             !descriptor.annotations.hasAnnotation(InjektClassNames.Single)
-        ) return
+        ) return super.visitClass(declaration)
 
         val injektConstructor = descriptor.findInjektConstructor()
 
@@ -124,7 +101,10 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         declaration.patchDeclarationParents(declaration.parent)
 
         //error("declaration ${declaration.dump()}")
+
+        return super.visitClass(declaration)
     }
+
 
     private fun unlinkedBinding(declaration: IrClass): IrClass {
         val descriptor = declaration.descriptor
@@ -175,7 +155,8 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             if (scopeAnnotation != null) {
                 superTypes = superTypes + hasScope.defaultType.toIrType()
 
-                val scopeCompanion = getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                val scopeCompanion =
+                    getTopLevelClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
 
                 addProperty {
                     name = Name.identifier("scope")
@@ -234,7 +215,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 .map { param ->
                     val nameClass = param.getAnnotatedAnnotations(InjektClassNames.Name)
                         .singleOrNull()
-                        ?.let { nameAnnotation -> getClass(nameAnnotation.fqName!!) }
+                        ?.let { nameAnnotation -> getTopLevelClass(nameAnnotation.fqName!!) }
                         ?.companionObjectDescriptor
 
                     val fieldName = Name.identifier(param.name.asString() + "Key")
@@ -362,7 +343,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
             val injektConstructor = descriptor.findInjektConstructor()
 
-            val paramBindingFields = injektConstructor.valueParameters
+            val paramProviderFields = injektConstructor.valueParameters
                 .filter { !it.annotations.hasAnnotation(InjektClassNames.Param) }
                 .map { param ->
                     val fieldName = Name.identifier(param.name.asString() + "Provider")
@@ -383,7 +364,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 visibility = Visibilities.PRIVATE
 
             }.apply {
-                paramBindingFields.forEachIndexed { index, field ->
+                paramProviderFields.forEachIndexed { index, field ->
                     addValueParameter {
                         this.index = index
                         this.name = field.name
@@ -400,7 +381,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         putTypeArgument(0, descriptor.defaultType.toIrType())
                     }
                     +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
-                    paramBindingFields.forEachIndexed { index, field ->
+                    paramProviderFields.forEachIndexed { index, field ->
                         +irSetField(irGet(thisReceiver!!), field, irGet(valueParameters[index]))
                     }
                 }
@@ -449,18 +430,21 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                                 putValueArgument(0, irInt(paramIndex))
                                             }
                                             ++paramIndex
-                                    }
-                                } else {
-                                    DeclarationIrBuilder(context, symbol).irBlock {
-                                        +irCall(
-                                            callee = symbolTable.referenceSimpleFunction(invoke),
-                                            type = paramType
-                                        ).apply {
-                                            dispatchReceiver = irGetField(irGet(dispatchReceiverParameter!!),
-                                                paramBindingFields.single { it.name.asString().startsWith(param.name.asString()) })
+                                        }
+                                    } else {
+                                        DeclarationIrBuilder(context, symbol).irBlock {
+                                            +irCall(
+                                                callee = symbolTable.referenceSimpleFunction(invoke),
+                                                type = paramType
+                                            ).apply {
+                                                dispatchReceiver =
+                                                    irGetField(irGet(dispatchReceiverParameter!!),
+                                                        paramProviderFields.single {
+                                                            it.name.asString() == param.name.asString() + "Provider"
+                                                        })
+                                            }
                                         }
                                     }
-                                }
 
                                 putValueArgument(
                                     index = index,
@@ -481,37 +465,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             ?: unsubstitutedPrimaryConstructor!!
     }
 
-    private fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
-        fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(
-            this.startOffset ?: UNDEFINED_OFFSET,
-            this.endOffset ?: UNDEFINED_OFFSET,
-            IrDeclarationOrigin.DEFINED,
-            this,
-            type.toIrType(),
-            (this as? ValueParameterDescriptor)?.varargElementType?.toIrType()
-        ).also {
-            it.parent = this@createParameterDeclarations
-        }
-
-        fun TypeParameterDescriptor.irTypeParameter() = IrTypeParameterImpl(
-            this.startOffset ?: UNDEFINED_OFFSET,
-            this.endOffset ?: UNDEFINED_OFFSET,
-            IrDeclarationOrigin.DEFINED,
-            IrTypeParameterSymbolImpl(this)
-        ).also {
-            it.parent = this@createParameterDeclarations
-        }
-
-        dispatchReceiverParameter = descriptor.dispatchReceiverParameter?.irValueParameter()
-        extensionReceiverParameter = descriptor.extensionReceiverParameter?.irValueParameter()
-
-        assert(valueParameters.isEmpty()) { "params ${valueParameters.map { it.name }}" }
-        valueParameters = descriptor.valueParameters.map { it.irValueParameter() }
-
-        assert(typeParameters.isEmpty()) { "types ${typeParameters.map { it.name }}" }
-        typeParameters + descriptor.typeParameters.map { it.irTypeParameter() }
-    }
 }
 
 object InjektOrigin : IrDeclarationOrigin
-

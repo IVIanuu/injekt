@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val Component = FqName("com.ivianuu.injekt.Component")
+    val Definition = FqName("com.ivianuu.injekt.Definition")
     val Factory = FqName("com.ivianuu.injekt.Factory")
     val HasScope = FqName("com.ivianuu.injekt.HasScope")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
@@ -39,6 +40,7 @@ object InjektClassNames {
     val Provider = FqName("com.ivianuu.injekt.Provider")
     val Scope = FqName("com.ivianuu.injekt.Scope")
     val Single = FqName("com.ivianuu.injekt.Single")
+    val Type = FqName("com.ivianuu.injekt.Type")
     val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
 }
 
@@ -54,3 +56,4 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
         module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
     return descriptor.annotations.hasAnnotation(annotation)
 }
+
