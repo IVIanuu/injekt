@@ -76,13 +76,13 @@ class InjektBindingGenerator(context: IrPluginContext) : AbstractInjektTransform
     private val provider = getTopLevelClass(InjektClassNames.Provider)
     private val unlinkedBinding = getTopLevelClass(InjektClassNames.UnlinkedBinding)
 
-    override fun visitClass(declaration: IrClass): IrStatement {
+    override fun visitClassNew(declaration: IrClass): IrStatement {
         println("visit class ${declaration.symbol.descriptor.fqNameSafe}")
         val descriptor = declaration.descriptor
 
         if (!descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
             !descriptor.annotations.hasAnnotation(InjektClassNames.Single)
-        ) return super.visitClass(declaration)
+        ) return super.visitClassNew(declaration)
 
         val injektConstructor = descriptor.findInjektConstructor()
 
@@ -102,7 +102,7 @@ class InjektBindingGenerator(context: IrPluginContext) : AbstractInjektTransform
 
         //error("declaration ${declaration.dump()}")
 
-        return super.visitClass(declaration)
+        return super.visitClassNew(declaration)
     }
 
 
@@ -333,7 +333,6 @@ class InjektBindingGenerator(context: IrPluginContext) : AbstractInjektTransform
         ).apply clazz@ {
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-
             val linkedBindingWithType = KotlinTypeFactory.simpleType(
                 baseType = linkedBinding.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
@@ -362,7 +361,6 @@ class InjektBindingGenerator(context: IrPluginContext) : AbstractInjektTransform
                 origin = InjektOrigin
                 isPrimary = true
                 visibility = Visibilities.PRIVATE
-
             }.apply {
                 paramProviderFields.forEachIndexed { index, field ->
                     addValueParameter {

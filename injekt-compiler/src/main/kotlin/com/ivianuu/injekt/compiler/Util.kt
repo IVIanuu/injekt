@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+
     val Component = FqName("com.ivianuu.injekt.Component")
     val Definition = FqName("com.ivianuu.injekt.Definition")
     val Factory = FqName("com.ivianuu.injekt.Factory")

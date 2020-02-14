@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -30,14 +31,13 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.startOffset
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
     protected val context: IrPluginContext
-) : IrElementTransformerVoid() {
+) : IrElementTransformerVoidWithContext() {
 
     protected val symbolTable = context.symbolTable
     protected val typeTranslator = context.typeTranslator

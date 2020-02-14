@@ -17,9 +17,10 @@
 package com.ivianuu.injekt.sample.data
 
 import android.content.Context
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.Parameters
 import java.io.File
 
 @Name
@@ -33,6 +34,11 @@ annotation class DatabaseFile {
 }
 
 val DataModule = Module {
+    single(name = WebApiUrl, definition = object : (Component, Parameters) -> String {
+        override fun invoke(p1: Component, p2: Parameters): String {
+            return "https://baseurl/"
+        }
+    })
     single(name = WebApiUrl) { "https://baseurl/" }
     single(name = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
 }
