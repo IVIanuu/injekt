@@ -189,7 +189,9 @@ class ModuleBuilder {
         // we create a proxy binding which links to the original binding
         // because we have no reference to the original one it's likely in another [Module] or [Component]
         // we use a unique id here to make sure that the binding does not collide with any user config
-        factory(type = type, name = UUID.randomUUID().toString()) { get(type = type, name = name) }
+        factory(type = type, name = UUID.randomUUID().toString()) { parameters ->
+            get(type = type, name = name, parameters = parameters)
+        }
             .block()
     }
 
