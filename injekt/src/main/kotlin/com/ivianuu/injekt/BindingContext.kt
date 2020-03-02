@@ -75,7 +75,9 @@ data class BindingContext<T> internal constructor(
             type = type as Type<Any?>,
             name = name,
             overrideStrategy = overrideStrategy
-        ) { get(type = key.type as Type<Any?>, name = key.name) }
+        ) { parameters ->
+            get(type = key.type as Type<Any?>, name = key.name, parameters = parameters)
+        }
 
         return this
     }
