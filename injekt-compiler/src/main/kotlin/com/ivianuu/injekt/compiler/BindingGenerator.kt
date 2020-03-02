@@ -122,8 +122,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         }
 
         declaration.patchDeclarationParents(declaration.parent)
-
-        //error("declaration ${declaration.dump()}")
     }
 
     private fun unlinkedBinding(declaration: IrClass): IrClass {
@@ -285,6 +283,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             ).apply {
                 overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(link)
                 createParameterDeclarations(link)
+                dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     val constructor = linkedBindingClass.constructors.first()
                     val newLinkedBindingCall = irConstructorCall(
@@ -305,7 +304,9 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                     ).apply {
                                         dispatchReceiver = irGet(valueParameters.first())
                                         putTypeArgument(0, param.type.toIrType())
-                                        putValueArgument(0, irGetField(irGet(dispatchReceiverParameter!!), field))
+                                        putValueArgument(0,
+                                            irGetField(irGet(dispatchReceiverParameter!!), field)
+                                        )
                                     }
                                 }
                             )
@@ -351,7 +352,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             IrClassSymbolImpl(bindingDescriptor)
         ).apply clazz@ {
             createImplicitParameterDeclarationWithWrappedDescriptor()
-
 
             val linkedBindingWithType = KotlinTypeFactory.simpleType(
                 baseType = linkedBinding.defaultType,
@@ -422,6 +422,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             ).apply {
                 overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(invoke)
                 createParameterDeclarations(invoke)
+                dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     val getInstanceCall = if (descriptor.kind == ClassKind.OBJECT) {
                         irGetObject(symbolTable.referenceClass(descriptor))
@@ -430,7 +431,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                             callee = symbolTable.referenceConstructor(injektConstructor),
                             type = injektConstructor.returnType.toIrType()
                         ).apply {
-
                             var paramIndex = 0
                             injektConstructor.valueParameters.forEachIndexed { index, param ->
                                 val paramType =
@@ -456,8 +456,10 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                             callee = symbolTable.referenceSimpleFunction(invoke),
                                             type = paramType
                                         ).apply {
-                                            dispatchReceiver = irGetField(irGet(dispatchReceiverParameter!!),
-                                                paramBindingFields.single { it.name.asString().startsWith(param.name.asString()) })
+                                            dispatchReceiver = irGetField(
+                                                irGet(dispatchReceiverParameter!!),
+                                                paramBindingFields.single { it.name.asString().startsWith(param.name.asString()) }
+                                            )
                                         }
                                     }
                                 }
@@ -514,4 +516,3 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 }
 
 object InjektOrigin : IrDeclarationOrigin
-

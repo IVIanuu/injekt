@@ -23,6 +23,7 @@ import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.sample.data.DataModule
+import com.ivianuu.injekt.sample.data.Repository
 
 class App : Application(), InjektTrait {
 

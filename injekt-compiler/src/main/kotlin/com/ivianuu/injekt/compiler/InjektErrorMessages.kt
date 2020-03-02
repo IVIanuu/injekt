@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
-import org.jetbrains.kotlin.diagnostics.reportFromPlugin
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.resolve.BindingTrace
 
@@ -33,7 +32,7 @@ fun report(
 ) {
     descriptor.findPsi()?.let {
         val factory = diagnostic(it)
-        trace.reportFromPlugin(factory.on(it), InjektErrorMessages)
+        trace.report(factory.on(it))
     }
 }
 
