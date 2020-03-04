@@ -111,13 +111,13 @@ class Component internal constructor(
         binding = findBindingInThisComponent(key)
         if (binding != null) return binding
 
-        binding = findJustInTimeBinding(key)
-        if (binding != null) return binding
-
         for (dependency in dependencies) {
             binding = dependency.findBinding(key)
             if (binding != null) return binding
         }
+
+        binding = findJustInTimeBinding(key)
+        if (binding != null) return binding
 
         return null
     }

@@ -80,7 +80,7 @@ class ModuleBuilder {
     inline fun <reified T> single(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
+        scoping: Scoping = Scoping.Scoped(),
         eager: Boolean = false,
         noinline definition: Definition<T>
     ): BindingContext<T> = single(
@@ -108,7 +108,7 @@ class ModuleBuilder {
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
+        scoping: Scoping = Scoping.Scoped(),
         eager: Boolean = false,
         definition: Definition<T>
     ): BindingContext<T> =
@@ -207,8 +207,9 @@ class ModuleBuilder {
                 key = it.key,
                 binding = it.value,
                 overrideStrategy = it.value.overrideStrategy,
+                scoping = it.value.scoping,
                 eager = it.value.eager,
-                scoping = it.value.scoping
+                single = it.value.single
             )
         }
 

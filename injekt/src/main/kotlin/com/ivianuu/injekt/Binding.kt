@@ -34,11 +34,6 @@ sealed class Binding<T> {
     var overrideStrategy = OverrideStrategy.Fail
 
     /**
-     * Creates the instance in the moment the component get's created
-     */
-    var eager = false
-
-    /**
      * How this is binding is scoped
      */
     var scoping: Scoping = Scoping.Unscoped
@@ -47,6 +42,11 @@ sealed class Binding<T> {
      * Whether or not this binding reuses instances
      */
     var single = false
+
+    /**
+     * Creates the instance in the moment the component get's created
+     */
+    var eager = false
 
     /**
      * Returns a [LinkedBinding] and get's all required dependencies from the [component]
@@ -58,9 +58,9 @@ sealed class Binding<T> {
     internal open fun performLink(component: Component): LinkedBinding<T> {
         val linked = link(component)
         linked.overrideStrategy = overrideStrategy
-        linked.eager = eager
         linked.scoping = scoping
         linked.single = single
+        linked.eager = eager
         return linked
     }
 }
