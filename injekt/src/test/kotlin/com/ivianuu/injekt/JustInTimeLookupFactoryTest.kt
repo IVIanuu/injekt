@@ -19,48 +19,39 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNull
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class JustInTimeLookupFactoryTest {
 
     @Test
     fun testUnscoped() {
-        val lookup =
+        val binding =
             CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>())
-        assertNotNull(lookup)
-        assertNull(lookup!!.scope)
+        assertNotNull(binding)
+        assertEquals(Scoping.Unscoped, binding?.scoping)
     }
 
     @Test
     fun testScoped() {
-        val lookup =
+        val binding =
             CodegenJustInTimeLookupFactory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
-        assertNotNull(lookup)
-        assertEquals(TestScopeOne, lookup!!.scope)
+        assertNotNull(binding)
+        assertTrue(binding?.scoping is Scoping.Scoped)
+        assertEquals(TestScopeOne, (binding?.scoping as? Scoping.Scoped)?.name)
     }
 
     @Test
     fun testCannotResolveNamed() {
-        val lookup =
+        val binding =
             CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
-        assertNull(lookup)
+        assertNull(binding)
     }
 }
 
 @Factory
-class MyUnscopedDep {
-    object Binding : LinkedBinding<MyUnscopedDep>() {
-        override fun invoke(parameters: Parameters): MyUnscopedDep = MyUnscopedDep()
-    }
-}
+class MyUnscopedDep
 
 @TestScopeOne
 @Single
-class MyScopedDep {
-    object Binding : LinkedBinding<MyScopedDep>(), HasScope {
-        override val scope: Any
-            get() = TestScopeOne
-
-        override fun invoke(parameters: Parameters) = MyScopedDep()
-    }
-}
+class MyScopedDep

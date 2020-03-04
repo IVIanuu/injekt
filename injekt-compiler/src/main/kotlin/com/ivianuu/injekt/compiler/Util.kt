@@ -26,11 +26,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val Binding = FqName("com.ivianuu.injekt.Binding")
     val Component = FqName("com.ivianuu.injekt.Component")
     val Factory = FqName("com.ivianuu.injekt.Factory")
-    val HasScope = FqName("com.ivianuu.injekt.HasScope")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
-    val IsSingle = FqName("com.ivianuu.injekt.IsSingle")
     val Key = FqName("com.ivianuu.injekt.Key")
     val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
     val Name = FqName("com.ivianuu.injekt.Name")
@@ -38,6 +37,7 @@ object InjektClassNames {
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Provider = FqName("com.ivianuu.injekt.Provider")
     val Scope = FqName("com.ivianuu.injekt.Scope")
+    val Scoping = FqName("com.ivianuu.injekt.Scoping")
     val Single = FqName("com.ivianuu.injekt.Single")
     val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
 }

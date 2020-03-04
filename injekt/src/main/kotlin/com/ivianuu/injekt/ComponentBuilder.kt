@@ -127,7 +127,7 @@ class ComponentBuilder {
         val key = keyOf(type, name)
         val binding = InstanceBinding(instance)
         binding.overrideStrategy = overrideStrategy
-        binding.scoped = true
+        binding.scoping = Scoping.Scoped()
         instances[key] = binding
     }
 
@@ -168,7 +168,8 @@ class ComponentBuilder {
                 )
             ) {
                 scopedBindings[key] = binding
-                if (!binding.scoped) unlinkedUnscopedBindings[key] = binding as UnlinkedBinding<*>
+                if (binding.scoping is Scoping.Unscoped) unlinkedUnscopedBindings[key] =
+                    binding as UnlinkedBinding<*>
             }
         }
 
@@ -276,7 +277,7 @@ class ComponentBuilder {
 
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
         val componentBinding = ComponentBinding()
-        componentBinding.scoped = true
+        componentBinding.scoping = Scoping.Scoped()
         componentBinding.overrideStrategy = OverrideStrategy.Override
         val componentKey = keyOf<Component>()
         bindings[componentKey] = componentBinding
@@ -319,7 +320,7 @@ class ComponentBuilder {
         )
 
         bindings[mapOfProviderKey] = MapOfProviderBinding<Any?, Any?>(bindingKeys)
-            .also { it.scoped = true }
+            .also { it.scoping = Scoping.Scoped() }
 
         val mapOfLazyKey = keyOf(
             typeOf<Any?>(
@@ -333,10 +334,10 @@ class ComponentBuilder {
         )
 
         bindings[mapOfLazyKey] = MapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
-            .also { it.scoped = true }
+            .also { it.scoping = Scoping.Scoped() }
 
         bindings[mapKey] = MapOfValueBinding<Any?, Any?>(mapOfProviderKey)
-            .also { it.scoped = true }
+            .also { it.scoping = Scoping.Scoped() }
     }
 
     private fun includeSetBindings(
@@ -359,7 +360,7 @@ class ComponentBuilder {
         )
 
         bindings[setOfProviderKey] = SetOfProviderBinding<Any?>(setKeys)
-            .also { it.scoped = true }
+            .also { it.scoping = Scoping.Scoped() }
 
         val setOfLazyKey = keyOf(
             typeOf<Any?>(
@@ -372,10 +373,10 @@ class ComponentBuilder {
         )
 
         bindings[setOfLazyKey] = SetOfLazyBinding<Any?>(setOfProviderKey)
-            .also { it.scoped = true }
+            .also { it.scoping = Scoping.Scoped() }
 
         bindings[setKey] = SetOfValueBinding<Any?>(setOfProviderKey)
-            .also { it.scoped = true }
+            .also { it.scoping = Scoping.Scoped() }
     }
 
     private fun Component.getAllBindings(): Map<Key, Binding<*>> =

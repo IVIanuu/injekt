@@ -43,13 +43,13 @@ class ModuleBuilder {
     inline fun <reified T> factory(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = false,
+        scoping: Scoping = Scoping.Unscoped,
         noinline definition: Definition<T>
     ): BindingContext<T> = factory(
         type = typeOf(),
         name = name,
         overrideStrategy = overrideStrategy,
-        scoped = scoped,
+        scoping = scoping,
         definition = definition
     )
 
@@ -59,7 +59,7 @@ class ModuleBuilder {
      * @param type the of the instance
      * @param name the name of the instance
      * @param overrideStrategy the strategy for handling overrides
-     * @param scoped whether or not to create instances in the added scope
+     * @param scoping how instances should be scoped
      * @param definition the definitions which creates instances
      *
      * @see bind
@@ -68,26 +68,26 @@ class ModuleBuilder {
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = false,
+        scoping: Scoping = Scoping.Unscoped,
         definition: Definition<T>
     ): BindingContext<T> = bind(
         key = keyOf(type, name),
         binding = DefinitionBinding(definition = definition),
         overrideStrategy = overrideStrategy,
-        scoped = scoped
+        scoping = scoping
     )
 
     inline fun <reified T> single(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = true,
+        scoping: Scoping = Scoping.Unscoped,
         eager: Boolean = false,
         noinline definition: Definition<T>
     ): BindingContext<T> = single(
         type = typeOf(),
         name = name,
         overrideStrategy = overrideStrategy,
-        scoped = scoped,
+        scoping = scoping,
         eager = eager,
         definition = definition
     )
@@ -98,7 +98,7 @@ class ModuleBuilder {
      * @param type the of the instance
      * @param name the name of the instance
      * @param overrideStrategy the strategy for handling overrides
-     * @param scoped whether or not to create instances in the added scope
+     * @param scoping how instances should be scoped
      * @param eager whether the instance should be created when the [Component] get's created
      * @param definition the definitions which creates instances
      *
@@ -108,7 +108,7 @@ class ModuleBuilder {
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = true,
+        scoping: Scoping = Scoping.Unscoped,
         eager: Boolean = false,
         definition: Definition<T>
     ): BindingContext<T> =
@@ -116,8 +116,9 @@ class ModuleBuilder {
             key = keyOf(type, name),
             binding = DefinitionBinding(definition = definition).asSingle(),
             overrideStrategy = overrideStrategy,
-            scoped = scoped,
-            eager = eager
+            scoping = scoping,
+            eager = eager,
+            single = true
         )
 
     inline fun <reified T> instance(
@@ -152,7 +153,7 @@ class ModuleBuilder {
         key = keyOf(type, name),
         binding = InstanceBinding(instance),
         overrideStrategy = overrideStrategy,
-        scoped = true
+        scoping = Scoping.Scoped()
     )
 
     inline fun <reified T> withBinding(
@@ -207,7 +208,7 @@ class ModuleBuilder {
                 binding = it.value,
                 overrideStrategy = it.value.overrideStrategy,
                 eager = it.value.eager,
-                scoped = it.value.scoped
+                scoping = it.value.scoping
             )
         }
 
@@ -320,8 +321,9 @@ class ModuleBuilder {
      * @param key the key by which the binding can be retrieved later in the [Component]
      * @param binding the binding to add
      * @param overrideStrategy the strategy for handling overrides
+     * @param single whether instances are reused
      * @param eager whether a instance should be created when the [Component] get's created
-     * @param scoped whether instances should be created in the requesting scope
+     * @param scoping how instances should be scoped
      * @return the [BindingContext] to chain binding calls
      *
      * @see Component.get
@@ -333,12 +335,14 @@ class ModuleBuilder {
         key: Key,
         binding: Binding<T>,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoped: Boolean = false,
+        scoping: Scoping = Scoping.Unscoped,
+        single: Boolean = false,
         eager: Boolean = false
     ): BindingContext<T> {
         binding.overrideStrategy = overrideStrategy
+        binding.scoping = scoping
+        binding.single = single
         binding.eager = eager
-        binding.scoped = scoped
 
         if (overrideStrategy.check(
                 existsPredicate = { key in bindings },

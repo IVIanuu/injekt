@@ -435,7 +435,7 @@ class ComponentTest {
         val componentA = Component {
             modules(
                 Module {
-                    single(scoped = false) { Context(get()) }
+                    single(scoping = Scoping.Unscoped) { Context(get()) }
                         .bindAlias<Environment>()
                 }
             )
@@ -492,12 +492,4 @@ interface Environment
 
 @TestScopeOne
 @Single
-class SingleJustInTimeDep {
-    object Binding : LinkedBinding<SingleJustInTimeDep>(), IsSingle, HasScope {
-        override val scope: Any
-            get() = TestScopeOne.Companion
-
-        override fun invoke(parameters: Parameters): SingleJustInTimeDep =
-            SingleJustInTimeDep()
-    }
-}
+class SingleJustInTimeDep

@@ -30,13 +30,6 @@ package com.ivianuu.injekt
 annotation class Single
 
 /**
- * Used by generated code
- *
- * @see CodegenJustInTimeLookupFactory
- */
-interface IsSingle
-
-/**
  * Ensures that a instance is only created once
  * Afterwards a cached value will be returned
  *

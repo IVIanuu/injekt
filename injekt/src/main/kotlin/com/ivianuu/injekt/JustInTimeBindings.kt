@@ -18,50 +18,39 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-data class JustInTimeLookup<T>(
-    val binding: Binding<T>,
-    val scope: Any?,
-    val isSingle: Boolean
-)
-
 interface JustInTimeLookupFactory {
-    fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>?
+    fun <T> findBindingForKey(key: Key): Binding<T>?
 }
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val lookups = mutableMapOf<Type<*>, JustInTimeLookup<*>>()
+    private val bindings = mutableMapOf<Type<*>, Binding<*>>()
 
-    override fun <T> findBindingForKey(key: Key): JustInTimeLookup<T>? {
+    override fun <T> findBindingForKey(key: Key): Binding<T>? {
         if (key.name != null) return null
         val type = key.type
 
-        var lookup = synchronized(lookups) { lookups[type] }
+        var binding = synchronized(bindings) { bindings[type] }
 
-        if (lookup == null) {
-            lookup = findLookup(type.classifier)
-            if (lookup != null) {
-                synchronized(lookups) {
-                    lookups[type] = lookup
+        if (binding == null) {
+            binding = doFindBindingForKey(type.classifier)
+            if (binding != null) {
+                synchronized(bindings) {
+                    bindings[type] = binding
                 }
             }
         }
 
-        return lookup as? JustInTimeLookup<T>
+        return binding as? Binding<T>
     }
 
-    private fun findLookup(classifier: KClass<*>) = try {
+    private fun doFindBindingForKey(classifier: KClass<*>) = try {
         val bindingClass = classifier.java.declaredClasses
             .first { Binding::class.java.isAssignableFrom(it) }
-        val binding = bindingClass.declaredFields
+        bindingClass.declaredFields
             .first { it.type == bindingClass }
             .also { it.isAccessible = true }
             .get(null) as Binding<*>
-        JustInTimeLookup(
-            binding = binding,
-            scope = (binding as? HasScope)?.scope,
-            isSingle = binding is IsSingle
-        )
     } catch (e: Exception) {
         null
     }

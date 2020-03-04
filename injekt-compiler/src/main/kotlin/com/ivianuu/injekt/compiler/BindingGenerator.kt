@@ -34,14 +34,14 @@ import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
@@ -88,13 +88,15 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private fun getClass(fqName: FqName) =
         context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
+    private val binding = getClass(InjektClassNames.Binding)
     private val component = getClass(InjektClassNames.Component)
-    private val hasScope = getClass(InjektClassNames.HasScope)
-    private val isSingle = getClass(InjektClassNames.IsSingle)
     private val key = getClass(InjektClassNames.Key)
     private val linkedBinding = getClass(InjektClassNames.LinkedBinding)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val provider = getClass(InjektClassNames.Provider)
+    private val scoped = getClass(InjektClassNames.Scoping)
+        .sealedSubclasses
+        .single { it.name.asString() == "Scoped" }
     private val unlinkedBinding = getClass(InjektClassNames.UnlinkedBinding)
 
     override fun visitElement(element: IrElement) {
@@ -164,43 +166,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
             superTypes = superTypes + unlinkedBindingWithType
 
-            if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
-                superTypes = superTypes + isSingle.defaultType.toIrType()
-            }
-
-            val scopeAnnotation =
-                descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).singleOrNull()
-            if (scopeAnnotation != null) {
-                superTypes = superTypes + hasScope.defaultType.toIrType()
-
-                val scopeCompanion = getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
-
-                addProperty {
-                    name = Name.identifier("scope")
-                }.apply {
-                    getter = buildFun {
-                        visibility = Visibilities.PUBLIC
-                        modality = Modality.FINAL
-                        name = Name.identifier("getScope")
-                        returnType = scopeCompanion.defaultType.toIrType()
-                    }.apply {
-                        overriddenSymbols = overriddenSymbols + symbolTable.referenceSimpleFunction(
-                            hasScope.unsubstitutedMemberScope
-                                .getContributedVariables(
-                                    Name.identifier("scope"),
-                                    NoLookupLocation.FROM_BACKEND
-                                )
-                                .single()
-                                .getter!!
-                        )
-                        dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
-                        body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                            +irReturn(irGetObject(symbolTable.referenceClass(scopeCompanion)))
-                        }
-                    }
-                }
-            }
-
             addConstructor {
                 origin = InjektOrigin
                 isPrimary = true
@@ -217,6 +182,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         putTypeArgument(0, descriptor.defaultType.toIrType())
                     }
                     +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
+                    applyOptions(descriptor, this@clazz)
                 }
             }
 
@@ -400,6 +366,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         putTypeArgument(0, descriptor.defaultType.toIrType())
                     }
                     +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
+                    if (classKind == ClassKind.OBJECT) applyOptions(descriptor, this@clazz)
                     paramBindingFields.forEachIndexed { index, field ->
                         +irSetField(irGet(thisReceiver!!), field, irGet(valueParameters[index]))
                     }
@@ -474,6 +441,62 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
                     +irReturn(getInstanceCall)
                 }
+            }
+        }
+    }
+
+    private fun IrBlockBodyBuilder.applyOptions(
+        descriptor: ClassDescriptor,
+        clazz: IrClass
+    ) {
+        if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
+            +irCall(
+                symbolTable.referenceSimpleFunction(
+                    binding.unsubstitutedMemberScope
+                        .getContributedVariables(
+                            Name.identifier("single"),
+                            NoLookupLocation.FROM_BACKEND
+                        )
+                        .single()
+                        .setter!!
+                ),
+                context.irBuiltIns.unitType
+            ).apply {
+                dispatchReceiver = irGet(clazz.thisReceiver!!)
+                putValueArgument(0, irBoolean(true))
+            }
+        }
+
+        val scopeAnnotation =
+            descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).singleOrNull()
+        if (scopeAnnotation != null) {
+            val scopeObject =
+                getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+            val scopedConstructor =
+                symbolTable.referenceConstructor(scoped.constructors.first())
+            +irCall(
+                symbolTable.referenceSimpleFunction(
+                    binding.unsubstitutedMemberScope
+                        .getContributedVariables(
+                            Name.identifier("scoping"),
+                            NoLookupLocation.FROM_BACKEND
+                        )
+                        .single()
+                        .setter!!
+                ),
+                context.irBuiltIns.unitType
+            ).apply {
+                dispatchReceiver = irGet(clazz.thisReceiver!!)
+
+                putValueArgument(0, irCall(
+                    callee = scopedConstructor,
+                    type = scoped.defaultType.toIrType()
+                ).apply {
+                    putValueArgument(
+                        0,
+                        irGetObject(symbolTable.referenceClass(scopeObject))
+                    )
+                })
             }
         }
     }

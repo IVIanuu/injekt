@@ -143,16 +143,14 @@ class Component internal constructor(
         synchronized(linkedBindings) { linkedBindings.get(key) } as? LinkedBinding<T>
 
     private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
-        val justInTimeLookup = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
-        if (justInTimeLookup == null ||
-            (justInTimeLookup.scope != null && justInTimeLookup.scope !in scopes)
+        var binding = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
+        if (binding == null ||
+            (binding.scoping is Scoping.Scoped && (binding.scoping as Scoping.Scoped).name !in scopes)
         ) return null
 
-        val binding = justInTimeLookup.binding
+        binding = binding
             .performLink(this)
-            .let { if (justInTimeLookup.isSingle) it.asSingle() else it } as LinkedBinding<T>
-
-        binding.scoped = justInTimeLookup.scope != null
+            .let { if (binding!!.single) it.asSingle() else it } as LinkedBinding<T>
         synchronized(linkedBindings) { linkedBindings[key] = binding }
         return binding
     }

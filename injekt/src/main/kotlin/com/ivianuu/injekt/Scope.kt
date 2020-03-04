@@ -41,12 +41,3 @@ package com.ivianuu.injekt
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
-
-/**
- * Used by generated code to provide the scope of the injectable
- *
- * @see CodegenJustInTimeLookupFactory
- */
-interface HasScope {
-    val scope: Any
-}

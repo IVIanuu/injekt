@@ -109,6 +109,6 @@ class ModuleTest {
         val binding = moduleB.bindings.values.single()
         assertEquals(OverrideStrategy.Override, binding.overrideStrategy)
         assertTrue(binding.eager)
-        assertTrue(binding.scoped)
+        assertTrue(binding.single)
     }
 }
