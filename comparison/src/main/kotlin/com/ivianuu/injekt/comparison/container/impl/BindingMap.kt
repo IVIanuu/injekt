@@ -26,14 +26,14 @@ class BindingMap(val entries: Map<Key, Binding<*>>) {
 
         if (key.type.isNullable) {
             val nullableKey = key.copy(type = key.type.copy(isNullable = true))
-            return entries[nullableKey] as? Binding<T>
+            return entries[nullableKey] as? Binding<T> ?: Binding(
+                key = nullableKey,
+                provider = { null }
+            ) as Binding<T>
         }
 
         return null
     }
-
-    fun <T> getBinding(key: Key): Binding<T> = findBinding(key)
-        ?: error("Couldn't find binding for $key")
 
     companion object {
         operator fun invoke(
@@ -67,3 +67,6 @@ class BindingMap(val entries: Map<Key, Binding<*>>) {
         }
     }
 }
+
+fun <T> BindingMap.getBinding(key: Key): Binding<T> = findBinding(key)
+    ?: error("Couldn't find binding for $key")

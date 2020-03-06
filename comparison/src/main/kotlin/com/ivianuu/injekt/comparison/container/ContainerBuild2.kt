@@ -117,10 +117,7 @@ import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
 import com.ivianuu.injekt.comparison.container.impl.Container
-import com.ivianuu.injekt.comparison.container.impl.alias
 import com.ivianuu.injekt.comparison.container.impl.factory
-import com.ivianuu.injekt.comparison.container.impl.get
-import com.ivianuu.injekt.comparison.container.impl.single
 
 fun createContainer2() = Container {
     factory<Fib1>()

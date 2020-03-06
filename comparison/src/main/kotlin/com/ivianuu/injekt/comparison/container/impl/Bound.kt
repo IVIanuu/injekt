@@ -18,11 +18,13 @@ package com.ivianuu.injekt.comparison.container.impl
 
 import com.ivianuu.injekt.Parameters
 
-class BoundProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver {
+class BoundProvider<T>(private val provider: BindingProvider<T>) : (Container, Parameters) -> T, ContainerInitObserver {
     private lateinit var container: Container
     override fun onInit(container: Container) {
+        check(!this::container.isInitialized) { "Already bound to $container" }
         this.container = container
     }
+
     override fun invoke(p1: Container, p2: Parameters): T {
         return provider(container, p2)
     }

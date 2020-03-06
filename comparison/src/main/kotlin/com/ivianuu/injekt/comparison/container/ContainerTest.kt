@@ -18,26 +18,28 @@ package com.ivianuu.injekt.comparison.container
 
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
+import com.ivianuu.injekt.comparison.container.impl.Container
 import com.ivianuu.injekt.comparison.container.impl.get
 
 object ContainerTest : InjectionTest {
+
     override val name: String
         get() = "Container"
+
+    private var container: Container? = null
 
     override fun moduleCreation() {
     }
 
-    private val container = createContainer2()
-
-    override fun inject() {
-        container.get<Fib8>()
+    override fun setup() {
+        container = createContainer()
     }
 
-    override fun setup() {
-
+    override fun inject() {
+        container!!.get<Fib8>()
     }
 
     override fun shutdown() {
-
+        container = null
     }
 }

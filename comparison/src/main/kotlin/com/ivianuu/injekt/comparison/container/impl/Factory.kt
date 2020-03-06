@@ -35,7 +35,7 @@ inline fun <reified T> ContainerBuilder.factory(
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     scoped: Boolean = false,
-    noinline provider: Container.(Parameters) -> T
+    noinline provider: BindingProvider<T>
 ) {
     add(Binding(
         key = keyOf<T>(name = name),

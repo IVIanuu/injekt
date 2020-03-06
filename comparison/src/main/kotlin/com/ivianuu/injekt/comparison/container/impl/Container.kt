@@ -17,12 +17,9 @@
 package com.ivianuu.injekt.comparison.container.impl
 
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.emptyParameters
 import com.ivianuu.injekt.keyOf
-import com.ivianuu.injekt.typeOf
 
 interface Container {
     val bindings: BindingMap
@@ -54,12 +51,12 @@ internal class ContainerImpl(override val bindings: BindingMap) : Container {
     init {
         bindings.entries
             .map { it.value.provider }
-            .filterIsInstance<ContainerLifecycleObserver>()
+            .filterIsInstance<ContainerInitObserver>()
             .forEach { it.onInit(this) }
     }
 }
 
-interface ContainerLifecycleObserver {
+interface ContainerInitObserver {
     fun onInit(container: Container) {
     }
 }

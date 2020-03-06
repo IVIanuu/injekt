@@ -23,13 +23,13 @@ import com.ivianuu.injekt.Parameters
 class Binding<T>(
     val key: Key,
     val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    val attributes: Attributes = emptyAttributes(),
-    val provider: Container.(Parameters) -> T
+    val properties: Properties = emptyProperties(),
+    val provider: BindingProvider<T>
 ) {
     fun copy(
         key: Key = this.key,
         overrideStrategy: OverrideStrategy = this.overrideStrategy,
-        attributes: Attributes = this.attributes,
+        properties: Properties = this.properties,
         provider: Container.(Parameters) -> T = this.provider
-    ): Binding<T> = Binding(key, overrideStrategy, attributes, provider)
+    ): Binding<T> = Binding(key, overrideStrategy, properties, provider)
 }

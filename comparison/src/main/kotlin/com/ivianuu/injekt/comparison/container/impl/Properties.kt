@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.comparison.container.impl
 
-class Attributes internal constructor(val entries: Map<Any, Any?>) {
+class Properties internal constructor(val entries: Map<Any, Any?>) {
 
     operator fun contains(key: Any): Boolean = key in entries
 
@@ -27,21 +27,21 @@ class Attributes internal constructor(val entries: Map<Any, Any?>) {
 
     fun <T> getOrNull(key: Any): T? = entries[key] as? T
 
-    inline fun copy(block: AttributesBuilderBlock): Attributes =
-        attributesOf(entries.toMutableMap().apply(block))
+    inline fun copy(block: PropertiesBuilderBlock): Properties =
+        propertiesOf(entries.toMutableMap().apply(block))
 
     override fun toString(): String = entries.toString()
 
 }
 
-typealias AttributesBuilderBlock = MutableMap<Any, Any?>.() -> Unit
+typealias PropertiesBuilderBlock = MutableMap<Any, Any?>.() -> Unit
 
-private val emptyAttributes = Attributes(emptyMap())
+private val emptyProperties = Properties(emptyMap())
 
-fun emptyAttributes(): Attributes = emptyAttributes
+fun emptyProperties(): Properties = emptyProperties
 
-fun attributesOf(vararg pairs: Pair<Any, Any?>): Attributes = attributesOf(pairs.toMap())
+fun propertiesOf(vararg pairs: Pair<Any, Any?>): Properties = propertiesOf(pairs.toMap())
 
-fun attributesOf(entries: Map<Any, Any?>): Attributes = Attributes(entries)
+fun propertiesOf(entries: Map<Any, Any?>): Properties = Properties(entries)
 
-inline fun attributesOf(block: AttributesBuilderBlock) = attributesOf(mutableMapOf<Any, Any?>().apply(block))
+inline fun propertiesOf(block: PropertiesBuilderBlock) = propertiesOf(mutableMapOf<Any, Any?>().apply(block))

@@ -35,7 +35,7 @@ inline fun <reified T> ContainerBuilder.single(
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     bound: Boolean = true,
-    noinline provider: Container.(Parameters) -> T
+    noinline provider: BindingProvider<T>
 ) {
     add(
         Binding(
@@ -47,7 +47,7 @@ inline fun <reified T> ContainerBuilder.single(
     )
 }
 
-class SingleProvider<T>(private val provider: Container.(Parameters) -> T): (Container, Parameters) -> T {
+class SingleProvider<T>(private val provider: BindingProvider<T>): (Container, Parameters) -> T {
     private var value: Any? = provider
     override fun invoke(p1: Container, p2: Parameters): T {
         if (value === this) {

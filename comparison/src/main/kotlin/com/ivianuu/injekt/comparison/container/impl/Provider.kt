@@ -22,7 +22,9 @@ import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.typeOf
 import org.jetbrains.annotations.Nullable
 
-inline fun <reified T> providerOf(): Container.(Parameters) -> T {
+typealias BindingProvider<T> = Container.(Parameters) -> T
+
+inline fun <reified T> providerOf(): BindingProvider<T> {
     return {
         val constructor = T::class.java.constructors.first()
         constructor.newInstance(
@@ -40,4 +42,4 @@ inline fun <reified T> providerOf(): Container.(Parameters) -> T {
     }
 }
 
-fun <T> (Container.(Parameters) -> T).invoke(container: Container) = invoke(container, emptyParameters())
+fun <T> BindingProvider<T>.invoke(container: Container) = invoke(container, emptyParameters())

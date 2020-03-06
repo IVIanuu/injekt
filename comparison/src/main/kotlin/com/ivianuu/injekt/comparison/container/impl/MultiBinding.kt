@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyWithOverrideInfo
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.keyOf
-import com.ivianuu.injekt.typeOf
 import java.util.UUID
 
 fun MultiBindingContainer(parent: Container): Container {
@@ -30,9 +29,9 @@ fun MultiBindingContainer(parent: Container): Container {
         val containerSets = mutableMapOf<Key, MutableSet<KeyWithOverrideInfo>>()
 
         parent.bindings.entries.values
-            .filter { MultiBindingSets in it.attributes }
+            .filter { MultiBindingSets in it.properties }
             .forEach { binding ->
-                val bindingSets = binding.attributes.get<Set<KeyWithOverrideInfo>>(MultiBindingSets)
+                val bindingSets = binding.properties.get<Set<KeyWithOverrideInfo>>(MultiBindingSets)
                 bindingSets.forEach { bindingSetKey ->
                     val currentSet = containerSets.getOrPut(bindingSetKey.key) { mutableSetOf() }
                     if (currentSet.any { it.key == binding.key }) {
@@ -41,7 +40,7 @@ fun MultiBindingContainer(parent: Container): Container {
                 }
             }
 
-        println(containerSets)
+        //println(containerSets)
 
         containerSets.forEach { (key, elementKeys) ->
             println("add set with $key to $elementKeys")
@@ -66,7 +65,7 @@ inline fun <reified T : E, reified E> ContainerBuilder.intoSet(
     add(
         Binding(
             key = keyOf<T>(name = UUID.randomUUID()),
-            attributes = attributesOf {
+            properties = propertiesOf {
                 val sets = getOrPut(MultiBindingSets) { mutableSetOf<KeyWithOverrideInfo>() } as MutableSet<KeyWithOverrideInfo>
                 sets += KeyWithOverrideInfo(keyOf<Set<E>>(
                     name = setName
