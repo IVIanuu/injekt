@@ -29,7 +29,7 @@ package com.ivianuu.injekt
 sealed class Binding<T> {
 
     /**
-     * Overrides existing bindings with the same key
+     * How overrides should be handled
      */
     var overrideStrategy = OverrideStrategy.Fail
 
