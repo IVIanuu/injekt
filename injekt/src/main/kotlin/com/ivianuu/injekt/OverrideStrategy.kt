@@ -21,7 +21,8 @@ package com.ivianuu.injekt
  */
 enum class OverrideStrategy {
     /** Overrides the existing binding */
-    Override,
+    Permit,
+
     /** Throws an exception if there's an existing binding */
     Fail,
     /** Keeps the existing binding and drops this one */
@@ -31,7 +32,7 @@ enum class OverrideStrategy {
         existsPredicate: () -> Boolean,
         errorMessage: () -> String
     ): Boolean = when (this) {
-        Override -> true
+        Permit -> true
         Fail -> check(!existsPredicate(), errorMessage).let { true }
         Drop -> !existsPredicate()
     }

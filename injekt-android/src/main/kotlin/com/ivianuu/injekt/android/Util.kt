@@ -33,12 +33,12 @@ internal fun ComponentBuilder.maybeLifecycleBindings(
     name: Any
 ) {
     if (instance !is LifecycleOwner) return
-    instance<LifecycleOwner>(instance = instance, overrideStrategy = OverrideStrategy.Override)
+    instance<LifecycleOwner>(instance = instance, overrideStrategy = OverrideStrategy.Permit)
         .bindAlias(name = name)
-    factory<CoroutineScope>(overrideStrategy = OverrideStrategy.Override) {
+    factory<CoroutineScope>(overrideStrategy = OverrideStrategy.Permit) {
         instance.lifecycleScope
     }.bindAlias(name = name)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.lifecycle }
+    factory(overrideStrategy = OverrideStrategy.Permit) { instance.lifecycle }
         .bindAlias(name = name)
 }
 
@@ -48,9 +48,9 @@ internal fun ComponentBuilder.maybeViewModelStoreBindings(
     name: Any
 ) {
     if (instance !is ViewModelStoreOwner) return
-    instance<ViewModelStoreOwner>(instance = instance, overrideStrategy = OverrideStrategy.Override)
+    instance<ViewModelStoreOwner>(instance = instance, overrideStrategy = OverrideStrategy.Permit)
         .bindAlias(name = ForActivity)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.viewModelStore }
+    factory(overrideStrategy = OverrideStrategy.Permit) { instance.viewModelStore }
         .bindAlias(name = name)
 }
 
@@ -62,10 +62,10 @@ internal fun ComponentBuilder.maybeSavedStateBindings(
     if (instance !is SavedStateRegistryOwner) return
     instance<SavedStateRegistryOwner>(
         instance = instance,
-        overrideStrategy = OverrideStrategy.Override
+        overrideStrategy = OverrideStrategy.Permit
     )
         .bindAlias(name = ForActivity)
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.savedStateRegistry }
+    factory(overrideStrategy = OverrideStrategy.Permit) { instance.savedStateRegistry }
         .bindAlias(name = name)
 }
 
@@ -79,7 +79,7 @@ internal fun ComponentBuilder.contextBindings(
     name: Any,
     definition: () -> Context
 ) {
-    factory(overrideStrategy = OverrideStrategy.Override) { definition() }
+    factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
         .bindAlias(name = name)
     resourcesBindings(name) { definition().resources!! }
 }
@@ -89,7 +89,7 @@ internal fun ComponentBuilder.resourcesBindings(
     name: Any,
     definition: () -> Resources
 ) {
-    factory(overrideStrategy = OverrideStrategy.Override) { definition() }
+    factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
         .bindAlias(name = name)
 }
 

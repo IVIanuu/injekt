@@ -50,7 +50,7 @@ inline fun <T : Fragment> FragmentComponent(
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-        instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override)
+        instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Permit)
             .bindAlias<Fragment>()
             .bindAlias<Fragment>(name = name)
 
@@ -59,7 +59,7 @@ inline fun <T : Fragment> FragmentComponent(
         maybeSavedStateBindings(instance, name)
 
         contextBindings(name) { instance.requireContext() }
-        factory(overrideStrategy = OverrideStrategy.Override) { instance.childFragmentManager }.bindAlias(
+        factory(overrideStrategy = OverrideStrategy.Permit) { instance.childFragmentManager }.bindAlias(
             name = name
         )
 

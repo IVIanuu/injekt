@@ -109,7 +109,7 @@ class MapTest {
             factory(name = NameTwo) { "overridden_value" }
                 .intoMap<String, String>(
                     "key",
-                    overrideStrategy = OverrideStrategy.Override
+                    overrideStrategy = OverrideStrategy.Permit
                 )
         }
 
@@ -153,7 +153,7 @@ class MapTest {
             factory(name = NameOne) { "overridden_value" }
                 .intoMap<String, String>(
                     "key",
-                    overrideStrategy = OverrideStrategy.Override
+                    overrideStrategy = OverrideStrategy.Permit
                 )
         }
 

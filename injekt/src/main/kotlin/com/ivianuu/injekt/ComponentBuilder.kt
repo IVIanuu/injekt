@@ -503,7 +503,7 @@ class ComponentBuilder {
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
         val componentBinding = ComponentBinding()
         componentBinding.scoping = Scoping.Scoped()
-        componentBinding.overrideStrategy = OverrideStrategy.Override
+        componentBinding.overrideStrategy = OverrideStrategy.Permit
         val componentKey = keyOf<Component>()
         bindings[componentKey] = componentBinding
         scopes

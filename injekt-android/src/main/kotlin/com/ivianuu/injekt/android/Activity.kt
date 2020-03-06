@@ -51,7 +51,7 @@ inline fun <T : Activity> ActivityComponent(
         }
 
     (instance as? FragmentActivity)?.let {
-        factory(overrideStrategy = OverrideStrategy.Override) { instance.supportFragmentManager }
+        factory(overrideStrategy = OverrideStrategy.Permit) { instance.supportFragmentManager }
             .bindAlias(name = ForActivity)
     }
 

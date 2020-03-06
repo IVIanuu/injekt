@@ -49,7 +49,7 @@ inline fun <T : View> ViewComponent(
         instance(
             instance = instance,
             type = type,
-            overrideStrategy = OverrideStrategy.Override
+            overrideStrategy = OverrideStrategy.Permit
         ).bindAlias<View>().bindAlias<View>(name)
 
         contextBindings(name) { instance.context!! }

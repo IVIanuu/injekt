@@ -24,12 +24,12 @@ class OverrideStrategyTest {
 
     @Test
     fun testStrategies() {
-        assertTrue(OverrideStrategy.Override.check(
+        assertTrue(OverrideStrategy.Permit.check(
             existsPredicate = { false },
             errorMessage = { "" }
         ))
 
-        assertTrue(OverrideStrategy.Override.check(
+        assertTrue(OverrideStrategy.Permit.check(
             existsPredicate = { true },
             errorMessage = { "" }
         ))
