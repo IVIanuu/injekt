@@ -121,8 +121,6 @@ import org.kodein.di.erased.bind
 import org.kodein.di.erased.instance
 import org.kodein.di.erased.provider
 
-val kodeinModule = createModule()
-
 fun createModule() = Kodein.Module("fib") {
     bind<Fib1>() with provider { Fib1() }
     bind<Fib2>() with provider { Fib2() }

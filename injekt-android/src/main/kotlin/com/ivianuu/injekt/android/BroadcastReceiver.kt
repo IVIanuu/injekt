@@ -21,7 +21,6 @@ import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
@@ -46,24 +45,13 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
 ): Component = Component {
     scopes(ReceiverScope)
     instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
-    modules(ReceiverModule(context, instance, type))
-    block()
-}
 
-inline fun <reified T : BroadcastReceiver> ReceiverModule(
-    context: Context,
-    instance: T
-): Module = ReceiverModule(context = context, instance = instance, type = typeOf())
-
-fun <T : BroadcastReceiver> ReceiverModule(
-    context: Context,
-    instance: T,
-    type: Type<T>
-): Module = Module {
     instance(instance, type = type)
         .bindAlias<BroadcastReceiver>()
     contextBindings(ForReceiver) { context }
     componentAlias(ReceiverScope)
+
+    block()
 }
 
 @Scope

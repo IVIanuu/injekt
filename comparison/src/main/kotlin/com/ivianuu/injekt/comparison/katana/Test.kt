@@ -31,7 +31,7 @@ object KatanaTest : InjectionTest {
     }
 
     override fun setup() {
-        component = Component(modules = listOf(katanaModule))
+        component = Component(modules = listOf(createModule()))
     }
 
     override fun inject() {

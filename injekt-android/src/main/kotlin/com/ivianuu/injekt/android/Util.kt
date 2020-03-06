@@ -23,11 +23,12 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ModuleBuilder
+import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.OverrideStrategy
 import kotlinx.coroutines.CoroutineScope
 
-internal fun ModuleBuilder.maybeLifecycleBindings(
+@PublishedApi
+internal fun ComponentBuilder.maybeLifecycleBindings(
     instance: Any,
     name: Any
 ) {
@@ -41,7 +42,8 @@ internal fun ModuleBuilder.maybeLifecycleBindings(
         .bindAlias(name = name)
 }
 
-internal fun ModuleBuilder.maybeViewModelStoreBindings(
+@PublishedApi
+internal fun ComponentBuilder.maybeViewModelStoreBindings(
     instance: Any,
     name: Any
 ) {
@@ -52,7 +54,8 @@ internal fun ModuleBuilder.maybeViewModelStoreBindings(
         .bindAlias(name = name)
 }
 
-internal fun ModuleBuilder.maybeSavedStateBindings(
+@PublishedApi
+internal fun ComponentBuilder.maybeSavedStateBindings(
     instance: Any,
     name: Any
 ) {
@@ -66,11 +69,13 @@ internal fun ModuleBuilder.maybeSavedStateBindings(
         .bindAlias(name = name)
 }
 
-internal fun ModuleBuilder.componentAlias(scope: Any) {
+@PublishedApi
+internal fun ComponentBuilder.componentAlias(scope: Any) {
     withBinding<Component> { bindAlias(name = scope) }
 }
 
-internal fun ModuleBuilder.contextBindings(
+@PublishedApi
+internal fun ComponentBuilder.contextBindings(
     name: Any,
     definition: () -> Context
 ) {
@@ -79,7 +84,8 @@ internal fun ModuleBuilder.contextBindings(
     resourcesBindings(name) { definition().resources!! }
 }
 
-internal fun ModuleBuilder.resourcesBindings(
+@PublishedApi
+internal fun ComponentBuilder.resourcesBindings(
     name: Any,
     definition: () -> Resources
 ) {

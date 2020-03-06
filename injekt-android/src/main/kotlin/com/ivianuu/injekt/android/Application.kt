@@ -20,7 +20,6 @@ import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
@@ -38,27 +37,18 @@ inline fun <T : Application> ApplicationComponent(
 ): Component =
     Component {
         scopes(ApplicationScope)
-        modules(ApplicationModule(instance, type))
+
+        instance(instance, type = type)
+            .bindAlias<Application>()
+        contextBindings(ForApplication) { instance }
+        maybeLifecycleBindings(
+            ProcessLifecycleOwner.get(),
+            ForApplication
+        )
+        componentAlias(ApplicationScope)
+
         block()
     }
-
-inline fun <reified T : Application> ApplicationModule(
-    instance: T
-): Module = ApplicationModule(instance = instance, type = typeOf())
-
-fun <T : Application> ApplicationModule(
-    instance: T,
-    type: Type<T>
-): Module = Module {
-    instance(instance, type = type)
-        .bindAlias<Application>()
-    contextBindings(ForApplication) { instance }
-    maybeLifecycleBindings(
-        ProcessLifecycleOwner.get(),
-        ForApplication
-    )
-    componentAlias(ApplicationScope)
-}
 
 @Scope
 annotation class ApplicationScope {

@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.playground
 
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
@@ -41,7 +41,7 @@ class CommandTwo : Command
 @Factory
 class CommandThree : Command
 
-val commandsModule = Module {
+fun CommandsComponent() = Component {
     map<KClass<out Command>, Command> {
         CommandOne::class to keyOf<CommandOne>()
         CommandOne::class to keyOf<CommandOne>()

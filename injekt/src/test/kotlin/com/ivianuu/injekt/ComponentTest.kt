@@ -33,12 +33,8 @@ class ComponentTest {
         val named = TestDep1()
 
         val component = Component {
-            modules(
-                Module {
-                    factory { typed }
-                    factory(name = Named) { named }
-                }
-            )
+            factory { typed }
+            factory(name = Named) { named }
         }
 
         val typedGet = component.get<TestDep1>()
@@ -51,28 +47,16 @@ class ComponentTest {
     @Test
     fun testGetNested() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { TestDep1() }
-                }
-            )
+            factory { TestDep1() }
         }
         val componentB = Component {
             dependencies(componentA)
-            modules(
-                Module {
-                    factory { TestDep2(get()) }
-                }
-            )
+            factory { TestDep2(get()) }
         }
 
         val componentC = Component {
             dependencies(componentB)
-            modules(
-                Module {
-                    factory { TestDep3(get(), get()) }
-                }
-            )
+            factory { TestDep3(get(), get()) }
         }
 
         componentC.get<TestDep3>()
@@ -87,11 +71,7 @@ class ComponentTest {
     @Test
     fun testGetNullableInstanceReturnsNonNullable() {
         val component = Component {
-            modules(
-                Module {
-                    factory { "string" }
-                }
-            )
+            factory { "string" }
         }
         assertEquals("string", component.get<String?>())
     }
@@ -107,14 +87,10 @@ class ComponentTest {
         var called = false
 
         val component = Component {
-            modules(
-                Module {
-                    factory {
-                        called = true
-                        TestDep1()
-                    }
-                }
-            )
+            factory {
+                called = true
+                TestDep1()
+            }
         }
 
         assertFalse(called)
@@ -128,14 +104,10 @@ class ComponentTest {
     fun testGetProvider() {
         var called = 0
         val component = Component {
-            modules(
-                Module {
-                    factory {
-                        ++called
-                        TestDep1()
-                    }
-                }
-            )
+            factory {
+                ++called
+                TestDep1()
+            }
         }
 
         assertEquals(0, called)
@@ -149,64 +121,41 @@ class ComponentTest {
 
     @Test
     fun testOverride() {
-        val module1 = Module {
+        val component = Component {
             factory { "my_value" }
-        }
-
-        val module2 = Module {
             factory(overrideStrategy = OverrideStrategy.Override) { "my_overridden_value" }
         }
-
-        val component = Component { modules(module1, module2) }
 
         assertEquals("my_overridden_value", component.get<String>())
     }
 
     @Test
     fun testOverrideDrop() {
-        val module1 = Module {
+        val component = Component {
             factory { "my_value" }
-        }
-
-        val module2 = Module {
             factory(overrideStrategy = OverrideStrategy.Drop) { "my_overridden_value" }
         }
-
-        val component = Component { modules(module1, module2) }
 
         assertEquals("my_value", component.get<String>())
     }
 
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
-        val module1 = Module {
+        Component {
             factory { "my_value" }
-        }
-
-        val module2 = Module {
             factory { "my_overridden_value" }
         }
-
-        Component { modules(module1, module2) }
     }
 
     @Test
     fun testNestedOverride() {
         val parentComponent = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
+            factory { "my_value" }
         }
 
         val childComponent = Component {
             dependencies(parentComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "my_overridden_value" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Override) { "my_overridden_value" }
         }
 
         assertEquals("my_value", parentComponent.get<String>())
@@ -216,20 +165,12 @@ class ComponentTest {
     @Test
     fun testNestedOverrideDrop() {
         val parentComponent = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
+            factory { "my_value" }
         }
 
         val childComponent = Component {
             dependencies(parentComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Drop) { "my_overridden_value" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Drop) { "my_overridden_value" }
         }
 
         assertEquals("my_value", parentComponent.get<String>())
@@ -239,38 +180,22 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testNestedOverrideFail() {
         val parentComponent = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
+            factory { "my_value" }
         }
 
         val childComponent = Component {
             dependencies(parentComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "my_overridden_value" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Fail) { "my_overridden_value" }
         }
     }
 
     @Test
     fun testDependencyOverride() {
         val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory { "value_a" }
-                }
-            )
+            factory { "value_a" }
         }
         val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "value_b" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Override) { "value_b" }
         }
 
         val childComponent = Component {
@@ -283,18 +208,10 @@ class ComponentTest {
     @Test
     fun testDependencyOverrideDrop() {
         val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory { "value_a" }
-                }
-            )
+            factory { "value_a" }
         }
         val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Drop) { "value_b" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Drop) { "value_b" }
         }
 
         val childComponent = Component {
@@ -307,18 +224,10 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testDependencyOverrideFail() {
         val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory { "value_a" }
-                }
-            )
+            factory { "value_a" }
         }
         val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "value_b" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Fail) { "value_b" }
         }
 
         val childComponent = Component {
@@ -329,18 +238,10 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testReverseDependencyOverrideFail() {
         val dependencyComponentA = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "value_a" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Override) { "value_a" }
         }
         val dependencyComponentB = Component {
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "value_b" }
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Fail) { "value_b" }
         }
 
         val childComponent = Component {
@@ -351,12 +252,8 @@ class ComponentTest {
     @Test
     fun testTypeDistinction() {
         val component = Component {
-            modules(
-                Module {
-                    factory { listOf(1, 2, 3) }
-                    factory { listOf("one", "two", "three") }
-                }
-            )
+            factory { listOf(1, 2, 3) }
+            factory { listOf("one", "two", "three") }
         }
 
         val ints = component.get<List<Int>>()
@@ -387,11 +284,7 @@ class ComponentTest {
     @Test
     fun testReusesSingleBindings() {
         val componentA = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                }
-            )
+            single { TestDep1() }
         }
 
         val componentB = Component { dependencies(componentA) }
@@ -433,12 +326,8 @@ class ComponentTest {
     @Test
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = Component {
-            modules(
-                Module {
-                    single(scoping = Scoping.Unscoped) { Context(get()) }
-                        .bindAlias<Environment>()
-                }
-            )
+            single(scoping = Scoping.Unscoped) { Context(get()) }
+                .bindAlias<Environment>()
         }
         val componentB = Component { dependencies(componentA) }
         val componentC = Component { dependencies(componentB) }
@@ -468,19 +357,11 @@ class ComponentTest {
     fun testInstantiatesEagerBindingOnStart() {
         var called = false
         Component {
-            modules(
-                Module {
-                    single(eager = false) { called = true }
-                }
-            )
+            single(eager = false) { called = true }
         }
         assertFalse(called)
         Component {
-            modules(
-                Module {
-                    single(eager = true) { called = true }
-                }
-            )
+            single(eager = true) { called = true }
         }
         assertTrue(called)
     }

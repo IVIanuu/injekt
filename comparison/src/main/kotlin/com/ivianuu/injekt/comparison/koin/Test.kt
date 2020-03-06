@@ -32,7 +32,7 @@ object KoinTest : InjectionTest, KoinComponent {
     }
 
     override fun setup() {
-        startKoin { modules(koinModule) }
+        startKoin { modules(createModule()) }
     }
 
     override fun inject() {

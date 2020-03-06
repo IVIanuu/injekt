@@ -24,12 +24,8 @@ class BindingContextTest {
     @Test
     fun testBindAliasBoth() {
         val component = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                        .bindAlias<Any>(name = "name")
-                }
-            )
+            single { TestDep1() }
+                .bindAlias<Any>(name = "name")
         }
 
         val declared = component.get<TestDep1>()
@@ -40,12 +36,8 @@ class BindingContextTest {
     @Test
     fun testBindAliasTypeOnly() {
         val component = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                        .bindAlias<Any>()
-                }
-            )
+            single { TestDep1() }
+                .bindAlias<Any>()
         }
 
         val declared = component.get<TestDep1>()
@@ -56,12 +48,8 @@ class BindingContextTest {
     @Test
     fun testBindAliasNameOnly() {
         val component = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                        .bindAlias("name")
-                }
-            )
+            single { TestDep1() }
+                .bindAlias("name")
         }
 
         val declared = component.get<TestDep1>()

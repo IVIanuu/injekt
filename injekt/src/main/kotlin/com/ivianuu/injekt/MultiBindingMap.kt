@@ -53,7 +53,7 @@ package com.ivianuu.injekt
  * or a 'Map<K, Lazy<V>>'
  *
  *
- * @see ModuleBuilder.map
+ * @see ComponentBuilder.map
  * @see MultiBindingMapBuilder
  */
 // todo ir use * instead of Any?
@@ -62,7 +62,7 @@ typealias MultiBindingMap<K, V> = Map<K, KeyWithOverrideInfo>
 /**
  * Builder for a [MultiBindingSet]
  *
- * @see ModuleBuilder.map
+ * @see ComponentBuilder.map
  */
 class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key) {
     private val entries = mutableMapOf<K, KeyWithOverrideInfo>()

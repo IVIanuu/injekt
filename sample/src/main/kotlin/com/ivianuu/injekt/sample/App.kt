@@ -22,15 +22,14 @@ import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.sample.data.DataModule
-import com.ivianuu.injekt.sample.data.Repository
+import com.ivianuu.injekt.android.SystemServiceComponent
+import com.ivianuu.injekt.plus
+import com.ivianuu.injekt.sample.data.DataComponent
 
 class App : Application(), InjektTrait {
 
     override val component by lazy {
-        ApplicationComponent(this) {
-            modules(DataModule)
-        }
+        ApplicationComponent(this) + DataComponent() + SystemServiceComponent()
     }
 
     override fun onCreate() {

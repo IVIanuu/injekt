@@ -24,11 +24,7 @@ class ScopedTest {
     @Test
     fun testInstantiatesOnlyOnce() {
         val component = Component {
-            modules(
-                Module {
-                    single { TestDep1() }
-                }
-            )
+            single { TestDep1() }
         }
 
         val value1 = component.get<TestDep1>()

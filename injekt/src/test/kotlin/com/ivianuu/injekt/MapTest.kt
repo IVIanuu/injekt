@@ -24,16 +24,12 @@ class MapTest {
     @Test
     fun testMapBinding() {
         val component = Component {
-            modules(
-                Module {
-                    factory(name = NameOne) { "value_one" }
-                        .intoMap<String, CharSequence>("key_one", mapName = Values)
-                    factory(name = NameTwo) { "value_two" }
-                        .intoMap<String, CharSequence>("key_two", mapName = Values)
-                    factory(name = NameThree) { "value_three" }
-                        .intoMap<String, CharSequence>("key_three", mapName = Values)
-                }
-            )
+            factory(name = NameOne) { "value_one" }
+                .intoMap<String, CharSequence>("key_one", mapName = Values)
+            factory(name = NameTwo) { "value_two" }
+                .intoMap<String, CharSequence>("key_two", mapName = Values)
+            factory(name = NameThree) { "value_three" }
+                .intoMap<String, CharSequence>("key_three", mapName = Values)
         }
 
         val map = component.get<Map<String, CharSequence>>(Values)
@@ -64,11 +60,7 @@ class MapTest {
     @Test
     fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
         val component = Component {
-            modules(
-                Module {
-                    map<String, Int>()
-                }
-            )
+            map<String, Int>()
         }
 
         assertEquals(0, component.get<Map<String, Int>>().size)
@@ -77,12 +69,8 @@ class MapTest {
     @Test
     fun testNestedMapBindings() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory(name = NameOne) { "value_one" }
-                        .intoMap<String, String>("key_one")
-                }
-            )
+            factory(name = NameOne) { "value_one" }
+                .intoMap<String, String>("key_one")
         }
 
         val mapA = componentA.get<Map<String, String>>()
@@ -91,13 +79,8 @@ class MapTest {
 
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(name = NameTwo) { "value_two" }
-                        .intoMap<String, String>("key_two")
-                }
-            )
+            factory(name = NameTwo) { "value_two" }
+                .intoMap<String, String>("key_two")
         }
 
         val mapB = componentB.get<Map<String, String>>()
@@ -107,13 +90,8 @@ class MapTest {
 
         val componentC = Component {
             dependencies(componentB)
-
-            modules(
-                Module {
-                    factory(name = NameThree) { "value_three" }
-                        .intoMap<String, String>("key_three")
-                }
-            )
+            factory(name = NameThree) { "value_three" }
+                .intoMap<String, String>("key_three")
         }
 
         val mapC = componentC.get<Map<String, String>>()
@@ -126,17 +104,13 @@ class MapTest {
     @Test
     fun testOverride() {
         val component = Component {
-            modules(
-                Module {
-                    factory(name = NameOne) { "value" }
-                        .intoMap<String, String>("key")
-                    factory(name = NameTwo) { "overridden_value" }
-                        .intoMap<String, String>(
-                            "key",
-                            overrideStrategy = OverrideStrategy.Override
-                        )
-                }
-            )
+            factory(name = NameOne) { "value" }
+                .intoMap<String, String>("key")
+            factory(name = NameTwo) { "overridden_value" }
+                .intoMap<String, String>(
+                    "key",
+                    overrideStrategy = OverrideStrategy.Override
+                )
         }
 
         assertEquals(
@@ -148,14 +122,10 @@ class MapTest {
     @Test
     fun testOverrideDrop() {
         val component = Component {
-            modules(
-                Module {
-                    factory(name = NameOne) { "value" }
-                        .intoMap<String, String>("key")
-                    factory(name = NameTwo) { "overridden_value" }
-                        .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
-                }
-            )
+            factory(name = NameOne) { "value" }
+                .intoMap<String, String>("key")
+            factory(name = NameTwo) { "overridden_value" }
+                .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
         }
 
         assertEquals(
@@ -167,35 +137,24 @@ class MapTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         Component {
-            Module {
-                factory { "value" }.intoMap<String, String>("key")
-                factory { "overridden_value" }.intoMap<String, String>("key")
-            }
+            factory { "value" }.intoMap<String, String>("key")
+            factory { "overridden_value" }.intoMap<String, String>("key")
         }
     }
 
     @Test
     fun testNestedOverride() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "value" }
-                        .intoMap<String, String>("key")
-                }
-            )
+            factory { "value" }
+                .intoMap<String, String>("key")
         }
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(name = NameOne) { "overridden_value" }
-                        .intoMap<String, String>(
-                            "key",
-                            overrideStrategy = OverrideStrategy.Override
-                        )
-                }
-            )
+            factory(name = NameOne) { "overridden_value" }
+                .intoMap<String, String>(
+                    "key",
+                    overrideStrategy = OverrideStrategy.Override
+                )
         }
 
         val mapA = componentA.get<Map<String, String>>()
@@ -207,22 +166,13 @@ class MapTest {
     @Test
     fun testNestedOverrideDrop() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "value" }
-                        .intoMap<String, String>("key")
-                }
-            )
+            factory { "value" }
+                .intoMap<String, String>("key")
         }
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(name = NameOne) { "overridden_value" }
-                        .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
-                }
-            )
+            factory(name = NameOne) { "overridden_value" }
+                .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
         }
 
         val mapA = componentA.get<Map<String, String>>()
@@ -234,22 +184,13 @@ class MapTest {
     @Test(expected = IllegalStateException::class)
     fun testNestedOverrideFail() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "value" }
-                        .intoMap<String, String>("key")
-                }
-            )
+            factory { "value" }
+                .intoMap<String, String>("key")
         }
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(name = NameOne) { "overridden_value" }
-                        .intoMap<String, String>("key")
-                }
-            )
+            factory(name = NameOne) { "overridden_value" }
+                .intoMap<String, String>("key")
         }
     }
 }

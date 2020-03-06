@@ -33,7 +33,7 @@ object KodeinTest : InjectionTest {
     }
 
     override fun setup() {
-        kodein = Kodein { import(kodeinModule) }
+        kodein = Kodein { import(createModule()) }
     }
 
     override fun inject() {

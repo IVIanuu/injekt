@@ -120,8 +120,6 @@ import org.rewedigital.katana.Module
 import org.rewedigital.katana.dsl.factory
 import org.rewedigital.katana.dsl.get
 
-val katanaModule = createModule()
-
 fun createModule() = Module("katanaKotlinModule") {
     factory { Fib1() }
     factory { Fib2() }

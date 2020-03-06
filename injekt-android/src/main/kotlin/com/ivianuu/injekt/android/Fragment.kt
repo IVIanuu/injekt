@@ -20,7 +20,6 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
@@ -50,37 +49,24 @@ inline fun <T : Fragment> FragmentComponent(
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(FragmentModule(instance, type, scope, name))
+
+        instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override)
+            .bindAlias<Fragment>()
+            .bindAlias<Fragment>(name = name)
+
+        maybeLifecycleBindings(instance, name)
+        maybeViewModelStoreBindings(instance, name)
+        maybeSavedStateBindings(instance, name)
+
+        contextBindings(name) { instance.requireContext() }
+        factory(overrideStrategy = OverrideStrategy.Override) { instance.childFragmentManager }.bindAlias(
+            name = name
+        )
+
+        componentAlias(scope)
+
         block()
     }
-
-inline fun <reified T : Fragment> FragmentModule(
-    instance: T,
-    scope: Any = FragmentScope,
-    name: Any = ForFragment
-): Module = FragmentModule(instance = instance, type = typeOf(), scope = scope, name = name)
-
-fun <T : Fragment> FragmentModule(
-    instance: T,
-    type: Type<T>,
-    scope: Any = FragmentScope,
-    name: Any = ForFragment
-) = Module {
-    instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Override)
-        .bindAlias<Fragment>()
-        .bindAlias<Fragment>(name = name)
-
-    maybeLifecycleBindings(instance, name)
-    maybeViewModelStoreBindings(instance, name)
-    maybeSavedStateBindings(instance, name)
-
-    contextBindings(name) { instance.requireContext() }
-    factory(overrideStrategy = OverrideStrategy.Override) { instance.childFragmentManager }.bindAlias(
-        name = name
-    )
-
-    componentAlias(scope)
-}
 
 @Scope
 annotation class FragmentScope {

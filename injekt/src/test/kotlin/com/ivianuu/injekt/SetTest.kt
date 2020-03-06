@@ -24,13 +24,9 @@ class SetTest {
     @Test
     fun testSetBinding() {
         val component = Component {
-            modules(
-                Module {
-                    factory(name = NameOne) { "value_one" }.intoSet<CharSequence>(setName = Values)
-                    factory(name = NameTwo) { "value_two" }.intoSet<CharSequence>(setName = Values)
-                    factory(name = NameThree) { "value_three" }.intoSet<CharSequence>(setName = Values)
-                }
-            )
+            factory(name = NameOne) { "value_one" }.intoSet<CharSequence>(setName = Values)
+            factory(name = NameTwo) { "value_two" }.intoSet<CharSequence>(setName = Values)
+            factory(name = NameThree) { "value_three" }.intoSet<CharSequence>(setName = Values)
         }
 
         val set = component.get<Set<CharSequence>>(Values)
@@ -61,11 +57,7 @@ class SetTest {
     @Test
     fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
         val component = Component {
-            modules(
-                Module {
-                    set<String>()
-                }
-            )
+            set<String>()
         }
 
         assertEquals(0, component.get<Set<String>>().size)
@@ -74,12 +66,8 @@ class SetTest {
     @Test
     fun testNestedMapBindings() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory(name = NameOne) { "value_one" }
-                        .intoSet<String>()
-                }
-            )
+            factory(name = NameOne) { "value_one" }
+                .intoSet<String>()
         }
 
         val setA = componentA.get<Set<String>>()
@@ -88,13 +76,8 @@ class SetTest {
 
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(name = NameTwo) { "value_two" }
-                        .intoSet<String>()
-                }
-            )
+            factory(name = NameTwo) { "value_two" }
+                .intoSet<String>()
         }
 
         val setB = componentB.get<Set<String>>()
@@ -104,13 +87,8 @@ class SetTest {
 
         val componentC = Component {
             dependencies(componentB)
-
-            modules(
-                Module {
-                    factory(name = NameThree) { "value_three" }
-                        .intoSet<String>()
-                }
-            )
+            factory(name = NameThree) { "value_three" }
+                .intoSet<String>()
         }
 
         val setC = componentC.get<Set<String>>()
@@ -123,18 +101,12 @@ class SetTest {
     @Test
     fun testOverride() {
         val originalValueComponent = Component {
-            modules(
-                Module { factory { "value" }.intoSet<String>() }
-            )
+            factory { "value" }.intoSet<String>()
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "overridden_value" }.intoSet<String>(
-                        overrideStrategy = OverrideStrategy.Override
-                    )
-                }
+            factory(overrideStrategy = OverrideStrategy.Override) { "overridden_value" }.intoSet<String>(
+                overrideStrategy = OverrideStrategy.Override
             )
         }
 
@@ -144,18 +116,12 @@ class SetTest {
     @Test
     fun testOverrideDrop() {
         val originalValueComponent = Component {
-            modules(
-                Module { factory { "value" }.intoSet<String>() }
-            )
+            factory { "value" }.intoSet<String>()
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }.intoSet<String>(
-                        overrideStrategy = OverrideStrategy.Drop
-                    )
-                }
+            factory(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }.intoSet<String>(
+                overrideStrategy = OverrideStrategy.Drop
             )
         }
 
@@ -165,34 +131,21 @@ class SetTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         Component {
-            modules(
-                Module {
-                    factory { "value" }.intoSet<String>()
-                    factory { "overridden_value" }.intoSet<String>()
-                }
-            )
+            factory { "value" }.intoSet<String>()
+            factory { "overridden_value" }.intoSet<String>()
         }
     }
 
     @Test
     fun testNestedOverride() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "value" }
-                        .intoSet<String>()
-                }
-            )
+            factory { "value" }
+                .intoSet<String>()
         }
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Override) { "overridden_value" }
-                        .intoSet<String>(overrideStrategy = OverrideStrategy.Override)
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Override) { "overridden_value" }
+                .intoSet<String>(overrideStrategy = OverrideStrategy.Override)
         }
 
         val setA = componentA.get<Set<String>>()
@@ -204,22 +157,13 @@ class SetTest {
     @Test
     fun testNestedOverrideDrop() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "value" }
-                        .intoSet<String>()
-                }
-            )
+            factory { "value" }
+                .intoSet<String>()
         }
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }
-                        .intoSet<String>(overrideStrategy = OverrideStrategy.Drop)
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }
+                .intoSet<String>(overrideStrategy = OverrideStrategy.Drop)
         }
 
         val setA = componentA.get<Set<String>>()
@@ -231,22 +175,13 @@ class SetTest {
     @Test(expected = IllegalStateException::class)
     fun testNestedOverrideFail() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "value" }
-                        .intoSet<String>()
-                }
-            )
+            factory { "value" }
+                .intoSet<String>()
         }
         val componentB = Component {
             dependencies(componentA)
-
-            modules(
-                Module {
-                    factory(overrideStrategy = OverrideStrategy.Fail) { "overridden_value" }
-                        .intoSet<String>(overrideStrategy = OverrideStrategy.Fail)
-                }
-            )
+            factory(overrideStrategy = OverrideStrategy.Fail) { "overridden_value" }
+                .intoSet<String>(overrideStrategy = OverrideStrategy.Fail)
         }
     }
 }

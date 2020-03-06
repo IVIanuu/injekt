@@ -20,7 +20,6 @@ import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
@@ -39,23 +38,14 @@ inline fun <T : ContentProvider> ContentProviderComponent(
     Component {
         scopes(ContentProviderScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ContentProviderModule(instance, type))
+
+        instance(instance, type = type)
+            .bindAlias<ContentProvider>()
+        contextBindings(ForContentProvider) { instance.context!! }
+        componentAlias(ContentProviderScope)
+
         block()
     }
-
-inline fun <reified T : ContentProvider> ContentProviderModule(
-    instance: T
-): Module = ContentProviderModule(instance = instance, type = typeOf())
-
-fun <T : ContentProvider> ContentProviderModule(
-    instance: T,
-    type: Type<T>
-): Module = Module {
-    instance(instance, type = type)
-        .bindAlias<ContentProvider>()
-    contextBindings(ForContentProvider) { instance.context!! }
-    componentAlias(ContentProviderScope)
-}
 
 @Scope
 annotation class ContentProviderScope {

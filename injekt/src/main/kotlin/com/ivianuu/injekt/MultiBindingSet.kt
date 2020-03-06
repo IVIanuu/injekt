@@ -54,7 +54,7 @@ package com.ivianuu.injekt
  * or a 'Set<Lazy<E>>'
  *
  *
- * @see ModuleBuilder.set
+ * @see ComponentBuilder.set
  */
 // todo ir use * instead of Any?
 typealias MultiBindingSet<E> = Set<KeyWithOverrideInfo>
@@ -62,7 +62,7 @@ typealias MultiBindingSet<E> = Set<KeyWithOverrideInfo>
 /**
  * Builder for a [MultiBindingSet]
  *
- * @see ModuleBuilder.set
+ * @see ComponentBuilder.set
  */
 class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
 

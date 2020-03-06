@@ -20,7 +20,6 @@ import android.app.Service
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.Type
@@ -39,23 +38,14 @@ inline fun <T : Service> ServiceComponent(
     Component {
         scopes(ServiceScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ServiceModule(instance, type))
+
+        instance(instance, type = type)
+            .bindAlias<Service>()
+        contextBindings(ForService) { instance }
+        componentAlias(ServiceScope)
+
         block()
     }
-
-inline fun <reified T : Service> ServiceModule(
-    instance: T
-): Module = ServiceModule(instance = instance, type = typeOf())
-
-fun <T : Service> ServiceModule(
-    instance: T,
-    type: Type<T>
-): Module = Module {
-    instance(instance, type = type)
-        .bindAlias<Service>()
-    contextBindings(ForService) { instance }
-    componentAlias(ServiceScope)
-}
 
 @Scope
 annotation class ServiceScope {

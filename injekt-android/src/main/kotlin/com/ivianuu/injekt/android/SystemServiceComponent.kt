@@ -76,12 +76,11 @@ import android.view.accessibility.CaptioningManager
 import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.typeOf
 import kotlin.reflect.KClass
 
-val SystemServiceModule = Module {
+fun SystemServiceComponent() = Component {
     getSystemServices()
         .forEach { service ->
             factory(type = typeOf(service)) {

@@ -18,14 +18,10 @@ package com.ivianuu.injekt.sample.data
 
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.android.ApplicationScope
-import com.ivianuu.injekt.sample.App
 
 @ApplicationScope
 @Single
-class Repository(
-    private val api: Api,
-    private val database: Database,
-    private val app: App
-) {
-    fun getItems() = api.getItems()
+class Repository(private val database: Database) {
+
+    fun getItems() = database.getItems()
 }

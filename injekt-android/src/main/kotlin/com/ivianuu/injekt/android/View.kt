@@ -21,7 +21,6 @@ import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
@@ -46,31 +45,18 @@ inline fun <T : View> ViewComponent(
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ViewModule(instance = instance, type = type, scope = scope, name = name))
+
+        instance(
+            instance = instance,
+            type = type,
+            overrideStrategy = OverrideStrategy.Override
+        ).bindAlias<View>().bindAlias<View>(name)
+
+        contextBindings(name) { instance.context!! }
+        componentAlias(scope)
+
         block()
     }
-
-inline fun <reified T : View> ViewModule(
-    instance: T,
-    scope: Any = ViewScope,
-    name: Any = ForView
-) = ViewModule(instance = instance, type = typeOf(), scope = scope, name = name)
-
-fun <T : View> ViewModule(
-    instance: T,
-    type: Type<T>,
-    scope: Any = ViewScope,
-    name: Any = ForView
-) = Module {
-    instance(
-        instance = instance,
-        type = type,
-        overrideStrategy = OverrideStrategy.Override
-    ).bindAlias<View>().bindAlias<View>(name)
-
-    contextBindings(name) { instance.context!! }
-    componentAlias(scope)
-}
 
 @Scope
 annotation class ViewScope {

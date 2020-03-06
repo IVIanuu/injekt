@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.comparison.injektdsl
 
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib1
 import com.ivianuu.injekt.comparison.Fib10
 import com.ivianuu.injekt.comparison.Fib100
@@ -117,11 +117,8 @@ import com.ivianuu.injekt.comparison.Fib96
 import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
-import com.ivianuu.injekt.get
 
-val InjektDslModule = createModule()
-
-fun createModule() = Module {
+fun createComponent() = Component {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }

@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ComponentBuilderTest {
@@ -63,42 +63,39 @@ class ComponentBuilderTest {
     @Test(expected = IllegalStateException::class)
     fun testDisallowsNestedImplicitOverride() {
         val componentA = Component {
-            modules(
-                Module {
-                    factory { "my_value" }
-                }
-            )
+            factory { "my_value" }
         }
 
         Component {
             dependencies(componentA)
-            modules(
-                Module {
-                    factory { "my_overridden_value" }
-                }
-            )
+            factory { "my_overridden_value" }
         }
     }
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsIfDependenciesOverrideEachOther() {
         val dependency1 = Component {
-            modules(
-                Module {
-                    factory { "value_1" }
-                }
-            )
+            factory { "value_1" }
         }
 
         val dependency2 = Component {
-            modules(
-                Module {
-                    factory { "value_2" }
-                }
-            )
+            factory { "value_2" }
         }
 
         Component { dependencies(dependency1, dependency2) }
+    }
+
+    @Test
+    fun testBind() {
+        val binding = InstanceBinding("value")
+        val component = Component {
+            bind(
+                key = keyOf<String>(),
+                scoping = Scoping.Scoped(),
+                binding = binding
+            )
+        }
+        assertEquals(binding, component.getBinding<String>(keyOf<String>()))
     }
 
 }

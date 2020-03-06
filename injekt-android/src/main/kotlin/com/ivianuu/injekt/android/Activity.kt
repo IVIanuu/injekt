@@ -23,7 +23,6 @@ import androidx.fragment.app.FragmentActivity
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
@@ -42,18 +41,7 @@ inline fun <T : Activity> ActivityComponent(
 ): Component = Component {
     scopes(ActivityScope)
     instance.getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(ActivityModule(instance, type))
-    block()
-}
 
-inline fun <reified T : Activity> ActivityModule(
-    instance: T
-): Module = ActivityModule(instance = instance, type = typeOf())
-
-fun <T : Activity> ActivityModule(
-    instance: T,
-    type: Type<T>
-): Module = Module {
     instance(instance = instance, type = type)
         .bindAlias<Activity>()
         .apply {
@@ -72,6 +60,8 @@ fun <T : Activity> ActivityModule(
     maybeViewModelStoreBindings(instance, ForActivity)
     maybeSavedStateBindings(instance, ForActivity)
     componentAlias(ActivityScope)
+
+    block()
 }
 
 @Scope

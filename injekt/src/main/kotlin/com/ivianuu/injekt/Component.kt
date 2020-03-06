@@ -159,3 +159,7 @@ class Component internal constructor(
         override fun invoke(parameters: Parameters): Any? = null
     }
 }
+
+operator fun Component.plus(other: Component): Component {
+    return Component { dependencies(this@plus, other) }
+}

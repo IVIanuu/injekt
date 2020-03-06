@@ -24,7 +24,7 @@ package com.ivianuu.injekt
  * @see Name
  * @see Scope
  * @see InjektConstructor
- * @see ModuleBuilder.factory
+ * @see ComponentBuilder.factory
  */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Factory

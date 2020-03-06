@@ -24,7 +24,7 @@ package com.ivianuu.injekt
  * @see Name
  * @see Scope
  * @see InjektConstructor
- * @see ModuleBuilder.single
+ * @see ComponentBuilder.single
  */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Single
@@ -33,7 +33,7 @@ annotation class Single
  * Ensures that a instance is only created once
  * Afterwards a cached value will be returned
  *
- * @see ModuleBuilder.single
+ * @see ComponentBuilder.single
  */
 fun <T> Binding<T>.asSingle(): Binding<T> = when (this) {
     is LinkedSingleBinding, is UnlinkedSingleBinding -> this

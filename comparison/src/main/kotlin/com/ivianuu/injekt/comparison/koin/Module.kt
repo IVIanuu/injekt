@@ -118,8 +118,6 @@ import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
 import org.koin.dsl.module
 
-val koinModule = createModule()
-
 fun createModule() = module {
     factory { Fib1() }
     factory { Fib2() }
