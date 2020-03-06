@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.serialization.proto.IrFunction
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -39,6 +40,9 @@ object InjektClassNames {
     val Scope = FqName("com.ivianuu.injekt.Scope")
     val Scoping = FqName("com.ivianuu.injekt.Scoping")
     val Single = FqName("com.ivianuu.injekt.Single")
+    val Type = FqName("com.ivianuu.injekt.Type")
+    val TypeArg = FqName("com.ivianuu.injekt.TypeArg")
+    val Typed = FqName("com.ivianuu.injekt.Typed")
     val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
 }
 

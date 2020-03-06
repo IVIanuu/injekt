@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -67,6 +68,7 @@ import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.irConstructorCall
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.startOffset
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -79,7 +81,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
-class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVisitorVoid {
+class InjektBindingGenerator(private val context: IrPluginContext) : IrElementTransformerVoid() {
 
     private val symbolTable = context.symbolTable
     private val typeTranslator = context.typeTranslator
@@ -99,15 +101,14 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         .single { it.name.asString() == "Scoped" }
     private val unlinkedBinding = getClass(InjektClassNames.UnlinkedBinding)
 
-    override fun visitElement(element: IrElement) {
-    }
+    override fun visitClass(declaration: IrClass): IrStatement {
+        super.visitClass(declaration)
 
-    override fun visitClass(declaration: IrClass) {
         val descriptor = declaration.descriptor
 
         if (!descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
             !descriptor.annotations.hasAnnotation(InjektClassNames.Single)
-        ) return
+        ) return declaration
 
         val injektConstructor = descriptor.findInjektConstructor()
 
@@ -124,6 +125,8 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         }
 
         declaration.patchDeclarationParents(declaration.parent)
+
+        return declaration
     }
 
     private fun unlinkedBinding(declaration: IrClass): IrClass {

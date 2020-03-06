@@ -76,6 +76,13 @@ data class Type<T> internal constructor(
 
 inline fun <reified T> typeOf(): Type<T> = kotlin.reflect.typeOf<T>().asType()
 
+/** Used by the compiler */
+annotation class Typed
+
+/** Used by the compiler */
+@Target(AnnotationTarget.TYPE_PARAMETER)
+annotation class TypeArg
+
 @PublishedApi
 internal fun <T> KType.asType(): Type<T> {
     val args = arrayOfNulls<Type<Any?>>(arguments.size)

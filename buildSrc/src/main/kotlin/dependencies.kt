@@ -19,7 +19,7 @@
 object Build {
     const val applicationId = "com.ivianuu.injekt.sample"
     const val applicationIdComparison = "com.ivianuu.injekt.comparison"
-    const val buildToolsVersion = "28.0.3"
+    const val buildToolsVersion = "29.0.3"
     const val compileSdk = 29
     const val minSdk = 14
     const val minSdkComparison = 29
@@ -32,7 +32,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev104"
+    const val version = "${Build.versionName}-dev105"
 }
 
 object Deps {
@@ -66,7 +66,7 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev103"
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev105"
 
     const val junit = "junit:junit:4.12"
 

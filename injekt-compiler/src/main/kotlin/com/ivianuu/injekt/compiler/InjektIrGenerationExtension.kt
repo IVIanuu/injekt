@@ -19,13 +19,26 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.ir.util.ExternalDependenciesGenerator
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val bindingGenerator = InjektBindingGenerator(pluginContext)
-        moduleFragment.files.forEach { file ->
-            file.acceptChildrenVoid(bindingGenerator)
+        // create a symbol remapper to be used across all transforms
+        val symbolRemapper = DeepCopySymbolRemapper()
+
+        val transformers = listOf(
+            InjektBindingGenerator(pluginContext)/*,
+            TypedFunctionMarker(pluginContext),
+            TypeOfParamsTransformer(pluginContext, symbolRemapper),
+            TypedCallTransformer(pluginContext)*/
+        )
+
+        transformers.forEach {
+            ExternalDependenciesGenerator(pluginContext.symbolTable, pluginContext.irProviders)
+                .generateUnboundSymbolsAsDependencies()
+            moduleFragment.transformChildrenVoid(it)
         }
     }
 }
