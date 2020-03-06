@@ -20,6 +20,33 @@ import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.keyOf
 
+inline fun <reified T> ContainerBuilder.single(
+    name: Any? = null,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    scoped: Boolean = true
+): Unit = single(
+    name = name,
+    overrideStrategy = overrideStrategy,
+    bound = scoped,
+    provider = providerOf<T>()
+)
+
+inline fun <reified T> ContainerBuilder.single(
+    name: Any? = null,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    bound: Boolean = true,
+    noinline provider: Container.(Parameters) -> T
+) {
+    add(
+        Binding(
+            key = keyOf<T>(name = name),
+            overrideStrategy = overrideStrategy,
+            provider = if (bound) BoundProvider(SingleProvider(provider))
+            else SingleProvider(provider)
+        )
+    )
+}
+
 class SingleProvider<T>(private val provider: Container.(Parameters) -> T): (Container, Parameters) -> T {
     private var value: Any? = provider
     override fun invoke(p1: Container, p2: Parameters): T {
@@ -28,31 +55,4 @@ class SingleProvider<T>(private val provider: Container.(Parameters) -> T): (Con
         }
         return value as T
     }
-}
-
-inline fun <reified T> ContainerBuilder.single(
-    name: Any? = null,
-    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    scoped: Boolean = true
-): Unit = single(
-    name = name,
-    overrideStrategy = overrideStrategy,
-    scoped = scoped,
-    provider = providerOf<T>()
-)
-
-inline fun <reified T> ContainerBuilder.single(
-    name: Any?,
-    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    scoped: Boolean = true,
-    noinline provider: Container.(Parameters) -> T
-) {
-    add(
-        Binding(
-            key = keyOf<T>(name = name),
-            overrideStrategy = overrideStrategy,
-            provider = if (scoped) ScopedProvider(SingleProvider(provider))
-            else SingleProvider(provider)
-        )
-    )
 }

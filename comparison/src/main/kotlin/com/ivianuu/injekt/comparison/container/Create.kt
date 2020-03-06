@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.container.impl
+package com.ivianuu.injekt.comparison.container
 
-import com.ivianuu.injekt.Parameters
-
-class EagerProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver {
-
-    override fun onInit(container: Container) {
-         invoke(container)
-
+fun main() {
+    """
+    fun createContainer() = Container {
+        ${(1..100).joinToString("\n") { "factory<Fib$it>()" }}
     }
-
-    override fun invoke(p1: Container, p2: Parameters): T {
-        return provider(p1, p2)
-    }
+    """.trimIndent().let { println(it) }
 }

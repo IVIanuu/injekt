@@ -18,14 +18,12 @@ package com.ivianuu.injekt.comparison.container.impl
 
 import com.ivianuu.injekt.Parameters
 
-class EagerProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver {
-
+class BoundProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver {
+    private lateinit var container: Container
     override fun onInit(container: Container) {
-         invoke(container)
-
+        this.container = container
     }
-
     override fun invoke(p1: Container, p2: Parameters): T {
-        return provider(p1, p2)
+        return provider(container, p2)
     }
 }

@@ -17,35 +17,36 @@
 package com.ivianuu.injekt.comparison.container.impl
 
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.emptyParameters
 import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.typeOf
 
 interface Container {
     val bindings: BindingMap
 }
 
-fun Container(bindings: BindingMap): Container {
-    return ContainerImpl(bindings)
-}
+fun Container(bindings: BindingMap): Container = ContainerImpl(bindings)
 
-fun Container(block: ContainerBuilder.() -> Unit): Container =
+inline fun Container(block: ContainerBuilder.() -> Unit): Container =
     ContainerBuilder().apply(block).build()
 
 class ContainerBuilder {
 
     private val bindings = mutableMapOf<Key, Binding<*>>()
 
+    var wrap = true // todo remove
+
     fun add(binding: Binding<*>) {
         bindings[binding.key] = binding
     }
 
-    fun build(): Container =
-        Container(
-            BindingMap(
-                bindings
-            )
-        )
+    fun build(): Container {
+        val container = Container(BindingMap(bindings))
+        return if (wrap) InjektPlugins.containerInitInterceptor(container) else container
+    }
 
 }
 
@@ -53,12 +54,12 @@ internal class ContainerImpl(override val bindings: BindingMap) : Container {
     init {
         bindings.entries
             .map { it.value.provider }
-            .filterIsInstance<ContainerLifecycleObserver<*>>()
+            .filterIsInstance<ContainerLifecycleObserver>()
             .forEach { it.onInit(this) }
     }
 }
 
-interface ContainerLifecycleObserver<T> {
+interface ContainerLifecycleObserver {
     fun onInit(container: Container) {
     }
 }
@@ -74,4 +75,9 @@ operator fun Container.plus(other: Container): Container =
 inline fun <reified T> Container.get(
     name: Any? = null,
     parameters: Parameters = emptyParameters()
-): T = bindings.findBinding<T>(keyOf<T>(name))!!.provider(this, parameters)
+): T = get(keyOf<T>(name = name), parameters)
+
+fun <T> Container.get(
+    key: Key,
+    parameters: Parameters = emptyParameters()
+): T = bindings.getBinding<T>(key).provider(this, parameters)

@@ -20,7 +20,20 @@ import com.ivianuu.injekt.Key
 
 class BindingMap(val entries: Map<Key, Binding<*>>) {
 
-    fun <T> findBinding(key: Key): Binding<T>? = entries[key] as? Binding<T>
+    fun <T> findBinding(key: Key): Binding<T>? {
+        val binding = entries[key] as? Binding<T>
+        if (binding != null) return binding
+
+        if (key.type.isNullable) {
+            val nullableKey = key.copy(type = key.type.copy(isNullable = true))
+            return entries[nullableKey] as? Binding<T>
+        }
+
+        return null
+    }
+
+    fun <T> getBinding(key: Key): Binding<T> = findBinding(key)
+        ?: error("Couldn't find binding for $key")
 
     companion object {
         operator fun invoke(

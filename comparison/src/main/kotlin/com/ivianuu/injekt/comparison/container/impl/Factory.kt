@@ -23,11 +23,11 @@ import com.ivianuu.injekt.keyOf
 inline fun <reified T> ContainerBuilder.factory(
     name: Any? = null,
     overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-    scoped: Boolean = false
+    bound: Boolean = false
 ): Unit = factory(
     name = name,
     overrideStrategy = overrideStrategy,
-    scoped = scoped,
+    scoped = bound,
     provider = providerOf<T>()
 )
 
@@ -38,8 +38,8 @@ inline fun <reified T> ContainerBuilder.factory(
     noinline provider: Container.(Parameters) -> T
 ) {
     add(Binding(
-        keyOf<T>(name = name),
-        overrideStrategy,
-        if (scoped) ScopedProvider(provider) else provider
+        key = keyOf<T>(name = name),
+        overrideStrategy = overrideStrategy,
+        provider = if (scoped) BoundProvider(provider) else provider
     ))
 }

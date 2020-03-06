@@ -16,16 +16,10 @@
 
 package com.ivianuu.injekt.comparison.container.impl
 
-import com.ivianuu.injekt.Parameters
+object InjektPlugins {
+    var containerInitInterceptor: (Container) -> Container = DefaultContainerInitInterceptor
+}
 
-class EagerProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver {
-
-    override fun onInit(container: Container) {
-         invoke(container)
-
-    }
-
-    override fun invoke(p1: Container, p2: Parameters): T {
-        return provider(p1, p2)
-    }
+val DefaultContainerInitInterceptor: (Container) -> Container = {
+    it + LazyContainer(it) + ProviderContainer(it) + MultiBindingContainer(it)
 }

@@ -27,7 +27,7 @@ object ContainerTest : InjectionTest {
     override fun moduleCreation() {
     }
 
-    private val container = createContainer()
+    private val container = createContainer2()
 
     override fun inject() {
         container.get<Fib8>()

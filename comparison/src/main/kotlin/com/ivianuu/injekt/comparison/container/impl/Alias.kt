@@ -16,14 +16,18 @@
 
 package com.ivianuu.injekt.comparison.container.impl
 
-import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.keyOf
 
-class ScopedProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver<T> {
-    private lateinit var container: Container
-    override fun onInit(container: Container) {
-        this.container = container
-    }
-    override fun invoke(p1: Container, p2: Parameters): T {
-        return provider(container, p2)
-    }
+inline fun <reified T : S, reified S> ContainerBuilder.alias(
+    name: Any? = null,
+    aliasName: Any? = null,
+    overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+) {
+    return add(
+        Binding(
+            key = keyOf<S>(name = aliasName),
+            overrideStrategy = overrideStrategy
+        ) { get<T>(name = name, parameters = it) }
+    )
 }

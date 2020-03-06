@@ -18,7 +18,26 @@ package com.ivianuu.injekt.comparison.container.impl
 
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.emptyParameters
+import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.typeOf
+import org.jetbrains.annotations.Nullable
 
-inline fun <reified T> providerOf(): Container.(Parameters) -> T = error("Not compiled with the inject compiler")
+inline fun <reified T> providerOf(): Container.(Parameters) -> T {
+    return {
+        val constructor = T::class.java.constructors.first()
+        constructor.newInstance(
+            *(0 until constructor.parameterCount)
+                .asSequence()
+                .map { index ->
+                    val isNullable = constructor.parameterAnnotations[index]
+                        .any { it.annotationClass == Nullable::class }
+                    val key = keyOf(typeOf<Any?>(constructor.parameterTypes[index], isNullable))
+                    get<Any?>(key)
+                }
+                .toList()
+                .toTypedArray()
+        ) as T
+    }
+}
 
 fun <T> (Container.(Parameters) -> T).invoke(container: Container) = invoke(container, emptyParameters())
