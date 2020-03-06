@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.comparison.container.impl
 
-/**
- * All strategies for handling overrides
- */
-enum class OverrideStrategy {
-    /** Overrides the existing binding */
-    Override,
-    /** Throws an exception if there's an existing binding */
-    Fail,
-    /** Keeps the existing binding and drops this one */
-    Drop;
+import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.emptyParameters
 
-    inline fun check(
-        existsPredicate: () -> Boolean,
-        errorMessage: () -> String
-    ): Boolean = when (this) {
-        Override -> true
-        Fail -> check(!existsPredicate(), errorMessage).let { true }
-        Drop -> !existsPredicate()
-    }
-}
+inline fun <reified T> providerOf(): Container.(Parameters) -> T = error("Not compiled with the inject compiler")
+
+fun <T> (Container.(Parameters) -> T).invoke(container: Container) = invoke(container, emptyParameters())

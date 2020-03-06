@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.comparison.container.impl
 
-/**
- * All strategies for handling overrides
- */
-enum class OverrideStrategy {
-    /** Overrides the existing binding */
-    Override,
-    /** Throws an exception if there's an existing binding */
-    Fail,
-    /** Keeps the existing binding and drops this one */
-    Drop;
+import com.ivianuu.injekt.Parameters
 
-    inline fun check(
-        existsPredicate: () -> Boolean,
-        errorMessage: () -> String
-    ): Boolean = when (this) {
-        Override -> true
-        Fail -> check(!existsPredicate(), errorMessage).let { true }
-        Drop -> !existsPredicate()
+class ScopedProvider<T>(private val provider: Container.(Parameters) -> T) : (Container, Parameters) -> T, ContainerLifecycleObserver<T> {
+    private lateinit var container: Container
+    override fun onInit(container: Container) {
+        this.container = container
+    }
+    override fun invoke(p1: Container, p2: Parameters): T {
+        return provider(container, p2)
     }
 }

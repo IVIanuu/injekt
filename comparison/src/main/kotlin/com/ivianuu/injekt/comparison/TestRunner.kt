@@ -17,6 +17,7 @@
 
 package com.ivianuu.injekt.comparison
 
+import com.ivianuu.injekt.comparison.container.ContainerTest
 import com.ivianuu.injekt.comparison.custom.CustomTest
 import com.ivianuu.injekt.comparison.dagger.DaggerTest
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
@@ -55,6 +56,7 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             GuiceTest,
             InjektCodegenTest,
             InjektDslTest,
+            ContainerTest,
             KatanaTest,
             KodeinTest,
             KoinTest,

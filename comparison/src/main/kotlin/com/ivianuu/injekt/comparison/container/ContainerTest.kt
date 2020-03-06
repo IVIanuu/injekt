@@ -14,25 +14,30 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.comparison.container
 
-/**
- * All strategies for handling overrides
- */
-enum class OverrideStrategy {
-    /** Overrides the existing binding */
-    Override,
-    /** Throws an exception if there's an existing binding */
-    Fail,
-    /** Keeps the existing binding and drops this one */
-    Drop;
+import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.InjectionTest
+import com.ivianuu.injekt.comparison.container.impl.get
 
-    inline fun check(
-        existsPredicate: () -> Boolean,
-        errorMessage: () -> String
-    ): Boolean = when (this) {
-        Override -> true
-        Fail -> check(!existsPredicate(), errorMessage).let { true }
-        Drop -> !existsPredicate()
+object ContainerTest : InjectionTest {
+    override val name: String
+        get() = "Container"
+
+    override fun moduleCreation() {
+    }
+
+    private val container = createContainer()
+
+    override fun inject() {
+        container.get<Fib8>()
+    }
+
+    override fun setup() {
+
+    }
+
+    override fun shutdown() {
+
     }
 }
