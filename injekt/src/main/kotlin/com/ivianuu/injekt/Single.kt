@@ -29,33 +29,16 @@ package com.ivianuu.injekt
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Single
 
-/**
- * Ensures that a instance is only created once
- * Afterwards a cached value will be returned
- *
- * @see ComponentBuilder.single
- */
-fun <T> Binding<T>.asSingle(): Binding<T> = when (this) {
-    is LinkedSingleBinding, is UnlinkedSingleBinding -> this
-    is LinkedBinding -> LinkedSingleBinding(this)
-    else -> UnlinkedSingleBinding(this)
-}
-
-private class UnlinkedSingleBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
-    override fun link(component: Component): LinkedBinding<T> =
-        LinkedSingleBinding(binding.performLink(component))
-}
-
-private class LinkedSingleBinding<T>(private val provider: Provider<T>) : LinkedBinding<T>() {
+class SingleProvider<T>(private val provider: BindingProvider<T>) : (Component, Parameters) -> T {
     private var _value: Any? = this
 
-    override fun invoke(parameters: Parameters): T {
+    override fun invoke(component: Component, parameters: Parameters): T {
         var value = _value
         if (value === this) {
             synchronized(this) {
                 value = _value
                 if (value === this) {
-                    _value = provider(parameters)
+                    _value = provider(component, parameters)
                     value = _value
                 }
             }

@@ -39,27 +39,17 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: Set<Any>,
-    internal val scopedBindings: Map<Key, Binding<*>>,
-    internal val unlinkedUnscopedBindings: Map<Key, UnlinkedBinding<*>>,
+    internal val scopes: List<Any>,
+    internal val dependencies: List<Component>,
+    internal val bindings: MutableMap<Key, Binding<*>>,
     internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
-    internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>,
-    internal val dependencies: Set<Component>
+    internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>
 ) {
 
-    private val linkedBindings = mutableMapOf<Key, LinkedBinding<*>>()
-
     init {
-        scopedBindings.forEach { (key, binding) ->
-            linkedBindings[key] = binding.performLink(this)
-        }
-        unlinkedUnscopedBindings.forEach { (key, binding) ->
-            linkedBindings[key] = binding.performLink(this)
-        }
-
-        scopedBindings
-            .filter { it.value.eager }
-            .forEach { get(it.key) }
+        bindings
+            .mapNotNull { it.value.provider as? ComponentInitObserver }
+            .forEach { it.onInit(this) }
     }
 
     inline fun <reified T> get(
@@ -81,7 +71,7 @@ class Component internal constructor(
      * @return the instance
      */
     fun <T> get(key: Key, parameters: Parameters = emptyParameters()): T =
-        getBinding<T>(key)(parameters)
+        getBinding<T>(key).provider(this, parameters)
 
     /**
      * Retrieve a binding of type [T]
@@ -89,19 +79,35 @@ class Component internal constructor(
      * @param key the of the instance
      * @return the instance
      */
-    fun <T> getBinding(key: Key): LinkedBinding<T> {
+    fun <T> getBinding(key: Key): Binding<T> {
         val binding = findBinding<T>(key)
         if (binding != null) return binding
+
         if (key.type.isNullable) {
-            val nullableKey = key.copy(type = key.type.copy(isNullable = true))
-            return findBinding(nullableKey) ?: NullBinding as LinkedBinding<T>
+            return Binding<Any?>(
+                key = key,
+                provider = { null }
+            ) as Binding<T>
         }
 
         error("Couldn't find a binding for $key")
     }
 
+    fun getComponentForScope(scope: Any): Component =
+        findComponentForScope(scope) ?: error("Couldn't find component for scope $scope")
+
+    private fun findComponentForScope(scope: Any): Component? {
+        if (scope in scopes) return this
+
+        for (i in dependencies.size - 1 downTo 0) {
+            dependencies[i].findComponentForScope(scope)?.let { return it }
+        }
+
+        return null
+    }
+
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key): LinkedBinding<T>? {
+    private fun <T> findBinding(key: Key): Binding<T>? {
         var binding: Binding<T>?
 
         // providers, lazy
@@ -111,8 +117,8 @@ class Component internal constructor(
         binding = findBindingInThisComponent(key)
         if (binding != null) return binding
 
-        for (dependency in dependencies) {
-            binding = dependency.findBinding(key)
+        for (i in dependencies.size - 1 downTo 0) {
+            binding = dependencies[i].findBinding(key)
             if (binding != null) return binding
         }
 
@@ -122,16 +128,22 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findSpecialBinding(key: Key): LinkedBinding<T>? {
+    private fun <T> findSpecialBinding(key: Key): Binding<T>? {
         if (key.type.arguments.size == 1) {
             when (key.type.classifier) {
                 Provider::class -> {
                     val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return ProviderBinding<Any?>(this, instanceKey) as LinkedBinding<T>
+                    return Binding<Provider<Any?>>(
+                        key = key,
+                        provider = { KeyedProvider(this, instanceKey) }
+                    ) as Binding<T>
                 }
                 Lazy::class -> {
                     val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return LinkedLazyBinding<Any?>(this, instanceKey) as LinkedBinding<T>
+                    return Binding<Lazy<Any?>>(
+                        key = key,
+                        provider = { KeyedLazy(this, instanceKey) }
+                    ) as Binding<T>
                 }
             }
         }
@@ -139,25 +151,24 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findBindingInThisComponent(key: Key): LinkedBinding<T>? =
-        synchronized(linkedBindings) { linkedBindings.get(key) } as? LinkedBinding<T>
+    private fun <T> findBindingInThisComponent(key: Key): Binding<T>? =
+        bindings[key] as? Binding<T>
 
-    private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
-        var binding = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
-        if (binding == null ||
-            (binding.scoping is Scoping.Scoped && (binding.scoping as Scoping.Scoped).name !in scopes)
-        ) return null
+    private fun <T> findJustInTimeBinding(key: Key): Binding<T>? {
+        if (key.name != null) return null
 
-        binding = binding
-            .performLink(this)
-            .let { if (binding!!.single) it.asSingle() else it } as LinkedBinding<T>
-        synchronized(linkedBindings) { linkedBindings[key] = binding }
+        val binding = InjektPlugins.justInTimeLookupFactory.findBinding(key.type) as? Binding<T>
+            ?: return null
+        if (binding.scoping == Scoping.Unscoped ||
+            ((binding.scoping as Scoping.Scoped).name == null ||
+                    binding.scoping.name in scopes)
+        ) {
+            bindings[key] = binding
+        }
         return binding
+
     }
 
-    private object NullBinding : LinkedBinding<Any?>() {
-        override fun invoke(parameters: Parameters): Any? = null
-    }
 }
 
 operator fun Component.plus(other: Component): Component {

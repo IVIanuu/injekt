@@ -326,7 +326,7 @@ class ComponentTest {
     @Test
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = Component {
-            single(scoping = Scoping.Unscoped) { Context(get()) }
+            factory(scoping = Scoping.Unscoped) { Context(get()) }
                 .bindAlias<Environment>()
         }
         val componentB = Component { dependencies(componentA) }
@@ -335,6 +335,8 @@ class ComponentTest {
         val contextA = componentA.get<Context>()
         val contextB = componentB.get<Context>()
         val contextC = componentC.get<Context>()
+
+        println("a $componentA b $componentB c $componentC")
 
         assertEquals(componentA, contextA.component)
         assertEquals(componentB, contextB.component)

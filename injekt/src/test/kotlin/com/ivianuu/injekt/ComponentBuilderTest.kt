@@ -87,14 +87,8 @@ class ComponentBuilderTest {
 
     @Test
     fun testBind() {
-        val binding = InstanceBinding("value")
-        val component = Component {
-            bind(
-                key = keyOf<String>(),
-                scoping = Scoping.Scoped(),
-                binding = binding
-            )
-        }
+        val binding = Binding(key = keyOf<String>()) { "value" }
+        val component = Component { add(binding) }
         assertEquals(binding, component.getBinding<String>(keyOf<String>()))
     }
 

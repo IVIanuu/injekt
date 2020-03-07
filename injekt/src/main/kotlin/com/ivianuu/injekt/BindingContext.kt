@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Result of call to [ComponentBuilder.bind]
+ * Result of call to [ComponentBuilder.add]
  * this is allows to add additional aliases to the same declared binding
  *
  * E.g.
@@ -32,7 +32,6 @@ package com.ivianuu.injekt
  */
 data class BindingContext<T> internal constructor(
     val binding: Binding<T>,
-    val key: Key,
     val componentBuilder: ComponentBuilder
 ) {
 
@@ -49,7 +48,7 @@ data class BindingContext<T> internal constructor(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        bindAlias(type = key.type, name = name, overrideStrategy = overrideStrategy)
+        bindAlias(type = binding.key.type, name = name, overrideStrategy = overrideStrategy)
         return this
     }
 
@@ -64,10 +63,10 @@ data class BindingContext<T> internal constructor(
      * @param name the alias name
      * @param override whether or not the alias binding can override existing bindings
      *
-     * @see ComponentBuilder.bind
+     * @see ComponentBuilder.add
      */
     fun bindAlias(
-        type: Type<*> = key.type,
+        type: Type<*> = binding.key.type,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
@@ -76,7 +75,11 @@ data class BindingContext<T> internal constructor(
             name = name,
             overrideStrategy = overrideStrategy
         ) { parameters ->
-            get(type = key.type as Type<Any?>, name = key.name, parameters = parameters)
+            get(
+                type = binding.key.type as Type<Any?>,
+                name = binding.key.name,
+                parameters = parameters
+            )
         }
 
         return this
@@ -120,8 +123,8 @@ data class BindingContext<T> internal constructor(
         ) {
             put(
                 entryKey = entryKey,
-                entryValueType = key.type as Type<V>,
-                entryValueName = key.name,
+                entryValueType = binding.key.type as Type<V>,
+                entryValueName = binding.key.name,
                 overrideStrategy = overrideStrategy
             )
         }
@@ -154,8 +157,8 @@ data class BindingContext<T> internal constructor(
     ): BindingContext<T> {
         componentBuilder.set(setElementType = setElementType, setName = setName) {
             add(
-                elementType = key.type as Type<E>,
-                elementName = key.name,
+                elementType = binding.key.type as Type<E>,
+                elementName = binding.key.name,
                 overrideStrategy = overrideStrategy
             )
         }

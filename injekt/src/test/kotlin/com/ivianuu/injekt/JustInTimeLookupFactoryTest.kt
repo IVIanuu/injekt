@@ -18,7 +18,6 @@ package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -27,7 +26,7 @@ class JustInTimeLookupFactoryTest {
     @Test
     fun testUnscoped() {
         val binding =
-            CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>())
+            CodegenJustInTimeLookupFactory.findBinding<MyUnscopedDep>(typeOf())
         assertNotNull(binding)
         assertEquals(Scoping.Unscoped, binding?.scoping)
     }
@@ -35,18 +34,12 @@ class JustInTimeLookupFactoryTest {
     @Test
     fun testScoped() {
         val binding =
-            CodegenJustInTimeLookupFactory.findBindingForKey<MyScopedDep>(keyOf<MyScopedDep>())
+            CodegenJustInTimeLookupFactory.findBinding<MyScopedDep>(typeOf())
         assertNotNull(binding)
         assertTrue(binding?.scoping is Scoping.Scoped)
         assertEquals(TestScopeOne, (binding?.scoping as? Scoping.Scoped)?.name)
     }
 
-    @Test
-    fun testCannotResolveNamed() {
-        val binding =
-            CodegenJustInTimeLookupFactory.findBindingForKey<MyUnscopedDep>(keyOf<MyUnscopedDep>("name"))
-        assertNull(binding)
-    }
 }
 
 @Factory

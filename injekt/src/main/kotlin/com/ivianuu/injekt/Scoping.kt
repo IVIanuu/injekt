@@ -20,6 +20,35 @@ package com.ivianuu.injekt
  * All possible scoping models
  */
 sealed class Scoping {
-    data class Scoped(val name: Any? = null) : Scoping()
-    object Unscoped : Scoping()
+    data class Scoped(val name: Any? = null) : Scoping() {
+        override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
+            ScopedProvider(name, provider)
+
+        private class ScopedProvider<T>(
+            private val name: Any? = null,
+            private val provider: BindingProvider<T>
+        ) : (Component, Parameters) -> T, ComponentInitObserver {
+            private lateinit var component: Component
+            override fun onInit(component: Component) {
+                check(!this::component.isInitialized) {
+                    "Already scoped to $component"
+                }
+
+                (provider as? ComponentInitObserver)?.onInit(component)
+
+                this.component = if (name == null) component
+                else component.getComponentForScope(name)
+            }
+
+            override fun invoke(p1: Component, p2: Parameters): T {
+                return provider(component, p2)
+            }
+        }
+    }
+
+    object Unscoped : Scoping() {
+        override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
+    }
+
+    abstract fun <T> apply(provider: BindingProvider<T>): BindingProvider<T>
 }

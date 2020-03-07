@@ -36,8 +36,8 @@ inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder {
 
-    private val scopes = mutableSetOf<Any>()
-    private val dependencies = mutableSetOf<Component>()
+    private val scopes = mutableListOf<Any>()
+    private val dependencies = mutableListOf<Component>()
     private val bindings = mutableMapOf<Key, Binding<*>>()
     private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
     private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
@@ -84,13 +84,13 @@ class ComponentBuilder {
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
         scoping: Scoping = Scoping.Unscoped,
-        noinline definition: Definition<T>
+        noinline provider: BindingProvider<T>
     ): BindingContext<T> = factory(
         type = typeOf(),
         name = name,
         overrideStrategy = overrideStrategy,
         scoping = scoping,
-        definition = definition
+        provider = provider
     )
 
     /**
@@ -100,21 +100,23 @@ class ComponentBuilder {
      * @param name the name of the instance
      * @param overrideStrategy the strategy for handling overrides
      * @param scoping how instances should be scoped
-     * @param definition the definitions which creates instances
+     * @param provider the definitions which creates instances
      *
-     * @see bind
+     * @see add
      */
     fun <T> factory(
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
         scoping: Scoping = Scoping.Unscoped,
-        definition: Definition<T>
-    ): BindingContext<T> = bind(
-        key = keyOf(type, name),
-        binding = DefinitionBinding(definition = definition),
-        overrideStrategy = overrideStrategy,
-        scoping = scoping
+        provider: BindingProvider<T>
+    ): BindingContext<T> = add(
+        Binding(
+            key = keyOf(type, name),
+            overrideStrategy = overrideStrategy,
+            scoping = scoping,
+            provider = scoping.apply(provider)
+        )
     )
 
     inline fun <reified T> single(
@@ -122,14 +124,14 @@ class ComponentBuilder {
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
         scoping: Scoping = Scoping.Scoped(),
         eager: Boolean = false,
-        noinline definition: Definition<T>
+        noinline provider: BindingProvider<T>
     ): BindingContext<T> = single(
         type = typeOf(),
         name = name,
         overrideStrategy = overrideStrategy,
         scoping = scoping,
         eager = eager,
-        definition = definition
+        provider = provider
     )
 
     /**
@@ -140,9 +142,9 @@ class ComponentBuilder {
      * @param overrideStrategy the strategy for handling overrides
      * @param scoping how instances should be scoped
      * @param eager whether the instance should be created when the [Component] get's created
-     * @param definition the definitions which creates instances
+     * @param provider the definitions which creates instances
      *
-     * @see bind
+     * @see add
      */
     fun <T> single(
         type: Type<T>,
@@ -150,16 +152,17 @@ class ComponentBuilder {
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
         scoping: Scoping = Scoping.Scoped(),
         eager: Boolean = false,
-        definition: Definition<T>
-    ): BindingContext<T> =
-        bind(
+        provider: BindingProvider<T>
+    ): BindingContext<T> = add(
+        Binding(
             key = keyOf(type, name),
-            binding = DefinitionBinding(definition = definition).asSingle(),
             overrideStrategy = overrideStrategy,
             scoping = scoping,
-            eager = eager,
-            single = true
+            provider = SingleProvider(provider)
+                .let { scoping.apply(it) }
+                .let { if (eager) EagerProvider(it) else it }
         )
+    )
 
     inline fun <reified T> instance(
         instance: T,
@@ -182,18 +185,20 @@ class ComponentBuilder {
      * @param name the type for the [Key] by which the binding can be retrieved later in the [Component]
      * @return the [BindingContext] to chain binding calls
      *
-     * @see bind
+     * @see add
      */
     fun <T> instance(
         instance: T,
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ): BindingContext<T> = bind(
-        key = keyOf(type, name),
-        binding = InstanceBinding(instance),
-        overrideStrategy = overrideStrategy,
-        scoping = Scoping.Scoped()
+    ): BindingContext<T> = add(
+        Binding(
+            key = keyOf(type, name),
+            overrideStrategy = overrideStrategy,
+            scoping = Scoping.Scoped(),
+            provider = { instance }
+        )
     )
 
     inline fun <reified T> withBinding(
@@ -325,41 +330,23 @@ class ComponentBuilder {
      * Contributes the binding
      * This function is rarely used directly instead use [factory] or [single]
      *
-     * @param key the key by which the binding can be retrieved later in the [Component]
      * @param binding the binding to add
-     * @param overrideStrategy the strategy for handling overrides
-     * @param single whether instances are reused
-     * @param eager whether a instance should be created when the [Component] get's created
-     * @param scoping how instances should be scoped
-     * @return the [BindingContext] to chain binding calls
      *
      * @see Component.get
      * @see BindingContext
      * @see factory
      * @see single
      */
-    fun <T> bind(
-        key: Key,
-        binding: Binding<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
-        single: Boolean = false,
-        eager: Boolean = false
-    ): BindingContext<T> {
-        binding.overrideStrategy = overrideStrategy
-        binding.scoping = scoping
-        binding.single = single
-        binding.eager = eager
-
-        if (overrideStrategy.check(
-                existsPredicate = { key in bindings },
-                errorMessage = { "Already declared binding for $key" }
+    fun <T> add(binding: Binding<T>): BindingContext<T> {
+        if (binding.overrideStrategy.check(
+                existsPredicate = { binding.key in bindings },
+                errorMessage = { "Already declared binding for ${binding.key}" }
             )
         ) {
-            bindings[key] = binding
+            bindings[binding.key] = binding
         }
 
-        return BindingContext(binding = binding, key = key, componentBuilder = this)
+        return BindingContext(binding = binding, componentBuilder = this)
     }
 
     /**
@@ -384,36 +371,16 @@ class ComponentBuilder {
                 return@fold acc
             }
 
-        val scopedBindings = mutableMapOf<Key, Binding<*>>()
-        val unlinkedUnscopedBindings = mutableMapOf<Key, UnlinkedBinding<*>>()
+        val finalBindings = mutableMapOf<Key, Binding<*>>()
         val allMultiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
         val allMultiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
 
-        fun addBinding(key: Key, binding: Binding<*>) {
+        fun addBinding(binding: Binding<*>) {
             if (binding.overrideStrategy.check(
-                    existsPredicate = {
-                        key in scopedBindings ||
-                                key in dependencyBindings
-                    },
-                    errorMessage = { "Already declared key $key" }
-                )
+                    existsPredicate = { binding.key in dependencyBindings },
+                    errorMessage = { "Already declared key ${binding.key}" })
             ) {
-                scopedBindings[key] = binding
-                if (binding.scoping is Scoping.Unscoped) unlinkedUnscopedBindings[key] =
-                    binding as UnlinkedBinding<*>
-            }
-        }
-
-        fun addUnlinkedUnscopedDependencyBinding(key: Key, binding: UnlinkedBinding<*>) {
-            if (binding.overrideStrategy.check(
-                    existsPredicate = {
-                        key in scopedBindings ||
-                                key in unlinkedUnscopedBindings
-                    },
-                    errorMessage = { "Already declared key $key" }
-                )
-            ) {
-                unlinkedUnscopedBindings[key] = binding
+                finalBindings[binding.key] = binding
             }
         }
 
@@ -433,9 +400,6 @@ class ComponentBuilder {
         }
 
         dependencies.forEach { dependency ->
-            dependency.unlinkedUnscopedBindings.forEach { (key, binding) ->
-                addUnlinkedUnscopedDependencyBinding(key, binding)
-            }
             dependency.multiBindingMaps.forEach { (mapKey, map) ->
                 addMultiBindingMap(mapKey, map)
             }
@@ -445,7 +409,7 @@ class ComponentBuilder {
             }
         }
 
-        bindings.forEach { (key, binding) -> addBinding(key, binding) }
+        bindings.values.forEach { binding -> addBinding(binding) }
 
         multiBindingMapBuilders.forEach {
             addMultiBindingMap(it.key, it.value.build())
@@ -460,25 +424,24 @@ class ComponentBuilder {
         }
 
         multiBindingMaps.forEach { (mapKey, map) ->
-            includeMapBindings(scopedBindings, mapKey, map)
+            includeMapBindings(finalBindings, mapKey, map)
         }
 
         val multiBindingSets = allMultiBindingSetBuilders.mapValues {
             it.value.build()
         }
         multiBindingSets.forEach { (setKey, set) ->
-            includeSetBindings(scopedBindings, setKey, set)
+            includeSetBindings(finalBindings, setKey, set)
         }
 
-        includeComponentBindings(scopedBindings)
+        includeComponentBindings(finalBindings)
 
         return Component(
             scopes = scopes,
-            scopedBindings = scopedBindings,
-            unlinkedUnscopedBindings = unlinkedUnscopedBindings,
+            dependencies = dependencies,
+            bindings = finalBindings,
             multiBindingMaps = multiBindingMaps,
-            multiBindingSets = multiBindingSets,
-            dependencies = dependencies
+            multiBindingSets = multiBindingSets
         )
     }
 
@@ -501,25 +464,39 @@ class ComponentBuilder {
     }
 
     private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
-        val componentBinding = ComponentBinding()
-        componentBinding.scoping = Scoping.Scoped()
-        componentBinding.overrideStrategy = OverrideStrategy.Permit
-        val componentKey = keyOf<Component>()
-        bindings[componentKey] = componentBinding
+        val componentBinding = Binding(
+            key = keyOf<Component>(),
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = ComponentProvider(null)
+        )
+
+        bindings[componentBinding.key] = componentBinding
         scopes
-            .map { keyOf<Component>(it) }
-            .forEach { bindings[it] = componentBinding }
+            .forEach {
+                bindings[keyOf<Component>(it)] = Binding(
+                    key = keyOf<Component>(),
+                    overrideStrategy = OverrideStrategy.Permit,
+                    scoping = Scoping.Scoped(),
+                    provider = ComponentProvider(it)
+                )
+            }
     }
 
-    private class ComponentBinding : UnlinkedBinding<Component>() {
-        override fun link(component: Component): LinkedBinding<Component> =
-            Linked(component)
+    private class ComponentProvider(
+        private val scope: Any?
+    ) : (Component, Parameters) -> Component, ComponentInitObserver {
+        private lateinit var component: Component
+        override fun onInit(component: Component) {
+            check(!this::component.isInitialized) {
+                "Already scoped to $component"
+            }
 
-        private class Linked(private val component: Component) :
-            LinkedBinding<Component>() {
-            override fun invoke(parameters: Parameters): Component =
-                component
+            this.component = if (scope == null) component
+            else component.getComponentForScope(scope)
         }
+
+        override fun invoke(p1: Component, p2: Parameters): Component = component
     }
 
     private fun includeMapBindings(
@@ -533,6 +510,16 @@ class ComponentBuilder {
         val mapKeyType = mapKey.type.arguments[0]
         val mapValueType = mapKey.type.arguments[1]
 
+        bindings[mapKey] = Binding(
+            key = mapKey,
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = Scoping.Scoped().apply {
+                bindingKeys
+                    .mapValues { get<Any?>(key = it.value) }
+            }
+        )
+
         val mapOfProviderKey = keyOf(
             typeOf<Any?>(
                 Map::class,
@@ -543,9 +530,15 @@ class ComponentBuilder {
             ),
             mapKey.name
         )
-
-        bindings[mapOfProviderKey] = MapOfProviderBinding<Any?, Any?>(bindingKeys)
-            .also { it.scoping = Scoping.Scoped() }
+        bindings[mapOfProviderKey] = Binding(
+            key = mapOfProviderKey,
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = Scoping.Scoped().apply {
+                bindingKeys
+                    .mapValues { KeyedProvider<Any?>(this, it.value) }
+            }
+        )
 
         val mapOfLazyKey = keyOf(
             typeOf<Any?>(
@@ -557,12 +550,15 @@ class ComponentBuilder {
             ),
             mapKey.name
         )
-
-        bindings[mapOfLazyKey] = MapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
-
-        bindings[mapKey] = MapOfValueBinding<Any?, Any?>(mapOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
+        bindings[mapOfLazyKey] = Binding(
+            key = mapOfLazyKey,
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = Scoping.Scoped().apply {
+                bindingKeys
+                    .mapValues { KeyedLazy<Any?>(this, it.value) }
+            }
+        )
     }
 
     private fun includeSetBindings(
@@ -570,9 +566,19 @@ class ComponentBuilder {
         setKey: Key,
         set: MultiBindingSet<*>
     ) {
-        val setKeys = set.map { it.key }.toSet()
+        val setKeys = set.mapTo(mutableSetOf()) { it.key }
 
         val setElementType = setKey.type.arguments[0]
+
+        bindings[setKey] = Binding(
+            key = setKey,
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = {
+                setKeys
+                    .mapTo(mutableSetOf()) { get<Any?>(key = it) }
+            }
+        )
 
         val setOfProviderKey = keyOf(
             typeOf<Any?>(
@@ -583,9 +589,17 @@ class ComponentBuilder {
             ),
             setKey.name
         )
-
-        bindings[setOfProviderKey] = SetOfProviderBinding<Any?>(setKeys)
-            .also { it.scoping = Scoping.Scoped() }
+        bindings[setOfProviderKey] = Binding(
+            key = setOfProviderKey,
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = {
+                setKeys
+                    .mapTo(mutableSetOf<Any?>()) {
+                        KeyedProvider<Any?>(this, it)
+                    }
+            }
+        )
 
         val setOfLazyKey = keyOf(
             typeOf<Any?>(
@@ -596,12 +610,17 @@ class ComponentBuilder {
             ),
             setKey.name
         )
-
-        bindings[setOfLazyKey] = SetOfLazyBinding<Any?>(setOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
-
-        bindings[setKey] = SetOfValueBinding<Any?>(setOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
+        bindings[setOfLazyKey] = Binding(
+            key = setOfLazyKey,
+            overrideStrategy = OverrideStrategy.Permit,
+            scoping = Scoping.Scoped(),
+            provider = {
+                setKeys
+                    .mapTo(mutableSetOf<Any?>()) {
+                        KeyedLazy<Any?>(this, it)
+                    }
+            }
+        )
     }
 
     private fun Component.getAllBindings(): Map<Key, Binding<*>> =
@@ -609,10 +628,6 @@ class ComponentBuilder {
 
     private fun Component.collectBindings(bindings: MutableMap<Key, Binding<*>>) {
         dependencies.forEach { it.collectBindings(bindings) }
-        bindings += this.scopedBindings
+        bindings += this.bindings
     }
-}
-
-internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
-    override fun invoke(parameters: Parameters) = instance
 }

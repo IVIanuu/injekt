@@ -19,38 +19,35 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 interface JustInTimeLookupFactory {
-    fun <T> findBindingForKey(key: Key): Binding<T>?
+    fun <T> findBinding(type: Type<T>): Binding<T>?
 }
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val bindings = mutableMapOf<Type<*>, Binding<*>>()
+    private val bindingFactories = mutableMapOf<Type<*>, BindingFactory<*>>()
 
-    override fun <T> findBindingForKey(key: Key): Binding<T>? {
-        if (key.name != null) return null
-        val type = key.type
+    override fun <T> findBinding(type: Type<T>): Binding<T>? {
+        var bindingFactory = synchronized(bindingFactories) { bindingFactories[type] }
 
-        var binding = synchronized(bindings) { bindings[type] }
-
-        if (binding == null) {
-            binding = doFindBindingForKey(type.classifier)
-            if (binding != null) {
-                synchronized(bindings) {
-                    bindings[type] = binding
+        if (bindingFactory == null) {
+            bindingFactory = findBindingFactory(type.classifier)
+            if (bindingFactory != null) {
+                synchronized(bindingFactories) {
+                    bindingFactories[type] = bindingFactory
                 }
             }
         }
 
-        return binding as? Binding<T>
+        return bindingFactory?.create() as? Binding<T>
     }
 
-    private fun doFindBindingForKey(classifier: KClass<*>) = try {
-        val bindingClass = classifier.java.declaredClasses
-            .first { Binding::class.java.isAssignableFrom(it) }
-        bindingClass.declaredFields
-            .first { it.type == bindingClass }
+    private fun findBindingFactory(classifier: KClass<*>) = try {
+        val bindingFactoryClass = classifier.java.declaredClasses
+            .first { BindingFactory::class.java.isAssignableFrom(it) }
+        bindingFactoryClass.declaredFields
+            .first { it.type == bindingFactoryClass }
             .also { it.isAccessible = true }
-            .get(null) as Binding<*>
+            .get(null) as BindingFactory<*>
     } catch (e: Exception) {
         null
     }

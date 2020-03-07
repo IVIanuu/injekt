@@ -22,52 +22,42 @@ package com.ivianuu.injekt
  * you typically don't access this class directly but instead declare dependencies
  * via a [ComponentBuilder] or annotating classes with [Factory] or [Single]
  *
- * @see Module
  * @see Factory
  * @see Single
  */
-sealed class Binding<T> {
-
+class Binding<T>(
+    /**
+     * The which is used to identify this binding
+     */
+    val key: Key,
     /**
      * How overrides should be handled
      */
-    var overrideStrategy = OverrideStrategy.Fail
-
+    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     /**
-     * How this is binding is scoped
+     * Where instances should be created
      */
-    var scoping: Scoping = Scoping.Unscoped
-
+    val scoping: Scoping = Scoping.Unscoped,
     /**
-     * Whether or not this binding reuses instances
+     * Provides instances of [T]
      */
-    var single = false
+    val provider: BindingProvider<T>
+) {
 
-    /**
-     * Creates the instance in the moment the component get's created
-     */
-    var eager = false
+    fun copy(
+        key: Key = this.key,
+        overrideStrategy: OverrideStrategy = this.overrideStrategy,
+        scoping: Scoping = this.scoping,
+        provider: BindingProvider<T> = this.provider
+    ) = Binding(key, overrideStrategy, scoping, provider)
 
-    /**
-     * Returns a [LinkedBinding] and get's all required dependencies from the [component]
-     *
-     * @param component the linker where to get required bindings from
-     */
-    protected abstract fun link(component: Component): LinkedBinding<T>
-
-    internal open fun performLink(component: Component): LinkedBinding<T> {
-        val linked = link(component)
-        linked.overrideStrategy = overrideStrategy
-        linked.scoping = scoping
-        linked.single = single
-        linked.eager = eager
-        return linked
-    }
 }
 
-abstract class UnlinkedBinding<T> : Binding<T>()
+typealias BindingProvider<T> = Component.(Parameters) -> T
 
-abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
-    final override fun link(component: Component): LinkedBinding<T> = this
-    final override fun performLink(component: Component): LinkedBinding<T> = this
+interface BindingFactory<T> {
+    fun create(): Binding<T>
 }
+
+// todo remove once fixed in compiler
+abstract class AbstractBindingFactory<T> : BindingFactory<T>

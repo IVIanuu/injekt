@@ -16,20 +16,12 @@
 
 package com.ivianuu.injekt
 
-/**
- * Creates instances of type [T]
- */
-typealias Definition<T> = Component.(Parameters) -> T
-
-internal class DefinitionBinding<T>(
-    private val definition: Definition<T>
-) : UnlinkedBinding<T>() {
-    override fun link(component: Component): LinkedBinding<T> = Linked(component, definition)
-    private class Linked<T>(
-        private val component: Component,
-        private val definition: Definition<T>
-    ) : LinkedBinding<T>() {
-        override fun invoke(parameters: Parameters): T =
-            definition(component, parameters)
+class EagerProvider<T>(private val provider: BindingProvider<T>) : (Component, Parameters) -> T,
+    ComponentInitObserver {
+    override fun onInit(component: Component) {
+        (provider as? ComponentInitObserver)?.onInit(component)
+        invoke(component, emptyParameters())
     }
+
+    override fun invoke(p1: Component, p2: Parameters): T = provider(p1, p2)
 }

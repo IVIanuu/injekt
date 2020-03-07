@@ -16,30 +16,21 @@
 
 package com.ivianuu.injekt
 
-/**
- * A provider which reuses instances after the first call to [invoke]
- */
-interface Lazy<T> : Provider<T>
-
-internal class KeyedLazy<T>(
-    private val component: Component,
-    private val key: Key
-) : Lazy<T> {
-
-    private var _value: Any? = this
-
-    override fun invoke(parameters: Parameters): T {
-        var value = _value
-        if (value === this) {
-            synchronized(this) {
-                value = _value
-                if (value === this) {
-                    _value = component.get<T>(key, parameters)
-                    value = _value
-                }
-            }
+class BoundProvider<T>(
+    private val scopeName: Any? = null,
+    private val provider: BindingProvider<T>
+) : (Component, Parameters) -> T, ComponentInitObserver {
+    private lateinit var boundComponent: Component
+    override fun onInit(component: Component) {
+        check(!this::boundComponent.isInitialized) {
+            "Already scoped to $component"
         }
 
-        return value as T
+        (provider as? ComponentInitObserver)?.onInit(component)
+
+        this.boundComponent = if (scopeName == null) component
+        else component.getComponentForScope(scopeName)
     }
+
+    override fun invoke(p1: Component, p2: Parameters): T = provider(boundComponent, p2)
 }
