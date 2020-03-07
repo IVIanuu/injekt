@@ -16,6 +16,10 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Ensures that the [provider] resolves instances in the [Component] with the [scope]
+ * Or if [scope] == null in the [Component] it gets added to
+ */
 class BoundProvider<T>(
     private val scope: Any? = null,
     private val provider: BindingProvider<T>

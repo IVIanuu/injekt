@@ -25,4 +25,3 @@ interface ComponentInitObserver {
      */
     fun onInit(component: Component)
 }
-
