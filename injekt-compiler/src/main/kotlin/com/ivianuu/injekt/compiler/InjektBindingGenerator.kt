@@ -96,13 +96,10 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
 
     private val abstractBindingFactory = getClass(InjektClassNames.AbstractBindingFactory)
     private val binding = getClass(InjektClassNames.Binding)
+    private val boundProvider = getClass(InjektClassNames.BoundProvider)
     private val component = getClass(InjektClassNames.Component)
     private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
-    private val provider = getClass(InjektClassNames.Provider)
-    private val scoped = getClass(InjektClassNames.Scoping)
-        .sealedSubclasses
-        .single { it.name.asString() == "Scoped" }
     private val singleProvider = getClass(InjektClassNames.SingleProvider)
 
     private fun getClass(fqName: FqName) =
@@ -222,28 +219,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 }
                             )
 
-                            val scopeAnnotation =
-                                descriptor.getAnnotatedAnnotations(InjektClassNames.Scope)
-                                    .singleOrNull()
-                            if (scopeAnnotation != null) {
-                                val scopeObject =
-                                    getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
-                                val scopedConstructor =
-                                    symbolTable.referenceConstructor(scoped.constructors.first())
-                                putValueArgument(
-                                    2,
-                                    irCall(
-                                        callee = scopedConstructor,
-                                        type = scoped.defaultType.toIrType()
-                                    ).apply {
-                                        putValueArgument(
-                                            0,
-                                            irGetObject(symbolTable.referenceClass(scopeObject))
-                                        )
-                                    }
-                                )
-                            }
-
                             val providerType = KotlinTypeFactory.simpleType(
                                 context.builtIns.getFunction(2).defaultType,
                                 arguments = listOf(
@@ -334,23 +309,52 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 )
                             }
 
-                            putValueArgument(
-                                3,
-                                if (!descriptor.annotations.hasAnnotation(InjektClassNames.Single)) providerLambda
-                                else irCall(
+                            val scopeAnnotation =
+                                descriptor.getAnnotatedAnnotations(InjektClassNames.Scope)
+                                    .singleOrNull()
+
+                            val scopeExpr = scopeAnnotation?.let {
+                                val scopeObject =
+                                    getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                                irGetObject(symbolTable.referenceClass(scopeObject))
+                            }
+
+                            val providerExpr =
+                                if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
+                                    irCall(
+                                        symbolTable.referenceConstructor(
+                                            singleProvider.unsubstitutedPrimaryConstructor!!
+                                        ),
+                                        KotlinTypeFactory.simpleType(
+                                            singleProvider.defaultType,
+                                            arguments = listOf(
+                                                descriptor.defaultType.asTypeProjection()
+                                            )
+                                        ).toIrType()
+                                    ).apply {
+                                        putValueArgument(0, scopeExpr!!)
+                                        putValueArgument(1, providerLambda)
+                                    }
+                                } else if (scopeAnnotation != null) {
+                                    irCall(
                                     symbolTable.referenceConstructor(
-                                        singleProvider.unsubstitutedPrimaryConstructor!!
+                                        boundProvider.unsubstitutedPrimaryConstructor!!
                                     ),
                                     KotlinTypeFactory.simpleType(
-                                        singleProvider.defaultType,
+                                        boundProvider.defaultType,
                                         arguments = listOf(
                                             descriptor.defaultType.asTypeProjection()
                                         )
                                     ).toIrType()
                                 ).apply {
-                                    putValueArgument(0, providerLambda)
+                                        putValueArgument(0, scopeExpr!!)
+                                        putValueArgument(1, providerLambda)
                                 }
-                            )
+                                } else {
+                                    providerLambda
+                                }
+
+                            putValueArgument(2, providerExpr)
                         }
 
                     )

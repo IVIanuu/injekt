@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 class BoundProvider<T>(
-    private val scopeName: Any? = null,
+    private val scope: Any? = null,
     private val provider: BindingProvider<T>
 ) : (Component, Parameters) -> T, ComponentInitObserver {
     private lateinit var boundComponent: Component
@@ -26,10 +26,10 @@ class BoundProvider<T>(
             "Already scoped to $component"
         }
 
-        (provider as? ComponentInitObserver)?.onInit(component)
+        this.boundComponent = if (scope == null) component
+        else component.getComponentForScope(scope)
 
-        this.boundComponent = if (scopeName == null) component
-        else component.getComponentForScope(scopeName)
+        (provider as? ComponentInitObserver)?.onInit(component)
     }
 
     override fun invoke(p1: Component, p2: Parameters): T = provider(boundComponent, p2)

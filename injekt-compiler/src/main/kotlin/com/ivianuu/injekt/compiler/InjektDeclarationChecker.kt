@@ -65,6 +65,15 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { NeedsACompanionObject }
         }
 
+        if (descriptor.annotations.hasAnnotation(InjektClassNames.Single) &&
+            descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).isEmpty()
+        ) {
+            report(
+                descriptor,
+                context.trace
+            ) { SingleNeedsScope }
+        }
+
         if (descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).size > 1) {
             report(
                 descriptor,

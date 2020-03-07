@@ -29,8 +29,17 @@ package com.ivianuu.injekt
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Single
 
-class SingleProvider<T>(private val provider: BindingProvider<T>) : (Component, Parameters) -> T {
+class SingleProvider<T>(
+    scope: Any? = null,
+    provider: BindingProvider<T>
+) : (Component, Parameters) -> T, ComponentInitObserver {
+    private val provider = BoundProvider(scope, provider)
+
     private var _value: Any? = this
+
+    override fun onInit(component: Component) {
+        provider.onInit(component)
+    }
 
     override fun invoke(component: Component, parameters: Parameters): T {
         var value = _value

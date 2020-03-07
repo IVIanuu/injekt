@@ -35,10 +35,6 @@ class Binding<T>(
      */
     val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
     /**
-     * Where instances should be created
-     */
-    val scoping: Scoping = Scoping.Unscoped,
-    /**
      * Provides instances of [T]
      */
     val provider: BindingProvider<T>
@@ -47,9 +43,8 @@ class Binding<T>(
     fun copy(
         key: Key = this.key,
         overrideStrategy: OverrideStrategy = this.overrideStrategy,
-        scoping: Scoping = this.scoping,
         provider: BindingProvider<T> = this.provider
-    ) = Binding(key, overrideStrategy, scoping, provider)
+    ) = Binding(key, overrideStrategy, provider)
 
 }
 

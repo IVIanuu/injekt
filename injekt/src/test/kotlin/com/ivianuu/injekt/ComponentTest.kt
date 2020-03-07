@@ -326,7 +326,7 @@ class ComponentTest {
     @Test
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = Component {
-            factory(scoping = Scoping.Unscoped) { Context(get()) }
+            factory(bound = false) { Context(get()) }
                 .bindAlias<Environment>()
         }
         val componentB = Component { dependencies(componentA) }

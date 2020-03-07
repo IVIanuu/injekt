@@ -83,13 +83,13 @@ class ComponentBuilder {
     inline fun <reified T> factory(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
+        bound: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = factory(
         type = typeOf(),
         name = name,
         overrideStrategy = overrideStrategy,
-        scoping = scoping,
+        bound = bound,
         provider = provider
     )
 
@@ -99,7 +99,7 @@ class ComponentBuilder {
      * @param type the of the instance
      * @param name the name of the instance
      * @param overrideStrategy the strategy for handling overrides
-     * @param scoping how instances should be scoped
+     * @param bound whether instances should be created in the scope of the component
      * @param provider the definitions which creates instances
      *
      * @see add
@@ -108,28 +108,25 @@ class ComponentBuilder {
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
+        bound: Boolean = false,
         provider: BindingProvider<T>
     ): BindingContext<T> = add(
         Binding(
             key = keyOf(type, name),
             overrideStrategy = overrideStrategy,
-            scoping = scoping,
-            provider = scoping.apply(provider)
+            provider = if (bound) BoundProvider(provider = provider) else provider
         )
     )
 
     inline fun <reified T> single(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Scoped(),
         eager: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = single(
         type = typeOf(),
         name = name,
         overrideStrategy = overrideStrategy,
-        scoping = scoping,
         eager = eager,
         provider = provider
     )
@@ -150,16 +147,13 @@ class ComponentBuilder {
         type: Type<T>,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Scoped(),
         eager: Boolean = false,
         provider: BindingProvider<T>
     ): BindingContext<T> = add(
         Binding(
             key = keyOf(type, name),
             overrideStrategy = overrideStrategy,
-            scoping = scoping,
-            provider = SingleProvider(provider)
-                .let { scoping.apply(it) }
+            provider = SingleProvider(provider = provider)
                 .let { if (eager) EagerProvider(it) else it }
         )
     )
@@ -196,7 +190,6 @@ class ComponentBuilder {
         Binding(
             key = keyOf(type, name),
             overrideStrategy = overrideStrategy,
-            scoping = Scoping.Scoped(),
             provider = { instance }
         )
     )
@@ -467,7 +460,6 @@ class ComponentBuilder {
         val componentBinding = Binding(
             key = keyOf<Component>(),
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
             provider = ComponentProvider(null)
         )
 
@@ -477,7 +469,6 @@ class ComponentBuilder {
                 bindings[keyOf<Component>(it)] = Binding(
                     key = keyOf<Component>(),
                     overrideStrategy = OverrideStrategy.Permit,
-                    scoping = Scoping.Scoped(),
                     provider = ComponentProvider(it)
                 )
             }
@@ -513,8 +504,7 @@ class ComponentBuilder {
         bindings[mapKey] = Binding(
             key = mapKey,
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
-            provider = Scoping.Scoped().apply {
+            provider = BoundProvider {
                 bindingKeys
                     .mapValues { get<Any?>(key = it.value) }
             }
@@ -533,8 +523,7 @@ class ComponentBuilder {
         bindings[mapOfProviderKey] = Binding(
             key = mapOfProviderKey,
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
-            provider = Scoping.Scoped().apply {
+            provider = BoundProvider {
                 bindingKeys
                     .mapValues { KeyedProvider<Any?>(this, it.value) }
             }
@@ -553,8 +542,7 @@ class ComponentBuilder {
         bindings[mapOfLazyKey] = Binding(
             key = mapOfLazyKey,
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
-            provider = Scoping.Scoped().apply {
+            provider = BoundProvider {
                 bindingKeys
                     .mapValues { KeyedLazy<Any?>(this, it.value) }
             }
@@ -573,7 +561,6 @@ class ComponentBuilder {
         bindings[setKey] = Binding(
             key = setKey,
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
             provider = {
                 setKeys
                     .mapTo(mutableSetOf()) { get<Any?>(key = it) }
@@ -592,7 +579,6 @@ class ComponentBuilder {
         bindings[setOfProviderKey] = Binding(
             key = setOfProviderKey,
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
             provider = {
                 setKeys
                     .mapTo(mutableSetOf<Any?>()) {
@@ -613,7 +599,6 @@ class ComponentBuilder {
         bindings[setOfLazyKey] = Binding(
             key = setOfLazyKey,
             overrideStrategy = OverrideStrategy.Permit,
-            scoping = Scoping.Scoped(),
             provider = {
                 setKeys
                     .mapTo(mutableSetOf<Any?>()) {

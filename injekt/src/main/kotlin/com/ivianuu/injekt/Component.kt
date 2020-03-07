@@ -159,12 +159,8 @@ class Component internal constructor(
 
         val binding = InjektPlugins.justInTimeLookupFactory.findBinding(key.type) as? Binding<T>
             ?: return null
-        if (binding.scoping == Scoping.Unscoped ||
-            ((binding.scoping as Scoping.Scoped).name == null ||
-                    binding.scoping.name in scopes)
-        ) {
-            bindings[key] = binding
-        }
+        bindings[key] = binding
+        (binding.provider as? ComponentInitObserver)?.onInit(this)
         return binding
 
     }
