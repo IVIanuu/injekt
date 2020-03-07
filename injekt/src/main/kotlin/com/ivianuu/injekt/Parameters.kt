@@ -69,7 +69,7 @@ package com.ivianuu.injekt
 
     /**
      * Retrieve the parameter at 0
-     * Enables convenient syntax in definitions like this:
+     * Enables convenient syntax like this:
      *
      * ´´´
      * factory { (id: String) ->
