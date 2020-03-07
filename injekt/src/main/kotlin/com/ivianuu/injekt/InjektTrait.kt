@@ -34,42 +34,31 @@ package com.ivianuu.injekt
  *
  */
 interface InjektTrait {
-
     /**
      * The [Component] which will be used to retrieve dependencies
      */
     val component: Component
-
-    /**
-     * @see Component.get
-     */
-    fun <T> get(
-        key: Key<T>,
-        parameters: Parameters = emptyParameters()
-    ): T = component.get(key, parameters)
-
-    /**
-     * Lazy version of [get]
-     *
-     * @param key the key of the instance
-     * @param parameters optional parameters to construct the instance
-     * @return the instance
-
-     * @see Component.get
-     */
-    fun <T> getLazy(
-        key: Key<T>,
-        parameters: () -> Parameters = { emptyParameters() }
-    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(key, parameters()) }
-
 }
 
+/**
+ * @see Component.get
+ */
 inline fun <reified T> InjektTrait.get(
     name: Any? = null,
     parameters: Parameters = emptyParameters()
-): T = get(key = keyOf(name = name), parameters = parameters)
+): T = component.get(keyOf(name = name), parameters)
 
+/**
+ * Lazy version of [get]
+ *
+ * @param key the key of the instance
+ * @param parameters optional parameters to construct the instance
+ * @return the instance
+
+ * @see Component.get
+ */
 inline fun <reified T> InjektTrait.getLazy(
     name: Any? = null,
     noinline parameters: () -> Parameters = { emptyParameters() }
-): kotlin.Lazy<T> = getLazy(key = keyOf(name = name), parameters = parameters)
+): kotlin.Lazy<T> =
+    lazy(LazyThreadSafetyMode.NONE) { component.get(keyOf(name = name), parameters()) }
