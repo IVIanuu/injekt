@@ -73,19 +73,8 @@ class Component internal constructor(
      * @param key the of the instance
      * @return the instance
      */
-    fun <T> getBinding(key: Key<T>): Binding<T> {
-        val binding = findBinding(key)
-        if (binding != null) return binding
-
-        if (key.isNullable) {
-            return Binding(
-                key = key as Key<Any?>,
-                provider = { null }
-            ) as Binding<T>
-        }
-
-        error("Couldn't find a binding for $key")
-    }
+    fun <T> getBinding(key: Key<T>): Binding<T> =
+        findBinding(key) ?: error("Couldn't find a binding for $key")
 
     fun getComponentForScope(scope: Any): Component =
         findComponentForScope(scope) ?: error("Couldn't find component for scope $scope")
@@ -118,6 +107,13 @@ class Component internal constructor(
 
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
+
+        if (key.isNullable) {
+            return Binding(
+                key = key as Key<Any?>,
+                provider = { null }
+            ) as Binding<T>
+        }
 
         return null
     }
