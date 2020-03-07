@@ -19,21 +19,23 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 interface JustInTimeLookupFactory {
-    fun <T> findBinding(type: Type<T>): Binding<T>?
+    fun <T> findBinding(key: Key<T>): Binding<T>?
 }
 
 object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
 
-    private val bindingFactories = mutableMapOf<Type<*>, BindingFactory<*>>()
+    private val bindingFactories = mutableMapOf<Key<*>, BindingFactory<*>>()
 
-    override fun <T> findBinding(type: Type<T>): Binding<T>? {
-        var bindingFactory = synchronized(bindingFactories) { bindingFactories[type] }
+    override fun <T> findBinding(key: Key<T>): Binding<T>? {
+        if (key.name != null) return null
+
+        var bindingFactory = synchronized(bindingFactories) { bindingFactories[key] }
 
         if (bindingFactory == null) {
-            bindingFactory = findBindingFactory(type.classifier)
+            bindingFactory = findBindingFactory(key.classifier)
             if (bindingFactory != null) {
                 synchronized(bindingFactories) {
-                    bindingFactories[type] = bindingFactory
+                    bindingFactories[key] = bindingFactory
                 }
             }
         }

@@ -29,13 +29,13 @@ package com.ivianuu.injekt
  * ´´´
  * val creditcardModule = Module {
  *     map<String, PaymentHandler> {
- *         put("creditcard", typeOf<CreditcardPaymentHandler>())
+ *         put("creditcard", keyOf<CreditcardPaymentHandler>())
  *     }
  * }
  *
  * val paypalModule = Module {
  *     map<String, PaymentHandler> {
- *         put("paypal", typeOf<PaypalPaymentHandler>())
+ *         put("paypal", keyOf<PaypalPaymentHandler>())
  *     }
  * }
  *
@@ -64,7 +64,7 @@ typealias MultiBindingMap<K, V> = Map<K, KeyWithOverrideInfo>
  *
  * @see ComponentBuilder.map
  */
-class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key) {
+class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key<Map<K, V>>) {
     private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
 
     inline fun <reified T : V> put(
@@ -72,22 +72,12 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key)
         entryValueName: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        put<T>(entryKey, typeOf(), entryValueName, overrideStrategy)
-    }
-
-    fun <T : V> put(
-        entryKey: K,
-        entryValueType: Type<T>,
-        entryValueName: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ) {
-        val entryValueKey = keyOf(entryValueType, entryValueName)
-        put(entryKey, entryValueKey, overrideStrategy)
+        put(entryKey, keyOf<T>(name = entryValueName), overrideStrategy)
     }
 
     fun put(
         entryKey: K,
-        entryValueKey: Key,
+        entryValueKey: Key<*>,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
         put(entryKey, KeyWithOverrideInfo(entryValueKey, overrideStrategy))

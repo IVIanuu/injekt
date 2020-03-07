@@ -41,9 +41,9 @@ package com.ivianuu.injekt
 class Component internal constructor(
     internal val scopes: List<Any>,
     internal val dependencies: List<Component>,
-    internal val bindings: MutableMap<Key, Binding<*>>,
-    internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
-    internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>
+    internal val bindings: MutableMap<Key<*>, Binding<*>>,
+    internal val multiBindingMaps: Map<Key<*>, MultiBindingMap<Any?, Any?>>,
+    internal val multiBindingSets: Map<Key<*>, MultiBindingSet<Any?>>
 ) {
 
     init {
@@ -55,13 +55,7 @@ class Component internal constructor(
     inline fun <reified T> get(
         name: Any? = null,
         parameters: Parameters = emptyParameters()
-    ): T = get(type = typeOf(), name = name, parameters = parameters)
-
-    fun <T> get(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: Parameters = emptyParameters()
-    ): T = get(key = keyOf(type, name), parameters = parameters)
+    ): T = get(key = keyOf(name = name), parameters = parameters)
 
     /**
      * Retrieve a instance of type [T]
@@ -70,8 +64,8 @@ class Component internal constructor(
      * @param parameters optional parameters to construct the instance
      * @return the instance
      */
-    fun <T> get(key: Key, parameters: Parameters = emptyParameters()): T =
-        getBinding<T>(key).provider(this, parameters)
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+        getBinding(key).provider(this, parameters)
 
     /**
      * Retrieve a binding of type [T]
@@ -79,13 +73,13 @@ class Component internal constructor(
      * @param key the of the instance
      * @return the instance
      */
-    fun <T> getBinding(key: Key): Binding<T> {
-        val binding = findBinding<T>(key)
+    fun <T> getBinding(key: Key<T>): Binding<T> {
+        val binding = findBinding(key)
         if (binding != null) return binding
 
-        if (key.type.isNullable) {
-            return Binding<Any?>(
-                key = key,
+        if (key.isNullable) {
+            return Binding(
+                key = key as Key<Any?>,
                 provider = { null }
             ) as Binding<T>
         }
@@ -107,7 +101,7 @@ class Component internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key): Binding<T>? {
+    private fun <T> findBinding(key: Key<T>): Binding<T>? {
         var binding: Binding<T>?
 
         // providers, lazy
@@ -128,22 +122,24 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findSpecialBinding(key: Key): Binding<T>? {
-        if (key.type.arguments.size == 1) {
-            when (key.type.classifier) {
+    private fun <T> findSpecialBinding(key: Key<T>): Binding<T>? {
+        if (key.arguments.size == 1) {
+            when (key.classifier) {
                 Provider::class -> {
-                    val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return Binding<Provider<Any?>>(
+                    val instanceKey = key.arguments.single()
+                        .copy(name = key.name)
+                    return Binding(
                         key = key,
-                        provider = { KeyedProvider(this, instanceKey) }
-                    ) as Binding<T>
+                        provider = { KeyedProvider(this, instanceKey) as T }
+                    )
                 }
                 Lazy::class -> {
-                    val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return Binding<Lazy<Any?>>(
+                    val instanceKey = key.arguments.single()
+                        .copy(name = key.name)
+                    return Binding<T>(
                         key = key,
-                        provider = { KeyedLazy(this, instanceKey) }
-                    ) as Binding<T>
+                        provider = { KeyedLazy(this, instanceKey) as T }
+                    )
                 }
             }
         }
@@ -151,13 +147,13 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findBindingInThisComponent(key: Key): Binding<T>? =
+    private fun <T> findBindingInThisComponent(key: Key<T>): Binding<T>? =
         bindings[key] as? Binding<T>
 
-    private fun <T> findJustInTimeBinding(key: Key): Binding<T>? {
+    private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
         if (key.name != null) return null
 
-        val binding = InjektPlugins.justInTimeLookupFactory.findBinding(key.type) as? Binding<T>
+        val binding = InjektPlugins.justInTimeLookupFactory.findBinding(key)
             ?: return null
         bindings[key] = binding
         (binding.provider as? ComponentInitObserver)?.onInit(this)

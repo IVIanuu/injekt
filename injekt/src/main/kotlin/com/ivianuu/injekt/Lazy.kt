@@ -23,7 +23,7 @@ interface Lazy<T> : Provider<T>
 
 internal class KeyedLazy<T>(
     private val component: Component,
-    private val key: Key
+    private val key: Key<T>
 ) : Lazy<T> {
 
     private var _value: Any? = this

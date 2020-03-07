@@ -396,13 +396,13 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             startOffset = startOffset,
             endOffset = endOffset,
             origin = IrStatementOrigin.LAMBDA,
-            resultType = type
+            resultkey = key
         ) {
             +lambda
             +IrFunctionReferenceImpl(
                 startOffset = startOffset,
                 endOffset = endOffset,
-                type = type,
+                key = key,
                 symbol = symbol,
                 typeArgumentsCount = descriptor.typeParametersCount,
                 origin = IrStatementOrigin.LAMBDA,

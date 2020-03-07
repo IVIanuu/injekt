@@ -38,9 +38,9 @@ class ComponentBuilder {
 
     private val scopes = mutableListOf<Any>()
     private val dependencies = mutableListOf<Component>()
-    private val bindings = mutableMapOf<Key, Binding<*>>()
-    private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
-    private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
+    private val bindings = mutableMapOf<Key<*>, Binding<*>>()
+    private val multiBindingMapBuilders = mutableMapOf<Key<*>, MultiBindingMapBuilder<Any?, Any?>>()
+    private val multiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
 
     fun scopes(scope: Any) {
         check(scope !in scopes) { "Duplicated scope $scope" }
@@ -86,8 +86,7 @@ class ComponentBuilder {
         bound: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = factory(
-        type = typeOf(),
-        name = name,
+        key = keyOf(name = name),
         overrideStrategy = overrideStrategy,
         bound = bound,
         provider = provider
@@ -96,8 +95,7 @@ class ComponentBuilder {
     /**
      * Contributes a binding which will be instantiated on each request
      *
-     * @param type the of the instance
-     * @param name the name of the instance
+     * @param key the key to retrieve the instance
      * @param overrideStrategy the strategy for handling overrides
      * @param bound whether instances should be created in the scope of the component
      * @param provider the definitions which creates instances
@@ -105,14 +103,13 @@ class ComponentBuilder {
      * @see add
      */
     fun <T> factory(
-        type: Type<T>,
-        name: Any? = null,
+        key: Key<T>,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
         bound: Boolean = false,
         provider: BindingProvider<T>
     ): BindingContext<T> = add(
         Binding(
-            key = keyOf(type, name),
+            key = key,
             overrideStrategy = overrideStrategy,
             provider = if (bound) BoundProvider(provider = provider) else provider
         )
@@ -124,8 +121,7 @@ class ComponentBuilder {
         eager: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = single(
-        type = typeOf(),
-        name = name,
+        key = keyOf(name = name),
         overrideStrategy = overrideStrategy,
         eager = eager,
         provider = provider
@@ -134,24 +130,21 @@ class ComponentBuilder {
     /**
      * Contributes a binding which will be reused throughout the lifetime of the [Component] it life's in
      *
-     * @param type the of the instance
-     * @param name the name of the instance
+     * @param key the key to retrieve the instance
      * @param overrideStrategy the strategy for handling overrides
-     * @param scoping how instances should be scoped
      * @param eager whether the instance should be created when the [Component] get's created
      * @param provider the definitions which creates instances
      *
      * @see add
      */
     fun <T> single(
-        type: Type<T>,
-        name: Any? = null,
+        key: Key<T>,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
         eager: Boolean = false,
         provider: BindingProvider<T>
     ): BindingContext<T> = add(
         Binding(
-            key = keyOf(type, name),
+            key = key,
             overrideStrategy = overrideStrategy,
             provider = SingleProvider(provider = provider)
                 .let { if (eager) EagerProvider(it) else it }
@@ -165,8 +158,7 @@ class ComponentBuilder {
     ): BindingContext<T> {
         return instance(
             instance = instance,
-            type = typeOf(),
-            name = name,
+            key = keyOf(name = name),
             overrideStrategy = overrideStrategy
         )
     }
@@ -175,20 +167,18 @@ class ComponentBuilder {
      * Adds a binding for a already existing instance
      *
      * @param instance the instance to contribute
-     * @param type the type for the [Key] by which the binding can be retrieved later in the [Component]
-     * @param name the type for the [Key] by which the binding can be retrieved later in the [Component]
+     * @param key the key to retrieve the instance
      * @return the [BindingContext] to chain binding calls
      *
      * @see add
      */
     fun <T> instance(
         instance: T,
-        type: Type<T>,
-        name: Any? = null,
+        key: Key<T>,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ): BindingContext<T> = add(
         Binding(
-            key = keyOf(type, name),
+            key = key,
             overrideStrategy = overrideStrategy,
             provider = { instance }
         )
@@ -198,7 +188,7 @@ class ComponentBuilder {
         name: Any? = null,
         noinline block: BindingContext<T>.() -> Unit
     ) {
-        withBinding(type = typeOf(), name = name, block = block)
+        withBinding(key = keyOf(name = name), block = block)
     }
 
     /**
@@ -210,7 +200,7 @@ class ComponentBuilder {
      * ´@Factory class MyRepository : Repository`
      *
      * ´´´
-     * withBinding(type = typeOf<MyRepository>()) {
+     * withBinding(key = keyOf<MyRepository>()) {
      *     bindAlias<Repository>()
      * }
      *
@@ -221,48 +211,31 @@ class ComponentBuilder {
      * @param block the lambda to call in the context of the other binding
      */
     fun <T> withBinding(
-        type: Type<T>,
-        name: Any? = null,
+        key: Key<T>,
         block: BindingContext<T>.() -> Unit
     ) {
         // we create a proxy binding which links to the original binding
         // because we have no reference to the original one it's likely in another [Module] or [Component]
         // we use a unique id here to make sure that the binding does not collide with any user config
-        factory(type = type, name = UUID.randomUUID().toString()) { parameters ->
-            get(type = type, name = name, parameters = parameters)
-        }
-            .block()
+        factory(key = key.copy(name = UUID.randomUUID().toString())) { parameters ->
+            get(key, parameters = parameters)
+        }.block()
     }
 
     inline fun <reified K, reified V> map(
         mapName: Any? = null,
         noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
-        map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
-    }
-
-    /**
-     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
-     *
-     * @param mapKeyType the type of the keys in the map
-     * @param mapValueType the type of the values in the map
-     * @param mapName the name by which the map can be retrieved later in the [Component]
-     * @param block the lambda to run in the context of the binding map
-     *
-     * @see MultiBindingMap
-     */
-    fun <K, V> map(
-        mapKeyType: Type<K>,
-        mapValueType: Type<V>,
-        mapName: Any? = null,
-        block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
-    ) {
-        val mapKey = keyOf(
-            type = typeOf<Any?>(Map::class, arrayOf(mapKeyType, mapValueType)),
+        map(
+            mapKey = keyOf(
+                classifier = Map::class,
+                arguments = arrayOf(
+                    keyOf<K>(),
+                    keyOf<V>()
+                ),
             name = mapName
+            ), block = block
         )
-
-        map(mapKey = mapKey, block = block)
     }
 
     /**
@@ -274,11 +247,11 @@ class ComponentBuilder {
      * @see MultiBindingMap
      */
     fun <K, V> map(
-        mapKey: Key,
+        mapKey: Key<Map<K, V>>,
         block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
         val builder = multiBindingMapBuilders.getOrPut(mapKey) {
-            MultiBindingMapBuilder(mapKey)
+            MultiBindingMapBuilder(mapKey) as MultiBindingMapBuilder<Any?, Any?>
         } as MultiBindingMapBuilder<K, V>
 
         builder.apply(block)
@@ -288,16 +261,14 @@ class ComponentBuilder {
         setName: Any? = null,
         noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
-        set(setElementType = typeOf(), setName = setName, block = block)
-    }
-
-    fun <E> set(
-        setElementType: Type<E>,
-        setName: Any? = null,
-        block: MultiBindingSetBuilder<E>.() -> Unit = {}
-    ) {
-        val setKey = keyOf(type = typeOf<Any?>(Set::class, arrayOf(setElementType)), name = setName)
-        set(setKey = setKey, block = block)
+        set(
+            setKey = keyOf(
+                classifier = Set::class,
+                arguments = arrayOf(keyOf<E>()),
+                name = setName
+            ),
+            block = block
+        )
     }
 
     /**
@@ -309,11 +280,11 @@ class ComponentBuilder {
      * @see MultiBindingSet
      */
     fun <E> set(
-        setKey: Key,
+        setKey: Key<Set<E>>,
         block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
         val builder = multiBindingSetBuilders.getOrPut(setKey) {
-            MultiBindingSetBuilder(setKey)
+            MultiBindingSetBuilder(setKey) as MultiBindingSetBuilder<Any?>
         } as MultiBindingSetBuilder<E>
 
         builder.apply(block)
@@ -350,7 +321,7 @@ class ComponentBuilder {
 
         val dependencyBindings = dependencies
             .map { it.getAllBindings() }
-            .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
+            .fold(mutableMapOf<Key<*>, Binding<*>>()) { acc, current ->
                 current.forEach { (key, binding) ->
                     if (binding.overrideStrategy.check(
                             existsPredicate = { key in acc },
@@ -364,9 +335,9 @@ class ComponentBuilder {
                 return@fold acc
             }
 
-        val finalBindings = mutableMapOf<Key, Binding<*>>()
-        val allMultiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
-        val allMultiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
+        val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
+        val allMultiBindingMapBuilders = mutableMapOf<Key<*>, MultiBindingMapBuilder<Any?, Any?>>()
+        val allMultiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
 
         fun addBinding(binding: Binding<*>) {
             if (binding.overrideStrategy.check(
@@ -377,16 +348,16 @@ class ComponentBuilder {
             }
         }
 
-        fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<Any?, Any?>) {
+        fun addMultiBindingMap(mapKey: Key<*>, map: MultiBindingMap<*, *>) {
             val builder = allMultiBindingMapBuilders.getOrPut(mapKey) {
-                MultiBindingMapBuilder(mapKey)
+                MultiBindingMapBuilder(mapKey as Key<Map<Any?, Any?>>)
             }
-            builder.putAll(map)
+            builder.putAll(map as MultiBindingMap<Any?, Any?>)
         }
 
-        fun addMultiBindingSet(setKey: Key, set: MultiBindingSet<Any?>) {
+        fun addMultiBindingSet(setKey: Key<*>, set: MultiBindingSet<*>) {
             val builder = allMultiBindingSetBuilders.getOrPut(setKey) {
-                MultiBindingSetBuilder(setKey)
+                MultiBindingSetBuilder(setKey as Key<Set<Any?>>)
             }
 
             builder.addAll(set)
@@ -433,7 +404,7 @@ class ComponentBuilder {
             scopes = scopes,
             dependencies = dependencies,
             bindings = finalBindings,
-            multiBindingMaps = multiBindingMaps,
+            multiBindingMaps = multiBindingMaps as Map<Key<*>, MultiBindingMap<Any?, Any?>>,
             multiBindingSets = multiBindingSets
         )
     }
@@ -456,9 +427,9 @@ class ComponentBuilder {
         scopes.forEach { addScope(it) }
     }
 
-    private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
+    private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
         val componentBinding = Binding(
-            key = keyOf<Component>(),
+            key = keyOf(),
             overrideStrategy = OverrideStrategy.Permit,
             provider = ComponentProvider(null)
         )
@@ -467,7 +438,7 @@ class ComponentBuilder {
         scopes
             .forEach {
                 bindings[keyOf<Component>(it)] = Binding(
-                    key = keyOf<Component>(),
+                    key = keyOf(),
                     overrideStrategy = OverrideStrategy.Permit,
                     provider = ComponentProvider(it)
                 )
@@ -491,127 +462,131 @@ class ComponentBuilder {
     }
 
     private fun includeMapBindings(
-        bindings: MutableMap<Key, Binding<*>>,
-        mapKey: Key,
+        bindings: MutableMap<Key<*>, Binding<*>>,
+        mapKey: Key<*>,
         map: MultiBindingMap<*, *>
     ) {
         val bindingKeys = map
             .mapValues { it.value.key }
 
-        val mapKeyType = mapKey.type.arguments[0]
-        val mapValueType = mapKey.type.arguments[1]
+        val mapKeyKey = mapKey.arguments[0]
+        val mapValueKey = mapKey.arguments[1]
 
         bindings[mapKey] = Binding(
-            key = mapKey,
+            key = mapKey as Key<Map<*, *>>,
             overrideStrategy = OverrideStrategy.Permit,
             provider = BoundProvider {
                 bindingKeys
-                    .mapValues { get<Any?>(key = it.value) }
+                    .mapValues { get(key = it.value) }
             }
         )
 
-        val mapOfProviderKey = keyOf(
-            typeOf<Any?>(
-                Map::class,
-                arrayOf(
-                    mapKeyType,
-                    typeOf<Provider<*>>(Provider::class, arrayOf(mapValueType))
+        val mapOfProviderKey = keyOf<Map<*, Provider<*>>>(
+            classifier = Map::class,
+            arguments = arrayOf(
+                mapKeyKey,
+                keyOf<Provider<Any?>>(
+                    classifier = Provider::class,
+                    arguments = arrayOf(mapValueKey)
                 )
             ),
-            mapKey.name
+            name = mapKey.name
         )
         bindings[mapOfProviderKey] = Binding(
             key = mapOfProviderKey,
             overrideStrategy = OverrideStrategy.Permit,
             provider = BoundProvider {
                 bindingKeys
-                    .mapValues { KeyedProvider<Any?>(this, it.value) }
+                    .mapValues { KeyedProvider(this, it.value) }
             }
         )
 
-        val mapOfLazyKey = keyOf(
-            typeOf<Any?>(
-                Map::class,
-                arrayOf(
-                    mapKeyType,
-                    typeOf<Lazy<*>>(Lazy::class, arrayOf(mapValueType))
+        val mapOfLazyKey = keyOf<Map<*, Lazy<*>>>(
+            classifier = Map::class,
+            arguments = arrayOf(
+                mapKeyKey,
+                keyOf<Lazy<Any?>>(
+                    classifier = Lazy::class,
+                    arguments = arrayOf(mapValueKey)
                 )
             ),
-            mapKey.name
+            name = mapKey.name
         )
         bindings[mapOfLazyKey] = Binding(
             key = mapOfLazyKey,
             overrideStrategy = OverrideStrategy.Permit,
             provider = BoundProvider {
                 bindingKeys
-                    .mapValues { KeyedLazy<Any?>(this, it.value) }
+                    .mapValues { KeyedLazy(this, it.value) }
             }
         )
     }
 
     private fun includeSetBindings(
-        bindings: MutableMap<Key, Binding<*>>,
-        setKey: Key,
+        bindings: MutableMap<Key<*>, Binding<*>>,
+        setKey: Key<*>,
         set: MultiBindingSet<*>
     ) {
         val setKeys = set.mapTo(mutableSetOf()) { it.key }
 
-        val setElementType = setKey.type.arguments[0]
+        val setElementKey = setKey.arguments[0]
 
         bindings[setKey] = Binding(
-            key = setKey,
+            key = setKey as Key<Set<*>>,
             overrideStrategy = OverrideStrategy.Permit,
             provider = {
                 setKeys
-                    .mapTo(mutableSetOf()) { get<Any?>(key = it) }
+                    .mapTo(mutableSetOf()) { get(key = it) }
             }
         )
 
-        val setOfProviderKey = keyOf(
-            typeOf<Any?>(
-                Set::class,
-                arrayOf(
-                    typeOf<Provider<*>>(Provider::class, arrayOf(setElementType))
+        val setOfProviderKey = keyOf<Set<Provider<*>>>(
+            classifier = Set::class,
+            arguments = arrayOf(
+                keyOf<Provider<*>>(
+                    classifier = Provider::class,
+                    arguments = arrayOf(setElementKey)
                 )
             ),
-            setKey.name
+            name = setKey.name
         )
         bindings[setOfProviderKey] = Binding(
             key = setOfProviderKey,
             overrideStrategy = OverrideStrategy.Permit,
             provider = {
                 setKeys
-                    .mapTo(mutableSetOf<Any?>()) {
-                        KeyedProvider<Any?>(this, it)
+                    .mapTo(mutableSetOf()) {
+                        KeyedProvider(this, it)
                     }
             }
         )
 
-        val setOfLazyKey = keyOf(
-            typeOf<Any?>(
-                Set::class,
-                arrayOf(
-                    typeOf<Lazy<*>>(Lazy::class, arrayOf(setElementType))
+        val setOfLazyKey = keyOf<Set<Lazy<*>>>(
+            classifier = Set::class,
+            arguments = arrayOf(
+                keyOf<Lazy<*>>(
+                    classifier = Lazy::class,
+                    arguments = arrayOf(setElementKey)
                 )
             ),
-            setKey.name
+            name = setKey.name
         )
         bindings[setOfLazyKey] = Binding(
             key = setOfLazyKey,
             overrideStrategy = OverrideStrategy.Permit,
             provider = {
                 setKeys
-                    .mapTo(mutableSetOf<Any?>()) {
-                        KeyedLazy<Any?>(this, it)
+                    .mapTo(mutableSetOf()) {
+                        KeyedLazy(this, it)
                     }
             }
         )
     }
 
-    private fun Component.getAllBindings(): Map<Key, Binding<*>> =
-        mutableMapOf<Key, Binding<*>>().also { collectBindings(it) }
+    private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =
+        mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
-    private fun Component.collectBindings(bindings: MutableMap<Key, Binding<*>>) {
+    private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
         dependencies.forEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }

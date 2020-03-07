@@ -20,11 +20,11 @@ import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Fragment> FragmentComponent(
     instance: T,
@@ -33,7 +33,7 @@ inline fun <reified T : Fragment> FragmentComponent(
     block: ComponentBuilder.() -> Unit = {}
 ): Component = FragmentComponent(
     instance = instance,
-    type = typeOf(),
+    key = keyOf(),
     scope = scope,
     name = name,
     block = block
@@ -41,7 +41,7 @@ inline fun <reified T : Fragment> FragmentComponent(
 
 inline fun <T : Fragment> FragmentComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     scope: Any = FragmentScope,
     name: Any = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
@@ -50,7 +50,7 @@ inline fun <T : Fragment> FragmentComponent(
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-        instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Permit)
+        instance(instance = instance, key = key, overrideStrategy = OverrideStrategy.Permit)
             .bindAlias<Fragment>()
             .bindAlias<Fragment>(name = name)
 

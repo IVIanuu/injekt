@@ -39,7 +39,7 @@ data class BindingContext<T> internal constructor(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        bindAlias(type = typeOf<S>(), name = name, overrideStrategy = overrideStrategy)
+        bindAlias(key = keyOf<S>(name = name), overrideStrategy = overrideStrategy)
         return this
     }
 
@@ -48,7 +48,7 @@ data class BindingContext<T> internal constructor(
         name: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        bindAlias(type = binding.key.type, name = name, overrideStrategy = overrideStrategy)
+        bindAlias(key = binding.key.copy(name = name), overrideStrategy = overrideStrategy)
         return this
     }
 
@@ -57,7 +57,7 @@ data class BindingContext<T> internal constructor(
      *
      * For example the following code binds RepositoryImpl to Repository
      *
-     * `factory { RepositoryImpl() }.bindAlias(typeOf<Repository>())`
+     * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
      *
      * @param type the alias type
      * @param name the alias name
@@ -66,21 +66,13 @@ data class BindingContext<T> internal constructor(
      * @see ComponentBuilder.add
      */
     fun bindAlias(
-        type: Type<*> = binding.key.type,
-        name: Any? = null,
+        key: Key<*>,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
         componentBuilder.factory(
-            type = type as Type<Any?>,
-            name = name,
+            key = key as Key<T>,
             overrideStrategy = overrideStrategy
-        ) { parameters ->
-            get(
-                type = binding.key.type as Type<Any?>,
-                name = binding.key.name,
-                parameters = parameters
-            )
-        }
+        ) { parameters -> get(binding.key, parameters = parameters) }
 
         return this
     }
@@ -90,10 +82,8 @@ data class BindingContext<T> internal constructor(
         mapName: Any? = null,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> = intoMap(
-        mapKeyType = typeOf(),
-        mapValueType = typeOf<V>(),
         entryKey = entryKey,
-        mapName = mapName,
+        mapKey = keyOf<Map<K, V>>(name = mapName),
         overrideStrategy = overrideStrategy
     )
 
@@ -110,21 +100,14 @@ data class BindingContext<T> internal constructor(
      * @see MultiBindingMapBuilder
      */
     fun <K, V> intoMap(
-        mapKeyType: Type<K>,
-        mapValueType: Type<V>,
         entryKey: K,
-        mapName: Any? = null,
+        mapKey: Key<Map<K, V>>,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        componentBuilder.map(
-            mapKeyType = mapKeyType,
-            mapValueType = mapValueType,
-            mapName = mapName
-        ) {
+        componentBuilder.map(mapKey = mapKey) {
             put(
                 entryKey = entryKey,
-                entryValueType = binding.key.type as Type<V>,
-                entryValueName = binding.key.name,
+                entryValueKey = binding.key,
                 overrideStrategy = overrideStrategy
             )
         }
@@ -135,8 +118,7 @@ data class BindingContext<T> internal constructor(
         setName: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ): BindingContext<T> = intoSet(
-        setElementType = typeOf<E>(),
-        setName = setName,
+        setKey = keyOf<Set<E>>(name = setName),
         overrideStrategy = overrideStrategy
     )
 
@@ -151,14 +133,12 @@ data class BindingContext<T> internal constructor(
      * @see MultiBindingSetBuilder
      */
     fun <E> intoSet(
-        setElementType: Type<E>,
-        setName: Any? = null,
+        setKey: Key<Set<E>>,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        componentBuilder.set(setElementType = setElementType, setName = setName) {
+        componentBuilder.set(setKey = setKey) {
             add(
-                elementType = binding.key.type as Type<E>,
-                elementName = binding.key.name,
+                elementKey = binding.key,
                 overrideStrategy = overrideStrategy
             )
         }

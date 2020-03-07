@@ -77,13 +77,13 @@ import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
 fun SystemServiceComponent() = Component {
     getSystemServices()
         .forEach { service ->
-            factory(type = typeOf(service)) {
+            factory(key = keyOf(service)) {
                 ContextCompat.getSystemService(get(), service.java)!!
             }
         }

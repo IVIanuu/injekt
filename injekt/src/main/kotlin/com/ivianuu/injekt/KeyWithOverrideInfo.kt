@@ -26,7 +26,7 @@ data class KeyWithOverrideInfo(
     /**
      * The key of the [Binding] this info is for
      */
-    val key: Key,
+    val key: Key<*>,
     /**
      * How overrides should be handled
      */

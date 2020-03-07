@@ -16,6 +16,11 @@
 
 package com.ivianuu.injekt
 
+import kotlin.jvm.internal.ClassBasedDeclarationContainer
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.typeOf
+
 /**
  * A key of a binding
  *
@@ -24,20 +29,55 @@ package com.ivianuu.injekt
  * @see Component.get
  * @see ComponentBuilder.add
  */
-data class Key internal constructor(val type: Type<*>, val name: Any? = null) {
+data class Key<T> internal constructor(
+    val classifier: KClass<*>,
+    val isNullable: Boolean,
+    val arguments: Array<Key<*>>,
+    val name: Any?
+) {
 
-    private val hashCode = generateHashcode()
+    private val hashCode = generateHashCode()
 
-    override fun hashCode() = hashCode
+    override fun hashCode(): Int = hashCode
 
-    private fun generateHashcode(): Int {
-        var result = type.hashCode()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Key<*>
+
+        if (classifier != other.classifier) return false
+        // todo if (isNullable && !other.isNullable) return false
+        if (!arguments.contentEquals(other.arguments)) return false
+        if (name != other.name) return false
+
+        return true
+    }
+
+    private fun generateHashCode(): Int {
+        var result = classifier.hashCode()
+        // todo result = 31 * result + isNullable.hashCode()
+        result = 31 * result + arguments.contentHashCode()
         result = 31 * result + (name?.hashCode() ?: 0)
         return result
     }
+
+    override fun toString(): String {
+        val params = if (arguments.isNotEmpty()) {
+            arguments.joinToString(
+                separator = ", ",
+                prefix = "<",
+                postfix = ">"
+            ) { it.toString() }
+        } else {
+            ""
+        }
+
+        return "${classifier.java.name}${if (isNullable) "?" else ""}$params($name)"
+    }
 }
 
-inline fun <reified T> keyOf(name: Any? = null): Key = keyOf(typeOf<T>(), name)
+inline fun <reified T> keyOf(name: Any? = null): Key<T> = typeOf<T>().asKey(name = name)
 
 /**
  * Create a key
@@ -46,4 +86,68 @@ inline fun <reified T> keyOf(name: Any? = null): Key = keyOf(typeOf<T>(), name)
  * @param name the name of the key
  * @return the constructed key
  */
-fun keyOf(type: Type<*>, name: Any? = null): Key = Key(type, name)
+fun <T> keyOf(
+    classifier: KClass<*>,
+    isNullable: Boolean = false,
+    arguments: Array<Key<*>> = emptyArray(),
+    name: Any? = null
+): Key<T> {
+    // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
+    val finalClassifier = if (isNullable) boxed(classifier) else unboxed(classifier)
+    return Key(
+        classifier = finalClassifier,
+        isNullable = isNullable,
+        arguments = arguments,
+        name = name
+    )
+}
+
+@PublishedApi
+internal fun <T> KType.asKey(name: Any? = null): Key<T> {
+    val args = arrayOfNulls<Key<Any?>>(arguments.size)
+
+    arguments.forEachIndexed { index, kTypeProjection ->
+        args[index] = kTypeProjection.type?.asKey() ?: keyOf()
+    }
+
+    return Key(
+        classifier = (classifier ?: Any::class) as KClass<*>,
+        arguments = args as Array<Key<*>>,
+        isNullable = isMarkedNullable,
+        name = name
+    )
+}
+
+private fun unboxed(type: KClass<*>): KClass<*> {
+    val thisJClass = (type as ClassBasedDeclarationContainer).jClass
+    if (thisJClass.isPrimitive) return type
+
+    return when (thisJClass.name) {
+        "java.lang.Boolean" -> Boolean::class
+        "java.lang.Character" -> Char::class
+        "java.lang.Byte" -> Byte::class
+        "java.lang.Short" -> Short::class
+        "java.lang.Integer" -> Int::class
+        "java.lang.Float" -> Float::class
+        "java.lang.Long" -> Long::class
+        "java.lang.Double" -> Double::class
+        else -> type
+    }
+}
+
+private fun boxed(type: KClass<*>): KClass<*> {
+    val jClass = (type as ClassBasedDeclarationContainer).jClass
+    if (!jClass.isPrimitive) return type
+
+    return when (jClass.name) {
+        "boolean" -> java.lang.Boolean::class
+        "char" -> java.lang.Character::class
+        "byte" -> java.lang.Byte::class
+        "short" -> java.lang.Short::class
+        "int" -> java.lang.Integer::class
+        "float" -> java.lang.Float::class
+        "long" -> java.lang.Long::class
+        "double" -> java.lang.Double::class
+        else -> type
+    }
+}

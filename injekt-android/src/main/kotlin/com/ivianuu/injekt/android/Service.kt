@@ -20,26 +20,26 @@ import android.app.Service
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Service> ServiceComponent(
     instance: T,
     block: ComponentBuilder.() -> Unit = {}
-): Component = ServiceComponent(instance = instance, type = typeOf(), block = block)
+): Component = ServiceComponent(instance = instance, key = keyOf(), block = block)
 
 inline fun <T : Service> ServiceComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(ServiceScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-        instance(instance, type = type)
+        instance(instance, key = key)
             .bindAlias<Service>()
         contextBindings(ForService) { instance }
         componentAlias(ServiceScope)

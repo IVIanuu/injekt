@@ -64,7 +64,7 @@ typealias MultiBindingSet<E> = Set<KeyWithOverrideInfo>
  *
  * @see ComponentBuilder.set
  */
-class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
+class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key<Set<E>>) {
 
     private val elements = mutableSetOf<KeyWithOverrideInfo>()
 
@@ -72,18 +72,10 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key) {
         elementName: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
     ) {
-        add<T>(typeOf(), elementName, overrideStrategy)
+        add(keyOf<T>(name = elementName), overrideStrategy)
     }
 
-    fun <T : E> add(
-        elementType: Type<T>,
-        elementName: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ) {
-        add(keyOf(elementType, elementName), overrideStrategy)
-    }
-
-    fun add(elementKey: Key, overrideStrategy: OverrideStrategy = OverrideStrategy.Fail) {
+    fun add(elementKey: Key<*>, overrideStrategy: OverrideStrategy = OverrideStrategy.Fail) {
         add(KeyWithOverrideInfo(elementKey, overrideStrategy))
     }
 

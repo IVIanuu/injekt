@@ -23,26 +23,26 @@ import androidx.fragment.app.FragmentActivity
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Activity> ActivityComponent(
     instance: T,
     block: ComponentBuilder.() -> Unit = {}
-): Component = ActivityComponent(instance = instance, type = typeOf(), block = block)
+): Component = ActivityComponent(instance = instance, key = keyOf(), block = block)
 
 inline fun <T : Activity> ActivityComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(ActivityScope)
     instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-    instance(instance = instance, type = type)
+    instance(instance = instance, key = key)
         .bindAlias<Activity>()
         .apply {
             if (instance is ComponentActivity) bindAlias<ComponentActivity>()

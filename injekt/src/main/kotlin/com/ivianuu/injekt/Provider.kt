@@ -34,7 +34,7 @@ interface Provider<T> {
 
 internal class KeyedProvider<T>(
     private val component: Component,
-    private val key: Key
+    private val key: Key<T>
 ) : Provider<T> {
 
     private var _provider: BindingProvider<T>? = null

@@ -20,26 +20,26 @@ import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : ContentProvider> ContentProviderComponent(
     instance: T,
     block: ComponentBuilder.() -> Unit = {}
-): Component = ContentProviderComponent(instance = instance, type = typeOf(), block = block)
+): Component = ContentProviderComponent(instance = instance, key = keyOf(), block = block)
 
 inline fun <T : ContentProvider> ContentProviderComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(ContentProviderScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-        instance(instance, type = type)
+        instance(instance, key = key)
             .bindAlias<ContentProvider>()
         contextBindings(ForContentProvider) { instance.context!! }
         componentAlias(ContentProviderScope)

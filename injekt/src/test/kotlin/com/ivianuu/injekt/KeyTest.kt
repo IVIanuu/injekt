@@ -21,42 +21,42 @@ import junit.framework.Assert.assertFalse
 import org.junit.Test
 import kotlin.reflect.KClass
 
-class TypeTest {
+class KeyTest {
 
     @Test
     fun testArgumentDistinction() {
-        val listOfInts = typeOf<List<Int>>()
-        val listOfStrings = typeOf<List<String>>()
+        val listOfInts = keyOf<List<Int>>()
+        val listOfStrings = keyOf<List<String>>()
         assertFalse(listOfInts == listOfStrings)
     }
 
     // todo not supported yet @Test
     fun testAnnotationDistinction() {
-        val typeA = typeOf<@TypeAnnotationOne String>()
-        val typeB = typeOf<@TypeAnnotationTwo String>()
+        val typeA = keyOf<@TypeAnnotationOne String>()
+        val typeB = keyOf<@TypeAnnotationTwo String>()
         assertFalse(typeA == typeB)
     }
 
     // todo not supported for now @Test
     fun testNullableDistinction() {
-        val nonNull = typeOf<String>()
-        val nullable = typeOf<String?>()
+        val nonNull = keyOf<String>()
+        val nullable = keyOf<String?>()
         assertFalse(nonNull == nullable)
     }
 
     private enum class Primitive(
         val primitiveClassifier: KClass<*>,
-        val nonNullReified: Type<*>,
-        val nullableReified: Type<*>
+        val nonNullReified: Key<*>,
+        val nullableReified: Key<*>
     ) {
-        Boolean(kotlin.Boolean::class, typeOf<kotlin.Boolean>(), typeOf<kotlin.Boolean?>()),
-        Byte(kotlin.Byte::class, typeOf<kotlin.Byte>(), typeOf<kotlin.Byte?>()),
-        Char(kotlin.Char::class, typeOf<kotlin.Char>(), typeOf<kotlin.Char?>()),
-        Double(kotlin.Double::class, typeOf<kotlin.Double>(), typeOf<kotlin.Double?>()),
-        Float(kotlin.Float::class, typeOf<kotlin.Float>(), typeOf<kotlin.Float?>()),
-        Int(kotlin.Int::class, typeOf<kotlin.Int>(), typeOf<kotlin.Int?>()),
-        Long(kotlin.Long::class, typeOf<kotlin.Long>(), typeOf<kotlin.Long?>()),
-        Short(kotlin.Short::class, typeOf<kotlin.Short>(), typeOf<kotlin.Short?>());
+        Boolean(kotlin.Boolean::class, keyOf<kotlin.Boolean>(), keyOf<kotlin.Boolean?>()),
+        Byte(kotlin.Byte::class, keyOf<kotlin.Byte>(), keyOf<kotlin.Byte?>()),
+        Char(kotlin.Char::class, keyOf<kotlin.Char>(), keyOf<kotlin.Char?>()),
+        Double(kotlin.Double::class, keyOf<kotlin.Double>(), keyOf<kotlin.Double?>()),
+        Float(kotlin.Float::class, keyOf<kotlin.Float>(), keyOf<kotlin.Float?>()),
+        Int(kotlin.Int::class, keyOf<kotlin.Int>(), keyOf<kotlin.Int?>()),
+        Long(kotlin.Long::class, keyOf<kotlin.Long>(), keyOf<kotlin.Long?>()),
+        Short(kotlin.Short::class, keyOf<kotlin.Short>(), keyOf<kotlin.Short?>());
     }
 
     @Test
@@ -65,19 +65,19 @@ class TypeTest {
             val nonNullReified = type.nonNullReified
             val nullableReified = type.nullableReified
 
-            val nonNullPrimitive = typeOf<Any?>(type.primitiveClassifier)
-            val nullablePrimitive = typeOf<Any?>(type.primitiveClassifier, isNullable = true)
+            val nonNullPrimitive = keyOf<Any?>(type.primitiveClassifier)
+            val nullablePrimitive = keyOf<Any?>(type.primitiveClassifier, isNullable = true)
 
-            val nonNullObject = typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
+            val nonNullObject = keyOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
             val nullableObject =
-                typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin, isNullable = true)
+                keyOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin, isNullable = true)
 
-            val nonNullPrimitiveJava = typeOf<Any?>(type.primitiveClassifier)
-            val nullablePrimitiveJava = typeOf<Any?>(type.primitiveClassifier, isNullable = true)
+            val nonNullPrimitiveJava = keyOf<Any?>(type.primitiveClassifier)
+            val nullablePrimitiveJava = keyOf<Any?>(type.primitiveClassifier, isNullable = true)
 
-            val nonNullObjectJava = typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
+            val nonNullObjectJava = keyOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
             val nullableObjectJava =
-                typeOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin, isNullable = true)
+                keyOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin, isNullable = true)
 
             val pairs = listOf(
                 nonNullReified to nullableReified,

@@ -21,11 +21,11 @@ import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
 import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : View> ViewComponent(
     instance: T,
@@ -33,11 +33,11 @@ inline fun <reified T : View> ViewComponent(
     name: Any = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
-    ViewComponent(instance = instance, type = typeOf(), scope = scope, name = name, block = block)
+    ViewComponent(instance = instance, key = keyOf(), scope = scope, name = name, block = block)
 
 inline fun <T : View> ViewComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     scope: Any = ViewScope,
     name: Any = ForView,
     block: ComponentBuilder.() -> Unit = {}
@@ -48,7 +48,7 @@ inline fun <T : View> ViewComponent(
 
         instance(
             instance = instance,
-            type = type,
+            key = key,
             overrideStrategy = OverrideStrategy.Permit
         ).bindAlias<View>().bindAlias<View>(name)
 

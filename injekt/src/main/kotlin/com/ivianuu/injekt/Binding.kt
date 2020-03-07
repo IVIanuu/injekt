@@ -29,7 +29,7 @@ class Binding<T>(
     /**
      * The which is used to identify this binding
      */
-    val key: Key,
+    val key: Key<T>,
     /**
      * How overrides should be handled
      */
@@ -41,7 +41,7 @@ class Binding<T>(
 ) {
 
     fun copy(
-        key: Key = this.key,
+        key: Key<T> = this.key,
         overrideStrategy: OverrideStrategy = this.overrideStrategy,
         provider: BindingProvider<T> = this.provider
     ) = Binding(key, overrideStrategy, provider)
