@@ -25,7 +25,7 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-class Binding<T>(
+data class Binding<T>(
     /**
      * The which is used to identify this binding
      */
@@ -38,15 +38,7 @@ class Binding<T>(
      * Provides instances of [T]
      */
     val provider: BindingProvider<T>
-) {
-
-    fun copy(
-        key: Key<T> = this.key,
-        overrideStrategy: OverrideStrategy = this.overrideStrategy,
-        provider: BindingProvider<T> = this.provider
-    ) = Binding(key, overrideStrategy, provider)
-
-}
+)
 
 typealias BindingProvider<T> = Component.(Parameters) -> T
 

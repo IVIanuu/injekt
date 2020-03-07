@@ -22,7 +22,6 @@ package com.ivianuu.injekt
  * This enables providing multiple instances, lazy instances or optional retrieval of instances
  */
 interface Provider<T> {
-
     /**
      * Provides an instance of type [T]
      *

@@ -30,7 +30,7 @@ package com.ivianuu.injekt
  *
  * @see ComponentBuilder
  */
-data class BindingContext<T> internal constructor(
+class BindingContext<T> internal constructor(
     val binding: Binding<T>,
     val componentBuilder: ComponentBuilder
 ) {
