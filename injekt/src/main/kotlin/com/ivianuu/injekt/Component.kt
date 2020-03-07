@@ -153,7 +153,7 @@ class Component internal constructor(
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
         if (key.name != null) return null
 
-        val binding = InjektPlugins.justInTimeLookupFactory.findBinding(key)
+        val binding = InjektPlugins.justInTimeBindingFactory.findBinding(key)
             ?: return null
         bindings[key] = binding
         (binding.provider as? ComponentInitObserver)?.onInit(this)

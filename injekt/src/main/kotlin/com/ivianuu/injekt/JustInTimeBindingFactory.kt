@@ -18,11 +18,11 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-interface JustInTimeLookupFactory {
+interface JustInTimeBindingFactory {
     fun <T> findBinding(key: Key<T>): Binding<T>?
 }
 
-object CodegenJustInTimeLookupFactory : JustInTimeLookupFactory {
+object CodegenJustInTimeBindingFactory : JustInTimeBindingFactory {
 
     private val bindingFactories = mutableMapOf<Key<*>, BindingFactory<*>>()
 
