@@ -92,4 +92,3 @@ internal fun ComponentBuilder.resourcesBindings(
     factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
         .bindAlias(name = name)
 }
-

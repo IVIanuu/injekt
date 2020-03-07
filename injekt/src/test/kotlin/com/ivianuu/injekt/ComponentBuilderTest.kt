@@ -104,5 +104,4 @@ class ComponentBuilderTest {
         val component = Component { add(binding) }
         assertEquals(binding, component.getBinding<String>(keyOf<String>()))
     }
-
 }

@@ -112,7 +112,6 @@ class KeyTest {
     }
 }
 
-
 private annotation class TypeAnnotationOne
 
 private annotation class TypeAnnotationTwo

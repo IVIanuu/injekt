@@ -145,7 +145,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             UNDEFINED_OFFSET,
             InjektOrigin,
             IrClassSymbolImpl(bindingDescriptor)
-        ).apply clazz@ {
+        ).apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             val bindingFactoryWithType = KotlinTypeFactory.simpleType(

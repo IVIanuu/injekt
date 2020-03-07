@@ -99,7 +99,6 @@ package com.ivianuu.injekt
     override fun hashCode(): Int = values.contentHashCode()
 
     override fun toString(): String = values.contentToString()
-
 }
 
 /**
