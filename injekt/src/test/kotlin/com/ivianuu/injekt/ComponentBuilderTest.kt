@@ -16,10 +16,23 @@
 
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ComponentBuilderTest {
+
+    @Test
+    fun testAlias() {
+        val component = Component {
+            single { TestDep1() }
+            alias<TestDep1, Any>()
+        }
+
+        val declared = component.get<TestDep1>()
+        val aliased = component.get<Any>()
+        assertTrue(declared === aliased)
+    }
 
     @Test
     fun testInstance() {

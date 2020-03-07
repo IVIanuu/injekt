@@ -151,17 +151,45 @@ class ComponentBuilder {
         )
     )
 
+    inline fun <reified S, reified T> alias(
+        originalName: Any? = null,
+        aliasName: Any? = null,
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+    ): BindingContext<T> = alias<S, T>(
+        originalKey = keyOf(name = originalName),
+        aliasKey = keyOf(name = aliasName),
+        overrideStrategy = overrideStrategy
+    )
+
+    /**
+     * Makes the [Binding] for [originalKey] retrievable via [aliasKey]
+     *
+     * For example the following code binds RepositoryImpl to Repository
+     *
+     * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
+     *
+     * @param originalKey the key of the original binding
+     * @param overrideStrategy how overrides should be handled
+     *
+     */
+    fun <S, T> alias(
+        originalKey: Key<S>,
+        aliasKey: Key<T>,
+        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+    ): BindingContext<T> = factory(
+        key = aliasKey,
+        overrideStrategy = overrideStrategy
+    ) { parameters -> get(originalKey, parameters = parameters) as T }
+
     inline fun <reified T> instance(
         instance: T,
         name: Any? = null,
         overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ): BindingContext<T> {
-        return instance(
-            instance = instance,
-            key = keyOf(name = name),
-            overrideStrategy = overrideStrategy
-        )
-    }
+    ): BindingContext<T> = instance(
+        instance = instance,
+        key = keyOf(name = name),
+        overrideStrategy = overrideStrategy
+    )
 
     /**
      * Adds a binding for a already existing instance

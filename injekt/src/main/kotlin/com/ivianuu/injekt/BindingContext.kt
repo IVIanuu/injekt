@@ -68,10 +68,11 @@ data class BindingContext<T> internal constructor(
         key: Key<*>,
         overrideStrategy: OverrideStrategy = binding.overrideStrategy
     ): BindingContext<T> {
-        componentBuilder.factory(
-            key = key as Key<T>,
+        componentBuilder.alias(
+            originalKey = binding.key as Key<Any?>,
+            aliasKey = key as Key<Any?>,
             overrideStrategy = overrideStrategy
-        ) { parameters -> get(binding.key, parameters = parameters) }
+        )
 
         return this
     }
