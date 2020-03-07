@@ -34,7 +34,7 @@ internal class KeyedLazy<T>(
             synchronized(this) {
                 value = _value
                 if (value === this) {
-                    _value = component.get<T>(key, parameters)
+                    _value = component.get(key, parameters)
                     value = _value
                 }
             }

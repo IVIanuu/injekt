@@ -51,8 +51,7 @@ interface InjektTrait {
     /**
      * Lazy version of [get]
      *
-     * @param type the type of key of the instance
-     * @param name the name of the of the instance
+     * @param key the key of the instance
      * @param parameters optional parameters to construct the instance
      * @return the instance
 

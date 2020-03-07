@@ -136,7 +136,7 @@ class Component internal constructor(
                 Lazy::class -> {
                     val instanceKey = key.arguments.single()
                         .copy(name = key.name)
-                    return Binding<T>(
+                    return Binding(
                         key = key,
                         provider = { KeyedLazy(this, instanceKey) as T }
                     )

@@ -24,7 +24,7 @@ import kotlin.reflect.typeOf
 /**
  * A key of a binding
  *
- * This is used to identify bindings in [Component]s and [Module]s
+ * This is used to retrieve [Binding]s in [Component]s
  *
  * @see Component.get
  * @see ComponentBuilder.add
@@ -79,13 +79,6 @@ data class Key<T> internal constructor(
 
 inline fun <reified T> keyOf(name: Any? = null): Key<T> = typeOf<T>().asKey(name = name)
 
-/**
- * Create a key
- *
- * @param type the type of the key
- * @param name the name of the key
- * @return the constructed key
- */
 fun <T> keyOf(
     classifier: KClass<*>,
     isNullable: Boolean = false,

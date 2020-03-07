@@ -53,15 +53,14 @@ data class BindingContext<T> internal constructor(
     }
 
     /**
-     * Binds the [binding] to [Module] with the alias params
+     * Creates an alias of the [binding] which can then also be retrieved via [key]
      *
      * For example the following code binds RepositoryImpl to Repository
      *
      * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
      *
-     * @param type the alias type
-     * @param name the alias name
-     * @param override whether or not the alias binding can override existing bindings
+     * @param key the alias key
+     * @param overrideStrategy how overrides should be handled
      *
      * @see ComponentBuilder.add
      */
@@ -88,13 +87,11 @@ data class BindingContext<T> internal constructor(
     )
 
     /**
-     * Contributes the [binding] into to the specified map
+     * Adds the [binding] into to the map with the [mapKey]
      *
-     * @param mapKeyType the key type of the map
-     * @param mapValueType the value type of the map
      * @param entryKey the key of this binding in the map
-     * @param mapName the name of the map
-     * @param override whether or not this binding can override existing one's
+     * @param mapKey the map this binding gets added to
+     * @param overrideStrategy how overrides should be handled
      *
      * @see MultiBindingMap
      * @see MultiBindingMapBuilder
@@ -123,11 +120,10 @@ data class BindingContext<T> internal constructor(
     )
 
     /**
-     * Contributes the [binding] into to the specified set
+     * Adds the [binding] into to the set with the [setKey]
      *
-     * @param setElementType the type of the set
-     * @param setName the name of the set
-     * @param override whether or not this binding can override existing one's
+     * @param setKey the set this binding gets added to
+     * @param overrideStrategy how overrides should be handled
      *
      * @see MultiBindingSet
      * @see MultiBindingSetBuilder

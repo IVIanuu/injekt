@@ -206,8 +206,7 @@ class ComponentBuilder {
      *
      * ´´´
      *
-     * @param type the type of the binding
-     * @param name the name of the other binding
+     * @param key the type of the binding
      * @param block the lambda to call in the context of the other binding
      */
     fun <T> withBinding(
@@ -404,7 +403,7 @@ class ComponentBuilder {
             scopes = scopes,
             dependencies = dependencies,
             bindings = finalBindings,
-            multiBindingMaps = multiBindingMaps as Map<Key<*>, MultiBindingMap<Any?, Any?>>,
+            multiBindingMaps = multiBindingMaps,
             multiBindingSets = multiBindingSets
         )
     }

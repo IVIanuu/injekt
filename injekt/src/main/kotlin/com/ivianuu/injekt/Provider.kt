@@ -42,7 +42,7 @@ internal class KeyedProvider<T>(
     override fun invoke(parameters: Parameters): T {
         var provider = _provider
         if (provider == null) {
-            provider = component.getBinding<T>(key).provider
+            provider = component.getBinding(key).provider
             _provider = provider
         }
         return provider(component, parameters)
