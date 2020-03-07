@@ -26,8 +26,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val AbstractBindingFactory = FqName("com.ivianuu.injekt.AbstractBindingFactory")
     val Binding = FqName("com.ivianuu.injekt.Binding")
+    val BindingFactory = FqName("com.ivianuu.injekt.BindingFactory")
     val BoundProvider = FqName("com.ivianuu.injekt.BoundProvider")
     val Component = FqName("com.ivianuu.injekt.Component")
     val Factory = FqName("com.ivianuu.injekt.Factory")

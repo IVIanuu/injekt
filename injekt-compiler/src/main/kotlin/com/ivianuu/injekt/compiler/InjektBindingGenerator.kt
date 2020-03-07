@@ -94,8 +94,8 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private val typeTranslator = context.typeTranslator
     private fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
-    private val abstractBindingFactory = getClass(InjektClassNames.AbstractBindingFactory)
     private val binding = getClass(InjektClassNames.Binding)
+    private val bindingFactory = getClass(InjektClassNames.BindingFactory)
     private val boundProvider = getClass(InjektClassNames.BoundProvider)
     private val component = getClass(InjektClassNames.Component)
     private val key = getClass(InjektClassNames.Key)
@@ -149,7 +149,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             val bindingFactoryWithType = KotlinTypeFactory.simpleType(
-                baseType = abstractBindingFactory.defaultType,
+                baseType = bindingFactory.defaultType,
                 arguments = listOf(descriptor.defaultType.asTypeProjection())
             ).toIrType()
 
@@ -165,16 +165,14 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                         startOffset, endOffset,
                         context.irBuiltIns.unitType,
                         symbolTable.referenceConstructor(
-                            abstractBindingFactory.unsubstitutedPrimaryConstructor!!
+                            context.builtIns.any.unsubstitutedPrimaryConstructor!!
                         )
-                    ).apply {
-                        putTypeArgument(0, descriptor.defaultType.toIrType())
-                    }
+                    )
                     +IrInstanceInitializerCallImpl(startOffset, endOffset, this@clazz.symbol, context.irBuiltIns.unitType)
                 }
             }
 
-            val bindingFactoryCreate = abstractBindingFactory.unsubstitutedMemberScope
+            val bindingFactoryCreate = bindingFactory.unsubstitutedMemberScope
                 .findSingleFunction(Name.identifier("create"))
 
             val bindingWithType = KotlinTypeFactory.simpleType(
@@ -396,13 +394,13 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             startOffset = startOffset,
             endOffset = endOffset,
             origin = IrStatementOrigin.LAMBDA,
-            resultkey = key
+            resultType = type
         ) {
             +lambda
             +IrFunctionReferenceImpl(
                 startOffset = startOffset,
                 endOffset = endOffset,
-                key = key,
+                type = type,
                 symbol = symbol,
                 typeArgumentsCount = descriptor.typeParametersCount,
                 origin = IrStatementOrigin.LAMBDA,

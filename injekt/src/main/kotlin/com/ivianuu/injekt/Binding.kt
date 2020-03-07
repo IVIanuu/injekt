@@ -53,6 +53,3 @@ typealias BindingProvider<T> = Component.(Parameters) -> T
 interface BindingFactory<T> {
     fun create(): Binding<T>
 }
-
-// todo remove once fixed in compiler
-abstract class AbstractBindingFactory<T> : BindingFactory<T>
