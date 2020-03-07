@@ -20,7 +20,9 @@ class BoundProvider<T>(
     private val scope: Any? = null,
     private val provider: BindingProvider<T>
 ) : (Component, Parameters) -> T, ComponentInitObserver {
+
     private lateinit var boundComponent: Component
+
     override fun onInit(component: Component) {
         check(!this::boundComponent.isInitialized) {
             "Already scoped to $component"

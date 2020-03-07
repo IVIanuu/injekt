@@ -166,7 +166,10 @@ class ComponentBuilder {
      *
      * For example the following code binds RepositoryImpl to Repository
      *
-     * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
+     * ´´´
+     * factory { RepositoryImpl() }
+     * alias<RepositoryImpl, Repository>()
+     * ´´´
      *
      * @param originalKey the key of the original binding
      * @param overrideStrategy how overrides should be handled

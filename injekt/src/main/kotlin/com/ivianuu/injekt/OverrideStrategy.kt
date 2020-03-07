@@ -22,7 +22,6 @@ package com.ivianuu.injekt
 enum class OverrideStrategy {
     /** Overrides the existing binding */
     Permit,
-
     /** Throws an exception if there's an existing binding */
     Fail,
     /** Keeps the existing binding and drops this one */
