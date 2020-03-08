@@ -438,9 +438,9 @@ class ComponentBuilder {
     }
 
     private fun checkScopes() {
-        val dependencyScopes = mutableSetOf<Any>()
+        val dependencyScopes = mutableSetOf<Scope>()
 
-        fun addScope(scope: Any) {
+        fun addScope(scope: Scope) {
             check(scope !in dependencyScopes) {
                 "Duplicated scope $scope"
             }
