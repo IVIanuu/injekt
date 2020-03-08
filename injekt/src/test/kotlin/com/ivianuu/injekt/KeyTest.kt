@@ -30,13 +30,6 @@ class KeyTest {
         assertFalse(listOfInts == listOfStrings)
     }
 
-    // todo not supported yet @Test
-    fun testAnnotationDistinction() {
-        val typeA = keyOf<@TypeAnnotationOne String>()
-        val typeB = keyOf<@TypeAnnotationTwo String>()
-        assertFalse(typeA == typeB)
-    }
-
     // todo not supported for now @Test
     fun testNullableDistinction() {
         val nonNull = keyOf<String>()
@@ -111,7 +104,3 @@ class KeyTest {
         }
     }
 }
-
-private annotation class TypeAnnotationOne
-
-private annotation class TypeAnnotationTwo
