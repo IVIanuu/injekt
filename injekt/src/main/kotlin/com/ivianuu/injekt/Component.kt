@@ -25,7 +25,6 @@ package com.ivianuu.injekt
  *
  * ´´´
  * val component = Component {
- *     scopes(Singleton)
  *     single { Api(get()) }
  *     single { Database(get(), get()) }
  * }
@@ -94,10 +93,7 @@ class Component internal constructor(
         if (binding != null) return binding
 
         binding = bindings[key] as? Binding<T>
-        if (binding != null &&
-            !key.isNullable &&
-            binding.key.isNullable
-        ) {
+        if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
         if (binding != null) return binding
