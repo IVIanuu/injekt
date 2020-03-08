@@ -63,103 +63,6 @@ class ComponentBuilder {
         }
     }
 
-    inline fun <reified T> factory(
-        qualifier: Qualifier = Qualifier.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        bound: Boolean = false,
-        noinline provider: BindingProvider<T>
-    ): BindingContext<T> = factory(
-        key = keyOf(qualifier = qualifier),
-        duplicateStrategy = duplicateStrategy,
-        bound = bound,
-        provider = provider
-    )
-
-    /**
-     * Adds a binding for [key] which will be instantiated on each request
-     *
-     * We get different logger instances in the following example
-     *
-     * ´´´
-     * val component = Component {
-     *     factory { Logger(get()) }
-     * }
-     *
-     * val logger1 = component.get<Logger>()
-     * val logger2 = component.get<Logger>()
-     * assertEquals(logger1, logger2) // false
-
-     *
-     * ´´´
-     *
-     * @param key the key to retrieve the instance
-     * @param duplicateStrategy the strategy for handling overrides
-     * @param bound whether instances should be created in the scope of the component
-     * @param provider the definitions which creates instances
-     *
-     * @see add
-     */
-    fun <T> factory(
-        key: Key<T>,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        bound: Boolean = false,
-        provider: BindingProvider<T>
-    ): BindingContext<T> = add(
-        Binding(
-            key = key,
-            duplicateStrategy = duplicateStrategy,
-            provider = if (bound) BoundProvider(provider = provider) else provider
-        )
-    )
-
-    inline fun <reified T> single(
-        qualifier: Qualifier = Qualifier.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        eager: Boolean = false,
-        noinline provider: BindingProvider<T>
-    ): BindingContext<T> = single(
-        key = keyOf(qualifier = qualifier),
-        duplicateStrategy = duplicateStrategy,
-        eager = eager,
-        provider = provider
-    )
-
-    /**
-     * Adds a binding for [key] which will be cached after the first request
-     *
-     * We get the same instance in the following example
-     *
-     * ´´´
-     * val component = Component {
-     *     single { Database(get()) }
-     * }
-     *
-     * val db1 = component.get<Database>()
-     * val db2 = component.get<Database>()
-     * assertEquals(db1, db2) // true
-     *
-     * ´´´
-     * @param key the key to retrieve the instance
-     * @param duplicateStrategy the strategy for handling overrides
-     * @param eager whether the instance should be created when the [Component] get's created
-     * @param provider the definitions which creates instances
-     *
-     * @see add
-     */
-    fun <T> single(
-        key: Key<T>,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        eager: Boolean = false,
-        provider: BindingProvider<T>
-    ): BindingContext<T> = add(
-        Binding(
-            key = key,
-            duplicateStrategy = duplicateStrategy,
-            provider = SingleProvider(provider = provider)
-                .let { if (eager) EagerProvider(it) else it }
-        )
-    )
-
     inline fun <reified S, reified T> alias(
         originalQualifiers: Qualifier = Qualifier.None,
         aliasQualifiers: Qualifier = Qualifier.None,
@@ -458,8 +361,9 @@ class ComponentBuilder {
     private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
         val componentBinding = Binding(
             key = keyOf(),
+            behavior = BoundBehavior(),
             duplicateStrategy = DuplicateStrategy.Permit,
-            provider = BoundProvider(null) { this }
+            provider = { this }
         )
 
         bindings[componentBinding.key] = componentBinding
@@ -478,8 +382,9 @@ class ComponentBuilder {
 
         bindings[mapKey] = Binding(
             key = mapKey as Key<Map<*, *>>,
+            behavior = BoundBehavior(),
             duplicateStrategy = DuplicateStrategy.Permit,
-            provider = BoundProvider {
+            provider = {
                 bindingKeys
                     .mapValues { get(key = it.value) }
             }
@@ -498,8 +403,9 @@ class ComponentBuilder {
         )
         bindings[mapOfProviderKey] = Binding(
             key = mapOfProviderKey,
+            behavior = BoundBehavior(),
             duplicateStrategy = DuplicateStrategy.Permit,
-            provider = BoundProvider {
+            provider = {
                 bindingKeys
                     .mapValues { KeyedProvider(this, it.value) }
             }
@@ -518,8 +424,9 @@ class ComponentBuilder {
         )
         bindings[mapOfLazyKey] = Binding(
             key = mapOfLazyKey,
+            behavior = BoundBehavior(),
             duplicateStrategy = DuplicateStrategy.Permit,
-            provider = BoundProvider {
+            provider = {
                 bindingKeys
                     .mapValues { KeyedLazy(this, it.value) }
             }

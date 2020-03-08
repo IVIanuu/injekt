@@ -17,10 +17,15 @@
 package com.ivianuu.injekt
 
 /**
- * Ensures that the [provider] resolves instances in the [Component] with the [scope]
+ * Ensures that the providers resolves instances in the [Component] with the [scope]
  * Or if [scope] == null in the [Component] it gets added to
  */
-class BoundProvider<T>(
+class BoundBehavior(private val scope: Scope? = null) : Behavior.Element {
+    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
+        BoundProvider(scope, provider)
+}
+
+private class BoundProvider<T>(
     private val scope: Scope? = null,
     private val provider: BindingProvider<T>
 ) : (Component, Parameters) -> T, ComponentInitObserver {

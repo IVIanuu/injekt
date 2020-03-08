@@ -94,14 +94,15 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private val typeTranslator = context.typeTranslator
     private fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
+    private val behavior = getClass(InjektClassNames.Behavior)
     private val binding = getClass(InjektClassNames.Binding)
     private val bindingFactory = getClass(InjektClassNames.BindingFactory)
-    private val boundProvider = getClass(InjektClassNames.BoundProvider)
+    private val boundBehavior = getClass(InjektClassNames.BoundBehavior)
     private val component = getClass(InjektClassNames.Component)
     private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val qualifier = getClass(InjektClassNames.Qualifier)
-    private val singleProvider = getClass(InjektClassNames.SingleProvider)
+    private val singleBehavior = getClass(InjektClassNames.SingleBehavior)
 
     private fun getClass(fqName: FqName) =
         context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
@@ -194,12 +195,22 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                 createParameterDeclarations(bindingFactoryCreate)
                 dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                    val constructor = binding.unsubstitutedPrimaryConstructor!!
+                    val bindingCompanionInvoke = binding.companionObjectDescriptor!!
+                        .unsubstitutedMemberScope
+                        .findSingleFunction(Name.identifier("invoke"))
                     +irReturn(
                         irCall(
-                            symbolTable.referenceConstructor(constructor),
+                            symbolTable.referenceSimpleFunction(bindingCompanionInvoke),
                             bindingWithType
                         ).apply {
+                            dispatchReceiver = irGetObject(
+                                symbolTable.referenceClass(
+                                    binding.companionObjectDescriptor!!
+                                )
+                            )
+
+                            putTypeArgument(0, descriptor.defaultType.toIrType())
+
                             val keyOf =
                                 this@InjektBindingGenerator.context.moduleDescriptor.getPackage(
                                     InjektClassNames.InjektPackage
@@ -218,161 +229,167 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 }
                             )
 
-                            val providerType = KotlinTypeFactory.simpleType(
-                                context.builtIns.getFunction(2).defaultType,
-                                arguments = listOf(
-                                    component.defaultType.asTypeProjection(),
-                                    parameters.defaultType.asTypeProjection(),
-                                    descriptor.defaultType.asTypeProjection()
-                                )
-                            )
+                            val behaviors = mutableListOf<IrExpression>()
 
-                            val providerLambda = irLambdaExpression(
-                                createFunctionDescriptor(providerType),
-                                providerType.toIrType()
-                            ) { lambdaFn ->
-                                val injektConstructor = descriptor.findInjektConstructor()
-
-                                val componentGet = component.unsubstitutedMemberScope
-                                    .findFirstFunction("get") {
-                                        it.typeParameters.first().isReified &&
-                                                it.valueParameters.size == 2
-                                    }
-
-                                val parametersGet = parameters.unsubstitutedMemberScope
-                                    .findSingleFunction(Name.identifier("get"))
-
-                                +irReturn(
-                                    irCall(
-                                        symbolTable.referenceConstructor(injektConstructor),
-                                        descriptor.defaultType.toIrType()
-                                    ).apply {
-                                        var paramIndex = 0
-
-                                        injektConstructor.valueParameters
-                                            .map { param ->
-                                                val paramExpr = if (param.annotations.hasAnnotation(
-                                                        InjektClassNames.Param
-                                                    )
-                                                ) {
-                                                    irCall(
-                                                        callee = symbolTable.referenceSimpleFunction(
-                                                            parametersGet
-                                                        ),
-                                                        type = param.type.toIrType()
-                                                    ).apply {
-                                                        dispatchReceiver =
-                                                            irGet(lambdaFn.valueParameters[1])
-                                                        putTypeArgument(0, param.type.toIrType())
-                                                        putValueArgument(0, irInt(paramIndex))
-                                                        ++paramIndex
-                                                    }
-                                                } else {
-                                                    irCall(
-                                                        symbolTable.referenceSimpleFunction(
-                                                            componentGet
-                                                        ),
-                                                        param.type.toIrType()
-                                                    ).apply {
-                                                        dispatchReceiver =
-                                                            irGet(lambdaFn.valueParameters[0])
-                                                        putTypeArgument(0, param.type.toIrType())
-
-                                                        val qualifiers =
-                                                            param.getAnnotatedAnnotations(
-                                                                InjektClassNames.QualifierMarker
-                                                            )
-                                                                .map { getClass(it.fqName!!).companionObjectDescriptor!! }
-                                                        if (qualifiers.isNotEmpty()) {
-                                                            putValueArgument(
-                                                                0,
-                                                                qualifiers
-                                                                    .map {
-                                                                        irGetObject(
-                                                                            symbolTable.referenceClass(
-                                                                                it
-                                                                            )
-                                                                        ) as IrExpression
-                                                                    }
-                                                                    .reduceRight { currentQualifier, acc ->
-                                                                        irCall(
-                                                                            symbolTable.referenceSimpleFunction(
-                                                                                qualifier.unsubstitutedMemberScope
-                                                                                    .findSingleFunction(
-                                                                                        Name.identifier(
-                                                                                            "plus"
-                                                                                        )
-                                                                                    )
-                                                                            ),
-                                                                            qualifier.defaultType.toIrType()
-                                                                        ).apply {
-                                                                            dispatchReceiver =
-                                                                                currentQualifier
-                                                                            putValueArgument(0, acc)
-                                                                        }
-                                                                    }
-                                                            )
-                                                        }
-                                                    }
-                                                }
-
-                                                putValueArgument(param.index, paramExpr)
-                                            }
-                                    }
-                                )
+                            if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
+                                behaviors += irGetObject(symbolTable.referenceClass(singleBehavior))
                             }
 
                             val scopeAnnotation =
                                 descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
                                     .singleOrNull()
-
-                            val scopeExpr = scopeAnnotation?.let {
-                                val scopeObject =
-                                    getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
-                                irGetObject(symbolTable.referenceClass(scopeObject))
+                            if (scopeAnnotation != null) {
+                                behaviors += irCall(
+                                    symbolTable.referenceConstructor(
+                                        boundBehavior.unsubstitutedPrimaryConstructor!!
+                                    ),
+                                    boundBehavior.defaultType.toIrType()
+                                ).apply {
+                                    val scopeObject =
+                                        getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                                    putValueArgument(
+                                        0,
+                                        irGetObject(symbolTable.referenceClass(scopeObject))
+                                    )
+                                }
                             }
 
-                            val providerExpr =
-                                if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
-                                    irCall(
-                                        symbolTable.referenceConstructor(
-                                            singleProvider.unsubstitutedPrimaryConstructor!!
-                                        ),
-                                        KotlinTypeFactory.simpleType(
-                                            singleProvider.defaultType,
-                                            arguments = listOf(
-                                                descriptor.defaultType.asTypeProjection()
-                                            )
-                                        ).toIrType()
-                                    ).apply {
-                                        putValueArgument(0, scopeExpr!!)
-                                        putValueArgument(1, providerLambda)
-                                    }
-                                } else if (scopeAnnotation != null) {
-                                    irCall(
-                                    symbolTable.referenceConstructor(
-                                        boundProvider.unsubstitutedPrimaryConstructor!!
-                                    ),
-                                    KotlinTypeFactory.simpleType(
-                                        boundProvider.defaultType,
-                                        arguments = listOf(
-                                            descriptor.defaultType.asTypeProjection()
-                                        )
-                                    ).toIrType()
-                                ).apply {
-                                        putValueArgument(0, scopeExpr!!)
-                                        putValueArgument(1, providerLambda)
-                                }
-                                } else {
-                                    providerLambda
-                                }
+                            if (behaviors.isNotEmpty()) {
+                                putValueArgument(
+                                    1,
+                                    behaviors
+                                        .reduceRight { currentBehavior, acc ->
+                                            irCall(
+                                                symbolTable.referenceSimpleFunction(
+                                                    behavior.unsubstitutedMemberScope
+                                                        .findSingleFunction(
+                                                            Name.identifier(
+                                                                "plus"
+                                                            )
+                                                        )
+                                                ),
+                                                behavior.defaultType.toIrType()
+                                            ).apply {
+                                                dispatchReceiver = currentBehavior
+                                                putValueArgument(0, acc)
+                                            }
+                                        }
+                                )
+                            }
 
-                            putValueArgument(2, providerExpr)
+                            putValueArgument(3, bindingProvider(descriptor))
                         }
 
                     )
                 }
             }
+        }
+    }
+
+    private fun IrBuilderWithScope.bindingProvider(
+        descriptor: ClassDescriptor
+    ): IrExpression {
+        val providerType = KotlinTypeFactory.simpleType(
+            context.builtIns.getFunction(2).defaultType,
+            arguments = listOf(
+                component.defaultType.asTypeProjection(),
+                parameters.defaultType.asTypeProjection(),
+                descriptor.defaultType.asTypeProjection()
+            )
+        )
+
+        return irLambdaExpression(
+            createFunctionDescriptor(providerType),
+            providerType.toIrType()
+        ) { lambdaFn ->
+            val injektConstructor = descriptor.findInjektConstructor()
+
+            val componentGet = component.unsubstitutedMemberScope
+                .findFirstFunction("get") {
+                    it.typeParameters.first().isReified &&
+                            it.valueParameters.size == 2
+                }
+
+            val parametersGet = parameters.unsubstitutedMemberScope
+                .findSingleFunction(Name.identifier("get"))
+
+            +irReturn(
+                irCall(
+                    symbolTable.referenceConstructor(injektConstructor),
+                    descriptor.defaultType.toIrType()
+                ).apply {
+                    var paramIndex = 0
+
+                    injektConstructor.valueParameters
+                        .map { param ->
+                            val paramExpr = if (param.annotations.hasAnnotation(
+                                    InjektClassNames.Param
+                                )
+                            ) {
+                                irCall(
+                                    callee = symbolTable.referenceSimpleFunction(
+                                        parametersGet
+                                    ),
+                                    type = param.type.toIrType()
+                                ).apply {
+                                    dispatchReceiver =
+                                        irGet(lambdaFn.valueParameters[1])
+                                    putTypeArgument(0, param.type.toIrType())
+                                    putValueArgument(0, irInt(paramIndex))
+                                    ++paramIndex
+                                }
+                            } else {
+                                irCall(
+                                    symbolTable.referenceSimpleFunction(
+                                        componentGet
+                                    ),
+                                    param.type.toIrType()
+                                ).apply {
+                                    dispatchReceiver =
+                                        irGet(lambdaFn.valueParameters[0])
+                                    putTypeArgument(0, param.type.toIrType())
+
+                                    val qualifiers: List<IrExpression> = param
+                                        .getAnnotatedAnnotations(InjektClassNames.QualifierMarker)
+                                        .map { getClass(it.fqName!!).companionObjectDescriptor!! }
+                                        .map {
+                                            irGetObject(
+                                                symbolTable.referenceClass(
+                                                    it
+                                                )
+                                            )
+                                        }
+
+                                    if (qualifiers.isNotEmpty()) {
+                                        putValueArgument(
+                                            0,
+                                            qualifiers
+                                                .reduceRight { currentQualifier, acc ->
+                                                    irCall(
+                                                        symbolTable.referenceSimpleFunction(
+                                                            qualifier.unsubstitutedMemberScope
+                                                                .findSingleFunction(
+                                                                    Name.identifier(
+                                                                        "plus"
+                                                                    )
+                                                                )
+                                                        ),
+                                                        qualifier.defaultType.toIrType()
+                                                    ).apply {
+                                                        dispatchReceiver =
+                                                            currentQualifier
+                                                        putValueArgument(0, acc)
+                                                    }
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+
+                            putValueArgument(param.index, paramExpr)
+                        }
+                }
+            )
         }
     }
 

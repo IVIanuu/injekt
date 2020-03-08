@@ -26,11 +26,15 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-data class Binding<T>(
+data class Binding<T> private constructor(
     /**
      * The key which is used to identify this binding
      */
     val key: Key<T>,
+    /**
+     * Behavior applied to the [provider]
+     */
+    val behavior: Behavior = Behavior.None,
     /**
      * How overrides should be handled
      */
@@ -39,7 +43,26 @@ data class Binding<T>(
      * Creates instances for this binding
      */
     val provider: BindingProvider<T>
-)
+) {
+    companion object {
+        /**
+         * Returns a new [Binding] instance
+         */
+        operator fun <T> invoke(
+            key: Key<T>,
+            behavior: Behavior = Behavior.None,
+            duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+            provider: BindingProvider<T>
+        ): Binding<T> = Binding(
+            key = key,
+            behavior = behavior,
+            duplicateStrategy = duplicateStrategy,
+            provider = behavior.foldIn(provider) { currentProvider, currentBehavior ->
+                currentBehavior.apply(currentProvider)
+            }
+        )
+    }
+}
 
 /**
  * Provides instances of [T]

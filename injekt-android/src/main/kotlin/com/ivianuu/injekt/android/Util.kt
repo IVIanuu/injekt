@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.factory
 import kotlinx.coroutines.CoroutineScope
 
 @PublishedApi

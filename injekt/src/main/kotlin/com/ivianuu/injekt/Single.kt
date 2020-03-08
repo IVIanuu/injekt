@@ -29,16 +29,66 @@ package com.ivianuu.injekt
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Single
 
-class SingleProvider<T>(
-    scope: Scope? = null,
-    provider: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
-    private val provider = BoundProvider(scope, provider)
+object SingleBehavior : Behavior.Element {
+    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
+        SingleProvider(provider)
+}
 
+inline fun <reified T> ComponentBuilder.single(
+    qualifier: Qualifier = Qualifier.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    eager: Boolean = false,
+    noinline provider: BindingProvider<T>
+): BindingContext<T> = single(
+    key = keyOf(qualifier = qualifier),
+    duplicateStrategy = duplicateStrategy,
+    eager = eager,
+    provider = provider
+)
+
+/**
+ * Adds a binding for [key] which will be cached after the first request
+ *
+ * We get the same instance in the following example
+ *
+ * ´´´
+ * val component = Component {
+ *     single { Database(get()) }
+ * }
+ *
+ * val db1 = component.get<Database>()
+ * val db2 = component.get<Database>()
+ * assertEquals(db1, db2) // true
+ *
+ * ´´´
+ * @param key the key to retrieve the instance
+ * @param duplicateStrategy the strategy for handling overrides
+ * @param eager whether the instance should be created when the [Component] get's created
+ * @param provider the definitions which creates instances
+ *
+ * @see ComponentBuilder.add
+ */
+fun <T> ComponentBuilder.single(
+    key: Key<T>,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    eager: Boolean = false,
+    provider: BindingProvider<T>
+): BindingContext<T> = add(
+    Binding(
+        key = key,
+        behavior = (if (eager) EagerBehavior else Behavior.None) + SingleBehavior + BoundBehavior(),
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+)
+
+private class SingleProvider<T>(
+    private val provider: BindingProvider<T>
+) : (Component, Parameters) -> T, ComponentInitObserver {
     private var value: Any? = this
 
     override fun onInit(component: Component) {
-        provider.onInit(component)
+        (provider as? ComponentInitObserver)?.onInit(component)
     }
 
     override fun invoke(component: Component, parameters: Parameters): T {

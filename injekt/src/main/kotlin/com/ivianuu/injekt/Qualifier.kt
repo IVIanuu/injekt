@@ -74,7 +74,6 @@ interface Qualifier {
         override fun toString() = "Qualifier.None"
     }
 
-    // todo remove if possible
     interface Element : Qualifier {
         override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R =
             operation(initial, this)

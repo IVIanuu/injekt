@@ -20,7 +20,13 @@ package com.ivianuu.injekt
  * Creates a instance once the [Component] is initialized
  * [provider]s typically caches the result of their [invoke] function
  */
-class EagerProvider<T>(private val provider: BindingProvider<T>) : (Component, Parameters) -> T,
+object EagerBehavior : Behavior.Element {
+    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
+        EagerProvider(provider)
+}
+
+private class EagerProvider<T>(private val provider: BindingProvider<T>) :
+        (Component, Parameters) -> T,
     ComponentInitObserver {
     override fun onInit(component: Component) {
         (provider as? ComponentInitObserver)?.onInit(component)

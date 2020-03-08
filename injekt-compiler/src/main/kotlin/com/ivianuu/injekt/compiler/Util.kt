@@ -26,9 +26,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val Behavior = FqName("com.ivianuu.injekt.Behavior")
     val Binding = FqName("com.ivianuu.injekt.Binding")
     val BindingFactory = FqName("com.ivianuu.injekt.BindingFactory")
-    val BoundProvider = FqName("com.ivianuu.injekt.BoundProvider")
+    val BoundBehavior = FqName("com.ivianuu.injekt.BoundBehavior")
     val Component = FqName("com.ivianuu.injekt.Component")
     val Factory = FqName("com.ivianuu.injekt.Factory")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
@@ -39,7 +40,7 @@ object InjektClassNames {
     val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
     val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
     val Single = FqName("com.ivianuu.injekt.Single")
-    val SingleProvider = FqName("com.ivianuu.injekt.SingleProvider")
+    val SingleBehavior = FqName("com.ivianuu.injekt.SingleBehavior")
 }
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =

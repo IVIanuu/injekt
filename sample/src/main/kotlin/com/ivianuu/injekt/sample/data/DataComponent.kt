@@ -20,6 +20,7 @@ import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
+import com.ivianuu.injekt.single
 import java.io.File
 
 @QualifierMarker
