@@ -32,5 +32,6 @@ internal class KeyedProvider<T>(
     private val component: Component,
     private val key: Key<T>
 ) : Provider<T> {
-    override fun invoke(parameters: Parameters): T = component.get(key)
+    override fun invoke(parameters: Parameters): T =
+        component.get(key = key, parameters = parameters)
 }
