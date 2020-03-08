@@ -94,7 +94,6 @@ class Component internal constructor(
         if (binding != null) return binding
 
         binding = bindings[key] as? Binding<T>
-        println("find binding for ${key.isNullable} found binding is ${binding?.key?.isNullable}")
         if (binding != null &&
             !key.isNullable &&
             binding.key.isNullable
