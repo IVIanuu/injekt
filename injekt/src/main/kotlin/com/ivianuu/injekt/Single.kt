@@ -35,20 +35,20 @@ class SingleProvider<T>(
 ) : (Component, Parameters) -> T, ComponentInitObserver {
     private val provider = BoundProvider(scope, provider)
 
-    private var _value: Any? = this
+    private var value: Any? = this
 
     override fun onInit(component: Component) {
         provider.onInit(component)
     }
 
     override fun invoke(component: Component, parameters: Parameters): T {
-        var value = _value
+        var value = this.value
         if (value === this) {
             synchronized(this) {
-                value = _value
+                value = this.value
                 if (value === this) {
-                    _value = provider(component, parameters)
-                    value = _value
+                    this.value = provider(component, parameters)
+                    value = this.value
                 }
             }
         }
