@@ -459,34 +459,10 @@ class ComponentBuilder {
         val componentBinding = Binding(
             key = keyOf(),
             duplicateStrategy = DuplicateStrategy.Permit,
-            provider = ComponentProvider(null)
+            provider = BoundProvider(null) { this }
         )
 
         bindings[componentBinding.key] = componentBinding
-        scopes
-            .forEach {
-                bindings[keyOf<Component>(qualifier = ScopeQualifier(it))] = Binding(
-                    key = keyOf(),
-                    duplicateStrategy = DuplicateStrategy.Permit,
-                    provider = ComponentProvider(it)
-                )
-            }
-    }
-
-    private class ComponentProvider(
-        private val scope: Any?
-    ) : (Component, Parameters) -> Component, ComponentInitObserver {
-        private lateinit var component: Component
-        override fun onInit(component: Component) {
-            check(!this::component.isInitialized) {
-                "Already scoped to $component"
-            }
-
-            this.component = if (scope == null) component
-            else component.getComponentForScope(scope)
-        }
-
-        override fun invoke(p1: Component, p2: Parameters): Component = component
     }
 
     private fun includeMapBindings(
