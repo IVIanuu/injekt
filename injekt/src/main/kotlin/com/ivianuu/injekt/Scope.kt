@@ -41,3 +41,5 @@ package com.ivianuu.injekt
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
+
+data class ScopeQualifier(val scope: Any) : Qualifier.Element

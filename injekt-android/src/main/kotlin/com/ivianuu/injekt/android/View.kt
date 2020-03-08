@@ -23,23 +23,30 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : View> ViewComponent(
     instance: T,
     scope: Any = ViewScope,
-    name: Any = ForView,
+    qualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
-    ViewComponent(instance = instance, key = keyOf(), scope = scope, name = name, block = block)
+    ViewComponent(
+        instance = instance,
+        key = keyOf(),
+        scope = scope,
+        qualifier = qualifier,
+        block = block
+    )
 
 inline fun <T : View> ViewComponent(
     instance: T,
     key: Key<T>,
     scope: Any = ViewScope,
-    name: Any = ForView,
+    qualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
@@ -50,10 +57,10 @@ inline fun <T : View> ViewComponent(
             instance = instance,
             key = key,
             duplicateStrategy = DuplicateStrategy.Permit
-        ).bindAlias<View>().bindAlias<View>(name)
+        ).bindAlias<View>().bindAlias<View>(qualifier)
 
-        contextBindings(name) { instance.context!! }
-        componentAlias(scope)
+        contextBindings(qualifier) { instance.context!! }
+        componentAlias(qualifier)
 
         block()
     }
@@ -68,14 +75,14 @@ annotation class ChildViewScope {
     companion object
 }
 
-@Name
+@QualifierMarker
 annotation class ForView {
-    companion object
+    companion object : Qualifier.Element
 }
 
-@Name
+@QualifierMarker
 annotation class ForChildView {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun View.getClosestComponentOrNull(): Component? {

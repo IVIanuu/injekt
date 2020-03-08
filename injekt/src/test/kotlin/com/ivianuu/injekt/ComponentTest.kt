@@ -25,23 +25,37 @@ import org.junit.Test
 
 class ComponentTest {
 
-    private object Named
-
     @Test
     fun testGet() {
-        val typed = TestDep1()
-        val named = TestDep1()
+        val instance = TestDep1()
 
         val component = Component {
-            factory { typed }
-            factory(name = Named) { named }
+            instance(instance)
         }
 
-        val typedGet = component.get<TestDep1>()
-        assertEquals(typed, typedGet)
+        assertEquals(instance, component.get<TestDep1>())
+    }
 
-        val namedGet = component.get<TestDep1>(Named)
-        assertEquals(named, namedGet)
+    @Test
+    fun testGetQualified() {
+        val instance = TestDep1()
+
+        val component = Component {
+            instance(instance = instance, qualifier = TestQualifier1)
+        }
+
+        assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1))
+    }
+
+    @Test
+    fun testGetMultiQualified() {
+        val instance = TestDep1()
+
+        val component = Component {
+            instance(instance = instance, qualifier = TestQualifier1 + TestQualifier2)
+        }
+
+        assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1 + TestQualifier2))
     }
 
     @Test
@@ -282,12 +296,12 @@ class ComponentTest {
             dependencies(componentA)
         }
 
-        assertEquals(componentA, componentA.get<Component>())
-        assertEquals(componentA, componentA.get<Component>(TestScopeOne))
+        /*assertEquals(componentA, componentA.get<Component>())
+        assertEquals(componentA, componentA.get<Component>(qualifier = TestScopeOne))
 
         assertEquals(componentB, componentB.get<Component>())
-        assertEquals(componentB, componentB.get<Component>(TestScopeTwo))
-        assertEquals(componentA, componentB.get<Component>(TestScopeOne))
+        assertEquals(componentB, componentB.get<Component>(qualifier = TestScopeTwo))
+        assertEquals(componentA, componentB.get<Component>(qualifier = TestScopeOne))*/ // todo
     }
 
     @Test
@@ -376,6 +390,7 @@ class ComponentTest {
         }
         assertTrue(called)
     }
+
 }
 
 class Context(val component: Component) : Environment

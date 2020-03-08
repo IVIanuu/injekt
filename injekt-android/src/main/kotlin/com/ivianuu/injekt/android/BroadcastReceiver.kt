@@ -22,7 +22,8 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
@@ -49,7 +50,7 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
     instance(instance, key = key)
         .bindAlias<BroadcastReceiver>()
     contextBindings(ForReceiver) { context }
-    componentAlias(ReceiverScope)
+    componentAlias(ForReceiver)
 
     block()
 }
@@ -59,9 +60,9 @@ annotation class ReceiverScope {
     companion object
 }
 
-@Name
+@QualifierMarker
 annotation class ForReceiver {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =

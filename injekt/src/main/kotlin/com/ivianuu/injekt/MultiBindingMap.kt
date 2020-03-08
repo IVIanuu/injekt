@@ -69,10 +69,10 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key<
 
     inline fun <reified T : V> put(
         entryKey: K,
-        entryValueName: Any? = null,
+        entryValueQualifiers: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        put(entryKey, keyOf<T>(name = entryValueName), duplicateStrategy)
+        put(entryKey, keyOf<T>(qualifier = entryValueQualifiers), duplicateStrategy)
     }
 
     fun put(

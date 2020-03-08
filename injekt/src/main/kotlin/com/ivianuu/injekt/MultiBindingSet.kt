@@ -69,10 +69,10 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key<Set
     private val elements = mutableSetOf<KeyWithOverrideInfo>()
 
     inline fun <reified T : E> add(
-        elementName: Any? = null,
+        elementQualifiers: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        add(keyOf<T>(name = elementName), duplicateStrategy)
+        add(keyOf<T>(qualifier = elementQualifiers), duplicateStrategy)
     }
 
     fun add(elementKey: Key<*>, duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail) {

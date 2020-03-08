@@ -22,20 +22,21 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Fragment> FragmentComponent(
     instance: T,
     scope: Any = FragmentScope,
-    name: Any = ForFragment,
+    qualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = FragmentComponent(
     instance = instance,
     key = keyOf(),
     scope = scope,
-    name = name,
+    qualifier = qualifier,
     block = block
 )
 
@@ -43,7 +44,7 @@ inline fun <T : Fragment> FragmentComponent(
     instance: T,
     key: Key<T>,
     scope: Any = FragmentScope,
-    name: Any = ForFragment,
+    qualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
@@ -52,18 +53,18 @@ inline fun <T : Fragment> FragmentComponent(
 
         instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Permit)
             .bindAlias<Fragment>()
-            .bindAlias<Fragment>(name = name)
+            .bindAlias<Fragment>(qualifier = qualifier)
 
-        maybeLifecycleBindings(instance, name)
-        maybeViewModelStoreBindings(instance, name)
-        maybeSavedStateBindings(instance, name)
+        maybeLifecycleBindings(instance, qualifier)
+        maybeViewModelStoreBindings(instance, qualifier)
+        maybeSavedStateBindings(instance, qualifier)
 
-        contextBindings(name) { instance.requireContext() }
+        contextBindings(qualifier) { instance.requireContext() }
         factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.childFragmentManager }.bindAlias(
-            name = name
+            qualifier = qualifier
         )
 
-        componentAlias(scope)
+        componentAlias(qualifier)
 
         block()
     }
@@ -78,14 +79,14 @@ annotation class ChildFragmentScope {
     companion object
 }
 
-@Name
+@QualifierMarker
 annotation class ForFragment {
-    companion object
+    companion object : Qualifier.Element
 }
 
-@Name
+@QualifierMarker
 annotation class ForChildFragment {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun Fragment.getClosestComponentOrNull(): Component? {

@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  * The class will be created on each request
  *
  * @see Single
- * @see Name
+ * @see Qualifier
  * @see Scope
  * @see InjektConstructor
  * @see ComponentBuilder.factory

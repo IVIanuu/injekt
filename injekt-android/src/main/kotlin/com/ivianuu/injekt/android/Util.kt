@@ -25,70 +25,70 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Qualifier
 import kotlinx.coroutines.CoroutineScope
 
 @PublishedApi
 internal fun ComponentBuilder.maybeLifecycleBindings(
     instance: Any,
-    name: Any
+    qualifier: Qualifier
 ) {
     if (instance !is LifecycleOwner) return
-    instance<LifecycleOwner>(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
-        .bindAlias(name = name)
+    instance(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
+        .bindAlias(qualifier = qualifier)
     factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Permit) {
         instance.lifecycleScope
-    }.bindAlias(name = name)
+    }.bindAlias(qualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.lifecycle }
-        .bindAlias(name = name)
+        .bindAlias(qualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.maybeViewModelStoreBindings(
     instance: Any,
-    name: Any
+    qualifier: Qualifier
 ) {
     if (instance !is ViewModelStoreOwner) return
     instance<ViewModelStoreOwner>(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
-        .bindAlias(name = ForActivity)
+        .bindAlias(qualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.viewModelStore }
-        .bindAlias(name = name)
+        .bindAlias(qualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.maybeSavedStateBindings(
     instance: Any,
-    name: Any
+    qualifier: Qualifier
 ) {
     if (instance !is SavedStateRegistryOwner) return
-    instance<SavedStateRegistryOwner>(
+    instance(
         instance = instance,
         duplicateStrategy = DuplicateStrategy.Permit
-    )
-        .bindAlias(name = ForActivity)
+    ).bindAlias(qualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.savedStateRegistry }
-        .bindAlias(name = name)
+        .bindAlias(qualifier = qualifier)
 }
 
 @PublishedApi
-internal fun ComponentBuilder.componentAlias(scope: Any) {
-    withBinding<Component> { bindAlias(name = scope) }
+internal fun ComponentBuilder.componentAlias(qualifier: Qualifier) {
+    withBinding<Component> { bindAlias(qualifier = qualifier) }
 }
 
 @PublishedApi
 internal fun ComponentBuilder.contextBindings(
-    name: Any,
+    qualifier: Qualifier,
     definition: () -> Context
 ) {
     factory(duplicateStrategy = DuplicateStrategy.Permit) { definition() }
-        .bindAlias(name = name)
-    resourcesBindings(name) { definition().resources!! }
+        .bindAlias(qualifier = qualifier)
+    resourcesBindings(qualifier = qualifier) { definition().resources!! }
 }
 
 @PublishedApi
 internal fun ComponentBuilder.resourcesBindings(
-    name: Any,
+    qualifier: Qualifier,
     definition: () -> Resources
 ) {
     factory(duplicateStrategy = DuplicateStrategy.Permit) { definition() }
-        .bindAlias(name = name)
+        .bindAlias(qualifier = qualifier)
 }

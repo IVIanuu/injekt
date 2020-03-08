@@ -100,6 +100,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private val component = getClass(InjektClassNames.Component)
     private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
+    private val qualifier = getClass(InjektClassNames.Qualifier)
     private val singleProvider = getClass(InjektClassNames.SingleProvider)
 
     private fun getClass(fqName: FqName) =
@@ -277,25 +278,39 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                                             irGet(lambdaFn.valueParameters[0])
                                                         putTypeArgument(0, param.type.toIrType())
 
-                                                        val nameClass =
+                                                        val qualifiers =
                                                             param.getAnnotatedAnnotations(
-                                                                InjektClassNames.Name
+                                                                InjektClassNames.QualifierMarker
                                                             )
-                                                                .singleOrNull()
-                                                                ?.let { nameAnnotation ->
-                                                                    getClass(
-                                                                        nameAnnotation.fqName!!
-                                                                    )
-                                                                }
-                                                                ?.companionObjectDescriptor
-                                                        if (nameClass != null) {
+                                                                .map { getClass(it.fqName!!).companionObjectDescriptor!! }
+                                                        if (qualifiers.isNotEmpty()) {
                                                             putValueArgument(
                                                                 0,
-                                                                irGetObject(
-                                                                    symbolTable.referenceClass(
-                                                                        nameClass
-                                                                    )
-                                                                )
+                                                                qualifiers
+                                                                    .map {
+                                                                        irGetObject(
+                                                                            symbolTable.referenceClass(
+                                                                                it
+                                                                            )
+                                                                        ) as IrExpression
+                                                                    }
+                                                                    .reduceRight { currentQualifier, acc ->
+                                                                        irCall(
+                                                                            symbolTable.referenceSimpleFunction(
+                                                                                qualifier.unsubstitutedMemberScope
+                                                                                    .findSingleFunction(
+                                                                                        Name.identifier(
+                                                                                            "plus"
+                                                                                        )
+                                                                                    )
+                                                                            ),
+                                                                            qualifier.defaultType.toIrType()
+                                                                        ).apply {
+                                                                            dispatchReceiver =
+                                                                                currentQualifier
+                                                                            putValueArgument(0, acc)
+                                                                        }
+                                                                    }
                                                             )
                                                         }
                                                     }

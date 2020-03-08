@@ -21,7 +21,8 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
@@ -45,7 +46,7 @@ inline fun <T : Application> ApplicationComponent(
             ProcessLifecycleOwner.get(),
             ForApplication
         )
-        componentAlias(ApplicationScope)
+        componentAlias(ForApplication)
 
         block()
     }
@@ -55,7 +56,7 @@ annotation class ApplicationScope {
     companion object
 }
 
-@Name
+@QualifierMarker
 annotation class ForApplication {
-    companion object
+    companion object : Qualifier.Element
 }

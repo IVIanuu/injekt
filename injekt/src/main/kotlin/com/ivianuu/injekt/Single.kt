@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  * The class will be created once per [Component]
  *
  * @see Factory
- * @see Name
+ * @see Qualifier
  * @see Scope
  * @see InjektConstructor
  * @see ComponentBuilder.single

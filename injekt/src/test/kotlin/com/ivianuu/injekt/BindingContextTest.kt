@@ -25,11 +25,11 @@ class BindingContextTest {
     fun testBindAliasBoth() {
         val component = Component {
             single { TestDep1() }
-                .bindAlias<Any>(name = "name")
+                .bindAlias<Any>(qualifier = TestQualifier1)
         }
 
         val declared = component.get<TestDep1>()
-        val aliased = component.get<Any>(name = "name")
+        val aliased = component.get<Any>(qualifier = TestQualifier1)
         assertTrue(declared === aliased)
     }
 
@@ -49,11 +49,11 @@ class BindingContextTest {
     fun testBindAliasNameOnly() {
         val component = Component {
             single { TestDep1() }
-                .bindAlias("name")
+                .bindAlias(qualifier = TestQualifier1)
         }
 
         val declared = component.get<TestDep1>()
-        val aliased = component.get<TestDep1>(name = "name")
+        val aliased = component.get<TestDep1>(qualifier = TestQualifier1)
         assertTrue(declared === aliased)
     }
 }

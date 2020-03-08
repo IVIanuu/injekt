@@ -24,24 +24,27 @@ class SetTest {
     @Test
     fun testSetBinding() {
         val component = Component {
-            factory(name = NameOne) { "value_one" }.intoSet<CharSequence>(setName = Values)
-            factory(name = NameTwo) { "value_two" }.intoSet<CharSequence>(setName = Values)
-            factory(name = NameThree) { "value_three" }.intoSet<CharSequence>(setName = Values)
+            factory(qualifier = TestQualifier1) { "value_one" }
+                .intoSet<CharSequence>(setQualifier = Values)
+            factory(qualifier = TestQualifier2) { "value_two" }
+                .intoSet<CharSequence>(setQualifier = Values)
+            factory(qualifier = TestQualifier3) { "value_three" }
+                .intoSet<CharSequence>(setQualifier = Values)
         }
 
-        val set = component.get<Set<CharSequence>>(Values)
+        val set = component.get<Set<CharSequence>>(qualifier = Values)
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val providerSet = component.get<Set<Provider<CharSequence>>>(Values)
+        val providerSet = component.get<Set<Provider<CharSequence>>>(qualifier = Values)
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0]())
         assertEquals("value_two", providerSet.toList()[1]())
         assertEquals("value_three", providerSet.toList()[2]())
 
-        val lazySet = component.get<Set<Lazy<CharSequence>>>(Values)
+        val lazySet = component.get<Set<Lazy<CharSequence>>>(qualifier = Values)
         assertEquals(3, providerSet.size)
         assertEquals("value_one", lazySet.toList()[0]())
         assertEquals("value_two", lazySet.toList()[1]())
@@ -66,7 +69,7 @@ class SetTest {
     @Test
     fun testNestedMapBindings() {
         val componentA = Component {
-            factory(name = NameOne) { "value_one" }
+            factory(qualifier = TestQualifier1) { "value_one" }
                 .intoSet<String>()
         }
 
@@ -76,7 +79,7 @@ class SetTest {
 
         val componentB = Component {
             dependencies(componentA)
-            factory(name = NameTwo) { "value_two" }
+            factory(qualifier = TestQualifier2) { "value_two" }
                 .intoSet<String>()
         }
 
@@ -87,7 +90,7 @@ class SetTest {
 
         val componentC = Component {
             dependencies(componentB)
-            factory(name = NameThree) { "value_three" }
+            factory(qualifier = TestQualifier3) { "value_three" }
                 .intoSet<String>()
         }
 

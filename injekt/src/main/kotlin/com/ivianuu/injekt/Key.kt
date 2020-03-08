@@ -31,7 +31,7 @@ data class Key<T> internal constructor(
     val classifier: KClass<*>,
     val isNullable: Boolean,
     val arguments: Array<Key<*>>,
-    val name: Any?
+    val qualifier: Qualifier
 ) {
 
     private val hashCode = generateHashCode()
@@ -39,14 +39,6 @@ data class Key<T> internal constructor(
     override fun hashCode(): Int = hashCode
 
     override fun equals(other: Any?): Boolean = other is Key<*> && hashCode == other.hashCode
-
-    private fun generateHashCode(): Int {
-        var result = classifier.hashCode()
-        // todo result = 31 * result + isNullable.hashCode()
-        result = 31 * result + arguments.contentHashCode()
-        result = 31 * result + (name?.hashCode() ?: 0)
-        return result
-    }
 
     override fun toString(): String {
         val params = if (arguments.isNotEmpty()) {
@@ -59,17 +51,26 @@ data class Key<T> internal constructor(
             ""
         }
 
-        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params,name=$name)"
+        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params, qualifier=$qualifier)"
+    }
+
+    private fun generateHashCode(): Int {
+        var result = classifier.hashCode()
+        // todo result = 31 * result + isNullable.hashCode()
+        result = 31 * result + arguments.contentHashCode()
+        result = 31 * result + qualifier.hashCode()
+        return result
     }
 }
 
-inline fun <reified T> keyOf(name: Any? = null): Key<T> = typeOf<T>().asKey(name = name)
+inline fun <reified T> keyOf(qualifier: Qualifier = Qualifier.None): Key<T> =
+    typeOf<T>().asKey(qualifier = qualifier)
 
 fun <T> keyOf(
     classifier: KClass<*>,
     isNullable: Boolean = false,
     arguments: Array<Key<*>> = emptyArray(),
-    name: Any? = null
+    qualifier: Qualifier = Qualifier.None
 ): Key<T> {
     // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
     val finalClassifier = if (isNullable) boxed(classifier) else unboxed(classifier)
@@ -77,12 +78,12 @@ fun <T> keyOf(
         classifier = finalClassifier,
         isNullable = isNullable,
         arguments = arguments,
-        name = name
+        qualifier = qualifier
     )
 }
 
 @PublishedApi
-internal fun <T> KType.asKey(name: Any? = null): Key<T> {
+internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
     val args = arrayOfNulls<Key<Any?>>(arguments.size)
 
     arguments.forEachIndexed { index, kTypeProjection ->
@@ -93,7 +94,7 @@ internal fun <T> KType.asKey(name: Any? = null): Key<T> {
         classifier = (classifier ?: Any::class) as KClass<*>,
         arguments = args as Array<Key<*>>,
         isNullable = isMarkedNullable,
-        name = name
+        qualifier = qualifier
     )
 }
 

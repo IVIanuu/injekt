@@ -25,7 +25,7 @@ package com.ivianuu.injekt
  *```
  * factory { MyRepository() } // retrievable via component.get<MyRepository>()
  *     .bindAlias<IRepository>() // retrievable via component.get<IRepository>()
- *     .bindAlias(name = "my_name") // retrievable via component.get<MyRepository>(name = "my_name")
+ *     .bindAlias(qualifier = "my_name")) // retrievable via component.get<MyRepository>(qualifier = qualifier("my_name")
  *```
  *
  * @see ComponentBuilder
@@ -36,19 +36,22 @@ class BindingContext<T> internal constructor(
 ) {
 
     inline fun <reified S> bindAlias(
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
-        bindAlias(key = keyOf<S>(name = name), duplicateStrategy = duplicateStrategy)
+        bindAlias(key = keyOf<S>(qualifier = qualifier), duplicateStrategy = duplicateStrategy)
         return this
     }
 
-    @JvmName("bindName")
+    @JvmName("bindQualifiers")
     fun bindAlias(
-        name: Any? = null,
+        qualifier: Qualifier,
         duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
-        bindAlias(key = binding.key.copy(name = name), duplicateStrategy = duplicateStrategy)
+        bindAlias(
+            key = binding.key.copy(qualifier = qualifier),
+            duplicateStrategy = duplicateStrategy
+        )
         return this
     }
 
@@ -76,11 +79,11 @@ class BindingContext<T> internal constructor(
 
     inline fun <reified K, reified V> intoMap(
         entryKey: K,
-        mapName: Any? = null,
+        mapQualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> = intoMap(
         entryKey = entryKey,
-        mapKey = keyOf<Map<K, V>>(name = mapName),
+        mapKey = keyOf<Map<K, V>>(qualifier = mapQualifier),
         duplicateStrategy = duplicateStrategy
     )
 
@@ -106,10 +109,10 @@ class BindingContext<T> internal constructor(
     }
 
     inline fun <reified E> intoSet(
-        setName: Any? = null,
+        setQualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = intoSet(
-        setKey = keyOf<Set<E>>(name = setName),
+        setKey = keyOf<Set<E>>(qualifier = setQualifier),
         duplicateStrategy = duplicateStrategy
     )
 

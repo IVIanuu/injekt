@@ -52,9 +52,9 @@ class Component internal constructor(
     }
 
     inline fun <reified T> get(
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         parameters: Parameters = emptyParameters()
-    ): T = get(key = keyOf(name = name), parameters = parameters)
+    ): T = get(key = keyOf(qualifier = qualifier), parameters = parameters)
 
     /**
      * Retrieve a instance of type [T] for [key]
@@ -121,7 +121,7 @@ class Component internal constructor(
             when (key.classifier) {
                 Provider::class -> {
                     val instanceKey = key.arguments.single()
-                        .copy(name = key.name)
+                        .copy(qualifier = key.qualifier)
                     return Binding(
                         key = key,
                         provider = { KeyedProvider(this, instanceKey) as T }
@@ -129,7 +129,7 @@ class Component internal constructor(
                 }
                 Lazy::class -> {
                     val instanceKey = key.arguments.single()
-                        .copy(name = key.name)
+                        .copy(qualifier = key.qualifier)
                     return Binding(
                         key = key,
                         provider = { KeyedLazy(this, instanceKey) as T }
@@ -142,7 +142,7 @@ class Component internal constructor(
     }
 
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
-        if (key.name != null) return null
+        if (key.qualifier != Qualifier.None) return null
 
         val binding = InjektPlugins.justInTimeBindingFactory.findBinding(key)
             ?: return null

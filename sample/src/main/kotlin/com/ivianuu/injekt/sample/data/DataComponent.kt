@@ -18,20 +18,21 @@ package com.ivianuu.injekt.sample.data
 
 import android.content.Context
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import java.io.File
 
-@Name
+@QualifierMarker
 annotation class WebApiUrl {
-    companion object
+    companion object : Qualifier.Element
 }
 
-@Name
+@QualifierMarker
 annotation class DatabaseFile {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun DataComponent() = Component {
-    single(name = WebApiUrl) { "https://baseurl/" }
-    single(name = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
+    single(qualifier = WebApiUrl) { "https://baseurl/" }
+    single(qualifier = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
 }

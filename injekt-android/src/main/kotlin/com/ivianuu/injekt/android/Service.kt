@@ -21,7 +21,8 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
@@ -42,7 +43,7 @@ inline fun <T : Service> ServiceComponent(
         instance(instance, key = key)
             .bindAlias<Service>()
         contextBindings(ForService) { instance }
-        componentAlias(ServiceScope)
+        componentAlias(ForService)
 
         block()
     }
@@ -52,9 +53,9 @@ annotation class ServiceScope {
     companion object
 }
 
-@Name
+@QualifierMarker
 annotation class ForService {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun Service.getClosestComponentOrNull(): Component? =

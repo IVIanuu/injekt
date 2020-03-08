@@ -27,7 +27,7 @@ object CodegenJustInTimeBindingFactory : JustInTimeBindingFactory {
     private val bindingFactories = mutableMapOf<Key<*>, BindingFactory<*>>()
 
     override fun <T> findBinding(key: Key<T>): Binding<T>? {
-        if (key.name != null) return null
+        if (key.qualifier != Qualifier.None) return null
 
         var bindingFactory = synchronized(bindingFactories) { bindingFactories[key] }
 

@@ -21,12 +21,16 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 class InjektStorageComponentContainerContributorExtension : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -55,14 +59,31 @@ class InjektDeclarationChecker : DeclarationChecker {
         }
 
         if (descriptor is ClassDescriptor &&
-            (descriptor.annotations.hasAnnotation(InjektClassNames.Name) ||
-                    descriptor.annotations.hasAnnotation(InjektClassNames.Scope)) &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.Scope) &&
             descriptor.companionObjectDescriptor == null
         ) {
             report(
                 descriptor,
                 context.trace
             ) { NeedsACompanionObject }
+        }
+
+        if (descriptor is ClassDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker) &&
+            (descriptor.companionObjectDescriptor == null ||
+                    !descriptor.companionObjectDescriptor!!.defaultType.isSubtypeOf(
+                        descriptor.module.findClassAcrossModuleDependencies(
+                            ClassId.topLevel(
+                                InjektClassNames.Qualifier
+                            )
+                        )!!
+                            .defaultType
+                    ))
+        ) {
+            report(
+                descriptor,
+                context.trace
+            ) { NeedsAQualifierCompanionObject }
         }
 
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Single) &&
@@ -81,15 +102,8 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { OnlyOneScope }
         }
 
-        if (descriptor.getAnnotatedAnnotations(InjektClassNames.Name).size > 1) {
-            report(
-                descriptor,
-                context.trace
-            ) { OnlyOneName }
-        }
-
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Param) &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.Name)
+            descriptor.annotations.hasAnnotation(InjektClassNames.Qualifier)
         ) {
             report(
                 descriptor,

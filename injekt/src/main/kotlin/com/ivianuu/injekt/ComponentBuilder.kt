@@ -64,12 +64,12 @@ class ComponentBuilder {
     }
 
     inline fun <reified T> factory(
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         bound: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = factory(
-        key = keyOf(name = name),
+        key = keyOf(qualifier = qualifier),
         duplicateStrategy = duplicateStrategy,
         bound = bound,
         provider = provider
@@ -113,12 +113,12 @@ class ComponentBuilder {
     )
 
     inline fun <reified T> single(
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         eager: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = single(
-        key = keyOf(name = name),
+        key = keyOf(qualifier = qualifier),
         duplicateStrategy = duplicateStrategy,
         eager = eager,
         provider = provider
@@ -161,12 +161,12 @@ class ComponentBuilder {
     )
 
     inline fun <reified S, reified T> alias(
-        originalName: Any? = null,
-        aliasName: Any? = null,
+        originalQualifiers: Qualifier = Qualifier.None,
+        aliasQualifiers: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = alias<S, T>(
-        originalKey = keyOf(name = originalName),
-        aliasKey = keyOf(name = aliasName),
+        originalKey = keyOf(qualifier = originalQualifiers),
+        aliasKey = keyOf(qualifier = aliasQualifiers),
         duplicateStrategy = duplicateStrategy
     )
 
@@ -197,11 +197,11 @@ class ComponentBuilder {
 
     inline fun <reified T> instance(
         instance: T,
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = instance(
         instance = instance,
-        key = keyOf(name = name),
+        key = keyOf(qualifier = qualifier),
         duplicateStrategy = duplicateStrategy
     )
 
@@ -223,10 +223,10 @@ class ComponentBuilder {
     )
 
     inline fun <reified T> withBinding(
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         noinline block: BindingContext<T>.() -> Unit
     ) {
-        withBinding(key = keyOf(name = name), block = block)
+        withBinding(key = keyOf(qualifier = qualifier), block = block)
     }
 
     /**
@@ -252,13 +252,15 @@ class ComponentBuilder {
         // we create a proxy binding which links to the original binding
         // because we have no reference to the original one it's likely in another [Module] or [Component]
         // we use a unique id here to make sure that the binding does not collide with any user config
-        factory(key = key.copy(name = UUID.randomUUID().toString())) { parameters ->
+        factory(key = key.copy(qualifier = UUIDQualifier())) { parameters ->
             get(key, parameters = parameters)
         }.block()
     }
 
+    private data class UUIDQualifier(private val uuid: UUID = UUID.randomUUID()) : Qualifier.Element
+
     inline fun <reified K, reified V> map(
-        mapName: Any? = null,
+        mapQualifiers: Qualifier = Qualifier.None,
         noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
     ) {
         map(
@@ -268,7 +270,7 @@ class ComponentBuilder {
                     keyOf<K>(),
                     keyOf<V>()
                 ),
-            name = mapName
+                qualifier = mapQualifiers
             ), block = block
         )
     }
@@ -290,14 +292,14 @@ class ComponentBuilder {
     }
 
     inline fun <reified E> set(
-        setName: Any? = null,
+        setQualifiers: Qualifier = Qualifier.None,
         noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
     ) {
         set(
             setKey = keyOf(
                 classifier = Set::class,
                 arguments = arrayOf(keyOf<E>()),
-                name = setName
+                qualifier = setQualifiers
             ),
             block = block
         )
@@ -463,7 +465,7 @@ class ComponentBuilder {
         bindings[componentBinding.key] = componentBinding
         scopes
             .forEach {
-                bindings[keyOf<Component>(it)] = Binding(
+                bindings[keyOf<Component>(qualifier = ScopeQualifier(it))] = Binding(
                     key = keyOf(),
                     duplicateStrategy = DuplicateStrategy.Permit,
                     provider = ComponentProvider(it)
@@ -516,7 +518,7 @@ class ComponentBuilder {
                     arguments = arrayOf(mapValueKey)
                 )
             ),
-            name = mapKey.name
+            qualifier = mapKey.qualifier
         )
         bindings[mapOfProviderKey] = Binding(
             key = mapOfProviderKey,
@@ -536,7 +538,7 @@ class ComponentBuilder {
                     arguments = arrayOf(mapValueKey)
                 )
             ),
-            name = mapKey.name
+            qualifier = mapKey.qualifier
         )
         bindings[mapOfLazyKey] = Binding(
             key = mapOfLazyKey,
@@ -574,7 +576,7 @@ class ComponentBuilder {
                     arguments = arrayOf(setElementKey)
                 )
             ),
-            name = setKey.name
+            qualifier = setKey.qualifier
         )
         bindings[setOfProviderKey] = Binding(
             key = setOfProviderKey,
@@ -595,7 +597,7 @@ class ComponentBuilder {
                     arguments = arrayOf(setElementKey)
                 )
             ),
-            name = setKey.name
+            qualifier = setKey.qualifier
         )
         bindings[setOfLazyKey] = Binding(
             key = setOfLazyKey,

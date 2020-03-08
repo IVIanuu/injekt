@@ -44,9 +44,9 @@ interface InjektTrait {
  * @see Component.get
  */
 inline fun <reified T> InjektTrait.get(
-    name: Any? = null,
+    qualifier: Qualifier = Qualifier.None,
     parameters: Parameters = emptyParameters()
-): T = component.get(keyOf(name = name), parameters)
+): T = component.get(keyOf(qualifier = qualifier), parameters)
 
 /**
  * Lazy version of [get]
@@ -54,7 +54,7 @@ inline fun <reified T> InjektTrait.get(
  * @see Component.get
  */
 inline fun <reified T> InjektTrait.getLazy(
-    name: Any? = null,
+    qualifier: Qualifier = Qualifier.None,
     noinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> =
-    lazy(LazyThreadSafetyMode.NONE) { component.get(keyOf(name = name), parameters()) }
+    lazy(LazyThreadSafetyMode.NONE) { component.get(keyOf(qualifier = qualifier), parameters()) }

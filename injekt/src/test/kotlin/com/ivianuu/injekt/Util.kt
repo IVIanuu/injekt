@@ -16,11 +16,25 @@
 
 package com.ivianuu.injekt
 
-object NameOne
-object NameTwo
-object NameThree
+@QualifierMarker
+annotation class TestQualifier1 {
+    companion object : Qualifier.Element
+}
 
-object Values
+@QualifierMarker
+annotation class TestQualifier2 {
+    companion object : Qualifier.Element
+}
+
+@QualifierMarker
+annotation class TestQualifier3 {
+    companion object : Qualifier.Element
+}
+
+@QualifierMarker
+annotation class Values {
+    companion object : Qualifier.Element
+}
 
 @Scope
 annotation class TestScopeOne {

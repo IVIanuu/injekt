@@ -25,7 +25,8 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
@@ -52,14 +53,14 @@ inline fun <T : Activity> ActivityComponent(
 
     (instance as? FragmentActivity)?.let {
         factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.supportFragmentManager }
-            .bindAlias(name = ForActivity)
+            .bindAlias(qualifier = ForActivity)
     }
 
     contextBindings(ForActivity) { instance }
     maybeLifecycleBindings(instance, ForActivity)
     maybeViewModelStoreBindings(instance, ForActivity)
     maybeSavedStateBindings(instance, ForActivity)
-    componentAlias(ActivityScope)
+    componentAlias(ForActivity)
 
     block()
 }
@@ -69,9 +70,9 @@ annotation class ActivityScope {
     companion object
 }
 
-@Name
+@QualifierMarker
 annotation class ForActivity {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun Activity.getClosestComponentOrNull(): Component? =
