@@ -38,17 +38,17 @@ annotation class Values {
 
 @ScopeMarker
 annotation class TestScopeOne {
-    companion object
+    companion object : Scope
 }
 
 @ScopeMarker
 annotation class TestScopeTwo {
-    companion object
+    companion object : Scope
 }
 
 @ScopeMarker
 annotation class TestScopeThree {
-    companion object
+    companion object : Scope
 }
 
 @Factory
