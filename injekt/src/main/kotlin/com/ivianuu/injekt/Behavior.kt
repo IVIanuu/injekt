@@ -16,6 +16,13 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Behavior applies scoping or such to [BindingProvider]s
+ *
+ * @see BoundBehavior
+ * @see EagerBehavior
+ * @see SingleBehavior
+ */
 interface Behavior {
 
     fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
