@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import java.util.UUID
-
 /**
  * Create a [Component] configured by [block]
  *
@@ -62,43 +60,6 @@ class ComponentBuilder {
             this.dependencies += dependency
         }
     }
-
-    inline fun <reified T> withBinding(
-        qualifier: Qualifier = Qualifier.None,
-        noinline block: BindingContext<T>.() -> Unit
-    ) {
-        withBinding(key = keyOf(qualifier = qualifier), block = block)
-    }
-
-    /**
-     * Runs the [block] in the [BindingContext] of the [Binding] for [key]
-     * This allows to add aliases to bindings which are declared somewhere else
-     *
-     * For example to add a alias for a annotated class one can write the following:
-     *
-     * ´@Factory class MyRepository : Repository`
-     *
-     * ´´´
-     * withBinding(key = keyOf<MyRepository>()) {
-     *     bindAlias<Repository>()
-     * }
-     *
-     * ´´´
-     *
-     */
-    fun <T> withBinding(
-        key: Key<T>,
-        block: BindingContext<T>.() -> Unit
-    ) {
-        // we create a proxy binding which links to the original binding
-        // because we have no reference to the original one it's likely in another [Module] or [Component]
-        // we use a unique id here to make sure that the binding does not collide with any user config
-        factory(key = key.copy(qualifier = UUIDQualifier())) { parameters ->
-            get(key, parameters = parameters)
-        }.block()
-    }
-
-    private data class UUIDQualifier(private val uuid: UUID = UUID.randomUUID()) : Qualifier.Element
 
     inline fun <reified K, reified V> map(
         mapQualifiers: Qualifier = Qualifier.None,
@@ -160,6 +121,34 @@ class ComponentBuilder {
         } as MultiBindingSetBuilder<E>
 
         builder.apply(block)
+    }
+
+    inline fun <reified T> bind(
+        qualifier: Qualifier = Qualifier.None,
+        behavior: Behavior = Behavior.None,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        noinline provider: BindingProvider<T>
+    ): BindingContext<T> = bind(
+        key = keyOf(qualifier = qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+
+    fun <T> bind(
+        key: Key<T>,
+        behavior: Behavior = Behavior.None,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        provider: BindingProvider<T>
+    ): BindingContext<T> {
+        return bind(
+            Binding(
+                key = key,
+                behavior = behavior,
+                duplicateStrategy = duplicateStrategy,
+                provider = provider
+            )
+        )
     }
 
     /**

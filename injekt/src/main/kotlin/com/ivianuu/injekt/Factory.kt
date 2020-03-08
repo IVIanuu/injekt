@@ -16,20 +16,8 @@
 
 package com.ivianuu.injekt
 
-inline fun <reified T> ComponentBuilder.factory(
-    qualifier: Qualifier = Qualifier.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    bound: Boolean = false,
-    noinline provider: BindingProvider<T>
-): BindingContext<T> = factory(
-    key = keyOf(qualifier = qualifier),
-    duplicateStrategy = duplicateStrategy,
-    bound = bound,
-    provider = provider
-)
-
 /**
- * Adds a binding for [key] which will be instantiated on each request
+ * Creates instances on each request
  *
  * We get different logger instances in the following example
  *
@@ -40,44 +28,43 @@ inline fun <reified T> ComponentBuilder.factory(
  *
  * val logger1 = component.get<Logger>()
  * val logger2 = component.get<Logger>()
- * assertEquals(logger1, logger2) // false
-
- *
+ * assertSame(logger1, logger2) // false
  * ´´´
- *
- * @param key the key to retrieve the instance
- * @param duplicateStrategy the strategy for handling overrides
- * @param bound whether instances should be created in the scope of the component
- * @param provider the definitions which creates instances
- *
- * @see ComponentBuilder.bind
+ */
+object FactoryBehavior : Behavior.Element
+
+inline fun <reified T> ComponentBuilder.factory(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+): BindingContext<T> = factory(
+    key = keyOf(qualifier = qualifier),
+    behavior = behavior,
+    duplicateStrategy = duplicateStrategy,
+    provider = provider
+)
+
+/**
+ * Dsl builder for the [FactoryBehavior]
  */
 fun <T> ComponentBuilder.factory(
     key: Key<T>,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    bound: Boolean = false,
     provider: BindingProvider<T>
 ): BindingContext<T> = bind(
     Binding(
         key = key,
-        behavior = if (bound) BoundBehavior() else Behavior.None,
+        behavior = behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
 )
 
 /**
- * Makes the annotated class injectable and generates a factory binding for it
- * The class will be created on each request
- *
- * @see Single
- * @see Qualifier
- * @see ScopeMarker
- * @see InjektConstructor
- * @see ComponentBuilder.factory
+ * Annotation for the [FactoryBehavior]
  */
 @BehaviorMarker(FactoryBehavior::class)
 @Target(AnnotationTarget.CLASS)
 annotation class Factory
-
-object FactoryBehavior : Behavior.Element

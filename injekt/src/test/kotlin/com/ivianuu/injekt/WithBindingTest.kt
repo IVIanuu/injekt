@@ -19,13 +19,13 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class AliasTest {
+class WithBindingTest {
 
     @Test
-    fun testAlias() {
+    fun testWithBinding() {
         val component = Component {
             single { TestDep1() }
-            alias<TestDep1, Any>()
+            withBinding<TestDep1> { bindAlias<Any>() }
         }
 
         val declared = component.get<TestDep1>()

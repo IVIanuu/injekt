@@ -18,10 +18,22 @@ package com.ivianuu.injekt
 
 import java.util.concurrent.ConcurrentHashMap
 
-@BehaviorMarker(MultiBehavior::class)
-@Target(AnnotationTarget.CLASS)
-annotation class Multi
-
+/**
+ * Returns the same instance for the given parameters
+ *
+ * ´´´
+ * val component = Component {
+ *     multi { (url: String) -> Api(url = url) }
+ * }
+ *
+ * val googleApi1 = component.get<Api>(parameters = parametersOf("www.google.com"))
+ * val googleApi2 = component.get<Api>(parameters = parametersOf("www.google.com"))
+ * val yahooApi = component.get<Api>(parameters = parametersOf("www.yahoo.com"))
+ * assertSame(googleApi1, googleApi2) // true
+ * assertSame(googleApi1, yahooApi) // false
+ * ´´´
+ *
+ */
 object MultiBehavior : Behavior.Element {
     override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
         MultiProvider(provider)
@@ -37,6 +49,9 @@ inline fun <reified T> ComponentBuilder.multi(
     provider = provider
 )
 
+/**
+ * Dsl builder for the [MultiBehavior]
+ */
 fun <T> ComponentBuilder.multi(
     key: Key<T>,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
@@ -49,6 +64,13 @@ fun <T> ComponentBuilder.multi(
         provider = provider
     )
 )
+
+/**
+ * Annotation for the [MultiBehavior]
+ */
+@BehaviorMarker(MultiBehavior::class)
+@Target(AnnotationTarget.CLASS)
+annotation class Multi
 
 private class MultiProvider<T>(
     private val provider: BindingProvider<T>

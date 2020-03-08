@@ -17,8 +17,17 @@
 package com.ivianuu.injekt
 
 /**
- * Creates a instance once the [Component] is initialized
- * [provider]s typically caches the result of their [invoke] function
+ * Creates a instance once the component is initialized
+ *
+ *
+ * Analytics will be initialized directly without to explicitly requesting it
+ *
+ * ´´´
+ * val component = Component {
+ *     single(behavior = EagerBehavior) { Analytics() }
+ * }
+ * ´´´
+ *
  */
 object EagerBehavior : Behavior.Element {
     override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =

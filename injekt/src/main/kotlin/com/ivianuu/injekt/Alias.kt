@@ -46,7 +46,7 @@ fun <S, T> ComponentBuilder.alias(
     originalKey: Key<S>,
     aliasKey: Key<T>,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-): BindingContext<T> = factory(
+): BindingContext<T> = bind(
     key = aliasKey,
     duplicateStrategy = duplicateStrategy
 ) { parameters -> get(originalKey, parameters = parameters) as T }
