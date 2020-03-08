@@ -27,9 +27,9 @@ package com.ivianuu.injekt
  * The following is a typical usage of multi binding maps:
  *
  * ´´´
- * val creditcardModule = Module {
+ * val creditCardModule = Module {
  *     map<String, PaymentHandler> {
- *         put("creditcard", keyOf<CreditcardPaymentHandler>())
+ *         put("creditCard", keyOf<CreditcardPaymentHandler>())
  *     }
  * }
  *
@@ -40,7 +40,7 @@ package com.ivianuu.injekt
  * }
  *
  * val component = Component {
- *     modules(creditcardModule, paypalModule)
+ *     modules(creditCardModule, paypalModule)
  * }
  *
  * // will include both CreditcardPaymentHandler and PaypalPaymentHandler
