@@ -49,15 +49,6 @@ class InjektDeclarationChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.Single)
-        ) {
-            report(
-                descriptor,
-                context.trace
-            ) { EitherFactoryOrSingle }
-        }
-
         if (descriptor is ClassDescriptor &&
             descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
             descriptor.companionObjectDescriptor == null
@@ -86,15 +77,6 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { NeedsAQualifierCompanionObject }
         }
 
-        if (descriptor.annotations.hasAnnotation(InjektClassNames.Single) &&
-            descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).isEmpty()
-        ) {
-            report(
-                descriptor,
-                context.trace
-            ) { SingleNeedsScope }
-        }
-
         if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).size > 1) {
             report(
                 descriptor,
@@ -112,9 +94,7 @@ class InjektDeclarationChecker : DeclarationChecker {
         }
 
         if (descriptor is ClassDescriptor && descriptor.constructors.filter {
-                it.annotations.hasAnnotation(
-                    InjektClassNames.InjektConstructor
-                )
+                it.annotations.hasAnnotation(InjektClassNames.InjektConstructor)
             }.size > 1) {
             report(
                 descriptor,
@@ -122,8 +102,8 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { OnlyOneInjektConstructor }
         }
 
-        if (descriptor is ClassDescriptor && (descriptor.annotations.hasAnnotation(InjektClassNames.Factory) ||
-                    descriptor.annotations.hasAnnotation(InjektClassNames.Single)) &&
+        if (descriptor is ClassDescriptor &&
+            descriptor.getAnnotatedAnnotations(InjektClassNames.BehaviorMarker).isNotEmpty() &&
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
         ) {

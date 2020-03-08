@@ -82,11 +82,15 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.DescriptorFactory
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVisitorVoid {
 
@@ -102,7 +106,6 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val qualifier = getClass(InjektClassNames.Qualifier)
-    private val singleBehavior = getClass(InjektClassNames.SingleBehavior)
 
     private fun getClass(fqName: FqName) =
         context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
@@ -113,9 +116,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
     override fun visitClass(declaration: IrClass) {
         val descriptor = declaration.descriptor
 
-        if (!descriptor.annotations.hasAnnotation(InjektClassNames.Factory) &&
-            !descriptor.annotations.hasAnnotation(InjektClassNames.Single)
-        ) return
+        if (descriptor.getAnnotatedAnnotations(InjektClassNames.BehaviorMarker).isEmpty()) return
 
         declaration.addMember(bindingFactory(declaration))
 
@@ -229,11 +230,22 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                                 }
                             )
 
-                            val behaviors = mutableListOf<IrExpression>()
-
-                            if (descriptor.annotations.hasAnnotation(InjektClassNames.Single)) {
-                                behaviors += irGetObject(symbolTable.referenceClass(singleBehavior))
-                            }
+                            val behaviors =
+                                descriptor.getAnnotatedAnnotations(InjektClassNames.BehaviorMarker)
+                                    .map {
+                                        val behaviorMarkerAnnotation = it.annotationClass!!
+                                            .annotations.findAnnotation(InjektClassNames.BehaviorMarker)!!
+                                        irGetObject(
+                                            symbolTable.referenceClass(
+                                                behaviorMarkerAnnotation.argumentValue("type")!!
+                                                    .cast<KClassValue>()
+                                                    .getArgumentType(this@InjektBindingGenerator.context.moduleDescriptor)
+                                                    .constructor
+                                                    .declarationDescriptor as ClassDescriptor
+                                            )
+                                        ) as IrExpression
+                                    }
+                                    .toMutableList()
 
                             val scopeAnnotation =
                                 descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)

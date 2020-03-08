@@ -36,14 +36,13 @@ fun report(
     }
 }
 
-val EitherFactoryOrSingle = error()
-val OnlyOneScope = error()
+val BehaviorMarkerBehaviorMustBeObject = error()
 val NeedsAQualifierCompanionObject = error()
 val NeedsAScopeCompanionObject = error()
 val ParamCannotBeNamed = error()
 val OnlyOneInjektConstructor = error()
+val OnlyOneScope = error()
 val NeedsPrimaryConstructorOrAnnotation = error()
-val SingleNeedsScope = error()
 
 private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -53,8 +52,8 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
 
     init {
         map.put(
-            EitherFactoryOrSingle,
-            "Can only have one of @Factory or @Single"
+            BehaviorMarkerBehaviorMustBeObject,
+            "Behavior must be an object"
         )
         map.put(
             OnlyOneScope,
@@ -79,10 +78,6 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             NeedsPrimaryConstructorOrAnnotation,
             "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
-        )
-        map.put(
-            SingleNeedsScope,
-            "@Single annotated classes needs a scope"
         )
     }
 }
