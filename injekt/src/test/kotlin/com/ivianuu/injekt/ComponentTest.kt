@@ -305,48 +305,6 @@ class ComponentTest {
     }
 
     @Test
-    fun testReusesSingleBindings() {
-        val componentA = Component {
-            single { TestDep1() }
-        }
-
-        val componentB = Component { dependencies(componentA) }
-        val componentC = Component { dependencies(componentB) }
-
-        val depA = componentA.get<TestDep1>()
-        val depA2 = componentA.get<TestDep1>()
-        val depB = componentB.get<TestDep1>()
-        val depC = componentC.get<TestDep1>()
-
-        assertEquals(depA, depA2)
-        assertEquals(depA, depB)
-        assertEquals(depA, depC)
-    }
-
-    @Test
-    fun testReusesSingleJustInTimeBindings() {
-        val componentA = Component { scopes(TestScopeOne) }
-
-        val componentB = Component {
-            scopes(TestScopeTwo)
-            dependencies(componentA)
-        }
-        val componentC = Component {
-            scopes(TestScopeThree)
-            dependencies(componentB)
-        }
-
-        val depA = componentA.get<SingleJustInTimeDep>()
-        val depA2 = componentA.get<SingleJustInTimeDep>()
-        val depB = componentB.get<SingleJustInTimeDep>()
-        val depC = componentC.get<SingleJustInTimeDep>()
-
-        assertEquals(depA, depA2)
-        assertEquals(depA, depB)
-        assertEquals(depA, depC)
-    }
-
-    @Test
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = Component {
             factory(bound = false) { Context(get()) }
@@ -376,19 +334,6 @@ class ComponentTest {
         assertEquals(componentA, environmentA.component)
         assertEquals(componentB, environmentB.component)
         assertEquals(componentC, environmentC.component)
-    }
-
-    @Test
-    fun testInstantiatesEagerBindingOnStart() {
-        var called = false
-        Component {
-            single(eager = false) { called = true }
-        }
-        assertFalse(called)
-        Component {
-            single(eager = true) { called = true }
-        }
-        assertTrue(called)
     }
 
 }
