@@ -19,10 +19,7 @@ package com.ivianuu.injekt
 import java.util.UUID
 
 /**
- * Construct a [Component] with a lambda
- *
- * @param block the block to configure the Component
- * @return the constructed [Component]
+ * Create a [Component] configured by [block]
  *
  * @see Component
  */
@@ -43,9 +40,10 @@ class ComponentBuilder {
     private val multiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
 
     /**
-     * Scope the component
+     * Adds the [scopes] this allows generated [Binding]s
+     * to be associated with components.
      *
-     * @param scopes the scopes to include
+     * @see Scope
      */
     fun scopes(vararg scopes: Any) {
         scopes.forEach { scope ->
@@ -55,11 +53,8 @@ class ComponentBuilder {
     }
 
     /**
-     * Add component dependencies
-     *
-     * This all make all bindings of the dependencies accessible in this component
-     *
-     * @param dependencies the dependencies to add
+     * Adds the [dependencies] to the component if this component cannot resolve a instance
+     * it will ask it's dependencies
      */
     fun dependencies(vararg dependencies: Component) {
         dependencies.forEach { dependency ->
@@ -81,7 +76,21 @@ class ComponentBuilder {
     )
 
     /**
-     * Contributes a binding which will be instantiated on each request
+     * Adds a binding for [key] which will be instantiated on each request
+     *
+     * We get different logger instances in the following example
+     *
+     * ´´´
+     * val component = Component {
+     *     factory { Logger(get()) }
+     * }
+     *
+     * val logger1 = component.get<Logger>()
+     * val logger2 = component.get<Logger>()
+     * assertEquals(logger1, logger2) // false
+
+     *
+     * ´´´
      *
      * @param key the key to retrieve the instance
      * @param duplicateStrategy the strategy for handling overrides
@@ -116,8 +125,20 @@ class ComponentBuilder {
     )
 
     /**
-     * Contributes a binding which will be reused throughout the lifetime of the [Component] it life's in
+     * Adds a binding for [key] which will be cached after the first request
      *
+     * We get the same instance in the following example
+     *
+     * ´´´
+     * val component = Component {
+     *     single { Database(get()) }
+     * }
+     *
+     * val db1 = component.get<Database>()
+     * val db2 = component.get<Database>()
+     * assertEquals(db1, db2) // true
+     *
+     * ´´´
      * @param key the key to retrieve the instance
      * @param duplicateStrategy the strategy for handling overrides
      * @param eager whether the instance should be created when the [Component] get's created
@@ -152,15 +173,17 @@ class ComponentBuilder {
     /**
      * Makes the [Binding] for [originalKey] retrievable via [aliasKey]
      *
-     * For example the following code binds RepositoryImpl to Repository
+     * For example the following code points the Repository request to RepositoryImpl
      *
      * ´´´
-     * factory { RepositoryImpl() }
-     * alias<RepositoryImpl, Repository>()
-     * ´´´
+     * val component = Component {
+     *     factory { RepositoryImpl() }
+     *     alias<RepositoryImpl, Repository>()
+     * }
      *
-     * @param originalKey the key of the original binding
-     * @param duplicateStrategy how overrides should be handled
+     * val repository = component.get<Repository>()
+     *
+     * ´´´
      *
      */
     fun <S, T> alias(
@@ -183,11 +206,7 @@ class ComponentBuilder {
     )
 
     /**
-     * Adds a binding for a already existing instance
-     *
-     * @param instance the instance to contribute
-     * @param key the key to retrieve the instance
-     * @return the [BindingContext] to chain binding calls
+     * Adds the [instance] as a binding for [key]
      *
      * @see add
      */
@@ -211,7 +230,7 @@ class ComponentBuilder {
     }
 
     /**
-     * Invokes a lambda in the binding context of a other binding
+     * Runs the [block] in the [BindingContext] of the [Binding] for [key]
      * This allows to add aliases to bindings which are declared somewhere else
      *
      * For example to add a alias for a annotated class one can write the following:
@@ -225,8 +244,6 @@ class ComponentBuilder {
      *
      * ´´´
      *
-     * @param key the type of the binding
-     * @param block the lambda to call in the context of the other binding
      */
     fun <T> withBinding(
         key: Key<T>,
@@ -257,10 +274,7 @@ class ComponentBuilder {
     }
 
     /**
-     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
-     *
-     * @param mapKey the key of the map
-     * @param block the lambda to run in the context of the binding map
+     * Runs the [block] in the scope of the [MultiBindingMapBuilder] for [mapKey]
      *
      * @see MultiBindingMap
      */
@@ -290,10 +304,7 @@ class ComponentBuilder {
     }
 
     /**
-     * Runs a lambda in the scope of a [MultiBindingSetBuilder]
-     *
-     * @param setKey the key of the set
-     * @param block the lambda to run in the context of the binding set
+     * Runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
      *
      * @see MultiBindingSet
      */
@@ -309,15 +320,12 @@ class ComponentBuilder {
     }
 
     /**
-     * Contributes the binding
+     * Adds the [binding]
      * This function is rarely used directly instead use [factory] or [single]
      *
-     * @param binding the binding to add
-     *
-     * @see Component.get
-     * @see BindingContext
      * @see factory
      * @see single
+     * @see BindingContext
      */
     fun <T> add(binding: Binding<T>): BindingContext<T> {
         if (binding.duplicateStrategy.check(

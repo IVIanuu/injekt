@@ -24,7 +24,7 @@ package com.ivianuu.injekt
  */
 data class KeyWithOverrideInfo(
     /**
-     * The key of the [Binding] this info is for
+     * The key of the [Binding]
      */
     val key: Key<*>,
     /**

@@ -55,15 +55,11 @@ package com.ivianuu.injekt
 
     /**
      * Retrieve the parameter at the [index]
-     *
-     * @param index the index of the parameter
      */
     operator fun <T> get(index: Int): T = values[index] as T
 
     /**
      * Retrieve the parameter at the [index] or null
-     *
-     * @param index the index of the parameter
      */
     fun <T> getOrNull(index: Int): T? = values.getOrNull(index) as? T
 
@@ -102,10 +98,7 @@ package com.ivianuu.injekt
 }
 
 /**
- * Creates parameters which contains all [values]
- *
- * @param values the provided parameters
- * @return the newly constructed parameters
+ * Creates [Parameters] with [values]
  */
 fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
 

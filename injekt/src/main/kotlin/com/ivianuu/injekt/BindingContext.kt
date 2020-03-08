@@ -59,9 +59,6 @@ class BindingContext<T> internal constructor(
      *
      * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
      *
-     * @param key the alias key
-     * @param duplicateStrategy how overrides should be handled
-     *
      * @see ComponentBuilder.add
      */
     fun bindAlias(
@@ -88,11 +85,7 @@ class BindingContext<T> internal constructor(
     )
 
     /**
-     * Adds the [binding] into to the map with the [mapKey]
-     *
-     * @param entryKey the key of this binding in the map
-     * @param mapKey the map this binding gets added to
-     * @param duplicateStrategy how overrides should be handled
+     * Adds the [binding] into to the map of [mapKey]
      *
      * @see MultiBindingMap
      * @see MultiBindingMapBuilder
@@ -121,10 +114,7 @@ class BindingContext<T> internal constructor(
     )
 
     /**
-     * Adds the [binding] into to the set with the [setKey]
-     *
-     * @param setKey the set this binding gets added to
-     * @param duplicateStrategy how overrides should be handled
+     * Adds the [binding] into to the set of [setKey]
      *
      * @see MultiBindingSet
      * @see MultiBindingSetBuilder

@@ -26,8 +26,8 @@ package com.ivianuu.injekt
  * ´´´
  * val component = Component {
  *     scopes(Singleton)
- *     modules(networkModule)
- *     modules(databaseModule)
+ *     single { Api(get()) }
+ *     single { Database(get(), get()) }
  * }
  *
  * val api = component.get<Api>()
@@ -58,24 +58,20 @@ class Component internal constructor(
     ): T = get(key = keyOf(name = name), parameters = parameters)
 
     /**
-     * Retrieve a instance of type [T]
-     *
-     * @param key the of the instance
-     * @param parameters optional parameters to construct the instance
-     * @return the instance
+     * Retrieve a instance of type [T] for [key]
      */
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
         getBinding(key).provider(this, parameters)
 
     /**
-     * Retrieve a binding of type [T]
-     *
-     * @param key the of the instance
-     * @return the instance
+     * Retrieve the [Binding] for [key] or throws
      */
     fun <T> getBinding(key: Key<T>): Binding<T> =
         findBinding(key) ?: error("Couldn't find a binding for $key")
 
+    /**
+     * Returns the [Component] for [scope] or throws
+     */
     fun getComponentForScope(scope: Any): Component =
         findComponentForScope(scope) ?: error("Couldn't find component for scope $scope")
 

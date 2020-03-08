@@ -51,10 +51,6 @@ inline fun <reified T> InjektTrait.get(
 /**
  * Lazy version of [get]
  *
- * @param key the key of the instance
- * @param parameters optional parameters to construct the instance
- * @return the instance
-
  * @see Component.get
  */
 inline fun <reified T> InjektTrait.getLazy(

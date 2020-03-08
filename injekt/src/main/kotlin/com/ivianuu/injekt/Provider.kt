@@ -24,9 +24,6 @@ package com.ivianuu.injekt
 interface Provider<T> {
     /**
      * Provides an instance of type [T]
-     *
-     * @param parameters optional parameters for constructing the instance
-     * @return the instance of type [T]
      */
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }

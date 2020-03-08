@@ -22,9 +22,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 /**
- * A key of a binding
- *
- * This is used to retrieve [Binding]s in [Component]s
+ * A key used to retrieve [Binding]s in [Component]s
  *
  * @see Component.get
  * @see ComponentBuilder.add

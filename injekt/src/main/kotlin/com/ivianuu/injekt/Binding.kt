@@ -19,7 +19,8 @@ package com.ivianuu.injekt
 /**
  * A binding knows how to create a concrete instance of a type
  * it also holds additional information about the declaration
- * you typically don't access this class directly but instead declare dependencies
+ *
+ * You typically don't access this class directly but instead declare dependencies
  * via a [ComponentBuilder] or annotating classes with [Factory] or [Single]
  *
  * @see Factory
@@ -27,7 +28,7 @@ package com.ivianuu.injekt
  */
 data class Binding<T>(
     /**
-     * The which is used to identify this binding
+     * The key which is used to identify this binding
      */
     val key: Key<T>,
     /**
@@ -35,13 +36,19 @@ data class Binding<T>(
      */
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     /**
-     * Provides instances of [T]
+     * Creates instances for this binding
      */
     val provider: BindingProvider<T>
 )
 
+/**
+ * Provides instances of [T]
+ */
 typealias BindingProvider<T> = Component.(Parameters) -> T
 
+/**
+ * Used by the codegen
+ */
 interface BindingFactory<T> {
     fun create(): Binding<T>
 }

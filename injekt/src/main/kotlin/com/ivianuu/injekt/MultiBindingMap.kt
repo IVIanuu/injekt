@@ -49,7 +49,7 @@ package com.ivianuu.injekt
  * paymentHandlers.get(paymentMethod).processPayment(shoppingCart)
  * ´´´
  *
- * It's also possible to automatically retrieve a 'Map<K, Provider<V>>'
+ * It's also possible retrieve a 'Map<K, Provider<V>>'
  * or a 'Map<K, Lazy<V>>'
  *
  *
@@ -84,10 +84,7 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key<
     }
 
     /**
-     * Contributes a binding into this map
-     *
-     * @param entryKey the key of the instance inside the map
-     * @param entry the entry to add to this map
+     * Adds the [Binding] for [entry] into this map
      */
     fun put(entryKey: K, entry: KeyWithOverrideInfo) {
         if (entry.duplicateStrategy.check(

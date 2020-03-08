@@ -80,9 +80,7 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key<Set
     }
 
     /**
-     * Contributes a binding into this set
-     *
-     * @param element the element to add to this set
+     * Adds the [Binding] for [element] into this set
      */
     fun add(element: KeyWithOverrideInfo) {
         if (element.duplicateStrategy.check(
