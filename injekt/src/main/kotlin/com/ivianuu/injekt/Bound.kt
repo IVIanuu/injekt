@@ -40,7 +40,7 @@ private class BoundProvider<T>(
         this.boundComponent = if (scope == null) component
         else component.getComponentForScope(scope)
 
-        (provider as? ComponentInitObserver)?.onInit(component)
+        (provider as? ComponentInitObserver)?.onInit(boundComponent)
     }
 
     override fun invoke(p1: Component, p2: Parameters): T = provider(boundComponent, p2)
