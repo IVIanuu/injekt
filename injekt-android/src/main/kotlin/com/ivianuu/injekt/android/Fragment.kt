@@ -25,11 +25,12 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Fragment> FragmentComponent(
     instance: T,
-    scope: Any = FragmentScope,
+    scope: Scope = FragmentScope,
     qualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = FragmentComponent(
@@ -43,7 +44,7 @@ inline fun <reified T : Fragment> FragmentComponent(
 inline fun <T : Fragment> FragmentComponent(
     instance: T,
     key: Key<T>,
-    scope: Any = FragmentScope,
+    scope: Scope = FragmentScope,
     qualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
@@ -69,14 +70,14 @@ inline fun <T : Fragment> FragmentComponent(
         block()
     }
 
-@Scope
+@ScopeMarker
 annotation class FragmentScope {
-    companion object
+    companion object : Scope
 }
 
-@Scope
+@ScopeMarker
 annotation class ChildFragmentScope {
-    companion object
+    companion object : Scope
 }
 
 @QualifierMarker

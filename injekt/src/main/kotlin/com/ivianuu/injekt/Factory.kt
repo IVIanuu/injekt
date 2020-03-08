@@ -22,7 +22,7 @@ package com.ivianuu.injekt
  *
  * @see Single
  * @see Qualifier
- * @see Scope
+ * @see ScopeMarker
  * @see InjektConstructor
  * @see ComponentBuilder.factory
  */

@@ -33,7 +33,7 @@ inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder {
 
-    private val scopes = mutableListOf<Any>()
+    private val scopes = mutableListOf<Scope>()
     private val dependencies = mutableListOf<Component>()
     private val bindings = mutableMapOf<Key<*>, Binding<*>>()
     private val multiBindingMapBuilders = mutableMapOf<Key<*>, MultiBindingMapBuilder<Any?, Any?>>()
@@ -43,9 +43,9 @@ class ComponentBuilder {
      * Adds the [scopes] this allows generated [Binding]s
      * to be associated with components.
      *
-     * @see Scope
+     * @see ScopeMarker
      */
-    fun scopes(vararg scopes: Any) {
+    fun scopes(vararg scopes: Scope) {
         scopes.forEach { scope ->
             check(scope !in this.scopes) { "Duplicated scope $scope" }
             this.scopes += scope

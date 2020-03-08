@@ -28,6 +28,7 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Activity> ActivityComponent(
@@ -65,9 +66,9 @@ inline fun <T : Activity> ActivityComponent(
     block()
 }
 
-@Scope
+@ScopeMarker
 annotation class ActivityScope {
-    companion object
+    companion object : Scope
 }
 
 @QualifierMarker

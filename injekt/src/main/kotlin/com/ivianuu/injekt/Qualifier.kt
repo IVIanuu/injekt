@@ -64,15 +64,12 @@ private class CombinedQualifier(
 
 /**
  * Marks the annotated class as a qualifier which can be used to differentiate between instances of the same type
- * The annotated class must have an companion object
- *
- * It's a good convention to declare qualifiers which can be used from both the dsl AND annotated classes
- * This can be achieved by declaring it like this:
+ * The annotated class must have an companion object which implements Qualifier
  *
  * ´´´
  * @QualifierMarker
  * annotation class UserId {
- *     companion object
+ *     companion object : Qualifier.Element
  * }
  * ´´´
  *
@@ -80,7 +77,7 @@ private class CombinedQualifier(
  *
  * ´´´
  * factory {
- *     MyViewModel(userId = get(name = UserId))
+ *     MyViewModel(userId = get(qualifier = UserId))
  * }
  * ´´´
  *

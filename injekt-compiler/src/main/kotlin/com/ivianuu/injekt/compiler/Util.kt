@@ -37,7 +37,7 @@ object InjektClassNames {
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
     val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
-    val Scope = FqName("com.ivianuu.injekt.Scope")
+    val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
     val Single = FqName("com.ivianuu.injekt.Single")
     val SingleProvider = FqName("com.ivianuu.injekt.SingleProvider")
 }

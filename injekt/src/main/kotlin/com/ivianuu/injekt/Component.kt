@@ -38,7 +38,7 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: List<Any>,
+    internal val scopes: List<Scope>,
     internal val dependencies: List<Component>,
     internal val bindings: MutableMap<Key<*>, Binding<*>>,
     internal val multiBindingMaps: Map<Key<*>, MultiBindingMap<Any?, Any?>>,

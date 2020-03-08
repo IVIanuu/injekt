@@ -323,7 +323,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
                             }
 
                             val scopeAnnotation =
-                                descriptor.getAnnotatedAnnotations(InjektClassNames.Scope)
+                                descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
                                     .singleOrNull()
 
                             val scopeExpr = scopeAnnotation?.let {

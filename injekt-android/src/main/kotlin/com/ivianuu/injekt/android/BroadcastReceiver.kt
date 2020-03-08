@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : BroadcastReceiver> ReceiverComponent(
@@ -55,9 +56,9 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
     block()
 }
 
-@Scope
+@ScopeMarker
 annotation class ReceiverScope {
-    companion object
+    companion object : Scope
 }
 
 @QualifierMarker

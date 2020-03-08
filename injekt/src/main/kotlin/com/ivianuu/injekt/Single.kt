@@ -22,7 +22,7 @@ package com.ivianuu.injekt
  *
  * @see Factory
  * @see Qualifier
- * @see Scope
+ * @see ScopeMarker
  * @see InjektConstructor
  * @see ComponentBuilder.single
  */
@@ -30,7 +30,7 @@ package com.ivianuu.injekt
 annotation class Single
 
 class SingleProvider<T>(
-    scope: Any? = null,
+    scope: Scope? = null,
     provider: BindingProvider<T>
 ) : (Component, Parameters) -> T, ComponentInitObserver {
     private val provider = BoundProvider(scope, provider)

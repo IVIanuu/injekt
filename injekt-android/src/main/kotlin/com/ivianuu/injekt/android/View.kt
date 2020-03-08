@@ -26,11 +26,12 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : View> ViewComponent(
     instance: T,
-    scope: Any = ViewScope,
+    scope: Scope = ViewScope,
     qualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
@@ -45,7 +46,7 @@ inline fun <reified T : View> ViewComponent(
 inline fun <T : View> ViewComponent(
     instance: T,
     key: Key<T>,
-    scope: Any = ViewScope,
+    scope: Scope = ViewScope,
     qualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
@@ -65,14 +66,14 @@ inline fun <T : View> ViewComponent(
         block()
     }
 
-@Scope
+@ScopeMarker
 annotation class ViewScope {
-    companion object
+    companion object : Scope
 }
 
-@Scope
+@ScopeMarker
 annotation class ChildViewScope {
-    companion object
+    companion object : Scope
 }
 
 @QualifierMarker

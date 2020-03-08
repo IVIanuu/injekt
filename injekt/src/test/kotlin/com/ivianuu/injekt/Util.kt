@@ -36,17 +36,17 @@ annotation class Values {
     companion object : Qualifier.Element
 }
 
-@Scope
+@ScopeMarker
 annotation class TestScopeOne {
     companion object
 }
 
-@Scope
+@ScopeMarker
 annotation class TestScopeTwo {
     companion object
 }
 
-@Scope
+@ScopeMarker
 annotation class TestScopeThree {
     companion object
 }

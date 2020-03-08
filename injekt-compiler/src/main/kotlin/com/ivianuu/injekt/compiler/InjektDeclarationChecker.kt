@@ -59,13 +59,13 @@ class InjektDeclarationChecker : DeclarationChecker {
         }
 
         if (descriptor is ClassDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.Scope) &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
             descriptor.companionObjectDescriptor == null
         ) {
             report(
                 descriptor,
                 context.trace
-            ) { NeedsACompanionObject }
+            ) { NeedsAScopeCompanionObject }
         }
 
         if (descriptor is ClassDescriptor &&
@@ -87,7 +87,7 @@ class InjektDeclarationChecker : DeclarationChecker {
         }
 
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Single) &&
-            descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).isEmpty()
+            descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).isEmpty()
         ) {
             report(
                 descriptor,
@@ -95,7 +95,7 @@ class InjektDeclarationChecker : DeclarationChecker {
             ) { SingleNeedsScope }
         }
 
-        if (descriptor.getAnnotatedAnnotations(InjektClassNames.Scope).size > 1) {
+        if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).size > 1) {
             report(
                 descriptor,
                 context.trace

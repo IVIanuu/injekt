@@ -23,9 +23,9 @@ package com.ivianuu.injekt
  * For example a scope for activities is declared like this
  *
  * ´´´
- * @Scope
+ * @ScopeMarker
  * annotation class ActivityScope {
- *     companion object
+ *     companion object : Scope
  * }
  * ´´´
  *
@@ -40,6 +40,8 @@ package com.ivianuu.injekt
  * @see ComponentBuilder.scopes
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Scope
+annotation class ScopeMarker
+
+interface Scope
 
 data class ScopeQualifier(val scope: Any) : Qualifier.Element

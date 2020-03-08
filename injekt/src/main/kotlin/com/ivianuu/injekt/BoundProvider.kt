@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  * Or if [scope] == null in the [Component] it gets added to
  */
 class BoundProvider<T>(
-    private val scope: Any? = null,
+    private val scope: Scope? = null,
     private val provider: BindingProvider<T>
 ) : (Component, Parameters) -> T, ComponentInitObserver {
 

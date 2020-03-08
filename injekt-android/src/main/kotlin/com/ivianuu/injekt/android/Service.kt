@@ -24,6 +24,7 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Service> ServiceComponent(
@@ -48,9 +49,9 @@ inline fun <T : Service> ServiceComponent(
         block()
     }
 
-@Scope
+@ScopeMarker
 annotation class ServiceScope {
-    companion object
+    companion object : Scope
 }
 
 @QualifierMarker

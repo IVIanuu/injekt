@@ -39,7 +39,7 @@ fun report(
 val EitherFactoryOrSingle = error()
 val OnlyOneScope = error()
 val NeedsAQualifierCompanionObject = error()
-val NeedsACompanionObject = error()
+val NeedsAScopeCompanionObject = error()
 val ParamCannotBeNamed = error()
 val OnlyOneInjektConstructor = error()
 val NeedsPrimaryConstructorOrAnnotation = error()
@@ -58,11 +58,11 @@ object InjektErrorMessages : DefaultErrorMessages.Extension {
         )
         map.put(
             OnlyOneScope,
-            "Can only have one 1 scope ammptatopm"
+            "Can only have one 1 scope annotation"
         )
         map.put(
-            NeedsACompanionObject,
-            "Needs a companion object"
+            NeedsAScopeCompanionObject,
+            "Needs a companion object which implements Scope"
         )
         map.put(
             NeedsAQualifierCompanionObject,
