@@ -33,13 +33,13 @@ internal class KeyedProvider<T>(
     private val key: Key<T>
 ) : Provider<T> {
 
-    private var _provider: BindingProvider<T>? = null
+    private var provider: BindingProvider<T>? = null
 
     override fun invoke(parameters: Parameters): T {
-        var provider = _provider
+        var provider = this.provider
         if (provider == null) {
             provider = component.getBinding(key).provider
-            _provider = provider
+            this.provider = provider
         }
         return provider(component, parameters)
     }

@@ -26,16 +26,16 @@ internal class KeyedLazy<T>(
     private val key: Key<T>
 ) : Lazy<T> {
 
-    private var _value: Any? = this
+    private var value: Any? = this
 
     override fun invoke(parameters: Parameters): T {
-        var value = _value
+        var value = this.value
         if (value === this) {
             synchronized(this) {
-                value = _value
+                value = this.value
                 if (value === this) {
-                    _value = component.get(key, parameters)
-                    value = _value
+                    this.value = component.get(key, parameters)
+                    value = this.value
                 }
             }
         }
