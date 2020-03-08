@@ -42,31 +42,16 @@ class ComponentBuilder {
     private val multiBindingMapBuilders = mutableMapOf<Key<*>, MultiBindingMapBuilder<Any?, Any?>>()
     private val multiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
 
-    fun scopes(scope: Any) {
-        check(scope !in scopes) { "Duplicated scope $scope" }
-        this.scopes += scope
-    }
-
-    fun scopes(vararg scopes: Any) {
-        scopes.forEach { scopes(it) }
-    }
-
     /**
      * Scope the component
      *
      * @param scopes the scopes to include
      */
-    fun scopes(vararg scopes: List<Any>) {
-        scopes.forEach { scopes(it) }
-    }
-
-    fun dependencies(dependency: Component) {
-        check(dependency !in dependencies) { "Duplicated dependency $dependency" }
-        this.dependencies += dependency
-    }
-
-    fun dependencies(vararg dependencies: Component) {
-        dependencies.forEach { dependencies(it) }
+    fun scopes(vararg scopes: Any) {
+        scopes.forEach { scope ->
+            check(scope !in this.scopes) { "Duplicated scope $scope" }
+            this.scopes += scope
+        }
     }
 
     /**
@@ -76,8 +61,11 @@ class ComponentBuilder {
      *
      * @param dependencies the dependencies to add
      */
-    fun dependencies(dependencies: List<Component>) {
-        dependencies.forEach { dependencies(it) }
+    fun dependencies(vararg dependencies: Component) {
+        dependencies.forEach { dependency ->
+            check(dependency !in this.dependencies) { "Duplicated dependency $dependency" }
+            this.dependencies += dependency
+        }
     }
 
     inline fun <reified T> factory(
