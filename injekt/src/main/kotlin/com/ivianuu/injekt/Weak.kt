@@ -16,35 +16,22 @@
 
 package com.ivianuu.injekt
 
-import java.util.concurrent.ConcurrentHashMap
+import java.lang.ref.WeakReference
 
 /**
- * Returns the same instance for the given parameters
- *
- * ´´´
- * val component = Component {
- *     multi { (url: String) -> Api(url = url) }
- * }
- *
- * val googleApi1 = component.get<Api>(parameters = parametersOf("www.google.com"))
- * val googleApi2 = component.get<Api>(parameters = parametersOf("www.google.com"))
- * val yahooApi = component.get<Api>(parameters = parametersOf("www.yahoo.com"))
- * assertSame(googleApi1, googleApi2) // true
- * assertSame(googleApi1, yahooApi) // false
- * ´´´
- *
+ * Holds instances in a [WeakReference]
  */
-object MultiBehavior : Behavior.Element {
+object WeakBehavior : Behavior.Element {
     override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        MultiProvider(provider)
+        WeakProvider(provider)
 }
 
-inline fun <reified T> ComponentBuilder.multi(
+inline fun <reified T> ComponentBuilder.weak(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>
-): BindingContext<T> = multi(
+): BindingContext<T> = weak(
     key = keyOf(qualifier = qualifier),
     behavior = behavior,
     duplicateStrategy = duplicateStrategy,
@@ -52,9 +39,9 @@ inline fun <reified T> ComponentBuilder.multi(
 )
 
 /**
- * Dsl builder for the [MultiBehavior] + [BoundBehavior]
+ * Dsl builder for [WeakBehavior] + [BoundBehavior]
  */
-fun <T> ComponentBuilder.multi(
+fun <T> ComponentBuilder.weak(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
@@ -62,29 +49,37 @@ fun <T> ComponentBuilder.multi(
 ): BindingContext<T> = bind(
     Binding(
         key = key,
-        behavior = BoundBehavior() + MultiBehavior + behavior,
+        behavior = WeakBehavior + BoundBehavior() + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
 )
 
 /**
- * Annotation for the [MultiBehavior]
+ * Annotation for the [WeakBehavior]
  */
-@BehaviorMarker(MultiBehavior::class)
+@BehaviorMarker(WeakBehavior::class)
 @Target(AnnotationTarget.CLASS)
-annotation class Multi
+annotation class Weak
 
-private class MultiProvider<T>(
-    private val provider: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
+private class WeakProvider<T>(private val provider: BindingProvider<T>) :
+        (Component, Parameters) -> T, ComponentInitObserver {
 
-    private val values = ConcurrentHashMap<Int, T>()
+    private var ref: WeakReference<ValueWrapper<T>>? = null
 
     override fun onInit(component: Component) {
         (provider as? ComponentInitObserver)?.onInit(component)
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T =
-        values.getOrPut(parameters.hashCode()) { provider(component, parameters) }
+    override fun invoke(p1: Component, p2: Parameters): T {
+        var valueWrapper = ref?.get()
+        if (valueWrapper == null) {
+            valueWrapper = ValueWrapper(provider(p1, p2))
+            ref = WeakReference(valueWrapper)
+        }
+
+        return valueWrapper.value
+    }
+
+    private class ValueWrapper<T>(val value: T)
 }
