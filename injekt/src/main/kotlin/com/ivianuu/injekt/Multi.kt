@@ -85,6 +85,6 @@ private class MultiProvider<T>(
         (provider as? ComponentInitObserver)?.onInit(component)
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T =
-        values.getOrPut(parameters.hashCode()) { provider(component, parameters) }
+    override fun invoke(p1: Component, pq: Parameters): T =
+        values.getOrPut(pq.hashCode()) { provider(p1, pq) }
 }

@@ -82,13 +82,13 @@ private class SingleProvider<T>(
         (provider as? ComponentInitObserver)?.onInit(component)
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T {
+    override fun invoke(p1: Component, p2: Parameters): T {
         var value = this.value
         if (value === this) {
             synchronized(this) {
                 value = this.value
                 if (value === this) {
-                    this.value = provider(component, parameters)
+                    this.value = provider(p1, p2)
                     value = this.value
                 }
             }
