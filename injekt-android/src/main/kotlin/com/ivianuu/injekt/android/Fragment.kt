@@ -19,10 +19,10 @@ package com.ivianuu.injekt.android
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
@@ -50,7 +50,7 @@ inline fun <T : Fragment> FragmentComponent(
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-        instance(instance = instance, key = key, overrideStrategy = OverrideStrategy.Permit)
+        instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Permit)
             .bindAlias<Fragment>()
             .bindAlias<Fragment>(name = name)
 
@@ -59,7 +59,7 @@ inline fun <T : Fragment> FragmentComponent(
         maybeSavedStateBindings(instance, name)
 
         contextBindings(name) { instance.requireContext() }
-        factory(overrideStrategy = OverrideStrategy.Permit) { instance.childFragmentManager }.bindAlias(
+        factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.childFragmentManager }.bindAlias(
             name = name
         )
 

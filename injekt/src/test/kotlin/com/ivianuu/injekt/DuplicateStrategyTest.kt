@@ -20,32 +20,36 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class OverrideStrategyTest {
+class DuplicateStrategyTest {
 
     @Test
     fun testStrategies() {
-        assertTrue(OverrideStrategy.Permit.check(
+        assertTrue(
+            DuplicateStrategy.Permit.check(
             existsPredicate = { false },
             errorMessage = { "" }
         ))
 
-        assertTrue(OverrideStrategy.Permit.check(
-            existsPredicate = { true },
-            errorMessage = { "" }
-        ))
-
-        assertTrue(OverrideStrategy.Drop.check(
-            existsPredicate = { false },
-            errorMessage = { "" }
-        ))
-
-        assertFalse(OverrideStrategy.Drop.check(
+        assertTrue(
+            DuplicateStrategy.Permit.check(
             existsPredicate = { true },
             errorMessage = { "" }
         ))
 
         assertTrue(
-            OverrideStrategy.Fail.check(
+            DuplicateStrategy.Drop.check(
+            existsPredicate = { false },
+            errorMessage = { "" }
+        ))
+
+        assertFalse(
+            DuplicateStrategy.Drop.check(
+            existsPredicate = { true },
+            errorMessage = { "" }
+        ))
+
+        assertTrue(
+            DuplicateStrategy.Fail.check(
                 existsPredicate = { false },
                 errorMessage = { "" }
             )
@@ -53,7 +57,7 @@ class OverrideStrategyTest {
 
         assertTrue(
             try {
-                OverrideStrategy.Fail.check(
+                DuplicateStrategy.Fail.check(
                     existsPredicate = { true },
                     errorMessage = { "" }
                 )

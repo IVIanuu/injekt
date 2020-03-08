@@ -105,8 +105,8 @@ class SetTest {
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(overrideStrategy = OverrideStrategy.Permit) { "overridden_value" }.intoSet<String>(
-                overrideStrategy = OverrideStrategy.Permit
+            factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }.intoSet<String>(
+                duplicateStrategy = DuplicateStrategy.Permit
             )
         }
 
@@ -120,8 +120,8 @@ class SetTest {
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }.intoSet<String>(
-                overrideStrategy = OverrideStrategy.Drop
+            factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }.intoSet<String>(
+                duplicateStrategy = DuplicateStrategy.Drop
             )
         }
 
@@ -144,8 +144,8 @@ class SetTest {
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(overrideStrategy = OverrideStrategy.Permit) { "overridden_value" }
-                .intoSet<String>(overrideStrategy = OverrideStrategy.Permit)
+            factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }
+                .intoSet<String>(duplicateStrategy = DuplicateStrategy.Permit)
         }
 
         val setA = componentA.get<Set<String>>()
@@ -162,8 +162,8 @@ class SetTest {
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(overrideStrategy = OverrideStrategy.Drop) { "overridden_value" }
-                .intoSet<String>(overrideStrategy = OverrideStrategy.Drop)
+            factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }
+                .intoSet<String>(duplicateStrategy = DuplicateStrategy.Drop)
         }
 
         val setA = componentA.get<Set<String>>()
@@ -180,8 +180,8 @@ class SetTest {
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(overrideStrategy = OverrideStrategy.Fail) { "overridden_value" }
-                .intoSet<String>(overrideStrategy = OverrideStrategy.Fail)
+            factory(duplicateStrategy = DuplicateStrategy.Fail) { "overridden_value" }
+                .intoSet<String>(duplicateStrategy = DuplicateStrategy.Fail)
         }
     }
 }

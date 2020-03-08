@@ -37,18 +37,18 @@ class BindingContext<T> internal constructor(
 
     inline fun <reified S> bindAlias(
         name: Any? = null,
-        overrideStrategy: OverrideStrategy = binding.overrideStrategy
+        duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
-        bindAlias(key = keyOf<S>(name = name), overrideStrategy = overrideStrategy)
+        bindAlias(key = keyOf<S>(name = name), duplicateStrategy = duplicateStrategy)
         return this
     }
 
     @JvmName("bindName")
     fun bindAlias(
         name: Any? = null,
-        overrideStrategy: OverrideStrategy = binding.overrideStrategy
+        duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
-        bindAlias(key = binding.key.copy(name = name), overrideStrategy = overrideStrategy)
+        bindAlias(key = binding.key.copy(name = name), duplicateStrategy = duplicateStrategy)
         return this
     }
 
@@ -60,18 +60,18 @@ class BindingContext<T> internal constructor(
      * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
      *
      * @param key the alias key
-     * @param overrideStrategy how overrides should be handled
+     * @param duplicateStrategy how overrides should be handled
      *
      * @see ComponentBuilder.add
      */
     fun bindAlias(
         key: Key<*>,
-        overrideStrategy: OverrideStrategy = binding.overrideStrategy
+        duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
         componentBuilder.alias(
             originalKey = binding.key as Key<Any?>,
             aliasKey = key as Key<Any?>,
-            overrideStrategy = overrideStrategy
+            duplicateStrategy = duplicateStrategy
         )
 
         return this
@@ -80,11 +80,11 @@ class BindingContext<T> internal constructor(
     inline fun <reified K, reified V> intoMap(
         entryKey: K,
         mapName: Any? = null,
-        overrideStrategy: OverrideStrategy = binding.overrideStrategy
+        duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> = intoMap(
         entryKey = entryKey,
         mapKey = keyOf<Map<K, V>>(name = mapName),
-        overrideStrategy = overrideStrategy
+        duplicateStrategy = duplicateStrategy
     )
 
     /**
@@ -92,7 +92,7 @@ class BindingContext<T> internal constructor(
      *
      * @param entryKey the key of this binding in the map
      * @param mapKey the map this binding gets added to
-     * @param overrideStrategy how overrides should be handled
+     * @param duplicateStrategy how overrides should be handled
      *
      * @see MultiBindingMap
      * @see MultiBindingMapBuilder
@@ -100,13 +100,13 @@ class BindingContext<T> internal constructor(
     fun <K, V> intoMap(
         entryKey: K,
         mapKey: Key<Map<K, V>>,
-        overrideStrategy: OverrideStrategy = binding.overrideStrategy
+        duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
         componentBuilder.map(mapKey = mapKey) {
             put(
                 entryKey = entryKey,
                 entryValueKey = binding.key,
-                overrideStrategy = overrideStrategy
+                duplicateStrategy = duplicateStrategy
             )
         }
         return this
@@ -114,29 +114,29 @@ class BindingContext<T> internal constructor(
 
     inline fun <reified E> intoSet(
         setName: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = intoSet(
         setKey = keyOf<Set<E>>(name = setName),
-        overrideStrategy = overrideStrategy
+        duplicateStrategy = duplicateStrategy
     )
 
     /**
      * Adds the [binding] into to the set with the [setKey]
      *
      * @param setKey the set this binding gets added to
-     * @param overrideStrategy how overrides should be handled
+     * @param duplicateStrategy how overrides should be handled
      *
      * @see MultiBindingSet
      * @see MultiBindingSetBuilder
      */
     fun <E> intoSet(
         setKey: Key<Set<E>>,
-        overrideStrategy: OverrideStrategy = binding.overrideStrategy
+        duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
     ): BindingContext<T> {
         componentBuilder.set(setKey = setKey) {
             add(
                 elementKey = binding.key,
-                overrideStrategy = overrideStrategy
+                duplicateStrategy = duplicateStrategy
             )
         }
         return this

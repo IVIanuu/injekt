@@ -70,13 +70,13 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key<Set
 
     inline fun <reified T : E> add(
         elementName: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        add(keyOf<T>(name = elementName), overrideStrategy)
+        add(keyOf<T>(name = elementName), duplicateStrategy)
     }
 
-    fun add(elementKey: Key<*>, overrideStrategy: OverrideStrategy = OverrideStrategy.Fail) {
-        add(KeyWithOverrideInfo(elementKey, overrideStrategy))
+    fun add(elementKey: Key<*>, duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail) {
+        add(KeyWithOverrideInfo(elementKey, duplicateStrategy))
     }
 
     /**
@@ -85,7 +85,7 @@ class MultiBindingSetBuilder<E> internal constructor(private val setKey: Key<Set
      * @param element the element to add to this set
      */
     fun add(element: KeyWithOverrideInfo) {
-        if (element.overrideStrategy.check(
+        if (element.duplicateStrategy.check(
                 existsPredicate = { elements.any { it.key == element.key } },
                 errorMessage = { "Already declared ${element.key} in elements $setKey" }
             )

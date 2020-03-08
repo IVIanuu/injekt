@@ -82,12 +82,12 @@ class ComponentBuilder {
 
     inline fun <reified T> factory(
         name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         bound: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = factory(
         key = keyOf(name = name),
-        overrideStrategy = overrideStrategy,
+        duplicateStrategy = duplicateStrategy,
         bound = bound,
         provider = provider
     )
@@ -96,7 +96,7 @@ class ComponentBuilder {
      * Contributes a binding which will be instantiated on each request
      *
      * @param key the key to retrieve the instance
-     * @param overrideStrategy the strategy for handling overrides
+     * @param duplicateStrategy the strategy for handling overrides
      * @param bound whether instances should be created in the scope of the component
      * @param provider the definitions which creates instances
      *
@@ -104,25 +104,25 @@ class ComponentBuilder {
      */
     fun <T> factory(
         key: Key<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         bound: Boolean = false,
         provider: BindingProvider<T>
     ): BindingContext<T> = add(
         Binding(
             key = key,
-            overrideStrategy = overrideStrategy,
+            duplicateStrategy = duplicateStrategy,
             provider = if (bound) BoundProvider(provider = provider) else provider
         )
     )
 
     inline fun <reified T> single(
         name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         eager: Boolean = false,
         noinline provider: BindingProvider<T>
     ): BindingContext<T> = single(
         key = keyOf(name = name),
-        overrideStrategy = overrideStrategy,
+        duplicateStrategy = duplicateStrategy,
         eager = eager,
         provider = provider
     )
@@ -131,7 +131,7 @@ class ComponentBuilder {
      * Contributes a binding which will be reused throughout the lifetime of the [Component] it life's in
      *
      * @param key the key to retrieve the instance
-     * @param overrideStrategy the strategy for handling overrides
+     * @param duplicateStrategy the strategy for handling overrides
      * @param eager whether the instance should be created when the [Component] get's created
      * @param provider the definitions which creates instances
      *
@@ -139,13 +139,13 @@ class ComponentBuilder {
      */
     fun <T> single(
         key: Key<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         eager: Boolean = false,
         provider: BindingProvider<T>
     ): BindingContext<T> = add(
         Binding(
             key = key,
-            overrideStrategy = overrideStrategy,
+            duplicateStrategy = duplicateStrategy,
             provider = SingleProvider(provider = provider)
                 .let { if (eager) EagerProvider(it) else it }
         )
@@ -154,11 +154,11 @@ class ComponentBuilder {
     inline fun <reified S, reified T> alias(
         originalName: Any? = null,
         aliasName: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = alias<S, T>(
         originalKey = keyOf(name = originalName),
         aliasKey = keyOf(name = aliasName),
-        overrideStrategy = overrideStrategy
+        duplicateStrategy = duplicateStrategy
     )
 
     /**
@@ -172,26 +172,26 @@ class ComponentBuilder {
      * ´´´
      *
      * @param originalKey the key of the original binding
-     * @param overrideStrategy how overrides should be handled
+     * @param duplicateStrategy how overrides should be handled
      *
      */
     fun <S, T> alias(
         originalKey: Key<S>,
         aliasKey: Key<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = factory(
         key = aliasKey,
-        overrideStrategy = overrideStrategy
+        duplicateStrategy = duplicateStrategy
     ) { parameters -> get(originalKey, parameters = parameters) as T }
 
     inline fun <reified T> instance(
         instance: T,
         name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = instance(
         instance = instance,
         key = keyOf(name = name),
-        overrideStrategy = overrideStrategy
+        duplicateStrategy = duplicateStrategy
     )
 
     /**
@@ -206,11 +206,11 @@ class ComponentBuilder {
     fun <T> instance(
         instance: T,
         key: Key<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ): BindingContext<T> = add(
         Binding(
             key = key,
-            overrideStrategy = overrideStrategy,
+            duplicateStrategy = duplicateStrategy,
             provider = { instance }
         )
     )
@@ -332,7 +332,7 @@ class ComponentBuilder {
      * @see single
      */
     fun <T> add(binding: Binding<T>): BindingContext<T> {
-        if (binding.overrideStrategy.check(
+        if (binding.duplicateStrategy.check(
                 existsPredicate = { binding.key in bindings },
                 errorMessage = { "Already declared binding for ${binding.key}" }
             )
@@ -353,7 +353,7 @@ class ComponentBuilder {
             .map { it.getAllBindings() }
             .fold(mutableMapOf<Key<*>, Binding<*>>()) { acc, current ->
                 current.forEach { (key, binding) ->
-                    if (binding.overrideStrategy.check(
+                    if (binding.duplicateStrategy.check(
                             existsPredicate = { key in acc },
                             errorMessage = { "Already declared binding for $key" }
                         )
@@ -370,7 +370,7 @@ class ComponentBuilder {
         val allMultiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
 
         fun addBinding(binding: Binding<*>) {
-            if (binding.overrideStrategy.check(
+            if (binding.duplicateStrategy.check(
                     existsPredicate = { binding.key in dependencyBindings },
                     errorMessage = { "Already declared key ${binding.key}" })
             ) {
@@ -460,7 +460,7 @@ class ComponentBuilder {
     private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
         val componentBinding = Binding(
             key = keyOf(),
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = ComponentProvider(null)
         )
 
@@ -469,7 +469,7 @@ class ComponentBuilder {
             .forEach {
                 bindings[keyOf<Component>(it)] = Binding(
                     key = keyOf(),
-                    overrideStrategy = OverrideStrategy.Permit,
+                    duplicateStrategy = DuplicateStrategy.Permit,
                     provider = ComponentProvider(it)
                 )
             }
@@ -504,7 +504,7 @@ class ComponentBuilder {
 
         bindings[mapKey] = Binding(
             key = mapKey as Key<Map<*, *>>,
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = BoundProvider {
                 bindingKeys
                     .mapValues { get(key = it.value) }
@@ -524,7 +524,7 @@ class ComponentBuilder {
         )
         bindings[mapOfProviderKey] = Binding(
             key = mapOfProviderKey,
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = BoundProvider {
                 bindingKeys
                     .mapValues { KeyedProvider(this, it.value) }
@@ -544,7 +544,7 @@ class ComponentBuilder {
         )
         bindings[mapOfLazyKey] = Binding(
             key = mapOfLazyKey,
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = BoundProvider {
                 bindingKeys
                     .mapValues { KeyedLazy(this, it.value) }
@@ -563,7 +563,7 @@ class ComponentBuilder {
 
         bindings[setKey] = Binding(
             key = setKey as Key<Set<*>>,
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = {
                 setKeys
                     .mapTo(mutableSetOf()) { get(key = it) }
@@ -582,7 +582,7 @@ class ComponentBuilder {
         )
         bindings[setOfProviderKey] = Binding(
             key = setOfProviderKey,
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = {
                 setKeys
                     .mapTo(mutableSetOf()) {
@@ -603,7 +603,7 @@ class ComponentBuilder {
         )
         bindings[setOfLazyKey] = Binding(
             key = setOfLazyKey,
-            overrideStrategy = OverrideStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Permit,
             provider = {
                 setKeys
                     .mapTo(mutableSetOf()) {

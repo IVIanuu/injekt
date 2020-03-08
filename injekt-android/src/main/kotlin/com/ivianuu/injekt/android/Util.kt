@@ -24,7 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.DuplicateStrategy
 import kotlinx.coroutines.CoroutineScope
 
 @PublishedApi
@@ -33,12 +33,12 @@ internal fun ComponentBuilder.maybeLifecycleBindings(
     name: Any
 ) {
     if (instance !is LifecycleOwner) return
-    instance<LifecycleOwner>(instance = instance, overrideStrategy = OverrideStrategy.Permit)
+    instance<LifecycleOwner>(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
         .bindAlias(name = name)
-    factory<CoroutineScope>(overrideStrategy = OverrideStrategy.Permit) {
+    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Permit) {
         instance.lifecycleScope
     }.bindAlias(name = name)
-    factory(overrideStrategy = OverrideStrategy.Permit) { instance.lifecycle }
+    factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.lifecycle }
         .bindAlias(name = name)
 }
 
@@ -48,9 +48,9 @@ internal fun ComponentBuilder.maybeViewModelStoreBindings(
     name: Any
 ) {
     if (instance !is ViewModelStoreOwner) return
-    instance<ViewModelStoreOwner>(instance = instance, overrideStrategy = OverrideStrategy.Permit)
+    instance<ViewModelStoreOwner>(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
         .bindAlias(name = ForActivity)
-    factory(overrideStrategy = OverrideStrategy.Permit) { instance.viewModelStore }
+    factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.viewModelStore }
         .bindAlias(name = name)
 }
 
@@ -62,10 +62,10 @@ internal fun ComponentBuilder.maybeSavedStateBindings(
     if (instance !is SavedStateRegistryOwner) return
     instance<SavedStateRegistryOwner>(
         instance = instance,
-        overrideStrategy = OverrideStrategy.Permit
+        duplicateStrategy = DuplicateStrategy.Permit
     )
         .bindAlias(name = ForActivity)
-    factory(overrideStrategy = OverrideStrategy.Permit) { instance.savedStateRegistry }
+    factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.savedStateRegistry }
         .bindAlias(name = name)
 }
 
@@ -79,7 +79,7 @@ internal fun ComponentBuilder.contextBindings(
     name: Any,
     definition: () -> Context
 ) {
-    factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
+    factory(duplicateStrategy = DuplicateStrategy.Permit) { definition() }
         .bindAlias(name = name)
     resourcesBindings(name) { definition().resources!! }
 }
@@ -89,6 +89,6 @@ internal fun ComponentBuilder.resourcesBindings(
     name: Any,
     definition: () -> Resources
 ) {
-    factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
+    factory(duplicateStrategy = DuplicateStrategy.Permit) { definition() }
         .bindAlias(name = name)
 }

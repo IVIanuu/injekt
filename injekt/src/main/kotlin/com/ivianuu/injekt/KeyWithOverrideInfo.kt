@@ -30,5 +30,5 @@ data class KeyWithOverrideInfo(
     /**
      * How overrides should be handled
      */
-    val overrideStrategy: OverrideStrategy
+    val duplicateStrategy: DuplicateStrategy
 )

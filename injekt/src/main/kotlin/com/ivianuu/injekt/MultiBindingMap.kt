@@ -70,17 +70,17 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key<
     inline fun <reified T : V> put(
         entryKey: K,
         entryValueName: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        put(entryKey, keyOf<T>(name = entryValueName), overrideStrategy)
+        put(entryKey, keyOf<T>(name = entryValueName), duplicateStrategy)
     }
 
     fun put(
         entryKey: K,
         entryValueKey: Key<*>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        put(entryKey, KeyWithOverrideInfo(entryValueKey, overrideStrategy))
+        put(entryKey, KeyWithOverrideInfo(entryValueKey, duplicateStrategy))
     }
 
     /**
@@ -90,7 +90,7 @@ class MultiBindingMapBuilder<K, V> internal constructor(private val mapKey: Key<
      * @param entry the entry to add to this map
      */
     fun put(entryKey: K, entry: KeyWithOverrideInfo) {
-        if (entry.overrideStrategy.check(
+        if (entry.duplicateStrategy.check(
                 existsPredicate = { entryKey in entries },
                 errorMessage = { "Already declared $entryKey in map $mapKey" }
             )

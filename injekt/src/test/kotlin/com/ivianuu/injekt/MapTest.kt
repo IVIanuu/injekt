@@ -109,7 +109,7 @@ class MapTest {
             factory(name = NameTwo) { "overridden_value" }
                 .intoMap<String, String>(
                     "key",
-                    overrideStrategy = OverrideStrategy.Permit
+                    duplicateStrategy = DuplicateStrategy.Permit
                 )
         }
 
@@ -125,7 +125,7 @@ class MapTest {
             factory(name = NameOne) { "value" }
                 .intoMap<String, String>("key")
             factory(name = NameTwo) { "overridden_value" }
-                .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
+                .intoMap<String, String>("key", duplicateStrategy = DuplicateStrategy.Drop)
         }
 
         assertEquals(
@@ -153,7 +153,7 @@ class MapTest {
             factory(name = NameOne) { "overridden_value" }
                 .intoMap<String, String>(
                     "key",
-                    overrideStrategy = OverrideStrategy.Permit
+                    duplicateStrategy = DuplicateStrategy.Permit
                 )
         }
 
@@ -172,7 +172,7 @@ class MapTest {
         val componentB = Component {
             dependencies(componentA)
             factory(name = NameOne) { "overridden_value" }
-                .intoMap<String, String>("key", overrideStrategy = OverrideStrategy.Drop)
+                .intoMap<String, String>("key", duplicateStrategy = DuplicateStrategy.Drop)
         }
 
         val mapA = componentA.get<Map<String, String>>()

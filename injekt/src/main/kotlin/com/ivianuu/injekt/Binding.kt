@@ -33,7 +33,7 @@ data class Binding<T>(
     /**
      * How overrides should be handled
      */
-    val overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
+    val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     /**
      * Provides instances of [T]
      */

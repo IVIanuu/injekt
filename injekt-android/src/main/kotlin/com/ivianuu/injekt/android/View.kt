@@ -20,10 +20,10 @@ import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.keyOf
 
@@ -49,7 +49,7 @@ inline fun <T : View> ViewComponent(
         instance(
             instance = instance,
             key = key,
-            overrideStrategy = OverrideStrategy.Permit
+            duplicateStrategy = DuplicateStrategy.Permit
         ).bindAlias<View>().bindAlias<View>(name)
 
         contextBindings(name) { instance.context!! }
