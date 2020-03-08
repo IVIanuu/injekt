@@ -65,7 +65,7 @@ annotation class Weak
 private class WeakProvider<T>(private val provider: BindingProvider<T>) :
         (Component, Parameters) -> T, ComponentInitObserver {
 
-    private var ref: WeakReference<ValueWrapper<T>>? = null
+    private var ref: WeakReference<Wrapper<T>>? = null
 
     override fun onInit(component: Component) {
         (provider as? ComponentInitObserver)?.onInit(component)
@@ -74,12 +74,15 @@ private class WeakProvider<T>(private val provider: BindingProvider<T>) :
     override fun invoke(p1: Component, p2: Parameters): T {
         var valueWrapper = ref?.get()
         if (valueWrapper == null) {
-            valueWrapper = ValueWrapper(provider(p1, p2))
+            valueWrapper = Wrapper(provider(p1, p2))
             ref = WeakReference(valueWrapper)
         }
 
         return valueWrapper.value
     }
 
-    private class ValueWrapper<T>(val value: T)
+    /**
+     * We need the wrapper because [T] might be nullable
+     */
+    private class Wrapper<T>(val value: T)
 }
