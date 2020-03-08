@@ -93,7 +93,14 @@ class Component internal constructor(
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = findBindingInThisComponent(key)
+        binding = bindings[key] as? Binding<T>
+        println("find binding for ${key.isNullable} found binding is ${binding?.key?.isNullable}")
+        if (binding != null &&
+            !key.isNullable &&
+            binding.key.isNullable
+        ) {
+            binding = null
+        }
         if (binding != null) return binding
 
         for (i in dependencies.size - 1 downTo 0) {
@@ -138,9 +145,6 @@ class Component internal constructor(
 
         return null
     }
-
-    private fun <T> findBindingInThisComponent(key: Key<T>): Binding<T>? =
-        bindings[key] as? Binding<T>
 
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
         if (key.name != null) return null

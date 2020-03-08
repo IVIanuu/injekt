@@ -76,6 +76,15 @@ class ComponentTest {
         assertEquals("string", component.get<String?>())
     }
 
+    @Test(expected = IllegalStateException::class)
+    fun testGetNonNullableNotReturnsNullable() {
+        val component = Component {
+            factory<String?> { null }
+        }
+
+        component.get<String>()
+    }
+
     @Test
     fun testGetUnknownNullableInstanceReturnsNull() {
         val component = Component()
