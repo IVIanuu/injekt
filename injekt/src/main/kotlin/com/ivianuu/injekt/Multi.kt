@@ -41,10 +41,12 @@ object MultiBehavior : Behavior.Element {
 
 inline fun <reified T> ComponentBuilder.multi(
     qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>
 ): BindingContext<T> = multi(
     key = keyOf(qualifier = qualifier),
+    behavior = behavior,
     duplicateStrategy = duplicateStrategy,
     provider = provider
 )
@@ -54,12 +56,13 @@ inline fun <reified T> ComponentBuilder.multi(
  */
 fun <T> ComponentBuilder.multi(
     key: Key<T>,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     provider: BindingProvider<T>
 ): BindingContext<T> = bind(
     Binding(
         key = key,
-        behavior = MultiBehavior,
+        behavior = MultiBehavior + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
