@@ -71,7 +71,7 @@ data class Key<T> internal constructor(
             ""
         }
 
-        return "${classifier.java.name}${if (isNullable) "?" else ""}$params($name)"
+        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params, name=$name)"
     }
 }
 
