@@ -30,7 +30,7 @@ class ComponentTest {
         val instance = TestDep1()
 
         val component = Component {
-            instance(instance)
+            factory { instance }
         }
 
         assertEquals(instance, component.get<TestDep1>())
@@ -41,7 +41,7 @@ class ComponentTest {
         val instance = TestDep1()
 
         val component = Component {
-            instance(instance = instance, qualifier = TestQualifier1)
+            factory(qualifier = TestQualifier1) { instance }
         }
 
         assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1))
@@ -52,7 +52,7 @@ class ComponentTest {
         val instance = TestDep1()
 
         val component = Component {
-            instance(instance = instance, qualifier = TestQualifier1 + TestQualifier2)
+            factory(qualifier = TestQualifier1 + TestQualifier2) { instance }
         }
 
         assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1 + TestQualifier2))

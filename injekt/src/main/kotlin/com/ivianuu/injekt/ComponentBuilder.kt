@@ -63,68 +63,6 @@ class ComponentBuilder {
         }
     }
 
-    inline fun <reified S, reified T> alias(
-        originalQualifiers: Qualifier = Qualifier.None,
-        aliasQualifiers: Qualifier = Qualifier.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-    ): BindingContext<T> = alias<S, T>(
-        originalKey = keyOf(qualifier = originalQualifiers),
-        aliasKey = keyOf(qualifier = aliasQualifiers),
-        duplicateStrategy = duplicateStrategy
-    )
-
-    /**
-     * Makes the [Binding] for [originalKey] retrievable via [aliasKey]
-     *
-     * For example the following code points the Repository request to RepositoryImpl
-     *
-     * ´´´
-     * val component = Component {
-     *     factory { RepositoryImpl() }
-     *     alias<RepositoryImpl, Repository>()
-     * }
-     *
-     * val repository = component.get<Repository>()
-     *
-     * ´´´
-     *
-     */
-    fun <S, T> alias(
-        originalKey: Key<S>,
-        aliasKey: Key<T>,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-    ): BindingContext<T> = factory(
-        key = aliasKey,
-        duplicateStrategy = duplicateStrategy
-    ) { parameters -> get(originalKey, parameters = parameters) as T }
-
-    inline fun <reified T> instance(
-        instance: T,
-        qualifier: Qualifier = Qualifier.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-    ): BindingContext<T> = instance(
-        instance = instance,
-        key = keyOf(qualifier = qualifier),
-        duplicateStrategy = duplicateStrategy
-    )
-
-    /**
-     * Adds the [instance] as a binding for [key]
-     *
-     * @see add
-     */
-    fun <T> instance(
-        instance: T,
-        key: Key<T>,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-    ): BindingContext<T> = add(
-        Binding(
-            key = key,
-            duplicateStrategy = duplicateStrategy,
-            provider = { instance }
-        )
-    )
-
     inline fun <reified T> withBinding(
         qualifier: Qualifier = Qualifier.None,
         noinline block: BindingContext<T>.() -> Unit
@@ -232,7 +170,7 @@ class ComponentBuilder {
      * @see single
      * @see BindingContext
      */
-    fun <T> add(binding: Binding<T>): BindingContext<T> {
+    fun <T> bind(binding: Binding<T>): BindingContext<T> {
         if (binding.duplicateStrategy.check(
                 existsPredicate = { binding.key in bindings },
                 errorMessage = { "Already declared binding for ${binding.key}" }

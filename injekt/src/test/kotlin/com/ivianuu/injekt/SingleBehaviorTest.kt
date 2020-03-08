@@ -24,7 +24,7 @@ class SingleBehaviorTest {
     @Test
     fun testSingleBehavior() {
         val componentA = Component {
-            add(
+            bind(
                 Binding(
                     key = keyOf(),
                     behavior = SingleBehavior

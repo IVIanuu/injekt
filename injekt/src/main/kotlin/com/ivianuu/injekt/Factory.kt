@@ -50,14 +50,14 @@ inline fun <reified T> ComponentBuilder.factory(
  * @param bound whether instances should be created in the scope of the component
  * @param provider the definitions which creates instances
  *
- * @see ComponentBuilder.add
+ * @see ComponentBuilder.bind
  */
 fun <T> ComponentBuilder.factory(
     key: Key<T>,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     bound: Boolean = false,
     provider: BindingProvider<T>
-): BindingContext<T> = add(
+): BindingContext<T> = bind(
     Binding(
         key = key,
         behavior = if (bound) BoundBehavior() else Behavior.None,
@@ -76,6 +76,8 @@ fun <T> ComponentBuilder.factory(
  * @see InjektConstructor
  * @see ComponentBuilder.factory
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
+@BehaviorMarker(FactoryBehavior::class)
+@Target(AnnotationTarget.CLASS)
 annotation class Factory
 
+object FactoryBehavior : Behavior.Element

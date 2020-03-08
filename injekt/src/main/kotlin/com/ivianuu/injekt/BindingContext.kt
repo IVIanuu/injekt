@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Result of call to [ComponentBuilder.add]
+ * Result of call to [ComponentBuilder.bind]
  * this is allows to add additional aliases to the same declared binding
  *
  * E.g.
@@ -62,7 +62,7 @@ class BindingContext<T> internal constructor(
      *
      * `factory { RepositoryImpl() }.bindAlias(keyOf<Repository>())`
      *
-     * @see ComponentBuilder.add
+     * @see ComponentBuilder.bind
      */
     fun bindAlias(
         key: Key<*>,

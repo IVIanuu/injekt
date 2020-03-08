@@ -25,7 +25,7 @@ import kotlin.reflect.typeOf
  * A key used to retrieve [Binding]s in [Component]s
  *
  * @see Component.get
- * @see ComponentBuilder.add
+ * @see ComponentBuilder.bind
  */
 data class Key<T> internal constructor(
     val classifier: KClass<*>,

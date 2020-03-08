@@ -26,7 +26,8 @@ package com.ivianuu.injekt
  * @see InjektConstructor
  * @see ComponentBuilder.single
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
+@BehaviorMarker(SingleBehavior::class)
+@Target(AnnotationTarget.CLASS)
 annotation class Single
 
 object SingleBehavior : Behavior.Element {
@@ -66,14 +67,14 @@ inline fun <reified T> ComponentBuilder.single(
  * @param eager whether the instance should be created when the [Component] get's created
  * @param provider the definitions which creates instances
  *
- * @see ComponentBuilder.add
+ * @see ComponentBuilder.bind
  */
 fun <T> ComponentBuilder.single(
     key: Key<T>,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     eager: Boolean = false,
     provider: BindingProvider<T>
-): BindingContext<T> = add(
+): BindingContext<T> = bind(
     Binding(
         key = key,
         behavior = (if (eager) EagerBehavior else Behavior.None) + SingleBehavior + BoundBehavior(),

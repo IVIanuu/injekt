@@ -16,34 +16,10 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ComponentBuilderTest {
-
-    @Test
-    fun testAlias() {
-        val component = Component {
-            single { TestDep1() }
-            alias<TestDep1, Any>()
-        }
-
-        val declared = component.get<TestDep1>()
-        val aliased = component.get<Any>()
-        assertTrue(declared === aliased)
-    }
-
-    @Test
-    fun testInstance() {
-        val component = Component {
-            instance("string")
-            instance(1)
-        }
-
-        assertEquals("string", component.get<String>())
-        assertEquals(1, component.get<Int>())
-    }
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
@@ -101,7 +77,7 @@ class ComponentBuilderTest {
     @Test
     fun testBind() {
         val binding = Binding(key = keyOf<String>()) { "value" }
-        val component = Component { add(binding) }
+        val component = Component { bind(binding) }
         assertEquals(binding, component.getBinding<String>(keyOf<String>()))
     }
 }

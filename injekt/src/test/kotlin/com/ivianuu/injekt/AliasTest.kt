@@ -16,30 +16,21 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
+import junit.framework.Assert
 import org.junit.Test
 
-class EagerBehaviorTest {
+class AliasTest {
 
     @Test
-    fun testEagerBehavior() {
-        var called = false
-        Component {
-            bind(
-                Binding(key = keyOf()) { called = true }
-            )
+    fun testAlias() {
+        val component = Component {
+            single { TestDep1() }
+            alias<TestDep1, Any>()
         }
-        assertFalse(called)
-        Component {
-            bind(
-                Binding(
-                    key = keyOf(),
-                    behavior = EagerBehavior
-                ) { called = true }
-            )
-        }
-        assertTrue(called)
+
+        val declared = component.get<TestDep1>()
+        val aliased = component.get<Any>()
+        Assert.assertSame(declared, aliased)
     }
 
 }

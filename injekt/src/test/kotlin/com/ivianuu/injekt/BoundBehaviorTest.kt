@@ -26,7 +26,7 @@ class BoundBehaviorTest {
         val usedComponents = mutableListOf<Component>()
 
         val componentA = Component {
-            add(
+            bind(
                 Binding(
                     keyOf(),
                     behavior = BoundBehavior()
@@ -58,7 +58,7 @@ class BoundBehaviorTest {
         val componentB = Component {
             dependencies(componentA)
 
-            add(
+            bind(
                 Binding(
                     keyOf(),
                     behavior = BoundBehavior(scope = TestScopeOne)

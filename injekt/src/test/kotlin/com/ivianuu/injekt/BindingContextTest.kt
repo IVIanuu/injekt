@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertTrue
+import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class BindingContextTest {
@@ -30,7 +30,7 @@ class BindingContextTest {
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>(qualifier = TestQualifier1)
-        assertTrue(declared === aliased)
+        assertSame(declared, aliased)
     }
 
     @Test
@@ -42,7 +42,7 @@ class BindingContextTest {
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>()
-        assertTrue(declared === aliased)
+        assertSame(declared, aliased)
     }
 
     @Test
@@ -54,6 +54,6 @@ class BindingContextTest {
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<TestDep1>(qualifier = TestQualifier1)
-        assertTrue(declared === aliased)
+        assertSame(declared, aliased)
     }
 }
