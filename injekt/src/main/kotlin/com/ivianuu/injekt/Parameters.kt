@@ -45,7 +45,7 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
-/*inline*/ class Parameters(private val values: Array<*>) {
+class Parameters(private val values: Array<*>) {
 
     /**
      * The count of parameters
