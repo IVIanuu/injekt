@@ -16,6 +16,48 @@
 
 package com.ivianuu.injekt
 
+/**
+ *
+ * A qualifier can help to distinct between bindings of the same type for example:
+ *
+ * ´´´
+ * val component = Component {
+ *     factory<CreditCardHandler>(qualifier = Paypal) { ... }
+ *     factory<CreditCardHandler>(qualifier = Amazon) { ... }
+ * }
+ *
+ * val creditCardHandler: CreditCardHandler = if (usePaypal) {
+ *     component.get(qualifier = Paypal)
+ * } else {
+ *     component.get(qualifier = Amazon)
+ * }
+ * ´´´
+ *
+ * A qualifier can be declared as follows
+ *
+ * ´´´
+ * @QualifierMarker
+ * annotation class UserId {
+ *     companion object : Qualifier.Element
+ * }
+ *
+ * Qualifiers can be used like this with the annotation api
+ *
+ * ´´´
+ * @Factory
+ * class MyViewModel(@UserId private val userId: String)
+ * ´´´
+ *
+ * It's also possible to combine multiple qualifiers
+ *
+ * ´´´
+ * val combinedQualifier = PaypalQualifier + MockedQualifier
+ * ´´´
+ *
+ * @see Component.get
+ * @see Factory
+ * @see Single
+ */
 interface Qualifier {
 
     fun <R> foldIn(initial: R, operation: (R, Element) -> R): R
@@ -42,6 +84,14 @@ interface Qualifier {
     }
 }
 
+/**
+ * Marker for [Qualifier]s
+ *
+ * @see Qualifier
+ */
+@Target(AnnotationTarget.CLASS)
+annotation class QualifierMarker
+
 private class CombinedQualifier(
     private val element: Qualifier.Element,
     private val wrapped: Qualifier
@@ -61,36 +111,3 @@ private class CombinedQualifier(
         if (acc.isEmpty()) element.toString() else "$acc, $element"
     } + "]"
 }
-
-/**
- * Marks the annotated class as a qualifier which can be used to differentiate between instances of the same type
- * The annotated class must have an companion object which implements Qualifier
- *
- * ´´´
- * @QualifierMarker
- * annotation class UserId {
- *     companion object : Qualifier.Element
- * }
- * ´´´
- *
- * We can then use the name in the dsl as follows:
- *
- * ´´´
- * factory {
- *     MyViewModel(userId = get(qualifier = UserId))
- * }
- * ´´´
- *
- * And also in @Factory or @Single annotated classes like this:
- *
- * ´´´
- * @Factory
- * class MyViewModel(@UserId private val userId: String)
- * ´´´
- *
- * @see Component.get
- * @see Factory
- * @see Single
- */
-@Target(AnnotationTarget.CLASS)
-annotation class QualifierMarker
