@@ -38,19 +38,7 @@ data class Key<T> internal constructor(
 
     override fun hashCode(): Int = hashCode
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Key<*>
-
-        if (classifier != other.classifier) return false
-        // todo if (isNullable && !other.isNullable) return false
-        if (!arguments.contentEquals(other.arguments)) return false
-        if (name != other.name) return false
-
-        return true
-    }
+    override fun equals(other: Any?): Boolean = other is Key<*> && hashCode == other.hashCode
 
     private fun generateHashCode(): Int {
         var result = classifier.hashCode()
@@ -71,7 +59,7 @@ data class Key<T> internal constructor(
             ""
         }
 
-        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params, name=$name)"
+        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params,name=$name)"
     }
 }
 
