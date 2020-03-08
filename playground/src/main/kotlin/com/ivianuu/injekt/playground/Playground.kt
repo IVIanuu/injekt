@@ -20,6 +20,8 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
@@ -28,7 +30,7 @@ interface Command
 
 @QualifierMarker
 annotation class Commands {
-    companion object
+    companion object : Qualifier.Element
 }
 
 @Factory
