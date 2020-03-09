@@ -33,11 +33,13 @@ inline fun <reified S, reified T> ComponentBuilder.alias(
  *
  * ´´´
  * val component = Component {
- *     factory { RepositoryImpl() }
+ *     single { RepositoryImpl() }
  *     alias<RepositoryImpl, Repository>()
  * }
  *
- * val repository = component.get<Repository>()
+ * val repositoryA = component.get<RepositoryImpl>()
+ * val repositoryB = component.get<Repository>()
+ * assertSame(repositoryA, repositoryB) // true
  *
  * ´´´
  *
