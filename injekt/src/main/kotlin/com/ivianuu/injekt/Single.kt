@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Caches the result of the first call to the provider
  *
-We get the same instance in the following example
+ * We get the same instance in the following example
  *
  * ´´´
  * val component = Component {
