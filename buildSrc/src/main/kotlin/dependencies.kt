@@ -42,7 +42,7 @@ object Deps {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
         object Lifecycle {
-            private const val version = "2.2.0-rc02"
+            private const val version = "2.2.0"
             const val extensions = "androidx.lifecycle:lifecycle-extensions:$version"
             const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
         }
@@ -70,11 +70,11 @@ object Deps {
 
     const val junit = "junit:junit:4.12"
 
-    const val katana = "org.rewedigital.katana:katana-core:1.12.1"
+    const val katana = "org.rewedigital.katana:katana-core:1.13.1"
 
-    const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.5.1"
+    const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.5.3"
 
-    const val koin = "org.koin:koin-core:2.0.1"
+    const val koin = "org.koin:koin-core:2.1.3"
 
     object Kotlin {
         private const val version = "1.4-SNAPSHOT"
