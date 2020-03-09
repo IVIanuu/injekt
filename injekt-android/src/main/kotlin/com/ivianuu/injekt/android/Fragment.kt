@@ -55,23 +55,29 @@ inline fun <T : Fragment> FragmentComponent(
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
-        alias(originalKey = key, aliasKey = keyOf<Fragment>())
-        alias<Fragment>(aliasQualifier = qualifier)
-
-        maybeLifecycleBindings(instance, qualifier)
-        maybeViewModelStoreBindings(instance, qualifier)
-        maybeSavedStateBindings(instance, qualifier)
-
-        contextBindings(qualifier) { instance.requireContext() }
-        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
-        alias<FragmentManager>(aliasQualifier = qualifier)
-
-        componentAlias(qualifier)
-
+        fragmentBindings(instance, key, qualifier)
         block()
     }
+
+fun <T : Fragment> ComponentBuilder.fragmentBindings(
+    instance: T,
+    key: Key<T>,
+    qualifier: Qualifier = ForFragment
+) {
+    instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
+    alias(originalKey = key, aliasKey = keyOf<Fragment>())
+    alias<Fragment>(aliasQualifier = qualifier)
+
+    maybeLifecycleBindings(instance, qualifier)
+    maybeViewModelStoreBindings(instance, qualifier)
+    maybeSavedStateBindings(instance, qualifier)
+
+    contextBindings(qualifier) { instance.requireContext() }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
+    alias<FragmentManager>(aliasQualifier = qualifier)
+
+    componentAlias(qualifier)
+}
 
 @ScopeMarker
 annotation class FragmentScope {

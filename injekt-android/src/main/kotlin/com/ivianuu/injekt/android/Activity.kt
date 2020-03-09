@@ -47,7 +47,14 @@ fun <T : Activity> ActivityComponent(
 ): Component = Component {
     scopes(ActivityScope)
     instance.getClosestComponentOrNull()?.let { dependencies(it) }
+    activityBindings(instance, key)
+    block()
+}
 
+fun <T : Activity> ComponentBuilder.activityBindings(
+    instance: T,
+    key: Key<T>
+) {
     instance(instance = instance, key = key)
     if (instance is ComponentActivity) alias(key, keyOf<ComponentActivity>())
     if (instance is FragmentActivity) alias(key, keyOf<FragmentActivity>())
@@ -63,8 +70,6 @@ fun <T : Activity> ActivityComponent(
     maybeViewModelStoreBindings(instance, ForActivity)
     maybeSavedStateBindings(instance, ForActivity)
     componentAlias(ForActivity)
-
-    block()
 }
 
 @ScopeMarker

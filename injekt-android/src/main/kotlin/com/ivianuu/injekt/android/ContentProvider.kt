@@ -42,14 +42,19 @@ inline fun <T : ContentProvider> ContentProviderComponent(
     Component {
         scopes(ContentProviderScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(instance, key = key)
-        alias(originalKey = key, aliasKey = keyOf<ContentProvider>())
-        contextBindings(ForContentProvider) { instance.context!! }
-        componentAlias(ForContentProvider)
-
+        contentProviderBindings(instance, key)
         block()
     }
+
+fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance, key = key)
+    alias(originalKey = key, aliasKey = keyOf<ContentProvider>())
+    contextBindings(ForContentProvider) { instance.context!! }
+    componentAlias(ForContentProvider)
+}
 
 @ScopeMarker
 annotation class ContentProviderScope {

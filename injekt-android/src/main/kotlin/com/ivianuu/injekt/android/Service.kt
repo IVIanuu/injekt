@@ -42,14 +42,19 @@ inline fun <T : Service> ServiceComponent(
     Component {
         scopes(ServiceScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(instance, key = key)
-        alias(originalKey = key, aliasKey = keyOf<Service>())
-        contextBindings(ForService) { instance }
-        componentAlias(ForService)
-
+        serviceBindings(instance, key)
         block()
     }
+
+fun <T : Service> ComponentBuilder.serviceBindings(
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance, key = key)
+    alias(originalKey = key, aliasKey = keyOf<Service>())
+    contextBindings(ForService) { instance }
+    componentAlias(ForService)
+}
 
 @ScopeMarker
 annotation class ServiceScope {

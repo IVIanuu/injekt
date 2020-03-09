@@ -49,13 +49,19 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
 ): Component = Component {
     scopes(ReceiverScope)
     instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
+    receiverBindings(context, instance, key)
+    block()
+}
 
+fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
+    context: Context,
+    instance: T,
+    key: Key<T>
+) {
     instance(instance, key = key)
     alias(originalKey = key, aliasKey = keyOf<BroadcastReceiver>())
     contextBindings(ForReceiver) { context }
     componentAlias(ForReceiver)
-
-    block()
 }
 
 @ScopeMarker

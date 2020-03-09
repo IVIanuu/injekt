@@ -55,20 +55,26 @@ inline fun <T : View> ViewComponent(
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(
-            instance = instance,
-            key = key,
-            duplicateStrategy = DuplicateStrategy.Override
-        )
-        alias(originalKey = key, aliasKey = keyOf<View>())
-        alias<View>(aliasQualifier = qualifier)
-
-        contextBindings(qualifier) { instance.context!! }
-        componentAlias(qualifier)
-
+        viewBindings(instance, key, qualifier)
         block()
     }
+
+fun <T : View> ComponentBuilder.viewBindings(
+    instance: T,
+    key: Key<T>,
+    qualifier: Qualifier = ForView
+) {
+    instance(
+        instance = instance,
+        key = key,
+        duplicateStrategy = DuplicateStrategy.Override
+    )
+    alias(originalKey = key, aliasKey = keyOf<View>())
+    alias<View>(aliasQualifier = qualifier)
+
+    contextBindings(qualifier) { instance.context!! }
+    componentAlias(qualifier)
+}
 
 @ScopeMarker
 annotation class ViewScope {

@@ -41,18 +41,23 @@ inline fun <T : Application> ApplicationComponent(
 ): Component =
     Component {
         scopes(ApplicationScope)
-
-        instance(instance, key = key)
-        alias(key, keyOf<Application>())
-        contextBindings(ForApplication) { instance }
-        maybeLifecycleBindings(
-            ProcessLifecycleOwner.get(),
-            ForApplication
-        )
-        componentAlias(ForApplication)
-
+        applicationBindings(instance, key)
         block()
     }
+
+fun <T : Application> ComponentBuilder.applicationBindings(
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance, key = key)
+    alias(key, keyOf<Application>())
+    contextBindings(ForApplication) { instance }
+    maybeLifecycleBindings(
+        ProcessLifecycleOwner.get(),
+        ForApplication
+    )
+    componentAlias(ForApplication)
+}
 
 @ScopeMarker
 annotation class ApplicationScope {

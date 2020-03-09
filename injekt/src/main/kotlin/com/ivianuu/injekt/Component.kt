@@ -149,7 +149,3 @@ class Component internal constructor(
         return binding
     }
 }
-
-operator fun Component.plus(other: Component): Component {
-    return Component { dependencies(this@plus, other) }
-}
