@@ -126,7 +126,7 @@ data class Results(
 
 fun List<Timings>.results(): Results {
     return Results(
-        injectorName = first().injectorName, // todo dirty
+        injectorName = first().injectorName,
         moduleCreation = Result("Module creation", map { it.moduleCreation }),
         setup = Result("Setup", map { it.setup }),
         firstInjection = Result("First injection", map { it.firstInjection }),
