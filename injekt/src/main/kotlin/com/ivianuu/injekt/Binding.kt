@@ -70,6 +70,25 @@ data class Binding<T> private constructor(
 typealias BindingProvider<T> = Component.(Parameters) -> T
 
 /**
+ * Base class for special [BindingProvider]s
+ */
+abstract class DelegatingBindingProvider<T>(
+    val delegate: BindingProvider<T>
+) : (Component, Parameters) -> T, ComponentInitObserver {
+
+    private var initialized = false
+
+    override fun onInit(component: Component) {
+        check(!initialized) { "Binding providers should not be reused" }
+        initialized = true
+        (delegate as? ComponentInitObserver)?.onInit(component)
+    }
+
+    override fun invoke(p1: Component, p2: Parameters): T = delegate(p1, p2)
+
+}
+
+/**
  * Used by the codegen
  */
 interface BindingFactory<T> {

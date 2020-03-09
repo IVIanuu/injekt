@@ -74,13 +74,9 @@ fun <T> ComponentBuilder.single(
 annotation class Single
 
 private class SingleProvider<T>(
-    private val provider: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
+    delegate: BindingProvider<T>
+) : DelegatingBindingProvider<T>(delegate) {
     private var value: Any? = this
-
-    override fun onInit(component: Component) {
-        (provider as? ComponentInitObserver)?.onInit(component)
-    }
 
     override fun invoke(p1: Component, p2: Parameters): T {
         var value = this.value
@@ -88,7 +84,7 @@ private class SingleProvider<T>(
             synchronized(this) {
                 value = this.value
                 if (value === this) {
-                    this.value = provider(p1, p2)
+                    this.value = super.invoke(p1, p2)
                     value = this.value
                 }
             }

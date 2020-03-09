@@ -23,7 +23,7 @@ import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.ComponentInitObserver
+import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
@@ -52,19 +52,15 @@ inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
 annotation class ViewModel
 
 private class ViewModelProvider<T>(
-    private val provider: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
-    override fun onInit(component: Component) {
-        (provider as? ComponentInitObserver)?.onInit(component)
-    }
-
+    delegate: BindingProvider<T>
+) : DelegatingBindingProvider<T>(delegate) {
     override fun invoke(p1: Component, p2: Parameters): T {
         val viewModelStore = p1.get<ViewModelStore>()
         val viewModelProvider = AndroidViewModelProvider(
             viewModelStore,
             object : AndroidViewModelProvider.Factory {
                 override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    provider(p1, p2) as T
+                    this@ViewModelProvider.invoke(p1, p2) as T
             }
         )
 

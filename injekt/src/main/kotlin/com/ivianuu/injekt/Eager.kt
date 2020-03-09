@@ -34,13 +34,10 @@ object EagerBehavior : Behavior.Element {
         EagerProvider(provider)
 }
 
-private class EagerProvider<T>(private val provider: BindingProvider<T>) :
-        (Component, Parameters) -> T,
-    ComponentInitObserver {
+private class EagerProvider<T>(delegate: BindingProvider<T>) :
+    DelegatingBindingProvider<T>(delegate) {
     override fun onInit(component: Component) {
-        (provider as? ComponentInitObserver)?.onInit(component)
+        super.onInit(component)
         invoke(component, emptyParameters())
     }
-
-    override fun invoke(p1: Component, p2: Parameters): T = provider(p1, p2)
 }

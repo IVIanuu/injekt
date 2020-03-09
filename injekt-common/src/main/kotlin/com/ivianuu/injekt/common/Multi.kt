@@ -24,7 +24,7 @@ import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.BoundBehavior
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.ComponentInitObserver
+import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
@@ -90,16 +90,9 @@ fun <T> ComponentBuilder.multi(
 annotation class Multi
 
 private class MultiProvider<T>(
-    private val provider: BindingProvider<T>
-) : (Component, Parameters) -> T,
-    ComponentInitObserver {
-
+    delegate: BindingProvider<T>
+) : DelegatingBindingProvider<T>(delegate) {
     private val values = ConcurrentHashMap<Int, T>()
-
-    override fun onInit(component: Component) {
-        (provider as? ComponentInitObserver)?.onInit(component)
-    }
-
-    override fun invoke(p1: Component, pq: Parameters): T =
-        values.getOrPut(pq.hashCode()) { provider(p1, pq) }
+    override fun invoke(p1: Component, p2: Parameters): T =
+        values.getOrPut(p2.hashCode()) { super.invoke(p1, p2) }
 }

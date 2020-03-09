@@ -27,21 +27,16 @@ class BoundBehavior(private val scope: Scope? = null) : Behavior.Element {
 
 private class BoundProvider<T>(
     private val scope: Scope? = null,
-    private val provider: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
+    delegate: BindingProvider<T>
+) : DelegatingBindingProvider<T>(delegate) {
 
     private lateinit var boundComponent: Component
 
     override fun onInit(component: Component) {
-        check(!this::boundComponent.isInitialized) {
-            "Already scoped to $component"
-        }
-
         this.boundComponent = if (scope == null) component
         else component.getComponent(scope)
-
-        (provider as? ComponentInitObserver)?.onInit(boundComponent)
+        super.onInit(boundComponent)
     }
 
-    override fun invoke(p1: Component, p2: Parameters): T = provider(boundComponent, p2)
+    override fun invoke(p1: Component, p2: Parameters): T = super.invoke(boundComponent, p2)
 }
