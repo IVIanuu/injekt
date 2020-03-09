@@ -82,16 +82,16 @@ import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
 fun SystemServiceComponent() = Component {
-    getSystemServices()
-        .forEach { service ->
-            factory(key = keyOf(service)) {
-                ContextCompat.getSystemService(get(), service.java)!!
+    getSystemServicesClasses()
+        .forEach { serviceClass ->
+            factory(key = keyOf(serviceClass)) {
+                ContextCompat.getSystemService(get(), serviceClass.java)!!
             }
         }
 }
 
 @Suppress("DEPRECATION")
-private fun getSystemServices(): Set<KClass<*>> = mutableSetOf<KClass<out Any>>().apply {
+private fun getSystemServicesClasses(): Set<KClass<*>> = mutableSetOf<KClass<out Any>>().apply {
     this += AccessibilityManager::class
     this += AccountManager::class
     this += ActivityManager::class
