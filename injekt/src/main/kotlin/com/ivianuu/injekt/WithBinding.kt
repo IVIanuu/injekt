@@ -45,12 +45,13 @@ fun <T> ComponentBuilder.withBinding(
     key: Key<T>,
     block: BindingContext<T>.() -> Unit
 ) {
-    //* we create a proxy binding which links to the original binding
+    // we create a alias of the original binding with a UUID qualifier
     // because we have no reference to the original one it's likely in another [Component]
     // we use a unique id here to make sure that the binding does not collide with any user config
-    bind(key = key.copy(qualifier = UUIDQualifier())) { parameters ->
-        get(key, parameters = parameters)
-    }.block()
+    alias(
+        originalKey = key,
+        aliasKey = key.copy(qualifier = UUIDQualifier())
+    ).block()
 }
 
 private data class UUIDQualifier(private val uuid: UUID = UUID.randomUUID()) : Qualifier.Element
