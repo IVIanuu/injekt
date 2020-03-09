@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -73,7 +73,7 @@ fun ContentProvider.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun ContentProvider.getApplicationComponentOrNull(): Component? =
-    (context?.applicationContext as? InjektTrait)?.component
+    (context?.applicationContext as? ComponentOwner)?.component
 
 fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")

@@ -20,7 +20,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
+import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -81,7 +81,7 @@ fun BroadcastReceiver.getClosestComponent(context: Context): Component =
     getClosestComponentOrNull(context) ?: error("No close Component found for $this")
 
 fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component? =
-    (context.applicationContext as? InjektTrait)?.component
+    (context.applicationContext as? ComponentOwner)?.component
 
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application Component found for $this")

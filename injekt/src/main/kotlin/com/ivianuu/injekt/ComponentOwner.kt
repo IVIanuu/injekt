@@ -22,7 +22,7 @@ package com.ivianuu.injekt
  * Example:
  *
  * ```
- * class MainActivity : Activity(), InjektTrait {
+ * class MainActivity : Activity(), ComponentOwner {
  *
  *     override val component = Component { ... }
  *
@@ -33,8 +33,7 @@ package com.ivianuu.injekt
  * ```
  *
  */
-interface InjektTrait {
-
+interface ComponentOwner {
     /**
      * The [Component] which will be used to retrieve dependencies
      */
@@ -66,7 +65,7 @@ interface InjektTrait {
 /**
  * @see Component.get
  */
-inline fun <reified T> InjektTrait.get(
+inline fun <reified T> ComponentOwner.get(
     qualifier: Qualifier = Qualifier.None,
     parameters: Parameters = emptyParameters()
 ): T = get(keyOf(qualifier = qualifier), parameters)
@@ -76,7 +75,7 @@ inline fun <reified T> InjektTrait.get(
  *
  * @see Component.get
  */
-inline fun <reified T> InjektTrait.getLazy(
+inline fun <reified T> ComponentOwner.getLazy(
     qualifier: Qualifier = Qualifier.None,
     noinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = getLazy(key = keyOf(qualifier), parameters = parameters)

@@ -23,8 +23,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -88,7 +88,8 @@ fun Activity.getClosestComponentOrNull(): Component? =
 fun Activity.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
-fun Activity.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
+fun Activity.getApplicationComponentOrNull(): Component? =
+    (application as? ComponentOwner)?.component
 
 fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")

@@ -20,8 +20,8 @@ import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.InjektTrait
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -106,7 +106,7 @@ fun View.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun View.getParentViewComponentOrNull(): Component? =
-    (parent as? InjektTrait)?.component
+    (parent as? ComponentOwner)?.component
 
 fun View.getParentViewComponent(): Component =
     getParentViewComponentOrNull() ?: error("No parent view Component found for $this")
@@ -114,7 +114,7 @@ fun View.getParentViewComponent(): Component =
 fun View.getContextComponentOrNull(): Component? {
     var parentContext = context
     while (parentContext != null) {
-        if (parentContext is InjektTrait) {
+        if (parentContext is ComponentOwner) {
             return parentContext.component
         }
         parentContext = (parentContext as? ContextWrapper)?.baseContext
@@ -127,7 +127,7 @@ fun View.getContextComponent(): Component =
     getContextComponentOrNull() ?: error("No context Component found for $this")
 
 fun View.getApplicationComponentOrNull(): Component? =
-    (context.applicationContext as? InjektTrait)?.component
+    (context.applicationContext as? ComponentOwner)?.component
 
 fun View.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")
