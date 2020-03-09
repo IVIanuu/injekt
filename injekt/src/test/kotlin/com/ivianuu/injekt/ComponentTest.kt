@@ -335,7 +335,6 @@ class ComponentTest {
         assertEquals(componentB, environmentB.component)
         assertEquals(componentC, environmentC.component)
     }
-
 }
 
 class Context(val component: Component) : Environment

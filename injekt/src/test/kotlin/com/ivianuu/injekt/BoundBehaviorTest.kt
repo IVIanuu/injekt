@@ -78,5 +78,4 @@ class BoundBehaviorTest {
 
         assertEquals(listOf(componentA, componentA), usedComponents)
     }
-
 }

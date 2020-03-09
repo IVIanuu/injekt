@@ -40,5 +40,4 @@ class MultiBehaviorTest {
     }
 
     private class MultiDep(val arg: String)
-
 }

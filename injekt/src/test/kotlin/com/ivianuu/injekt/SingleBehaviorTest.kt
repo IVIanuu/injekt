@@ -67,5 +67,4 @@ class SingleBehaviorTest {
         assertEquals(depA, depB)
         assertEquals(depA, depC)
     }
-
 }

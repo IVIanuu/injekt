@@ -61,5 +61,4 @@ class BehaviorTest {
 
         assertEquals(listOf(1, 2, 3), appliedBehaviors)
     }
-
 }

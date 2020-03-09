@@ -32,5 +32,4 @@ class WithBindingTest {
         val aliased = component.get<Any>()
         assertSame(declared, aliased)
     }
-
 }

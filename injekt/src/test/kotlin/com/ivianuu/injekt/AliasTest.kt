@@ -32,5 +32,4 @@ class AliasTest {
         val aliased = component.get<Any>()
         assertSame(declared, aliased)
     }
-
 }

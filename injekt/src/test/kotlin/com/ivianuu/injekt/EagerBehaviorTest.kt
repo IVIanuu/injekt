@@ -41,5 +41,4 @@ class EagerBehaviorTest {
         }
         assertTrue(called)
     }
-
 }
