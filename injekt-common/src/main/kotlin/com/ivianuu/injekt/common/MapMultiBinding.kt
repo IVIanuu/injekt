@@ -21,7 +21,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyWithOverrideInfo
 import com.ivianuu.injekt.KeyedLazy
 import com.ivianuu.injekt.KeyedProvider
 import com.ivianuu.injekt.Lazy
