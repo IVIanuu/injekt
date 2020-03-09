@@ -180,6 +180,19 @@ class ComponentBuilder {
         )
 
         bindings[componentBinding.key] = componentBinding
+
+        _scopes
+            .map { scope ->
+                Binding(
+                    key = keyOf(qualifier = scope),
+                    behavior = BoundBehavior(),
+                    duplicateStrategy = DuplicateStrategy.Override,
+                    provider = { this }
+                )
+            }
+            .forEach {
+                bindings[it.key] = it
+            }
     }
 
     private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =

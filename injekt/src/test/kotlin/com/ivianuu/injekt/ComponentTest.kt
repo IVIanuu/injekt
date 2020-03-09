@@ -297,12 +297,12 @@ class ComponentTest {
             dependencies(componentA)
         }
 
-        /*assertEquals(componentA, componentA.get<Component>())
+        assertEquals(componentA, componentA.get<Component>())
         assertEquals(componentA, componentA.get<Component>(qualifier = TestScopeOne))
 
         assertEquals(componentB, componentB.get<Component>())
         assertEquals(componentB, componentB.get<Component>(qualifier = TestScopeTwo))
-        assertEquals(componentA, componentB.get<Component>(qualifier = TestScopeOne))*/ // todo
+        assertEquals(componentA, componentB.get<Component>(qualifier = TestScopeOne))
     }
 
     @Test

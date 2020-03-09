@@ -39,7 +39,7 @@ package com.ivianuu.injekt
  *
  * @see ComponentBuilder.scopes
  */
-interface Scope
+interface Scope : Qualifier.Element
 
 /**
  * Marker for [Scope]s
