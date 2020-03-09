@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
+
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
 
 /**
  * Used in multi binding collections
