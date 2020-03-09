@@ -38,7 +38,7 @@ private class BoundProvider<T>(
         }
 
         this.boundComponent = if (scope == null) component
-        else component.getComponentForScope(scope)
+        else component.getComponent(scope)
 
         (provider as? ComponentInitObserver)?.onInit(boundComponent)
     }

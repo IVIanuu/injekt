@@ -71,14 +71,14 @@ class Component internal constructor(
     /**
      * Returns the [Component] for [scope] or throws
      */
-    fun getComponentForScope(scope: Scope): Component =
-        findComponentForScope(scope) ?: error("Couldn't find component for scope $scope")
+    fun getComponent(scope: Scope): Component =
+        findComponent(scope) ?: error("Couldn't find component for scope $scope")
 
-    private fun findComponentForScope(scope: Scope): Component? {
+    private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
         for (i in dependencies.size - 1 downTo 0) {
-            dependencies[i].findComponentForScope(scope)?.let { return it }
+            dependencies[i].findComponent(scope)?.let { return it }
         }
 
         return null
