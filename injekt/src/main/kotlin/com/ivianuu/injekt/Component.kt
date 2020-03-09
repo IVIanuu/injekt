@@ -40,11 +40,14 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scopes: List<Scope>,
     val dependencies: List<Component>,
-    val bindings: MutableMap<Key<*>, Binding<*>>
+    bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
+    private val _bindings = bindings
+    val bindings: Map<Key<*>, Binding<*>> get() = _bindings
+
     init {
-        bindings
+        _bindings
             .mapNotNull { it.value.provider as? ComponentInitObserver }
             .forEach { it.onInit(this) }
     }
@@ -90,7 +93,7 @@ class Component internal constructor(
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = bindings[key] as? Binding<T>
+        binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
@@ -144,7 +147,7 @@ class Component internal constructor(
 
         val binding = InjektPlugins.justInTimeBindingFactory.findBinding(key)
             ?: return null
-        bindings[key] = binding
+        synchronized(_bindings) { _bindings[key] = binding }
         (binding.provider as? ComponentInitObserver)?.onInit(this)
         return binding
     }
