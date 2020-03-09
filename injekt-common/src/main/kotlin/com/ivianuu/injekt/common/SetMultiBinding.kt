@@ -157,7 +157,8 @@ fun <E> ComponentBuilder.set(
                         classifier = Provider::class,
                         arguments = arrayOf(setKey.arguments[0])
                     )
-                )
+                ),
+                qualifier = setKey.qualifier
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
@@ -179,7 +180,8 @@ fun <E> ComponentBuilder.set(
                         classifier = Lazy::class,
                         arguments = arrayOf(setKey.arguments[0])
                     )
-                )
+                ),
+                qualifier = setKey.qualifier
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {

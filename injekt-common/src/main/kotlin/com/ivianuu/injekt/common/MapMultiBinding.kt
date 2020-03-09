@@ -168,7 +168,8 @@ fun <K, V> ComponentBuilder.map(
                         classifier = Provider::class,
                         arguments = arrayOf(mapKey.arguments[1])
                     )
-                )
+                ),
+                qualifier = mapKey.qualifier
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
@@ -191,7 +192,8 @@ fun <K, V> ComponentBuilder.map(
                         classifier = Lazy::class,
                         arguments = arrayOf(mapKey.arguments[1])
                     )
-                )
+                ),
+                qualifier = mapKey.qualifier
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {

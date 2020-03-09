@@ -32,26 +32,26 @@ class SetMultiBindingTest {
             factory { Command1 }
             factory { Command2 }
             factory { Command3 }
-            set<Command> {
+            set<Command>(setQualifier = TestQualifier1) {
                 add<Command1>()
                 add<Command2>()
                 add<Command3>()
             }
         }
 
-        val set = component.get<Set<Command>>()
+        val set = component.get<Set<Command>>(qualifier = TestQualifier1)
         assertEquals(3, set.size)
         assertEquals(Command1, set.toList()[0])
         assertEquals(Command2, set.toList()[1])
         assertEquals(Command3, set.toList()[2])
 
-        val providerSet = component.get<Set<Provider<Command>>>()
+        val providerSet = component.get<Set<Provider<Command>>>(qualifier = TestQualifier1)
         assertEquals(3, providerSet.size)
         assertEquals(Command1, providerSet.toList()[0]())
         assertEquals(Command2, providerSet.toList()[1]())
         assertEquals(Command3, providerSet.toList()[2]())
 
-        val lazySet = component.get<Set<Lazy<Command>>>()
+        val lazySet = component.get<Set<Lazy<Command>>>(qualifier = TestQualifier1)
         assertEquals(3, providerSet.size)
         assertEquals(Command1, lazySet.toList()[0]())
         assertEquals(Command2, lazySet.toList()[1]())

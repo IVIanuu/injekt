@@ -32,26 +32,26 @@ class MapMultiBindingTest {
             factory { Command1 }
             factory { Command2 }
             factory { Command3 }
-            map<String, Command> {
+            map<String, Command>(mapQualifier = TestQualifier1) {
                 put<Command1>("one")
                 put<Command2>("two")
                 put<Command3>("three")
             }
         }
 
-        val map = component.get<Map<String, Command>>()
+        val map = component.get<Map<String, Command>>(qualifier = TestQualifier1)
         assertEquals(3, map.size)
         assertEquals(map["one"], Command1)
         assertEquals(map["two"], Command2)
         assertEquals(map["three"], Command3)
 
-        val providerMap = component.get<Map<String, Provider<Command>>>()
+        val providerMap = component.get<Map<String, Provider<Command>>>(qualifier = TestQualifier1)
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("one")(), Command1)
         assertEquals(providerMap.getValue("two")(), Command2)
         assertEquals(providerMap.getValue("three")(), Command3)
 
-        val lazyMap = component.get<Map<String, Lazy<Command>>>()
+        val lazyMap = component.get<Map<String, Lazy<Command>>>(qualifier = TestQualifier1)
         assertEquals(3, lazyMap.size)
         assertEquals(lazyMap.getValue("one")(), Command1)
         assertEquals(lazyMap.getValue("two")(), Command2)
