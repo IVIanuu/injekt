@@ -42,7 +42,7 @@ inline fun <reified T> ComponentBuilder.single(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>
-): BindingContext<T> = single(
+) = single(
     key = keyOf(qualifier = qualifier),
     behavior = behavior,
     duplicateStrategy = duplicateStrategy,
@@ -57,7 +57,7 @@ fun <T> ComponentBuilder.single(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     provider: BindingProvider<T>
-): BindingContext<T> = bind(
+) = bind(
     Binding(
         key = key,
         behavior = SingleBehavior + BoundBehavior() + behavior,

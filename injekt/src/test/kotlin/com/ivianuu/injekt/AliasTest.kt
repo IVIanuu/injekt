@@ -32,4 +32,17 @@ class AliasTest {
         val aliased = component.get<Any>()
         assertSame(declared, aliased)
     }
+
+    @Test
+    fun testAliasQualifier() {
+        val component = Component {
+            single { TestDep1() }
+            alias<TestDep1>(aliasQualifier = TestQualifier1)
+        }
+
+        val declared = component.get<TestDep1>()
+        val aliased = component.get<TestDep1>(qualifier = TestQualifier1)
+        assertSame(declared, aliased)
+    }
+
 }

@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
@@ -86,10 +85,10 @@ class MultiBindingSetBuilder<E> internal constructor() {
     private val elements = mutableSetOf<KeyWithOverrideInfo>()
 
     inline fun <reified T : E> add(
-        elementQualifiers: Qualifier = Qualifier.None,
+        elementQualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        add(keyOf<T>(qualifier = elementQualifiers), duplicateStrategy)
+        add(keyOf<T>(qualifier = elementQualifier), duplicateStrategy)
     }
 
     fun add(elementKey: Key<*>, duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail) {
@@ -118,14 +117,14 @@ class MultiBindingSetBuilder<E> internal constructor() {
 }
 
 inline fun <reified E> ComponentBuilder.set(
-    setQualifiers: Qualifier = Qualifier.None,
+    setQualifier: Qualifier = Qualifier.None,
     noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
 ) {
     set(
         setKey = keyOf(
             classifier = Set::class,
             arguments = arrayOf(keyOf<E>()),
-            qualifier = setQualifiers
+            qualifier = setQualifier
         ),
         block = block
     )
@@ -196,33 +195,6 @@ fun <E> ComponentBuilder.set(
     }
 
     bindingProvider.thisBuilder!!.block()
-}
-
-inline fun <reified T : E, reified E> BindingContext<T>.intoSet(
-    setQualifier: Qualifier = Qualifier.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-): BindingContext<T> = intoSet(
-    setKey = keyOf<Set<E>>(qualifier = setQualifier),
-    duplicateStrategy = duplicateStrategy
-)
-
-/**
- * Adds the [BindingContext.binding] into to the set of [setKey]
- *
- * @see MultiBindingSet
- * @see MultiBindingSetBuilder
- */
-fun <T, E> BindingContext<T>.intoSet(
-    setKey: Key<Set<E>>,
-    duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
-): BindingContext<T> {
-    componentBuilder.set(setKey = setKey) {
-        add(
-            elementKey = binding.key,
-            duplicateStrategy = duplicateStrategy
-        )
-    }
-    return this
 }
 
 private class SetBindingProvider<E>(

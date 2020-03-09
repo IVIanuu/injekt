@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
@@ -42,7 +43,7 @@ inline fun <T : Application> ApplicationComponent(
         scopes(ApplicationScope)
 
         instance(instance, key = key)
-            .bindAlias<Application>()
+        alias(key, keyOf<Application>())
         contextBindings(ForApplication) { instance }
         maybeLifecycleBindings(
             ProcessLifecycleOwner.get(),

@@ -18,17 +18,21 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.res.Resources
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.withBinding
 import kotlinx.coroutines.CoroutineScope
 
 @PublishedApi
@@ -38,12 +42,15 @@ internal fun ComponentBuilder.maybeLifecycleBindings(
 ) {
     if (instance !is LifecycleOwner) return
     instance(instance = instance, duplicateStrategy = DuplicateStrategy.Override)
-        .bindAlias(qualifier = qualifier)
+    alias<LifecycleOwner>(aliasQualifier = qualifier)
     factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) {
         instance.lifecycleScope
-    }.bindAlias(qualifier = qualifier)
+    }
+    alias<LifecycleCoroutineScope>(aliasQualifier = qualifier)
+    alias<LifecycleCoroutineScope, CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override)
+    alias<CoroutineScope>(aliasQualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycle }
-        .bindAlias(qualifier = qualifier)
+    alias<Lifecycle>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
@@ -52,13 +59,13 @@ internal fun ComponentBuilder.maybeViewModelStoreBindings(
     qualifier: Qualifier
 ) {
     if (instance !is ViewModelStoreOwner) return
-    instance<ViewModelStoreOwner>(
+    instance(
         instance = instance,
         duplicateStrategy = DuplicateStrategy.Override
     )
-        .bindAlias(qualifier = qualifier)
+    alias<ViewModelStoreOwner>(aliasQualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Override) { instance.viewModelStore }
-        .bindAlias(qualifier = qualifier)
+    alias<ViewModelStore>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
@@ -70,14 +77,15 @@ internal fun ComponentBuilder.maybeSavedStateBindings(
     instance(
         instance = instance,
         duplicateStrategy = DuplicateStrategy.Override
-    ).bindAlias(qualifier = qualifier)
+    )
+    alias<SavedStateRegistryOwner>(aliasQualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Override) { instance.savedStateRegistry }
-        .bindAlias(qualifier = qualifier)
+    alias<SavedStateRegistry>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.componentAlias(qualifier: Qualifier) {
-    withBinding<Component> { bindAlias(qualifier = qualifier) }
+    alias<Component>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
@@ -86,7 +94,7 @@ internal fun ComponentBuilder.contextBindings(
     definition: () -> Context
 ) {
     factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
-        .bindAlias(qualifier = qualifier)
+    alias<Context>(aliasQualifier = qualifier)
     resourcesBindings(qualifier = qualifier) { definition().resources!! }
 }
 
@@ -96,5 +104,5 @@ internal fun ComponentBuilder.resourcesBindings(
     definition: () -> Resources
 ) {
     factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
-        .bindAlias(qualifier = qualifier)
+    alias<Resources>(aliasQualifier = qualifier)
 }

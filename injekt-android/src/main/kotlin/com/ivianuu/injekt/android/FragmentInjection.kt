@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
@@ -29,11 +28,12 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.withBinding
+import com.ivianuu.injekt.keyOf
 
 fun FragmentFactoryComponent() = Component {
-    map<String, Fragment>(mapQualifiers = FragmentsMap)
+    map<String, Fragment>(mapQualifier = FragmentsMap)
     alias<InjektFragmentFactory, FragmentFactory>()
 }
 
@@ -44,21 +44,15 @@ inline fun <reified T : Fragment> ComponentBuilder.fragment(
     noinline provider: BindingProvider<T>
 ) {
     factory(qualifier, behavior, duplicateStrategy, provider)
-        .bindFragment()
+    bindFragmentIntoMap<T>(fragmentQualifier = qualifier)
 }
 
-inline fun <reified T : Fragment> ComponentBuilder.bindFragment(
-    qualifier: Qualifier = Qualifier.None
+inline fun <reified T : Fragment> ComponentBuilder.bindFragmentIntoMap(
+    fragmentQualifier: Qualifier = Qualifier.None
 ) {
-    withBinding<T>(qualifier) { bindFragment() }
-}
-
-inline fun <reified T : Fragment> BindingContext<T>.bindFragment(): BindingContext<T> {
-    intoMap<String, Fragment>(
-        entryKey = T::class.java.name,
-        mapQualifier = FragmentsMap
-    )
-    return this
+    map<String, Fragment>(mapQualifier = FragmentsMap) {
+        put(T::class.java.name, keyOf<T>(fragmentQualifier))
+    }
 }
 
 @Factory

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
@@ -55,17 +57,16 @@ inline fun <T : Fragment> FragmentComponent(
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
         instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
-            .bindAlias<Fragment>()
-            .bindAlias<Fragment>(qualifier = qualifier)
+        alias(originalKey = key, aliasKey = keyOf<Fragment>())
+        alias<Fragment>(aliasQualifier = qualifier)
 
         maybeLifecycleBindings(instance, qualifier)
         maybeViewModelStoreBindings(instance, qualifier)
         maybeSavedStateBindings(instance, qualifier)
 
         contextBindings(qualifier) { instance.requireContext() }
-        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }.bindAlias(
-            qualifier = qualifier
-        )
+        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
+        alias<FragmentManager>(aliasQualifier = qualifier)
 
         componentAlias(qualifier)
 

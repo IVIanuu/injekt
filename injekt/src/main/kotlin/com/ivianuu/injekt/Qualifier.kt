@@ -43,14 +43,14 @@ package com.ivianuu.injekt
  *     companion object : Qualifier.Element
  * }
  *
- * Qualifiers can be used like this with the annotation api
+ * Qualifier can be used like this with the annotation api
  *
  * ´´´
  * @Factory
  * class MyViewModel(@UserId private val userId: String)
  * ´´´
  *
- * It's also possible to combine multiple qualifiers
+ * It's also possible to combine multiple Qualifier
  *
  * ´´´
  * val combinedQualifier = PaypalQualifier + MockedQualifier

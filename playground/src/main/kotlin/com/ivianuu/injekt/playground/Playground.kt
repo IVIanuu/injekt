@@ -22,6 +22,7 @@ import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
+import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 

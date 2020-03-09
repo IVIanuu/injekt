@@ -20,6 +20,7 @@ import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
@@ -29,16 +30,17 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Activity> ActivityComponent(
     instance: T,
-    block: ComponentBuilder.() -> Unit = {}
+    noinline block: ComponentBuilder.() -> Unit = {}
 ): Component = ActivityComponent(instance = instance, key = keyOf(), block = block)
 
-inline fun <T : Activity> ActivityComponent(
+fun <T : Activity> ActivityComponent(
     instance: T,
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
@@ -47,16 +49,13 @@ inline fun <T : Activity> ActivityComponent(
     instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
     instance(instance = instance, key = key)
-        .bindAlias<Activity>()
-        .apply {
-            if (instance is ComponentActivity) bindAlias<ComponentActivity>()
-            if (instance is FragmentActivity) bindAlias<FragmentActivity>()
-            if (instance is AppCompatActivity) bindAlias<AppCompatActivity>()
-        }
+    if (instance is ComponentActivity) alias(key, keyOf<ComponentActivity>())
+    if (instance is FragmentActivity) alias(key, keyOf<FragmentActivity>())
+    if (instance is AppCompatActivity) alias(key, keyOf<AppCompatActivity>())
 
     (instance as? FragmentActivity)?.let {
         factory(duplicateStrategy = DuplicateStrategy.Override) { instance.supportFragmentManager }
-            .bindAlias(qualifier = ForActivity)
+        alias<FragmentManager>(aliasQualifier = ForActivity)
     }
 
     contextBindings(ForActivity) { instance }

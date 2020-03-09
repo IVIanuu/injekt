@@ -28,6 +28,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 
 dependencies {
     api(project(":injekt"))
+    implementation(project(":injekt-common"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
     api(Deps.AndroidX.Lifecycle.runtime)

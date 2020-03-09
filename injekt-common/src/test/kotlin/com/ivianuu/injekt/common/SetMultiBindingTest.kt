@@ -21,7 +21,6 @@ import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.keyOf
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -30,175 +29,174 @@ class SetMultiBindingTest {
     @Test
     fun testSetBinding() {
         val component = Component {
-            factory(qualifier = TestQualifier1) { "value_one" }
-                .intoSet(setKey = keyOf<Set<String>>())
-            factory(qualifier = TestQualifier2) { "value_two" }
-                .intoSet(setKey = keyOf<Set<String>>())
-            factory(qualifier = TestQualifier3) { "value_three" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory { Command1 }
+            factory { Command2 }
+            factory { Command3 }
+            set<Command> {
+                add<Command1>()
+                add<Command2>()
+                add<Command3>()
+            }
         }
 
-        val set = component.get<Set<String>>()
+        val set = component.get<Set<Command>>()
         assertEquals(3, set.size)
-        assertEquals("value_one", set.toList()[0])
-        assertEquals("value_two", set.toList()[1])
-        assertEquals("value_three", set.toList()[2])
+        assertEquals(Command1, set.toList()[0])
+        assertEquals(Command2, set.toList()[1])
+        assertEquals(Command3, set.toList()[2])
 
-        val providerSet = component.get<Set<Provider<String>>>()
+        val providerSet = component.get<Set<Provider<Command>>>()
         assertEquals(3, providerSet.size)
-        assertEquals("value_one", providerSet.toList()[0]())
-        assertEquals("value_two", providerSet.toList()[1]())
-        assertEquals("value_three", providerSet.toList()[2]())
+        assertEquals(Command1, providerSet.toList()[0]())
+        assertEquals(Command2, providerSet.toList()[1]())
+        assertEquals(Command3, providerSet.toList()[2]())
 
-        val lazySet = component.get<Set<Lazy<String>>>()
+        val lazySet = component.get<Set<Lazy<Command>>>()
         assertEquals(3, providerSet.size)
-        assertEquals("value_one", lazySet.toList()[0]())
-        assertEquals("value_two", lazySet.toList()[1]())
-        assertEquals("value_three", lazySet.toList()[2]())
+        assertEquals(Command1, lazySet.toList()[0]())
+        assertEquals(Command2, lazySet.toList()[1]())
+        assertEquals(Command3, lazySet.toList()[2]())
     }
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnNonDeclaredSetBinding() {
         val component = Component()
-        component.get<Set<String>>()
+        component.get<Set<Command>>()
     }
 
     @Test
     fun testReturnsEmptyOnADeclaredSetBindingWithoutElements() {
         val component = Component {
-            set<String>()
+            set<Command>()
         }
 
-        assertEquals(0, component.get<Set<String>>().size)
+        assertEquals(0, component.get<Set<Command>>().size)
     }
 
     @Test
     fun testNestedSetBindings() {
         val componentA = Component {
-            factory(qualifier = TestQualifier1) { "value_one" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory { Command1 }
+            set<Command> { add<Command1>() }
         }
 
-        val setA = componentA.get<Set<String>>()
+        val setA = componentA.get<Set<Command>>()
         assertEquals(1, setA.size)
-        assertEquals("value_one", setA.toList()[0])
+        assertEquals(Command1, setA.toList()[0])
 
         val componentB = Component {
             dependencies(componentA)
-            factory(qualifier = TestQualifier2) { "value_two" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory { Command2 }
+            set<Command> { add<Command2>() }
         }
 
-        val setB = componentB.get<Set<String>>()
+        val setB = componentB.get<Set<Command>>()
         assertEquals(2, setB.size)
-        assertEquals("value_one", setA.toList()[0])
-        assertEquals("value_two", setB.toList()[1])
+        assertEquals(Command1, setA.toList()[0])
+        assertEquals(Command2, setB.toList()[1])
 
         val componentC = Component {
             dependencies(componentB)
-            factory(qualifier = TestQualifier3) { "value_three" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory { Command3 }
+            set<Command> { add<Command3>() }
         }
 
-        val setC = componentC.get<Set<String>>()
+        val setC = componentC.get<Set<Command>>()
         assertEquals(3, setC.size)
-        assertEquals("value_one", setA.toList()[0])
-        assertEquals("value_two", setB.toList()[1])
-        assertEquals("value_three", setC.toList()[2])
+        assertEquals(Command1, setA.toList()[0])
+        assertEquals(Command2, setB.toList()[1])
+        assertEquals(Command3, setC.toList()[2])
     }
 
     @Test
     fun testOverride() {
         val originalValueComponent = Component {
-            factory { "value" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory<Command> { Command1 }
+            set<Command> { add<Command>() }
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Override) { "overridden_value" }
-                .intoSet(
-                    setKey = keyOf<Set<String>>(),
-                    duplicateStrategy = DuplicateStrategy.Override
-                )
+            factory<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) }
         }
 
-        assertEquals("overridden_value", overriddenValueComponent.get<Set<String>>().single())
+        assertEquals(Command2, overriddenValueComponent.get<Set<Command>>().single())
     }
 
     @Test
     fun testOverrideDrop() {
         val originalValueComponent = Component {
-            factory { "value" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory<Command> { Command1 }
+            set<Command> { add<Command>() }
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }
-                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Drop)
+            factory<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) }
         }
 
-        assertEquals("value", overriddenValueComponent.get<Set<String>>().single())
+        assertEquals(Command1, overriddenValueComponent.get<Set<Command>>().single())
     }
 
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
-        Component {
-            factory { "value" }
-                .intoSet(setKey = keyOf<Set<String>>())
-            factory { "overridden_value" }
-                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Fail)
+        val originalValueComponent = Component {
+            factory<Command> { Command1 }
+            set<Command> { add<Command>() }
+        }
+        val overriddenValueComponent = Component {
+            dependencies(originalValueComponent)
+            factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
         }
     }
 
     @Test
     fun testNestedOverride() {
         val componentA = Component {
-            factory { "value" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory<Command> { Command1 }
+            set<Command> { add<Command>() }
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(duplicateStrategy = DuplicateStrategy.Override) { "overridden_value" }
-                .intoSet(
-                    setKey = keyOf<Set<String>>(),
-                    duplicateStrategy = DuplicateStrategy.Override
-                )
+            factory<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) }
         }
 
-        val setA = componentA.get<Set<String>>()
-        assertEquals("value", setA.toList()[0])
-        val setB = componentB.get<Set<String>>()
-        assertEquals("overridden_value", setB.toList()[0])
+        val setA = componentA.get<Set<Command>>()
+        assertEquals(Command1, setA.toList()[0])
+        val setB = componentB.get<Set<Command>>()
+        assertEquals(Command2, setB.toList()[0])
     }
 
     @Test
     fun testNestedOverrideDrop() {
         val componentA = Component {
-            factory { "value" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory<Command> { Command1 }
+            set<Command> { add<Command>() }
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }
-                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Drop)
+            factory<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) }
         }
 
-        val setA = componentA.get<Set<String>>()
-        assertEquals("value", setA.toList()[0])
-        val setB = componentB.get<Set<String>>()
-        assertEquals("value", setB.toList()[0])
+        val setA = componentA.get<Set<Command>>()
+        assertEquals(Command1, setA.toList()[0])
+        val setB = componentB.get<Set<Command>>()
+        assertEquals(Command1, setB.toList()[0])
     }
 
     @Test(expected = IllegalStateException::class)
     fun testNestedOverrideFail() {
         val componentA = Component {
-            factory { "value" }
-                .intoSet(setKey = keyOf<Set<String>>())
+            factory<Command> { Command1 }
+            set<Command> { add<Command>() }
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(duplicateStrategy = DuplicateStrategy.Fail) { "overridden_value" }
-                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Fail)
+            factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
         }
     }
 }

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
@@ -85,12 +84,12 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
 
     inline fun <reified T : V> put(
         entryKey: K,
-        entryValueQualifiers: Qualifier = Qualifier.None,
+        entryValueQualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
         put(
             entryKey,
-            keyOf<T>(qualifier = entryValueQualifiers), duplicateStrategy
+            keyOf<T>(qualifier = entryValueQualifier), duplicateStrategy
         )
     }
 
@@ -125,7 +124,7 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
 }
 
 inline fun <reified K, reified V> ComponentBuilder.map(
-    mapQualifiers: Qualifier = Qualifier.None,
+    mapQualifier: Qualifier = Qualifier.None,
     noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
 ) {
     map(
@@ -135,7 +134,7 @@ inline fun <reified K, reified V> ComponentBuilder.map(
                 keyOf<K>(),
                 keyOf<V>()
             ),
-            qualifier = mapQualifiers
+            qualifier = mapQualifier
         ), block = block
     )
 }
@@ -207,37 +206,6 @@ fun <K, V> ComponentBuilder.map(
     }
 
     bindingProvider.thisBuilder!!.block()
-}
-
-inline fun <reified T : V, reified K, reified V> BindingContext<T>.intoMap(
-    entryKey: K,
-    mapQualifier: Qualifier = Qualifier.None,
-    duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
-): BindingContext<T> = intoMap(
-    entryKey = entryKey,
-    mapKey = keyOf<Map<K, V>>(qualifier = mapQualifier),
-    duplicateStrategy = duplicateStrategy
-)
-
-/**
- * Adds the [BindingContext.binding] into to the map of [mapKey]
- *
- * @see MultiBindingMap
- * @see MultiBindingMapBuilder
- */
-fun <T, K, V> BindingContext<T>.intoMap(
-    entryKey: K,
-    mapKey: Key<Map<K, V>>,
-    duplicateStrategy: DuplicateStrategy = binding.duplicateStrategy
-): BindingContext<T> {
-    componentBuilder.map(mapKey = mapKey) {
-        put(
-            entryKey = entryKey,
-            entryValueKey = binding.key,
-            duplicateStrategy = duplicateStrategy
-        )
-    }
-    return this
 }
 
 private class MapBindingProvider<K, V>(

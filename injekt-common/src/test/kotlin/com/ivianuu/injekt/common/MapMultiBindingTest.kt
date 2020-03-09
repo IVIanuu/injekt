@@ -21,7 +21,6 @@ import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.keyOf
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -30,40 +29,33 @@ class MapMultiBindingTest {
     @Test
     fun testMapBinding() {
         val component = Component {
-            factory(qualifier = TestQualifier1) { "value_one" }
-                .intoMap(
-                    entryKey = "key_one",
-                    mapKey = keyOf<Map<String, String>>()
-                )
-            factory(qualifier = TestQualifier2) { "value_two" }
-                .intoMap(
-                    entryKey = "key_two",
-                    mapKey = keyOf<Map<String, String>>()
-                )
-            factory(qualifier = TestQualifier3) { "value_three" }
-                .intoMap(
-                    entryKey = "key_three",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command1 }
+            factory { Command2 }
+            factory { Command3 }
+            map<String, Command> {
+                put<Command1>("one")
+                put<Command2>("two")
+                put<Command3>("three")
+            }
         }
 
-        val map = component.get<Map<String, String>>()
+        val map = component.get<Map<String, Command>>()
         assertEquals(3, map.size)
-        assertEquals(map["key_one"], "value_one")
-        assertEquals(map["key_two"], "value_two")
-        assertEquals(map["key_three"], "value_three")
+        assertEquals(map["one"], Command1)
+        assertEquals(map["two"], Command2)
+        assertEquals(map["three"], Command3)
 
-        val providerMap = component.get<Map<String, Provider<String>>>()
+        val providerMap = component.get<Map<String, Provider<Command>>>()
         assertEquals(3, providerMap.size)
-        assertEquals(providerMap.getValue("key_one")(), "value_one")
-        assertEquals(providerMap.getValue("key_two")(), "value_two")
-        assertEquals(providerMap.getValue("key_three")(), "value_three")
+        assertEquals(providerMap.getValue("one")(), Command1)
+        assertEquals(providerMap.getValue("two")(), Command2)
+        assertEquals(providerMap.getValue("three")(), Command3)
 
-        val lazyMap = component.get<Map<String, Lazy<String>>>()
+        val lazyMap = component.get<Map<String, Lazy<Command>>>()
         assertEquals(3, lazyMap.size)
-        assertEquals(lazyMap.getValue("key_one")(), "value_one")
-        assertEquals(lazyMap.getValue("key_two")(), "value_two")
-        assertEquals(lazyMap.getValue("key_three")(), "value_three")
+        assertEquals(lazyMap.getValue("one")(), Command1)
+        assertEquals(lazyMap.getValue("two")(), Command2)
+        assertEquals(lazyMap.getValue("three")(), Command3)
     }
 
     @Test(expected = IllegalStateException::class)
@@ -84,16 +76,13 @@ class MapMultiBindingTest {
     @Test
     fun testNestedMapBindings() {
         val componentA = Component {
-            factory(qualifier = TestQualifier1) { "value_one" }
-                .intoMap(
-                    entryKey = "key_one",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command1 }
+            map<String, Command> { put<Command1>("one") }
         }
 
-        val mapA = componentA.get<Map<String, String>>()
+        val mapA = componentA.get<Map<String, Command>>()
         assertEquals(1, mapA.size)
-        assertEquals("value_one", mapA["key_one"])
+        assertEquals(Command1, mapA["one"])
 
         val componentB = Component {
             dependencies(
@@ -101,17 +90,14 @@ class MapMultiBindingTest {
                     dependencies(componentA)
                 }
             )
-            factory(qualifier = TestQualifier2) { "value_two" }
-                .intoMap(
-                    entryKey = "key_two",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command2 }
+            map<String, Command> { put<Command2>("two") }
         }
 
-        val mapB = componentB.get<Map<String, String>>()
+        val mapB = componentB.get<Map<String, Command>>()
         assertEquals(2, mapB.size)
-        assertEquals("value_one", mapA["key_one"])
-        assertEquals("value_two", mapB["key_two"])
+        assertEquals(Command1, mapA["one"])
+        assertEquals(Command2, mapB["two"])
 
         val componentC = Component {
             dependencies(
@@ -119,155 +105,130 @@ class MapMultiBindingTest {
                     dependencies(componentB)
                 }
             )
-            factory(qualifier = TestQualifier3) { "value_three" }
-                .intoMap(
-                    entryKey = "key_three",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command3 }
+            map<String, Command> { put<Command3>("three") }
         }
 
-        val mapC = componentC.get<Map<String, String>>()
+        val mapC = componentC.get<Map<String, Command>>()
         assertEquals(3, mapC.size)
-        assertEquals("value_one", mapA["key_one"])
-        assertEquals("value_two", mapB["key_two"])
-        assertEquals("value_three", mapC["key_three"])
+        assertEquals(Command1, mapA["one"])
+        assertEquals(Command2, mapB["two"])
+        assertEquals(Command3, mapC["three"])
     }
 
     @Test
     fun testOverride() {
         val component = Component {
-            factory(qualifier = TestQualifier1) { "value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>()
-                )
-
-            factory(qualifier = TestQualifier2) { "overridden_value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>(),
-                    duplicateStrategy = DuplicateStrategy.Override
-                )
+            factory { Command1 }
+            factory { Command2 }
+            map<String, Command> {
+                put<Command1>("key")
+                put<Command2>("key", duplicateStrategy = DuplicateStrategy.Override)
+            }
         }
 
         assertEquals(
-            "overridden_value",
-            component.get<Map<String, String>>()["key"]
+            Command2,
+            component.get<Map<String, Command>>()["key"]
         )
     }
 
     @Test
     fun testOverrideDrop() {
         val component = Component {
-            factory(qualifier = TestQualifier1) { "value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>()
-                )
-            factory(qualifier = TestQualifier2) { "overridden_value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>(),
-                    duplicateStrategy = DuplicateStrategy.Drop
-                )
+            factory { Command1 }
+            factory { Command2 }
+            map<String, Command> {
+                put<Command1>("key")
+                put<Command2>("key", duplicateStrategy = DuplicateStrategy.Drop)
+            }
         }
 
         assertEquals(
-            "value",
-            component.get<Map<String, String>>()["key"]
+            Command1,
+            component.get<Map<String, Command>>()["key"]
         )
     }
 
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         Component {
-            factory { "value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>()
-                )
-            factory { "overridden_value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>(),
-                    duplicateStrategy = DuplicateStrategy.Fail
-                )
+            factory { Command1 }
+            factory { Command2 }
+            map<String, Command> {
+                put<Command1>("key")
+                put<Command2>("key", duplicateStrategy = DuplicateStrategy.Fail)
+            }
         }
     }
 
     @Test
     fun testNestedOverride() {
         val componentA = Component {
-            factory { "value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command1 }
+            map<String, Command> { put<Command1>("key") }
         }
         val componentB = Component {
             dependencies(Component {
                 dependencies(componentA)
             })
-            factory(qualifier = TestQualifier1) { "overridden_value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>(),
+            factory { Command2 }
+            map<String, Command> {
+                put<Command2>(
+                    "key",
                     duplicateStrategy = DuplicateStrategy.Override
                 )
+            }
         }
 
-        val mapA = componentA.get<Map<String, String>>()
-        assertEquals("value", mapA["key"])
-        val mapB = componentB.get<Map<String, String>>()
-        assertEquals("overridden_value", mapB["key"])
+        val mapA = componentA.get<Map<String, Command>>()
+        assertEquals(Command1, mapA["key"])
+        val mapB = componentB.get<Map<String, Command>>()
+        assertEquals(Command2, mapB["key"])
     }
 
     @Test
     fun testNestedOverrideDrop() {
         val componentA = Component {
-            factory { "value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command1 }
+            map<String, Command> { put<Command1>("key") }
         }
         val componentB = Component {
             dependencies(Component {
                 dependencies(componentA)
             })
-            factory(qualifier = TestQualifier1) { "overridden_value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>(),
+            factory { Command2 }
+            map<String, Command> {
+                put<Command2>(
+                    "key",
                     duplicateStrategy = DuplicateStrategy.Drop
                 )
+            }
         }
 
-        val mapA = componentA.get<Map<String, String>>()
-        assertEquals("value", mapA["key"])
-        val mapB = componentB.get<Map<String, String>>()
-        assertEquals("value", mapB["key"])
+        val mapA = componentA.get<Map<String, Command>>()
+        assertEquals(Command1, mapA["key"])
+        val mapB = componentB.get<Map<String, Command>>()
+        assertEquals(Command1, mapB["key"])
     }
 
     @Test(expected = IllegalStateException::class)
     fun testNestedOverrideFail() {
         val componentA = Component {
-            factory { "value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>()
-                )
+            factory { Command1 }
+            map<String, Command> { put<Command1>("key") }
         }
         val componentB = Component {
             dependencies(Component {
                 dependencies(componentA)
             })
-            factory(qualifier = TestQualifier1) { "overridden_value" }
-                .intoMap(
-                    entryKey = "key",
-                    mapKey = keyOf<Map<String, String>>(),
+            factory { Command2 }
+            map<String, Command> {
+                put<Command2>(
+                    "key",
                     duplicateStrategy = DuplicateStrategy.Fail
                 )
+            }
         }
     }
 }

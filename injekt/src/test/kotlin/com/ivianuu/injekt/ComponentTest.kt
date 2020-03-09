@@ -308,7 +308,7 @@ class ComponentTest {
     fun testInstantiatesUnscopedBindingsInTheRequestingComponent() {
         val componentA = Component {
             bind { Context(get()) }
-                .bindAlias<Environment>()
+            alias<Context, Environment>()
         }
         val componentB = Component { dependencies(componentA) }
         val componentC = Component { dependencies(componentB) }

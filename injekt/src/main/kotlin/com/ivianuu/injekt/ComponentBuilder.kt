@@ -69,7 +69,7 @@ class ComponentBuilder {
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         noinline provider: BindingProvider<T>
-    ): BindingContext<T> = bind(
+    ) = bind(
         key = keyOf(qualifier = qualifier),
         behavior = behavior,
         duplicateStrategy = duplicateStrategy,
@@ -81,8 +81,8 @@ class ComponentBuilder {
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         provider: BindingProvider<T>
-    ): BindingContext<T> {
-        return bind(
+    ) {
+        bind(
             Binding(
                 key = key,
                 behavior = behavior,
@@ -98,9 +98,8 @@ class ComponentBuilder {
      *
      * @see factory
      * @see single
-     * @see BindingContext
      */
-    fun <T> bind(binding: Binding<T>): BindingContext<T> {
+    fun <T> bind(binding: Binding<T>) {
         if (binding.duplicateStrategy.check(
                 existsPredicate = { binding.key in _bindings },
                 errorMessage = { "Already declared binding for ${binding.key}" }
@@ -108,8 +107,6 @@ class ComponentBuilder {
         ) {
             _bindings[binding.key] = binding
         }
-
-        return BindingContext(binding = binding, componentBuilder = this)
     }
 
     /**

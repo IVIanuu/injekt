@@ -21,7 +21,7 @@ inline fun <reified T> ComponentBuilder.instance(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-): BindingContext<T> = instance(
+) = instance(
     instance = instance,
     key = keyOf(qualifier = qualifier),
     duplicateStrategy = duplicateStrategy
@@ -35,7 +35,7 @@ fun <T> ComponentBuilder.instance(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-): BindingContext<T> = bind(
+) = bind(
     key = key,
     behavior = behavior,
     duplicateStrategy = duplicateStrategy,

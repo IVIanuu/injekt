@@ -22,6 +22,14 @@ import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
 
+interface Command
+
+object Command1 : Command
+
+object Command2 : Command
+
+object Command3 : Command
+
 @QualifierMarker
 annotation class TestQualifier1 {
     companion object : Qualifier.Element
@@ -34,11 +42,6 @@ annotation class TestQualifier2 {
 
 @QualifierMarker
 annotation class TestQualifier3 {
-    companion object : Qualifier.Element
-}
-
-@QualifierMarker
-annotation class Values {
     companion object : Qualifier.Element
 }
 

@@ -26,6 +26,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
@@ -50,7 +51,7 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
     instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
 
     instance(instance, key = key)
-        .bindAlias<BroadcastReceiver>()
+    alias(originalKey = key, aliasKey = keyOf<BroadcastReceiver>())
     contextBindings(ForReceiver) { context }
     componentAlias(ForReceiver)
 

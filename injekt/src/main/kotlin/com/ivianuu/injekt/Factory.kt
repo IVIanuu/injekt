@@ -38,7 +38,7 @@ inline fun <reified T> ComponentBuilder.factory(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>
-): BindingContext<T> = factory(
+) = factory(
     key = keyOf(qualifier = qualifier),
     behavior = behavior,
     duplicateStrategy = duplicateStrategy,
@@ -53,7 +53,7 @@ fun <T> ComponentBuilder.factory(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     provider: BindingProvider<T>
-): BindingContext<T> = bind(
+) = bind(
     Binding(
         key = key,
         behavior = behavior,

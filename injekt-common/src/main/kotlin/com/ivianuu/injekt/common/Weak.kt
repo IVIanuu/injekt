@@ -19,7 +19,6 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingContext
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.BoundBehavior
 import com.ivianuu.injekt.Component
@@ -45,7 +44,7 @@ inline fun <reified T> ComponentBuilder.weak(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>
-): BindingContext<T> = weak(
+) = weak(
     key = keyOf(qualifier = qualifier),
     behavior = behavior,
     duplicateStrategy = duplicateStrategy,
@@ -60,7 +59,7 @@ fun <T> ComponentBuilder.weak(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     provider: BindingProvider<T>
-): BindingContext<T> = bind(
+) = bind(
     Binding(
         key = key,
         behavior = WeakBehavior + BoundBehavior() + behavior,
