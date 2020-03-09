@@ -28,7 +28,7 @@ package com.ivianuu.injekt
  * }
  * ´´´
  *
- * We can then inject the presenter as follows:
+ * We can then inject the presenter like this:
  *
  * ´´´
  * class MyView : UiView() {
@@ -67,8 +67,8 @@ class Parameters(private val values: Array<*>) {
      * Enables convenient syntax like this:
      *
      * ´´´
-     * factory { (id: String) ->
-     *     MyPresenter(id = id)
+     * factory { (id: String, callback: () -> Unit) ->
+     *     MyPresenter(id = id, callback = callback)
      * }
      * ´´´
      *

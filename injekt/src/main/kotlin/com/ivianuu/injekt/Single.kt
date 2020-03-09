@@ -23,7 +23,7 @@ package com.ivianuu.injekt
  *
  * ´´´
  * val component = Component {
- *     bind(keyOf(), behavior = SingleBehavior) { Database(get()) }
+ *     bind(behavior = SingleBehavior) { Database(get()) }
  * }
  *
  * val db1 = component.get<Database>()
