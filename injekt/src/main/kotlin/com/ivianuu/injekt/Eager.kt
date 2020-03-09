@@ -20,7 +20,7 @@ package com.ivianuu.injekt
  * Creates a instance once the component is initialized
  *
  *
- * Analytics will be initialized directly without to explicitly requesting it
+ * Analytics will be instantiated directly without explicitly requesting it
  *
  * ´´´
  * val component = Component {

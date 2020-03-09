@@ -18,7 +18,9 @@ package com.ivianuu.injekt
 
 /**
  *
- * A qualifier can help to distinct between bindings of the same type for example:
+ * A qualifier can help to distinct between bindings of the same type
+ *
+ * For example:
  *
  * ´´´
  * val component = Component {
