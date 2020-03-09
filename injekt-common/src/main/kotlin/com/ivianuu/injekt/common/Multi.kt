@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.BindingProvider
+import com.ivianuu.injekt.BoundBehavior
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.ComponentInitObserver
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.keyOf
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -77,7 +91,8 @@ annotation class Multi
 
 private class MultiProvider<T>(
     private val provider: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
+) : (Component, Parameters) -> T,
+    ComponentInitObserver {
 
     private val values = ConcurrentHashMap<Int, T>()
 

@@ -45,8 +45,8 @@ fun <T> ComponentBuilder.withBinding(
     key: Key<T>,
     block: BindingContext<T>.() -> Unit
 ) {
-    // we create a proxy binding which links to the original binding
-    // because we have no reference to the original one it's likely in another [Module] or [Component]
+    //* we create a proxy binding which links to the original binding
+    // because we have no reference to the original one it's likely in another [Component]
     // we use a unique id here to make sure that the binding does not collide with any user config
     bind(key = key.copy(qualifier = UUIDQualifier())) { parameters ->
         get(key, parameters = parameters)

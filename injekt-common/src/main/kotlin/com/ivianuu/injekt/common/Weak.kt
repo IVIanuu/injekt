@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingContext
+import com.ivianuu.injekt.BindingProvider
+import com.ivianuu.injekt.BoundBehavior
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.ComponentInitObserver
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.keyOf
 import java.lang.ref.WeakReference
 
 /**
@@ -63,7 +77,8 @@ fun <T> ComponentBuilder.weak(
 annotation class Weak
 
 private class WeakProvider<T>(private val provider: BindingProvider<T>) :
-        (Component, Parameters) -> T, ComponentInitObserver {
+        (Component, Parameters) -> T,
+    ComponentInitObserver {
 
     private var ref: WeakReference<Wrapper<T>>? = null
 
@@ -74,7 +89,8 @@ private class WeakProvider<T>(private val provider: BindingProvider<T>) :
     override fun invoke(p1: Component, p2: Parameters): T {
         var valueWrapper = ref?.get()
         if (valueWrapper == null) {
-            valueWrapper = Wrapper(provider(p1, p2))
+            valueWrapper =
+                Wrapper(provider(p1, p2))
             ref = WeakReference(valueWrapper)
         }
 
