@@ -93,8 +93,7 @@ class ComponentBuilder {
     }
 
     /**
-     * Adds the [binding]
-     * This function is rarely used directly instead use [factory] or [single]
+     * Adds the [binding] which can be retrieved by [Binding.key]
      *
      * @see factory
      * @see single
