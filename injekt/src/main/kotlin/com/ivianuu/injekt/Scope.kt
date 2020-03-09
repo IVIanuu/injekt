@@ -17,15 +17,15 @@
 package com.ivianuu.injekt
 
 /**
- * Marks the annotated class as a scope
- * Scopes are used to describe where to create instances
+ * Scopes are used to name [Component]s
+ * This allows annotation api [Binding]s to be associated with a specific [Component]
  *
- * For example a scope for activities is declared like this
+ * A scope must be declared like this
  *
  * ´´´
- * @Scope
+ * @ScopeMarker
  * annotation class ActivityScope {
- *     companion object
+ *     companion object : Scope
  * }
  * ´´´
  *
@@ -39,5 +39,12 @@ package com.ivianuu.injekt
  *
  * @see ComponentBuilder.scopes
  */
+interface Scope
+
+/**
+ * Marker for [Scope]s
+ *
+ * @see Scope
+ */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Scope
+annotation class ScopeMarker

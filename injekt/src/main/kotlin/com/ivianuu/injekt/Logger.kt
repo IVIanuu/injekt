@@ -22,30 +22,22 @@ package com.ivianuu.injekt
 interface Logger {
 
     /**
-     * Logs a debug message
-     *
-     * @param msg the message
+     * Logs the debug [msg]
      */
     fun debug(msg: String)
 
     /**
-     * Logs a info message
-     *
-     * @param msg the message
+     * Logs the info [msg]
      */
     fun info(msg: String)
 
     /**
-     * Logs a warning message
-     *
-     * @param msg the message
+     * Logs the warning [msg]
      */
     fun warn(msg: String)
 
     /**
-     * Logs a error message
-     *
-     * @param msg the message
+     * Logs the error [msg]
      */
     fun error(msg: String)
 }

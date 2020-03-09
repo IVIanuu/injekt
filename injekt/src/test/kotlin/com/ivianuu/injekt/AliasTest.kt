@@ -16,44 +16,32 @@
 
 package com.ivianuu.injekt
 
-import junit.framework.Assert.assertTrue
+import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class BindingContextTest {
+class AliasTest {
 
     @Test
-    fun testBindAliasBoth() {
+    fun testAlias() {
         val component = Component {
             single { TestDep1() }
-                .bindAlias<Any>(name = "name")
-        }
-
-        val declared = component.get<TestDep1>()
-        val aliased = component.get<Any>(name = "name")
-        assertTrue(declared === aliased)
-    }
-
-    @Test
-    fun testBindAliasTypeOnly() {
-        val component = Component {
-            single { TestDep1() }
-                .bindAlias<Any>()
+            alias<TestDep1, Any>()
         }
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>()
-        assertTrue(declared === aliased)
+        assertSame(declared, aliased)
     }
 
     @Test
-    fun testBindAliasNameOnly() {
+    fun testAliasQualifier() {
         val component = Component {
             single { TestDep1() }
-                .bindAlias("name")
+            alias<TestDep1>(aliasQualifier = TestQualifier1)
         }
 
         val declared = component.get<TestDep1>()
-        val aliased = component.get<TestDep1>(name = "name")
-        assertTrue(declared === aliased)
+        val aliased = component.get<TestDep1>(qualifier = TestQualifier1)
+        assertSame(declared, aliased)
     }
 }

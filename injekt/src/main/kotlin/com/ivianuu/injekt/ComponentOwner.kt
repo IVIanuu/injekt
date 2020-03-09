@@ -22,7 +22,7 @@ package com.ivianuu.injekt
  * Example:
  *
  * ```
- * class MainActivity : Activity(), InjektTrait {
+ * class MainActivity : Activity(), ComponentOwner {
  *
  *     override val component = Component { ... }
  *
@@ -33,8 +33,7 @@ package com.ivianuu.injekt
  * ```
  *
  */
-interface InjektTrait {
-
+interface ComponentOwner {
     /**
      * The [Component] which will be used to retrieve dependencies
      */
@@ -44,35 +43,39 @@ interface InjektTrait {
      * @see Component.get
      */
     fun <T> get(
-        type: Type<T>,
-        name: Any? = null,
+        key: Key<T>,
         parameters: Parameters = emptyParameters()
-    ): T = component.get(type, name, parameters)
+    ): T = component.get(key, parameters)
 
     /**
      * Lazy version of [get]
      *
-     * @param type the type of key of the instance
-     * @param name the name of the of the instance
+     * @param key the key of the instance
      * @param parameters optional parameters to construct the instance
      * @return the instance
 
      * @see Component.get
      */
     fun <T> getLazy(
-        type: Type<T>,
-        name: Any? = null,
+        key: Key<T>,
         parameters: () -> Parameters = { emptyParameters() }
-    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(type, name, parameters()) }
-
+    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(key, parameters()) }
 }
 
-inline fun <reified T> InjektTrait.get(
-    name: Any? = null,
+/**
+ * @see Component.get
+ */
+inline fun <reified T> ComponentOwner.get(
+    qualifier: Qualifier = Qualifier.None,
     parameters: Parameters = emptyParameters()
-): T = get(type = typeOf(), name = name, parameters = parameters)
+): T = get(keyOf(qualifier = qualifier), parameters)
 
-inline fun <reified T> InjektTrait.getLazy(
-    name: Any? = null,
+/**
+ * Lazy version of [get]
+ *
+ * @see Component.get
+ */
+inline fun <reified T> ComponentOwner.getLazy(
+    qualifier: Qualifier = Qualifier.None,
     noinline parameters: () -> Parameters = { emptyParameters() }
-): kotlin.Lazy<T> = getLazy(type = typeOf(), name = name, parameters = parameters)
+): kotlin.Lazy<T> = getLazy(key = keyOf(qualifier), parameters = parameters)

@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt
 
-import org.junit.Assert
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class LazyTest {
@@ -30,7 +30,7 @@ class LazyTest {
         val lazy = component.get<Lazy<TestDep1>>()
         val value1 = lazy()
         val value2 = lazy()
-        assertTrue(value1 === value2)
+        assertSame(value1, value2)
     }
 
     @Test
@@ -50,6 +50,6 @@ class LazyTest {
 
         lazy(parameters)
 
-        Assert.assertEquals(parameters, usedParams)
+        assertEquals(parameters, usedParams)
     }
 }

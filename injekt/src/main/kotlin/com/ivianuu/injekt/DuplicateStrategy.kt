@@ -17,22 +17,21 @@
 package com.ivianuu.injekt
 
 /**
- * All strategies for handling overrides
+ * All strategies for handling duplicated bindings
  */
-enum class OverrideStrategy {
+enum class DuplicateStrategy {
     /** Overrides the existing binding */
-    Permit,
-
+    Override,
     /** Throws an exception if there's an existing binding */
     Fail,
     /** Keeps the existing binding and drops this one */
     Drop;
 
-    internal inline fun check(
+    inline fun check(
         existsPredicate: () -> Boolean,
         errorMessage: () -> String
     ): Boolean = when (this) {
-        Permit -> true
+        Override -> true
         Fail -> check(!existsPredicate(), errorMessage).let { true }
         Drop -> !existsPredicate()
     }

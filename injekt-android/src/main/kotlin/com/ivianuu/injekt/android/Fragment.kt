@@ -17,75 +17,86 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Fragment> FragmentComponent(
     instance: T,
-    scope: Any = FragmentScope,
-    name: Any = ForFragment,
+    scope: Scope = FragmentScope,
+    qualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = FragmentComponent(
     instance = instance,
-    type = typeOf(),
+    key = keyOf(),
     scope = scope,
-    name = name,
+    qualifier = qualifier,
     block = block
 )
 
 inline fun <T : Fragment> FragmentComponent(
     instance: T,
-    type: Type<T>,
-    scope: Any = FragmentScope,
-    name: Any = ForFragment,
+    key: Key<T>,
+    scope: Scope = FragmentScope,
+    qualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(instance = instance, type = type, overrideStrategy = OverrideStrategy.Permit)
-            .bindAlias<Fragment>()
-            .bindAlias<Fragment>(name = name)
-
-        maybeLifecycleBindings(instance, name)
-        maybeViewModelStoreBindings(instance, name)
-        maybeSavedStateBindings(instance, name)
-
-        contextBindings(name) { instance.requireContext() }
-        factory(overrideStrategy = OverrideStrategy.Permit) { instance.childFragmentManager }.bindAlias(
-            name = name
-        )
-
-        componentAlias(scope)
-
+        fragmentBindings(instance, key, qualifier)
         block()
     }
 
-@Scope
+fun <T : Fragment> ComponentBuilder.fragmentBindings(
+    instance: T,
+    key: Key<T>,
+    qualifier: Qualifier = ForFragment
+) {
+    instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
+    alias(originalKey = key, aliasKey = keyOf<Fragment>())
+    alias<Fragment>(aliasQualifier = qualifier)
+
+    maybeLifecycleBindings(instance, qualifier)
+    maybeViewModelStoreBindings(instance, qualifier)
+    maybeSavedStateBindings(instance, qualifier)
+
+    contextBindings(qualifier) { instance.requireContext() }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
+    alias<FragmentManager>(aliasQualifier = qualifier)
+
+    componentAlias(qualifier)
+}
+
+@ScopeMarker
 annotation class FragmentScope {
-    companion object
+    companion object : Scope
 }
 
-@Scope
+@ScopeMarker
 annotation class ChildFragmentScope {
-    companion object
+    companion object : Scope
 }
 
-@Name
+@QualifierMarker
 annotation class ForFragment {
-    companion object
+    companion object : Qualifier.Element
 }
 
-@Name
+@QualifierMarker
 annotation class ForChildFragment {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun Fragment.getClosestComponentOrNull(): Component? {
@@ -98,19 +109,19 @@ fun Fragment.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun Fragment.getParentFragmentComponentOrNull(): Component? =
-    (parentFragment as? InjektTrait)?.component
+    (parentFragment as? ComponentOwner)?.component
 
 fun Fragment.getParentFragmentComponent(): Component =
     getParentFragmentComponentOrNull() ?: error("No parent fragment Component found for $this")
 
 fun Fragment.getActivityComponentOrNull(): Component? =
-    (activity as? InjektTrait)?.component
+    (activity as? ComponentOwner)?.component
 
 fun Fragment.getActivityComponent(): Component =
     getActivityComponentOrNull() ?: error("No activity Component found for $this")
 
 fun Fragment.getApplicationComponentOrNull(): Component? =
-    (activity?.application as? InjektTrait)?.component
+    (activity?.application as? ComponentOwner)?.component
 
 fun Fragment.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")

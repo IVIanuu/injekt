@@ -19,55 +19,77 @@ package com.ivianuu.injekt
 /**
  * A binding knows how to create a concrete instance of a type
  * it also holds additional information about the declaration
- * you typically don't access this class directly but instead declare dependencies
+ *
+ * You typically don't access this class directly but instead declare dependencies
  * via a [ComponentBuilder] or annotating classes with [Factory] or [Single]
  *
- * @see Module
  * @see Factory
  * @see Single
  */
-sealed class Binding<T> {
-
+data class Binding<T> private constructor(
     /**
-     * Overrides existing bindings with the same key
+     * The key which is used to identify this binding
      */
-    var overrideStrategy = OverrideStrategy.Fail
-
+    val key: Key<T>,
     /**
-     * How this is binding is scoped
+     * Behavior applied to the [provider]
      */
-    var scoping: Scoping = Scoping.Unscoped
-
+    val behavior: Behavior = Behavior.None,
     /**
-     * Whether or not this binding reuses instances
+     * How overrides should be handled
      */
-    var single = false
-
+    val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     /**
-     * Creates the instance in the moment the component get's created
+     * Creates instances for this binding
      */
-    var eager = false
-
-    /**
-     * Returns a [LinkedBinding] and get's all required dependencies from the [component]
-     *
-     * @param component the linker where to get required bindings from
-     */
-    protected abstract fun link(component: Component): LinkedBinding<T>
-
-    internal open fun performLink(component: Component): LinkedBinding<T> {
-        val linked = link(component)
-        linked.overrideStrategy = overrideStrategy
-        linked.scoping = scoping
-        linked.single = single
-        linked.eager = eager
-        return linked
+    val provider: BindingProvider<T>
+) {
+    companion object {
+        /**
+         * Returns a new [Binding] instance
+         */
+        operator fun <T> invoke(
+            key: Key<T>,
+            behavior: Behavior = Behavior.None,
+            duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+            provider: BindingProvider<T>
+        ): Binding<T> = Binding(
+            key = key,
+            behavior = behavior,
+            duplicateStrategy = duplicateStrategy,
+            provider = behavior.foldIn(provider) { currentProvider, currentBehavior ->
+                currentBehavior.apply(currentProvider)
+            }
+        )
     }
 }
 
-abstract class UnlinkedBinding<T> : Binding<T>()
+/**
+ * Provides instances of T
+ */
+typealias BindingProvider<T> = Component.(Parameters) -> T
 
-abstract class LinkedBinding<T> : Binding<T>(), Provider<T> {
-    final override fun link(component: Component): LinkedBinding<T> = this
-    final override fun performLink(component: Component): LinkedBinding<T> = this
+/**
+ * Base class for special [BindingProvider]s
+ */
+abstract class DelegatingBindingProvider<T>(
+    val delegate: BindingProvider<T>
+) : (Component, Parameters) -> T, ComponentInitObserver {
+
+    private var initialized = false
+
+    override fun onInit(component: Component) {
+        check(!initialized) { "Binding providers should not be reused" }
+        initialized = true
+        (delegate as? ComponentInitObserver)?.onInit(component)
+    }
+
+    override fun invoke(p1: Component, p2: Parameters): T = delegate(p1, p2)
+}
+
+/**
+ * Used by the codegen
+ */
+interface BindingFactory<T> {
+    fun create(): Binding<T>
 }

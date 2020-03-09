@@ -16,34 +16,118 @@
 
 package com.ivianuu.injekt
 
+import kotlin.jvm.internal.ClassBasedDeclarationContainer
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.typeOf
+
 /**
- * A key of a binding
- *
- * This is used to identify bindings in [Component]s and [Module]s
+ * A key used to retrieve [Binding]s in [Component]s
  *
  * @see Component.get
  * @see ComponentBuilder.bind
  */
-data class Key internal constructor(val type: Type<*>, val name: Any? = null) {
+data class Key<T> internal constructor(
+    val classifier: KClass<*>,
+    val isNullable: Boolean,
+    val arguments: Array<Key<*>>,
+    val qualifier: Qualifier
+) {
 
-    private val hashCode = generateHashcode()
+    private val hashCode = generateHashCode()
 
-    override fun hashCode() = hashCode
+    override fun hashCode(): Int = hashCode
 
-    private fun generateHashcode(): Int {
-        var result = type.hashCode()
-        result = 31 * result + (name?.hashCode() ?: 0)
+    override fun equals(other: Any?): Boolean = other is Key<*> && hashCode == other.hashCode
+
+    override fun toString(): String {
+        val params = if (arguments.isNotEmpty()) {
+            arguments.joinToString(
+                separator = ", ",
+                prefix = "<",
+                postfix = ">"
+            ) { it.toString() }
+        } else {
+            ""
+        }
+
+        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params, qualifier=$qualifier)"
+    }
+
+    private fun generateHashCode(): Int {
+        var result = classifier.hashCode()
+        // todo result = 31 * result + isNullable.hashCode()
+        result = 31 * result + arguments.contentHashCode()
+        result = 31 * result + qualifier.hashCode()
         return result
     }
 }
 
-inline fun <reified T> keyOf(name: Any? = null): Key = keyOf(typeOf<T>(), name)
+inline fun <reified T> keyOf(qualifier: Qualifier = Qualifier.None): Key<T> =
+    typeOf<T>().asKey(qualifier = qualifier)
 
-/**
- * Create a key
- *
- * @param type the type of the key
- * @param name the name of the key
- * @return the constructed key
- */
-fun keyOf(type: Type<*>, name: Any? = null): Key = Key(type, name)
+fun <T> keyOf(
+    classifier: KClass<*>,
+    isNullable: Boolean = false,
+    arguments: Array<Key<*>> = emptyArray(),
+    qualifier: Qualifier = Qualifier.None
+): Key<T> {
+    // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
+    val finalClassifier = if (isNullable) boxed(classifier) else unboxed(classifier)
+    return Key(
+        classifier = finalClassifier,
+        isNullable = isNullable,
+        arguments = arguments,
+        qualifier = qualifier
+    )
+}
+
+@PublishedApi
+internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
+    val args = arrayOfNulls<Key<Any?>>(arguments.size)
+
+    arguments.forEachIndexed { index, kTypeProjection ->
+        args[index] = kTypeProjection.type?.asKey() ?: keyOf()
+    }
+
+    return Key(
+        classifier = (classifier ?: Any::class) as KClass<*>,
+        arguments = args as Array<Key<*>>,
+        isNullable = isMarkedNullable,
+        qualifier = qualifier
+    )
+}
+
+private fun unboxed(type: KClass<*>): KClass<*> {
+    val thisJClass = (type as ClassBasedDeclarationContainer).jClass
+    if (thisJClass.isPrimitive) return type
+
+    return when (thisJClass.name) {
+        "java.lang.Boolean" -> Boolean::class
+        "java.lang.Character" -> Char::class
+        "java.lang.Byte" -> Byte::class
+        "java.lang.Short" -> Short::class
+        "java.lang.Integer" -> Int::class
+        "java.lang.Float" -> Float::class
+        "java.lang.Long" -> Long::class
+        "java.lang.Double" -> Double::class
+        else -> type
+    }
+}
+
+private fun boxed(type: KClass<*>): KClass<*> {
+    val jClass = (type as ClassBasedDeclarationContainer).jClass
+    if (!jClass.isPrimitive) return type
+
+    return when (jClass.name) {
+        "boolean" -> java.lang.Boolean::class
+        "char" -> java.lang.Character::class
+        "byte" -> java.lang.Byte::class
+        "short" -> java.lang.Short::class
+        "int" -> java.lang.Integer::class
+        "float" -> java.lang.Float::class
+        "long" -> java.lang.Long::class
+        "double" -> java.lang.Double::class
+        else -> type
+    }
+}

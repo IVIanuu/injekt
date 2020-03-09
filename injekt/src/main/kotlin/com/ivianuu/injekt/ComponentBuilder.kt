@@ -16,13 +16,8 @@
 
 package com.ivianuu.injekt
 
-import java.util.UUID
-
 /**
- * Construct a [Component] with a lambda
- *
- * @param block the block to configure the Component
- * @return the constructed [Component]
+ * Create a [Component] configured by [block]
  *
  * @see Component
  */
@@ -36,330 +31,82 @@ inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder {
 
-    private val scopes = mutableSetOf<Any>()
-    private val dependencies = mutableSetOf<Component>()
-    private val bindings = mutableMapOf<Key, Binding<*>>()
-    private val multiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
-    private val multiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
+    private val _scopes = mutableListOf<Scope>()
+    val scopes: List<Scope> get() = _scopes
 
-    fun scopes(scope: Any) {
-        check(scope !in scopes) { "Duplicated scope $scope" }
-        this.scopes += scope
-    }
+    private val _dependencies = mutableListOf<Component>()
+    val dependencies: List<Component> get() = _dependencies
 
-    fun scopes(vararg scopes: Any) {
-        scopes.forEach { scopes(it) }
-    }
+    private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
+    val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
     /**
-     * Scope the component
+     * Adds the [scopes] this allows generated [Binding]s
+     * to be associated with components.
      *
-     * @param scopes the scopes to include
+     * @see ScopeMarker
      */
-    fun scopes(vararg scopes: List<Any>) {
-        scopes.forEach { scopes(it) }
-    }
-
-    fun dependencies(dependency: Component) {
-        check(dependency !in dependencies) { "Duplicated dependency $dependency" }
-        this.dependencies += dependency
-    }
-
-    fun dependencies(vararg dependencies: Component) {
-        dependencies.forEach { dependencies(it) }
-    }
-
-    /**
-     * Add component dependencies
-     *
-     * This all make all bindings of the dependencies accessible in this component
-     *
-     * @param dependencies the dependencies to add
-     */
-    fun dependencies(dependencies: List<Component>) {
-        dependencies.forEach { dependencies(it) }
-    }
-
-    inline fun <reified T> factory(
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
-        noinline definition: Definition<T>
-    ): BindingContext<T> = factory(
-        type = typeOf(),
-        name = name,
-        overrideStrategy = overrideStrategy,
-        scoping = scoping,
-        definition = definition
-    )
-
-    /**
-     * Contributes a binding which will be instantiated on each request
-     *
-     * @param type the of the instance
-     * @param name the name of the instance
-     * @param overrideStrategy the strategy for handling overrides
-     * @param scoping how instances should be scoped
-     * @param definition the definitions which creates instances
-     *
-     * @see bind
-     */
-    fun <T> factory(
-        type: Type<T>,
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
-        definition: Definition<T>
-    ): BindingContext<T> = bind(
-        key = keyOf(type, name),
-        binding = DefinitionBinding(definition = definition),
-        overrideStrategy = overrideStrategy,
-        scoping = scoping
-    )
-
-    inline fun <reified T> single(
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Scoped(),
-        eager: Boolean = false,
-        noinline definition: Definition<T>
-    ): BindingContext<T> = single(
-        type = typeOf(),
-        name = name,
-        overrideStrategy = overrideStrategy,
-        scoping = scoping,
-        eager = eager,
-        definition = definition
-    )
-
-    /**
-     * Contributes a binding which will be reused throughout the lifetime of the [Component] it life's in
-     *
-     * @param type the of the instance
-     * @param name the name of the instance
-     * @param overrideStrategy the strategy for handling overrides
-     * @param scoping how instances should be scoped
-     * @param eager whether the instance should be created when the [Component] get's created
-     * @param definition the definitions which creates instances
-     *
-     * @see bind
-     */
-    fun <T> single(
-        type: Type<T>,
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Scoped(),
-        eager: Boolean = false,
-        definition: Definition<T>
-    ): BindingContext<T> =
-        bind(
-            key = keyOf(type, name),
-            binding = DefinitionBinding(definition = definition).asSingle(),
-            overrideStrategy = overrideStrategy,
-            scoping = scoping,
-            eager = eager,
-            single = true
-        )
-
-    inline fun <reified T> instance(
-        instance: T,
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ): BindingContext<T> {
-        return instance(
-            instance = instance,
-            type = typeOf(),
-            name = name,
-            overrideStrategy = overrideStrategy
-        )
-    }
-
-    /**
-     * Adds a binding for a already existing instance
-     *
-     * @param instance the instance to contribute
-     * @param type the type for the [Key] by which the binding can be retrieved later in the [Component]
-     * @param name the type for the [Key] by which the binding can be retrieved later in the [Component]
-     * @return the [BindingContext] to chain binding calls
-     *
-     * @see bind
-     */
-    fun <T> instance(
-        instance: T,
-        type: Type<T>,
-        name: Any? = null,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail
-    ): BindingContext<T> = bind(
-        key = keyOf(type, name),
-        binding = InstanceBinding(instance),
-        overrideStrategy = overrideStrategy,
-        scoping = Scoping.Scoped()
-    )
-
-    inline fun <reified T> withBinding(
-        name: Any? = null,
-        noinline block: BindingContext<T>.() -> Unit
-    ) {
-        withBinding(type = typeOf(), name = name, block = block)
-    }
-
-    /**
-     * Invokes a lambda in the binding context of a other binding
-     * This allows to add aliases to bindings which are declared somewhere else
-     *
-     * For example to add a alias for a annotated class one can write the following:
-     *
-     * ´@Factory class MyRepository : Repository`
-     *
-     * ´´´
-     * withBinding(type = typeOf<MyRepository>()) {
-     *     bindAlias<Repository>()
-     * }
-     *
-     * ´´´
-     *
-     * @param type the type of the binding
-     * @param name the name of the other binding
-     * @param block the lambda to call in the context of the other binding
-     */
-    fun <T> withBinding(
-        type: Type<T>,
-        name: Any? = null,
-        block: BindingContext<T>.() -> Unit
-    ) {
-        // we create a proxy binding which links to the original binding
-        // because we have no reference to the original one it's likely in another [Module] or [Component]
-        // we use a unique id here to make sure that the binding does not collide with any user config
-        factory(type = type, name = UUID.randomUUID().toString()) { parameters ->
-            get(type = type, name = name, parameters = parameters)
+    fun scopes(vararg scopes: Scope) {
+        scopes.forEach { scope ->
+            check(scope !in this._scopes) { "Duplicated scope $scope" }
+            this._scopes += scope
         }
-            .block()
-    }
-
-    inline fun <reified K, reified V> map(
-        mapName: Any? = null,
-        noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
-    ) {
-        map(mapKeyType = typeOf(), mapValueType = typeOf(), mapName = mapName, block = block)
     }
 
     /**
-     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
-     *
-     * @param mapKeyType the type of the keys in the map
-     * @param mapValueType the type of the values in the map
-     * @param mapName the name by which the map can be retrieved later in the [Component]
-     * @param block the lambda to run in the context of the binding map
-     *
-     * @see MultiBindingMap
+     * Adds the [dependencies] to the component if this component cannot resolve a instance
+     * it will ask it's dependencies
      */
-    fun <K, V> map(
-        mapKeyType: Type<K>,
-        mapValueType: Type<V>,
-        mapName: Any? = null,
-        block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
+    fun dependencies(vararg dependencies: Component) {
+        dependencies.forEach { dependency ->
+            check(dependency !in this._dependencies) { "Duplicated dependency $dependency" }
+            this._dependencies += dependency
+        }
+    }
+
+    inline fun <reified T> bind(
+        qualifier: Qualifier = Qualifier.None,
+        behavior: Behavior = Behavior.None,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        noinline provider: BindingProvider<T>
+    ) = bind(
+        key = keyOf(qualifier = qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+
+    fun <T> bind(
+        key: Key<T>,
+        behavior: Behavior = Behavior.None,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        provider: BindingProvider<T>
     ) {
-        val mapKey = keyOf(
-            type = typeOf<Any?>(Map::class, arrayOf(mapKeyType, mapValueType)),
-            name = mapName
+        bind(
+            Binding(
+                key = key,
+                behavior = behavior,
+                duplicateStrategy = duplicateStrategy,
+                provider = provider
+            )
         )
-
-        map(mapKey = mapKey, block = block)
     }
 
     /**
-     * Runs a lambda in the scope of a [MultiBindingMapBuilder]
-     *
-     * @param mapKey the key of the map
-     * @param block the lambda to run in the context of the binding map
-     *
-     * @see MultiBindingMap
-     */
-    fun <K, V> map(
-        mapKey: Key,
-        block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
-    ) {
-        val builder = multiBindingMapBuilders.getOrPut(mapKey) {
-            MultiBindingMapBuilder(mapKey)
-        } as MultiBindingMapBuilder<K, V>
-
-        builder.apply(block)
-    }
-
-    inline fun <reified E> set(
-        setName: Any? = null,
-        noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
-    ) {
-        set(setElementType = typeOf(), setName = setName, block = block)
-    }
-
-    fun <E> set(
-        setElementType: Type<E>,
-        setName: Any? = null,
-        block: MultiBindingSetBuilder<E>.() -> Unit = {}
-    ) {
-        val setKey = keyOf(type = typeOf<Any?>(Set::class, arrayOf(setElementType)), name = setName)
-        set(setKey = setKey, block = block)
-    }
-
-    /**
-     * Runs a lambda in the scope of a [MultiBindingSetBuilder]
-     *
-     * @param setKey the key of the set
-     * @param block the lambda to run in the context of the binding set
-     *
-     * @see MultiBindingSet
-     */
-    fun <E> set(
-        setKey: Key,
-        block: MultiBindingSetBuilder<E>.() -> Unit = {}
-    ) {
-        val builder = multiBindingSetBuilders.getOrPut(setKey) {
-            MultiBindingSetBuilder(setKey)
-        } as MultiBindingSetBuilder<E>
-
-        builder.apply(block)
-    }
-
-    /**
-     * Contributes the binding
+     * Adds the [binding]
      * This function is rarely used directly instead use [factory] or [single]
      *
-     * @param key the key by which the binding can be retrieved later in the [Component]
-     * @param binding the binding to add
-     * @param overrideStrategy the strategy for handling overrides
-     * @param single whether instances are reused
-     * @param eager whether a instance should be created when the [Component] get's created
-     * @param scoping how instances should be scoped
-     * @return the [BindingContext] to chain binding calls
-     *
-     * @see Component.get
-     * @see BindingContext
      * @see factory
      * @see single
      */
-    fun <T> bind(
-        key: Key,
-        binding: Binding<T>,
-        overrideStrategy: OverrideStrategy = OverrideStrategy.Fail,
-        scoping: Scoping = Scoping.Unscoped,
-        single: Boolean = false,
-        eager: Boolean = false
-    ): BindingContext<T> {
-        binding.overrideStrategy = overrideStrategy
-        binding.scoping = scoping
-        binding.single = single
-        binding.eager = eager
-
-        if (overrideStrategy.check(
-                existsPredicate = { key in bindings },
-                errorMessage = { "Already declared binding for $key" }
+    fun <T> bind(binding: Binding<T>) {
+        if (binding.duplicateStrategy.check(
+                existsPredicate = { binding.key in _bindings },
+                errorMessage = { "Already declared binding for ${binding.key}" }
             )
         ) {
-            bindings[key] = binding
+            _bindings[binding.key] = binding
         }
-
-        return BindingContext(binding = binding, key = key, componentBuilder = this)
     }
 
     /**
@@ -368,11 +115,11 @@ class ComponentBuilder {
     fun build(): Component {
         checkScopes()
 
-        val dependencyBindings = dependencies
+        val dependencyBindings = _dependencies
             .map { it.getAllBindings() }
-            .fold(mutableMapOf<Key, Binding<*>>()) { acc, current ->
+            .fold(mutableMapOf<Key<*>, Binding<*>>()) { acc, current ->
                 current.forEach { (key, binding) ->
-                    if (binding.overrideStrategy.check(
+                    if (binding.duplicateStrategy.check(
                             existsPredicate = { key in acc },
                             errorMessage = { "Already declared binding for $key" }
                         )
@@ -384,108 +131,32 @@ class ComponentBuilder {
                 return@fold acc
             }
 
-        val scopedBindings = mutableMapOf<Key, Binding<*>>()
-        val unlinkedUnscopedBindings = mutableMapOf<Key, UnlinkedBinding<*>>()
-        val allMultiBindingMapBuilders = mutableMapOf<Key, MultiBindingMapBuilder<Any?, Any?>>()
-        val allMultiBindingSetBuilders = mutableMapOf<Key, MultiBindingSetBuilder<Any?>>()
+        val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        fun addBinding(key: Key, binding: Binding<*>) {
-            if (binding.overrideStrategy.check(
-                    existsPredicate = {
-                        key in scopedBindings ||
-                                key in dependencyBindings
-                    },
-                    errorMessage = { "Already declared key $key" }
-                )
+        fun addBinding(binding: Binding<*>) {
+            if (binding.duplicateStrategy.check(
+                    existsPredicate = { binding.key in dependencyBindings },
+                    errorMessage = { "Already declared key ${binding.key}" })
             ) {
-                scopedBindings[key] = binding
-                if (binding.scoping is Scoping.Unscoped) unlinkedUnscopedBindings[key] =
-                    binding as UnlinkedBinding<*>
+                finalBindings[binding.key] = binding
             }
         }
 
-        fun addUnlinkedUnscopedDependencyBinding(key: Key, binding: UnlinkedBinding<*>) {
-            if (binding.overrideStrategy.check(
-                    existsPredicate = {
-                        key in scopedBindings ||
-                                key in unlinkedUnscopedBindings
-                    },
-                    errorMessage = { "Already declared key $key" }
-                )
-            ) {
-                unlinkedUnscopedBindings[key] = binding
-            }
-        }
+        _bindings.values.forEach { binding -> addBinding(binding) }
 
-        fun addMultiBindingMap(mapKey: Key, map: MultiBindingMap<Any?, Any?>) {
-            val builder = allMultiBindingMapBuilders.getOrPut(mapKey) {
-                MultiBindingMapBuilder(mapKey)
-            }
-            builder.putAll(map)
-        }
-
-        fun addMultiBindingSet(setKey: Key, set: MultiBindingSet<Any?>) {
-            val builder = allMultiBindingSetBuilders.getOrPut(setKey) {
-                MultiBindingSetBuilder(setKey)
-            }
-
-            builder.addAll(set)
-        }
-
-        dependencies.forEach { dependency ->
-            dependency.unlinkedUnscopedBindings.forEach { (key, binding) ->
-                addUnlinkedUnscopedDependencyBinding(key, binding)
-            }
-            dependency.multiBindingMaps.forEach { (mapKey, map) ->
-                addMultiBindingMap(mapKey, map)
-            }
-
-            dependency.multiBindingSets.forEach { (setKey, set) ->
-                addMultiBindingSet(setKey, set)
-            }
-        }
-
-        bindings.forEach { (key, binding) -> addBinding(key, binding) }
-
-        multiBindingMapBuilders.forEach {
-            addMultiBindingMap(it.key, it.value.build())
-        }
-
-        multiBindingSetBuilders.forEach {
-            addMultiBindingSet(it.key, it.value.build())
-        }
-
-        val multiBindingMaps = allMultiBindingMapBuilders.mapValues {
-            it.value.build()
-        }
-
-        multiBindingMaps.forEach { (mapKey, map) ->
-            includeMapBindings(scopedBindings, mapKey, map)
-        }
-
-        val multiBindingSets = allMultiBindingSetBuilders.mapValues {
-            it.value.build()
-        }
-        multiBindingSets.forEach { (setKey, set) ->
-            includeSetBindings(scopedBindings, setKey, set)
-        }
-
-        includeComponentBindings(scopedBindings)
+        includeComponentBindings(finalBindings)
 
         return Component(
-            scopes = scopes,
-            scopedBindings = scopedBindings,
-            unlinkedUnscopedBindings = unlinkedUnscopedBindings,
-            multiBindingMaps = multiBindingMaps,
-            multiBindingSets = multiBindingSets,
-            dependencies = dependencies
+            scopes = _scopes,
+            dependencies = _dependencies,
+            bindings = finalBindings
         )
     }
 
     private fun checkScopes() {
-        val dependencyScopes = mutableSetOf<Any>()
+        val dependencyScopes = mutableSetOf<Scope>()
 
-        fun addScope(scope: Any) {
+        fun addScope(scope: Scope) {
             check(scope !in dependencyScopes) {
                 "Duplicated scope $scope"
             }
@@ -493,126 +164,29 @@ class ComponentBuilder {
             dependencyScopes += scope
         }
 
-        dependencies
+        _dependencies
             .flatMap { it.scopes }
             .forEach { addScope(it) }
 
-        scopes.forEach { addScope(it) }
+        _scopes.forEach { addScope(it) }
     }
 
-    private fun includeComponentBindings(bindings: MutableMap<Key, Binding<*>>) {
-        val componentBinding = ComponentBinding()
-        componentBinding.scoping = Scoping.Scoped()
-        componentBinding.overrideStrategy = OverrideStrategy.Permit
-        val componentKey = keyOf<Component>()
-        bindings[componentKey] = componentBinding
-        scopes
-            .map { keyOf<Component>(it) }
-            .forEach { bindings[it] = componentBinding }
-    }
-
-    private class ComponentBinding : UnlinkedBinding<Component>() {
-        override fun link(component: Component): LinkedBinding<Component> =
-            Linked(component)
-
-        private class Linked(private val component: Component) :
-            LinkedBinding<Component>() {
-            override fun invoke(parameters: Parameters): Component =
-                component
-        }
-    }
-
-    private fun includeMapBindings(
-        bindings: MutableMap<Key, Binding<*>>,
-        mapKey: Key,
-        map: MultiBindingMap<*, *>
-    ) {
-        val bindingKeys = map
-            .mapValues { it.value.key }
-
-        val mapKeyType = mapKey.type.arguments[0]
-        val mapValueType = mapKey.type.arguments[1]
-
-        val mapOfProviderKey = keyOf(
-            typeOf<Any?>(
-                Map::class,
-                arrayOf(
-                    mapKeyType,
-                    typeOf<Provider<*>>(Provider::class, arrayOf(mapValueType))
-                )
-            ),
-            mapKey.name
+    private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
+        val componentBinding = Binding(
+            key = keyOf(),
+            behavior = BoundBehavior(),
+            duplicateStrategy = DuplicateStrategy.Override,
+            provider = { this }
         )
 
-        bindings[mapOfProviderKey] = MapOfProviderBinding<Any?, Any?>(bindingKeys)
-            .also { it.scoping = Scoping.Scoped() }
-
-        val mapOfLazyKey = keyOf(
-            typeOf<Any?>(
-                Map::class,
-                arrayOf(
-                    mapKeyType,
-                    typeOf<Lazy<*>>(Lazy::class, arrayOf(mapValueType))
-                )
-            ),
-            mapKey.name
-        )
-
-        bindings[mapOfLazyKey] = MapOfLazyBinding<Any?, Any?>(mapOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
-
-        bindings[mapKey] = MapOfValueBinding<Any?, Any?>(mapOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
+        bindings[componentBinding.key] = componentBinding
     }
 
-    private fun includeSetBindings(
-        bindings: MutableMap<Key, Binding<*>>,
-        setKey: Key,
-        set: MultiBindingSet<*>
-    ) {
-        val setKeys = set.map { it.key }.toSet()
+    private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =
+        mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
-        val setElementType = setKey.type.arguments[0]
-
-        val setOfProviderKey = keyOf(
-            typeOf<Any?>(
-                Set::class,
-                arrayOf(
-                    typeOf<Provider<*>>(Provider::class, arrayOf(setElementType))
-                )
-            ),
-            setKey.name
-        )
-
-        bindings[setOfProviderKey] = SetOfProviderBinding<Any?>(setKeys)
-            .also { it.scoping = Scoping.Scoped() }
-
-        val setOfLazyKey = keyOf(
-            typeOf<Any?>(
-                Set::class,
-                arrayOf(
-                    typeOf<Lazy<*>>(Lazy::class, arrayOf(setElementType))
-                )
-            ),
-            setKey.name
-        )
-
-        bindings[setOfLazyKey] = SetOfLazyBinding<Any?>(setOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
-
-        bindings[setKey] = SetOfValueBinding<Any?>(setOfProviderKey)
-            .also { it.scoping = Scoping.Scoped() }
-    }
-
-    private fun Component.getAllBindings(): Map<Key, Binding<*>> =
-        mutableMapOf<Key, Binding<*>>().also { collectBindings(it) }
-
-    private fun Component.collectBindings(bindings: MutableMap<Key, Binding<*>>) {
+    private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
         dependencies.forEach { it.collectBindings(bindings) }
-        bindings += this.scopedBindings
+        bindings += this.bindings
     }
-}
-
-internal class InstanceBinding<T>(private val instance: T) : LinkedBinding<T>() {
-    override fun invoke(parameters: Parameters) = instance
 }

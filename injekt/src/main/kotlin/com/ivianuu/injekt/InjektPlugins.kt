@@ -20,7 +20,6 @@ package com.ivianuu.injekt
  * Global configurations
  */
 object InjektPlugins {
-
     /**
      * The logger to use
      */
@@ -29,5 +28,5 @@ object InjektPlugins {
     /**
      * The factory to use while looking up just in time bindings
      */
-    var justInTimeLookupFactory: JustInTimeLookupFactory = CodegenJustInTimeLookupFactory
+    var justInTimeBindingFactory: JustInTimeBindingFactory = CodegenJustInTimeBindingFactory
 }

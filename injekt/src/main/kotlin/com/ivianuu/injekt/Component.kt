@@ -25,9 +25,8 @@ package com.ivianuu.injekt
  *
  * ´´´
  * val component = Component {
- *     scopes(Singleton)
- *     modules(networkModule)
- *     modules(databaseModule)
+ *     single { Api(get()) }
+ *     single { Database(get(), get()) }
  * }
  *
  * val api = component.get<Api>()
@@ -39,99 +38,103 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: Set<Any>,
-    internal val scopedBindings: Map<Key, Binding<*>>,
-    internal val unlinkedUnscopedBindings: Map<Key, UnlinkedBinding<*>>,
-    internal val multiBindingMaps: Map<Key, MultiBindingMap<Any?, Any?>>,
-    internal val multiBindingSets: Map<Key, MultiBindingSet<Any?>>,
-    internal val dependencies: Set<Component>
+    val scopes: List<Scope>,
+    val dependencies: List<Component>,
+    bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
-    private val linkedBindings = mutableMapOf<Key, LinkedBinding<*>>()
+    private val _bindings = bindings
+    val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
     init {
-        scopedBindings.forEach { (key, binding) ->
-            linkedBindings[key] = binding.performLink(this)
-        }
-        unlinkedUnscopedBindings.forEach { (key, binding) ->
-            linkedBindings[key] = binding.performLink(this)
-        }
-
-        scopedBindings
-            .filter { it.value.eager }
-            .forEach { get(it.key) }
+        _bindings
+            .mapNotNull { it.value.provider as? ComponentInitObserver }
+            .forEach { it.onInit(this) }
     }
 
     inline fun <reified T> get(
-        name: Any? = null,
+        qualifier: Qualifier = Qualifier.None,
         parameters: Parameters = emptyParameters()
-    ): T = get(type = typeOf(), name = name, parameters = parameters)
-
-    fun <T> get(
-        type: Type<T>,
-        name: Any? = null,
-        parameters: Parameters = emptyParameters()
-    ): T = get(key = keyOf(type, name), parameters = parameters)
+    ): T = get(key = keyOf(qualifier = qualifier), parameters = parameters)
 
     /**
-     * Retrieve a instance of type [T]
-     *
-     * @param key the of the instance
-     * @param parameters optional parameters to construct the instance
-     * @return the instance
+     * Retrieve a instance of type [T] for [key]
      */
-    fun <T> get(key: Key, parameters: Parameters = emptyParameters()): T =
-        getBinding<T>(key)(parameters)
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+        getBinding(key).provider(this, parameters)
 
     /**
-     * Retrieve a binding of type [T]
-     *
-     * @param key the of the instance
-     * @return the instance
+     * Retrieve the [Binding] for [key] or throws
      */
-    fun <T> getBinding(key: Key): LinkedBinding<T> {
-        val binding = findBinding<T>(key)
-        if (binding != null) return binding
-        if (key.type.isNullable) {
-            val nullableKey = key.copy(type = key.type.copy(isNullable = true))
-            return findBinding(nullableKey) ?: NullBinding as LinkedBinding<T>
+    fun <T> getBinding(key: Key<T>): Binding<T> =
+        findBinding(key) ?: error("Couldn't find a binding for $key")
+
+    /**
+     * Returns the [Component] for [scope] or throws
+     */
+    fun getComponent(scope: Scope): Component =
+        findComponent(scope) ?: error("Couldn't find component for scope $scope")
+
+    private fun findComponent(scope: Scope): Component? {
+        if (scope in scopes) return this
+
+        for (i in dependencies.size - 1 downTo 0) {
+            dependencies[i].findComponent(scope)?.let { return it }
         }
 
-        error("Couldn't find a binding for $key")
+        return null
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key): LinkedBinding<T>? {
+    private fun <T> findBinding(key: Key<T>): Binding<T>? {
         var binding: Binding<T>?
 
         // providers, lazy
         binding = findSpecialBinding(key)
         if (binding != null) return binding
 
-        binding = findBindingInThisComponent(key)
+        binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
+        if (binding != null && !key.isNullable && binding.key.isNullable) {
+            binding = null
+        }
         if (binding != null) return binding
 
-        for (dependency in dependencies) {
-            binding = dependency.findBinding(key)
+        for (i in dependencies.size - 1 downTo 0) {
+            binding = dependencies[i].findBinding(key)
             if (binding != null) return binding
         }
 
         binding = findJustInTimeBinding(key)
         if (binding != null) return binding
 
+        if (key.isNullable) {
+            return Binding(
+                key = key as Key<Any?>,
+                provider = { null }
+            ) as Binding<T>
+        }
+
         return null
     }
 
-    private fun <T> findSpecialBinding(key: Key): LinkedBinding<T>? {
-        if (key.type.arguments.size == 1) {
-            when (key.type.classifier) {
+    private fun <T> findSpecialBinding(key: Key<T>): Binding<T>? {
+        if (key.arguments.size == 1) {
+            when (key.classifier) {
                 Provider::class -> {
-                    val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return ProviderBinding<Any?>(this, instanceKey) as LinkedBinding<T>
+                    val instanceKey = key.arguments.single()
+                        .copy(qualifier = key.qualifier)
+                    return Binding(
+                        key = key,
+                        provider = { KeyedProvider(this, instanceKey) as T }
+                    )
                 }
                 Lazy::class -> {
-                    val instanceKey = keyOf(key.type.arguments.single(), key.name)
-                    return LinkedLazyBinding<Any?>(this, instanceKey) as LinkedBinding<T>
+                    val instanceKey = key.arguments.single()
+                        .copy(qualifier = key.qualifier)
+                    return Binding(
+                        key = key,
+                        provider = { KeyedLazy(this, instanceKey) as T }
+                    )
                 }
             }
         }
@@ -139,27 +142,13 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findBindingInThisComponent(key: Key): LinkedBinding<T>? =
-        synchronized(linkedBindings) { linkedBindings.get(key) } as? LinkedBinding<T>
+    private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
+        if (key.qualifier != Qualifier.None) return null
 
-    private fun <T> findJustInTimeBinding(key: Key): LinkedBinding<T>? {
-        var binding = InjektPlugins.justInTimeLookupFactory.findBindingForKey<T>(key)
-        if (binding == null ||
-            (binding.scoping is Scoping.Scoped && (binding.scoping as Scoping.Scoped).name !in scopes)
-        ) return null
-
-        binding = binding
-            .performLink(this)
-            .let { if (binding!!.single) it.asSingle() else it } as LinkedBinding<T>
-        synchronized(linkedBindings) { linkedBindings[key] = binding }
+        val binding = InjektPlugins.justInTimeBindingFactory.findBinding(key)
+            ?: return null
+        synchronized(_bindings) { _bindings[key] = binding }
+        (binding.provider as? ComponentInitObserver)?.onInit(this)
         return binding
     }
-
-    private object NullBinding : LinkedBinding<Any?>() {
-        override fun invoke(parameters: Parameters): Any? = null
-    }
-}
-
-operator fun Component.plus(other: Component): Component {
-    return Component { dependencies(this@plus, other) }
 }

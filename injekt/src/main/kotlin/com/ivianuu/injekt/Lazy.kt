@@ -21,52 +21,25 @@ package com.ivianuu.injekt
  */
 interface Lazy<T> : Provider<T>
 
-internal class ProviderLazy<T>(private val provider: Provider<T>) : Lazy<T> {
-    private var _value: Any? = this
-
-    override fun invoke(parameters: Parameters): T {
-        var value = _value
-        if (value === this) {
-            synchronized(this) {
-                value = _value
-                if (value === this) {
-                    _value = provider(parameters)
-                    value = _value
-                }
-            }
-        }
-
-        return value as T
-    }
-}
-
-internal class KeyedLazy<T>(
+class KeyedLazy<T>(
     private val component: Component,
-    private val key: Key
+    private val key: Key<T>
 ) : Lazy<T> {
 
-    private var _value: Any? = this
+    private var value: Any? = this
 
     override fun invoke(parameters: Parameters): T {
-        var value = _value
+        var value = this.value
         if (value === this) {
             synchronized(this) {
-                value = _value
+                value = this.value
                 if (value === this) {
-                    _value = component.get<T>(key, parameters)
-                    value = _value
+                    this.value = component.get(key, parameters)
+                    value = this.value
                 }
             }
         }
 
         return value as T
     }
-}
-
-internal class LinkedLazyBinding<T>(
-    private val component: Component,
-    private val key: Key
-) : LinkedBinding<Lazy<T>>() {
-    override fun invoke(parameters: Parameters): Lazy<T> =
-        KeyedLazy(component, key)
 }

@@ -16,10 +16,29 @@
 
 package com.ivianuu.injekt
 
-/**
- * All possible scoping models
- */
-sealed class Scoping {
-    data class Scoped(val name: Any? = null) : Scoping()
-    object Unscoped : Scoping()
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
+import org.junit.Test
+
+class EagerBehaviorTest {
+
+    @Test
+    fun testEagerBehavior() {
+        var called = false
+        Component {
+            bind(
+                Binding(key = keyOf()) { called = true }
+            )
+        }
+        assertFalse(called)
+        Component {
+            bind(
+                Binding(
+                    key = keyOf(),
+                    behavior = EagerBehavior
+                ) { called = true }
+            )
+        }
+        assertTrue(called)
+    }
 }

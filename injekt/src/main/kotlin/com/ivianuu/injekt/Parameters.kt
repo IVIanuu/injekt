@@ -28,7 +28,7 @@ package com.ivianuu.injekt
  * }
  * ´´´
  *
- * We can then inject the presenter as follows:
+ * We can then inject the presenter like this:
  *
  * ´´´
  * class MyView : UiView() {
@@ -45,8 +45,7 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
-// todo ir
-/* inline */ class Parameters(private val values: Array<Any?>) {
+class Parameters(private val values: Array<*>) {
 
     /**
      * The count of parameters
@@ -55,25 +54,21 @@ package com.ivianuu.injekt
 
     /**
      * Retrieve the parameter at the [index]
-     *
-     * @param index the index of the parameter
      */
     operator fun <T> get(index: Int): T = values[index] as T
 
     /**
      * Retrieve the parameter at the [index] or null
-     *
-     * @param index the index of the parameter
      */
     fun <T> getOrNull(index: Int): T? = values.getOrNull(index) as? T
 
     /**
      * Retrieve the parameter at 0
-     * Enables convenient syntax in definitions like this:
+     * Enables convenient syntax like this:
      *
      * ´´´
-     * factory { (id: String) ->
-     *     MyPresenter(id = id)
+     * factory { (id: String, callback: () -> Unit) ->
+     *     MyPresenter(id = id, callback = callback)
      * }
      * ´´´
      *
@@ -85,17 +80,28 @@ package com.ivianuu.injekt
     operator fun <T> component4(): T = get(3)
     operator fun <T> component5(): T = get(4)
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Parameters
+
+        if (!values.contentEquals(other.values)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = values.contentHashCode()
+
+    override fun toString(): String = "Parameters(${values.contentToString()})"
 }
 
 /**
- * Creates parameters which contains all [values]
- *
- * @param values the provided parameters
- * @return the newly constructed parameters
+ * Creates [Parameters] with [values]
  */
-fun parametersOf(vararg values: Any?): Parameters = Parameters(values as Array<Any?>)
+fun parametersOf(vararg values: Any?): Parameters = Parameters(values)
 
-private val emptyParameters = Parameters(emptyArray())
+private val emptyParameters = Parameters(emptyArray<Any?>())
 
 /**
  * Returns empty parameters

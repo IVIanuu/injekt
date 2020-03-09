@@ -20,42 +20,51 @@ import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Application> ApplicationComponent(
     instance: T,
     block: ComponentBuilder.() -> Unit = {}
-): Component = ApplicationComponent(instance = instance, type = typeOf(), block = block)
+): Component = ApplicationComponent(instance = instance, key = keyOf(), block = block)
 
 inline fun <T : Application> ApplicationComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(ApplicationScope)
-
-        instance(instance, type = type)
-            .bindAlias<Application>()
-        contextBindings(ForApplication) { instance }
-        maybeLifecycleBindings(
-            ProcessLifecycleOwner.get(),
-            ForApplication
-        )
-        componentAlias(ApplicationScope)
-
+        applicationBindings(instance, key)
         block()
     }
 
-@Scope
-annotation class ApplicationScope {
-    companion object
+fun <T : Application> ComponentBuilder.applicationBindings(
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance, key = key)
+    alias(key, keyOf<Application>())
+    contextBindings(ForApplication) { instance }
+    maybeLifecycleBindings(
+        ProcessLifecycleOwner.get(),
+        ForApplication
+    )
+    componentAlias(ForApplication)
 }
 
-@Name
+@ScopeMarker
+annotation class ApplicationScope {
+    companion object : Scope
+}
+
+@QualifierMarker
 annotation class ForApplication {
-    companion object
+    companion object : Qualifier.Element
 }

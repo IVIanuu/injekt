@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
-import junit.framework.Assert.assertTrue
-import org.junit.Test
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
 
-class ScopedTest {
-
-    @Test
-    fun testInstantiatesOnlyOnce() {
-        val component = Component {
-            single { TestDep1() }
-        }
-
-        val value1 = component.get<TestDep1>()
-        val value2 = component.get<TestDep1>()
-
-        assertTrue(System.identityHashCode(value1) == System.identityHashCode(value2))
-    }
-}
+/**
+ * Used in multi binding collections
+ *
+ * @see MultiBindingMap
+ * @see MultiBindingSet
+ */
+data class KeyWithOverrideInfo(
+    /**
+     * The key of the [Binding]
+     */
+    val key: Key<*>,
+    /**
+     * How overrides should be handled
+     */
+    val duplicateStrategy: DuplicateStrategy
+)

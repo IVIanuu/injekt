@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+plugins {
+    kotlin("jvm")
+    id("com.ivianuu.injekt")
+}
 
-/**
- * Used in multi binding collections
- *
- * @see MultiBindingMap
- * @see MultiBindingSet
- */
-data class KeyWithOverrideInfo(
-    /**
-     * The key of the [Binding] this info is for
-     */
-    val key: Key,
-    /**
-     * How overrides should be handled
-     */
-    val overrideStrategy: OverrideStrategy
-)
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
+
+dependencies {
+    api(project(":injekt"))
+    testImplementation(Deps.junit)
+}

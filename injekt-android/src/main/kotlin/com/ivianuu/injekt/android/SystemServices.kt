@@ -76,21 +76,22 @@ import android.view.accessibility.CaptioningManager
 import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
-fun SystemServiceComponent() = Component {
-    getSystemServices()
-        .forEach { service ->
-            factory(type = typeOf(service)) {
-                ContextCompat.getSystemService(get(), service.java)!!
+fun ComponentBuilder.systemServiceBindings() {
+    getSystemServicesClasses()
+        .forEach { serviceClass ->
+            factory(key = keyOf(serviceClass)) {
+                ContextCompat.getSystemService(get(), serviceClass.java)!!
             }
         }
 }
 
 @Suppress("DEPRECATION")
-private fun getSystemServices(): Set<KClass<*>> = mutableSetOf<KClass<out Any>>().apply {
+private fun getSystemServicesClasses(): Set<KClass<*>> = mutableSetOf<KClass<out Any>>().apply {
     this += AccessibilityManager::class
     this += AccountManager::class
     this += ActivityManager::class

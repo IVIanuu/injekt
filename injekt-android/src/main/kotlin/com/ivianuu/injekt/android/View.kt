@@ -20,62 +20,80 @@ import android.content.ContextWrapper
 import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : View> ViewComponent(
     instance: T,
-    scope: Any = ViewScope,
-    name: Any = ForView,
+    scope: Scope = ViewScope,
+    qualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
-    ViewComponent(instance = instance, type = typeOf(), scope = scope, name = name, block = block)
+    ViewComponent(
+        instance = instance,
+        key = keyOf(),
+        scope = scope,
+        qualifier = qualifier,
+        block = block
+    )
 
 inline fun <T : View> ViewComponent(
     instance: T,
-    type: Type<T>,
-    scope: Any = ViewScope,
-    name: Any = ForView,
+    key: Key<T>,
+    scope: Scope = ViewScope,
+    qualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(
-            instance = instance,
-            type = type,
-            overrideStrategy = OverrideStrategy.Permit
-        ).bindAlias<View>().bindAlias<View>(name)
-
-        contextBindings(name) { instance.context!! }
-        componentAlias(scope)
-
+        viewBindings(instance, key, qualifier)
         block()
     }
 
-@Scope
+fun <T : View> ComponentBuilder.viewBindings(
+    instance: T,
+    key: Key<T>,
+    qualifier: Qualifier = ForView
+) {
+    instance(
+        instance = instance,
+        key = key,
+        duplicateStrategy = DuplicateStrategy.Override
+    )
+    alias(originalKey = key, aliasKey = keyOf<View>())
+    alias<View>(aliasQualifier = qualifier)
+
+    contextBindings(qualifier) { instance.context!! }
+    componentAlias(qualifier)
+}
+
+@ScopeMarker
 annotation class ViewScope {
-    companion object
+    companion object : Scope
 }
 
-@Scope
+@ScopeMarker
 annotation class ChildViewScope {
-    companion object
+    companion object : Scope
 }
 
-@Name
+@QualifierMarker
 annotation class ForView {
-    companion object
+    companion object : Qualifier.Element
 }
 
-@Name
+@QualifierMarker
 annotation class ForChildView {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun View.getClosestComponentOrNull(): Component? {
@@ -88,7 +106,7 @@ fun View.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun View.getParentViewComponentOrNull(): Component? =
-    (parent as? InjektTrait)?.component
+    (parent as? ComponentOwner)?.component
 
 fun View.getParentViewComponent(): Component =
     getParentViewComponentOrNull() ?: error("No parent view Component found for $this")
@@ -96,7 +114,7 @@ fun View.getParentViewComponent(): Component =
 fun View.getContextComponentOrNull(): Component? {
     var parentContext = context
     while (parentContext != null) {
-        if (parentContext is InjektTrait) {
+        if (parentContext is ComponentOwner) {
             return parentContext.component
         }
         parentContext = (parentContext as? ContextWrapper)?.baseContext
@@ -109,7 +127,7 @@ fun View.getContextComponent(): Component =
     getContextComponentOrNull() ?: error("No context Component found for $this")
 
 fun View.getApplicationComponentOrNull(): Component? =
-    (context.applicationContext as? InjektTrait)?.component
+    (context.applicationContext as? ComponentOwner)?.component
 
 fun View.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")

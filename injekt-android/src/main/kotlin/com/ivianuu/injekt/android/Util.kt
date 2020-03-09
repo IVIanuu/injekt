@@ -18,78 +18,91 @@ package com.ivianuu.injekt.android
 
 import android.content.Context
 import android.content.res.Resources
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.instance
 import kotlinx.coroutines.CoroutineScope
 
 @PublishedApi
 internal fun ComponentBuilder.maybeLifecycleBindings(
     instance: Any,
-    name: Any
+    qualifier: Qualifier
 ) {
     if (instance !is LifecycleOwner) return
-    instance<LifecycleOwner>(instance = instance, overrideStrategy = OverrideStrategy.Permit)
-        .bindAlias(name = name)
-    factory<CoroutineScope>(overrideStrategy = OverrideStrategy.Permit) {
+    instance(instance = instance, duplicateStrategy = DuplicateStrategy.Override)
+    alias<LifecycleOwner>(aliasQualifier = qualifier)
+    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) {
         instance.lifecycleScope
-    }.bindAlias(name = name)
-    factory(overrideStrategy = OverrideStrategy.Permit) { instance.lifecycle }
-        .bindAlias(name = name)
+    }
+    alias<LifecycleCoroutineScope>(aliasQualifier = qualifier)
+    alias<LifecycleCoroutineScope, CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override)
+    alias<CoroutineScope>(aliasQualifier = qualifier)
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycle }
+    alias<Lifecycle>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.maybeViewModelStoreBindings(
     instance: Any,
-    name: Any
+    qualifier: Qualifier
 ) {
     if (instance !is ViewModelStoreOwner) return
-    instance<ViewModelStoreOwner>(instance = instance, overrideStrategy = OverrideStrategy.Permit)
-        .bindAlias(name = ForActivity)
-    factory(overrideStrategy = OverrideStrategy.Permit) { instance.viewModelStore }
-        .bindAlias(name = name)
+    instance(
+        instance = instance,
+        duplicateStrategy = DuplicateStrategy.Override
+    )
+    alias<ViewModelStoreOwner>(aliasQualifier = qualifier)
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.viewModelStore }
+    alias<ViewModelStore>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.maybeSavedStateBindings(
     instance: Any,
-    name: Any
+    qualifier: Qualifier
 ) {
     if (instance !is SavedStateRegistryOwner) return
-    instance<SavedStateRegistryOwner>(
+    instance(
         instance = instance,
-        overrideStrategy = OverrideStrategy.Permit
+        duplicateStrategy = DuplicateStrategy.Override
     )
-        .bindAlias(name = ForActivity)
-    factory(overrideStrategy = OverrideStrategy.Permit) { instance.savedStateRegistry }
-        .bindAlias(name = name)
+    alias<SavedStateRegistryOwner>(aliasQualifier = qualifier)
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.savedStateRegistry }
+    alias<SavedStateRegistry>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
-internal fun ComponentBuilder.componentAlias(scope: Any) {
-    withBinding<Component> { bindAlias(name = scope) }
+internal fun ComponentBuilder.componentAlias(qualifier: Qualifier) {
+    alias<Component>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.contextBindings(
-    name: Any,
+    qualifier: Qualifier,
     definition: () -> Context
 ) {
-    factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
-        .bindAlias(name = name)
-    resourcesBindings(name) { definition().resources!! }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
+    alias<Context>(aliasQualifier = qualifier)
+    resourcesBindings(qualifier = qualifier) { definition().resources!! }
 }
 
 @PublishedApi
 internal fun ComponentBuilder.resourcesBindings(
-    name: Any,
+    qualifier: Qualifier,
     definition: () -> Resources
 ) {
-    factory(overrideStrategy = OverrideStrategy.Permit) { definition() }
-        .bindAlias(name = name)
+    factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
+    alias<Resources>(aliasQualifier = qualifier)
 }
-

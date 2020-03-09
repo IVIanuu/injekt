@@ -26,20 +26,19 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val Behavior = FqName("com.ivianuu.injekt.Behavior")
+    val BehaviorMarker = FqName("com.ivianuu.injekt.BehaviorMarker")
     val Binding = FqName("com.ivianuu.injekt.Binding")
+    val BindingFactory = FqName("com.ivianuu.injekt.BindingFactory")
+    val BoundBehavior = FqName("com.ivianuu.injekt.BoundBehavior")
     val Component = FqName("com.ivianuu.injekt.Component")
-    val Factory = FqName("com.ivianuu.injekt.Factory")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
     val Key = FqName("com.ivianuu.injekt.Key")
-    val LinkedBinding = FqName("com.ivianuu.injekt.LinkedBinding")
-    val Name = FqName("com.ivianuu.injekt.Name")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val Provider = FqName("com.ivianuu.injekt.Provider")
-    val Scope = FqName("com.ivianuu.injekt.Scope")
-    val Scoping = FqName("com.ivianuu.injekt.Scoping")
-    val Single = FqName("com.ivianuu.injekt.Single")
-    val UnlinkedBinding = FqName("com.ivianuu.injekt.UnlinkedBinding")
+    val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
+    val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
+    val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
 }
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =

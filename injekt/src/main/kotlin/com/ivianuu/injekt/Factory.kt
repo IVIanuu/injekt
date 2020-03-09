@@ -17,14 +17,54 @@
 package com.ivianuu.injekt
 
 /**
- * Makes the annotated class injectable and generates a factory binding for it
- * The class will be created on each request
+ * Creates instances on each request
  *
- * @see Single
- * @see Name
- * @see Scope
- * @see InjektConstructor
- * @see ComponentBuilder.factory
+ * We get different logger instances in the following example
+ *
+ * ´´´
+ * val component = Component {
+ *     factory { Logger(get()) }
+ * }
+ *
+ * val logger1 = component.get<Logger>()
+ * val logger2 = component.get<Logger>()
+ * assertSame(logger1, logger2) // false
+ * ´´´
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
+object FactoryBehavior : Behavior.Element
+
+inline fun <reified T> ComponentBuilder.factory(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) = factory(
+    key = keyOf(qualifier = qualifier),
+    behavior = behavior,
+    duplicateStrategy = duplicateStrategy,
+    provider = provider
+)
+
+/**
+ * Dsl builder for the [FactoryBehavior]
+ */
+fun <T> ComponentBuilder.factory(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) = bind(
+    Binding(
+        key = key,
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+)
+
+/**
+ * Annotation for the [FactoryBehavior]
+ */
+@BehaviorMarker(FactoryBehavior::class)
+@Target(AnnotationTarget.CLASS)
 annotation class Factory

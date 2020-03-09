@@ -21,17 +21,6 @@ import org.junit.Test
 
 class ComponentBuilderTest {
 
-    @Test
-    fun testInstance() {
-        val component = Component {
-            instance("string")
-            instance(1)
-        }
-
-        assertEquals("string", component.get<String>())
-        assertEquals(1, component.get<Int>())
-    }
-
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val dependency = Component {
@@ -87,15 +76,8 @@ class ComponentBuilderTest {
 
     @Test
     fun testBind() {
-        val binding = InstanceBinding("value")
-        val component = Component {
-            bind(
-                key = keyOf<String>(),
-                scoping = Scoping.Scoped(),
-                binding = binding
-            )
-        }
-        assertEquals(binding, component.getBinding<String>(keyOf<String>()))
+        val binding = Binding(key = keyOf()) { "value" }
+        val component = Component { bind(binding) }
+        assertEquals(binding, component.getBinding(keyOf<String>()))
     }
-
 }

@@ -20,11 +20,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : BroadcastReceiver> ReceiverComponent(
     context: Context,
@@ -33,35 +37,41 @@ inline fun <reified T : BroadcastReceiver> ReceiverComponent(
 ): Component = ReceiverComponent(
     context = context,
     instance = instance,
-    type = typeOf(),
+    key = keyOf(),
     block = block
 )
 
 inline fun <T : BroadcastReceiver> ReceiverComponent(
     context: Context,
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(ReceiverScope)
     instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
-
-    instance(instance, type = type)
-        .bindAlias<BroadcastReceiver>()
-    contextBindings(ForReceiver) { context }
-    componentAlias(ReceiverScope)
-
+    receiverBindings(context, instance, key)
     block()
 }
 
-@Scope
-annotation class ReceiverScope {
-    companion object
+fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
+    context: Context,
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance, key = key)
+    alias(originalKey = key, aliasKey = keyOf<BroadcastReceiver>())
+    contextBindings(ForReceiver) { context }
+    componentAlias(ForReceiver)
 }
 
-@Name
+@ScopeMarker
+annotation class ReceiverScope {
+    companion object : Scope
+}
+
+@QualifierMarker
 annotation class ForReceiver {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
@@ -71,7 +81,7 @@ fun BroadcastReceiver.getClosestComponent(context: Context): Component =
     getClosestComponentOrNull(context) ?: error("No close Component found for $this")
 
 fun BroadcastReceiver.getApplicationComponentOrNull(context: Context): Component? =
-    (context.applicationContext as? InjektTrait)?.component
+    (context.applicationContext as? ComponentOwner)?.component
 
 fun BroadcastReceiver.getApplicationComponent(context: Context): Component =
     getApplicationComponentOrNull(context) ?: error("No application Component found for $this")

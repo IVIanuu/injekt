@@ -22,7 +22,7 @@ import java.io.File
 
 @ApplicationScope
 @Single
-class Database(@DatabaseFile private val file: File) {
+class Database(@WebApiUrl @DatabaseFile private val file: File) {
 
     private var _cached: List<String>? = null
 

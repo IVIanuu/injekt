@@ -33,7 +33,7 @@ import kotlin.system.measureNanoTime
 
 val defaultConfig = Config(
     rounds = 100_000,
-    timeUnit = TimeUnit.Millis
+    timeUnit = TimeUnit.Nanos
 )
 
 data class Config(

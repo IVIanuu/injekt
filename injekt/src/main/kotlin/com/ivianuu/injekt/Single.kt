@@ -17,46 +17,75 @@
 package com.ivianuu.injekt
 
 /**
- * Makes the annotated class injectable and generates a single binding for it
- * The class will be created once per [Component]
+ * Caches the result of the first call to the provider
  *
- * @see Factory
- * @see Name
- * @see Scope
- * @see InjektConstructor
- * @see ComponentBuilder.single
+ * We get the same instance in the following example
+ *
+ * ´´´
+ * val component = Component {
+ *     bind(behavior = SingleBehavior) { Database(get()) }
+ * }
+ *
+ * val db1 = component.get<Database>()
+ * val db2 = component.get<Database>()
+ * assertSame(db1, db2) // true
+ * ´´´
+ *
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
-annotation class Single
+object SingleBehavior : Behavior.Element {
+    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
+        SingleProvider(provider)
+}
+
+inline fun <reified T> ComponentBuilder.single(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) = single(
+    key = keyOf(qualifier = qualifier),
+    behavior = behavior,
+    duplicateStrategy = duplicateStrategy,
+    provider = provider
+)
 
 /**
- * Ensures that a instance is only created once
- * Afterwards a cached value will be returned
- *
- * @see ComponentBuilder.single
+ * Dsl builder for [SingleBehavior] + [BoundBehavior]
  */
-fun <T> Binding<T>.asSingle(): Binding<T> = when (this) {
-    is LinkedSingleBinding, is UnlinkedSingleBinding -> this
-    is LinkedBinding -> LinkedSingleBinding(this)
-    else -> UnlinkedSingleBinding(this)
-}
+fun <T> ComponentBuilder.single(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) = bind(
+    Binding(
+        key = key,
+        behavior = SingleBehavior + BoundBehavior() + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+)
 
-private class UnlinkedSingleBinding<T>(private val binding: Binding<T>) : UnlinkedBinding<T>() {
-    override fun link(component: Component): LinkedBinding<T> =
-        LinkedSingleBinding(binding.performLink(component))
-}
+/**
+ * Annotation for the [SingleBehavior]
+ */
+@BehaviorMarker(SingleBehavior::class)
+@Target(AnnotationTarget.CLASS)
+annotation class Single
 
-private class LinkedSingleBinding<T>(private val provider: Provider<T>) : LinkedBinding<T>() {
-    private var _value: Any? = this
+private class SingleProvider<T>(
+    delegate: BindingProvider<T>
+) : DelegatingBindingProvider<T>(delegate) {
+    private var value: Any? = this
 
-    override fun invoke(parameters: Parameters): T {
-        var value = _value
+    override fun invoke(p1: Component, p2: Parameters): T {
+        var value = this.value
         if (value === this) {
             synchronized(this) {
-                value = _value
+                value = this.value
                 if (value === this) {
-                    _value = provider(parameters)
-                    value = _value
+                    this.value = super.invoke(p1, p2)
+                    value = this.value
                 }
             }
         }

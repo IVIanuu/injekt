@@ -20,58 +20,66 @@ import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Name
-import com.ivianuu.injekt.OverrideStrategy
+import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Activity> ActivityComponent(
     instance: T,
-    block: ComponentBuilder.() -> Unit = {}
-): Component = ActivityComponent(instance = instance, type = typeOf(), block = block)
+    noinline block: ComponentBuilder.() -> Unit = {}
+): Component = ActivityComponent(instance = instance, key = keyOf(), block = block)
 
-inline fun <T : Activity> ActivityComponent(
+fun <T : Activity> ActivityComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(ActivityScope)
     instance.getClosestComponentOrNull()?.let { dependencies(it) }
+    activityBindings(instance, key)
+    block()
+}
 
-    instance(instance = instance, type = type)
-        .bindAlias<Activity>()
-        .apply {
-            if (instance is ComponentActivity) bindAlias<ComponentActivity>()
-            if (instance is FragmentActivity) bindAlias<FragmentActivity>()
-            if (instance is AppCompatActivity) bindAlias<AppCompatActivity>()
-        }
+fun <T : Activity> ComponentBuilder.activityBindings(
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance = instance, key = key)
+    if (instance is ComponentActivity) alias(key, keyOf<ComponentActivity>())
+    if (instance is FragmentActivity) alias(key, keyOf<FragmentActivity>())
+    if (instance is AppCompatActivity) alias(key, keyOf<AppCompatActivity>())
 
     (instance as? FragmentActivity)?.let {
-        factory(overrideStrategy = OverrideStrategy.Permit) { instance.supportFragmentManager }
-            .bindAlias(name = ForActivity)
+        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.supportFragmentManager }
+        alias<FragmentManager>(aliasQualifier = ForActivity)
     }
 
     contextBindings(ForActivity) { instance }
     maybeLifecycleBindings(instance, ForActivity)
     maybeViewModelStoreBindings(instance, ForActivity)
     maybeSavedStateBindings(instance, ForActivity)
-    componentAlias(ActivityScope)
-
-    block()
+    componentAlias(ForActivity)
 }
 
-@Scope
+@ScopeMarker
 annotation class ActivityScope {
-    companion object
+    companion object : Scope
 }
 
-@Name
+@QualifierMarker
 annotation class ForActivity {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun Activity.getClosestComponentOrNull(): Component? =
@@ -80,7 +88,8 @@ fun Activity.getClosestComponentOrNull(): Component? =
 fun Activity.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
-fun Activity.getApplicationComponentOrNull(): Component? = (application as? InjektTrait)?.component
+fun Activity.getApplicationComponentOrNull(): Component? =
+    (application as? ComponentOwner)?.component
 
 fun Activity.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")

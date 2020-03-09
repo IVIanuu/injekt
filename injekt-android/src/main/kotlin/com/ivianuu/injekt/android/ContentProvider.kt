@@ -19,42 +19,51 @@ package com.ivianuu.injekt.android
 import android.content.ContentProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.InjektTrait
-import com.ivianuu.injekt.Name
+import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.Type
-import com.ivianuu.injekt.typeOf
+import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : ContentProvider> ContentProviderComponent(
     instance: T,
     block: ComponentBuilder.() -> Unit = {}
-): Component = ContentProviderComponent(instance = instance, type = typeOf(), block = block)
+): Component = ContentProviderComponent(instance = instance, key = keyOf(), block = block)
 
 inline fun <T : ContentProvider> ContentProviderComponent(
     instance: T,
-    type: Type<T>,
+    key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(ContentProviderScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-
-        instance(instance, type = type)
-            .bindAlias<ContentProvider>()
-        contextBindings(ForContentProvider) { instance.context!! }
-        componentAlias(ContentProviderScope)
-
+        contentProviderBindings(instance, key)
         block()
     }
 
-@Scope
-annotation class ContentProviderScope {
-    companion object
+fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
+    instance: T,
+    key: Key<T>
+) {
+    instance(instance, key = key)
+    alias(originalKey = key, aliasKey = keyOf<ContentProvider>())
+    contextBindings(ForContentProvider) { instance.context!! }
+    componentAlias(ForContentProvider)
 }
 
-@Name
+@ScopeMarker
+annotation class ContentProviderScope {
+    companion object : Scope
+}
+
+@QualifierMarker
 annotation class ForContentProvider {
-    companion object
+    companion object : Qualifier.Element
 }
 
 fun ContentProvider.getClosestComponentOrNull(): Component? =
@@ -64,7 +73,7 @@ fun ContentProvider.getClosestComponent(): Component =
     getClosestComponentOrNull() ?: error("No close Component found for $this")
 
 fun ContentProvider.getApplicationComponentOrNull(): Component? =
-    (context?.applicationContext as? InjektTrait)?.component
+    (context?.applicationContext as? ComponentOwner)?.component
 
 fun ContentProvider.getApplicationComponent(): Component =
     getApplicationComponentOrNull() ?: error("No application Component found for $this")

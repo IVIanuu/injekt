@@ -22,37 +22,16 @@ package com.ivianuu.injekt
  * This enables providing multiple instances, lazy instances or optional retrieval of instances
  */
 interface Provider<T> {
-
     /**
      * Provides an instance of type [T]
-     *
-     * @param parameters optional parameters for constructing the instance
-     * @return the instance of type [T]
      */
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
-internal class KeyedProvider<T>(
+class KeyedProvider<T>(
     private val component: Component,
-    private val key: Key
+    private val key: Key<T>
 ) : Provider<T> {
-
-    private var _provider: Provider<T>? = null
-
-    override fun invoke(parameters: Parameters): T {
-        var provider = _provider
-        if (provider == null) {
-            provider = component.getBinding(key)
-            _provider = provider
-        }
-        return provider(parameters)
-    }
-}
-
-internal class ProviderBinding<T>(
-    private val component: Component,
-    private val key: Key
-) : LinkedBinding<Provider<T>>() {
-    override fun invoke(parameters: Parameters): Provider<T> =
-        KeyedProvider(component, key)
+    override fun invoke(parameters: Parameters): T =
+        component.get(key = key, parameters = parameters)
 }
