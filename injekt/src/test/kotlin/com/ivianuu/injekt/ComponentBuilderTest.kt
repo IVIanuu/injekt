@@ -76,8 +76,8 @@ class ComponentBuilderTest {
 
     @Test
     fun testBind() {
-        val binding = Binding(key = keyOf<String>()) { "value" }
+        val binding = Binding(key = keyOf()) { "value" }
         val component = Component { bind(binding) }
-        assertEquals(binding, component.getBinding<String>(keyOf<String>()))
+        assertEquals(binding, component.getBinding(keyOf<String>()))
     }
 }

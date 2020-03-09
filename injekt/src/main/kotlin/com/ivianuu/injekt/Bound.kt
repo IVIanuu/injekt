@@ -17,8 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Ensures that the providers resolves instances in the [Component] with the [scope]
- * Or if [scope] == null in the [Component] it gets added to
+ * Ensures instances will be resolved in the specified component
  */
 class BoundBehavior(private val scope: Scope? = null) : Behavior.Element {
     override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =

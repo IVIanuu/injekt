@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver

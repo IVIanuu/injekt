@@ -24,6 +24,7 @@ inline fun <reified T> ComponentBuilder.instance(
 ) = instance(
     instance = instance,
     key = keyOf(qualifier = qualifier),
+    behavior = behavior,
     duplicateStrategy = duplicateStrategy
 )
 

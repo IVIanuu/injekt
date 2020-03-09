@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 

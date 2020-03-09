@@ -65,7 +65,7 @@ data class Binding<T> private constructor(
 }
 
 /**
- * Provides instances of [T]
+ * Provides instances of T
  */
 typealias BindingProvider<T> = Component.(Parameters) -> T
 
