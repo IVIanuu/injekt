@@ -31,11 +31,14 @@ inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder {
 
-    private val scopes = mutableListOf<Scope>()
-    private val dependencies = mutableListOf<Component>()
-    private val bindings = mutableMapOf<Key<*>, Binding<*>>()
-    private val multiBindingMapBuilders = mutableMapOf<Key<*>, MultiBindingMapBuilder<Any?, Any?>>()
-    private val multiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
+    private val _scopes = mutableListOf<Scope>()
+    val scopes: List<Scope> get() = _scopes
+
+    private val _dependencies = mutableListOf<Component>()
+    val dependencies: List<Component> get() = _dependencies
+
+    private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
+    val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
     /**
      * Adds the [scopes] this allows generated [Binding]s
@@ -45,8 +48,8 @@ class ComponentBuilder {
      */
     fun scopes(vararg scopes: Scope) {
         scopes.forEach { scope ->
-            check(scope !in this.scopes) { "Duplicated scope $scope" }
-            this.scopes += scope
+            check(scope !in this._scopes) { "Duplicated scope $scope" }
+            this._scopes += scope
         }
     }
 
@@ -56,71 +59,9 @@ class ComponentBuilder {
      */
     fun dependencies(vararg dependencies: Component) {
         dependencies.forEach { dependency ->
-            check(dependency !in this.dependencies) { "Duplicated dependency $dependency" }
-            this.dependencies += dependency
+            check(dependency !in this._dependencies) { "Duplicated dependency $dependency" }
+            this._dependencies += dependency
         }
-    }
-
-    inline fun <reified K, reified V> map(
-        mapQualifiers: Qualifier = Qualifier.None,
-        noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
-    ) {
-        map(
-            mapKey = keyOf(
-                classifier = Map::class,
-                arguments = arrayOf(
-                    keyOf<K>(),
-                    keyOf<V>()
-                ),
-                qualifier = mapQualifiers
-            ), block = block
-        )
-    }
-
-    /**
-     * Runs the [block] in the scope of the [MultiBindingMapBuilder] for [mapKey]
-     *
-     * @see MultiBindingMap
-     */
-    fun <K, V> map(
-        mapKey: Key<Map<K, V>>,
-        block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
-    ) {
-        val builder = multiBindingMapBuilders.getOrPut(mapKey) {
-            MultiBindingMapBuilder(mapKey) as MultiBindingMapBuilder<Any?, Any?>
-        } as MultiBindingMapBuilder<K, V>
-
-        builder.apply(block)
-    }
-
-    inline fun <reified E> set(
-        setQualifiers: Qualifier = Qualifier.None,
-        noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
-    ) {
-        set(
-            setKey = keyOf(
-                classifier = Set::class,
-                arguments = arrayOf(keyOf<E>()),
-                qualifier = setQualifiers
-            ),
-            block = block
-        )
-    }
-
-    /**
-     * Runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
-     *
-     * @see MultiBindingSet
-     */
-    fun <E> set(
-        setKey: Key<Set<E>>,
-        block: MultiBindingSetBuilder<E>.() -> Unit = {}
-    ) {
-        val builder = multiBindingSetBuilders.getOrPut(setKey) {
-            MultiBindingSetBuilder(setKey) as MultiBindingSetBuilder<Any?>
-        } as MultiBindingSetBuilder<E>
-
-        builder.apply(block)
     }
 
     inline fun <reified T> bind(
@@ -161,11 +102,11 @@ class ComponentBuilder {
      */
     fun <T> bind(binding: Binding<T>): BindingContext<T> {
         if (binding.duplicateStrategy.check(
-                existsPredicate = { binding.key in bindings },
+                existsPredicate = { binding.key in _bindings },
                 errorMessage = { "Already declared binding for ${binding.key}" }
             )
         ) {
-            bindings[binding.key] = binding
+            _bindings[binding.key] = binding
         }
 
         return BindingContext(binding = binding, componentBuilder = this)
@@ -177,7 +118,7 @@ class ComponentBuilder {
     fun build(): Component {
         checkScopes()
 
-        val dependencyBindings = dependencies
+        val dependencyBindings = _dependencies
             .map { it.getAllBindings() }
             .fold(mutableMapOf<Key<*>, Binding<*>>()) { acc, current ->
                 current.forEach { (key, binding) ->
@@ -194,8 +135,6 @@ class ComponentBuilder {
             }
 
         val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
-        val allMultiBindingMapBuilders = mutableMapOf<Key<*>, MultiBindingMapBuilder<Any?, Any?>>()
-        val allMultiBindingSetBuilders = mutableMapOf<Key<*>, MultiBindingSetBuilder<Any?>>()
 
         fun addBinding(binding: Binding<*>) {
             if (binding.duplicateStrategy.check(
@@ -206,64 +145,14 @@ class ComponentBuilder {
             }
         }
 
-        fun addMultiBindingMap(mapKey: Key<*>, map: MultiBindingMap<*, *>) {
-            val builder = allMultiBindingMapBuilders.getOrPut(mapKey) {
-                MultiBindingMapBuilder(mapKey as Key<Map<Any?, Any?>>)
-            }
-            builder.putAll(map as MultiBindingMap<Any?, Any?>)
-        }
-
-        fun addMultiBindingSet(setKey: Key<*>, set: MultiBindingSet<*>) {
-            val builder = allMultiBindingSetBuilders.getOrPut(setKey) {
-                MultiBindingSetBuilder(setKey as Key<Set<Any?>>)
-            }
-
-            builder.addAll(set)
-        }
-
-        dependencies.forEach { dependency ->
-            dependency.multiBindingMaps.forEach { (mapKey, map) ->
-                addMultiBindingMap(mapKey, map)
-            }
-
-            dependency.multiBindingSets.forEach { (setKey, set) ->
-                addMultiBindingSet(setKey, set)
-            }
-        }
-
-        bindings.values.forEach { binding -> addBinding(binding) }
-
-        multiBindingMapBuilders.forEach {
-            addMultiBindingMap(it.key, it.value.build())
-        }
-
-        multiBindingSetBuilders.forEach {
-            addMultiBindingSet(it.key, it.value.build())
-        }
-
-        val multiBindingMaps = allMultiBindingMapBuilders.mapValues {
-            it.value.build()
-        }
-
-        multiBindingMaps.forEach { (mapKey, map) ->
-            includeMapBindings(finalBindings, mapKey, map)
-        }
-
-        val multiBindingSets = allMultiBindingSetBuilders.mapValues {
-            it.value.build()
-        }
-        multiBindingSets.forEach { (setKey, set) ->
-            includeSetBindings(finalBindings, setKey, set)
-        }
+        _bindings.values.forEach { binding -> addBinding(binding) }
 
         includeComponentBindings(finalBindings)
 
         return Component(
-            scopes = scopes,
-            dependencies = dependencies,
-            bindings = finalBindings,
-            multiBindingMaps = multiBindingMaps,
-            multiBindingSets = multiBindingSets
+            scopes = _scopes,
+            dependencies = _dependencies,
+            bindings = finalBindings
         )
     }
 
@@ -278,11 +167,11 @@ class ComponentBuilder {
             dependencyScopes += scope
         }
 
-        dependencies
+        _dependencies
             .flatMap { it.scopes }
             .forEach { addScope(it) }
 
-        scopes.forEach { addScope(it) }
+        _scopes.forEach { addScope(it) }
     }
 
     private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
@@ -294,131 +183,6 @@ class ComponentBuilder {
         )
 
         bindings[componentBinding.key] = componentBinding
-    }
-
-    private fun includeMapBindings(
-        bindings: MutableMap<Key<*>, Binding<*>>,
-        mapKey: Key<*>,
-        map: MultiBindingMap<*, *>
-    ) {
-        val bindingKeys = map
-            .mapValues { it.value.key }
-
-        val mapKeyKey = mapKey.arguments[0]
-        val mapValueKey = mapKey.arguments[1]
-
-        bindings[mapKey] = Binding(
-            key = mapKey as Key<Map<*, *>>,
-            behavior = BoundBehavior(),
-            duplicateStrategy = DuplicateStrategy.Permit,
-            provider = {
-                bindingKeys
-                    .mapValues { get(key = it.value) }
-            }
-        )
-
-        val mapOfProviderKey = keyOf<Map<*, Provider<*>>>(
-            classifier = Map::class,
-            arguments = arrayOf(
-                mapKeyKey,
-                keyOf<Provider<Any?>>(
-                    classifier = Provider::class,
-                    arguments = arrayOf(mapValueKey)
-                )
-            ),
-            qualifier = mapKey.qualifier
-        )
-        bindings[mapOfProviderKey] = Binding(
-            key = mapOfProviderKey,
-            behavior = BoundBehavior(),
-            duplicateStrategy = DuplicateStrategy.Permit,
-            provider = {
-                bindingKeys
-                    .mapValues { KeyedProvider(this, it.value) }
-            }
-        )
-
-        val mapOfLazyKey = keyOf<Map<*, Lazy<*>>>(
-            classifier = Map::class,
-            arguments = arrayOf(
-                mapKeyKey,
-                keyOf<Lazy<Any?>>(
-                    classifier = Lazy::class,
-                    arguments = arrayOf(mapValueKey)
-                )
-            ),
-            qualifier = mapKey.qualifier
-        )
-        bindings[mapOfLazyKey] = Binding(
-            key = mapOfLazyKey,
-            behavior = BoundBehavior(),
-            duplicateStrategy = DuplicateStrategy.Permit,
-            provider = {
-                bindingKeys
-                    .mapValues { KeyedLazy(this, it.value) }
-            }
-        )
-    }
-
-    private fun includeSetBindings(
-        bindings: MutableMap<Key<*>, Binding<*>>,
-        setKey: Key<*>,
-        set: MultiBindingSet<*>
-    ) {
-        val setKeys = set.mapTo(mutableSetOf()) { it.key }
-
-        val setElementKey = setKey.arguments[0]
-
-        bindings[setKey] = Binding(
-            key = setKey as Key<Set<*>>,
-            duplicateStrategy = DuplicateStrategy.Permit,
-            provider = {
-                setKeys
-                    .mapTo(mutableSetOf()) { get(key = it) }
-            }
-        )
-
-        val setOfProviderKey = keyOf<Set<Provider<*>>>(
-            classifier = Set::class,
-            arguments = arrayOf(
-                keyOf<Provider<*>>(
-                    classifier = Provider::class,
-                    arguments = arrayOf(setElementKey)
-                )
-            ),
-            qualifier = setKey.qualifier
-        )
-        bindings[setOfProviderKey] = Binding(
-            key = setOfProviderKey,
-            duplicateStrategy = DuplicateStrategy.Permit,
-            provider = {
-                setKeys
-                    .mapTo(mutableSetOf()) {
-                        KeyedProvider(this, it)
-                    }
-            }
-        )
-
-        val setOfLazyKey = keyOf<Set<Lazy<*>>>(
-            classifier = Set::class,
-            arguments = arrayOf(
-                keyOf<Lazy<*>>(
-                    classifier = Lazy::class,
-                    arguments = arrayOf(setElementKey)
-                )
-            ),
-            qualifier = setKey.qualifier
-        )
-        bindings[setOfLazyKey] = Binding(
-            key = setOfLazyKey,
-            duplicateStrategy = DuplicateStrategy.Permit,
-            provider = {
-                setKeys
-                    .mapTo(mutableSetOf()) {
-                        KeyedLazy(this, it)
-                    }
-            }
-        )
     }
 
     private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =

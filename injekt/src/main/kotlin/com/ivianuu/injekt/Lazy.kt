@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 interface Lazy<T> : Provider<T>
 
-internal class KeyedLazy<T>(
+class KeyedLazy<T>(
     private val component: Component,
     private val key: Key<T>
 ) : Lazy<T> {

@@ -38,11 +38,9 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    internal val scopes: List<Scope>,
-    internal val dependencies: List<Component>,
-    internal val bindings: MutableMap<Key<*>, Binding<*>>,
-    internal val multiBindingMaps: Map<Key<*>, MultiBindingMap<Any?, Any?>>,
-    internal val multiBindingSets: Map<Key<*>, MultiBindingSet<Any?>>
+    val scopes: List<Scope>,
+    val dependencies: List<Component>,
+    val bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
     init {
@@ -150,6 +148,7 @@ class Component internal constructor(
         (binding.provider as? ComponentInitObserver)?.onInit(this)
         return binding
     }
+
 }
 
 operator fun Component.plus(other: Component): Component {

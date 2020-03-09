@@ -14,25 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
-/**
- * All strategies for handling duplicated bindings
- */
-enum class DuplicateStrategy {
-    /** Overrides the existing binding */
-    Permit,
-    /** Throws an exception if there's an existing binding */
-    Fail,
-    /** Keeps the existing binding and drops this one */
-    Drop;
-
-    inline fun check(
-        existsPredicate: () -> Boolean,
-        errorMessage: () -> String
-    ): Boolean = when (this) {
-        Permit -> true
-        Fail -> check(!existsPredicate(), errorMessage).let { true }
-        Drop -> !existsPredicate()
-    }
-}
+// todo
+class WeakTest

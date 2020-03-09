@@ -14,37 +14,52 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Lazy
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.keyOf
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class MapTest {
+class MapMultiBindingTest {
 
     @Test
     fun testMapBinding() {
         val component = Component {
             factory(qualifier = TestQualifier1) { "value_one" }
-                .intoMap<String, CharSequence>("key_one", mapQualifier = Values)
+                .intoMap(
+                    entryKey = "key_one",
+                    mapKey = keyOf<Map<String, String>>()
+                )
             factory(qualifier = TestQualifier2) { "value_two" }
-                .intoMap<String, CharSequence>("key_two", mapQualifier = Values)
+                .intoMap(
+                    entryKey = "key_two",
+                    mapKey = keyOf<Map<String, String>>()
+                )
             factory(qualifier = TestQualifier3) { "value_three" }
-                .intoMap<String, CharSequence>("key_three", mapQualifier = Values)
+                .intoMap(
+                    entryKey = "key_three",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
 
-        val map = component.get<Map<String, CharSequence>>(qualifier = Values)
+        val map = component.get<Map<String, String>>()
         assertEquals(3, map.size)
         assertEquals(map["key_one"], "value_one")
         assertEquals(map["key_two"], "value_two")
         assertEquals(map["key_three"], "value_three")
 
-        val providerMap = component.get<Map<String, Provider<CharSequence>>>(qualifier = Values)
+        val providerMap = component.get<Map<String, Provider<String>>>()
         assertEquals(3, providerMap.size)
         assertEquals(providerMap.getValue("key_one")(), "value_one")
         assertEquals(providerMap.getValue("key_two")(), "value_two")
         assertEquals(providerMap.getValue("key_three")(), "value_three")
 
-        val lazyMap = component.get<Map<String, Lazy<CharSequence>>>(qualifier = Values)
+        val lazyMap = component.get<Map<String, Lazy<String>>>()
         assertEquals(3, lazyMap.size)
         assertEquals(lazyMap.getValue("key_one")(), "value_one")
         assertEquals(lazyMap.getValue("key_two")(), "value_two")
@@ -70,7 +85,10 @@ class MapTest {
     fun testNestedMapBindings() {
         val componentA = Component {
             factory(qualifier = TestQualifier1) { "value_one" }
-                .intoMap<String, String>("key_one")
+                .intoMap(
+                    entryKey = "key_one",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
 
         val mapA = componentA.get<Map<String, String>>()
@@ -78,9 +96,16 @@ class MapTest {
         assertEquals("value_one", mapA["key_one"])
 
         val componentB = Component {
-            dependencies(componentA)
+            dependencies(
+                Component {
+                    dependencies(componentA)
+                }
+            )
             factory(qualifier = TestQualifier2) { "value_two" }
-                .intoMap<String, String>("key_two")
+                .intoMap(
+                    entryKey = "key_two",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
 
         val mapB = componentB.get<Map<String, String>>()
@@ -89,9 +114,16 @@ class MapTest {
         assertEquals("value_two", mapB["key_two"])
 
         val componentC = Component {
-            dependencies(componentB)
+            dependencies(
+                Component {
+                    dependencies(componentB)
+                }
+            )
             factory(qualifier = TestQualifier3) { "value_three" }
-                .intoMap<String, String>("key_three")
+                .intoMap(
+                    entryKey = "key_three",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
 
         val mapC = componentC.get<Map<String, String>>()
@@ -105,10 +137,15 @@ class MapTest {
     fun testOverride() {
         val component = Component {
             factory(qualifier = TestQualifier1) { "value" }
-                .intoMap<String, String>(entryKey = "key")
-            factory(qualifier = TestQualifier2) { "overridden_value" }
-                .intoMap<String, String>(
+                .intoMap(
                     entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>()
+                )
+
+            factory(qualifier = TestQualifier2) { "overridden_value" }
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>(),
                     duplicateStrategy = DuplicateStrategy.Permit
                 )
         }
@@ -123,10 +160,14 @@ class MapTest {
     fun testOverrideDrop() {
         val component = Component {
             factory(qualifier = TestQualifier1) { "value" }
-                .intoMap<String, String>(entryKey = "key")
-            factory(qualifier = TestQualifier2) { "overridden_value" }
-                .intoMap<String, String>(
+                .intoMap(
                     entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>()
+                )
+            factory(qualifier = TestQualifier2) { "overridden_value" }
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>(),
                     duplicateStrategy = DuplicateStrategy.Drop
                 )
         }
@@ -140,8 +181,17 @@ class MapTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         Component {
-            factory { "value" }.intoMap<String, String>(entryKey = "key")
-            factory { "overridden_value" }.intoMap<String, String>(entryKey = "key")
+            factory { "value" }
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>()
+                )
+            factory { "overridden_value" }
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>(),
+                    duplicateStrategy = DuplicateStrategy.Fail
+                )
         }
     }
 
@@ -149,13 +199,19 @@ class MapTest {
     fun testNestedOverride() {
         val componentA = Component {
             factory { "value" }
-                .intoMap<String, String>(entryKey = "key")
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
         val componentB = Component {
-            dependencies(componentA)
+            dependencies(Component {
+                dependencies(componentA)
+            })
             factory(qualifier = TestQualifier1) { "overridden_value" }
-                .intoMap<String, String>(
+                .intoMap(
                     entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>(),
                     duplicateStrategy = DuplicateStrategy.Permit
                 )
         }
@@ -170,13 +226,19 @@ class MapTest {
     fun testNestedOverrideDrop() {
         val componentA = Component {
             factory { "value" }
-                .intoMap<String, String>("key")
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
         val componentB = Component {
-            dependencies(componentA)
+            dependencies(Component {
+                dependencies(componentA)
+            })
             factory(qualifier = TestQualifier1) { "overridden_value" }
-                .intoMap<String, String>(
+                .intoMap(
                     entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>(),
                     duplicateStrategy = DuplicateStrategy.Drop
                 )
         }
@@ -191,12 +253,21 @@ class MapTest {
     fun testNestedOverrideFail() {
         val componentA = Component {
             factory { "value" }
-                .intoMap<String, String>(entryKey = "key")
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>()
+                )
         }
         val componentB = Component {
-            dependencies(componentA)
+            dependencies(Component {
+                dependencies(componentA)
+            })
             factory(qualifier = TestQualifier1) { "overridden_value" }
-                .intoMap<String, String>(entryKey = "key")
+                .intoMap(
+                    entryKey = "key",
+                    mapKey = keyOf<Map<String, String>>(),
+                    duplicateStrategy = DuplicateStrategy.Fail
+                )
         }
     }
 }

@@ -14,37 +14,43 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Lazy
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.keyOf
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class SetTest {
+class SetMultiBindingTest {
 
     @Test
     fun testSetBinding() {
         val component = Component {
             factory(qualifier = TestQualifier1) { "value_one" }
-                .intoSet<CharSequence>(setQualifier = Values)
+                .intoSet(setKey = keyOf<Set<String>>())
             factory(qualifier = TestQualifier2) { "value_two" }
-                .intoSet<CharSequence>(setQualifier = Values)
+                .intoSet(setKey = keyOf<Set<String>>())
             factory(qualifier = TestQualifier3) { "value_three" }
-                .intoSet<CharSequence>(setQualifier = Values)
+                .intoSet(setKey = keyOf<Set<String>>())
         }
 
-        val set = component.get<Set<CharSequence>>(qualifier = Values)
+        val set = component.get<Set<String>>()
         assertEquals(3, set.size)
         assertEquals("value_one", set.toList()[0])
         assertEquals("value_two", set.toList()[1])
         assertEquals("value_three", set.toList()[2])
 
-        val providerSet = component.get<Set<Provider<CharSequence>>>(qualifier = Values)
+        val providerSet = component.get<Set<Provider<String>>>()
         assertEquals(3, providerSet.size)
         assertEquals("value_one", providerSet.toList()[0]())
         assertEquals("value_two", providerSet.toList()[1]())
         assertEquals("value_three", providerSet.toList()[2]())
 
-        val lazySet = component.get<Set<Lazy<CharSequence>>>(qualifier = Values)
+        val lazySet = component.get<Set<Lazy<String>>>()
         assertEquals(3, providerSet.size)
         assertEquals("value_one", lazySet.toList()[0]())
         assertEquals("value_two", lazySet.toList()[1]())
@@ -58,7 +64,7 @@ class SetTest {
     }
 
     @Test
-    fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
+    fun testReturnsEmptyOnADeclaredSetBindingWithoutElements() {
         val component = Component {
             set<String>()
         }
@@ -67,10 +73,10 @@ class SetTest {
     }
 
     @Test
-    fun testNestedMapBindings() {
+    fun testNestedSetBindings() {
         val componentA = Component {
             factory(qualifier = TestQualifier1) { "value_one" }
-                .intoSet<String>()
+                .intoSet(setKey = keyOf<Set<String>>())
         }
 
         val setA = componentA.get<Set<String>>()
@@ -80,7 +86,7 @@ class SetTest {
         val componentB = Component {
             dependencies(componentA)
             factory(qualifier = TestQualifier2) { "value_two" }
-                .intoSet<String>()
+                .intoSet(setKey = keyOf<Set<String>>())
         }
 
         val setB = componentB.get<Set<String>>()
@@ -91,7 +97,7 @@ class SetTest {
         val componentC = Component {
             dependencies(componentB)
             factory(qualifier = TestQualifier3) { "value_three" }
-                .intoSet<String>()
+                .intoSet(setKey = keyOf<Set<String>>())
         }
 
         val setC = componentC.get<Set<String>>()
@@ -104,13 +110,16 @@ class SetTest {
     @Test
     fun testOverride() {
         val originalValueComponent = Component {
-            factory { "value" }.intoSet<String>()
+            factory { "value" }
+                .intoSet(setKey = keyOf<Set<String>>())
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }.intoSet<String>(
-                duplicateStrategy = DuplicateStrategy.Permit
-            )
+            factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }
+                .intoSet(
+                    setKey = keyOf<Set<String>>(),
+                    duplicateStrategy = DuplicateStrategy.Permit
+                )
         }
 
         assertEquals("overridden_value", overriddenValueComponent.get<Set<String>>().single())
@@ -119,13 +128,13 @@ class SetTest {
     @Test
     fun testOverrideDrop() {
         val originalValueComponent = Component {
-            factory { "value" }.intoSet<String>()
+            factory { "value" }
+                .intoSet(setKey = keyOf<Set<String>>())
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }.intoSet<String>(
-                duplicateStrategy = DuplicateStrategy.Drop
-            )
+            factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }
+                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Drop)
         }
 
         assertEquals("value", overriddenValueComponent.get<Set<String>>().single())
@@ -134,8 +143,10 @@ class SetTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         Component {
-            factory { "value" }.intoSet<String>()
-            factory { "overridden_value" }.intoSet<String>()
+            factory { "value" }
+                .intoSet(setKey = keyOf<Set<String>>())
+            factory { "overridden_value" }
+                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Fail)
         }
     }
 
@@ -143,12 +154,15 @@ class SetTest {
     fun testNestedOverride() {
         val componentA = Component {
             factory { "value" }
-                .intoSet<String>()
+                .intoSet(setKey = keyOf<Set<String>>())
         }
         val componentB = Component {
             dependencies(componentA)
             factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }
-                .intoSet<String>(duplicateStrategy = DuplicateStrategy.Permit)
+                .intoSet(
+                    setKey = keyOf<Set<String>>(),
+                    duplicateStrategy = DuplicateStrategy.Permit
+                )
         }
 
         val setA = componentA.get<Set<String>>()
@@ -161,12 +175,12 @@ class SetTest {
     fun testNestedOverrideDrop() {
         val componentA = Component {
             factory { "value" }
-                .intoSet<String>()
+                .intoSet(setKey = keyOf<Set<String>>())
         }
         val componentB = Component {
             dependencies(componentA)
             factory(duplicateStrategy = DuplicateStrategy.Drop) { "overridden_value" }
-                .intoSet<String>(duplicateStrategy = DuplicateStrategy.Drop)
+                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Drop)
         }
 
         val setA = componentA.get<Set<String>>()
@@ -179,12 +193,12 @@ class SetTest {
     fun testNestedOverrideFail() {
         val componentA = Component {
             factory { "value" }
-                .intoSet<String>()
+                .intoSet(setKey = keyOf<Set<String>>())
         }
         val componentB = Component {
             dependencies(componentA)
             factory(duplicateStrategy = DuplicateStrategy.Fail) { "overridden_value" }
-                .intoSet<String>(duplicateStrategy = DuplicateStrategy.Fail)
+                .intoSet(setKey = keyOf<Set<String>>(), duplicateStrategy = DuplicateStrategy.Fail)
         }
     }
 }

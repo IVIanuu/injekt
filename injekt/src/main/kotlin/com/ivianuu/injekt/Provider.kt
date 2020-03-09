@@ -28,7 +28,7 @@ interface Provider<T> {
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
-internal class KeyedProvider<T>(
+class KeyedProvider<T>(
     private val component: Component,
     private val key: Key<T>
 ) : Provider<T> {

@@ -14,25 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
-/**
- * All strategies for handling duplicated bindings
- */
-enum class DuplicateStrategy {
-    /** Overrides the existing binding */
-    Permit,
-    /** Throws an exception if there's an existing binding */
-    Fail,
-    /** Keeps the existing binding and drops this one */
-    Drop;
+import com.ivianuu.injekt.Component
 
-    inline fun check(
-        existsPredicate: () -> Boolean,
-        errorMessage: () -> String
-    ): Boolean = when (this) {
-        Permit -> true
-        Fail -> check(!existsPredicate(), errorMessage).let { true }
-        Drop -> !existsPredicate()
-    }
+internal fun Component.getAllDependencies(): List<Component> =
+    mutableListOf<Component>().also { collectDependencies(it) }
+
+private fun Component.collectDependencies(dependencies: MutableList<Component>) {
+    this.dependencies.forEach { it.collectDependencies(dependencies) }
+    dependencies += this.dependencies
 }

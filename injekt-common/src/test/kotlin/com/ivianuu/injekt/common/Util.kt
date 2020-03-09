@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
+
+import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.QualifierMarker
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.ScopeMarker
 
 @QualifierMarker
 annotation class TestQualifier1 {
@@ -28,6 +34,11 @@ annotation class TestQualifier2 {
 
 @QualifierMarker
 annotation class TestQualifier3 {
+    companion object : Qualifier.Element
+}
+
+@QualifierMarker
+annotation class Values {
     companion object : Qualifier.Element
 }
 
