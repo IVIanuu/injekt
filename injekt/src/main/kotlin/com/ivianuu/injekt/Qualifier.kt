@@ -85,6 +85,10 @@ interface Qualifier {
     }
 }
 
+fun Qualifier(value: Any): Qualifier = SimpleQualifier(value = value)
+
+private data class SimpleQualifier(val value: Any) : Qualifier.Element
+
 /**
  * Marker for [Qualifier]s
  *
