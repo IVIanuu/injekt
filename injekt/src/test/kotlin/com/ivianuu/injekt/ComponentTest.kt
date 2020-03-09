@@ -318,8 +318,6 @@ class ComponentTest {
         val contextB = componentB.get<Context>()
         val contextC = componentC.get<Context>()
 
-        println("a $componentA b $componentB c $componentC")
-
         assertEquals(componentA, contextA.component)
         assertEquals(componentB, contextB.component)
         assertEquals(componentC, contextC.component)
