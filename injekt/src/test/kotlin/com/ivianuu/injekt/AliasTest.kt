@@ -44,5 +44,4 @@ class AliasTest {
         val aliased = component.get<TestDep1>(qualifier = TestQualifier1)
         assertSame(declared, aliased)
     }
-
 }

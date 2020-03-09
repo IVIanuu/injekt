@@ -148,7 +148,6 @@ class Component internal constructor(
         (binding.provider as? ComponentInitObserver)?.onInit(this)
         return binding
     }
-
 }
 
 operator fun Component.plus(other: Component): Component {

@@ -61,7 +61,6 @@ interface InjektTrait {
         key: Key<T>,
         parameters: () -> Parameters = { emptyParameters() }
     ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(key, parameters()) }
-
 }
 
 /**

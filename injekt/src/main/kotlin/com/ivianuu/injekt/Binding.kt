@@ -85,7 +85,6 @@ abstract class DelegatingBindingProvider<T>(
     }
 
     override fun invoke(p1: Component, p2: Parameters): T = delegate(p1, p2)
-
 }
 
 /**
