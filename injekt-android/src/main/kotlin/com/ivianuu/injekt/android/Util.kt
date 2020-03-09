@@ -37,12 +37,12 @@ internal fun ComponentBuilder.maybeLifecycleBindings(
     qualifier: Qualifier
 ) {
     if (instance !is LifecycleOwner) return
-    instance(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
+    instance(instance = instance, duplicateStrategy = DuplicateStrategy.Override)
         .bindAlias(qualifier = qualifier)
-    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Permit) {
+    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) {
         instance.lifecycleScope
     }.bindAlias(qualifier = qualifier)
-    factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.lifecycle }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycle }
         .bindAlias(qualifier = qualifier)
 }
 
@@ -52,9 +52,12 @@ internal fun ComponentBuilder.maybeViewModelStoreBindings(
     qualifier: Qualifier
 ) {
     if (instance !is ViewModelStoreOwner) return
-    instance<ViewModelStoreOwner>(instance = instance, duplicateStrategy = DuplicateStrategy.Permit)
+    instance<ViewModelStoreOwner>(
+        instance = instance,
+        duplicateStrategy = DuplicateStrategy.Override
+    )
         .bindAlias(qualifier = qualifier)
-    factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.viewModelStore }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.viewModelStore }
         .bindAlias(qualifier = qualifier)
 }
 
@@ -66,9 +69,9 @@ internal fun ComponentBuilder.maybeSavedStateBindings(
     if (instance !is SavedStateRegistryOwner) return
     instance(
         instance = instance,
-        duplicateStrategy = DuplicateStrategy.Permit
+        duplicateStrategy = DuplicateStrategy.Override
     ).bindAlias(qualifier = qualifier)
-    factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.savedStateRegistry }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.savedStateRegistry }
         .bindAlias(qualifier = qualifier)
 }
 
@@ -82,7 +85,7 @@ internal fun ComponentBuilder.contextBindings(
     qualifier: Qualifier,
     definition: () -> Context
 ) {
-    factory(duplicateStrategy = DuplicateStrategy.Permit) { definition() }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
         .bindAlias(qualifier = qualifier)
     resourcesBindings(qualifier = qualifier) { definition().resources!! }
 }
@@ -92,6 +95,6 @@ internal fun ComponentBuilder.resourcesBindings(
     qualifier: Qualifier,
     definition: () -> Resources
 ) {
-    factory(duplicateStrategy = DuplicateStrategy.Permit) { definition() }
+    factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
         .bindAlias(qualifier = qualifier)
 }

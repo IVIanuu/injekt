@@ -55,7 +55,7 @@ inline fun <T : Activity> ActivityComponent(
         }
 
     (instance as? FragmentActivity)?.let {
-        factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.supportFragmentManager }
+        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.supportFragmentManager }
             .bindAlias(qualifier = ForActivity)
     }
 

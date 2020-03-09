@@ -146,7 +146,7 @@ class MapMultiBindingTest {
                 .intoMap(
                     entryKey = "key",
                     mapKey = keyOf<Map<String, String>>(),
-                    duplicateStrategy = DuplicateStrategy.Permit
+                    duplicateStrategy = DuplicateStrategy.Override
                 )
         }
 
@@ -212,7 +212,7 @@ class MapMultiBindingTest {
                 .intoMap(
                     entryKey = "key",
                     mapKey = keyOf<Map<String, String>>(),
-                    duplicateStrategy = DuplicateStrategy.Permit
+                    duplicateStrategy = DuplicateStrategy.Override
                 )
         }
 

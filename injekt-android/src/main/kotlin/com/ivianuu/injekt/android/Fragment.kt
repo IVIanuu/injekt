@@ -54,7 +54,7 @@ inline fun <T : Fragment> FragmentComponent(
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
 
-        instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Permit)
+        instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
             .bindAlias<Fragment>()
             .bindAlias<Fragment>(qualifier = qualifier)
 
@@ -63,7 +63,7 @@ inline fun <T : Fragment> FragmentComponent(
         maybeSavedStateBindings(instance, qualifier)
 
         contextBindings(qualifier) { instance.requireContext() }
-        factory(duplicateStrategy = DuplicateStrategy.Permit) { instance.childFragmentManager }.bindAlias(
+        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }.bindAlias(
             qualifier = qualifier
         )
 

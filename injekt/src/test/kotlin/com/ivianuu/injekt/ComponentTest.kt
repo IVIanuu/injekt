@@ -146,7 +146,7 @@ class ComponentTest {
     fun testOverride() {
         val component = Component {
             factory { "my_value" }
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "my_overridden_value" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
         }
 
         assertEquals("my_overridden_value", component.get<String>())
@@ -178,7 +178,7 @@ class ComponentTest {
 
         val childComponent = Component {
             dependencies(parentComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "my_overridden_value" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
         }
 
         assertEquals("my_value", parentComponent.get<String>())
@@ -218,7 +218,7 @@ class ComponentTest {
             factory { "value_a" }
         }
         val dependencyComponentB = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "value_b" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "value_b" }
         }
 
         val childComponent = Component {
@@ -261,7 +261,7 @@ class ComponentTest {
     @Test(expected = IllegalStateException::class)
     fun testReverseDependencyOverrideFail() {
         val dependencyComponentA = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "value_a" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "value_a" }
         }
         val dependencyComponentB = Component {
             factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }

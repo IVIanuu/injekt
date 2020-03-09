@@ -25,13 +25,13 @@ class DuplicateStrategyTest {
     @Test
     fun testStrategies() {
         assertTrue(
-            DuplicateStrategy.Permit.check(
+            DuplicateStrategy.Override.check(
             existsPredicate = { false },
             errorMessage = { "" }
         ))
 
         assertTrue(
-            DuplicateStrategy.Permit.check(
+            DuplicateStrategy.Override.check(
             existsPredicate = { true },
             errorMessage = { "" }
         ))

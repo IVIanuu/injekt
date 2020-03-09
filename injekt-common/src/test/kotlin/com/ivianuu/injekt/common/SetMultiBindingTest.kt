@@ -115,10 +115,10 @@ class SetMultiBindingTest {
         }
         val overriddenValueComponent = Component {
             dependencies(originalValueComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "overridden_value" }
                 .intoSet(
                     setKey = keyOf<Set<String>>(),
-                    duplicateStrategy = DuplicateStrategy.Permit
+                    duplicateStrategy = DuplicateStrategy.Override
                 )
         }
 
@@ -158,10 +158,10 @@ class SetMultiBindingTest {
         }
         val componentB = Component {
             dependencies(componentA)
-            factory(duplicateStrategy = DuplicateStrategy.Permit) { "overridden_value" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "overridden_value" }
                 .intoSet(
                     setKey = keyOf<Set<String>>(),
-                    duplicateStrategy = DuplicateStrategy.Permit
+                    duplicateStrategy = DuplicateStrategy.Override
                 )
         }
 

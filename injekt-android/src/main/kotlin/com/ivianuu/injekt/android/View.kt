@@ -58,7 +58,7 @@ inline fun <T : View> ViewComponent(
         instance(
             instance = instance,
             key = key,
-            duplicateStrategy = DuplicateStrategy.Permit
+            duplicateStrategy = DuplicateStrategy.Override
         ).bindAlias<View>().bindAlias<View>(qualifier)
 
         contextBindings(qualifier) { instance.context!! }

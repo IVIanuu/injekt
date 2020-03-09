@@ -146,7 +146,7 @@ fun <E> ComponentBuilder.set(
         // bind the set
         bind(
             key = setKey,
-            duplicateStrategy = DuplicateStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Override,
             provider = bindingProvider
         )
 
@@ -161,7 +161,7 @@ fun <E> ComponentBuilder.set(
                     )
                 )
             ),
-            duplicateStrategy = DuplicateStrategy.Permit
+            duplicateStrategy = DuplicateStrategy.Override
         ) {
             bindingProvider.mergedSet!!
                 .mapTo(mutableSetOf()) { element ->
@@ -183,7 +183,7 @@ fun <E> ComponentBuilder.set(
                     )
                 )
             ),
-            duplicateStrategy = DuplicateStrategy.Permit
+            duplicateStrategy = DuplicateStrategy.Override
         ) {
             bindingProvider.mergedSet!!
                 .mapTo(mutableSetOf()) { element ->

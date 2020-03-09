@@ -155,7 +155,7 @@ fun <K, V> ComponentBuilder.map(
         // bind the map
         bind(
             key = mapKey,
-            duplicateStrategy = DuplicateStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Override,
             provider = bindingProvider
         )
 
@@ -171,7 +171,7 @@ fun <K, V> ComponentBuilder.map(
                     )
                 )
             ),
-            duplicateStrategy = DuplicateStrategy.Permit
+            duplicateStrategy = DuplicateStrategy.Override
         ) {
             bindingProvider.mergedMap!!
                 .mapValues { (_, value) ->
@@ -194,7 +194,7 @@ fun <K, V> ComponentBuilder.map(
                     )
                 )
             ),
-            duplicateStrategy = DuplicateStrategy.Permit
+            duplicateStrategy = DuplicateStrategy.Override
         ) {
             bindingProvider.mergedMap!!
                 .mapValues { (_, value) ->

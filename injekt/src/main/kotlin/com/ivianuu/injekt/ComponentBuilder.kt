@@ -178,7 +178,7 @@ class ComponentBuilder {
         val componentBinding = Binding(
             key = keyOf(),
             behavior = BoundBehavior(),
-            duplicateStrategy = DuplicateStrategy.Permit,
+            duplicateStrategy = DuplicateStrategy.Override,
             provider = { this }
         )
 
