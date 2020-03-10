@@ -62,14 +62,36 @@ class Component internal constructor(
     /**
      * Retrieve a instance of type [T] for [key]
      */
-    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
-        getBinding(key).provider(this, parameters)
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
+        if (key.arguments.size == 1) {
+            when (key.classifier) {
+                Provider::class -> {
+                    val instanceKey = key.arguments.single()
+                        .copy(qualifier = key.qualifier)
+                    return KeyedProvider(this, instanceKey).unsafeCast()
+                }
+                Lazy::class -> {
+                    val instanceKey = key.arguments.single()
+                        .copy(qualifier = key.qualifier)
+                    return KeyedLazy(this, instanceKey).unsafeCast()
+                }
+            }
+        }
 
-    /**
-     * Retrieve the [Binding] for [key] or throws
-     */
-    fun <T> getBinding(key: Key<T>): Binding<T> =
-        findBinding(key) ?: error("Couldn't find a binding for $key")
+        findBinding(key)?.let { return it.provider(this, parameters) }
+
+        val binding = findJustInTimeBinding(key)
+        if (binding != null) {
+            synchronized(_bindings) { _bindings[key] = binding }
+            return binding.provider(this, parameters)
+        }
+
+        if (key.isNullable) {
+            return null as T
+        }
+
+        error("Couldn't get instance for $key")
+    }
 
     /**
      * Returns the [Component] for [scope] or throws
@@ -80,8 +102,8 @@ class Component internal constructor(
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
-        for (i in dependencies.size - 1 downTo 0) {
-            dependencies[i].findComponent(scope)?.let { return it }
+        for (dependency in dependencies) {
+            dependency.findComponent(scope)?.let { return it }
         }
 
         return null
@@ -90,10 +112,6 @@ class Component internal constructor(
     @Suppress("UNCHECKED_CAST")
     private fun <T> findBinding(key: Key<T>): Binding<T>? {
         var binding: Binding<T>?
-
-        // providers, lazy
-        binding = findSpecialBinding(key)
-        if (binding != null) return binding
 
         binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {
@@ -104,41 +122,6 @@ class Component internal constructor(
         for (i in dependencies.size - 1 downTo 0) {
             binding = dependencies[i].findBinding(key)
             if (binding != null) return binding
-        }
-
-        binding = findJustInTimeBinding(key)
-        if (binding != null) return binding
-
-        if (key.isNullable) {
-            return Binding(
-                key = key.unsafeCast(),
-                provider = { null }
-            ).unsafeCast()
-        }
-
-        return null
-    }
-
-    private fun <T> findSpecialBinding(key: Key<T>): Binding<T>? {
-        if (key.arguments.size == 1) {
-            when (key.classifier) {
-                Provider::class -> {
-                    val instanceKey = key.arguments.single()
-                        .copy(qualifier = key.qualifier)
-                    return Binding(
-                        key = key,
-                        provider = { KeyedProvider(this, instanceKey).unsafeCast() }
-                    )
-                }
-                Lazy::class -> {
-                    val instanceKey = key.arguments.single()
-                        .copy(qualifier = key.qualifier)
-                    return Binding(
-                        key = key,
-                        provider = { KeyedLazy(this, instanceKey).unsafeCast() }
-                    )
-                }
-            }
         }
 
         return null
