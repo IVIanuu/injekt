@@ -30,7 +30,7 @@ class App : Application(), ComponentOwner {
     override val component by lazy {
         ApplicationComponent(this) {
             modules(DataModule())
-            modules(SystemServiceModule())
+            modules(SystemServiceModule)
         }
     }
 

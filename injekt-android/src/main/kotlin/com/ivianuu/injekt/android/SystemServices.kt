@@ -81,7 +81,7 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
-fun SystemServiceModule() = Module {
+val SystemServiceModule = Module {
     getSystemServicesClasses()
         .forEach { serviceClass ->
             factory(key = keyOf(serviceClass)) {
