@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
 import kotlin.jvm.internal.ClassBasedDeclarationContainer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -91,15 +92,15 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
     }
 
     return Key(
-        classifier = (classifier ?: Any::class) as KClass<*>,
-        arguments = args as Array<Key<*>>,
+        classifier = (classifier ?: Any::class).unsafeCast(),
+        arguments = args.unsafeCast(),
         isNullable = isMarkedNullable,
         qualifier = qualifier
     )
 }
 
 private fun unboxed(type: KClass<*>): KClass<*> {
-    val thisJClass = (type as ClassBasedDeclarationContainer).jClass
+    val thisJClass = type.unsafeCast<ClassBasedDeclarationContainer>().jClass
     if (thisJClass.isPrimitive) return type
 
     return when (thisJClass.name) {
@@ -116,7 +117,7 @@ private fun unboxed(type: KClass<*>): KClass<*> {
 }
 
 private fun boxed(type: KClass<*>): KClass<*> {
-    val jClass = (type as ClassBasedDeclarationContainer).jClass
+    val jClass = type.unsafeCast<ClassBasedDeclarationContainer>().jClass
     if (!jClass.isPrimitive) return type
 
     return when (jClass.name) {

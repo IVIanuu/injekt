@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
+
 /**
  * Caches the result of the first call to the provider
  *
@@ -90,6 +92,6 @@ private class SingleProvider<T>(
             }
         }
 
-        return value as T
+        return value.unsafeCast()
     }
 }

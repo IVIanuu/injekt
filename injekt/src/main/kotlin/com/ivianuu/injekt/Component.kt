@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
+
 /**
  * The heart of the library which provides instances
  * Dependencies can be requested by calling [get]
@@ -109,9 +111,9 @@ class Component internal constructor(
 
         if (key.isNullable) {
             return Binding(
-                key = key as Key<Any?>,
+                key = key.unsafeCast(),
                 provider = { null }
-            ) as Binding<T>
+            ).unsafeCast()
         }
 
         return null
@@ -125,7 +127,7 @@ class Component internal constructor(
                         .copy(qualifier = key.qualifier)
                     return Binding(
                         key = key,
-                        provider = { KeyedProvider(this, instanceKey) as T }
+                        provider = { KeyedProvider(this, instanceKey).unsafeCast() }
                     )
                 }
                 Lazy::class -> {
@@ -133,7 +135,7 @@ class Component internal constructor(
                         .copy(qualifier = key.qualifier)
                     return Binding(
                         key = key,
-                        provider = { KeyedLazy(this, instanceKey) as T }
+                        provider = { KeyedLazy(this, instanceKey).unsafeCast() }
                     )
                 }
             }

@@ -30,6 +30,7 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
+import com.jakewharton.confundus.unsafeCast
 
 /**
  * A [MultiBindingMap] is the description of a "multi binding map"
@@ -177,7 +178,7 @@ fun <K, V> ComponentBuilder.map(
                 .mapValues { (_, value) ->
                     KeyedProvider(
                         this,
-                        value.key as Key<V>
+                        value.key.unsafeCast()
                     )
                 }
         }
@@ -201,7 +202,7 @@ fun <K, V> ComponentBuilder.map(
                 .mapValues { (_, value) ->
                     KeyedLazy(
                         this,
-                        value.key as Key<V>
+                        value.key.unsafeCast()
                     )
                 }
         }
@@ -244,6 +245,6 @@ private class MapBindingProvider<K, V>(
 
     override fun invoke(component: Component, parameters: Parameters): Map<K, V> {
         return mergedMap!!
-            .mapValues { component.get(it.value.key as Key<V>) }
+            .mapValues { component.get(it.value.key.unsafeCast<Key<V>>()) }
     }
 }

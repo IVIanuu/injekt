@@ -30,6 +30,7 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
+import com.jakewharton.confundus.unsafeCast
 
 /**
  * A [MultiBindingSet] is a set of bindings
@@ -166,7 +167,7 @@ fun <E> ComponentBuilder.set(
                 .mapTo(mutableSetOf()) { element ->
                     KeyedProvider(
                         this,
-                        element.key as Key<E>
+                        element.key.unsafeCast()
                     )
                 }
         }
@@ -189,7 +190,7 @@ fun <E> ComponentBuilder.set(
                 .mapTo(mutableSetOf()) { element ->
                     KeyedLazy(
                         this,
-                        element.key as Key<E>
+                        element.key.unsafeCast()
                     )
                 }
         }
@@ -231,5 +232,5 @@ private class SetBindingProvider<E>(
     }
 
     override fun invoke(component: Component, parameters: Parameters): Set<E> =
-        mergedSet!!.mapTo(mutableSetOf()) { component.get(it.key as Key<E>) }
+        mergedSet!!.mapTo(mutableSetOf()) { component.get(it.key.unsafeCast<Key<E>>()) }
 }
