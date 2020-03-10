@@ -242,8 +242,8 @@ private class MapBindingProvider<K, V>(
         mergedMap = mergedBuilder.build()
     }
 
-    override fun invoke(p1: Component, p2: Parameters): Map<K, V> {
+    override fun invoke(component: Component, parameters: Parameters): Map<K, V> {
         return mergedMap!!
-            .mapValues { p1.get(it.value.key as Key<V>) }
+            .mapValues { component.get(it.value.key as Key<V>) }
     }
 }

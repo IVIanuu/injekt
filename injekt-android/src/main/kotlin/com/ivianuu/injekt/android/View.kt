@@ -23,6 +23,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -55,15 +56,15 @@ inline fun <T : View> ViewComponent(
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        viewBindings(instance, key, qualifier)
+        modules(ViewModule(instance, key, qualifier))
         block()
     }
 
-fun <T : View> ComponentBuilder.viewBindings(
+fun <T : View> ViewModule(
     instance: T,
     key: Key<T>,
     qualifier: Qualifier = ForView
-) {
+) = Module {
     instance(
         instance = instance,
         key = key,

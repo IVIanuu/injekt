@@ -37,5 +37,6 @@ private class BoundProvider<T>(
         super.onInit(boundComponent)
     }
 
-    override fun invoke(p1: Component, p2: Parameters): T = super.invoke(boundComponent, p2)
+    override fun invoke(component: Component, parameters: Parameters): T =
+        super.invoke(boundComponent, parameters)
 }

@@ -23,6 +23,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -55,15 +56,15 @@ inline fun <T : Fragment> FragmentComponent(
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        fragmentBindings(instance, key, qualifier)
+        modules(FragmentModule(instance, key, qualifier))
         block()
     }
 
-fun <T : Fragment> ComponentBuilder.fragmentBindings(
+fun <T : Fragment> FragmentModule(
     instance: T,
     key: Key<T>,
     qualifier: Qualifier = ForFragment
-) {
+) = Module {
     instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
     alias(originalKey = key, aliasKey = keyOf<Fragment>())
     alias<Fragment>(aliasQualifier = qualifier)

@@ -80,10 +80,10 @@ private class WeakProvider<T>(delegate: BindingProvider<T>) :
 
     private var ref: WeakReference<Wrapper<T>>? = null
 
-    override fun invoke(p1: Component, p2: Parameters): T {
+    override fun invoke(component: Component, parameters: Parameters): T {
         var valueWrapper = ref?.get()
         if (valueWrapper == null) {
-            valueWrapper = Wrapper(super.invoke(p1, p2))
+            valueWrapper = Wrapper(super.invoke(component, parameters))
             ref = WeakReference(valueWrapper)
         }
 

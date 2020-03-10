@@ -64,6 +64,13 @@ class ComponentBuilder {
         }
     }
 
+    /**
+     * Invokes all [modules]
+     */
+    fun modules(vararg modules: Module) {
+        modules.forEach { it() }
+    }
+
     inline fun <reified T> bind(
         qualifier: Qualifier = Qualifier.None,
         behavior: Behavior = Behavior.None,

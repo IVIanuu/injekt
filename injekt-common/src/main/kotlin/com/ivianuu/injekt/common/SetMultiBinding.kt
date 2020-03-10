@@ -230,6 +230,6 @@ private class SetBindingProvider<E>(
         mergedSet = mergedBuilder.build()
     }
 
-    override fun invoke(p1: Component, p2: Parameters): Set<E> =
-        mergedSet!!.mapTo(mutableSetOf()) { p1.get(it.key as Key<E>) }
+    override fun invoke(component: Component, parameters: Parameters): Set<E> =
+        mergedSet!!.mapTo(mutableSetOf()) { component.get(it.key as Key<E>) }
 }

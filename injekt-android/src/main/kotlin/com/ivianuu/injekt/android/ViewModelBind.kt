@@ -49,18 +49,18 @@ inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
 }
 
 @BehaviorMarker(ViewModelBehavior::class)
-annotation class ViewModel
+annotation class ViewModelBind
 
 private class ViewModelProvider<T>(
     delegate: BindingProvider<T>
 ) : DelegatingBindingProvider<T>(delegate) {
-    override fun invoke(p1: Component, p2: Parameters): T {
-        val viewModelStore = p1.get<ViewModelStore>()
+    override fun invoke(component: Component, parameters: Parameters): T {
+        val viewModelStore = component.get<ViewModelStore>()
         val viewModelProvider = AndroidViewModelProvider(
             viewModelStore,
             object : AndroidViewModelProvider.Factory {
                 override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    this@ViewModelProvider.invoke(p1, p2) as T
+                    this@ViewModelProvider.invoke(component, parameters) as T
             }
         )
 

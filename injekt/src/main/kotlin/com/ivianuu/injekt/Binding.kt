@@ -84,7 +84,8 @@ abstract class DelegatingBindingProvider<T>(
         (delegate as? ComponentInitObserver)?.onInit(component)
     }
 
-    override fun invoke(p1: Component, p2: Parameters): T = delegate(p1, p2)
+    override fun invoke(component: Component, parameters: Parameters): T =
+        delegate(component, parameters)
 }
 
 /**

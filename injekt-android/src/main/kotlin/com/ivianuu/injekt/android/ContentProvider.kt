@@ -21,6 +21,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -42,14 +43,14 @@ inline fun <T : ContentProvider> ContentProviderComponent(
     Component {
         scopes(ContentProviderScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        contentProviderBindings(instance, key)
+        modules(ContentProviderModule(instance, key))
         block()
     }
 
-fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
+fun <T : ContentProvider> ContentProviderModule(
     instance: T,
     key: Key<T>
-) {
+) = Module {
     instance(instance, key = key)
     alias(originalKey = key, aliasKey = keyOf<ContentProvider>())
     contextBindings(ForContentProvider) { instance.context!! }

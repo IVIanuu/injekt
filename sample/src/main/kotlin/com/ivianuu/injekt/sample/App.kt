@@ -22,15 +22,15 @@ import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.android.systemServiceBindings
-import com.ivianuu.injekt.sample.data.dataBindings
+import com.ivianuu.injekt.android.SystemServiceModule
+import com.ivianuu.injekt.sample.data.DataModule
 
 class App : Application(), ComponentOwner {
 
     override val component by lazy {
         ApplicationComponent(this) {
-            dataBindings()
-            systemServiceBindings()
+            modules(DataModule())
+            modules(SystemServiceModule())
         }
     }
 

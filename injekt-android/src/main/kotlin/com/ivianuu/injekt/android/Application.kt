@@ -21,6 +21,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -41,14 +42,14 @@ inline fun <T : Application> ApplicationComponent(
 ): Component =
     Component {
         scopes(ApplicationScope)
-        applicationBindings(instance, key)
+        modules(ApplicationModule(instance, key))
         block()
     }
 
-fun <T : Application> ComponentBuilder.applicationBindings(
+fun <T : Application> ApplicationModule(
     instance: T,
     key: Key<T>
-) {
+) = Module {
     instance(instance, key = key)
     alias(key, keyOf<Application>())
     contextBindings(ForApplication) { instance }

@@ -92,6 +92,6 @@ private class MultiProvider<T>(
     delegate: BindingProvider<T>
 ) : DelegatingBindingProvider<T>(delegate) {
     private val values = ConcurrentHashMap<Int, T>()
-    override fun invoke(p1: Component, p2: Parameters): T =
-        values.getOrPut(p2.hashCode()) { super.invoke(p1, p2) }
+    override fun invoke(component: Component, parameters: Parameters): T =
+        values.getOrPut(parameters.hashCode()) { super.invoke(component, parameters) }
 }
