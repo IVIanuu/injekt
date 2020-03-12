@@ -18,16 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.*
 
 inline fun <reified T : Application> ApplicationComponent(
     instance: T,
@@ -59,12 +50,3 @@ fun <T : Application> ComponentBuilder.applicationBindings(
     componentAlias(ForApplication)
 }
 
-@ScopeMarker
-annotation class ApplicationScope {
-    companion object : Scope
-}
-
-@QualifierMarker
-annotation class ForApplication {
-    companion object : Qualifier.Element
-}

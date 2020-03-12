@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample.data
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.ApplicationScope
-import com.ivianuu.injekt.Single
-import java.io.File
+@ScopeMarker
+annotation class ApplicationScope {
+    companion object : Scope
+}
 
-@ApplicationScope
-@Single
-class Database(@WebApiUrl @DatabaseFile private val file: File) {
-
-    private var _cached: List<String>? = null
-
-    fun getItems(): List<String>? = _cached
-
-    fun setItems(items: List<String>) {
-        _cached = items
-    }
+@QualifierMarker
+annotation class ForApplication {
+    companion object : Qualifier.Element
 }

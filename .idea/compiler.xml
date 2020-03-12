@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="injekt-common" target="1.8" />
+      <module name="injekt_buildSrc" target="1.8" />
+      <module name="ivianuu-studio-projects-injekt-comparison" target="1.7" />
+      <module name="ivianuu-studio-projects-injekt-injekt" target="1.8" />
+      <module name="ivianuu-studio-projects-injekt-playground" target="1.8" />
+      <module name="ivianuu-studio-projects-injekt-sample" target="1.7" />
+      <module name="studio-projects-injekt-injekt-android" target="1.7" />
+      <module name="studio-projects-injekt-injekt-compiler" target="1.8" />
+      <module name="studio-projects-injekt-injekt-gradle-plugin" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

@@ -42,7 +42,6 @@ inline fun <reified S : T, reified T> ComponentBuilder.alias(
  * val repositoryA = component.get<RepositoryImpl>()
  * val repositoryB = component.get<Repository>()
  * assertSame(repositoryA, repositoryB) // true
- *
  * ´´´
  *
  */
