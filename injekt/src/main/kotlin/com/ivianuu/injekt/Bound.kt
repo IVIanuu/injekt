@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Ensures instances will be resolved in the specified component
  */
-class BoundBehavior(private val scope: Scope? = null) : Behavior.Element {
+class BoundBehavior(val scope: Scope? = null) : Behavior.Element {
     override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
         BoundProvider(scope, provider)
 }

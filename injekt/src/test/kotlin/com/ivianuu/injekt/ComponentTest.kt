@@ -334,6 +334,21 @@ class ComponentTest {
         assertEquals(componentB, environmentB.component)
         assertEquals(componentC, environmentC.component)
     }
+
+    @Test
+    fun testAddsJitBindingToTheCorrectScope() {
+        val componentA = Component {
+            scopes(TestScopeOne)
+        }
+        val componentB = Component {
+            scopes(TestScopeTwo)
+            dependencies(componentA)
+        }
+
+        componentB.get<SingleJustInTimeDep>()
+
+        assertTrue(keyOf<SingleJustInTimeDep>() in componentA.bindings)
+    }
 }
 
 class Context(val component: Component) : Environment

@@ -81,10 +81,7 @@ class Component internal constructor(
         findBinding(key)?.let { return it.provider(this, parameters) }
 
         val binding = findJustInTimeBinding(key)
-        if (binding != null) {
-            synchronized(_bindings) { _bindings[key] = binding }
-            return binding.provider(this, parameters)
-        }
+        if (binding != null) return binding.provider(this, parameters)
 
         if (key.isNullable) {
             return null as T
@@ -132,8 +129,19 @@ class Component internal constructor(
 
         val binding = InjektPlugins.justInTimeBindingFactory.findBinding(key)
             ?: return null
-        synchronized(_bindings) { _bindings[key] = binding }
-        (binding.provider as? ComponentInitObserver)?.onInit(this)
+        var boundBehavior: BoundBehavior? = null
+        binding.behavior.foldOut(null) { behavior, element ->
+            if (boundBehavior == null && behavior is BoundBehavior)
+                boundBehavior = behavior
+            element
+        }
+        val component = if (boundBehavior != null && boundBehavior!!.scope != null) {
+            getComponent(boundBehavior!!.scope!!)
+        } else {
+            this
+        }
+        synchronized(component._bindings) { component._bindings[key] = binding }
+        (binding.provider as? ComponentInitObserver)?.onInit(component)
         return binding
     }
 }
