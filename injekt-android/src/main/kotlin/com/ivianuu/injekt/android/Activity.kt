@@ -26,7 +26,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -48,14 +47,14 @@ fun <T : Activity> ActivityComponent(
 ): Component = Component {
     scopes(ActivityScope)
     instance.getClosestComponentOrNull()?.let { dependencies(it) }
-    modules(ActivityModule(instance, key))
+    activityBindings(instance, key)
     block()
 }
 
-fun <T : Activity> ActivityModule(
+fun <T : Activity> ComponentBuilder.activityBindings(
     instance: T,
     key: Key<T>
-) = Module {
+) {
     instance(instance = instance, key = key)
     if (instance is ComponentActivity) alias(key, keyOf<ComponentActivity>())
     if (instance is FragmentActivity) alias(key, keyOf<FragmentActivity>())

@@ -23,7 +23,6 @@ import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -32,7 +31,7 @@ import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
 
-fun FragmentInjectionModule() = Module {
+fun ComponentBuilder.fragmentInjectionBindings() {
     map<String, Fragment>(mapQualifier = FragmentsMap)
     alias<InjektFragmentFactory, FragmentFactory>()
 }

@@ -22,7 +22,6 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -50,15 +49,15 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
 ): Component = Component {
     scopes(ReceiverScope)
     instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
-    modules(ReceiverModule(context, instance, key))
+    receiverBindings(context, instance, key)
     block()
 }
 
-fun <T : BroadcastReceiver> ReceiverModule(
+fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
     context: Context,
     instance: T,
     key: Key<T>
-) = Module {
+) {
     instance(instance, key = key)
     alias(originalKey = key, aliasKey = keyOf<BroadcastReceiver>())
     contextBindings(ForReceiver) { context }

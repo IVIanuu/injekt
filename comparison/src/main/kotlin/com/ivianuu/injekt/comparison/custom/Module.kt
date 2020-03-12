@@ -119,7 +119,7 @@ import com.ivianuu.injekt.comparison.Fib99
 
 val customModule = createModule()
 
-fun createModule() = module {
+fun createModule() {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }

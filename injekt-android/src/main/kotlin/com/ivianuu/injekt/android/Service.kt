@@ -21,7 +21,6 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -43,14 +42,14 @@ inline fun <T : Service> ServiceComponent(
     Component {
         scopes(ServiceScope)
         instance.getClosestComponentOrNull()?.let { dependencies(it) }
-        modules(ServiceModule(instance, key))
+        serviceBindings(instance, key)
         block()
     }
 
-fun <T : Service> ServiceModule(
+fun <T : Service> ComponentBuilder.serviceBindings(
     instance: T,
     key: Key<T>
-) = Module {
+) {
     instance(instance, key = key)
     alias(originalKey = key, aliasKey = keyOf<Service>())
     contextBindings(ForService) { instance }
