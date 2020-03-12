@@ -26,13 +26,10 @@ object InjektDslTest : InjectionTest {
     private var component: Component? = null
 
     override fun moduleCreation() {
-        createModule()
     }
 
     override fun setup() {
-        component = Component {
-            modules(createModule())
-        }
+        component = Component { fibonacci() }
     }
 
     override fun inject() {
