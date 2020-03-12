@@ -56,6 +56,7 @@ fun <T : Activity> ComponentBuilder.activityBindings(
     key: Key<T>
 ) {
     instance(instance = instance, key = key)
+    alias(key, keyOf<Activity>())
     if (instance is ComponentActivity) alias(key, keyOf<ComponentActivity>())
     if (instance is FragmentActivity) alias(key, keyOf<FragmentActivity>())
     if (instance is AppCompatActivity) alias(key, keyOf<AppCompatActivity>())
