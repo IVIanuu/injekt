@@ -32,11 +32,19 @@ private class BoundProvider<T>(
     private lateinit var boundComponent: Component
 
     override fun onInit(component: Component) {
-        this.boundComponent = if (scope == null) component
-        else component.getComponent(scope)
+        findComponentIfNeeded(component)
         super.onInit(boundComponent)
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T =
-        super.invoke(boundComponent, parameters)
+    override fun invoke(component: Component, parameters: Parameters): T {
+        findComponentIfNeeded(component)
+        return super.invoke(boundComponent, parameters)
+    }
+
+    private fun findComponentIfNeeded(component: Component) {
+        if (!this::boundComponent.isInitialized) {
+            this.boundComponent = if (scope == null) component
+            else component.getComponent(scope)
+        }
+    }
 }

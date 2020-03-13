@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.BoundBehavior
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.EagerBehavior
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
@@ -93,6 +95,8 @@ class MapMultiBindingTest {
             factory { Command2 }
             map<String, Command> { put<Command2>("two") }
         }
+
+        println("component a $componentA b $componentB")
 
         val mapB = componentB.get<Map<String, Command>>()
         assertEquals(2, mapB.size)
@@ -231,4 +235,16 @@ class MapMultiBindingTest {
             }
         }
     }
+
+    @Test
+    fun testEagerBoundBindingDependsOnMapOfProvider() {
+        Component {
+            factory(behavior = BoundBehavior() + EagerBehavior) {
+                get<Map<String, Provider<String>>>()
+                    .forEach { it.value() }
+            }
+            map<String, String>()
+        }
+    }
+
 }

@@ -132,7 +132,7 @@ class ComponentBuilder {
 
         val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        fun addBinding(binding: Binding<*>) {
+        _bindings.values.forEach { binding ->
             if (binding.duplicateStrategy.check(
                     existsPredicate = { binding.key in dependencyBindings },
                     errorMessage = { "Already declared key ${binding.key}" })
@@ -140,8 +140,6 @@ class ComponentBuilder {
                 finalBindings[binding.key] = binding
             }
         }
-
-        _bindings.values.forEach { binding -> addBinding(binding) }
 
         includeComponentBindings(finalBindings)
 

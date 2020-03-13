@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
@@ -72,8 +71,6 @@ import com.jakewharton.confundus.unsafeCast
  * @see ComponentBuilder.map
  * @see MultiBindingMapBuilder
  */
-// todo ir use * instead of Any?
-typealias MultiBindingMap<K, V> = Map<K, KeyWithOverrideInfo>
 
 /**
  * Builder for a [MultiBindingSet]
@@ -108,10 +105,7 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
         )
     }
 
-    /**
-     * Adds the [Binding] for [entry] into this map
-     */
-    fun put(entryKey: K, entry: KeyWithOverrideInfo) {
+    internal fun put(entryKey: K, entry: KeyWithOverrideInfo) {
         if (entry.duplicateStrategy.check(
                 existsPredicate = { entryKey in entries },
                 errorMessage = { "Already declared $entryKey" }
@@ -121,7 +115,7 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
         }
     }
 
-    internal fun build(): MultiBindingMap<K, KeyWithOverrideInfo> = entries
+    internal fun build(): Map<K, KeyWithOverrideInfo> = entries
 }
 
 inline fun <reified K, reified V> ComponentBuilder.map(
@@ -151,13 +145,34 @@ fun <K, V> ComponentBuilder.map(
 ) {
     var bindingProvider = bindings[mapKey]?.provider as? MapBindingProvider<K, V>
     if (bindingProvider == null) {
-        bindingProvider = MapBindingProvider(mapKey)
-        // bind the map
+        val mapOfKeyWithOverrideInfo = keyOf<Map<K, KeyWithOverrideInfo>>(
+            classifier = Map::class,
+            arguments = arrayOf(
+                mapKey.arguments.first(),
+                keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(mapKey))
+            ),
+            qualifier = mapKey.qualifier
+        )
+
+        bindingProvider = MapBindingProvider(mapOfKeyWithOverrideInfo)
+
+        // bind the map with keys
         bind(
-            key = mapKey,
+            key = mapOfKeyWithOverrideInfo,
             duplicateStrategy = DuplicateStrategy.Override,
             provider = bindingProvider
         )
+
+        // value map
+        factory(
+            key = mapKey,
+            duplicateStrategy = DuplicateStrategy.Override
+        ) {
+            get(key = mapOfKeyWithOverrideInfo)
+                .mapValues { (_, value) ->
+                    get(value.key).unsafeCast()
+                }
+        }
 
         // provider map
         factory(
@@ -174,7 +189,7 @@ fun <K, V> ComponentBuilder.map(
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            bindingProvider.mergedMap!!
+            get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
                     KeyedProvider(
                         this,
@@ -198,7 +213,7 @@ fun <K, V> ComponentBuilder.map(
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            bindingProvider.mergedMap!!
+            get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
                     KeyedLazy(
                         this,
@@ -212,20 +227,20 @@ fun <K, V> ComponentBuilder.map(
 }
 
 private class MapBindingProvider<K, V>(
-    private val mapKey: Key<Map<K, V>>
-) : (Component, Parameters) -> Map<K, V>,
-    ComponentInitObserver {
+    private val mapOfKeyWithOverrideInfo: Key<Map<K, KeyWithOverrideInfo>>
+) : (Component, Parameters) -> Map<K, KeyWithOverrideInfo>, ComponentInitObserver {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
     var thisMap: Map<K, KeyWithOverrideInfo>? = null
     var mergedMap: Map<K, KeyWithOverrideInfo>? = null
 
     override fun onInit(component: Component) {
+        checkNotNull(thisBuilder)
         val mergedBuilder = MultiBindingMapBuilder<K, V>()
 
         component.getAllDependencies()
             .flatMap { dependency ->
-                (dependency.bindings[mapKey]
+                (dependency.bindings[mapOfKeyWithOverrideInfo]
                     ?.provider
                     ?.let { it as? MapBindingProvider<K, V> }
                     ?.thisMap ?: emptyMap()).entries
@@ -241,10 +256,12 @@ private class MapBindingProvider<K, V>(
         }
 
         mergedMap = mergedBuilder.build()
+
+        println("init $component in ${thisMap!!.keys} merged ${mergedMap!!.keys}")
     }
 
-    override fun invoke(component: Component, parameters: Parameters): Map<K, V> {
+    override fun invoke(component: Component, parameters: Parameters): Map<K, KeyWithOverrideInfo> {
+        println("invoke ${mergedMap!!.keys} from $component this ${thisMap!!.keys}")
         return mergedMap!!
-            .mapValues { component.get(it.value.key.unsafeCast<Key<V>>()) }
     }
 }

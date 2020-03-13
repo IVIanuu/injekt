@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
@@ -72,8 +71,6 @@ import com.jakewharton.confundus.unsafeCast
  *
  * @see ComponentBuilder.set
  */
-// todo ir use * instead of Any?
-typealias MultiBindingSet<E> = Set<KeyWithOverrideInfo>
 
 /**
  * Builder for a [MultiBindingSet]
@@ -100,10 +97,7 @@ class MultiBindingSetBuilder<E> internal constructor() {
         )
     }
 
-    /**
-     * Adds the [Binding] for [element] into this set
-     */
-    fun add(element: KeyWithOverrideInfo) {
+    internal fun add(element: KeyWithOverrideInfo) {
         if (element.duplicateStrategy.check(
                 existsPredicate = { elements.any { it.key == element.key } },
                 errorMessage = { "Already declared element ${element.key}" }
@@ -113,7 +107,7 @@ class MultiBindingSetBuilder<E> internal constructor() {
         }
     }
 
-    internal fun build(): MultiBindingSet<E> = elements
+    internal fun build(): Set<KeyWithOverrideInfo> = elements
 }
 
 inline fun <reified E> ComponentBuilder.set(
@@ -141,13 +135,33 @@ fun <E> ComponentBuilder.set(
 ) {
     var bindingProvider = bindings[setKey]?.provider as? SetBindingProvider<E>
     if (bindingProvider == null) {
-        bindingProvider = SetBindingProvider(setKey)
+        val setOfKeyWithOverrideInfoKey = keyOf<Set<KeyWithOverrideInfo>>(
+            classifier = Set::class,
+            arguments = arrayOf(
+                keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(setKey))
+            ),
+            qualifier = setKey.qualifier
+        )
+
+        bindingProvider = SetBindingProvider(setOfKeyWithOverrideInfoKey)
+
         // bind the set
         bind(
-            key = setKey,
+            key = setOfKeyWithOverrideInfoKey,
             duplicateStrategy = DuplicateStrategy.Override,
             provider = bindingProvider
         )
+
+        // value set
+        factory(
+            key = setKey,
+            duplicateStrategy = DuplicateStrategy.Override
+        ) {
+            get(setOfKeyWithOverrideInfoKey)
+                .mapTo(mutableSetOf()) { element ->
+                    get(element.key).unsafeCast()
+                }
+        }
 
         // provider set
         factory(
@@ -163,7 +177,7 @@ fun <E> ComponentBuilder.set(
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            bindingProvider.mergedSet!!
+            get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
                     KeyedProvider(
                         this,
@@ -186,7 +200,7 @@ fun <E> ComponentBuilder.set(
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            bindingProvider.mergedSet!!
+            get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
                     KeyedLazy(
                         this,
@@ -200,20 +214,22 @@ fun <E> ComponentBuilder.set(
 }
 
 private class SetBindingProvider<E>(
-    private val setKey: Key<Set<E>>
-) : (Component, Parameters) -> Set<E>,
+    private val setOfKeyWithOverrideInfoKey: Key<Set<KeyWithOverrideInfo>>
+) : (Component, Parameters) -> Set<KeyWithOverrideInfo>,
     ComponentInitObserver {
     var thisBuilder: MultiBindingSetBuilder<E>? =
         MultiBindingSetBuilder()
     var thisSet: Set<KeyWithOverrideInfo>? = null
-    var mergedSet: Set<KeyWithOverrideInfo>? = null
+    private var mergedSet: Set<KeyWithOverrideInfo>? = null
 
     override fun onInit(component: Component) {
+        checkNotNull(thisBuilder)
+
         val mergedBuilder = MultiBindingSetBuilder<E>()
 
         component.getAllDependencies()
             .flatMap { dependency ->
-                dependency.bindings[setKey]
+                dependency.bindings[setOfKeyWithOverrideInfoKey]
                     ?.provider
                     ?.let { it as? SetBindingProvider<E> }
                     ?.thisSet ?: emptySet()
@@ -231,6 +247,6 @@ private class SetBindingProvider<E>(
         mergedSet = mergedBuilder.build()
     }
 
-    override fun invoke(component: Component, parameters: Parameters): Set<E> =
-        mergedSet!!.mapTo(mutableSetOf()) { component.get(it.key.unsafeCast<Key<E>>()) }
+    override fun invoke(component: Component, parameters: Parameters): Set<KeyWithOverrideInfo> =
+        mergedSet!!
 }

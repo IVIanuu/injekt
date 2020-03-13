@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.BoundBehavior
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.EagerBehavior
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
@@ -197,6 +199,17 @@ class SetMultiBindingTest {
             dependencies(componentA)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
+        }
+    }
+
+    @Test
+    fun testEagerBoundBindingDependsOnSetOfProvider() {
+        Component {
+            factory(behavior = BoundBehavior() + EagerBehavior) {
+                get<Set<Provider<String>>>()
+                    .forEach { it() }
+            }
+            set<String>()
         }
     }
 }

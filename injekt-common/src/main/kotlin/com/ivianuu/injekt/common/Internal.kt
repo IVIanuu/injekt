@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
 
 internal fun Component.getAllDependencies(): List<Component> =
     mutableListOf<Component>().also { collectDependencies(it) }
@@ -25,3 +27,8 @@ private fun Component.collectDependencies(dependencies: MutableList<Component>) 
     this.dependencies.forEach { it.collectDependencies(dependencies) }
     dependencies += this.dependencies
 }
+
+internal data class KeyWithOverrideInfo(
+    val key: Key<*>,
+    val duplicateStrategy: DuplicateStrategy
+)
