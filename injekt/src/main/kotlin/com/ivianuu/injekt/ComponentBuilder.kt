@@ -114,30 +114,29 @@ class ComponentBuilder {
     fun build(): Component {
         checkScopes()
 
-        val dependencyBindings = _dependencies
-            .map { it.getAllBindings() }
-            .fold(mutableMapOf<Key<*>, Binding<*>>()) { acc, current ->
-                current.forEach { (key, binding) ->
-                    if (binding.duplicateStrategy.check(
-                            existsPredicate = { key in acc },
-                            errorMessage = { "Already declared binding for $key" }
-                        )
-                    ) {
-                        acc[key] = binding
-                    }
-                }
+        val dependencyBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-                return@fold acc
+        for (dependency in _dependencies) {
+            val bindings = dependency.getAllBindings()
+            for ((key, binding) in bindings) {
+                if (binding.duplicateStrategy.check(
+                        existsPredicate = { key in dependencyBindings },
+                        errorMessage = { "Already declared binding for $key" }
+                    )
+                ) {
+                    dependencyBindings[key] = binding
+                }
             }
+        }
 
         val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        _bindings.values.forEach { binding ->
+        _bindings.forEach { (key, binding) ->
             if (binding.duplicateStrategy.check(
-                    existsPredicate = { binding.key in dependencyBindings },
-                    errorMessage = { "Already declared key ${binding.key}" })
+                    existsPredicate = { key in dependencyBindings },
+                    errorMessage = { "Already declared binding for $key" })
             ) {
-                finalBindings[binding.key] = binding
+                finalBindings[key] = binding
             }
         }
 
@@ -161,9 +160,11 @@ class ComponentBuilder {
             dependencyScopes += scope
         }
 
-        _dependencies
-            .flatMap { it.scopes }
-            .forEach { addScope(it) }
+        for (dependency in _dependencies) {
+            for (scope in dependency.scopes) {
+                addScope(scope)
+            }
+        }
 
         _scopes.forEach { addScope(it) }
     }
@@ -178,18 +179,16 @@ class ComponentBuilder {
 
         bindings[componentBinding.key] = componentBinding
 
-        _scopes
-            .map { scope ->
-                Binding(
-                    key = keyOf(qualifier = scope),
-                    behavior = BoundBehavior(),
-                    duplicateStrategy = DuplicateStrategy.Override,
-                    provider = { this }
-                )
-            }
-            .forEach {
-                bindings[it.key] = it
-            }
+        for (scope in _scopes) {
+            val binding = Binding(
+                key = keyOf(qualifier = scope),
+                behavior = BoundBehavior(),
+                duplicateStrategy = DuplicateStrategy.Override,
+                provider = { this }
+            )
+
+            bindings[binding.key] = binding
+        }
     }
 
     private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =
