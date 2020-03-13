@@ -349,6 +349,14 @@ class ComponentTest {
 
         assertTrue(keyOf<SingleJustInTimeDep>() in componentA.bindings)
     }
+
+    @TestScopeTwo
+    fun testMultipleBoundEagerBindings() {
+        Component {
+            bind(behavior = BoundBehavior() + EagerBehavior) { TestDep2(get()) }
+            bind(behavior = BoundBehavior() + EagerBehavior) { TestDep1() }
+        }
+    }
 }
 
 class Context(val component: Component) : Environment

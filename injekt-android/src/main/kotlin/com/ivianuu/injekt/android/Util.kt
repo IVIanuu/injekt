@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android
 import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -43,11 +42,7 @@ internal fun ComponentBuilder.maybeLifecycleBindings(
     if (instance !is LifecycleOwner) return
     instance(instance = instance, duplicateStrategy = DuplicateStrategy.Override)
     alias<LifecycleOwner>(aliasQualifier = qualifier)
-    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) {
-        instance.lifecycleScope
-    }
-    alias<LifecycleCoroutineScope>(aliasQualifier = qualifier)
-    alias<LifecycleCoroutineScope, CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override)
+    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycleScope }
     alias<CoroutineScope>(aliasQualifier = qualifier)
     factory(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycle }
     alias<Lifecycle>(aliasQualifier = qualifier)

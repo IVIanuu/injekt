@@ -48,10 +48,13 @@ class Component internal constructor(
     private val _bindings = bindings
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
+    private val initializedBindings = mutableSetOf<Binding<*>>()
+
     init {
-        _bindings
-            .mapNotNull { it.value.provider as? ComponentInitObserver }
-            .forEach { it.onInit(this) }
+        for ((_, binding) in _bindings) {
+            initializedBindings += binding
+            (binding.provider as? ComponentInitObserver)?.onInit(this)
+        }
     }
 
     inline fun <reified T> get(
@@ -114,7 +117,13 @@ class Component internal constructor(
         if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
-        if (binding != null) return binding
+        if (binding != null) {
+            if (binding !in initializedBindings) {
+                initializedBindings += binding
+                (binding.provider as? ComponentInitObserver)?.onInit(this)
+            }
+            return binding
+        }
 
         for (i in dependencies.size - 1 downTo 0) {
             binding = dependencies[i].findBinding(key)
@@ -141,6 +150,7 @@ class Component internal constructor(
             this
         }
         synchronized(component._bindings) { component._bindings[key] = binding }
+        initializedBindings += binding
         (binding.provider as? ComponentInitObserver)?.onInit(component)
         return binding
     }
