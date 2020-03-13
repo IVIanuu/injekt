@@ -180,14 +180,13 @@ class ComponentBuilder {
         bindings[componentBinding.key] = componentBinding
 
         for (scope in _scopes) {
-            val binding = Binding(
-                key = keyOf(qualifier = scope),
+            val key = keyOf<Component>(qualifier = scope)
+            bindings[key] = Binding(
+                key = key,
                 behavior = BoundBehavior(),
                 duplicateStrategy = DuplicateStrategy.Override,
                 provider = { this }
             )
-
-            bindings[binding.key] = binding
         }
     }
 
