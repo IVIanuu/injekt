@@ -315,7 +315,7 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             providerType.toIrType()
         ) { lambdaFn ->
             if (descriptor.kind == ClassKind.OBJECT) {
-                +irGetObject(symbolTable.referenceClass(descriptor))
+                +irReturn(irGetObject(symbolTable.referenceClass(descriptor)))
                 return@irLambdaExpression
             }
 
