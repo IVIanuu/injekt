@@ -143,17 +143,17 @@ fun <K, V> ComponentBuilder.map(
     mapKey: Key<Map<K, V>>,
     block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
 ) {
-    var bindingProvider = bindings[mapKey]?.provider as? MapBindingProvider<K, V>
-    if (bindingProvider == null) {
-        val mapOfKeyWithOverrideInfo = keyOf<Map<K, KeyWithOverrideInfo>>(
-            classifier = Map::class,
-            arguments = arrayOf(
-                mapKey.arguments.first(),
-                keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(mapKey))
-            ),
-            qualifier = mapKey.qualifier
-        )
+    val mapOfKeyWithOverrideInfo = keyOf<Map<K, KeyWithOverrideInfo>>(
+        classifier = Map::class,
+        arguments = arrayOf(
+            mapKey.arguments.first(),
+            keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(mapKey))
+        ),
+        qualifier = mapKey.qualifier
+    )
 
+    var bindingProvider = bindings[mapOfKeyWithOverrideInfo]?.provider as? MapBindingProvider<K, V>
+    if (bindingProvider == null) {
         bindingProvider = MapBindingProvider(mapOfKeyWithOverrideInfo)
 
         // bind the map with keys

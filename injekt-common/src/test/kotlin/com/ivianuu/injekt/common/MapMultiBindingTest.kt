@@ -247,4 +247,13 @@ class MapMultiBindingTest {
         }
     }
 
+    @Test
+    fun testReusesMapBuildersInsideAComponentBuilder() {
+        val component = Component {
+            map<String, Any> { put<TestDep1>("a") }
+            map<String, Any> { put<TestDep2>("b") }
+        }
+
+        assertEquals(2, component.get<Map<String, Any>>().size)
+    }
 }

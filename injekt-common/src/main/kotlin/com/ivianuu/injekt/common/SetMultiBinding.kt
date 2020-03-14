@@ -133,16 +133,16 @@ fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,
     block: MultiBindingSetBuilder<E>.() -> Unit = {}
 ) {
-    var bindingProvider = bindings[setKey]?.provider as? SetBindingProvider<E>
-    if (bindingProvider == null) {
-        val setOfKeyWithOverrideInfoKey = keyOf<Set<KeyWithOverrideInfo>>(
-            classifier = Set::class,
-            arguments = arrayOf(
-                keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(setKey))
-            ),
-            qualifier = setKey.qualifier
-        )
+    val setOfKeyWithOverrideInfoKey = keyOf<Set<KeyWithOverrideInfo>>(
+        classifier = Set::class,
+        arguments = arrayOf(
+            keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(setKey))
+        ),
+        qualifier = setKey.qualifier
+    )
 
+    var bindingProvider = bindings[setOfKeyWithOverrideInfoKey]?.provider as? SetBindingProvider<E>
+    if (bindingProvider == null) {
         bindingProvider = SetBindingProvider(setOfKeyWithOverrideInfoKey)
 
         // bind the set

@@ -212,4 +212,14 @@ class SetMultiBindingTest {
             set<String>()
         }
     }
+
+    @Test
+    fun testReusesSetBuildersInsideAComponentBuilder() {
+        val component = Component {
+            set<Any> { add<TestDep1>() }
+            set<Any> { add<TestDep2>() }
+        }
+
+        assertEquals(2, component.get<Set<Any>>().size)
+    }
 }
