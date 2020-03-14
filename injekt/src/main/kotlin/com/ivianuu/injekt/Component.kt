@@ -51,7 +51,7 @@ class Component internal constructor(
     private var initializedBindings: MutableSet<Binding<*>>? = mutableSetOf()
 
     init {
-        for ((_, binding) in _bindings) {
+        for ((_, binding) in _bindings.toMap()) {
             val initializedBindings = initializedBindings!!
             if (binding !in initializedBindings) {
                 initializedBindings += binding

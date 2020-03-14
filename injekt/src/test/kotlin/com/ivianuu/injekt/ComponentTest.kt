@@ -22,6 +22,7 @@ import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
 import org.junit.Test
+import java.util.UUID
 
 class ComponentTest {
 
@@ -350,9 +351,10 @@ class ComponentTest {
         assertTrue(keyOf<SingleJustInTimeDep>() in componentA.bindings)
     }
 
-    @TestScopeTwo
+    @Test
     fun testMultipleBoundEagerBindings() {
         Component {
+            factory(qualifier = Qualifier(UUID.randomUUID())) { get<TestDep3>() }
             bind(behavior = BoundBehavior() + EagerBehavior) { TestDep2(get()) }
             bind(behavior = BoundBehavior() + EagerBehavior) { TestDep1() }
         }
