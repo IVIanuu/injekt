@@ -314,7 +314,12 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
             createFunctionDescriptor(providerType),
             providerType.toIrType()
         ) { lambdaFn ->
-            val injektConstructor = descriptor.findInjektConstructor()
+            if (descriptor.kind == ClassKind.OBJECT) {
+                +irGetObject(symbolTable.referenceClass(descriptor))
+                return@irLambdaExpression
+            }
+
+            val injektConstructor = descriptor.findInjektConstructor()!!
 
             val componentGet = component.unsubstitutedMemberScope
                 .findFirstFunction("get") {
@@ -506,8 +511,9 @@ class InjektBindingGenerator(private val context: IrPluginContext) : IrElementVi
         }
     }
 
-    private fun ClassDescriptor.findInjektConstructor(): ClassConstructorDescriptor {
-        return constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
+    private fun ClassDescriptor.findInjektConstructor(): ClassConstructorDescriptor? {
+        return if (kind == ClassKind.OBJECT) null
+        else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
             ?: unsubstitutedPrimaryConstructor!!
     }
 

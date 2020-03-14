@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
@@ -103,6 +104,7 @@ class InjektDeclarationChecker : DeclarationChecker {
         }
 
         if (descriptor is ClassDescriptor &&
+            descriptor.kind != ClassKind.OBJECT &&
             descriptor.getAnnotatedAnnotations(InjektClassNames.BehaviorMarker).isNotEmpty() &&
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
