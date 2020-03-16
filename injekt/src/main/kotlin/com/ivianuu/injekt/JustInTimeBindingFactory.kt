@@ -20,5 +20,8 @@ package com.ivianuu.injekt
  * Will be called when a [Component] cannot resolve a instance request
  */
 interface JustInTimeBindingFactory {
-    fun <T> create(key: Key<T>): Binding<T>?
+    fun <T> create(
+        key: Key<T>,
+        component: Component
+    ): Binding<T>?
 }

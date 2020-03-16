@@ -29,7 +29,7 @@ object CodegenJustInTimeBindingFactory : JustInTimeBindingFactory {
 
     private val bindingFactories = mutableMapOf<Key<*>, Any?>()
 
-    override fun <T> create(key: Key<T>): Binding<T>? {
+    override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
         if (key.qualifier != Qualifier.None) return null
 
         var bindingFactoryOrThis: Any? = synchronized(bindingFactories) { bindingFactories[key] }

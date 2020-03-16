@@ -119,8 +119,7 @@ class Component internal constructor(
 
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
         for (i in justInTimeBindingFactories.size - 1 downTo 0) {
-            val binding = justInTimeBindingFactories[i].create(key)
-            println("binding for $key in ${justInTimeBindingFactories[i]} is $binding")
+            val binding = justInTimeBindingFactories[i].create(key, this)
             if (binding != null) {
                 // todo finding the right component is relatively small maybe
                 //  we can cache the scope bound of the behaviors when combining them

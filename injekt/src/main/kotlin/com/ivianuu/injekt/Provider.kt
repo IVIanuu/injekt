@@ -39,7 +39,7 @@ class KeyedProvider<T>(
 }
 
 object ProviderJustInTimeBindingFactory : JustInTimeBindingFactory {
-    override fun <T> create(key: Key<T>): Binding<T>? {
+    override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
         if (key.arguments.size != 1) return null
         if (key.classifier != Provider::class) return null
         val instanceKey = key.arguments.single()
