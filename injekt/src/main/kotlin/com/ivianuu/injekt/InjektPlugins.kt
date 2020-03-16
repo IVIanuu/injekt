@@ -29,4 +29,15 @@ object InjektPlugins {
      * The factory to use while looking up just in time bindings
      */
     var justInTimeBindingFactory: JustInTimeBindingFactory = CodegenJustInTimeBindingFactory
+
+    /**
+     * Interceptors to run on each [ComponentBuilder]
+     */
+    val componentBuilderInterceptors: List<ComponentBuilder.() -> Unit> = listOf {
+        justInTimeBindingFactories(
+            CodegenJustInTimeBindingFactory,
+            LazyJustInTimeBindingFactory,
+            ProviderJustInTimeBindingFactory
+        )
+    }
 }

@@ -16,41 +16,9 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
+/**
+ * Will be called when a [Component] cannot resolve a instance request
+ */
 interface JustInTimeBindingFactory {
-    fun <T> findBinding(key: Key<T>): Binding<T>?
-}
-
-object CodegenJustInTimeBindingFactory : JustInTimeBindingFactory {
-
-    private val bindingFactories = mutableMapOf<Key<*>, BindingFactory<*>>()
-
-    override fun <T> findBinding(key: Key<T>): Binding<T>? {
-        if (key.qualifier != Qualifier.None) return null
-
-        var bindingFactory = synchronized(bindingFactories) { bindingFactories[key] }
-
-        if (bindingFactory == null) {
-            bindingFactory = findBindingFactory(key.classifier)
-            if (bindingFactory != null) {
-                synchronized(bindingFactories) {
-                    bindingFactories[key] = bindingFactory
-                }
-            }
-        }
-
-        return bindingFactory?.create() as? Binding<T>
-    }
-
-    private fun findBindingFactory(classifier: KClass<*>) = try {
-        val bindingFactoryClass = classifier.java.declaredClasses
-            .first { BindingFactory::class.java.isAssignableFrom(it) }
-        bindingFactoryClass.declaredFields
-            .first { it.type == bindingFactoryClass }
-            .also { it.isAccessible = true }
-            .get(null) as BindingFactory<*>
-    } catch (e: Exception) {
-        null
-    }
+    fun <T> create(key: Key<T>): Binding<T>?
 }

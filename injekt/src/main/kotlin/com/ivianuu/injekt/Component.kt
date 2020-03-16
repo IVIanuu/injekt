@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * The heart of the library which provides instances
  * Dependencies can be requested by calling [get]
@@ -42,6 +40,7 @@ import com.jakewharton.confundus.unsafeCast
 class Component internal constructor(
     val scopes: List<Scope>,
     val dependencies: List<Component>,
+    val justInTimeBindingFactories: List<JustInTimeBindingFactory>,
     bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
@@ -70,30 +69,9 @@ class Component internal constructor(
      * Retrieve a instance of type [T] for [key]
      */
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
-        if (key.arguments.size == 1) {
-            when (key.classifier) {
-                Provider::class -> {
-                    val instanceKey = key.arguments.single()
-                        .copy(qualifier = key.qualifier)
-                    return KeyedProvider(this, instanceKey).unsafeCast()
-                }
-                Lazy::class -> {
-                    val instanceKey = key.arguments.single()
-                        .copy(qualifier = key.qualifier)
-                    return KeyedLazy(this, instanceKey).unsafeCast()
-                }
-            }
-        }
-
-        findBinding(key)?.let { return it.provider(this, parameters) }
-
-        val binding = findJustInTimeBinding(key)
-        if (binding != null) return binding.provider(this, parameters)
-
-        if (key.isNullable) {
-            return null as T
-        }
-
+        findExplicitBinding(key)?.let { return it.provider(this, parameters) }
+        findJustInTimeBinding(key)?.let { return it.provider(this, parameters) }
+        if (key.isNullable) return null as T
         error("Couldn't get instance for $key")
     }
 
@@ -114,10 +92,8 @@ class Component internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> findBinding(key: Key<T>): Binding<T>? {
-        var binding: Binding<T>?
-
-        binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
+    private fun <T> findExplicitBinding(key: Key<T>): Binding<T>? {
+        var binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
@@ -134,7 +110,7 @@ class Component internal constructor(
         }
 
         for (i in dependencies.size - 1 downTo 0) {
-            binding = dependencies[i].findBinding(key)
+            binding = dependencies[i].findExplicitBinding(key)
             if (binding != null) return binding
         }
 
@@ -142,24 +118,30 @@ class Component internal constructor(
     }
 
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
-        if (key.qualifier != Qualifier.None) return null
+        for (i in justInTimeBindingFactories.size - 1 downTo 0) {
+            val binding = justInTimeBindingFactories[i].create(key)
+            println("binding for $key in ${justInTimeBindingFactories[i]} is $binding")
+            if (binding != null) {
+                // todo finding the right component is relatively small maybe
+                //  we can cache the scope bound of the behaviors when combining them
+                var boundBehavior: BoundBehavior? = null
+                binding.behavior.foldOut(null) { behavior, element ->
+                    if (boundBehavior == null && behavior is BoundBehavior)
+                        boundBehavior = behavior
+                    element
+                }
+                val component = if (boundBehavior != null && boundBehavior!!.scope != null) {
+                    getComponent(boundBehavior!!.scope!!)
+                } else {
+                    this
+                }
+                synchronized(component._bindings) { component._bindings[key] = binding }
+                initializedBindings?.let { it += binding }
+                (binding.provider as? ComponentInitObserver)?.onInit(component)
+                return binding
+            }
+        }
 
-        val binding = InjektPlugins.justInTimeBindingFactory.findBinding(key)
-            ?: return null
-        var boundBehavior: BoundBehavior? = null
-        binding.behavior.foldOut(null) { behavior, element ->
-            if (boundBehavior == null && behavior is BoundBehavior)
-                boundBehavior = behavior
-            element
-        }
-        val component = if (boundBehavior != null && boundBehavior!!.scope != null) {
-            getComponent(boundBehavior!!.scope!!)
-        } else {
-            this
-        }
-        synchronized(component._bindings) { component._bindings[key] = binding }
-        initializedBindings?.let { it += binding }
-        (binding.provider as? ComponentInitObserver)?.onInit(component)
-        return binding
+        return null
     }
 }

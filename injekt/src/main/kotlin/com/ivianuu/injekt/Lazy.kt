@@ -45,3 +45,16 @@ class KeyedLazy<T>(
         return value.unsafeCast()
     }
 }
+
+object LazyJustInTimeBindingFactory : JustInTimeBindingFactory {
+    override fun <T> create(key: Key<T>): Binding<T>? {
+        if (key.arguments.size != 1) return null
+        if (key.classifier != Lazy::class) return null
+        val instanceKey = key.arguments.single()
+            .copy(qualifier = key.qualifier)
+
+        return Binding(key) {
+            KeyedLazy(this, instanceKey).unsafeCast()
+        }
+    }
+}

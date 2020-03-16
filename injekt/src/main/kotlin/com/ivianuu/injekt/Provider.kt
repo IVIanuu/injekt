@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
+
 /**
  * Provides instances of type [T]
  * For any type [T] that can be injected, you can also inject Provider<T>.
@@ -34,4 +36,17 @@ class KeyedProvider<T>(
 ) : Provider<T> {
     override fun invoke(parameters: Parameters): T =
         component.get(key = key, parameters = parameters)
+}
+
+object ProviderJustInTimeBindingFactory : JustInTimeBindingFactory {
+    override fun <T> create(key: Key<T>): Binding<T>? {
+        if (key.arguments.size != 1) return null
+        if (key.classifier != Provider::class) return null
+        val instanceKey = key.arguments.single()
+            .copy(qualifier = key.qualifier)
+
+        return Binding(key) {
+            KeyedProvider(this, instanceKey).unsafeCast()
+        }
+    }
 }

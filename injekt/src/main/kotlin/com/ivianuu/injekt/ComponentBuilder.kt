@@ -40,6 +40,9 @@ class ComponentBuilder {
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
+    private val _justInTimeBindingFactories = mutableListOf<JustInTimeBindingFactory>()
+    val justInTimeBindingFactories: List<JustInTimeBindingFactory> get() = _justInTimeBindingFactories
+
     /**
      * Adds the [scopes] this allows generated [Binding]s
      * to be associated with components.
@@ -62,6 +65,13 @@ class ComponentBuilder {
             check(dependency !in this._dependencies) { "Duplicated dependency $dependency" }
             this._dependencies += dependency
         }
+    }
+
+    /**
+     * Adds the [factories]
+     */
+    fun justInTimeBindingFactories(vararg factories: JustInTimeBindingFactory) {
+        _justInTimeBindingFactories += factories
     }
 
     inline fun <reified T> bind(
@@ -112,6 +122,8 @@ class ComponentBuilder {
      * Create a new [Component] instance.
      */
     fun build(): Component {
+        InjektPlugins.componentBuilderInterceptors.forEach { it() }
+
         checkScopes()
 
         val dependencyBindings = mutableMapOf<Key<*>, Binding<*>>()
@@ -145,6 +157,7 @@ class ComponentBuilder {
         return Component(
             scopes = _scopes,
             dependencies = _dependencies,
+            justInTimeBindingFactories = _justInTimeBindingFactories,
             bindings = finalBindings
         )
     }

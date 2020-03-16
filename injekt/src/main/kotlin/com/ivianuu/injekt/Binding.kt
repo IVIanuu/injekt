@@ -88,10 +88,3 @@ abstract class DelegatingBindingProvider<T>(
         return delegate(component, parameters)
     }
 }
-
-/**
- * Used by the codegen
- */
-interface BindingFactory<T> {
-    fun create(): Binding<T>
-}
