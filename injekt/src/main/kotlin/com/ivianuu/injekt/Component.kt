@@ -109,7 +109,7 @@ class Component internal constructor(
             return binding
         }
 
-        for (index in dependencies.size - 1 downTo 0) {
+        for (index in dependencies.lastIndex downTo 0) {
             binding = dependencies[index].findExplicitBinding(key)
             if (binding != null) return binding
         }
@@ -118,7 +118,7 @@ class Component internal constructor(
     }
 
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
-        for (index in justInTimeBindingFactories.size - 1 downTo 0) {
+        for (index in justInTimeBindingFactories.lastIndex downTo 0) {
             val binding = justInTimeBindingFactories[index].create(key, this)
             if (binding != null) {
                 // todo finding the right component is relatively small maybe
