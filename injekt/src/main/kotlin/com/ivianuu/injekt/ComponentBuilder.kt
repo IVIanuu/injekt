@@ -50,7 +50,7 @@ class ComponentBuilder {
      * @see ScopeMarker
      */
     fun scopes(vararg scopes: Scope) {
-        scopes.forEach { scope ->
+        scopes.fastForEach { scope ->
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
         }
@@ -61,7 +61,7 @@ class ComponentBuilder {
      * it will ask it's dependencies
      */
     fun dependencies(vararg dependencies: Component) {
-        dependencies.forEach { dependency ->
+        dependencies.fastForEach { dependency ->
             check(dependency !in this._dependencies) { "Duplicated dependency $dependency" }
             this._dependencies += dependency
         }
@@ -122,13 +122,13 @@ class ComponentBuilder {
      * Create a new [Component] instance.
      */
     fun build(): Component {
-        InjektPlugins.componentBuilderInterceptors.forEach { it() }
+        InjektPlugins.componentBuilderInterceptors.fastForEach { it() }
 
         checkScopes()
 
         val dependencyBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        for (dependency in _dependencies) {
+        _dependencies.fastForEach { dependency ->
             val bindings = dependency.getAllBindings()
             for ((key, binding) in bindings) {
                 if (binding.duplicateStrategy.check(
@@ -163,7 +163,7 @@ class ComponentBuilder {
     }
 
     private fun checkScopes() {
-        val dependencyScopes = mutableSetOf<Scope>()
+        val dependencyScopes = mutableListOf<Scope>()
 
         fun addScope(scope: Scope) {
             check(scope !in dependencyScopes) {
@@ -173,13 +173,13 @@ class ComponentBuilder {
             dependencyScopes += scope
         }
 
-        for (dependency in _dependencies) {
-            for (scope in dependency.scopes) {
+        _dependencies.fastForEach { dependency ->
+            dependency.scopes.fastForEach { scope ->
                 addScope(scope)
             }
         }
 
-        _scopes.forEach { addScope(it) }
+        _scopes.fastForEach { addScope(it) }
     }
 
     private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
@@ -192,7 +192,7 @@ class ComponentBuilder {
 
         bindings[componentBinding.key] = componentBinding
 
-        for (scope in _scopes) {
+        _scopes.fastForEach { scope ->
             val key = keyOf<Component>(qualifier = scope)
             bindings[key] = Binding(
                 key = key,
@@ -207,7 +207,7 @@ class ComponentBuilder {
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
     private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        dependencies.forEach { it.collectBindings(bindings) }
+        dependencies.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
 }

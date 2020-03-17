@@ -47,10 +47,10 @@ class Component internal constructor(
     private val _bindings = bindings
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private var initializedBindings: MutableSet<Binding<*>>? = mutableSetOf()
+    private var initializedBindings: MutableList<Binding<*>>? = mutableListOf()
 
     init {
-        for ((_, binding) in _bindings.toMap()) {
+        for (binding in _bindings.values) {
             val initializedBindings = initializedBindings!!
             if (binding !in initializedBindings) {
                 initializedBindings += binding
@@ -84,7 +84,7 @@ class Component internal constructor(
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
-        for (dependency in dependencies) {
+        dependencies.fastForEach { dependency ->
             dependency.findComponent(scope)?.let { return it }
         }
 
@@ -99,9 +99,9 @@ class Component internal constructor(
         }
         if (binding != null) {
             initializedBindings?.let {
+                // we currently initialize bindings
+                // make sure that the requested binding gets also initialized
                 if (binding!! !in it) {
-                    // we currently initialize bindings
-                    // make sure that the requested binding gets also initialized
                     it += binding!!
                     (binding!!.provider as? ComponentInitObserver)?.onInit(this)
                 }
@@ -109,8 +109,8 @@ class Component internal constructor(
             return binding
         }
 
-        for (i in dependencies.size - 1 downTo 0) {
-            binding = dependencies[i].findExplicitBinding(key)
+        for (index in dependencies.size - 1 downTo 0) {
+            binding = dependencies[index].findExplicitBinding(key)
             if (binding != null) return binding
         }
 
@@ -118,8 +118,8 @@ class Component internal constructor(
     }
 
     private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
-        for (i in justInTimeBindingFactories.size - 1 downTo 0) {
-            val binding = justInTimeBindingFactories[i].create(key, this)
+        for (index in justInTimeBindingFactories.size - 1 downTo 0) {
+            val binding = justInTimeBindingFactories[index].create(key, this)
             if (binding != null) {
                 // todo finding the right component is relatively small maybe
                 //  we can cache the scope bound of the behaviors when combining them
