@@ -173,8 +173,7 @@ class ComponentBuilder {
     }
 
     private fun runContributors() {
-        ServiceLoader.load(ComponentBuilderContributor::class.java, null)
-            .iterator()
+        ComponentBuilderContributors.implementations
             .forEach { it.apply(this) }
     }
 
@@ -224,4 +223,11 @@ class ComponentBuilder {
  */
 interface ComponentBuilderContributor {
     fun apply(builder: ComponentBuilder)
+}
+
+private object ComponentBuilderContributors {
+    val implementations by lazy {
+        ServiceLoader.load(ComponentBuilderContributor::class.java, null)
+            .toList()
+    }
 }
