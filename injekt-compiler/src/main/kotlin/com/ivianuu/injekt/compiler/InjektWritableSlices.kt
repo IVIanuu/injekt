@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektcodegen
+package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
+import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 
-object InjektCodegenTest : InjectionTest {
-    override val name = "Injekt Codegen"
-
-    private var component: Component? = null
-
-    override fun moduleCreation() {
-    }
-
-    override fun setup() {
-        component = Component()
-    }
-
-    override fun inject() {
-        component!!.get<Fib8>()
-    }
-
-    override fun shutdown() {
-        component = null
-    }
+object InjektWritableSlices {
+    val IS_INTO_COMPONENT = BasicWritableSlice<IrSimpleFunction, Unit>(RewritePolicy.DO_NOTHING)
+    val SCOPE = BasicWritableSlice<IrSimpleFunction, ClassDescriptor>(RewritePolicy.DO_NOTHING)
 }

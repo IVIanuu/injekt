@@ -21,7 +21,9 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addExtensionReceiver
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -34,6 +36,7 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -53,6 +56,7 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
     private val boundBehavior = getClass(InjektClassNames.BoundBehavior)
     private val component = getClass(InjektClassNames.Component)
     private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
+    private val duplicateStrategy = getClass(InjektClassNames.DuplicateStrategy)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val qualifier = getClass(InjektClassNames.Qualifier)
 
@@ -86,9 +90,13 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
             name = Name.identifier("bind${injectClass.name.asString()}")
             returnType = pluginContext.irBuiltIns.unitType
             origin = InjektOrigin
-        }.apply {
+        }.apply func@{
             addExtensionReceiver(componentBuilder.defaultType.toIrType())
             val extensionReceiver = this.extensionReceiverParameter!!
+
+            pluginContext.irTrace.record(
+                InjektWritableSlices.IS_INTO_COMPONENT, this, Unit
+            )
 
             body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
                 +irCall(
@@ -136,6 +144,10 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
                                 0,
                                 irGetObject(symbolTable.referenceClass(scopeObject))
                             )
+                            pluginContext.irTrace.record(
+                                InjektWritableSlices.SCOPE,
+                                this@func, getClass(scopeAnnotation.fqName!!)
+                            )
                         }
                     }
 
@@ -161,6 +173,22 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
                                 }
                         )
                     }
+
+                    putValueArgument(
+                        2,
+                        IrGetEnumValueImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            duplicateStrategy.defaultType.toIrType(),
+                            symbolTable.referenceEnumEntry(
+                                duplicateStrategy.unsubstitutedMemberScope
+                                    .getContributedClassifier(
+                                        Name.identifier("Drop"),
+                                        NoLookupLocation.FROM_BACKEND
+                                    ) as ClassDescriptor
+                            )
+                        )
+                    )
 
                     putValueArgument(3, bindingProvider(injectClass.descriptor))
                 }

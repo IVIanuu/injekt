@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.gradle
 
+import com.android.build.gradle.BaseExtension
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
@@ -50,12 +52,18 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
             kotlinCompilation.compilationName
         }
 
-        val outputDir = File(project.projectDir, "src/$sourceSetName")//
-        //val outputDir = File(project.buildDir, "generated/source/injekt/$sourceSetName")
-        /*kotlinCompilation?.allKotlinSourceSets?.forEach { sourceSet ->
-            sourceSet.kotlin.srcDir(outputDir)
-            //sourceSet.kotlin.exclude { it.file.startsWith(outputDir) }
-        }*/
+        val outputDir = File(project.buildDir, "generated/source/injekt/$sourceSetName")
+
+        val androidExtension = project.extensions.findByName("android") as? BaseExtension
+        androidExtension?.sourceSets
+            ?.findByName(sourceSetName)
+            ?.resources
+            ?.srcDir(File(outputDir, "resources"))
+
+        val sets = project.extensions.findByName("sourceSets") as SourceSetContainer
+        sets.findByName(sourceSetName)
+            ?.resources
+            ?.srcDir(File(outputDir, "resources"))
 
         return listOf(
             SubpluginOption(

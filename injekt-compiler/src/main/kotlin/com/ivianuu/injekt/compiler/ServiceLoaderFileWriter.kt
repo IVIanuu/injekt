@@ -34,7 +34,7 @@ class ServiceLoaderFileWriter(
     }
 
     fun writeFile() {
-        val servicesDir = File(outputDir, "META-INF/services")
+        val servicesDir = File(outputDir, "resources/META-INF/services")
         servicesDir.run { if (!exists()) mkdirs() }
 
         val file = File(servicesDir, InjektClassNames.ComponentBuilderContributor.asString())

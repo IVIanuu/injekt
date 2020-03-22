@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("com.android.library")
     id("com.jakewharton.confundus")
+    id("com.ivianuu.injekt")
     kotlin("android")
 }
 

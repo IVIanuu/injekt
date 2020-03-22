@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrStatement
@@ -40,20 +39,17 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 
@@ -68,11 +64,11 @@ class ComponentBuilderContributorGenerator(
     override fun visitFile(declaration: IrFile): IrFile {
         super.visitFile(declaration)
 
-        val intoComponentFunctions = mutableListOf<IrFunction>()
+        val intoComponentFunctions = mutableListOf<IrSimpleFunction>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.origin == InjektOrigin ||
+            override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
+                if (pluginContext.irTrace[InjektWritableSlices.IS_INTO_COMPONENT, declaration] != null ||
                     declaration.descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent)
                 ) {
                     intoComponentFunctions += declaration
@@ -90,35 +86,9 @@ class ComponentBuilderContributorGenerator(
         return declaration
     }
 
-    private fun autoServiceAnnotation(): IrConstructorCallImpl {
-        val autoServiceAnnotation =
-            pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(
-                ClassId.topLevel(FqName("com.google.auto.service.AutoService"))
-            )!!
-        return IrConstructorCallImpl(
-            UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-            autoServiceAnnotation.defaultType.toIrType(),
-            symbolTable.referenceConstructor(autoServiceAnnotation.constructors.single()!!),
-            0,
-            0,
-            1,
-            null
-        ).apply {
-            putValueArgument(
-                0,
-                IrClassReferenceImpl(
-                    startOffset, endOffset,
-                    pluginContext.irBuiltIns.kClassClass.descriptor.defaultType.toIrType(),
-                    pluginContext.irBuiltIns.kClassClass,
-                    componentBuilderContributor.defaultType.toIrType()
-                )
-            )
-        }
-    }
-
     private fun componentBuilderContributor(
         file: IrFile,
-        function: IrFunction
+        function: IrSimpleFunction
     ): IrClass {
         val componentBuilderContributorDescriptor = ClassDescriptorImpl(
             file.packageFragmentDescriptor,
@@ -151,8 +121,6 @@ class ComponentBuilderContributorGenerator(
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             superTypes = superTypes + componentBuilderContributor.defaultType.toIrType()
-
-            annotations += autoServiceAnnotation()
 
             addConstructor {
                 origin = InjektOrigin
@@ -211,8 +179,9 @@ class ComponentBuilderContributorGenerator(
                     }
 
                     val scopeAnnotation =
-                        function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
-                            .singleOrNull()
+                        pluginContext.irTrace[InjektWritableSlices.SCOPE, function]
+                            ?: function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
+                                .singleOrNull()?.annotationClass
 
                     if (scopeAnnotation != null) {
                         +DeclarationIrBuilder(context, symbol).irIfThen(
@@ -242,7 +211,7 @@ class ComponentBuilderContributorGenerator(
                                     0,
                                     irGetObject(
                                         symbolTable.referenceClass(
-                                            getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                                            scopeAnnotation.companionObjectDescriptor!!
                                         )
                                     )
                                 )

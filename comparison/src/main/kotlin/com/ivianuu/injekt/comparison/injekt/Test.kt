@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injektdsl
+package com.ivianuu.injekt.comparison.injekt
 
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
 
-object InjektDslTest : InjectionTest {
-    override val name = "Injekt Dsl"
+object InjektTest : InjectionTest {
+    override val name = "Injekt"
 
     private var component: Component? = null
 
@@ -29,7 +29,7 @@ object InjektDslTest : InjectionTest {
     }
 
     override fun setup() {
-        component = Component { fibonacci() }
+        component = Component()
     }
 
     override fun inject() {
