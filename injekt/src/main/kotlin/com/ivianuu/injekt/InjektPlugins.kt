@@ -26,11 +26,6 @@ object InjektPlugins {
     var logger: Logger? = null
 
     /**
-     * The factory to use while looking up just in time bindings
-     */
-    var justInTimeBindingFactory: JustInTimeBindingFactory = CodegenJustInTimeBindingFactory
-
-    /**
      * Interceptors to run on each [ComponentBuilder]
      */
     val componentBuilderInterceptors: List<ComponentBuilder.() -> Unit> = listOf {
