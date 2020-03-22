@@ -45,6 +45,8 @@ class ComponentBuilder {
     private val _justInTimeBindingFactories = mutableListOf<JustInTimeBindingFactory>()
     val justInTimeBindingFactories: List<JustInTimeBindingFactory> get() = _justInTimeBindingFactories
 
+    private val onPreBuildBlocks = mutableListOf<ComponentBuilder.() -> Boolean>()
+
     /**
      * Adds the [scopes] this allows generated [Binding]s
      * to be associated with components.
@@ -121,12 +123,18 @@ class ComponentBuilder {
     }
 
     /**
+     * Invokes the [block] before building the [Component] until it returns false
+     */
+    fun onPreBuild(block: ComponentBuilder.() -> Boolean) {
+        onPreBuildBlocks += block
+    }
+
+    /**
      * Create a new [Component] instance.
      */
     fun build(): Component {
-        val contributors =
-            ServiceLoader.load(ComponentBuilderContributor::class.java)
-        contributors.forEach { it.apply(this) }
+        runContributors()
+        runPreBuildBlocks()
 
         checkScopes()
 
@@ -162,6 +170,24 @@ class ComponentBuilder {
             justInTimeBindingFactories = _justInTimeBindingFactories,
             bindings = finalBindings
         )
+    }
+
+    private fun runContributors() {
+        ServiceLoader.load(ComponentBuilderContributor::class.java, null)
+            .iterator()
+            .forEach { it.apply(this) }
+    }
+
+    private fun runPreBuildBlocks() {
+        var run = true
+        while (run) {
+            run = false
+            onPreBuildBlocks.toList().fastForEach {
+                val result = it()
+                if (!result) onPreBuildBlocks -= it
+                run = run || result
+            }
+        }
     }
 
     private fun checkScopes() {
