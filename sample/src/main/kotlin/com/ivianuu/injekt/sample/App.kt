@@ -21,18 +21,11 @@ import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.android.fragmentInjectionBindings
-import com.ivianuu.injekt.android.systemServices
-import com.ivianuu.injekt.sample.data.data
 
 class App : Application(), ComponentOwner {
 
     override val component by lazy {
-        ApplicationComponent(this) {
-            data()
-            systemServices()
-            fragmentInjectionBindings()
-        }
+        ApplicationComponent(this)
     }
 
     override fun onCreate() {

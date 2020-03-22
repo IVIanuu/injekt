@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.sample.data
 
 import android.content.Context
+import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.IntoComponent
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.single
@@ -33,7 +35,9 @@ annotation class DatabaseFile {
     companion object : Qualifier.Element
 }
 
-fun ComponentBuilder.data() {
+@ApplicationScope
+@IntoComponent
+private fun ComponentBuilder.data() {
     single(qualifier = WebApiUrl) { "https://baseurl/" }
     single(qualifier = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
 }
