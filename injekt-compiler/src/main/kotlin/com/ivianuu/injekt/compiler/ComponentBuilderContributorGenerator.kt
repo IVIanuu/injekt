@@ -21,12 +21,15 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -39,12 +42,16 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -56,6 +63,7 @@ class ComponentBuilderContributorGenerator(
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val componentBuilderContributor = getClass(InjektClassNames.ComponentBuilderContributor)
+    private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
 
     override fun visitFile(declaration: IrFile): IrFile {
         super.visitFile(declaration)
@@ -80,6 +88,32 @@ class ComponentBuilderContributorGenerator(
         }
 
         return declaration
+    }
+
+    private fun autoServiceAnnotation(): IrConstructorCallImpl {
+        val autoServiceAnnotation =
+            pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(
+                ClassId.topLevel(FqName("com.google.auto.service.AutoService"))
+            )!!
+        return IrConstructorCallImpl(
+            UNDEFINED_OFFSET, UNDEFINED_OFFSET,
+            autoServiceAnnotation.defaultType.toIrType(),
+            symbolTable.referenceConstructor(autoServiceAnnotation.constructors.single()!!),
+            0,
+            0,
+            1,
+            null
+        ).apply {
+            putValueArgument(
+                0,
+                IrClassReferenceImpl(
+                    startOffset, endOffset,
+                    pluginContext.irBuiltIns.kClassClass.descriptor.defaultType.toIrType(),
+                    pluginContext.irBuiltIns.kClassClass,
+                    componentBuilderContributor.defaultType.toIrType()
+                )
+            )
+        }
     }
 
     private fun componentBuilderContributor(
@@ -117,6 +151,8 @@ class ComponentBuilderContributorGenerator(
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             superTypes = superTypes + componentBuilderContributor.defaultType.toIrType()
+
+            annotations += autoServiceAnnotation()
 
             addConstructor {
                 origin = InjektOrigin
@@ -157,7 +193,7 @@ class ComponentBuilderContributorGenerator(
                 dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
 
                 body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                    +irCall(function).apply {
+                    val functionCall = irCall(function).apply {
                         if (function.dispatchReceiverParameter != null) {
                             dispatchReceiver = irGetObject(
                                 symbolTable.referenceClass(
@@ -172,6 +208,49 @@ class ComponentBuilderContributorGenerator(
                         } else {
                             putValueArgument(0, irGet(this@func.valueParameters[0]))
                         }
+                    }
+
+                    val scopeAnnotation =
+                        function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
+                            .singleOrNull()
+
+                    if (scopeAnnotation != null) {
+                        +DeclarationIrBuilder(context, symbol).irIfThen(
+                            condition = irCall(
+                                callee = symbolTable.referenceSimpleFunction(
+                                    pluginContext.builtIns.list.unsubstitutedMemberScope
+                                        .findSingleFunction(Name.identifier("contains"))
+                                ),
+                                type = pluginContext.irBuiltIns.booleanType
+                            ).apply {
+                                dispatchReceiver = irCall(
+                                    callee = symbolTable.referenceSimpleFunction(
+                                        componentBuilder.unsubstitutedMemberScope
+                                            .getContributedVariables(
+                                                Name.identifier("scopes"),
+                                                NoLookupLocation.FROM_BACKEND
+                                            )
+                                            .single()
+                                            .getter!!
+                                    ),
+                                    type = context.builtIns.list.defaultType.toIrType()
+                                ).apply {
+                                    dispatchReceiver = irGet(this@func.valueParameters[0])
+                                }
+
+                                putValueArgument(
+                                    0,
+                                    irGetObject(
+                                        symbolTable.referenceClass(
+                                            getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                                        )
+                                    )
+                                )
+                            },
+                            thenPart = functionCall
+                        )
+                    } else {
+                        +functionCall
                     }
                 }
             }
