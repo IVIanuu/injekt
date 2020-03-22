@@ -58,3 +58,10 @@ object LazyJustInTimeBindingFactory : JustInTimeBindingFactory {
         }
     }
 }
+
+@IntoComponent
+private fun ComponentBuilder.enableLazyJitBindings() {
+    justInTimeBindingFactories(LazyJustInTimeBindingFactory)
+
+    println()
+}

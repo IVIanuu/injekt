@@ -50,3 +50,8 @@ object ProviderJustInTimeBindingFactory : JustInTimeBindingFactory {
         }
     }
 }
+
+@IntoComponent
+private fun ComponentBuilder.enableProviderJitBindings() {
+    justInTimeBindingFactories(ProviderJustInTimeBindingFactory)
+}

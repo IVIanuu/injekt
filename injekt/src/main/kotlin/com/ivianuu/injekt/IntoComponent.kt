@@ -16,12 +16,5 @@
 
 package com.ivianuu.injekt
 
-/**
- * Listener for component initialization
- */
-interface ComponentInitObserver {
-    /**
-     * Will be called once the [component] is initialized
-     */
-    fun onInit(component: Component)
-}
+@Target(AnnotationTarget.FUNCTION)
+annotation class IntoComponent

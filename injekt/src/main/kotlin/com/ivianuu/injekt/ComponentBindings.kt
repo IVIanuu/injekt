@@ -16,12 +16,13 @@
 
 package com.ivianuu.injekt
 
-/**
- * Global configurations
- */
-object InjektPlugins {
-    /**
-     * The logger to use
-     */
-    var logger: Logger? = null
+@IntoComponent
+private fun ComponentBuilder.componentBindings() {
+    (listOf(null) + scopes).forEach { scopeOrNull ->
+        bind(
+            qualifier = scopeOrNull ?: Qualifier.None,
+            behavior = BoundBehavior(),
+            duplicateStrategy = DuplicateStrategy.Override
+        ) { this }
+    }
 }

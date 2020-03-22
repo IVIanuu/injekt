@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.CodegenJustInTimeBindingFactory
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.InjektPlugins
 import com.ivianuu.injekt.android.AndroidLogger
@@ -38,7 +37,6 @@ class App : Application(), ComponentOwner {
 
     override fun onCreate() {
         super.onCreate()
-        InjektPlugins.justInTimeBindingFactory = CodegenJustInTimeBindingFactory
         InjektPlugins.logger = AndroidLogger()
     }
 }

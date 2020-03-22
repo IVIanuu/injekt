@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import java.util.ServiceLoader
+
 /**
  * Create a [Component] configured by [block]
  *
@@ -122,7 +124,9 @@ class ComponentBuilder {
      * Create a new [Component] instance.
      */
     fun build(): Component {
-        InjektPlugins.componentBuilderInterceptors.fastForEach { it() }
+        val contributors =
+            ServiceLoader.load(ComponentBuilderContributor::class.java)
+        contributors.forEach { it.apply(this) }
 
         checkScopes()
 
@@ -152,8 +156,6 @@ class ComponentBuilder {
             }
         }
 
-        includeComponentBindings(finalBindings)
-
         return Component(
             scopes = _scopes,
             dependencies = _dependencies,
@@ -182,27 +184,6 @@ class ComponentBuilder {
         _scopes.fastForEach { addScope(it) }
     }
 
-    private fun includeComponentBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        val componentBinding = Binding(
-            key = keyOf(),
-            behavior = BoundBehavior(),
-            duplicateStrategy = DuplicateStrategy.Override,
-            provider = { this }
-        )
-
-        bindings[componentBinding.key] = componentBinding
-
-        _scopes.fastForEach { scope ->
-            val key = keyOf<Component>(qualifier = scope)
-            bindings[key] = Binding(
-                key = key,
-                behavior = BoundBehavior(),
-                duplicateStrategy = DuplicateStrategy.Override,
-                provider = { this }
-            )
-        }
-    }
-
     private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
@@ -210,4 +191,11 @@ class ComponentBuilder {
         dependencies.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
+}
+
+/**
+ * Bridge for @IntoComponent functions
+ */
+interface ComponentBuilderContributor {
+    fun apply(builder: ComponentBuilder)
 }

@@ -54,10 +54,7 @@ class InjektDeclarationChecker : DeclarationChecker {
             descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
             descriptor.companionObjectDescriptor == null
         ) {
-            report(
-                descriptor,
-                context.trace
-            ) { NeedsAScopeCompanionObject }
+            context.trace.report(InjektErrors.NeedsAScopeCompanionObject.on(declaration))
         }
 
         if (descriptor is ClassDescriptor &&
@@ -72,35 +69,23 @@ class InjektDeclarationChecker : DeclarationChecker {
                             .defaultType
                     ))
         ) {
-            report(
-                descriptor,
-                context.trace
-            ) { NeedsAQualifierCompanionObject }
+            context.trace.report(InjektErrors.NeedsAQualifierCompanionObject.on(declaration))
         }
 
         if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).size > 1) {
-            report(
-                descriptor,
-                context.trace
-            ) { OnlyOneScope }
+            context.trace.report(InjektErrors.OnlyOneScope.on(declaration))
         }
 
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Param) &&
             descriptor.annotations.hasAnnotation(InjektClassNames.Qualifier)
         ) {
-            report(
-                descriptor,
-                context.trace
-            ) { ParamCannotBeNamed }
+            context.trace.report(InjektErrors.ParamCannotBeNamed.on(declaration))
         }
 
         if (descriptor is ClassDescriptor && descriptor.constructors.filter {
                 it.annotations.hasAnnotation(InjektClassNames.InjektConstructor)
             }.size > 1) {
-            report(
-                descriptor,
-                context.trace
-            ) { OnlyOneInjektConstructor }
+            context.trace.report(InjektErrors.OnlyOneInjektConstructor.on(declaration))
         }
 
         if (descriptor is ClassDescriptor &&
@@ -109,10 +94,23 @@ class InjektDeclarationChecker : DeclarationChecker {
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
         ) {
-            report(
-                descriptor,
-                context.trace
-            ) { NeedsPrimaryConstructorOrAnnotation }
+            context.trace.report(InjektErrors.NeedsPrimaryConstructorOrAnnotation.on(declaration))
         }
+
+        /*if (descriptor is FunctionDescriptor &&
+                descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent) &&
+            ((descriptor.allParameters.size != 1 ||
+                    descriptor.allParameters.single().type != context.moduleDescriptor.findClassAcrossModuleDependencies(
+                ClassId.topLevel(InjektClassNames.ComponentBuilder)
+            )) || descriptor.returnType?.isUnit() == false)) {
+            context.trace.report(InjektErrors.InvalidIntoComponentFunctionSignature.on(declaration))
+        }*/
+
+        /*if (descriptor is FunctionDescriptor &&
+                descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent) &&
+            (descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
+                .let { it == null || it.kind == ClassKind.OBJECT }) {
+            context.trace.report(InjektErrors.IntoComponentFunctionMustBeStatic.on(declaration))
+        }*/
     }
 }
