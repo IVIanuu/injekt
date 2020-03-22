@@ -20,16 +20,23 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-class InjektIrGenerationExtension : IrGenerationExtension {
+class InjektIrGenerationExtension(
+    private val outputDir: String
+) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        val fileWriter = ServiceLoaderFileWriter(
+            pluginContext.moduleDescriptor, outputDir
+        )
         val transformers = listOf(
             InjektBindingGenerator(pluginContext),
-            ComponentBuilderContributorGenerator(pluginContext)
+            ComponentBuilderContributorGenerator(pluginContext, fileWriter)
         )
         moduleFragment.files.forEach { file ->
             transformers.forEach { transformer ->
                 file.transform(transformer, null)
             }
         }
+
+        fileWriter.writeFile()
     }
 }

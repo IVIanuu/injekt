@@ -51,15 +51,16 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 
 class ComponentBuilderContributorGenerator(
-    pluginContext: IrPluginContext
+    pluginContext: IrPluginContext,
+    private val serviceLoaderFileWriter: ServiceLoaderFileWriter
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val componentBuilderContributor = getClass(InjektClassNames.ComponentBuilderContributor)
 
     override fun visitFile(declaration: IrFile): IrFile {
-        val intoComponentFunctions = mutableListOf<IrFunction>()
-
         super.visitFile(declaration)
+
+        val intoComponentFunctions = mutableListOf<IrFunction>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
@@ -73,7 +74,9 @@ class ComponentBuilderContributorGenerator(
         })
 
         intoComponentFunctions.forEach {
-            declaration.addChild(componentBuilderContributor(declaration, it))
+            val contributor = componentBuilderContributor(declaration, it)
+            declaration.addChild(contributor)
+            serviceLoaderFileWriter.add(contributor.fqNameForIrSerialization)
         }
 
         return declaration
