@@ -65,6 +65,7 @@ fun <T> ComponentBuilder.factory(
 /**
  * Annotation for the [FactoryBehavior]
  */
-@BehaviorMarker(FactoryBehavior::class)
-@Target(AnnotationTarget.CLASS)
-annotation class Factory
+@TagMarker
+annotation class Factory {
+    companion object : Tag
+}

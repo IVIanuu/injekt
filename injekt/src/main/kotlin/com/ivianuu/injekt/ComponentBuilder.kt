@@ -94,11 +94,13 @@ class ComponentBuilder {
         qualifier: Qualifier = Qualifier.None,
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        tags: List<Tag> = emptyList(),
         noinline provider: BindingProvider<T>
     ) = bind(
         key = keyOf(qualifier = qualifier),
         behavior = behavior,
         duplicateStrategy = duplicateStrategy,
+        tags = tags,
         provider = provider
     )
 
@@ -106,6 +108,7 @@ class ComponentBuilder {
         key: Key<T>,
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        tags: List<Tag> = emptyList(),
         provider: BindingProvider<T>
     ) {
         bind(
@@ -113,6 +116,7 @@ class ComponentBuilder {
                 key = key,
                 behavior = behavior,
                 duplicateStrategy = duplicateStrategy,
+                tags = tags,
                 provider = provider
             )
         )
@@ -125,14 +129,14 @@ class ComponentBuilder {
      * @see single
      */
     fun <T> bind(binding: Binding<T>) {
-        if (binding.duplicateStrategy.check(
-                existsPredicate = { binding.key in _bindings },
-                errorMessage = { "Already declared binding for ${binding.key}" }
+        val finalBinding = bindingInterceptors.fold(binding) { acc, interceptor ->
+            interceptor(acc) as Binding<T>
+        }
+        if (finalBinding.duplicateStrategy.check(
+                existsPredicate = { finalBinding.key in _bindings },
+                errorMessage = { "Already declared binding for ${finalBinding.key}" }
             )
         ) {
-            val finalBinding = bindingInterceptors.fold(binding) { acc, interceptor ->
-                interceptor(acc) as Binding<T>
-            }
             _bindings[finalBinding.key] = finalBinding
             onBindingAddedBlocks.toList().forEach { it(finalBinding) }
         }

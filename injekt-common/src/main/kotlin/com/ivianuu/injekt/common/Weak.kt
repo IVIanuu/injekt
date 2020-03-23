@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.BoundBehavior
@@ -25,9 +24,13 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.IntoComponent
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.keyOf
 import java.lang.ref.WeakReference
 
@@ -71,9 +74,21 @@ fun <T> ComponentBuilder.weak(
 /**
  * Annotation for the [WeakBehavior]
  */
-@BehaviorMarker(WeakBehavior::class)
-@Target(AnnotationTarget.CLASS)
-annotation class Weak
+@TagMarker
+annotation class Weak {
+    companion object : Tag
+}
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.weakBindingInterceptor() {
+    bindingInterceptor { binding ->
+        if (Single in binding.tags) {
+            binding.copy(behavior = binding.behavior + WeakBehavior)
+        } else {
+            binding
+        }
+    }
+}
 
 private class WeakProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {

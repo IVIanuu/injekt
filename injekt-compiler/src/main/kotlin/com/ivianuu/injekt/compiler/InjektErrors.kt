@@ -32,6 +32,9 @@ interface InjektErrors {
         @JvmField
         val NeedsAScopeCompanionObject = error()
         @JvmField
+        val NeedsATagCompanionObject = error()
+
+        @JvmField
         val ParamCannotBeNamed = error()
         @JvmField
         val OnlyOneInjektConstructor = error()
@@ -69,12 +72,16 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Can only have one 1 scope annotation"
         )
         map.put(
+            InjektErrors.NeedsAQualifierCompanionObject,
+            "Needs a companion object which implements Qualifier"
+        )
+        map.put(
             InjektErrors.NeedsAScopeCompanionObject,
             "Needs a companion object which implements Scope"
         )
         map.put(
-            InjektErrors.NeedsAQualifierCompanionObject,
-            "Needs a companion object which implements Qualifier"
+            InjektErrors.NeedsATagCompanionObject,
+            "Needs a companion object which implements Tag"
         )
         map.put(
             InjektErrors.ParamCannotBeNamed,

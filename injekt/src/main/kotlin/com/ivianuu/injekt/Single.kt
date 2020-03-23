@@ -69,9 +69,21 @@ fun <T> ComponentBuilder.single(
 /**
  * Annotation for the [SingleBehavior]
  */
-@BehaviorMarker(SingleBehavior::class)
-@Target(AnnotationTarget.CLASS)
-annotation class Single
+@TagMarker
+annotation class Single {
+    companion object : Tag
+}
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.singleBindingInterceptor() {
+    bindingInterceptor { binding ->
+        if (Single in binding.tags) {
+            binding.copy(behavior = binding.behavior + SingleBehavior)
+        } else {
+            binding
+        }
+    }
+}
 
 private class SingleProvider<T>(
     delegate: BindingProvider<T>

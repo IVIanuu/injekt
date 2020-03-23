@@ -26,7 +26,7 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-data class Binding<T> private constructor(
+class Binding<T> private constructor(
     /**
      * The key which is used to identify this binding
      */
@@ -40,10 +40,57 @@ data class Binding<T> private constructor(
      */
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     /**
+     * All tags of this binding
+     */
+    val tags: List<Tag> = emptyList(),
+    /**
      * Creates instances for this binding
      */
     val provider: BindingProvider<T>
 ) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Binding<*>
+
+        if (key != other.key) return false
+        if (behavior != other.behavior) return false
+        if (duplicateStrategy != other.duplicateStrategy) return false
+        if (tags != other.tags) return false
+        if (provider != other.provider) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = key.hashCode()
+        result = 31 * result + behavior.hashCode()
+        result = 31 * result + duplicateStrategy.hashCode()
+        result = 31 * result + tags.hashCode()
+        result = 31 * result + provider.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "Binding(key=$key, behavior=$behavior, duplicateStrategy=$duplicateStrategy, tags=$tags, provider=$provider)"
+    }
+
+    fun copy(
+        key: Key<T> = this.key,
+        behavior: Behavior = this.behavior,
+        duplicateStrategy: DuplicateStrategy = this.duplicateStrategy,
+        tags: List<Tag> = this.tags,
+        provider: BindingProvider<T> = this.provider
+    ) = invoke(
+        key,
+        behavior,
+        duplicateStrategy,
+        tags,
+        provider
+    )
+
     companion object {
         /**
          * Returns a new [Binding] instance
@@ -52,16 +99,20 @@ data class Binding<T> private constructor(
             key: Key<T>,
             behavior: Behavior = Behavior.None,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+            tags: List<Tag> = emptyList(),
             provider: BindingProvider<T>
         ): Binding<T> = Binding(
             key = key,
             behavior = behavior,
             duplicateStrategy = duplicateStrategy,
+            tags = tags,
             provider = behavior.foldIn(provider) { currentProvider, currentBehavior ->
                 currentBehavior.apply(currentProvider)
             }
         )
+
     }
+
 }
 
 /**

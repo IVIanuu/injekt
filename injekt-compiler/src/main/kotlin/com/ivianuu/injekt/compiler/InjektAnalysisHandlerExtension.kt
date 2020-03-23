@@ -58,7 +58,7 @@ class InjektAnalysisHandlerExtension(
             file.acceptChildren(
                 classOrObjectRecursiveVisitor { clazz ->
                     val descriptor = clazz.findClassDescriptor(bindingTrace.bindingContext)
-                    if (descriptor.hasAnnotatedAnnotations(InjektClassNames.BehaviorMarker)) {
+                    if (descriptor.hasAnnotatedAnnotations(InjektClassNames.TagMarker)) {
                         val functionName = (descriptor.fqNameSafe.pathSegments()
                             .dropLast(1) + "bind${clazz.name}")
                             .joinToString(".")
