@@ -134,16 +134,22 @@ class ComponentBuilder {
     }
 
     /**
-     * Invokes the [block] for every binding
+     * Invokes the [block] for every binding which gets added
      */
     fun onBindingAdded(block: (Binding<*>) -> Unit) {
         onBindingAddedBlocks += block
     }
 
+    /**
+     * Invokes the [block] for every scope which gets added
+     */
     fun onScopeAdded(block: (Scope) -> Unit) {
         onScopeAddedBlocks += block
     }
 
+    /**
+     * Invokes the [block] for every parent which gets added
+     */
     fun onParentAdded(block: (Component) -> Unit) {
         onParentAddedBlocks += block
     }
@@ -155,6 +161,9 @@ class ComponentBuilder {
         onPreBuildBlocks += block
     }
 
+    /**
+     * Invokes the [block] right after [Component] gets build
+     */
     fun onBuild(block: (Component) -> Unit) {
         onBuildBlocks += block
     }
