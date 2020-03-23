@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-@IntoComponent
+@IntoComponent(invokeOnInit = true)
 private fun ComponentBuilder.componentBindings() {
     bind(
         behavior = BoundBehavior(),
