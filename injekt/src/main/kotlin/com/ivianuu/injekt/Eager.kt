@@ -41,3 +41,19 @@ private class EagerProvider<T>(delegate: BindingProvider<T>) :
         invoke(component, emptyParameters())
     }
 }
+
+@TagMarker
+annotation class Eager {
+    companion object : Tag
+}
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.eagerBindingInterceptor() {
+    bindingInterceptor { binding ->
+        if (Eager in binding.tags) {
+            binding.copy(behavior = EagerBehavior + binding.behavior)
+        } else {
+            binding
+        }
+    }
+}
