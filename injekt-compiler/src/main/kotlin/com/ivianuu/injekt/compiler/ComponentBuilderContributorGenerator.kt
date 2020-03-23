@@ -33,10 +33,14 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -49,6 +53,8 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
@@ -144,6 +150,35 @@ class ComponentBuilderContributorGenerator(
                 }
             }
 
+            val invokeOnInit =
+                function.descriptor.annotations.findAnnotation(InjektClassNames.IntoComponent)?.let { annotation ->
+                    (annotation.argumentValue("invokeOnInit") as? BooleanValue)?.value
+                } == true
+
+            val invokeOnInitProperty = componentBuilderContributor.unsubstitutedMemberScope
+                .getContributedVariables(
+                    Name.identifier("invokeOnInit"),
+                    NoLookupLocation.FROM_BACKEND
+                )
+                .single()
+
+            addProperty {
+                name = Name.identifier("invokeOnInit")
+            }.apply {
+                addGetter {
+                    returnType = pluginContext.irBuiltIns.booleanType
+                }.apply {
+                    overriddenSymbols =
+                        overriddenSymbols + symbolTable.referenceSimpleFunction(invokeOnInitProperty.getter!!)
+                    createParameterDeclarations(invokeOnInitProperty.getter!!)
+                    dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
+
+                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                        +irReturn(irBoolean(invokeOnInit))
+                    }
+                }
+            }
+
             addFunction(
                 name = "apply",
                 returnType = pluginContext.irBuiltIns.unitType,
@@ -183,43 +218,62 @@ class ComponentBuilderContributorGenerator(
                             ?: function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
                                 .singleOrNull()?.annotationClass
 
-                    if (scopeAnnotation != null) {
-                        +DeclarationIrBuilder(context, symbol).irIfThen(
-                            condition = irCall(
-                                callee = symbolTable.referenceSimpleFunction(
-                                    pluginContext.builtIns.list.unsubstitutedMemberScope
-                                        .findSingleFunction(Name.identifier("contains"))
-                                ),
-                                type = pluginContext.irBuiltIns.booleanType
-                            ).apply {
-                                dispatchReceiver = irCall(
-                                    callee = symbolTable.referenceSimpleFunction(
-                                        componentBuilder.unsubstitutedMemberScope
-                                            .getContributedVariables(
-                                                Name.identifier("scopes"),
-                                                NoLookupLocation.FROM_BACKEND
-                                            )
-                                            .single()
-                                            .getter!!
-                                    ),
-                                    type = context.builtIns.list.defaultType.toIrType()
-                                ).apply {
-                                    dispatchReceiver = irGet(this@func.valueParameters[0])
-                                }
-
-                                putValueArgument(
-                                    0,
-                                    irGetObject(
-                                        symbolTable.referenceClass(
-                                            scopeAnnotation.companionObjectDescriptor!!
-                                        )
-                                    )
-                                )
-                            },
-                            thenPart = functionCall
-                        )
-                    } else {
+                    if (scopeAnnotation == null) {
                         +functionCall
+                    } else {
+                        val onPreBuildFunction = componentBuilder.unsubstitutedMemberScope
+                            .findSingleFunction(Name.identifier("onPreBuild"))
+                        +irCall(
+                            callee = symbolTable.referenceSimpleFunction(onPreBuildFunction),
+                            type = pluginContext.irBuiltIns.unitType
+                        ).apply {
+                            dispatchReceiver = irGet(this@func.valueParameters[0])
+                            putValueArgument(
+                                0,
+                                irLambdaExpression(
+                                    descriptor = createFunctionDescriptor(onPreBuildFunction.valueParameters.single().type),
+                                    type = onPreBuildFunction.valueParameters.single().type.toIrType()
+                                ) {
+                                    +DeclarationIrBuilder(context, symbol).irIfThen(
+                                        condition = irCall(
+                                            callee = symbolTable.referenceSimpleFunction(
+                                                pluginContext.builtIns.list.unsubstitutedMemberScope
+                                                    .findSingleFunction(Name.identifier("contains"))
+                                            ),
+                                            type = pluginContext.irBuiltIns.booleanType
+                                        ).apply {
+                                            dispatchReceiver = irCall(
+                                                callee = symbolTable.referenceSimpleFunction(
+                                                    componentBuilder.unsubstitutedMemberScope
+                                                        .getContributedVariables(
+                                                            Name.identifier("scopes"),
+                                                            NoLookupLocation.FROM_BACKEND
+                                                        )
+                                                        .single()
+                                                        .getter!!
+                                                ),
+                                                type = context.builtIns.list.defaultType.toIrType()
+                                            ).apply {
+                                                dispatchReceiver =
+                                                    irGet(this@func.valueParameters[0])
+                                            }
+
+                                            putValueArgument(
+                                                0,
+                                                irGetObject(
+                                                    symbolTable.referenceClass(
+                                                        scopeAnnotation.companionObjectDescriptor!!
+                                                    )
+                                                )
+                                            )
+                                        },
+                                        thenPart = functionCall
+                                    )
+
+                                    +irReturn(irBoolean(false))
+                                }
+                            )
+                        }
                     }
                 }
             }

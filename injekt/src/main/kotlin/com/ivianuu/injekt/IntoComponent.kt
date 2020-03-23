@@ -16,5 +16,27 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Runs this function on each [ComponentBuilder]
+ *
+ * Optionally annotate this function with a [Scope] annotation to ensure that this
+ * function gets only invoked for [ComponentBuilder]s with a matching scope
+ *
+ * ```
+ * @ActivityScope
+ * @IntoComponent
+ * private fun ComponentBuilder.myActivityBindings() {
+ *     factory { get<MyActivity>().resources }
+ * }
+ * ```
+ *
+ */
 @Target(AnnotationTarget.FUNCTION)
-annotation class IntoComponent
+annotation class IntoComponent(
+    /**
+     * By default the annotated function will invoked right before the component gets build
+     *
+     * Setting this flag to true will invoke this function when the builder gets created
+     */
+    val invokeOnInit: Boolean = false
+)

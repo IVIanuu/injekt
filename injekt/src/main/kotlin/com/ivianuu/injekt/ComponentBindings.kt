@@ -18,10 +18,15 @@ package com.ivianuu.injekt
 
 @IntoComponent
 private fun ComponentBuilder.componentBindings() {
-    (listOf(null) + scopes).forEach { scopeOrNull ->
+    bind(
+        behavior = BoundBehavior(),
+        duplicateStrategy = DuplicateStrategy.Override
+    ) { this }
+
+    onScopeAdded { scope ->
         bind(
-            qualifier = scopeOrNull ?: Qualifier.None,
-            behavior = BoundBehavior(),
+            behavior = BoundBehavior(scope = scope),
+            qualifier = scope,
             duplicateStrategy = DuplicateStrategy.Override
         ) { this }
     }

@@ -45,7 +45,17 @@ class ComponentBuilder {
     private val _justInTimeBindingFactories = mutableListOf<JustInTimeBindingFactory>()
     val justInTimeBindingFactories: List<JustInTimeBindingFactory> get() = _justInTimeBindingFactories
 
-    private val onPreBuildBlocks = mutableListOf<ComponentBuilder.() -> Boolean>()
+    private val onPreBuildBlocks = mutableListOf<() -> Boolean>()
+    private val onBuildBlocks = mutableListOf<(Component) -> Unit>()
+    private val onBindingAddedBlocks = mutableListOf<(Binding<*>) -> Unit>()
+    private val onScopeAddedBlocks = mutableListOf<(Scope) -> Unit>()
+    private val onDependencyAddedBlocks = mutableListOf<(Component) -> Unit>()
+
+    init {
+        ComponentBuilderContributors.implementations
+            .filter { it.invokeOnInit }
+            .forEach { it.apply(this) }
+    }
 
     /**
      * Adds the [scopes] this allows generated [Binding]s
@@ -57,6 +67,7 @@ class ComponentBuilder {
         scopes.fastForEach { scope ->
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
+            onScopeAddedBlocks.toList().forEach { it(scope) }
         }
     }
 
@@ -68,6 +79,7 @@ class ComponentBuilder {
         dependencies.fastForEach { dependency ->
             check(dependency !in this._dependencies) { "Duplicated dependency $dependency" }
             this._dependencies += dependency
+            onDependencyAddedBlocks.toList().forEach { it(dependency) }
         }
     }
 
@@ -119,21 +131,44 @@ class ComponentBuilder {
             )
         ) {
             _bindings[binding.key] = binding
+            onBindingAddedBlocks.toList().forEach { it(binding) }
         }
+    }
+
+    /**
+     * Invokes the [block] for every binding
+     */
+    fun onBindingAdded(block: (Binding<*>) -> Unit) {
+        onBindingAddedBlocks += block
+    }
+
+    fun onScopeAdded(block: (Scope) -> Unit) {
+        onScopeAddedBlocks += block
+    }
+
+    fun onDependencyAdded(block: (Component) -> Unit) {
+        onDependencyAddedBlocks += block
     }
 
     /**
      * Invokes the [block] before building the [Component] until it returns false
      */
-    fun onPreBuild(block: ComponentBuilder.() -> Boolean) {
+    fun onPreBuild(block: () -> Boolean) {
         onPreBuildBlocks += block
+    }
+
+    fun onBuild(block: (Component) -> Unit) {
+        onBuildBlocks += block
     }
 
     /**
      * Create a new [Component] instance.
      */
     fun build(): Component {
-        runContributors()
+        ComponentBuilderContributors.implementations
+            .filter { !it.invokeOnInit }
+            .forEach { it.apply(this) }
+
         runPreBuildBlocks()
 
         checkScopes()
@@ -164,17 +199,16 @@ class ComponentBuilder {
             }
         }
 
-        return Component(
+        val component = Component(
             scopes = _scopes,
             dependencies = _dependencies,
             justInTimeBindingFactories = _justInTimeBindingFactories,
             bindings = finalBindings
         )
-    }
 
-    private fun runContributors() {
-        ComponentBuilderContributors.implementations
-            .forEach { it.apply(this) }
+        onBuildBlocks.toList().forEach { it(component) }
+
+        return component
     }
 
     private fun runPreBuildBlocks() {
@@ -220,8 +254,11 @@ class ComponentBuilder {
 
 /**
  * Bridge for @IntoComponent functions
+ *
+ * @see IntoComponent
  */
 interface ComponentBuilderContributor {
+    val invokeOnInit: Boolean get() = false
     fun apply(builder: ComponentBuilder)
 }
 
