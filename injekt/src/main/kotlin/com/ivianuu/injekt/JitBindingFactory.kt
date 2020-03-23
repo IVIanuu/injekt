@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * Will be called when a [Component] cannot resolve a instance request
  */
-interface JustInTimeBindingFactory {
+interface JitBindingFactory {
     fun <T> create(
         key: Key<T>,
         component: Component

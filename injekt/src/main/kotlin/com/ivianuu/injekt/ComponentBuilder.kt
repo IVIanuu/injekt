@@ -42,8 +42,8 @@ class ComponentBuilder {
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private val _justInTimeBindingFactories = mutableListOf<JustInTimeBindingFactory>()
-    val justInTimeBindingFactories: List<JustInTimeBindingFactory> get() = _justInTimeBindingFactories
+    private val _justInTimeBindingFactories = mutableListOf<JitBindingFactory>()
+    val jitBindingFactories: List<JitBindingFactory> get() = _justInTimeBindingFactories
 
     private val onPreBuildBlocks = mutableListOf<() -> Boolean>()
     private val onBuildBlocks = mutableListOf<(Component) -> Unit>()
@@ -86,7 +86,7 @@ class ComponentBuilder {
     /**
      * Adds the [factories]
      */
-    fun justInTimeBindingFactories(vararg factories: JustInTimeBindingFactory) {
+    fun justInTimeBindingFactories(vararg factories: JitBindingFactory) {
         _justInTimeBindingFactories += factories
     }
 
@@ -202,7 +202,7 @@ class ComponentBuilder {
         val component = Component(
             scopes = _scopes,
             parents = _parents,
-            justInTimeBindingFactories = _justInTimeBindingFactories,
+            jitBindingFactories = _justInTimeBindingFactories,
             bindings = finalBindings
         )
 

@@ -40,7 +40,7 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scopes: List<Scope>,
     val parents: List<Component>,
-    val justInTimeBindingFactories: List<JustInTimeBindingFactory>,
+    val jitBindingFactories: List<JitBindingFactory>,
     bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
@@ -70,7 +70,7 @@ class Component internal constructor(
      */
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
         findExplicitBinding(key)?.let { return it.provider(this, parameters) }
-        findJustInTimeBinding(key)?.let { return it.provider(this, parameters) }
+        findJitBinding(key)?.let { return it.provider(this, parameters) }
         if (key.isNullable) return null as T
         error("Couldn't get instance for $key")
     }
@@ -117,9 +117,9 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
-        for (index in justInTimeBindingFactories.lastIndex downTo 0) {
-            val binding = justInTimeBindingFactories[index].create(key, this)
+    private fun <T> findJitBinding(key: Key<T>): Binding<T>? {
+        for (index in jitBindingFactories.lastIndex downTo 0) {
+            val binding = jitBindingFactories[index].create(key, this)
             if (binding != null) {
                 // todo finding the right component is relatively small maybe
                 //  we can cache the scope bound of the behaviors when combining them

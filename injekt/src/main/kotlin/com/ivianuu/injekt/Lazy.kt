@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 interface Lazy<T> : Provider<T>
 
-object LazyJustInTimeBindingFactory : JustInTimeBindingFactory {
+object LazyJitBindingFactory : JitBindingFactory {
     override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
         if (key.arguments.size != 1) return null
         if (key.classifier != Lazy::class) return null
@@ -59,5 +59,5 @@ private class KeyedLazy<T>(
 
 @IntoComponent
 private fun ComponentBuilder.enableLazyJitBindings() {
-    justInTimeBindingFactories(LazyJustInTimeBindingFactory)
+    justInTimeBindingFactories(LazyJitBindingFactory)
 }
