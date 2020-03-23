@@ -253,7 +253,7 @@ class ComponentTest {
 
     @Test
     fun testImplicitComponentBindings() {
-        InjektPlugins.logger = PrintLogger()
+        Injekt.logger = PrintLogger()
         val componentA = Component { scopes(TestScopeOne) }
         val componentB = Component {
             scopes(TestScopeTwo)
