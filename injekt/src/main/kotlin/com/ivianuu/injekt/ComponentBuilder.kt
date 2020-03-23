@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import java.util.ServiceLoader
-
 /**
  * Create a [Component] configured by [block]
  *
@@ -264,8 +262,12 @@ interface ComponentBuilderContributor {
 
 private object ComponentBuilderContributors {
     val implementations by lazy {
-        ServiceLoader.load(ComponentBuilderContributor::class.java, null)
+        FastServiceLoader.load(
+                ComponentBuilderContributor::class.java,
+                ClassLoader.getSystemClassLoader()
+            )
+            .iterator()
+            .asSequence()
             .toList()
-            .also { check(it.isNotEmpty()) }
     }
 }
