@@ -36,8 +36,8 @@ class ComponentBuilder {
     private val _scopes = mutableListOf<Scope>()
     val scopes: List<Scope> get() = _scopes
 
-    private val _dependencies = mutableListOf<Component>()
-    val dependencies: List<Component> get() = _dependencies
+    private val _parents = mutableListOf<Component>()
+    val parents: List<Component> get() = _parents
 
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
@@ -49,7 +49,7 @@ class ComponentBuilder {
     private val onBuildBlocks = mutableListOf<(Component) -> Unit>()
     private val onBindingAddedBlocks = mutableListOf<(Binding<*>) -> Unit>()
     private val onScopeAddedBlocks = mutableListOf<(Scope) -> Unit>()
-    private val onDependencyAddedBlocks = mutableListOf<(Component) -> Unit>()
+    private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
 
     init {
         ComponentBuilderContributors.implementations
@@ -72,14 +72,14 @@ class ComponentBuilder {
     }
 
     /**
-     * Adds the [dependencies] to the component if this component cannot resolve a instance
-     * it will ask it's dependencies
+     * Adds the [parents] to the component if this component cannot resolve a instance
+     * it will ask it's parents
      */
-    fun dependencies(vararg dependencies: Component) {
-        dependencies.fastForEach { dependency ->
-            check(dependency !in this._dependencies) { "Duplicated dependency $dependency" }
-            this._dependencies += dependency
-            onDependencyAddedBlocks.toList().forEach { it(dependency) }
+    fun parents(vararg parents: Component) {
+        parents.fastForEach { parent ->
+            check(parent !in this._parents) { "Duplicated parent $parent" }
+            this._parents += parent
+            onParentAddedBlocks.toList().forEach { it(parent) }
         }
     }
 
@@ -146,8 +146,8 @@ class ComponentBuilder {
         onScopeAddedBlocks += block
     }
 
-    fun onDependencyAdded(block: (Component) -> Unit) {
-        onDependencyAddedBlocks += block
+    fun onParentAdded(block: (Component) -> Unit) {
+        onParentAddedBlocks += block
     }
 
     /**
@@ -173,17 +173,17 @@ class ComponentBuilder {
 
         checkScopes()
 
-        val dependencyBindings = mutableMapOf<Key<*>, Binding<*>>()
+        val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        _dependencies.fastForEach { dependency ->
-            val bindings = dependency.getAllBindings()
+        _parents.fastForEach { parent ->
+            val bindings = parent.getAllBindings()
             for ((key, binding) in bindings) {
                 if (binding.duplicateStrategy.check(
-                        existsPredicate = { key in dependencyBindings },
+                        existsPredicate = { key in parentBindings },
                         errorMessage = { "Already declared binding for $key" }
                     )
                 ) {
-                    dependencyBindings[key] = binding
+                    parentBindings[key] = binding
                 }
             }
         }
@@ -192,7 +192,7 @@ class ComponentBuilder {
 
         _bindings.forEach { (key, binding) ->
             if (binding.duplicateStrategy.check(
-                    existsPredicate = { key in dependencyBindings },
+                    existsPredicate = { key in parentBindings },
                     errorMessage = { "Already declared binding for $key" })
             ) {
                 finalBindings[key] = binding
@@ -201,7 +201,7 @@ class ComponentBuilder {
 
         val component = Component(
             scopes = _scopes,
-            dependencies = _dependencies,
+            parents = _parents,
             justInTimeBindingFactories = _justInTimeBindingFactories,
             bindings = finalBindings
         )
@@ -224,18 +224,18 @@ class ComponentBuilder {
     }
 
     private fun checkScopes() {
-        val dependencyScopes = mutableListOf<Scope>()
+        val parentScopes = mutableListOf<Scope>()
 
         fun addScope(scope: Scope) {
-            check(scope !in dependencyScopes) {
+            check(scope !in parentScopes) {
                 "Duplicated scope $scope"
             }
 
-            dependencyScopes += scope
+            parentScopes += scope
         }
 
-        _dependencies.fastForEach { dependency ->
-            dependency.scopes.fastForEach { scope ->
+        _parents.fastForEach { parent ->
+            parent.scopes.fastForEach { scope ->
                 addScope(scope)
             }
         }
@@ -247,7 +247,7 @@ class ComponentBuilder {
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
     private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        dependencies.fastForEach { it.collectBindings(bindings) }
+        parents.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
 }

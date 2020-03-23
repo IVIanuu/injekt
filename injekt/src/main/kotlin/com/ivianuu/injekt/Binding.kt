@@ -20,7 +20,7 @@ package com.ivianuu.injekt
  * A binding knows how to create a concrete instance of a type
  * it also holds additional information about the declaration
  *
- * You typically don't access this class directly but instead declare dependencies
+ * You typically don't access this class directly but instead declare bindings
  * via a [ComponentBuilder] or annotating classes with [Factory] or [Single]
  *
  * @see Factory

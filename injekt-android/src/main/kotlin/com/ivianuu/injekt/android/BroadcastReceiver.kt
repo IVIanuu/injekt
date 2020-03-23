@@ -48,7 +48,7 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(ReceiverScope)
-    instance.getClosestComponentOrNull(context)?.let { dependencies(it) }
+    instance.getClosestComponentOrNull(context)?.let { parents(it) }
     receiverBindings(context, instance, key)
     block()
 }

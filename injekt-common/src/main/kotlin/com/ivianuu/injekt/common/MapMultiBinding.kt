@@ -238,9 +238,9 @@ private class MapBindingProvider<K, V>(
         checkNotNull(thisBuilder)
         val mergedBuilder = MultiBindingMapBuilder<K, V>()
 
-        component.getAllDependencies()
-            .flatMap { dependency ->
-                (dependency.bindings[mapOfKeyWithOverrideInfo]
+        component.getAllParents()
+            .flatMap { parent ->
+                (parent.bindings[mapOfKeyWithOverrideInfo]
                     ?.provider
                     ?.let { it as? MapBindingProvider<K, V> }
                     ?.thisMap ?: emptyMap()).entries

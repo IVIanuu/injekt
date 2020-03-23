@@ -46,7 +46,7 @@ fun <T : Activity> ActivityComponent(
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(ActivityScope)
-    instance.getClosestComponentOrNull()?.let { dependencies(it) }
+    instance.getClosestComponentOrNull()?.let { parents(it) }
     activityBindings(instance, key)
     block()
 }

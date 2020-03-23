@@ -227,9 +227,9 @@ private class SetBindingProvider<E>(
 
         val mergedBuilder = MultiBindingSetBuilder<E>()
 
-        component.getAllDependencies()
-            .flatMap { dependency ->
-                dependency.bindings[setOfKeyWithOverrideInfoKey]
+        component.getAllParents()
+            .flatMap { parent ->
+                parent.bindings[setOfKeyWithOverrideInfoKey]
                     ?.provider
                     ?.let { it as? SetBindingProvider<E> }
                     ?.thisSet ?: emptySet()

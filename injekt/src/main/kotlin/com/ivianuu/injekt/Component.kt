@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * The heart of the library which provides instances
- * Dependencies can be requested by calling [get]
+ * Instances can be requested by calling [get]
  * Use [ComponentBuilder] to construct [Component] instances
  *
  * Typical usage of a [Component] looks like this:
@@ -39,7 +39,7 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     val scopes: List<Scope>,
-    val dependencies: List<Component>,
+    val parents: List<Component>,
     val justInTimeBindingFactories: List<JustInTimeBindingFactory>,
     bindings: MutableMap<Key<*>, Binding<*>>
 ) {
@@ -84,8 +84,8 @@ class Component internal constructor(
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
-        dependencies.fastForEach { dependency ->
-            dependency.findComponent(scope)?.let { return it }
+        parents.fastForEach { parent ->
+            parent.findComponent(scope)?.let { return it }
         }
 
         return null
@@ -109,8 +109,8 @@ class Component internal constructor(
             return binding
         }
 
-        for (index in dependencies.lastIndex downTo 0) {
-            binding = dependencies[index].findExplicitBinding(key)
+        for (index in parents.lastIndex downTo 0) {
+            binding = parents[index].findExplicitBinding(key)
             if (binding != null) return binding
         }
 
@@ -174,7 +174,7 @@ interface ComponentInitObserver {
  */
 interface ComponentOwner {
     /**
-     * The [Component] which will be used to retrieve dependencies
+     * The [Component] which will be used to retrieve instances
      */
     val component: Component
 

@@ -87,9 +87,9 @@ class MapMultiBindingTest {
         assertEquals(Command1, mapA["one"])
 
         val componentB = Component {
-            dependencies(
+            parents(
                 Component {
-                    dependencies(componentA)
+                    parents(componentA)
                 }
             )
             factory { Command2 }
@@ -104,9 +104,9 @@ class MapMultiBindingTest {
         assertEquals(Command2, mapB["two"])
 
         val componentC = Component {
-            dependencies(
+            parents(
                 Component {
-                    dependencies(componentB)
+                    parents(componentB)
                 }
             )
             factory { Command3 }
@@ -173,8 +173,8 @@ class MapMultiBindingTest {
             map<String, Command> { put<Command1>("key") }
         }
         val componentB = Component {
-            dependencies(Component {
-                dependencies(componentA)
+            parents(Component {
+                parents(componentA)
             })
             factory { Command2 }
             map<String, Command> {
@@ -198,8 +198,8 @@ class MapMultiBindingTest {
             map<String, Command> { put<Command1>("key") }
         }
         val componentB = Component {
-            dependencies(Component {
-                dependencies(componentA)
+            parents(Component {
+                parents(componentA)
             })
             factory { Command2 }
             map<String, Command> {
@@ -223,8 +223,8 @@ class MapMultiBindingTest {
             map<String, Command> { put<Command1>("key") }
         }
         val componentB = Component {
-            dependencies(Component {
-                dependencies(componentA)
+            parents(Component {
+                parents(componentA)
             })
             factory { Command2 }
             map<String, Command> {

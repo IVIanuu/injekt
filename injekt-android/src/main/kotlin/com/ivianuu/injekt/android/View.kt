@@ -54,7 +54,7 @@ inline fun <T : View> ViewComponent(
 ): Component =
     Component {
         scopes(scope)
-        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        instance.getClosestComponentOrNull()?.let { parents(it) }
         viewBindings(instance, key, qualifier)
         block()
     }

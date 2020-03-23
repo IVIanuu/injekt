@@ -23,29 +23,29 @@ class ComponentBuilderTest {
 
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
-        val dependency = Component {
+        val parent = Component {
             scopes(TestScopeOne)
         }
 
         Component {
             scopes(TestScopeOne)
-            dependencies(dependency)
+            parents(parent)
         }
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testThrowsOnDependenciesWithSameScope() {
-        val dependency1 = Component {
+    fun testThrowsOnParentsWithSameScope() {
+        val parent1 = Component {
             scopes(TestScopeOne)
         }
 
-        val dependency2 = Component {
+        val parent2 = Component {
             scopes(TestScopeOne)
         }
 
         Component {
             scopes(TestScopeTwo)
-            dependencies(dependency1, dependency2)
+            parents(parent1, parent2)
         }
     }
 
@@ -56,22 +56,22 @@ class ComponentBuilderTest {
         }
 
         Component {
-            dependencies(componentA)
+            parents(componentA)
             factory { "my_overridden_value" }
         }
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testThrowsIfDependenciesOverrideEachOther() {
-        val dependency1 = Component {
+    fun testThrowsIfParentsOverrideEachOther() {
+        val parent1 = Component {
             factory { "value_1" }
         }
 
-        val dependency2 = Component {
+        val parent2 = Component {
             factory { "value_2" }
         }
 
-        Component { dependencies(dependency1, dependency2) }
+        Component { parents(parent1, parent2) }
     }
 
     @Test

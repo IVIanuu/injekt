@@ -32,8 +32,8 @@ class SingleBehaviorTest {
             )
         }
 
-        val componentB = Component { dependencies(componentA) }
-        val componentC = Component { dependencies(componentB) }
+        val componentB = Component { parents(componentA) }
+        val componentC = Component { parents(componentB) }
 
         val depA = componentA.get<TestDep1>()
         val depA2 = componentA.get<TestDep1>()
@@ -51,11 +51,11 @@ class SingleBehaviorTest {
 
         val componentB = Component {
             scopes(TestScopeTwo)
-            dependencies(componentA)
+            parents(componentA)
         }
         val componentC = Component {
             scopes(TestScopeThree)
-            dependencies(componentB)
+            parents(componentB)
         }
 
         val depA = componentA.get<SingleJustInTimeDep>()
