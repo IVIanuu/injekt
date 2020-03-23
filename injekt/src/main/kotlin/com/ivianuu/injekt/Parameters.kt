@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * Parameters can be used to inject dynamic data like id's into instances
  *
@@ -57,7 +55,7 @@ class Parameters(private val values: Array<*>) {
     /**
      * Retrieve the parameter at the [index]
      */
-    operator fun <T> get(index: Int): T = values[index].unsafeCast()
+    operator fun <T> get(index: Int): T = values[index] as T
 
     /**
      * Retrieve the parameter at the [index] or null

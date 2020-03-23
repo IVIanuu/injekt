@@ -54,8 +54,6 @@ object Deps {
     const val buildConfigGradlePlugin =
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
-    const val confundusGradlePlugin = "com.jakewharton.confundus:confundus-gradle:1.0.0"
-
     object Dagger2 {
         private const val version = "2.26"
         const val dagger2 = "com.google.dagger:dagger:$version"

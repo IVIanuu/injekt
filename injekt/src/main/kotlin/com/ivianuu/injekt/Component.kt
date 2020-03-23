@@ -84,7 +84,7 @@ class Component internal constructor(
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
-        parents.fastForEach { parent ->
+        parents.forEach { parent ->
             parent.findComponent(scope)?.let { return it }
         }
 

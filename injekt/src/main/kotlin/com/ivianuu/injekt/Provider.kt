@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * Provides instances of type [T]
  * For any type [T] that can be injected, you can also inject Provider<T>.
@@ -46,7 +44,7 @@ object ProviderJustInTimeBindingFactory : JustInTimeBindingFactory {
             .copy(qualifier = key.qualifier)
 
         return Binding(key) {
-            KeyedProvider(this, instanceKey).unsafeCast()
+            KeyedProvider(this, instanceKey) as T
         }
     }
 }

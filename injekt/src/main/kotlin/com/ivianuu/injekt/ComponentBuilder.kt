@@ -64,7 +64,7 @@ class ComponentBuilder {
      * @see ScopeMarker
      */
     fun scopes(vararg scopes: Scope) {
-        scopes.fastForEach { scope ->
+        scopes.forEach { scope ->
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
             onScopeAddedBlocks.toList().forEach { it(scope) }
@@ -76,7 +76,7 @@ class ComponentBuilder {
      * it will ask it's parents
      */
     fun parents(vararg parents: Component) {
-        parents.fastForEach { parent ->
+        parents.forEach { parent ->
             check(parent !in this._parents) { "Duplicated parent $parent" }
             this._parents += parent
             onParentAddedBlocks.toList().forEach { it(parent) }
@@ -175,7 +175,7 @@ class ComponentBuilder {
 
         val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        _parents.fastForEach { parent ->
+        _parents.forEach { parent ->
             val bindings = parent.getAllBindings()
             for ((key, binding) in bindings) {
                 if (binding.duplicateStrategy.check(
@@ -215,7 +215,7 @@ class ComponentBuilder {
         var run = true
         while (run) {
             run = false
-            onPreBuildBlocks.toList().fastForEach {
+            onPreBuildBlocks.toList().forEach {
                 val result = it()
                 if (!result) onPreBuildBlocks -= it
                 run = run || result
@@ -234,20 +234,20 @@ class ComponentBuilder {
             parentScopes += scope
         }
 
-        _parents.fastForEach { parent ->
-            parent.scopes.fastForEach { scope ->
+        _parents.forEach { parent ->
+            parent.scopes.forEach { scope ->
                 addScope(scope)
             }
         }
 
-        _scopes.fastForEach { addScope(it) }
+        _scopes.forEach { addScope(it) }
     }
 
     private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
     private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        parents.fastForEach { it.collectBindings(bindings) }
+        parents.forEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
 }

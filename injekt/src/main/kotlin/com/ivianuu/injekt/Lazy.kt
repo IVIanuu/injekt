@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * A provider which reuses instances after the first call to [invoke]
  */
@@ -42,7 +40,7 @@ class KeyedLazy<T>(
             }
         }
 
-        return value.unsafeCast()
+        return value as T
     }
 }
 
@@ -54,7 +52,7 @@ object LazyJustInTimeBindingFactory : JustInTimeBindingFactory {
             .copy(qualifier = key.qualifier)
 
         return Binding(key) {
-            KeyedLazy(this, instanceKey).unsafeCast()
+            KeyedLazy(this, instanceKey) as T
         }
     }
 }
