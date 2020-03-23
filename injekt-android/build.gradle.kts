@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -35,13 +33,4 @@ dependencies {
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
     api(Deps.AndroidX.Lifecycle.runtime)
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xno-param-assertions"
-        freeCompilerArgs += "-Xno-call-assertions"
-        freeCompilerArgs += "-Xno-receiver-assertions"
-        freeCompilerArgs += "-Xassertions=always-disable"
-    }
 }

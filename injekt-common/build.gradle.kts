@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -29,13 +27,4 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 dependencies {
     api(project(":injekt"))
     testImplementation(Deps.junit)
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xno-param-assertions"
-        freeCompilerArgs += "-Xno-call-assertions"
-        freeCompilerArgs += "-Xno-receiver-assertions"
-        freeCompilerArgs += "-Xassertions=always-disable"
-    }
 }
