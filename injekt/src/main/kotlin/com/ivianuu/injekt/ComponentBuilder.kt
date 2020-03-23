@@ -40,17 +40,19 @@ class ComponentBuilder {
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private val _justInTimeBindingFactories = mutableListOf<JitBindingFactory>()
-    val jitBindingFactories: List<JitBindingFactory> get() = _justInTimeBindingFactories
+    private val _jitFactories = mutableListOf<JitFactory>()
+    val jitFactories: List<JitFactory> get() = _jitFactories
 
     private val onPreBuildBlocks = mutableListOf<() -> Boolean>()
     private val onBuildBlocks = mutableListOf<(Component) -> Unit>()
     private val onBindingAddedBlocks = mutableListOf<(Binding<*>) -> Unit>()
     private val onScopeAddedBlocks = mutableListOf<(Scope) -> Unit>()
     private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
+    private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
 
     init {
-        ComponentBuilderContributors.implementations
+        (Injekt.componentBuilderContributors +
+                ComponentBuilderContributors.implementations)
             .filter { it.invokeOnInit }
             .forEach { it.apply(this) }
     }
@@ -84,8 +86,8 @@ class ComponentBuilder {
     /**
      * Adds the [factories]
      */
-    fun justInTimeBindingFactories(vararg factories: JitBindingFactory) {
-        _justInTimeBindingFactories += factories
+    fun jitFactories(vararg factories: JitFactory) {
+        _jitFactories += factories
     }
 
     inline fun <reified T> bind(
@@ -128,8 +130,11 @@ class ComponentBuilder {
                 errorMessage = { "Already declared binding for ${binding.key}" }
             )
         ) {
-            _bindings[binding.key] = binding
-            onBindingAddedBlocks.toList().forEach { it(binding) }
+            val finalBinding = bindingInterceptors.fold(binding) { acc, interceptor ->
+                interceptor(acc) as Binding<T>
+            }
+            _bindings[finalBinding.key] = finalBinding
+            onBindingAddedBlocks.toList().forEach { it(finalBinding) }
         }
     }
 
@@ -138,6 +143,22 @@ class ComponentBuilder {
      */
     fun onBindingAdded(block: (Binding<*>) -> Unit) {
         onBindingAddedBlocks += block
+    }
+
+    /**
+     * Invokes the [block] when ever a binding gets added
+     */
+    fun bindingInterceptor(block: (Binding<*>) -> Binding<*>) {
+        bindingInterceptors += block
+    }
+
+    fun jitFactory(block: (Key<*>, Component) -> Binding<*>?) {
+        jitFactories(
+            object : JitFactory {
+                override fun <T> create(key: Key<T>, component: Component): Binding<T>? =
+                    block(key, component) as? Binding<T>
+            }
+        )
     }
 
     /**
@@ -172,7 +193,8 @@ class ComponentBuilder {
      * Create a new [Component] instance.
      */
     fun build(): Component {
-        ComponentBuilderContributors.implementations
+        (Injekt.componentBuilderContributors +
+                ComponentBuilderContributors.implementations)
             .filter { !it.invokeOnInit }
             .forEach { it.apply(this) }
 
@@ -209,7 +231,7 @@ class ComponentBuilder {
         val component = Component(
             scopes = _scopes,
             parents = _parents,
-            jitBindingFactories = _justInTimeBindingFactories,
+            jitFactories = _jitFactories,
             bindings = finalBindings
         )
 

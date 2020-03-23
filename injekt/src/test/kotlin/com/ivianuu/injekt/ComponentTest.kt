@@ -308,9 +308,9 @@ class ComponentTest {
             parents(componentA)
         }
 
-        componentB.get<SingleJustInTimeDep>()
+        componentB.get<SingleJitDep>()
 
-        assertTrue(keyOf<SingleJustInTimeDep>() in componentA.bindings)
+        assertTrue(keyOf<SingleJitDep>() in componentA.bindings)
     }
 
     @Test
@@ -329,4 +329,4 @@ interface Environment
 
 @TestScopeOne
 @Single
-class SingleJustInTimeDep
+class SingleJitDep
