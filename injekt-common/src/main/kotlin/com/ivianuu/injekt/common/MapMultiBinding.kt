@@ -21,8 +21,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyedLazy
-import com.ivianuu.injekt.KeyedProvider
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
@@ -190,9 +188,12 @@ fun <K, V> ComponentBuilder.map(
         ) {
             get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
-                    KeyedProvider(
-                        this,
-                        value.key as Key<V>
+                    get(
+                        key = keyOf(
+                            classifier = Provider::class,
+                            arguments = arrayOf(value.key),
+                            qualifier = value.key.qualifier
+                        )
                     )
                 }
         }
@@ -214,9 +215,12 @@ fun <K, V> ComponentBuilder.map(
         ) {
             get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
-                    KeyedLazy(
-                        this,
-                        value.key as Key<V>
+                    get(
+                        key = keyOf(
+                            classifier = Lazy::class,
+                            arguments = arrayOf(value.key),
+                            qualifier = value.key.qualifier
+                        )
                     )
                 }
         }
@@ -255,12 +259,9 @@ private class MapBindingProvider<K, V>(
         }
 
         mergedMap = mergedBuilder.build()
-
-        println("init $component in ${thisMap!!.keys} merged ${mergedMap!!.keys}")
     }
 
     override fun invoke(component: Component, parameters: Parameters): Map<K, KeyWithOverrideInfo> {
-        println("invoke ${mergedMap!!.keys} from $component this ${thisMap!!.keys}")
         return mergedMap!!
     }
 }

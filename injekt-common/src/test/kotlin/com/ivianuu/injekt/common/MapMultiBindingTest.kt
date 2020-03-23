@@ -96,8 +96,6 @@ class MapMultiBindingTest {
             map<String, Command> { put<Command2>("two") }
         }
 
-        println("component a $componentA b $componentB")
-
         val mapB = componentB.get<Map<String, Command>>()
         assertEquals(2, mapB.size)
         assertEquals(Command1, mapA["one"])

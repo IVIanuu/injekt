@@ -21,8 +21,6 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyedLazy
-import com.ivianuu.injekt.KeyedProvider
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
@@ -178,9 +176,12 @@ fun <E> ComponentBuilder.set(
         ) {
             get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
-                    KeyedProvider(
-                        this,
-                        element.key as Key<E>
+                    get(
+                        key = keyOf(
+                            classifier = Provider::class,
+                            arguments = arrayOf(element.key),
+                            qualifier = element.key.qualifier
+                        )
                     )
                 }
         }
@@ -201,9 +202,12 @@ fun <E> ComponentBuilder.set(
         ) {
             get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
-                    KeyedLazy(
-                        this,
-                        element.key as Key<E>
+                    get(
+                        key = keyOf(
+                            classifier = Lazy::class,
+                            arguments = arrayOf(element.key),
+                            qualifier = element.key.qualifier
+                        )
                     )
                 }
         }

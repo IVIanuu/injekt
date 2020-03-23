@@ -21,7 +21,20 @@ package com.ivianuu.injekt
  */
 interface Lazy<T> : Provider<T>
 
-class KeyedLazy<T>(
+object LazyJustInTimeBindingFactory : JustInTimeBindingFactory {
+    override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
+        if (key.arguments.size != 1) return null
+        if (key.classifier != Lazy::class) return null
+        val instanceKey = key.arguments.single()
+            .copy(qualifier = key.qualifier)
+
+        return Binding(key) {
+            KeyedLazy(this, instanceKey) as T
+        }
+    }
+}
+
+private class KeyedLazy<T>(
     private val component: Component,
     private val key: Key<T>
 ) : Lazy<T> {
@@ -41,19 +54,6 @@ class KeyedLazy<T>(
         }
 
         return value as T
-    }
-}
-
-object LazyJustInTimeBindingFactory : JustInTimeBindingFactory {
-    override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
-        if (key.arguments.size != 1) return null
-        if (key.classifier != Lazy::class) return null
-        val instanceKey = key.arguments.single()
-            .copy(qualifier = key.qualifier)
-
-        return Binding(key) {
-            KeyedLazy(this, instanceKey) as T
-        }
     }
 }
 

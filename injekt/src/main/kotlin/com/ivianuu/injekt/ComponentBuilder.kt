@@ -266,5 +266,6 @@ private object ComponentBuilderContributors {
     val implementations by lazy {
         ServiceLoader.load(ComponentBuilderContributor::class.java, null)
             .toList()
+            .also { check(it.isNotEmpty()) }
     }
 }

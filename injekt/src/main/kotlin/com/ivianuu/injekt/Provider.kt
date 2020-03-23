@@ -28,14 +28,6 @@ interface Provider<T> {
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
-class KeyedProvider<T>(
-    private val component: Component,
-    private val key: Key<T>
-) : Provider<T> {
-    override fun invoke(parameters: Parameters): T =
-        component.get(key = key, parameters = parameters)
-}
-
 object ProviderJustInTimeBindingFactory : JustInTimeBindingFactory {
     override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
         if (key.arguments.size != 1) return null
@@ -47,6 +39,14 @@ object ProviderJustInTimeBindingFactory : JustInTimeBindingFactory {
             KeyedProvider(this, instanceKey) as T
         }
     }
+}
+
+private class KeyedProvider<T>(
+    private val component: Component,
+    private val key: Key<T>
+) : Provider<T> {
+    override fun invoke(parameters: Parameters): T =
+        component.get(key = key, parameters = parameters)
 }
 
 @IntoComponent

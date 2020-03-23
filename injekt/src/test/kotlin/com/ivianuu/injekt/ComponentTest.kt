@@ -17,7 +17,6 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
@@ -104,43 +103,6 @@ class ComponentTest {
     fun testGetUnknownNullableInstanceReturnsNull() {
         val component = Component()
         assertNull(component.get<String?>())
-    }
-
-    @Test
-    fun testGetLazy() {
-        var called = false
-
-        val component = Component {
-            factory {
-                called = true
-                TestDep1()
-            }
-        }
-
-        assertFalse(called)
-        val depLazy = component.get<Lazy<TestDep1>>()
-        assertFalse(called)
-        depLazy()
-        assertTrue(called)
-    }
-
-    @Test
-    fun testGetProvider() {
-        var called = 0
-        val component = Component {
-            factory {
-                ++called
-                TestDep1()
-            }
-        }
-
-        assertEquals(0, called)
-        val depProvider = component.get<Provider<TestDep1>>()
-        assertEquals(0, called)
-        depProvider()
-        assertEquals(1, called)
-        depProvider()
-        assertEquals(2, called)
     }
 
     @Test
