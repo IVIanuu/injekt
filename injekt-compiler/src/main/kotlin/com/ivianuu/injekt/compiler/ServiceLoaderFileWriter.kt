@@ -16,21 +16,15 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import java.io.File
 
-class ServiceLoaderFileWriter(
-    private val module: ModuleDescriptor,
-    private val outputDir: String
-) {
+class ServiceLoaderFileWriter(private val outputDir: String) {
 
     private val contributors = mutableListOf<String>()
 
-    fun add(contributor: FqName) {
-        contributors += contributor.asString()
+    fun add(contributor: String) {
+        message("add contributor $contributor")
+        contributors += contributor
     }
 
     fun writeFile() {
@@ -39,19 +33,19 @@ class ServiceLoaderFileWriter(
 
         val file = File(servicesDir, InjektClassNames.ComponentBuilderContributor.asString())
         if (!file.exists()) {
+            message("create not existing file ${file.absolutePath}")
             file.createNewFile()
         }
 
         val newContributors = file.readText().split("\n")
             .filter { it.isNotEmpty() }
-            .filter {
-                module.findClassAcrossModuleDependencies(ClassId.topLevel(FqName(it))) != null
-            }
             .toMutableList()
 
         contributors
             .filter { it !in newContributors }
             .forEach { newContributors += it }
+
+        message("write config file with $contributors to file ${file.absolutePath}")
 
         if (newContributors.isNotEmpty()) {
             file.writeText(newContributors.joinToString("\n"))

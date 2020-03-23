@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
-import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -56,12 +55,12 @@ import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 
 class ComponentBuilderContributorGenerator(
-    pluginContext: IrPluginContext,
-    private val serviceLoaderFileWriter: ServiceLoaderFileWriter
+    pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val componentBuilderContributor = getClass(InjektClassNames.ComponentBuilderContributor)
@@ -86,7 +85,6 @@ class ComponentBuilderContributorGenerator(
         intoComponentFunctions.forEach {
             val contributor = componentBuilderContributor(declaration, it)
             declaration.addChild(contributor)
-            serviceLoaderFileWriter.add(contributor.fqNameForIrSerialization)
         }
 
         return declaration
@@ -98,12 +96,7 @@ class ComponentBuilderContributorGenerator(
     ): IrClass {
         val componentBuilderContributorDescriptor = ClassDescriptorImpl(
             file.packageFragmentDescriptor,
-            Name.identifier(
-                function.fqNameForIrSerialization.asString().replace(
-                    ".",
-                    "_"
-                )
-            ), // todo fix name
+            Name.identifier(function.descriptor.fqNameSafe.asString().replace(".", "_")),
             Modality.FINAL,
             ClassKind.CLASS,
             emptyList(),
