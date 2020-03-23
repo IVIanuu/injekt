@@ -53,17 +53,20 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         }
 
         val outputDir = File(project.buildDir, "generated/source/injekt/$sourceSetName")
+        val resourcesDir = File(outputDir, "resources")
 
         val androidExtension = project.extensions.findByName("android") as? BaseExtension
         androidExtension?.sourceSets
             ?.findByName(sourceSetName)
             ?.resources
-            ?.srcDir(File(outputDir, "resources"))
+            ?.srcDir(resourcesDir)
 
         val sets = project.extensions.findByName("sourceSets") as SourceSetContainer
         sets.findByName(sourceSetName)
             ?.resources
-            ?.srcDir(File(outputDir, "resources"))
+            ?.srcDir(resourcesDir)
+
+        kotlinCompile.outputs.upToDateWhen { resourcesDir.exists() }
 
         return listOf(
             SubpluginOption(
