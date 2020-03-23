@@ -28,7 +28,7 @@ interface Provider<T> {
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
-object ProviderJitBindingFactory : JitBindingFactory {
+object ProviderJitFactory : JitFactory {
     override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
         if (key.arguments.size != 1) return null
         if (key.classifier != Provider::class) return null
@@ -51,5 +51,5 @@ private class KeyedProvider<T>(
 
 @IntoComponent
 private fun ComponentBuilder.enableProviderJitBindings() {
-    justInTimeBindingFactories(ProviderJitBindingFactory)
+    jitFactories(ProviderJitFactory)
 }

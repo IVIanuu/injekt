@@ -40,7 +40,7 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scopes: List<Scope>,
     val parents: List<Component>,
-    val jitBindingFactories: List<JitBindingFactory>,
+    val jitFactories: List<JitFactory>,
     bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
@@ -118,8 +118,8 @@ class Component internal constructor(
     }
 
     private fun <T> findJitBinding(key: Key<T>): Binding<T>? {
-        for (index in jitBindingFactories.lastIndex downTo 0) {
-            val binding = jitBindingFactories[index].create(key, this)
+        for (index in jitFactories.lastIndex downTo 0) {
+            val binding = jitFactories[index].create(key, this)
             if (binding != null) {
                 // todo finding the right component is relatively small maybe
                 //  we can cache the scope bound of the behaviors when combining them
