@@ -78,7 +78,7 @@ annotation class Single {
 private fun ComponentBuilder.singleBindingInterceptor() {
     bindingInterceptor { binding ->
         if (Single in binding.tags) {
-            binding.copy(behavior = binding.behavior + SingleBehavior)
+            binding.copy(behavior = SingleBehavior + binding.behavior)
         } else {
             binding
         }

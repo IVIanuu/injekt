@@ -30,7 +30,7 @@ interface Provider<T> {
 
 @IntoComponent
 private fun ComponentBuilder.providerJitFactory() {
-    jitFactory { key, component ->
+    jitFactory { key, _ ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Provider::class) return@jitFactory null
         val instanceKey = key.arguments.single()

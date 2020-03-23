@@ -83,7 +83,7 @@ annotation class Weak {
 private fun ComponentBuilder.weakBindingInterceptor() {
     bindingInterceptor { binding ->
         if (Single in binding.tags) {
-            binding.copy(behavior = binding.behavior + WeakBehavior)
+            binding.copy(behavior = WeakBehavior + binding.behavior)
         } else {
             binding
         }

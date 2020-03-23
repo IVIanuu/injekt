@@ -95,7 +95,7 @@ annotation class Multi {
 private fun ComponentBuilder.multiBindingInterceptor() {
     bindingInterceptor { binding ->
         if (Multi in binding.tags) {
-            binding.copy(behavior = binding.behavior + MultiBehavior)
+            binding.copy(behavior = MultiBehavior + binding.behavior)
         } else {
             binding
         }

@@ -59,7 +59,7 @@ annotation class ViewModelBind {
 private fun ComponentBuilder.viewModelBindingInterceptor() {
     bindingInterceptor { binding ->
         if (ViewModelBind in binding.tags) {
-            binding.copy(behavior = binding.behavior + ViewModelBehavior)
+            binding.copy(behavior = ViewModelBehavior + binding.behavior)
         } else {
             binding
         }
