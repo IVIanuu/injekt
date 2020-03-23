@@ -218,3 +218,19 @@ inline fun <reified T> ComponentOwner.getLazy(
     qualifier: Qualifier = Qualifier.None,
     noinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = getLazy(key = keyOf(qualifier), parameters = parameters)
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.componentBindings() {
+    bind(
+        behavior = BoundBehavior(),
+        duplicateStrategy = DuplicateStrategy.Override
+    ) { this }
+
+    onScopeAdded { scope ->
+        bind(
+            behavior = BoundBehavior(scope = scope),
+            qualifier = scope,
+            duplicateStrategy = DuplicateStrategy.Override
+        ) { this }
+    }
+}

@@ -83,6 +83,15 @@ class ComponentBuilder {
         }
     }
 
+    fun jitFactory(block: (Key<*>, Component) -> Binding<*>?) {
+        jitFactories(
+            object : JitFactory {
+                override fun <T> create(key: Key<T>, component: Component): Binding<T>? =
+                    block(key, component) as? Binding<T>
+            }
+        )
+    }
+
     /**
      * Adds the [factories]
      */
@@ -154,15 +163,6 @@ class ComponentBuilder {
      */
     fun bindingInterceptor(block: (Binding<*>) -> Binding<*>) {
         bindingInterceptors += block
-    }
-
-    fun jitFactory(block: (Key<*>, Component) -> Binding<*>?) {
-        jitFactories(
-            object : JitFactory {
-                override fun <T> create(key: Key<T>, component: Component): Binding<T>? =
-                    block(key, component) as? Binding<T>
-            }
-        )
     }
 
     /**

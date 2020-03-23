@@ -28,15 +28,15 @@ interface Provider<T> {
     operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
-object ProviderJitFactory : JitFactory {
-    override fun <T> create(key: Key<T>, component: Component): Binding<T>? {
-        if (key.arguments.size != 1) return null
-        if (key.classifier != Provider::class) return null
+@IntoComponent
+private fun ComponentBuilder.providerJitFactory() {
+    jitFactory { key, component ->
+        if (key.arguments.size != 1) return@jitFactory null
+        if (key.classifier != Provider::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-
-        return Binding(key) {
-            KeyedProvider(this, instanceKey) as T
+        return@jitFactory Binding(key as Key<Provider<*>>) {
+            KeyedProvider(this, instanceKey)
         }
     }
 }
@@ -47,9 +47,4 @@ private class KeyedProvider<T>(
 ) : Provider<T> {
     override fun invoke(parameters: Parameters): T =
         component.get(key = key, parameters = parameters)
-}
-
-@IntoComponent
-private fun ComponentBuilder.enableProviderJitBindings() {
-    jitFactories(ProviderJitFactory)
 }
