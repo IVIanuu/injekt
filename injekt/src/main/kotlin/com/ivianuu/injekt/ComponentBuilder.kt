@@ -333,8 +333,5 @@ private object ComponentBuilderContributors {
                 ComponentBuilderContributor::class.java,
                 ClassLoader.getSystemClassLoader()
             )
-            .iterator()
-            .asSequence()
-            .toList()
     }
 }
