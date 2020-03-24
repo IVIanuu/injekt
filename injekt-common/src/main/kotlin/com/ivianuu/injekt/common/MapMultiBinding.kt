@@ -118,7 +118,7 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
 
 inline fun <reified K, reified V> ComponentBuilder.map(
     mapQualifier: Qualifier = Qualifier.None,
-    noinline block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
+    block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
 ) {
     map(
         mapKey = keyOf(
@@ -137,10 +137,15 @@ inline fun <reified K, reified V> ComponentBuilder.map(
  *
  * @see MultiBindingMap
  */
-fun <K, V> ComponentBuilder.map(
+inline fun <K, V> ComponentBuilder.map(
     mapKey: Key<Map<K, V>>,
     block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
 ) {
+    getMapBuilder(mapKey).block()
+}
+
+@PublishedApi
+internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): MultiBindingMapBuilder<K, V> {
     val mapOfKeyWithOverrideInfo = keyOf<Map<K, KeyWithOverrideInfo>>(
         classifier = Map::class,
         arguments = arrayOf(
@@ -229,7 +234,7 @@ fun <K, V> ComponentBuilder.map(
         }
     }
 
-    bindingProvider.thisBuilder!!.block()
+    return bindingProvider.thisBuilder!!
 }
 
 private class MapBindingProvider<K, V>(

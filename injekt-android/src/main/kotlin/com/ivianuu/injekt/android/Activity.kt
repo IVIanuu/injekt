@@ -37,10 +37,10 @@ import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Activity> ActivityComponent(
     instance: T,
-    noinline block: ComponentBuilder.() -> Unit = {}
+    block: ComponentBuilder.() -> Unit = {}
 ): Component = ActivityComponent(instance = instance, key = keyOf(), block = block)
 
-fun <T : Activity> ActivityComponent(
+inline fun <T : Activity> ActivityComponent(
     instance: T,
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}

@@ -41,7 +41,7 @@ inline fun <reified T> ComponentBuilder.single(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: Component.(Parameters) -> T
+    crossinline provider: Component.(Parameters) -> T
 ) {
     single(
         key = keyOf(qualifier = qualifier),

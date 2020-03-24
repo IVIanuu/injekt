@@ -110,7 +110,7 @@ class MultiBindingSetBuilder<E> internal constructor() {
 
 inline fun <reified E> ComponentBuilder.set(
     setQualifier: Qualifier = Qualifier.None,
-    noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
+    block: MultiBindingSetBuilder<E>.() -> Unit = {}
 ) {
     set(
         setKey = keyOf(
@@ -127,10 +127,17 @@ inline fun <reified E> ComponentBuilder.set(
  *
  * @see MultiBindingSet
  */
-fun <E> ComponentBuilder.set(
+inline fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,
     block: MultiBindingSetBuilder<E>.() -> Unit = {}
 ) {
+    getSetBuilder(setKey).block()
+}
+
+@PublishedApi
+internal fun <E> ComponentBuilder.getSetBuilder(
+    setKey: Key<Set<E>>
+): MultiBindingSetBuilder<E> {
     val setOfKeyWithOverrideInfoKey = keyOf<Set<KeyWithOverrideInfo>>(
         classifier = Set::class,
         arguments = arrayOf(
@@ -216,7 +223,7 @@ fun <E> ComponentBuilder.set(
         }
     }
 
-    bindingProvider.thisBuilder!!.block()
+    return bindingProvider.thisBuilder!!
 }
 
 private class SetBindingProvider<E>(
