@@ -19,14 +19,16 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.IntoComponent
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.TagMarker
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 object ViewModelBehavior : Behavior.Element {
@@ -48,8 +50,21 @@ inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
     )
 }
 
-@BehaviorMarker(ViewModelBehavior::class)
-annotation class ViewModelBind
+@TagMarker
+annotation class ViewModelBind {
+    companion object : Tag
+}
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.viewModelBindingInterceptor() {
+    bindingInterceptor { binding ->
+        if (ViewModelBind in binding.tags) {
+            binding.copy(behavior = ViewModelBehavior + binding.behavior)
+        } else {
+            binding
+        }
+    }
+}
 
 private class ViewModelProvider<T>(
     delegate: BindingProvider<T>

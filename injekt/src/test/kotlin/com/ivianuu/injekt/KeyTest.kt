@@ -84,10 +84,10 @@ class KeyTest {
 
             val nonNulls = pairs.map { it.first }
 
-            for (i in nonNulls.indices) {
-                for (j in i + 1 until nonNulls.size) {
-                    val a = nonNulls[i]
-                    val b = nonNulls[j]
+            for (index in nonNulls.indices) {
+                for (index2 in index + 1 until nonNulls.size) {
+                    val a = nonNulls[index]
+                    val b = nonNulls[index2]
                     assertEquals(a, b)
                 }
             }

@@ -20,12 +20,12 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 
-internal fun Component.getAllDependencies(): List<Component> =
-    mutableListOf<Component>().also { collectDependencies(it) }
+internal fun Component.getAllParents(): List<Component> =
+    mutableListOf<Component>().also { collectParents(it) }
 
-private fun Component.collectDependencies(dependencies: MutableList<Component>) {
-    this.dependencies.forEach { it.collectDependencies(dependencies) }
-    dependencies += this.dependencies
+private fun Component.collectParents(parents: MutableList<Component>) {
+    this.parents.forEach { it.collectParents(parents) }
+    parents += this.parents
 }
 
 internal data class KeyWithOverrideInfo(

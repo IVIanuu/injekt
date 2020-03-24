@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 /**
  * The heart of the library which provides instances
- * Dependencies can be requested by calling [get]
+ * Instances can be requested by calling [get]
  * Use [ComponentBuilder] to construct [Component] instances
  *
  * Typical usage of a [Component] looks like this:
@@ -39,18 +39,18 @@ package com.ivianuu.injekt
  */
 class Component internal constructor(
     val scopes: List<Scope>,
-    val dependencies: List<Component>,
-    val justInTimeBindingFactories: List<JustInTimeBindingFactory>,
+    val parents: List<Component>,
+    val jitFactories: List<JitFactory>,
     bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
     private val _bindings = bindings
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private var initializedBindings: MutableSet<Binding<*>>? = mutableSetOf()
+    private var initializedBindings: MutableList<Binding<*>>? = mutableListOf()
 
     init {
-        for ((_, binding) in _bindings.toMap()) {
+        for (binding in _bindings.values) {
             val initializedBindings = initializedBindings!!
             if (binding !in initializedBindings) {
                 initializedBindings += binding
@@ -70,7 +70,7 @@ class Component internal constructor(
      */
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
         findExplicitBinding(key)?.let { return it.provider(this, parameters) }
-        findJustInTimeBinding(key)?.let { return it.provider(this, parameters) }
+        findJitBinding(key)?.let { return it.provider(this, parameters) }
         if (key.isNullable) return null as T
         error("Couldn't get instance for $key")
     }
@@ -84,8 +84,8 @@ class Component internal constructor(
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
-        for (dependency in dependencies) {
-            dependency.findComponent(scope)?.let { return it }
+        parents.forEach { parent ->
+            parent.findComponent(scope)?.let { return it }
         }
 
         return null
@@ -99,9 +99,9 @@ class Component internal constructor(
         }
         if (binding != null) {
             initializedBindings?.let {
+                // we currently initialize bindings
+                // make sure that the requested binding gets also initialized
                 if (binding!! !in it) {
-                    // we currently initialize bindings
-                    // make sure that the requested binding gets also initialized
                     it += binding!!
                     (binding!!.provider as? ComponentInitObserver)?.onInit(this)
                 }
@@ -109,17 +109,17 @@ class Component internal constructor(
             return binding
         }
 
-        for (i in dependencies.size - 1 downTo 0) {
-            binding = dependencies[i].findExplicitBinding(key)
+        for (index in parents.lastIndex downTo 0) {
+            binding = parents[index].findExplicitBinding(key)
             if (binding != null) return binding
         }
 
         return null
     }
 
-    private fun <T> findJustInTimeBinding(key: Key<T>): Binding<T>? {
-        for (i in justInTimeBindingFactories.size - 1 downTo 0) {
-            val binding = justInTimeBindingFactories[i].create(key, this)
+    private fun <T> findJitBinding(key: Key<T>): Binding<T>? {
+        for (index in jitFactories.lastIndex downTo 0) {
+            val binding = jitFactories[index].create(key, this)
             if (binding != null) {
                 // todo finding the right component is relatively small maybe
                 //  we can cache the scope bound of the behaviors when combining them
@@ -142,5 +142,95 @@ class Component internal constructor(
         }
 
         return null
+    }
+}
+
+/**
+ * Listener for component initialization
+ */
+interface ComponentInitObserver {
+    /**
+     * Will be called once the [component] is initialized
+     */
+    fun onInit(component: Component)
+}
+
+/**
+ * Holds a [Component] and allows for shorter syntax and lazy construction of a component
+ *
+ * Example:
+ *
+ * ```
+ * class MainActivity : Activity(), ComponentOwner {
+ *
+ *     override val component = Component { ... }
+ *
+ *     private val dep1: Dependency1 by getLazy()
+ *     private val dep2: Dependency2 by getLazy()
+ *
+ * }
+ * ```
+ *
+ */
+interface ComponentOwner {
+    /**
+     * The [Component] which will be used to retrieve instances
+     */
+    val component: Component
+
+    /**
+     * @see Component.get
+     */
+    fun <T> get(
+        key: Key<T>,
+        parameters: Parameters = emptyParameters()
+    ): T = component.get(key, parameters)
+
+    /**
+     * Lazy version of [get]
+     *
+     * @param key the key of the instance
+     * @param parameters optional parameters to construct the instance
+     * @return the instance
+
+     * @see Component.get
+     */
+    fun <T> getLazy(
+        key: Key<T>,
+        parameters: () -> Parameters = { emptyParameters() }
+    ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { component.get(key, parameters()) }
+}
+
+/**
+ * @see Component.get
+ */
+inline fun <reified T> ComponentOwner.get(
+    qualifier: Qualifier = Qualifier.None,
+    parameters: Parameters = emptyParameters()
+): T = get(keyOf(qualifier = qualifier), parameters)
+
+/**
+ * Lazy version of [get]
+ *
+ * @see Component.get
+ */
+inline fun <reified T> ComponentOwner.getLazy(
+    qualifier: Qualifier = Qualifier.None,
+    noinline parameters: () -> Parameters = { emptyParameters() }
+): kotlin.Lazy<T> = getLazy(key = keyOf(qualifier), parameters = parameters)
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.componentBindings() {
+    bind(
+        behavior = BoundBehavior(),
+        duplicateStrategy = DuplicateStrategy.Override
+    ) { this }
+
+    onScopeAdded { scope ->
+        bind(
+            behavior = BoundBehavior(scope = scope),
+            qualifier = scope,
+            duplicateStrategy = DuplicateStrategy.Override
+        ) { this }
     }
 }

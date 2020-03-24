@@ -18,7 +18,6 @@
             <option value="$PROJECT_DIR$/injekt-common" />
             <option value="$PROJECT_DIR$/injekt-compiler" />
             <option value="$PROJECT_DIR$/injekt-gradle-plugin" />
-            <option value="$PROJECT_DIR$/playground" />
             <option value="$PROJECT_DIR$/sample" />
           </set>
         </option>

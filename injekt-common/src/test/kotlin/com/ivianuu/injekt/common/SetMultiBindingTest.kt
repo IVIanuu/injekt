@@ -87,7 +87,7 @@ class SetMultiBindingTest {
         assertEquals(Command1, setA.toList()[0])
 
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
             factory { Command2 }
             set<Command> { add<Command2>() }
         }
@@ -98,7 +98,7 @@ class SetMultiBindingTest {
         assertEquals(Command2, setB.toList()[1])
 
         val componentC = Component {
-            dependencies(componentB)
+            parents(componentB)
             factory { Command3 }
             set<Command> { add<Command3>() }
         }
@@ -117,7 +117,7 @@ class SetMultiBindingTest {
             set<Command> { add<Command>() }
         }
         val overriddenValueComponent = Component {
-            dependencies(originalValueComponent)
+            parents(originalValueComponent)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) }
         }
@@ -132,7 +132,7 @@ class SetMultiBindingTest {
             set<Command> { add<Command>() }
         }
         val overriddenValueComponent = Component {
-            dependencies(originalValueComponent)
+            parents(originalValueComponent)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) }
         }
@@ -147,7 +147,7 @@ class SetMultiBindingTest {
             set<Command> { add<Command>() }
         }
         val overriddenValueComponent = Component {
-            dependencies(originalValueComponent)
+            parents(originalValueComponent)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
         }
@@ -160,7 +160,7 @@ class SetMultiBindingTest {
             set<Command> { add<Command>() }
         }
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) }
         }
@@ -178,7 +178,7 @@ class SetMultiBindingTest {
             set<Command> { add<Command>() }
         }
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) }
         }
@@ -196,7 +196,7 @@ class SetMultiBindingTest {
             set<Command> { add<Command>() }
         }
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
             factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
             set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
         }

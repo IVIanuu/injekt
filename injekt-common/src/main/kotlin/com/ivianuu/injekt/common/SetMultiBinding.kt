@@ -21,15 +21,12 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyedLazy
-import com.ivianuu.injekt.KeyedProvider
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
 
 /**
  * A [MultiBindingSet] is a set of bindings
@@ -159,7 +156,7 @@ fun <E> ComponentBuilder.set(
         ) {
             get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
-                    get(element.key).unsafeCast()
+                    get(element.key) as E
                 }
         }
 
@@ -179,9 +176,12 @@ fun <E> ComponentBuilder.set(
         ) {
             get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
-                    KeyedProvider(
-                        this,
-                        element.key.unsafeCast()
+                    get(
+                        key = keyOf(
+                            classifier = Provider::class,
+                            arguments = arrayOf(element.key),
+                            qualifier = element.key.qualifier
+                        )
                     )
                 }
         }
@@ -202,9 +202,12 @@ fun <E> ComponentBuilder.set(
         ) {
             get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
-                    KeyedLazy(
-                        this,
-                        element.key.unsafeCast()
+                    get(
+                        key = keyOf(
+                            classifier = Lazy::class,
+                            arguments = arrayOf(element.key),
+                            qualifier = element.key.qualifier
+                        )
                     )
                 }
         }
@@ -227,9 +230,9 @@ private class SetBindingProvider<E>(
 
         val mergedBuilder = MultiBindingSetBuilder<E>()
 
-        component.getAllDependencies()
-            .flatMap { dependency ->
-                dependency.bindings[setOfKeyWithOverrideInfoKey]
+        component.getAllParents()
+            .flatMap { parent ->
+                parent.bindings[setOfKeyWithOverrideInfoKey]
                     ?.provider
                     ?.let { it as? SetBindingProvider<E> }
                     ?.thisSet ?: emptySet()

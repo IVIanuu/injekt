@@ -14,16 +14,29 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.ivianuu.injekt")
-    kotlin("jvm")
-}
+package com.ivianuu.injekt.comparison.injekt
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.InjectionTest
 
-dependencies {
-    implementation(project(":injekt"))
-    implementation(project(":injekt-common"))
+object InjektTest : InjectionTest {
+    override val name = "Injekt"
+
+    private var component: Component? = null
+
+    override fun moduleCreation() {
+    }
+
+    override fun setup() {
+        component = Component()
+    }
+
+    override fun inject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun shutdown() {
+        component = null
+    }
 }

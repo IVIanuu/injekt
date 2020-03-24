@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Behavior applies scoping or such to [BindingProvider]s
  *
@@ -51,9 +49,6 @@ interface Behavior {
             operation(this, initial)
     }
 }
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class BehaviorMarker(val type: KClass<out Behavior>)
 
 private class CombinedBehavior(
     private val element: Behavior.Element,

@@ -41,7 +41,7 @@ inline fun <T : Service> ServiceComponent(
 ): Component =
     Component {
         scopes(ServiceScope)
-        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        instance.getClosestComponentOrNull()?.let { parents(it) }
         serviceBindings(instance, key)
         block()
     }

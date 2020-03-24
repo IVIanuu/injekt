@@ -46,11 +46,17 @@ annotation class TestScopeThree {
     companion object : Scope
 }
 
-@Factory
 class TestDep1
 
-@Factory
 class TestDep2(val dep1: TestDep1)
 
-@Factory
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
+
+@Factory
+class CTestDep1
+
+@Factory
+class CTestDep2(val dep1: CTestDep1)
+
+@Factory
+class CTestDep3(val dep1: CTestDep1, val dep2: CTestDep2)

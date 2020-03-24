@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -51,7 +50,7 @@ class BehaviorTest {
                         appliedBehaviors += behavior
                         return provider
                     }
-                }.unsafeCast<Behavior>()
+                } as Behavior
             }
             .reduceRight { p, acc -> p + acc }
 

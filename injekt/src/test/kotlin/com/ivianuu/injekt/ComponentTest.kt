@@ -17,7 +17,6 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
@@ -65,12 +64,12 @@ class ComponentTest {
             factory { TestDep1() }
         }
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
             factory { TestDep2(get()) }
         }
 
         val componentC = Component {
-            dependencies(componentB)
+            parents(componentB)
             factory { TestDep3(get(), get()) }
         }
 
@@ -104,43 +103,6 @@ class ComponentTest {
     fun testGetUnknownNullableInstanceReturnsNull() {
         val component = Component()
         assertNull(component.get<String?>())
-    }
-
-    @Test
-    fun testGetLazy() {
-        var called = false
-
-        val component = Component {
-            factory {
-                called = true
-                TestDep1()
-            }
-        }
-
-        assertFalse(called)
-        val depLazy = component.get<Lazy<TestDep1>>()
-        assertFalse(called)
-        depLazy()
-        assertTrue(called)
-    }
-
-    @Test
-    fun testGetProvider() {
-        var called = 0
-        val component = Component {
-            factory {
-                ++called
-                TestDep1()
-            }
-        }
-
-        assertEquals(0, called)
-        val depProvider = component.get<Provider<TestDep1>>()
-        assertEquals(0, called)
-        depProvider()
-        assertEquals(1, called)
-        depProvider()
-        assertEquals(2, called)
     }
 
     @Test
@@ -178,7 +140,7 @@ class ComponentTest {
         }
 
         val childComponent = Component {
-            dependencies(parentComponent)
+            parents(parentComponent)
             factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
         }
 
@@ -193,7 +155,7 @@ class ComponentTest {
         }
 
         val childComponent = Component {
-            dependencies(parentComponent)
+            parents(parentComponent)
             factory(duplicateStrategy = DuplicateStrategy.Drop) { "my_overridden_value" }
         }
 
@@ -208,22 +170,22 @@ class ComponentTest {
         }
 
         val childComponent = Component {
-            dependencies(parentComponent)
+            parents(parentComponent)
             factory(duplicateStrategy = DuplicateStrategy.Fail) { "my_overridden_value" }
         }
     }
 
     @Test
-    fun testDependencyOverride() {
-        val dependencyComponentA = Component {
+    fun testParentOverride() {
+        val parentComponentA = Component {
             factory { "value_a" }
         }
-        val dependencyComponentB = Component {
+        val parentComponentB = Component {
             factory(duplicateStrategy = DuplicateStrategy.Override) { "value_b" }
         }
 
         val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
+            parents(parentComponentA, parentComponentB)
         }
 
         assertEquals("value_b", childComponent.get<String>())
@@ -231,46 +193,46 @@ class ComponentTest {
 
     // todo how should we fix this
     //@Test
-    fun testDependencyOverrideDrop() {
-        val dependencyComponentA = Component {
+    fun testParentOverrideDrop() {
+        val parentComponentA = Component {
             factory { "value_a" }
         }
-        val dependencyComponentB = Component {
+        val parentComponentB = Component {
             factory(duplicateStrategy = DuplicateStrategy.Drop) { "value_b" }
         }
 
         val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
+            parents(parentComponentA, parentComponentB)
         }
 
         assertEquals("value_a", childComponent.get<String>())
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testDependencyOverrideFail() {
-        val dependencyComponentA = Component {
+    fun testParentOverrideFail() {
+        val parentComponentA = Component {
             factory { "value_a" }
         }
-        val dependencyComponentB = Component {
+        val parentComponentB = Component {
             factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }
         }
 
         val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
+            parents(parentComponentA, parentComponentB)
         }
     }
 
     @Test(expected = IllegalStateException::class)
-    fun testReverseDependencyOverrideFail() {
-        val dependencyComponentA = Component {
+    fun testReverseParentOverrideFail() {
+        val parentComponentA = Component {
             factory(duplicateStrategy = DuplicateStrategy.Override) { "value_a" }
         }
-        val dependencyComponentB = Component {
+        val parentComponentB = Component {
             factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }
         }
 
         val childComponent = Component {
-            dependencies(dependencyComponentA, dependencyComponentB)
+            parents(parentComponentA, parentComponentB)
         }
     }
 
@@ -291,11 +253,11 @@ class ComponentTest {
 
     @Test
     fun testImplicitComponentBindings() {
-        InjektPlugins.logger = PrintLogger()
+        Injekt.logger = PrintLogger()
         val componentA = Component { scopes(TestScopeOne) }
         val componentB = Component {
             scopes(TestScopeTwo)
-            dependencies(componentA)
+            parents(componentA)
         }
 
         assertEquals(componentA, componentA.get<Component>())
@@ -312,8 +274,8 @@ class ComponentTest {
             bind { Context(get()) }
             alias<Context, Environment>()
         }
-        val componentB = Component { dependencies(componentA) }
-        val componentC = Component { dependencies(componentB) }
+        val componentB = Component { parents(componentA) }
+        val componentC = Component { parents(componentB) }
 
         val contextA = componentA.get<Context>()
         val contextB = componentB.get<Context>()
@@ -343,12 +305,12 @@ class ComponentTest {
         }
         val componentB = Component {
             scopes(TestScopeTwo)
-            dependencies(componentA)
+            parents(componentA)
         }
 
-        componentB.get<SingleJustInTimeDep>()
+        componentB.get<SingleJitDep>()
 
-        assertTrue(keyOf<SingleJustInTimeDep>() in componentA.bindings)
+        assertTrue(keyOf<SingleJitDep>() in componentA.bindings)
     }
 
     @Test
@@ -367,4 +329,4 @@ interface Environment
 
 @TestScopeOne
 @Single
-class SingleJustInTimeDep
+class SingleJitDep

@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.playground;
+package com.ivianuu.injekt
 
-public interface JsonAdapter<T> {
-}
+interface Tag
+
+/**
+ * Marker for [Tag]s
+ */
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class TagMarker

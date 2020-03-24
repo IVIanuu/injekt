@@ -38,7 +38,7 @@ class BoundBehaviorTest {
         }
 
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
         }
 
         componentA.get<Unit>()
@@ -56,7 +56,7 @@ class BoundBehaviorTest {
         }
 
         val componentB = Component {
-            dependencies(componentA)
+            parents(componentA)
 
             bind(
                 Binding(
@@ -70,7 +70,7 @@ class BoundBehaviorTest {
         }
 
         val componentC = Component {
-            dependencies(componentB)
+            parents(componentB)
         }
 
         componentB.get<Unit>()

@@ -27,25 +27,29 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val Behavior = FqName("com.ivianuu.injekt.Behavior")
-    val BehaviorMarker = FqName("com.ivianuu.injekt.BehaviorMarker")
-    val Binding = FqName("com.ivianuu.injekt.Binding")
-    val BindingFactory = FqName("com.ivianuu.injekt.BindingFactory")
     val BoundBehavior = FqName("com.ivianuu.injekt.BoundBehavior")
     val Component = FqName("com.ivianuu.injekt.Component")
+    val ComponentBuilder = FqName("com.ivianuu.injekt.ComponentBuilder")
+    val ComponentBuilderContributor = FqName("com.ivianuu.injekt.ComponentBuilderContributor")
+    val DuplicateStrategy = FqName("com.ivianuu.injekt.DuplicateStrategy")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
-    val Key = FqName("com.ivianuu.injekt.Key")
+    val IntoComponent = FqName("com.ivianuu.injekt.IntoComponent")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
     val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
     val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
+    val Tag = FqName("com.ivianuu.injekt.Tag")
+    val TagMarker = FqName("com.ivianuu.injekt.TagMarker")
 }
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
 
 fun DeclarationDescriptor.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
-    annotations.filter { it.hasAnnotation(annotation, module) }
+    annotations.filter {
+        it.hasAnnotation(annotation, module)
+    }
 
 fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
     val thisFqName = this.fqName ?: return false

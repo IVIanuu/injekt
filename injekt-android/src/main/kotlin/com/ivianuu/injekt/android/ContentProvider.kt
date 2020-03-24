@@ -41,7 +41,7 @@ inline fun <T : ContentProvider> ContentProviderComponent(
 ): Component =
     Component {
         scopes(ContentProviderScope)
-        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        instance.getClosestComponentOrNull()?.let { parents(it) }
         contentProviderBindings(instance, key)
         block()
     }

@@ -94,7 +94,7 @@ private data class SimpleQualifier(val value: Any) : Qualifier.Element
  *
  * @see Qualifier
  */
-@Target(AnnotationTarget.CLASS)
+@Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class QualifierMarker
 
 private class CombinedQualifier(

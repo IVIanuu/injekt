@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.BoundBehavior
@@ -25,9 +24,12 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.IntoComponent
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.keyOf
 import java.util.concurrent.ConcurrentHashMap
 
@@ -84,9 +86,21 @@ fun <T> ComponentBuilder.multi(
 /**
  * Annotation for the [MultiBehavior]
  */
-@BehaviorMarker(MultiBehavior::class)
-@Target(AnnotationTarget.CLASS)
-annotation class Multi
+@TagMarker
+annotation class Multi {
+    companion object : Tag
+}
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.multiBindingInterceptor() {
+    bindingInterceptor { binding ->
+        if (Multi in binding.tags) {
+            binding.copy(behavior = MultiBehavior + binding.behavior)
+        } else {
+            binding
+        }
+    }
+}
 
 private class MultiProvider<T>(
     delegate: BindingProvider<T>

@@ -21,15 +21,12 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyedLazy
-import com.ivianuu.injekt.KeyedProvider
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
 
 /**
  * A [MultiBindingMap] is the description of a "multi binding map"
@@ -170,7 +167,7 @@ fun <K, V> ComponentBuilder.map(
         ) {
             get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
-                    get(value.key).unsafeCast()
+                    get(value.key) as V
                 }
         }
 
@@ -191,9 +188,12 @@ fun <K, V> ComponentBuilder.map(
         ) {
             get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
-                    KeyedProvider(
-                        this,
-                        value.key.unsafeCast()
+                    get(
+                        key = keyOf(
+                            classifier = Provider::class,
+                            arguments = arrayOf(value.key),
+                            qualifier = value.key.qualifier
+                        )
                     )
                 }
         }
@@ -215,9 +215,12 @@ fun <K, V> ComponentBuilder.map(
         ) {
             get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
-                    KeyedLazy(
-                        this,
-                        value.key.unsafeCast()
+                    get(
+                        key = keyOf(
+                            classifier = Lazy::class,
+                            arguments = arrayOf(value.key),
+                            qualifier = value.key.qualifier
+                        )
                     )
                 }
         }
@@ -238,9 +241,9 @@ private class MapBindingProvider<K, V>(
         checkNotNull(thisBuilder)
         val mergedBuilder = MultiBindingMapBuilder<K, V>()
 
-        component.getAllDependencies()
-            .flatMap { dependency ->
-                (dependency.bindings[mapOfKeyWithOverrideInfo]
+        component.getAllParents()
+            .flatMap { parent ->
+                (parent.bindings[mapOfKeyWithOverrideInfo]
                     ?.provider
                     ?.let { it as? MapBindingProvider<K, V> }
                     ?.thisMap ?: emptyMap()).entries
@@ -256,12 +259,9 @@ private class MapBindingProvider<K, V>(
         }
 
         mergedMap = mergedBuilder.build()
-
-        println("init $component in ${thisMap!!.keys} merged ${mergedMap!!.keys}")
     }
 
     override fun invoke(component: Component, parameters: Parameters): Map<K, KeyWithOverrideInfo> {
-        println("invoke ${mergedMap!!.keys} from $component this ${thisMap!!.keys}")
         return mergedMap!!
     }
 }

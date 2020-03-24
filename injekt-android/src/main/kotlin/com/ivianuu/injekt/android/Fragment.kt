@@ -54,7 +54,7 @@ inline fun <T : Fragment> FragmentComponent(
 ): Component =
     Component {
         scopes(scope)
-        instance.getClosestComponentOrNull()?.let { dependencies(it) }
+        instance.getClosestComponentOrNull()?.let { parents(it) }
         fragmentBindings(instance, key, qualifier)
         block()
     }

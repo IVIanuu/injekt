@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * Caches the result of the first call to the provider
  *
@@ -71,9 +69,21 @@ fun <T> ComponentBuilder.single(
 /**
  * Annotation for the [SingleBehavior]
  */
-@BehaviorMarker(SingleBehavior::class)
-@Target(AnnotationTarget.CLASS)
-annotation class Single
+@TagMarker
+annotation class Single {
+    companion object : Tag
+}
+
+@IntoComponent(invokeOnInit = true)
+private fun ComponentBuilder.singleBindingInterceptor() {
+    bindingInterceptor { binding ->
+        if (Single in binding.tags) {
+            binding.copy(behavior = SingleBehavior + binding.behavior)
+        } else {
+            binding
+        }
+    }
+}
 
 private class SingleProvider<T>(
     delegate: BindingProvider<T>
@@ -92,6 +102,6 @@ private class SingleProvider<T>(
             }
         }
 
-        return value.unsafeCast()
+        return value as T
     }
 }

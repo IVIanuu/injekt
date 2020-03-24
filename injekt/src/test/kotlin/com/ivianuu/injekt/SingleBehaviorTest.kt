@@ -32,8 +32,8 @@ class SingleBehaviorTest {
             )
         }
 
-        val componentB = Component { dependencies(componentA) }
-        val componentC = Component { dependencies(componentB) }
+        val componentB = Component { parents(componentA) }
+        val componentC = Component { parents(componentB) }
 
         val depA = componentA.get<TestDep1>()
         val depA2 = componentA.get<TestDep1>()
@@ -46,22 +46,22 @@ class SingleBehaviorTest {
     }
 
     @Test
-    fun testReusesSingleJustInTimeBindings() {
+    fun testReusesSingleJitBindings() {
         val componentA = Component { scopes(TestScopeOne) }
 
         val componentB = Component {
             scopes(TestScopeTwo)
-            dependencies(componentA)
+            parents(componentA)
         }
         val componentC = Component {
             scopes(TestScopeThree)
-            dependencies(componentB)
+            parents(componentB)
         }
 
-        val depA = componentA.get<SingleJustInTimeDep>()
-        val depA2 = componentA.get<SingleJustInTimeDep>()
-        val depB = componentB.get<SingleJustInTimeDep>()
-        val depC = componentC.get<SingleJustInTimeDep>()
+        val depA = componentA.get<SingleJitDep>()
+        val depA2 = componentA.get<SingleJitDep>()
+        val depB = componentB.get<SingleJitDep>()
+        val depC = componentC.get<SingleJitDep>()
 
         assertEquals(depA, depA2)
         assertEquals(depA, depB)
