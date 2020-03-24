@@ -84,8 +84,8 @@ class Component internal constructor(
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
 
-        parents.forEach { parent ->
-            parent.findComponent(scope)?.let { return it }
+        for (index in parents.indices) {
+            parents[index].findComponent(scope)?.let { return it }
         }
 
         return null

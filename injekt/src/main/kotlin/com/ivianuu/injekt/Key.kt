@@ -86,8 +86,8 @@ fun <T> keyOf(
 internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
     val args = arrayOfNulls<Key<Any?>>(arguments.size)
 
-    arguments.forEachIndexed { index, kTypeProjection ->
-        args[index] = kTypeProjection.type?.asKey() ?: keyOf()
+    for (index in arguments.indices) {
+        args[index] = arguments[index].type?.asKey() ?: keyOf()
     }
 
     return Key(
