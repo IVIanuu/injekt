@@ -212,7 +212,7 @@ inline fun <reified T> ComponentOwner.getLazy(
 @IntoComponent(invokeOnInit = true)
 private fun ComponentBuilder.componentBindings() {
     bind(
-        behavior = BoundBehavior(),
+        behavior = BoundBehavior,
         duplicateStrategy = DuplicateStrategy.Override
     ) { this }
 

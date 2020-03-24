@@ -67,7 +67,7 @@ inline fun <T> ComponentBuilder.weak(
 ) {
     bind(
         key = key,
-        behavior = WeakBehavior + BoundBehavior() + behavior,
+        behavior = WeakBehavior + BoundBehavior + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

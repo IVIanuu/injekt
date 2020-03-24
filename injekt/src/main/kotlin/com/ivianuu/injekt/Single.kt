@@ -62,7 +62,7 @@ inline fun <T> ComponentBuilder.single(
 ) {
     bind(
         key = key,
-        behavior = SingleBehavior + BoundBehavior() + behavior,
+        behavior = SingleBehavior + BoundBehavior + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

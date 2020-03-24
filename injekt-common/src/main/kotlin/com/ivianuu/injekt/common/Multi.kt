@@ -79,7 +79,7 @@ inline fun <T> ComponentBuilder.multi(
 ) {
     bind(
         key = key,
-        behavior = BoundBehavior() + MultiBehavior + behavior,
+        behavior = BoundBehavior + MultiBehavior + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

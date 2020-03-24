@@ -29,7 +29,7 @@ class BoundBehaviorTest {
             bind(
                 Binding(
                     keyOf(),
-                    behavior = BoundBehavior()
+                    behavior = BoundBehavior
                 ) {
                     usedComponents += this
                     Unit
