@@ -37,30 +37,32 @@ inline fun <reified T> ComponentBuilder.factory(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: BindingProvider<T>
-) = factory(
-    key = keyOf(qualifier = qualifier),
-    behavior = behavior,
-    duplicateStrategy = duplicateStrategy,
-    provider = provider
-)
+    crossinline provider: Component.(Parameters) -> T
+) {
+    factory(
+        key = keyOf(qualifier = qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
 /**
  * Dsl builder for the [FactoryBehavior]
  */
-fun <T> ComponentBuilder.factory(
+inline fun <T> ComponentBuilder.factory(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) = bind(
-    Binding(
+    crossinline provider: Component.(Parameters) -> T
+) {
+    bind(
         key = key,
         behavior = behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-)
+}
 
 /**
  * Annotation for the [FactoryBehavior]

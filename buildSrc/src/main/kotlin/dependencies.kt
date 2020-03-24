@@ -32,12 +32,11 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev118"
+    const val version = "${Build.versionName}-dev119"
 }
 
 object Deps {
-    const val androidGradlePlugin = "com.android.tools.build:gradle:3.6.0"
-
+    const val androidGradlePlugin = "com.android.tools.build:gradle:4.1.0-alpha03"
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
@@ -66,7 +65,7 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev118"
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev119"
 
     const val junit = "junit:junit:4.12"
 
@@ -74,7 +73,7 @@ object Deps {
 
     const val kodein = "org.kodein.di:kodein-di-erased-jvm:6.5.3"
 
-    const val koin = "org.koin:koin-core:2.1.3"
+    const val koin = "org.koin:koin-core:2.1.5"
 
     object Kotlin {
         private const val version = "1.4-SNAPSHOT"

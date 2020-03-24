@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Lazy
@@ -144,9 +145,11 @@ fun <E> ComponentBuilder.set(
 
         // bind the set
         bind(
-            key = setOfKeyWithOverrideInfoKey,
-            duplicateStrategy = DuplicateStrategy.Override,
-            provider = bindingProvider
+            Binding(
+                key = setOfKeyWithOverrideInfoKey,
+                duplicateStrategy = DuplicateStrategy.Override,
+                provider = bindingProvider
+            )
         )
 
         // value set
@@ -218,14 +221,13 @@ fun <E> ComponentBuilder.set(
 
 private class SetBindingProvider<E>(
     private val setOfKeyWithOverrideInfoKey: Key<Set<KeyWithOverrideInfo>>
-) : (Component, Parameters) -> Set<KeyWithOverrideInfo>,
-    ComponentInitObserver {
+) : BindingProvider<Set<KeyWithOverrideInfo>>() {
     var thisBuilder: MultiBindingSetBuilder<E>? =
         MultiBindingSetBuilder()
     var thisSet: Set<KeyWithOverrideInfo>? = null
     private var mergedSet: Set<KeyWithOverrideInfo>? = null
 
-    override fun onInit(component: Component) {
+    override fun onAttach(component: Component) {
         checkNotNull(thisBuilder)
 
         val mergedBuilder = MultiBindingSetBuilder<E>()

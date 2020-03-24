@@ -54,7 +54,7 @@ class Component internal constructor(
             val initializedBindings = initializedBindings!!
             if (binding !in initializedBindings) {
                 initializedBindings += binding
-                (binding.provider as? ComponentInitObserver)?.onInit(this)
+                binding.provider.onAttach(this)
             }
         }
         initializedBindings = null // Don't needed anymore
@@ -103,7 +103,7 @@ class Component internal constructor(
                 // make sure that the requested binding gets also initialized
                 if (binding!! !in it) {
                     it += binding!!
-                    (binding!!.provider as? ComponentInitObserver)?.onInit(this)
+                    binding!!.provider.onAttach(this)
                 }
             }
             return binding
@@ -136,23 +136,13 @@ class Component internal constructor(
                 }
                 synchronized(component._bindings) { component._bindings[key] = binding }
                 initializedBindings?.let { it += binding }
-                (binding.provider as? ComponentInitObserver)?.onInit(component)
+                binding.provider.onAttach(component)
                 return binding
             }
         }
 
         return null
     }
-}
-
-/**
- * Listener for component initialization
- */
-interface ComponentInitObserver {
-    /**
-     * Will be called once the [component] is initialized
-     */
-    fun onInit(component: Component)
 }
 
 /**

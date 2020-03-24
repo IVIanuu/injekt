@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.BoundBehavior
 import com.ivianuu.injekt.Component
@@ -46,30 +45,33 @@ inline fun <reified T> ComponentBuilder.weak(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: BindingProvider<T>
-) = weak(
-    key = keyOf(qualifier = qualifier),
-    behavior = behavior,
-    duplicateStrategy = duplicateStrategy,
-    provider = provider
-)
+    crossinline provider: Component.(Parameters) -> T
+) {
+    weak(
+        key = keyOf(qualifier = qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
 /**
  * Dsl builder for [WeakBehavior] + [BoundBehavior]
  */
-fun <T> ComponentBuilder.weak(
+inline fun <T> ComponentBuilder.weak(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) = bind(
-    Binding(
+    crossinline provider: Component.(Parameters) -> T
+
+) {
+    bind(
         key = key,
         behavior = WeakBehavior + BoundBehavior() + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-)
+}
 
 /**
  * Annotation for the [WeakBehavior]

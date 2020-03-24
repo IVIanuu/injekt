@@ -40,7 +40,7 @@ inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: BindingProvider<T>
+    crossinline provider: Component.(Parameters) -> T
 ) {
     bind(
         qualifier = qualifier,
@@ -75,7 +75,7 @@ private class ViewModelProvider<T>(
             viewModelStore,
             object : AndroidViewModelProvider.Factory {
                 override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    this@ViewModelProvider.invoke(component, parameters) as T
+                    this@ViewModelProvider(component, parameters) as T
             }
         )
 

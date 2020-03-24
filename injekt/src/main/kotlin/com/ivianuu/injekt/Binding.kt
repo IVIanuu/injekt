@@ -92,6 +92,24 @@ class Binding<T> private constructor(
     )
 
     companion object {
+        operator fun <T> invoke(
+            key: Key<T>,
+            behavior: Behavior = Behavior.None,
+            duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+            tags: List<Tag> = emptyList(),
+            provider: Component.(Parameters) -> T
+        ): Binding<T> = invoke(
+            key = key,
+            behavior = behavior,
+            duplicateStrategy = duplicateStrategy,
+            tags = tags,
+            provider = object : BindingProvider<T>() {
+                override fun invoke(component: Component, parameters: Parameters): T {
+                    return provider(component, parameters)
+                }
+            }
+        )
+
         /**
          * Returns a new [Binding] instance
          */
@@ -110,7 +128,6 @@ class Binding<T> private constructor(
                 currentBehavior.apply(currentProvider)
             }
         )
-
     }
 
 }
@@ -118,24 +135,28 @@ class Binding<T> private constructor(
 /**
  * Provides instances of T
  */
-typealias BindingProvider<T> = Component.(Parameters) -> T
+abstract class BindingProvider<T> {
+    open fun onAttach(component: Component) {
+    }
+
+    abstract operator fun invoke(component: Component, parameters: Parameters): T
+}
 
 /**
- * Base class for special [BindingProvider]s
+ * Wraps a existing [BindingProvider]
  */
 abstract class DelegatingBindingProvider<T>(
-    val delegate: BindingProvider<T>
-) : (Component, Parameters) -> T, ComponentInitObserver {
+    private val delegate: BindingProvider<T>
+) : BindingProvider<T>() {
 
     private var initialized = false
 
-    override fun onInit(component: Component) {
+    override fun onAttach(component: Component) {
         check(!initialized) { "Binding providers should not be reused" }
         initialized = true
-        (delegate as? ComponentInitObserver)?.onInit(component)
+        delegate.onAttach(component)
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T {
-        return delegate(component, parameters)
-    }
+    override fun invoke(component: Component, parameters: Parameters): T =
+        delegate(component, parameters)
 }

@@ -20,11 +20,12 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.BindingProvider
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -44,7 +45,7 @@ inline fun <reified T : Fragment> ComponentBuilder.fragment(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: BindingProvider<T>
+    crossinline provider: Component.(Parameters) -> T
 ) {
     factory(qualifier, behavior, duplicateStrategy, provider)
     bindFragmentIntoMap<T>(fragmentQualifier = qualifier)

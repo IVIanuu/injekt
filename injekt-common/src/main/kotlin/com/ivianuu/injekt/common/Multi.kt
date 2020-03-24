@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.BoundBehavior
 import com.ivianuu.injekt.Component
@@ -54,34 +53,37 @@ object MultiBehavior : Behavior.Element {
         MultiProvider(provider)
 }
 
+/**
+ * Dsl builder for the [MultiBehavior] + [BoundBehavior]
+ */
 inline fun <reified T> ComponentBuilder.multi(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: BindingProvider<T>
-) = multi(
-    key = keyOf(qualifier = qualifier),
-    behavior = behavior,
-    duplicateStrategy = duplicateStrategy,
-    provider = provider
-)
+    crossinline provider: Component.(Parameters) -> T
+) {
+    multi(
+        key = keyOf(qualifier = qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
-/**
- * Dsl builder for the [MultiBehavior] + [BoundBehavior]
- */
-fun <T> ComponentBuilder.multi(
+
+inline fun <T> ComponentBuilder.multi(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) = bind(
-    Binding(
+    crossinline provider: Component.(Parameters) -> T
+) {
+    bind(
         key = key,
         behavior = BoundBehavior() + MultiBehavior + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-)
+}
 
 /**
  * Annotation for the [MultiBehavior]

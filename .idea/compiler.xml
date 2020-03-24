@@ -3,6 +3,14 @@
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
       <module name="injekt-common" target="1.8" />
+      <module name="injekt.buildSrc" target="1.8" />
+      <module name="injekt.comparison" target="1.7" />
+      <module name="injekt.injekt" target="1.8" />
+      <module name="injekt.injekt-android" target="1.7" />
+      <module name="injekt.injekt-common" target="1.8" />
+      <module name="injekt.injekt-compiler" target="1.8" />
+      <module name="injekt.injekt-gradle-plugin" target="1.8" />
+      <module name="injekt.sample" target="1.7" />
       <module name="injekt_buildSrc" target="1.8" />
       <module name="ivianuu-studio-projects-injekt-comparison" target="1.7" />
       <module name="ivianuu-studio-projects-injekt-injekt" target="1.8" />

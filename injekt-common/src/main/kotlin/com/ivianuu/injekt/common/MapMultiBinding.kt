@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Binding
+import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.ComponentInitObserver
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Lazy
@@ -155,9 +156,11 @@ fun <K, V> ComponentBuilder.map(
 
         // bind the map with keys
         bind(
-            key = mapOfKeyWithOverrideInfo,
-            duplicateStrategy = DuplicateStrategy.Override,
-            provider = bindingProvider
+            Binding(
+                key = mapOfKeyWithOverrideInfo,
+                duplicateStrategy = DuplicateStrategy.Override,
+                provider = bindingProvider
+            )
         )
 
         // value map
@@ -231,13 +234,13 @@ fun <K, V> ComponentBuilder.map(
 
 private class MapBindingProvider<K, V>(
     private val mapOfKeyWithOverrideInfo: Key<Map<K, KeyWithOverrideInfo>>
-) : (Component, Parameters) -> Map<K, KeyWithOverrideInfo>, ComponentInitObserver {
+) : BindingProvider<Map<K, KeyWithOverrideInfo>>() {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
     var thisMap: Map<K, KeyWithOverrideInfo>? = null
     var mergedMap: Map<K, KeyWithOverrideInfo>? = null
 
-    override fun onInit(component: Component) {
+    override fun onAttach(component: Component) {
         checkNotNull(thisBuilder)
         val mergedBuilder = MultiBindingMapBuilder<K, V>()
 

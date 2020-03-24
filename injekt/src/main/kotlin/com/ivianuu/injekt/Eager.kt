@@ -36,8 +36,8 @@ object EagerBehavior : Behavior.Element {
 
 private class EagerProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {
-    override fun onInit(component: Component) {
-        super.onInit(component)
+    override fun onAttach(component: Component) {
+        super.onAttach(component)
         invoke(component, emptyParameters())
     }
 }

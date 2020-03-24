@@ -31,9 +31,9 @@ private class BoundProvider<T>(
 
     private lateinit var boundComponent: Component
 
-    override fun onInit(component: Component) {
+    override fun onAttach(component: Component) {
         findComponentIfNeeded(component)
-        super.onInit(boundComponent)
+        super.onAttach(boundComponent)
     }
 
     override fun invoke(component: Component, parameters: Parameters): T {

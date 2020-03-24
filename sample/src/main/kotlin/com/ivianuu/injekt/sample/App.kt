@@ -21,11 +21,14 @@ import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Injekt
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.single
 
 class App : Application(), ComponentOwner {
 
     override val component by lazy {
-        ApplicationComponent(this)
+        ApplicationComponent(this) {
+            single { "" }
+        }
     }
 
     override fun onCreate() {

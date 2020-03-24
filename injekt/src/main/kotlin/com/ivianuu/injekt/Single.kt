@@ -41,30 +41,32 @@ inline fun <reified T> ComponentBuilder.single(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    noinline provider: BindingProvider<T>
-) = single(
-    key = keyOf(qualifier = qualifier),
-    behavior = behavior,
-    duplicateStrategy = duplicateStrategy,
-    provider = provider
-)
+    noinline provider: Component.(Parameters) -> T
+) {
+    single(
+        key = keyOf(qualifier = qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
 /**
  * Dsl builder for [SingleBehavior] + [BoundBehavior]
  */
-fun <T> ComponentBuilder.single(
+inline fun <T> ComponentBuilder.single(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) = bind(
-    Binding(
+    crossinline provider: Component.(Parameters) -> T
+) {
+    bind(
         key = key,
         behavior = SingleBehavior + BoundBehavior() + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-)
+}
 
 /**
  * Annotation for the [SingleBehavior]

@@ -128,21 +128,23 @@ class ComponentBuilder {
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         tags: List<Tag> = emptyList(),
-        noinline provider: BindingProvider<T>
-    ) = bind(
-        key = keyOf(qualifier = qualifier),
-        behavior = behavior,
-        duplicateStrategy = duplicateStrategy,
-        tags = tags,
-        provider = provider
-    )
+        crossinline provider: Component.(Parameters) -> T
+    ) {
+        bind(
+            key = keyOf(qualifier = qualifier),
+            behavior = behavior,
+            duplicateStrategy = duplicateStrategy,
+            tags = tags,
+            provider = provider
+        )
+    }
 
-    fun <T> bind(
+    inline fun <T> bind(
         key: Key<T>,
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         tags: List<Tag> = emptyList(),
-        provider: BindingProvider<T>
+        crossinline provider: Component.(Parameters) -> T
     ) {
         bind(
             Binding(
@@ -150,7 +152,11 @@ class ComponentBuilder {
                 behavior = behavior,
                 duplicateStrategy = duplicateStrategy,
                 tags = tags,
-                provider = provider
+                provider = object : BindingProvider<T>() {
+                    override fun invoke(component: Component, parameters: Parameters): T {
+                        return provider(component, parameters)
+                    }
+                }
             )
         )
     }
