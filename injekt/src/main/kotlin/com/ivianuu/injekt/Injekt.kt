@@ -46,7 +46,7 @@ object Injekt {
 
 }
 
-fun Injekt.componentBuilderContributor(block: ComponentBuilder.() -> Unit) {
+inline fun Injekt.componentBuilderContributor(crossinline block: ComponentBuilder.() -> Unit) {
     componentBuilderContributors(
         object : ComponentBuilderContributor {
             override fun apply(builder: ComponentBuilder) {

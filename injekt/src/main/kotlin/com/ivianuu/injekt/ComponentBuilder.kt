@@ -99,7 +99,7 @@ class ComponentBuilder {
         parents(*parents.toTypedArray())
     }
 
-    fun jitFactory(block: (Key<*>, Component) -> Binding<*>?) {
+    inline fun jitFactory(crossinline block: (Key<*>, Component) -> Binding<*>?) {
         jitFactories(
             object : JitFactory {
                 override fun <T> create(key: Key<T>, component: Component): Binding<T>? =
