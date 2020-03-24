@@ -20,17 +20,20 @@ import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.callExpressionRecursiveVisitor
 import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.psi.synthetics.findClassDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 class InjektAnalysisHandlerExtension(
     private val outputDir: String
 ) : AnalysisHandlerExtension {
+
     override fun analysisCompleted(
         project: Project,
         module: ModuleDescriptor,
@@ -66,6 +69,20 @@ class InjektAnalysisHandlerExtension(
                         fileWriter.add(
                             (descriptor.fqNameSafe.pathSegments()
                                 .dropLast(1) + functionName.replace(".", "_")).joinToString(".")
+                        )
+                    }
+                }
+            )
+            file.acceptChildren(
+                callExpressionRecursiveVisitor { callExpression ->
+                    val resolvedCall = callExpression.getResolvedCall(bindingTrace.bindingContext)
+                    if (resolvedCall != null &&
+                        resolvedCall.resultingDescriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent)
+                    ) {
+                        bindingTrace.report(
+                            InjektErrors.CannotInvokeIntoComponentFunctions.on(
+                                callExpression
+                            )
                         )
                     }
                 }

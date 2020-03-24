@@ -18,11 +18,9 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irIfThen
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -35,6 +33,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -42,12 +41,15 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
+import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -66,36 +68,18 @@ class ComponentBuilderContributorGenerator(
     private val componentBuilderContributor = getClass(InjektClassNames.ComponentBuilderContributor)
     private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
 
-    override fun visitFile(declaration: IrFile): IrFile {
-        super.visitFile(declaration)
+    override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
+        super.visitSimpleFunction(declaration)
+        if (pluginContext.irTrace[InjektWritableSlices.IS_INTO_COMPONENT, declaration] == null &&
+            !declaration.descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent)
+        ) return declaration
 
-        val intoComponentFunctions = mutableListOf<IrSimpleFunction>()
-
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
-                if (pluginContext.irTrace[InjektWritableSlices.IS_INTO_COMPONENT, declaration] != null ||
-                    declaration.descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent)
-                ) {
-                    intoComponentFunctions += declaration
-                }
-                return super.visitFunction(declaration)
-            }
-        })
-
-        intoComponentFunctions.forEach {
-            val contributor = componentBuilderContributor(declaration, it)
-            declaration.addChild(contributor)
-        }
-
-        return declaration
+        return componentBuilderContributor(declaration)
     }
 
-    private fun componentBuilderContributor(
-        file: IrFile,
-        function: IrSimpleFunction
-    ): IrClass {
+    private fun componentBuilderContributor(function: IrSimpleFunction): IrClass {
         val componentBuilderContributorDescriptor = ClassDescriptorImpl(
-            file.packageFragmentDescriptor,
+            function.file.packageFragmentDescriptor,
             Name.identifier(function.descriptor.fqNameSafe.asString().replace(".", "_")),
             Modality.FINAL,
             ClassKind.CLASS,
@@ -189,22 +173,23 @@ class ComponentBuilderContributorGenerator(
                 dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
 
                 body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                    val functionCall = irCall(function).apply {
-                        if (function.dispatchReceiverParameter != null) {
-                            dispatchReceiver = irGetObject(
-                                symbolTable.referenceClass(
-                                    function.dispatchReceiverParameter!!.descriptor
-                                        .type.constructor.declarationDescriptor as ClassDescriptor
-                                )
-                            )
-                        }
-
-                        if (function.extensionReceiverParameter != null) {
-                            extensionReceiver = irGet(this@func.valueParameters[0])
-                        } else {
-                            putValueArgument(0, irGet(this@func.valueParameters[0]))
+                    val functionBlock = irBlock {
+                        function.body?.statements?.forEach { statement ->
+                            +statement.deepCopyWithVariables()
                         }
                     }
+
+                    functionBlock.transformChildrenVoid(object : IrElementTransformerVoid() {
+                        override fun visitGetValue(expression: IrGetValue): IrExpression {
+                            try {
+                                if (expression.symbol == function.extensionReceiverParameter!!.symbol) {
+                                    return irGet(valueParameters.single())
+                                }
+                            } catch (e: Exception) {
+                            }
+                            return super.visitGetValue(expression)
+                        }
+                    })
 
                     val scopeAnnotation =
                         pluginContext.irTrace[InjektWritableSlices.SCOPE, function]
@@ -212,7 +197,7 @@ class ComponentBuilderContributorGenerator(
                                 .singleOrNull()?.annotationClass
 
                     if (scopeAnnotation == null) {
-                        +functionCall
+                        +functionBlock
                     } else {
                         val onPreBuildFunction = componentBuilder.unsubstitutedMemberScope
                             .findSingleFunction(Name.identifier("onPreBuild"))
@@ -260,7 +245,7 @@ class ComponentBuilderContributorGenerator(
                                                 )
                                             )
                                         },
-                                        thenPart = functionCall
+                                        thenPart = functionBlock
                                     )
 
                                     +irReturn(irBoolean(false))

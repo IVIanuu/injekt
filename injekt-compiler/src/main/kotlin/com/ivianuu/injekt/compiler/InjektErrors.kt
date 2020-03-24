@@ -47,6 +47,9 @@ interface InjektErrors {
         @JvmField
         val IntoComponentFunctionMustBeStatic = error()
 
+        @JvmField
+        val CannotInvokeIntoComponentFunctions = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -102,6 +105,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.IntoComponentFunctionMustBeStatic,
             "@IntoComponent functions must be callable from a static context"
+        )
+        map.put(
+            InjektErrors.CannotInvokeIntoComponentFunctions,
+            "@IntoComponent functions cannot be invoked"
         )
     }
 
