@@ -72,6 +72,14 @@ class ComponentBuilder {
     }
 
     /**
+     * Replaces all existing scopes with [scopes]
+     */
+    fun setScopes(scopes: List<Scope>) {
+        _scopes.clear()
+        scopes(*scopes.toTypedArray())
+    }
+
+    /**
      * Adds the [parents] to the component if this component cannot resolve a instance
      * it will ask it's parents
      */
@@ -81,6 +89,14 @@ class ComponentBuilder {
             this._parents += parent
             onParentAddedBlocks.toList().forEach { it(parent) }
         }
+    }
+
+    /**
+     * Replaces all existing parents with [parents]
+     */
+    fun setParents(parents: List<Component>) {
+        _parents.clear()
+        parents(*parents.toTypedArray())
     }
 
     fun jitFactory(block: (Key<*>, Component) -> Binding<*>?) {
@@ -97,6 +113,14 @@ class ComponentBuilder {
      */
     fun jitFactories(vararg factories: JitFactory) {
         _jitFactories += factories
+    }
+
+    /**
+     * Replaces all existing jit factories with [factories]
+     */
+    fun setJitFactories(factories: List<JitFactory>) {
+        _jitFactories.clear()
+        jitFactories(*factories.toTypedArray())
     }
 
     inline fun <reified T> bind(
@@ -149,6 +173,14 @@ class ComponentBuilder {
             _bindings[finalBinding.key] = finalBinding
             onBindingAddedBlocks.toList().forEach { it(finalBinding) }
         }
+    }
+
+    /**
+     * Replaces all existing bindings with [bindings]
+     */
+    fun setBindings(bindings: List<Binding<*>>) {
+        _bindings.clear()
+        bindings.forEach { bind(it) }
     }
 
     /**

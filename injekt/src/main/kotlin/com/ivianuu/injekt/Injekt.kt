@@ -36,6 +36,14 @@ object Injekt {
         _componentBuilderContributors += contributors
     }
 
+    /**
+     * Replaces all existing contributors with [contributors]
+     */
+    fun setComponentBuilderContributors(contributors: List<ComponentBuilderContributor>) {
+        _componentBuilderContributors.clear()
+        _componentBuilderContributors += contributors
+    }
+
 }
 
 fun Injekt.componentBuilderContributor(block: ComponentBuilder.() -> Unit) {
