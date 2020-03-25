@@ -39,20 +39,32 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        StorageComponentContainerContributor.registerExtension(project, InjektStorageComponentContainerContributorExtension())
-        val outputDir = configuration.getNotNull(OutputDirKey)
-        IrGenerationExtension.registerExtension(
-            project,
-            InjektIrGenerationExtension()
-        )
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            InjektAnalysisHandlerExtension(outputDir)
-        )
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
-        message("Hello from the component registrar")
+
+        val outputDir = configuration.get(OutputDirKey)
+        val isGenerateStubs = outputDir != null
+
+        message("Hello from the component registrar phase is $isGenerateStubs output $outputDir")
+
+        if (outputDir != null) {
+            StorageComponentContainerContributor.registerExtension(
+                project,
+                InjektStorageComponentContainerContributorExtension()
+            )
+
+            AnalysisHandlerExtension.registerExtension(
+                project,
+                InjektAnalysisHandlerExtension(outputDir)
+            )
+        } else {
+            IrGenerationExtension.registerExtension(
+                project,
+                InjektIrGenerationExtension()
+            )
+        }
     }
+
 }
 
 private lateinit var messageCollector: MessageCollector
@@ -73,7 +85,8 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         CliOption(
             optionName = "outputDir",
             valueDescription = "generated src dir",
-            description = "generated src"
+            description = "generated src",
+            required = false
         )
     )
 

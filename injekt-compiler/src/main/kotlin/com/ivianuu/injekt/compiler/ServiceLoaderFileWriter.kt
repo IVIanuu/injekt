@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeSpec
 import java.io.File
 
 class ServiceLoaderFileWriter(private val outputDir: String) {
@@ -28,7 +30,16 @@ class ServiceLoaderFileWriter(private val outputDir: String) {
     }
 
     fun writeFile() {
-        val servicesDir = File(outputDir, "resources/META-INF/services")
+        contributors.forEach { fqName ->
+            FileSpec.builder("com.ivianuu.injekt.aggregate", fqName.replace(".", "_"))
+                .addType(
+                    TypeSpec.classBuilder(fqName.replace(".", "_"))
+                        .build()
+                )
+                .build()
+                .writeTo(File("$outputDir/kotlin"))
+        }
+        /*val servicesDir = File(outputDir, "resources/META-INF/services")
         servicesDir.run { if (!exists()) mkdirs() }
 
         val file = File(servicesDir, InjektClassNames.ComponentBuilderContributor.asString())
@@ -51,7 +62,7 @@ class ServiceLoaderFileWriter(private val outputDir: String) {
             file.writeText(newContributors.joinToString("\n"))
         } else {
             file.delete()
-        }
+        }*/
     }
 
 }

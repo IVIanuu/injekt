@@ -30,6 +30,9 @@ buildConfig {
 
 dependencies {
     implementation(Deps.androidGradlePlugin)
+    implementation(Deps.Kotlin.gradlePlugin)
+
+    implementation(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.Kotlin.gradlePluginApi)
     implementation(Deps.processingX)
     kapt(Deps.processingX)

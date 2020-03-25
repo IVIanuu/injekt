@@ -44,6 +44,8 @@ object Injekt {
         _componentBuilderContributors += contributors
     }
 
+    fun initializeEndpoint(): Unit = error("Must be compiled with injekt compiler")
+
 }
 
 inline fun Injekt.componentBuilderContributor(crossinline block: ComponentBuilder.() -> Unit) {

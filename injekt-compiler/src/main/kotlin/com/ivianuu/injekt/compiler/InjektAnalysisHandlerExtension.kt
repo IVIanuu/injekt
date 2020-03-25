@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 class InjektAnalysisHandlerExtension(
     private val outputDir: String
 ) : AnalysisHandlerExtension {
-
     override fun analysisCompleted(
         project: Project,
         module: ModuleDescriptor,
@@ -91,6 +90,10 @@ class InjektAnalysisHandlerExtension(
 
         fileWriter.writeFile()
 
-        return super.analysisCompleted(project, module, bindingTrace, files)
+        return AnalysisResult.success(
+            bindingTrace.bindingContext,
+            module,
+            shouldGenerateCode = false
+        )
     }
 }

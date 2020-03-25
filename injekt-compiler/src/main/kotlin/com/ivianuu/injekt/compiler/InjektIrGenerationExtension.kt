@@ -22,14 +22,15 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val transformers = listOf(
+        /*val transformers = listOf(
             InjektBindingGenerator(pluginContext),
-            ComponentBuilderContributorGenerator(pluginContext)
+            ComponentBuilderContributorGenerator(pluginContext),
+            InjektEndpointTransformer(pluginContext)
         )
         moduleFragment.files.forEach { file ->
             transformers.forEach { transformer ->
                 file.transform(transformer, null)
             }
-        }
+        }*/
     }
 }
