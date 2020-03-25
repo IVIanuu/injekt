@@ -35,9 +35,17 @@ object Injekt {
 
 }
 
-inline fun Injekt.componentBuilderContributor(crossinline block: ComponentBuilder.() -> Unit) {
+inline fun Injekt.componentBuilderContributor(
+    scope: Scope? = null,
+    invokeOnInit: Boolean = false,
+    crossinline block: ComponentBuilder.() -> Unit
+) {
     componentBuilderContributors(
         object : ComponentBuilderContributor {
+            override val scope: Scope?
+                get() = scope
+            override val invokeOnInit: Boolean
+                get() = invokeOnInit
             override fun apply(builder: ComponentBuilder) {
                 builder.block()
             }

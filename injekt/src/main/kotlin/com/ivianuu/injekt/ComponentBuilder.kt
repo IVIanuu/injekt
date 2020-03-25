@@ -324,7 +324,7 @@ class ComponentBuilder {
  * @see IntoComponent
  */
 interface ComponentBuilderContributor {
-    val invokeOnInit: Boolean get() = false
     val scope: Scope? get() = null
+    val invokeOnInit: Boolean get() = false
     fun apply(builder: ComponentBuilder)
 }
