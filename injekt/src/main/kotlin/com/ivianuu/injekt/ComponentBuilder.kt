@@ -336,7 +336,7 @@ interface ComponentBuilderContributor {
 private object ComponentBuilderContributors {
     val implementations by lazy {
         FastServiceLoader.load(
-            ComponentBuilderContributor::class.java,
+            ComponentBuilderContributor::class,
             ClassLoader.getSystemClassLoader()
         )
     }

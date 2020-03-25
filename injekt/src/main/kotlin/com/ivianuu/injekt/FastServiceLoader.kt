@@ -21,26 +21,31 @@ import java.io.InputStreamReader
 import java.net.URL
 import java.util.jar.JarFile
 import java.util.zip.ZipEntry
+import kotlin.reflect.KClass
 
 internal object FastServiceLoader {
     private const val PREFIX: String = "META-INF/services/"
 
-    fun <S> load(service: Class<S>, loader: ClassLoader): List<S> {
+    fun <S : Any> load(service: KClass<S>, loader: ClassLoader): List<S> {
         return loadProviders(service, loader)
     }
 
-    private fun <S> loadProviders(service: Class<S>, loader: ClassLoader): List<S> {
-        val fullServiceName = PREFIX + service.name
+    private fun <S : Any> loadProviders(service: KClass<S>, loader: ClassLoader): List<S> {
+        val fullServiceName = PREFIX + service.java.name
         // Filter out situations when both JAR and regular files are in the classpath (e.g. IDEA)
         val urls = loader.getResources(fullServiceName)
         val providers = urls.toList().flatMap { parse(it) }.toSet()
         return providers.map { getProviderInstance(it, loader, service) }
     }
 
-    private fun <S> getProviderInstance(name: String, loader: ClassLoader, service: Class<S>): S {
+    private fun <S : Any> getProviderInstance(
+        name: String,
+        loader: ClassLoader,
+        service: KClass<S>
+    ): S {
         val clazz = Class.forName(name, false, loader)
-        require(service.isAssignableFrom(clazz)) { "Expected service of class $service, but found $clazz" }
-        return service.cast(clazz.getDeclaredConstructor().newInstance())
+        require(service.java.isAssignableFrom(clazz)) { "Expected service of class $service, but found $clazz" }
+        return service.java.cast(clazz.getDeclaredConstructor().newInstance())
     }
 
     private fun parse(url: URL): List<String> {
