@@ -35,6 +35,10 @@ object Injekt {
 
 }
 
+inline fun Injekt(block: Injekt.() -> Unit) {
+    Injekt.block()
+}
+
 inline fun Injekt.componentBuilderContributor(
     scope: Scope? = null,
     invokeOnInit: Boolean = false,
