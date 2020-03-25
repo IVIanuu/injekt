@@ -17,7 +17,7 @@ internal object ComponentBuilderContributors {
     fun getNonInitUnscoped(): List<ComponentBuilderContributor> =
         allContributors.filter { !it.invokeOnInit && it.scope == null }
 
-    fun getNonInitForScope(scope: Scope): List<ComponentBuilderContributor> =
+    fun getForScope(scope: Scope): List<ComponentBuilderContributor> =
         allContributors.filter { !it.invokeOnInit && it.scope == scope }
 
     fun register(contributor: ComponentBuilderContributor) {

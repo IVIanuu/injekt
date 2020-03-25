@@ -66,7 +66,7 @@ class ComponentBuilder {
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
             onScopeAddedBlocks.toList().forEach { it(scope) }
-            ComponentBuilderContributors.getNonInitForScope(scope)
+            ComponentBuilderContributors.getForScope(scope)
                 .forEach { it.apply(this) }
         }
     }
