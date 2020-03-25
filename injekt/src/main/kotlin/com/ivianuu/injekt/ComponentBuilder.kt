@@ -51,9 +51,7 @@ class ComponentBuilder {
     private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
 
     init {
-        (Injekt.componentBuilderContributors +
-                ComponentBuilderContributors.implementations)
-            .filter { it.invokeOnInit }
+        (ComponentBuilderContributors.getUnscopedInit() + ComponentBuilderContributors.getNonInitUnscoped())
             .forEach { it.apply(this) }
     }
 
@@ -68,6 +66,8 @@ class ComponentBuilder {
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
             onScopeAddedBlocks.toList().forEach { it(scope) }
+            ComponentBuilderContributors.getNonInitForScope(scope)
+                .forEach { it.apply(this) }
         }
     }
 
@@ -235,11 +235,6 @@ class ComponentBuilder {
      * Create a new [Component] instance.
      */
     fun build(): Component {
-        (Injekt.componentBuilderContributors +
-                ComponentBuilderContributors.implementations)
-            .filter { !it.invokeOnInit }
-            .forEach { it.apply(this) }
-
         runPreBuildBlocks()
 
         checkScopes()
@@ -330,14 +325,6 @@ class ComponentBuilder {
  */
 interface ComponentBuilderContributor {
     val invokeOnInit: Boolean get() = false
+    val scope: Scope? get() = null
     fun apply(builder: ComponentBuilder)
-}
-
-private object ComponentBuilderContributors {
-    val implementations by lazy {
-        FastServiceLoader.load(
-            ComponentBuilderContributor::class,
-            ClassLoader.getSystemClassLoader()
-        )
-    }
 }

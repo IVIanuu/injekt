@@ -26,22 +26,11 @@ object Injekt {
      */
     var logger: Logger? = null
 
-    private val _componentBuilderContributors = mutableListOf<ComponentBuilderContributor>()
-    val componentBuilderContributors: List<ComponentBuilderContributor> get() = _componentBuilderContributors
-
     /**
      * Invokes any of [contributors] on each [ComponentBuilder]
      */
     fun componentBuilderContributors(vararg contributors: ComponentBuilderContributor) {
-        _componentBuilderContributors += contributors
-    }
-
-    /**
-     * Replaces all existing contributors with [contributors]
-     */
-    fun setComponentBuilderContributors(contributors: List<ComponentBuilderContributor>) {
-        _componentBuilderContributors.clear()
-        _componentBuilderContributors += contributors
+        contributors.forEach { ComponentBuilderContributors.register(it) }
     }
 
 }
