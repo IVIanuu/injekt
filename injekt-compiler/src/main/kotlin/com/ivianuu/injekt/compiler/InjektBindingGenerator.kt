@@ -165,8 +165,6 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
                             )
                             .toSet()
 
-                    message("tags for ${injectClass.descriptor} are -> $tags")
-
                     if (tags.isNotEmpty()) {
                         val listOf =
                             pluginContext.moduleDescriptor.getPackage(FqName("kotlin.collections"))

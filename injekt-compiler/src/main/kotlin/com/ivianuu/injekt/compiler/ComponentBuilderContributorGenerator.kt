@@ -21,15 +21,16 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irIfThen
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
@@ -41,27 +42,31 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.impl.IrConstructorImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 
 class ComponentBuilderContributorGenerator(
+    private val generatedClasses: MutableList<ClassDescriptor>,
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
@@ -80,7 +85,7 @@ class ComponentBuilderContributorGenerator(
     private fun componentBuilderContributor(function: IrSimpleFunction): IrClass {
         val componentBuilderContributorDescriptor = ClassDescriptorImpl(
             function.file.packageFragmentDescriptor,
-            Name.identifier(function.descriptor.fqNameSafe.asString().replace(".", "_")),
+            function.name,
             Modality.FINAL,
             ClassKind.CLASS,
             emptyList(),
@@ -88,43 +93,66 @@ class ComponentBuilderContributorGenerator(
             false,
             LockBasedStorageManager.NO_LOCKS
         ).apply {
+            val constructor = DescriptorFactory.createPrimaryConstructorForObject(this, this.source)
             initialize(
                 MemberScope.Empty,
-                emptySet(),
-                null
+                setOf(constructor),
+                constructor
             )
+
+            constructor.apply {
+                initialize(
+                    null,
+                    null,
+                    emptyList(),
+                    emptyList(),
+                    defaultType,
+                    Modality.FINAL,
+                    Visibilities.PUBLIC
+                )
+            }
         }
 
-        return IrClassImpl(
+        generatedClasses += componentBuilderContributorDescriptor
+
+        return symbolTable.declareClass(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
             InjektOrigin,
-            IrClassSymbolImpl(componentBuilderContributorDescriptor)
+            componentBuilderContributorDescriptor
         ).apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             superTypes = superTypes + componentBuilderContributor.defaultType.toIrType()
 
-            addConstructor {
-                origin = InjektOrigin
-                isPrimary = true
-                visibility = Visibilities.PUBLIC
-            }.apply {
-                body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        startOffset, endOffset,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any.unsubstitutedPrimaryConstructor!!
+            symbolTable.declareConstructor(
+                UNDEFINED_OFFSET,
+                UNDEFINED_OFFSET,
+                InjektOrigin,
+                descriptor.unsubstitutedPrimaryConstructor!!
+            ) {
+                IrConstructorImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    InjektOrigin,
+                    it,
+                    descriptor.defaultType.toIrType(),
+                    DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                        +IrDelegatingConstructorCallImpl(
+                            startOffset, endOffset,
+                            context.irBuiltIns.unitType,
+                            symbolTable.referenceConstructor(
+                                context.builtIns.any.unsubstitutedPrimaryConstructor!!
+                            )
                         )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        startOffset,
-                        endOffset,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-                }
+                        +IrInstanceInitializerCallImpl(
+                            startOffset,
+                            endOffset,
+                            this@clazz.symbol,
+                            context.irBuiltIns.unitType
+                        )
+                    }
+                )
             }
 
             val invokeOnInit =
@@ -254,6 +282,46 @@ class ComponentBuilderContributorGenerator(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    fun IrFunction.createParameterDeclarations(
+        receiver: IrValueParameter?,
+        overwriteValueParameters: Boolean = false,
+        copyTypeParameters: Boolean = true
+    ) {
+        fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(
+            this@createParameterDeclarations.startOffset,
+            this@createParameterDeclarations.endOffset,
+            InjektOrigin,
+            this,
+            type.toIrType(),
+            null
+        ).also {
+            it.parent = this@createParameterDeclarations
+        }
+
+        dispatchReceiverParameter = descriptor.dispatchReceiverParameter?.irValueParameter()
+        extensionReceiverParameter = descriptor.extensionReceiverParameter?.irValueParameter()
+
+        if (!overwriteValueParameters)
+            assert(valueParameters.isEmpty())
+
+        valueParameters = descriptor.valueParameters.map { it.irValueParameter() }
+
+        assert(typeParameters.isEmpty())
+        if (copyTypeParameters) copyTypeParamsFromDescriptor()
+    }
+
+    fun IrFunction.copyTypeParamsFromDescriptor() {
+        typeParameters += descriptor.typeParameters.map {
+            IrTypeParameterImpl(
+                startOffset, endOffset,
+                InjektOrigin,
+                it
+            ).also { typeParameter ->
+                typeParameter.parent = this
             }
         }
     }

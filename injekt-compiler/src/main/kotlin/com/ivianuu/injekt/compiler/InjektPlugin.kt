@@ -51,7 +51,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
-        message("Hello from the component registrar")
     }
 }
 

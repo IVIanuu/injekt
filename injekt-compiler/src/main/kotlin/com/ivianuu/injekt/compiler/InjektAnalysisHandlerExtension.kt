@@ -16,9 +16,15 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeSpec
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.container.get
+import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.JavaClassesTrackerImpl
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.callExpressionRecursiveVisitor
 import org.jetbrains.kotlin.psi.classOrObjectRecursiveVisitor
@@ -29,10 +35,41 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import java.io.File
 
 class InjektAnalysisHandlerExtension(
-    private val outputDir: String
+    private val outputPath: String
 ) : AnalysisHandlerExtension {
+
+    private var generatedFiles = false
+
+    private var javaClassesTracker: JavaClassesTrackerImpl? = null
+
+    override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider
+    ): AnalysisResult? {
+        javaClassesTracker = try {
+            componentProvider.get()
+        } catch (e: Exception) {
+            null
+        }
+
+        // fixes IC duplicate exception
+        javaClassesTracker?.let {
+            message("on hehe $it")
+            it.javaClass.getDeclaredField("classDescriptors")
+                .also { it.isAccessible = true }
+                .get(it)
+                .let { (it as MutableList<Any>).clear() }
+        } ?: message("lolo")
+
+        return null
+    }
 
     override fun analysisCompleted(
         project: Project,
@@ -40,9 +77,8 @@ class InjektAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        val fileWriter = ServiceLoaderFileWriter(outputDir)
-
-        message("analysis completed")
+        if (generatedFiles) return null
+        generatedFiles = true
 
         files.forEach { file ->
             file.acceptChildren(
@@ -50,11 +86,18 @@ class InjektAnalysisHandlerExtension(
                     val descriptor = bindingTrace[BindingContext.FUNCTION, namedFunction]
                     checkNotNull(descriptor)
                     if (descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent)) {
-                        fileWriter.add(
-                            (descriptor.fqNameSafe.pathSegments()
-                                .dropLast(1) + descriptor.fqNameSafe.asString().replace(".", "_"))
-                                .joinToString(".")
-                        )
+                        FileSpec.builder(
+                                "com.ivianuu.injekt.aggregate",
+                                descriptor.fqNameSafe.asString().replace(".", "_")
+                            )
+                            .addType(
+                                TypeSpec.classBuilder(
+                                        descriptor.fqNameSafe.asString().replace(".", "_")
+                                    )
+                                    .build()
+                            )
+                            .build()
+                            .writeTo(File(outputPath))
                     }
                 }
             )
@@ -64,12 +107,18 @@ class InjektAnalysisHandlerExtension(
                     if (descriptor.hasAnnotatedAnnotations(InjektClassNames.TagMarker)) {
                         val functionName = (descriptor.fqNameSafe.pathSegments()
                             .dropLast(1) + "bind${clazz.name}")
-                            .joinToString(".")
+                            .joinToString("_")
 
-                        fileWriter.add(
-                            (descriptor.fqNameSafe.pathSegments()
-                                .dropLast(1) + functionName.replace(".", "_")).joinToString(".")
-                        )
+                        FileSpec.builder(
+                                "com.ivianuu.injekt.aggregate",
+                                functionName
+                            )
+                            .addType(
+                                TypeSpec.classBuilder(functionName)
+                                    .build()
+                            )
+                            .build()
+                            .writeTo(File(outputPath))
                     }
                 }
             )
@@ -89,8 +138,20 @@ class InjektAnalysisHandlerExtension(
             )
         }
 
-        fileWriter.writeFile()
+        // fixes IC duplicate exception
+        javaClassesTracker?.let {
+            message("on hehe $it")
+            it.javaClass.getDeclaredField("classDescriptors")
+                .also { it.isAccessible = true }
+                .get(it)
+                .let { (it as MutableList<Any>).clear() }
+        } ?: message("lolo")
 
-        return super.analysisCompleted(project, module, bindingTrace, files)
+        return AnalysisResult.RetryWithAdditionalRoots(
+            bindingTrace.bindingContext,
+            module,
+            emptyList(),
+            listOf(File(outputPath))
+        )
     }
 }

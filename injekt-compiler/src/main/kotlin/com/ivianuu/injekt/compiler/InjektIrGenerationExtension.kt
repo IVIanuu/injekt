@@ -18,18 +18,24 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
 class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        val generatedClassed = mutableListOf<ClassDescriptor>()
         val transformers = listOf(
             InjektBindingGenerator(pluginContext),
-            ComponentBuilderContributorGenerator(pluginContext)
+            ComponentBuilderContributorGenerator(generatedClassed, pluginContext)
         )
         moduleFragment.files.forEach { file ->
             transformers.forEach { transformer ->
                 file.transform(transformer, null)
             }
+        }
+
+        moduleFragment.files.forEach { file ->
+            file.transform(InjektEndpointTransformer(generatedClassed, pluginContext), null)
         }
     }
 }

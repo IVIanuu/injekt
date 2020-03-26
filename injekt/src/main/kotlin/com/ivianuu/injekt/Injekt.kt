@@ -27,7 +27,7 @@ object Injekt {
     var logger: Logger? = null
 
     /**
-     * Invokes any of [contributors] on each [ComponentBuilder]
+     * Adds all [contributors] to the global pool
      */
     fun componentBuilderContributors(vararg contributors: ComponentBuilderContributor) {
         contributors.forEach { ComponentBuilderContributors.register(it) }
