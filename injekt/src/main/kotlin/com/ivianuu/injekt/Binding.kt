@@ -103,7 +103,7 @@ class Binding<T> private constructor(
             behavior = behavior,
             duplicateStrategy = duplicateStrategy,
             tags = tags,
-            provider = object : BindingProvider<T>() {
+            provider = object : BindingProvider<T> {
                 override fun invoke(component: Component, parameters: Parameters): T {
                     return provider(component, parameters)
                 }
@@ -135,11 +135,11 @@ class Binding<T> private constructor(
 /**
  * Provides instances of T
  */
-abstract class BindingProvider<T> {
-    open fun onAttach(component: Component) {
+interface BindingProvider<T> {
+    fun onAttach(component: Component) {
     }
 
-    abstract operator fun invoke(component: Component, parameters: Parameters): T
+    operator fun invoke(component: Component, parameters: Parameters): T
 }
 
 /**
@@ -147,7 +147,7 @@ abstract class BindingProvider<T> {
  */
 abstract class DelegatingBindingProvider<T>(
     private val delegate: BindingProvider<T>
-) : BindingProvider<T>() {
+) : BindingProvider<T> {
 
     private var initialized = false
 

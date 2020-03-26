@@ -152,7 +152,7 @@ class ComponentBuilder {
                 behavior = behavior,
                 duplicateStrategy = duplicateStrategy,
                 tags = tags,
-                provider = object : BindingProvider<T>() {
+                provider = object : BindingProvider<T> {
                     override fun invoke(component: Component, parameters: Parameters): T {
                         return provider(component, parameters)
                     }

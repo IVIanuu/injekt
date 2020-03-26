@@ -239,7 +239,7 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
 
 private class MapBindingProvider<K, V>(
     private val mapOfKeyWithOverrideInfo: Key<Map<K, KeyWithOverrideInfo>>
-) : BindingProvider<Map<K, KeyWithOverrideInfo>>() {
+) : BindingProvider<Map<K, KeyWithOverrideInfo>> {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
     var thisMap: Map<K, KeyWithOverrideInfo>? = null

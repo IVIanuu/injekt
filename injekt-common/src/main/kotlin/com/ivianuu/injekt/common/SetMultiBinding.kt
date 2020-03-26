@@ -228,7 +228,7 @@ internal fun <E> ComponentBuilder.getSetBuilder(
 
 private class SetBindingProvider<E>(
     private val setOfKeyWithOverrideInfoKey: Key<Set<KeyWithOverrideInfo>>
-) : BindingProvider<Set<KeyWithOverrideInfo>>() {
+) : BindingProvider<Set<KeyWithOverrideInfo>> {
     var thisBuilder: MultiBindingSetBuilder<E>? =
         MultiBindingSetBuilder()
     var thisSet: Set<KeyWithOverrideInfo>? = null
