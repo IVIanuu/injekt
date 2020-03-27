@@ -186,16 +186,14 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
                                 ).toIrType()
                             ).apply {
                                 putTypeArgument(0, tag.defaultType.toIrType())
-                                val arrayType =
-                                    pluginContext.symbols.array.typeWith(tag.defaultType.toIrType())
-
                                 putValueArgument(
                                     0,
                                     IrVarargImpl(
                                         UNDEFINED_OFFSET,
                                         UNDEFINED_OFFSET,
-                                        arrayType,
-                                        listOf.valueParameters.single().varargElementType!!.toIrType(),
+                                        pluginContext.irBuiltIns.arrayClass
+                                            .typeWith(getTypeArgument(0)!!),
+                                        getTypeArgument(0)!!,
                                         tags.map { tagAnnotation ->
                                             val tagObject =
                                                 getClass(tagAnnotation.fqName!!).companionObjectDescriptor!!
