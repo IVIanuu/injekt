@@ -51,7 +51,7 @@ class ComponentBuilder {
     private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
 
     init {
-        (ComponentBuilderContributors.getUnscopedInit() + ComponentBuilderContributors.getNonInitUnscoped())
+        (ComponentBuilderContributors.get())
             .forEach { it.apply(this) }
     }
 
@@ -66,7 +66,7 @@ class ComponentBuilder {
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
             onScopeAddedBlocks.toList().forEach { it(scope) }
-            ComponentBuilderContributors.getForScope(scope)
+            ComponentBuilderContributors.get(scope)
                 .forEach { it.apply(this) }
         }
     }

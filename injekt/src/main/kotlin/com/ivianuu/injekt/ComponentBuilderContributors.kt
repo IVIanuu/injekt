@@ -2,7 +2,7 @@ package com.ivianuu.injekt
 
 internal object ComponentBuilderContributors {
 
-    private val allContributors = mutableListOf<ComponentBuilderContributor>()
+    internal val allContributors = mutableListOf<ComponentBuilderContributor>()
 
     init {
         allContributors += FastServiceLoader.load(
@@ -11,14 +11,9 @@ internal object ComponentBuilderContributors {
         )
     }
 
-    fun getUnscopedInit(): List<ComponentBuilderContributor> =
-        allContributors.filter { it.invokeOnInit && it.scope == null }
-
-    fun getNonInitUnscoped(): List<ComponentBuilderContributor> =
-        allContributors.filter { !it.invokeOnInit && it.scope == null }
-
-    fun getForScope(scope: Scope): List<ComponentBuilderContributor> =
-        allContributors.filter { !it.invokeOnInit && it.scope == scope }
+    fun get(scope: Scope? = null): List<ComponentBuilderContributor> =
+        allContributors.filter { it.scope == scope }
+            .sortedByDescending { it.invokeOnInit }
 
     fun register(contributor: ComponentBuilderContributor) {
         allContributors += contributor
