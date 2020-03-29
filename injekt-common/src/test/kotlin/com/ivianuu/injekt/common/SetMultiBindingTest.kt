@@ -23,6 +23,7 @@ import com.ivianuu.injekt.EagerBehavior
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.invoke
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
