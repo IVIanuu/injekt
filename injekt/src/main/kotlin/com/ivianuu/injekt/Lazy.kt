@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 /**
  * A provider which reuses instances after the first call to [invoke]
  */
-interface Lazy<T> : Provider<T>
+fun interface Lazy<T> : Provider<T>
 
 @IntoComponent
 private fun ComponentBuilder.lazyJitFactory() {

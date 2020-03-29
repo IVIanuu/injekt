@@ -21,12 +21,14 @@ package com.ivianuu.injekt
  * For any type [T] that can be injected, you can also inject Provider<T>.
  * This enables providing multiple instances, lazy instances or optional retrieval of instances
  */
-interface Provider<T> {
+fun interface Provider<T> {
     /**
      * Provides an instance of type [T]
      */
-    operator fun invoke(parameters: Parameters = emptyParameters()): T
+    operator fun invoke(parameters: Parameters): T
 }
+
+operator fun <T> Provider<T>.invoke(): T = invoke(emptyParameters())
 
 @IntoComponent
 private fun ComponentBuilder.providerJitFactory() {
