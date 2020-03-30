@@ -30,7 +30,7 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
 
 /**
- * A [MultiBindingMap] is the description of a "multi binding map"
+ * A builder for a "multi binding map"
  *
  * A multi binding map is a keyed collection of instances of the same type
  * This allows to inject a map of 'Map<K, V>'
@@ -68,12 +68,6 @@ import com.ivianuu.injekt.keyOf
  *
  * @see ComponentBuilder.map
  * @see MultiBindingMapBuilder
- */
-
-/**
- * Builder for a [MultiBindingSet]
- *
- * @see ComponentBuilder.map
  */
 class MultiBindingMapBuilder<K, V> internal constructor() {
     private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
@@ -134,8 +128,6 @@ inline fun <reified K, reified V> ComponentBuilder.map(
 
 /**
  * Runs the [block] in the scope of the [MultiBindingMapBuilder] for [mapKey]
- *
- * @see MultiBindingMap
  */
 inline fun <K, V> ComponentBuilder.map(
     mapKey: Key<Map<K, V>>,

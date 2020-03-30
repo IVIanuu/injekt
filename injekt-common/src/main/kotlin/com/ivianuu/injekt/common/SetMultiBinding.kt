@@ -30,7 +30,7 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
 
 /**
- * A [MultiBindingSet] is a set of bindings
+ * A multi binding set is a set of bindings
  * This allows to inject 'Set<E>'
  *
 
@@ -66,12 +66,6 @@ import com.ivianuu.injekt.keyOf
  * It's also possible to automatically retrieve a 'Set<Provider<E>>'
  * or a 'Set<Lazy<E>>'
  *
- *
- * @see ComponentBuilder.set
- */
-
-/**
- * Builder for a [MultiBindingSet]
  *
  * @see ComponentBuilder.set
  */
@@ -124,8 +118,6 @@ inline fun <reified E> ComponentBuilder.set(
 
 /**
  * Runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
- *
- * @see MultiBindingSet
  */
 inline fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,

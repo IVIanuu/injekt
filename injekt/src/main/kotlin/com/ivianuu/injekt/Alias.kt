@@ -28,6 +28,25 @@ inline fun <reified S : T, reified T> ComponentBuilder.alias(
     )
 }
 
+inline fun <reified T> ComponentBuilder.alias(
+    aliasQualifier: Qualifier,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+) {
+    alias<T, T>(aliasQualifier = aliasQualifier, duplicateStrategy = duplicateStrategy)
+}
+
+fun <T> ComponentBuilder.alias(
+    originalKey: Key<T>,
+    aliasQualifier: Qualifier,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+) {
+    alias(
+        originalKey = originalKey,
+        aliasKey = originalKey.copy(qualifier = aliasQualifier),
+        duplicateStrategy = duplicateStrategy
+    )
+}
+
 /**
  * Makes the [Binding] for [originalKey] retrievable via [aliasKey]
  *
@@ -54,23 +73,4 @@ fun <S, T> ComponentBuilder.alias(
         key = aliasKey,
         duplicateStrategy = duplicateStrategy
     ) { parameters -> get(originalKey, parameters = parameters) as T }
-}
-
-inline fun <reified T> ComponentBuilder.alias(
-    aliasQualifier: Qualifier,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-) {
-    alias<T, T>(aliasQualifier = aliasQualifier, duplicateStrategy = duplicateStrategy)
-}
-
-fun <T> ComponentBuilder.alias(
-    originalKey: Key<T>,
-    aliasQualifier: Qualifier,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-) {
-    alias(
-        originalKey = originalKey,
-        aliasKey = originalKey.copy(qualifier = aliasQualifier),
-        duplicateStrategy = duplicateStrategy
-    )
 }
