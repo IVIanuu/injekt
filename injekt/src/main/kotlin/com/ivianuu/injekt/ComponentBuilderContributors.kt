@@ -6,8 +6,7 @@ internal object ComponentBuilderContributors {
 
     init {
         allContributors += FastServiceLoader.load(
-            ComponentBuilderContributor::class,
-            ClassLoader.getSystemClassLoader()
+            ComponentBuilderContributor::class
         )
     }
 

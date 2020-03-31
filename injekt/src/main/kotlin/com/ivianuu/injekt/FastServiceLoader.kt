@@ -26,26 +26,12 @@ import kotlin.reflect.KClass
 internal object FastServiceLoader {
     private const val PREFIX: String = "META-INF/services/"
 
-    fun <S : Any> load(service: KClass<S>, loader: ClassLoader): List<S> {
-        return loadProviders(service, loader)
-    }
-
-    private fun <S : Any> loadProviders(service: KClass<S>, loader: ClassLoader): List<S> {
+    fun <S : Any> load(service: KClass<S>): List<S> {
         val fullServiceName = PREFIX + service.java.name
         // Filter out situations when both JAR and regular files are in the classpath (e.g. IDEA)
-        val urls = loader.getResources(fullServiceName)
+        val urls = service.java.classLoader!!.getResources(fullServiceName)
         val providers = urls.toList().flatMap { parse(it) }.toSet()
-        return providers.map { getProviderInstance(it, loader, service) }
-    }
-
-    private fun <S : Any> getProviderInstance(
-        name: String,
-        loader: ClassLoader,
-        service: KClass<S>
-    ): S {
-        val clazz = Class.forName(name, false, loader)
-        require(service.java.isAssignableFrom(clazz)) { "Expected service of class $service, but found $clazz" }
-        return service.java.cast(clazz.getDeclaredConstructor().newInstance())
+        return providers.map { Class.forName(it).newInstance() as S }
     }
 
     private fun parse(url: URL): List<String> {

@@ -21,6 +21,8 @@ import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Injekt
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.sample.data.Repository
 
 class App : Application(), ComponentOwner {
 
@@ -31,5 +33,6 @@ class App : Application(), ComponentOwner {
     override fun onCreate() {
         super.onCreate()
         Injekt { logger = AndroidLogger() }
+        get<Repository>()
     }
 }
