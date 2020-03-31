@@ -26,9 +26,9 @@ fun interface Provider<T> {
      * Provides an instance of type [T]
      */
     operator fun invoke(parameters: Parameters): T
-}
 
-operator fun <T> Provider<T>.invoke(): T = invoke(emptyParameters())
+    operator fun invoke(): T = invoke(emptyParameters())
+}
 
 @IntoComponent
 private fun ComponentBuilder.providerJitFactory() {
