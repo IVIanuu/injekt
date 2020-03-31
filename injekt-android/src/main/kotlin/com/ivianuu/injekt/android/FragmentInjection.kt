@@ -32,7 +32,6 @@ import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.invoke
 import com.ivianuu.injekt.keyOf
 
 @ApplicationScope
