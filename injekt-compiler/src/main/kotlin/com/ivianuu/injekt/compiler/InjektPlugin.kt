@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import java.io.File
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -40,15 +40,16 @@ class InjektComponentRegistrar : ComponentRegistrar {
         configuration: CompilerConfiguration
     ) {
         StorageComponentContainerContributor.registerExtension(project, InjektStorageComponentContainerContributorExtension())
+
         val outputDir = configuration.getNotNull(OutputDirKey)
+
+        File(outputDir).deleteRecursively()
+
         IrGenerationExtension.registerExtension(
             project,
-            InjektIrGenerationExtension()
+            InjektIrGenerationExtension(outputDir, project)
         )
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            InjektAnalysisHandlerExtension(outputDir)
-        )
+
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
         message("Hello from the component registrar")

@@ -18,14 +18,28 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-class InjektIrGenerationExtension : IrGenerationExtension {
+class InjektIrGenerationExtension(
+    private val outputDir: String,
+    private val project: Project
+) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        val contributors = mutableListOf<IrClass>()
         InjektBindingGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
-        ComponentBuilderContributorGenerator(pluginContext).visitModuleFragment(
+        ComponentBuilderContributorGenerator(pluginContext, contributors).visitModuleFragment(
             moduleFragment,
             null
         )
+        InjektInitTransformer(pluginContext, contributors).visitModuleFragment(moduleFragment, null)
+        AggregateGenerator(
+            moduleFragment,
+            pluginContext,
+            outputDir,
+            project,
+            contributors
+        ).generate()
     }
 }

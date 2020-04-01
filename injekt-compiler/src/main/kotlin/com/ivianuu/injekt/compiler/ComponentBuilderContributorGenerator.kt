@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -56,13 +57,13 @@ import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
 
 class ComponentBuilderContributorGenerator(
-    pluginContext: IrPluginContext
+    pluginContext: IrPluginContext,
+    private val contributors: MutableList<IrClass>
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val componentBuilderContributor = getClass(InjektClassNames.ComponentBuilderContributor)
@@ -80,9 +81,9 @@ class ComponentBuilderContributorGenerator(
     private fun componentBuilderContributor(function: IrSimpleFunction): IrClass {
         val componentBuilderContributorDescriptor = ClassDescriptorImpl(
             function.file.packageFragmentDescriptor,
-            Name.identifier(function.descriptor.fqNameSafe.asString().replace(".", "_")),
+            function.name,
             Modality.FINAL,
-            ClassKind.CLASS,
+            ClassKind.OBJECT,
             emptyList(),
             SourceElement.NO_SOURCE,
             false,
@@ -101,7 +102,11 @@ class ComponentBuilderContributorGenerator(
             InjektOrigin,
             IrClassSymbolImpl(componentBuilderContributorDescriptor)
         ).apply clazz@{
+            contributors += this
+
             createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            metadata = MetadataSource.Class(componentBuilderContributorDescriptor)
 
             superTypes = superTypes + componentBuilderContributor.defaultType.toIrType()
 

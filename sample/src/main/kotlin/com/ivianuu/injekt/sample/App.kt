@@ -32,7 +32,10 @@ class App : Application(), ComponentOwner {
 
     override fun onCreate() {
         super.onCreate()
-        Injekt { logger = AndroidLogger() }
+        Injekt {
+            logger = AndroidLogger()
+            initializeEndpoint()
+        }
         get<Repository>()
     }
 }

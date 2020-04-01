@@ -33,6 +33,8 @@ object Injekt {
         contributors.forEach { ComponentBuilderContributors.register(it) }
     }
 
+    fun initializeEndpoint(): Unit = error("Must be compiled with the injekt compiler")
+
 }
 
 inline fun Injekt(block: Injekt.() -> Unit) {
