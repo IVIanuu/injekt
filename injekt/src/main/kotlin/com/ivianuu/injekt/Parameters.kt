@@ -109,7 +109,7 @@ private val emptyParameters = Parameters(emptyArray<Any?>())
 fun emptyParameters(): Parameters = emptyParameters
 
 /**
- * Marks a the annotated constructor parameter in a @[Factory] or @[Single] annotated class as a parameter
+ * Marks the annotated constructor parameter as a parameter
  * The generated binding will then use the provided [Parameters] to resolve the instance
  *
  * Example usage:
@@ -124,8 +124,6 @@ fun emptyParameters(): Parameters = emptyParameters
  * Note that [Parameters] will be retrieved in the same order they are specified in the constructor
  *
  * @see Parameters
- * @see Factory
- * @see Single
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Param

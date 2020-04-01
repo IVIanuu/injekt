@@ -16,9 +16,6 @@
 
 package com.ivianuu.injekt
 
-/**
- * Adds the [instance] as a binding for [key]
- */
 inline fun <reified T> ComponentBuilder.instance(
     instance: T,
     qualifier: Qualifier = Qualifier.None,
@@ -33,7 +30,9 @@ inline fun <reified T> ComponentBuilder.instance(
     )
 }
 
-
+/**
+ * Adds the [instance] as a binding for [key]
+ */
 fun <T> ComponentBuilder.instance(
     instance: T,
     key: Key<T>,
