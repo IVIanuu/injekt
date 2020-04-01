@@ -23,7 +23,7 @@ package com.ivianuu.injekt
  */
 fun interface Provider<T> {
     /**
-     * Provides an instance of type [T]
+     * Returns an instance of type [T]
      */
     operator fun invoke(parameters: Parameters): T
 
