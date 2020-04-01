@@ -92,12 +92,12 @@ class Binding<T> private constructor(
     )
 
     companion object {
-        operator fun <T> invoke(
+        inline operator fun <T> invoke(
             key: Key<T>,
             behavior: Behavior = Behavior.None,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
             tags: List<Tag> = emptyList(),
-            provider: Component.(Parameters) -> T
+            crossinline provider: Component.(Parameters) -> T
         ): Binding<T> = invoke(
             key = key,
             behavior = behavior,
