@@ -20,7 +20,7 @@ import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class EagerBehaviorTest {
+class EagerTest {
 
     @Test
     fun testEagerBehavior() {
@@ -41,4 +41,18 @@ class EagerBehaviorTest {
         }
         assertTrue(called)
     }
+
+    @Test
+    fun testEagerDslFunction() {
+        var called = false
+        Component {
+            factory {
+                called = true
+                "non eager binding"
+            }
+            eager<String>()
+        }
+        assertTrue(called)
+    }
+
 }

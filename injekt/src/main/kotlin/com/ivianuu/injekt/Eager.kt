@@ -57,3 +57,25 @@ private fun ComponentBuilder.eagerBindingInterceptor() {
         }
     }
 }
+
+inline fun <reified T> ComponentBuilder.eager(
+    qualifier: Qualifier = Qualifier.None
+) {
+    eager<T>(keyOf(qualifier))
+}
+
+/**
+ * Eagerly initializes the [Binding] for [key]
+ */
+fun <T> ComponentBuilder.eager(key: Key<T>) {
+    bind(
+        key = key.copy(qualifier = key.qualifier + EagerQualifier),
+        behavior = EagerBehavior,
+        duplicateStrategy = DuplicateStrategy.Drop
+    ) { get(key) }
+}
+
+@QualifierMarker
+private annotation class EagerQualifier {
+    companion object : Qualifier.Element
+}
