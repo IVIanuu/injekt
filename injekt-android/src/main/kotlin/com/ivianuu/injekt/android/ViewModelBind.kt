@@ -25,15 +25,17 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
+import com.ivianuu.injekt.keyOf
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
-object ViewModelBehavior : Behavior.Element {
+class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
     override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        ViewModelProvider(provider)
+        ViewModelProvider(provider, key)
 }
 
 inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
@@ -42,9 +44,10 @@ inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
+    val key = keyOf<T>(qualifier = qualifier)
     bind(
-        qualifier = qualifier,
-        behavior = ViewModelBehavior + behavior,
+        key = key,
+        behavior = ViewModelBehavior(key) + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
@@ -59,7 +62,7 @@ annotation class ViewModelBind {
 private fun ComponentBuilder.viewModelBindingInterceptor() {
     bindingInterceptor { binding ->
         if (ViewModelBind in binding.tags) {
-            binding.copy(behavior = ViewModelBehavior + binding.behavior)
+            binding.copy(behavior = ViewModelBehavior(binding.key) + binding.behavior)
         } else {
             binding
         }
@@ -67,7 +70,8 @@ private fun ComponentBuilder.viewModelBindingInterceptor() {
 }
 
 private class ViewModelProvider<T>(
-    delegate: BindingProvider<T>
+    delegate: BindingProvider<T>,
+    private val key: Key<*>
 ) : DelegatingBindingProvider<T>(delegate) {
     override fun invoke(component: Component, parameters: Parameters): T {
         val viewModelStore = component.get<ViewModelStore>()
@@ -79,6 +83,6 @@ private class ViewModelProvider<T>(
             }
         )
 
-        return viewModelProvider[ViewModel::class.java] as T
+        return viewModelProvider[key.hashCode().toString(), ViewModel::class.java] as T
     }
 }
