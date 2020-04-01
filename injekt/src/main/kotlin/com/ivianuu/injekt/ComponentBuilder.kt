@@ -80,6 +80,13 @@ class ComponentBuilder {
     }
 
     /**
+     * Removes the [scope]
+     */
+    fun removeScope(scope: Scope) {
+        _scopes -= scope
+    }
+
+    /**
      * Adds the [parents] to the component if this component cannot resolve a instance
      * it will ask it's parents
      */
@@ -97,6 +104,13 @@ class ComponentBuilder {
     fun setParents(parents: List<Component>) {
         _parents.clear()
         parents(*parents.toTypedArray())
+    }
+
+    /**
+     * Removes the [parent]
+     */
+    fun removeParent(parent: Component) {
+        _parents -= parent
     }
 
     inline fun jitFactory(crossinline block: (Key<*>, Component) -> Binding<*>?) {
@@ -121,6 +135,13 @@ class ComponentBuilder {
     fun setJitFactories(factories: List<JitFactory>) {
         _jitFactories.clear()
         jitFactories(*factories.toTypedArray())
+    }
+
+    /**
+     * Removes the [factory]
+     */
+    fun removeJitFactory(factory: JitFactory) {
+        _jitFactories -= factory
     }
 
     inline fun <reified T> bind(
@@ -187,6 +208,13 @@ class ComponentBuilder {
     fun setBindings(bindings: List<Binding<*>>) {
         _bindings.clear()
         bindings.forEach { bind(it) }
+    }
+
+    /**
+     * Removes the binding for [key]
+     */
+    fun removeBinding(key: Key<*>) {
+        _bindings -= key
     }
 
     /**
