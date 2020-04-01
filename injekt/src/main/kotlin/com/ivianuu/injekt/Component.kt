@@ -50,7 +50,7 @@ class Component internal constructor(
     private var initializedBindings: MutableList<Binding<*>>? = mutableListOf()
 
     init {
-        for (binding in _bindings.values) {
+        for (binding in _bindings.values.toList()) {
             val initializedBindings = initializedBindings!!
             if (binding !in initializedBindings) {
                 initializedBindings += binding
