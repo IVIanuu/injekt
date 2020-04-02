@@ -7,8 +7,8 @@ class ComponentBuilderContributorsTest {
 
     @Test
     fun testOrdering() {
-        val existingContributors = ComponentBuilderContributors.allContributors.toList()
-        ComponentBuilderContributors.allContributors.clear()
+        val existingContributors = ComponentBuilderContributors.contributorsByScope.toMap()
+        ComponentBuilderContributors.contributorsByScope.clear()
 
         val initA = object : ComponentBuilderContributor {
             override val invokeOnInit: Boolean
@@ -46,7 +46,8 @@ class ComponentBuilderContributorsTest {
         }
 
         assertEquals(listOf(initA, initB, nonInitA, nonInitB), ComponentBuilderContributors.get())
-        ComponentBuilderContributors.allContributors += existingContributors
+        ComponentBuilderContributors.contributorsByScope.clear()
+        ComponentBuilderContributors.contributorsByScope += existingContributors
     }
 
 }

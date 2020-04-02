@@ -2,14 +2,16 @@ package com.ivianuu.injekt
 
 internal object ComponentBuilderContributors {
 
-    internal val allContributors = mutableListOf<ComponentBuilderContributor>()
+    internal val contributorsByScope =
+        mutableMapOf<Scope?, MutableList<ComponentBuilderContributor>>()
 
     fun get(scope: Scope? = null): List<ComponentBuilderContributor> =
-        allContributors.filter { it.scope == scope }
-            .sortedByDescending { it.invokeOnInit }
+        contributorsByScope.getOrElse(scope) { emptyList() }
 
     fun register(contributor: ComponentBuilderContributor) {
-        allContributors += contributor
+        contributorsByScope.getOrPut(contributor.scope) { mutableListOf() }.run {
+            this += contributor
+            sortByDescending { it.invokeOnInit }
+        }
     }
-
 }
