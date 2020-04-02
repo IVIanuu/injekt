@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
 class InjektIrGenerationExtension(
-    private val outputDir: String,
     private val project: Project
 ) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
@@ -37,7 +36,6 @@ class InjektIrGenerationExtension(
         AggregateGenerator(
             moduleFragment,
             pluginContext,
-            outputDir,
             project,
             contributors
         ).generate()

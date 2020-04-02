@@ -43,26 +43,18 @@ import java.io.File
 class AggregateGenerator(
     private val moduleFragment: IrModuleFragment,
     private val pluginContext: IrPluginContext,
-    private val outputDir: String,
     private val project: Project,
     private val contributors: List<IrClass>
 ) {
 
     fun generate() {
-        val directory = File("$outputDir/kotlin/com/ivianuu/injekt/aggregate")
-            .apply { mkdirs() }
-
         val psiSourceManager = pluginContext.psiSourceManager as PsiSourceManager
 
         contributors.forEach { contributor ->
             val className =
                 Name.identifier(contributor.descriptor.fqNameSafe.asString().replace(".", "_"))
 
-            val sourceFile = File(directory, "$className.kt")
-
-            //check(!sourceFile.exists())
-            //sourceFile.createNewFile()
-            //sourceFile.writeText("package com.ivianuu.injekt.aggregate\n\nclass $className")
+            val sourceFile = File("$className.kt")
 
             val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), sourceFile)
 

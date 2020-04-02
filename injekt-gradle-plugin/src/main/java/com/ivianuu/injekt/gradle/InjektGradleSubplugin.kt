@@ -16,16 +16,13 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.android.build.gradle.BaseExtension
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
-import java.io.File
 
 @AutoService(KotlinGradleSubplugin::class)
 open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
@@ -52,27 +49,7 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
             kotlinCompilation.compilationName
         }
 
-        val outputDir = File(project.buildDir, "generated/source/injekt/$sourceSetName")
-        val resourcesDir = File(outputDir, "resources")
-
-        val androidExtension = project.extensions.findByName("android") as? BaseExtension
-        androidExtension?.sourceSets
-            ?.findByName(sourceSetName)
-            ?.resources
-            ?.srcDir(resourcesDir)
-
-        val sets = project.extensions.findByName("sourceSets") as SourceSetContainer
-        sets.findByName(sourceSetName)
-            ?.resources
-            ?.srcDir(resourcesDir)
-
-        kotlinCompile.outputs.upToDateWhen { resourcesDir.exists() }
-
-        return listOf(
-            SubpluginOption(
-                "outputDir", outputDir.absolutePath
-            )
-        )
+        return emptyList()
     }
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
