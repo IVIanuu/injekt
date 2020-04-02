@@ -37,20 +37,7 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         variantData: Any?,
         androidProjectHandler: Any?,
         kotlinCompilation: KotlinCompilation<*>?
-    ): List<SubpluginOption> {
-        val sourceSetName = if (variantData != null) {
-            // Lol
-            variantData.javaClass.getMethod("getName").run {
-                isAccessible = true
-                invoke(variantData) as String
-            }
-        } else {
-            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
-            kotlinCompilation.compilationName
-        }
-
-        return emptyList()
-    }
+    ): List<SubpluginOption> = emptyList()
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 
