@@ -25,6 +25,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
 dependencies {
+    compileOnly(project(":injekt-stub"))
     api(Deps.Kotlin.stdlib)
     testImplementation(Deps.junit)
 }

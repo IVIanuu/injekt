@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 Manuel Wrage<
+ * Copyright 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.gradle.archive
 
-fun main() {
-    runAllInjectionTests()
+
+/**
+ * Visitor for [ArchiveItem]
+ */
+interface ArchiveItemVisitor {
+
+    fun visit(archive: Archive) {
+
+    }
+
+    fun visit(archiveFile: ArchiveFile) {
+
+    }
 }

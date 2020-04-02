@@ -9,15 +9,12 @@ import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
 import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
-import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -35,9 +32,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi2ir.PsiSourceManager
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
-import org.jetbrains.kotlin.utils.Printer
 import java.io.File
 
 class AggregateGenerator(
@@ -66,7 +61,7 @@ class AggregateGenerator(
                 false
             )
 
-            val memberScope = AggregateMemberScope()
+            val memberScope = MutableMemberScope()
 
             val packageFragmentDescriptor =
                 object : PackageFragmentDescriptorImpl(
@@ -141,22 +136,4 @@ class AggregateGenerator(
         }
     }
 
-}
-
-private class AggregateMemberScope : MemberScopeImpl() {
-    val classDescriptors = mutableListOf<ClassDescriptor>()
-
-    override fun getContributedClassifier(
-        name: Name,
-        location: LookupLocation
-    ): ClassifierDescriptor? {
-        return classDescriptors.firstOrNull { it.name == name }
-    }
-
-    override fun getClassifierNames(): Set<Name>? {
-        return classDescriptors.mapTo(mutableSetOf()) { it.name }
-    }
-
-    override fun printScopeStructure(p: Printer) {
-    }
 }

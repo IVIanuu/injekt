@@ -32,8 +32,13 @@ class InjektIrGenerationExtension(
             moduleFragment,
             null
         )
-        InjektInitTransformer(pluginContext, contributors).visitModuleFragment(moduleFragment, null)
         AggregateGenerator(
+            moduleFragment,
+            pluginContext,
+            project,
+            contributors
+        ).generate()
+        GeneratedComponentBuilderContributorsGenerator(
             moduleFragment,
             pluginContext,
             project,

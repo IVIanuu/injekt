@@ -5,5 +5,6 @@ include(
     ":injekt-common",
     ":injekt-compiler",
     ":injekt-gradle-plugin",
+    ":injekt-stub",
     ":sample"
 )

@@ -4,6 +4,11 @@ internal object ComponentBuilderContributors {
 
     internal val allContributors = mutableListOf<ComponentBuilderContributor>()
 
+    init {
+        allContributors += GeneratedComponentContributors.contributors
+            .filterIsInstance<ComponentBuilderContributor>()
+    }
+
     fun get(scope: Scope? = null): List<ComponentBuilderContributor> =
         allContributors.filter { it.scope == scope }
             .sortedByDescending { it.invokeOnInit }

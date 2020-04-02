@@ -18,9 +18,47 @@ package com.ivianuu.injekt.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.attributes.Attribute
+import org.gradle.api.internal.artifacts.ArtifactAttributes
 
 open class InjektGradlePlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
+        val transformed =
+            Attribute.of("com.ivianuu.injekt.transformed", Boolean::class.javaObjectType)
+
+        val transformableTypes = listOf(
+            "jar", "processed-jar", "aar", "processed-aar"
+        )
+
+        project.dependencies.attributesSchema
+            .attribute(transformed)
+
+        transformableTypes.forEach {
+            project.dependencies.artifactTypes.findByName(it)
+                ?.attributes?.attribute(transformed, false)
+        }
+
+        project.configurations.all { configuration ->
+            project.afterEvaluate {
+                configuration.attributes.attribute(transformed, true)
+            }
+            configuration.dependencies.all { dependency ->
+                println("lalala ${configuration.name} -> $dependency")
+            }
+        }
+
+        transformableTypes.forEach { type ->
+            project.dependencies.registerTransform(
+                GradleTransform::class.java
+            ) {
+                it.from
+                    .attribute(transformed, false)
+                    .attribute(ArtifactAttributes.ARTIFACT_FORMAT, type)
+                it.to
+                    .attribute(transformed, true)
+                    .attribute(ArtifactAttributes.ARTIFACT_FORMAT, type)
+            }
+        }
     }
 }

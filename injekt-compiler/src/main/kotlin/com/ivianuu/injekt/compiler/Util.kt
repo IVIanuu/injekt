@@ -16,13 +16,19 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
+import org.jetbrains.kotlin.utils.Printer
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
@@ -57,4 +63,22 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     val descriptor =
         module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
     return descriptor.annotations.hasAnnotation(annotation)
+}
+
+class MutableMemberScope : MemberScopeImpl() {
+    val classDescriptors = mutableListOf<ClassDescriptor>()
+
+    override fun getContributedClassifier(
+        name: Name,
+        location: LookupLocation
+    ): ClassifierDescriptor? {
+        return classDescriptors.firstOrNull { it.name == name }
+    }
+
+    override fun getClassifierNames(): Set<Name>? {
+        return classDescriptors.mapTo(mutableSetOf()) { it.name }
+    }
+
+    override fun printScopeStructure(p: Printer) {
+    }
 }
