@@ -31,7 +31,7 @@ import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
 
 val defaultConfig = Config(
-    rounds = 1000,
+    rounds = 100_000,
     timeUnit = TimeUnit.Nanos
 )
 

@@ -42,7 +42,7 @@ class Binding<T> private constructor(
     /**
      * All tags of this binding
      */
-    val tags: List<Tag> = emptyList(),
+    val tags: Set<Tag> = emptySet(),
     /**
      * Creates instances for this binding
      */
@@ -81,7 +81,7 @@ class Binding<T> private constructor(
         key: Key<T> = this.key,
         behavior: Behavior = this.behavior,
         duplicateStrategy: DuplicateStrategy = this.duplicateStrategy,
-        tags: List<Tag> = this.tags,
+        tags: Set<Tag> = this.tags,
         provider: BindingProvider<T> = this.provider
     ) = invoke(
         key,
@@ -96,7 +96,7 @@ class Binding<T> private constructor(
             key: Key<T>,
             behavior: Behavior = Behavior.None,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-            tags: List<Tag> = emptyList(),
+            tags: Set<Tag> = emptySet(),
             crossinline provider: Component.(Parameters) -> T
         ): Binding<T> = invoke(
             key = key,
@@ -117,7 +117,7 @@ class Binding<T> private constructor(
             key: Key<T>,
             behavior: Behavior = Behavior.None,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-            tags: List<Tag> = emptyList(),
+            tags: Set<Tag> = emptySet(),
             provider: BindingProvider<T>
         ): Binding<T> = Binding(
             key = key,

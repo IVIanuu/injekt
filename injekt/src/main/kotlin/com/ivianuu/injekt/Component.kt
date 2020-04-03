@@ -38,7 +38,7 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    val scopes: List<Scope>,
+    val scopes: Set<Scope>,
     val parents: List<Component>,
     val jitFactories: List<JitFactory>,
     bindings: MutableMap<Key<*>, Binding<*>>
@@ -47,13 +47,13 @@ class Component internal constructor(
     private val _bindings = bindings
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private var initializedBindings: MutableList<Binding<*>>? = mutableListOf()
+    private var initializedBindings: MutableSet<Key<*>>? = mutableSetOf()
 
     init {
         for (binding in _bindings.values.toList()) {
             val initializedBindings = initializedBindings!!
-            if (binding !in initializedBindings) {
-                initializedBindings += binding
+            if (binding.key !in initializedBindings) {
+                initializedBindings += binding.key
                 binding.provider.onAttach(this)
             }
         }
@@ -101,8 +101,8 @@ class Component internal constructor(
             initializedBindings?.let {
                 // we currently initialize bindings
                 // make sure that the requested binding gets also initialized
-                if (binding!! !in it) {
-                    it += binding!!
+                if (binding!!.key !in it) {
+                    it += binding!!.key
                     binding!!.provider.onAttach(this)
                 }
             }
@@ -135,7 +135,7 @@ class Component internal constructor(
                     this
                 }
                 synchronized(component._bindings) { component._bindings[key] = binding }
-                initializedBindings?.let { it += binding }
+                initializedBindings?.let { it += key }
                 binding.provider.onAttach(component)
                 return binding
             }

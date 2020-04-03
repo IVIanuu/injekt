@@ -31,8 +31,8 @@ inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder {
 
-    private val _scopes = mutableListOf<Scope>()
-    val scopes: List<Scope> get() = _scopes
+    private val _scopes = mutableSetOf<Scope>()
+    val scopes: Set<Scope> get() = _scopes
 
     private val _parents = mutableListOf<Component>()
     val parents: List<Component> get() = _parents
@@ -148,7 +148,7 @@ class ComponentBuilder {
         qualifier: Qualifier = Qualifier.None,
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        tags: List<Tag> = emptyList(),
+        tags: Set<Tag> = emptySet(),
         crossinline provider: Component.(Parameters) -> T
     ) {
         bind(
@@ -164,7 +164,7 @@ class ComponentBuilder {
         key: Key<T>,
         behavior: Behavior = Behavior.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        tags: List<Tag> = emptyList(),
+        tags: Set<Tag> = emptySet(),
         crossinline provider: Component.(Parameters) -> T
     ) {
         bind(

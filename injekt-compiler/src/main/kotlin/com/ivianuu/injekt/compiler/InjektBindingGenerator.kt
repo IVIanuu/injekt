@@ -168,18 +168,18 @@ class InjektBindingGenerator(pluginContext: IrPluginContext) :
                     message("tags for ${injectClass.descriptor} are -> $tags")
 
                     if (tags.isNotEmpty()) {
-                        val listOf =
+                        val setOf =
                             pluginContext.moduleDescriptor.getPackage(FqName("kotlin.collections"))
                                 .memberScope
-                                .findFirstFunction("listOf") {
+                                .findFirstFunction("setOf") {
                                     it.valueParameters.singleOrNull()?.isVararg ?: false
                                 }
                         putValueArgument(
                             3,
                             DeclarationIrBuilder(context, symbol).irCall(
-                                symbolTable.referenceSimpleFunction(listOf),
+                                symbolTable.referenceSimpleFunction(setOf),
                                 type = KotlinTypeFactory.simpleType(
-                                    pluginContext.builtIns.list.defaultType,
+                                    pluginContext.builtIns.set.defaultType,
                                     arguments = listOf(
                                         tag.defaultType.asTypeProjection()
                                     )
