@@ -51,7 +51,7 @@ class ComponentBuilder {
     private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
 
     init {
-        (ComponentBuilderContributors.get())
+        (Modules.get())
             .fastForEach { it.apply(this) }
     }
 
@@ -66,7 +66,7 @@ class ComponentBuilder {
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
             onScopeAddedBlocks.toList().fastForEach { it(scope) }
-            ComponentBuilderContributors.get(scope)
+            Modules.get(scope)
                 .fastForEach { it.apply(this) }
         }
     }
@@ -338,15 +338,4 @@ class ComponentBuilder {
         parents.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
-}
-
-/**
- * Bridge for @IntoComponent functions
- *
- * @see IntoComponent
- */
-interface ComponentBuilderContributor {
-    val scope: Scope? get() = null
-    val invokeOnInit: Boolean get() = false
-    fun apply(builder: ComponentBuilder)
 }

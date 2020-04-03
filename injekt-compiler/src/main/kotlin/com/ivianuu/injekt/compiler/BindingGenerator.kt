@@ -82,13 +82,13 @@ class BindingGenerator(pluginContext: IrPluginContext) :
         })
 
         injectableClasses.forEach {
-            componentBuilderContributorFunction(declaration, it)
+            module(declaration, it)
         }
 
         return declaration
     }
 
-    private fun componentBuilderContributorFunction(
+    private fun module(
         file: IrFile,
         injectClass: IrClass
     ) {

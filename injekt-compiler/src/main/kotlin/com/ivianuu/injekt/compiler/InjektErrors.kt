@@ -43,12 +43,11 @@ interface InjektErrors {
         @JvmField
         val NeedsPrimaryConstructorOrAnnotation = error()
         @JvmField
-        val InvalidIntoComponentFunctionSignature = error()
+        val InvalidModuleSignature = error()
         @JvmField
-        val IntoComponentFunctionMustBeStatic = error()
-
+        val ModuleMustBeStatic = error()
         @JvmField
-        val CannotInvokeIntoComponentFunctions = error()
+        val CannotInvokeModuleFunctions = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -99,16 +98,16 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
         )
         map.put(
-            InjektErrors.InvalidIntoComponentFunctionSignature,
-            "@IntoComponent functions must take ComponentBuilder as a parameter or extension receiver and must return unit"
+            InjektErrors.InvalidModuleSignature,
+            "@Module functions must take ComponentBuilder as a parameter or extension receiver and must return unit"
         )
         map.put(
-            InjektErrors.IntoComponentFunctionMustBeStatic,
-            "@IntoComponent functions must be callable from a static context"
+            InjektErrors.ModuleMustBeStatic,
+            "@Module functions must be callable from a static context"
         )
         map.put(
-            InjektErrors.CannotInvokeIntoComponentFunctions,
-            "@IntoComponent functions cannot be invoked"
+            InjektErrors.CannotInvokeModuleFunctions,
+            "@Module functions cannot be invoked"
         )
     }
 

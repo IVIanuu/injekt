@@ -23,7 +23,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
@@ -93,8 +93,8 @@ annotation class Multi {
     companion object : Tag
 }
 
-@IntoComponent(invokeOnInit = true)
-private fun ComponentBuilder.multiBindingInterceptor() {
+@Module(invokeOnInit = true)
+private fun ComponentBuilder.multiModule() {
     bindingInterceptor { binding ->
         if (Multi in binding.tags) {
             binding.copy(behavior = MultiBehavior + binding.behavior)

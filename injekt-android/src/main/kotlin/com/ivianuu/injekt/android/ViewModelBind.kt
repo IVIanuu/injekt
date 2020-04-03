@@ -24,7 +24,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
@@ -68,8 +68,8 @@ annotation class ViewModelBind {
     companion object : Tag
 }
 
-@IntoComponent(invokeOnInit = true)
-private fun ComponentBuilder.viewModelBindingInterceptor() {
+@Module(invokeOnInit = true)
+private fun ComponentBuilder.viewModelModule() {
     bindingInterceptor { binding ->
         if (ViewModelBind in binding.tags) {
             binding.copy(behavior = ViewModelBehavior(binding.key) + binding.behavior)

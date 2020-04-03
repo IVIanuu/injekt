@@ -23,7 +23,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
@@ -81,8 +81,8 @@ annotation class Weak {
     companion object : Tag
 }
 
-@IntoComponent(invokeOnInit = true)
-private fun ComponentBuilder.weakBindingInterceptor() {
+@Module(invokeOnInit = true)
+private fun ComponentBuilder.weakModule() {
     bindingInterceptor { binding ->
         if (Single in binding.tags) {
             binding.copy(behavior = WeakBehavior + binding.behavior)

@@ -44,15 +44,15 @@ class AggregateGenerator(
     private val moduleFragment: IrModuleFragment,
     private val pluginContext: IrPluginContext,
     private val project: Project,
-    private val contributors: List<IrClass>
+    private val modules: List<IrClass>
 ) {
 
     fun generate() {
         val psiSourceManager = pluginContext.psiSourceManager as PsiSourceManager
 
-        contributors.forEach { contributor ->
+        modules.forEach { module ->
             val className =
-                Name.identifier(contributor.descriptor.fqNameSafe.asString().replace(".", "_"))
+                Name.identifier(module.descriptor.fqNameSafe.asString().replace(".", "_"))
 
             val sourceFile = File("$className.kt")
 

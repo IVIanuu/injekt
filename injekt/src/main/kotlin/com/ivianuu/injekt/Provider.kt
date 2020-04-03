@@ -32,8 +32,8 @@ fun interface Provider<T> {
     operator fun invoke(): T = invoke(emptyParameters())
 }
 
-@IntoComponent
-private fun ComponentBuilder.providerJitFactory() {
+@Module
+private fun ComponentBuilder.providerModule() {
     jitFactory { key, _ ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Provider::class) return@jitFactory null

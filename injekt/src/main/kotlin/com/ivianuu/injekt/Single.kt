@@ -74,8 +74,8 @@ annotation class Single {
     companion object : Tag
 }
 
-@IntoComponent(invokeOnInit = true)
-private fun ComponentBuilder.singleBindingInterceptor() {
+@Module(invokeOnInit = true)
+private fun ComponentBuilder.singleModule() {
     bindingInterceptor { binding ->
         if (Single in binding.tags) {
             binding.copy(behavior = SingleBehavior + binding.behavior)

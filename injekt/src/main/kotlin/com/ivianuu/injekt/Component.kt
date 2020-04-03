@@ -212,8 +212,8 @@ inline fun <T> ComponentOwner.getLazy(
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(key, parameters()) }
 
-@IntoComponent(invokeOnInit = true)
-private fun ComponentBuilder.componentBindings() {
+@Module(invokeOnInit = true)
+private fun ComponentBuilder.componentModule() {
     bind(
         behavior = BoundBehavior,
         duplicateStrategy = DuplicateStrategy.Override

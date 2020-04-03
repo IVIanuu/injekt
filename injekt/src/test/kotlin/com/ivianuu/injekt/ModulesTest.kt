@@ -3,35 +3,35 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class ComponentBuilderContributorsTest {
+class ModulesTest {
 
     @Test
     fun testOrdering() {
-        val existingContributors = ComponentBuilderContributors.contributorsByScope.toMap()
-        ComponentBuilderContributors.contributorsByScope.clear()
+        val existingModules = Modules.modulesByScope.toMap()
+        Modules.modulesByScope.clear()
 
-        val initA = object : ComponentBuilderContributor {
+        val initA = object : Module.Impl {
             override val invokeOnInit: Boolean
                 get() = true
 
             override fun apply(builder: ComponentBuilder) {
             }
         }
-        val initB = object : ComponentBuilderContributor {
+        val initB = object : Module.Impl {
             override val invokeOnInit: Boolean
                 get() = true
 
             override fun apply(builder: ComponentBuilder) {
             }
         }
-        val nonInitA = object : ComponentBuilderContributor {
+        val nonInitA = object : Module.Impl {
             override val invokeOnInit: Boolean
                 get() = false
 
             override fun apply(builder: ComponentBuilder) {
             }
         }
-        val nonInitB = object : ComponentBuilderContributor {
+        val nonInitB = object : Module.Impl {
             override val invokeOnInit: Boolean
                 get() = false
 
@@ -40,14 +40,14 @@ class ComponentBuilderContributorsTest {
         }
 
         Injekt {
-            componentBuilderContributors(
+            modules(
                 initA, nonInitA, nonInitB, initB
             )
         }
 
-        assertEquals(listOf(initA, initB, nonInitA, nonInitB), ComponentBuilderContributors.get())
-        ComponentBuilderContributors.contributorsByScope.clear()
-        ComponentBuilderContributors.contributorsByScope += existingContributors
+        assertEquals(listOf(initA, initB, nonInitA, nonInitB), Modules.get())
+        Modules.modulesByScope.clear()
+        Modules.modulesByScope += existingModules
     }
 
 }

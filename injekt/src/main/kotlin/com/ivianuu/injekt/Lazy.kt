@@ -23,8 +23,8 @@ import com.jakewharton.confundus.unsafeCast
  */
 fun interface Lazy<T> : Provider<T>
 
-@IntoComponent
-private fun ComponentBuilder.lazyJitFactory() {
+@Module
+private fun ComponentBuilder.lazyModule() {
     jitFactory { key, _ ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Lazy::class) return@jitFactory null

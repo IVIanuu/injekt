@@ -25,11 +25,11 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val contributors = mutableListOf<IrClass>()
+        val modules = mutableListOf<IrClass>()
         BindingGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
-        ComponentBuilderContributorGenerator(pluginContext, contributors)
+        ModuleImplGenerator(pluginContext, modules)
             .visitModuleFragment(moduleFragment, null)
-        InjektInitTransformer(pluginContext, contributors).visitModuleFragment(moduleFragment, null)
+        InjektInitTransformer(pluginContext, modules).visitModuleFragment(moduleFragment, null)
         KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
@@ -38,7 +38,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             moduleFragment,
             pluginContext,
             project,
-            contributors
+            modules
         ).generate()
     }
 

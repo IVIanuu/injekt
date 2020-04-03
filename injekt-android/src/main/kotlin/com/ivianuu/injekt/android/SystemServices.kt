@@ -78,14 +78,14 @@ import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
 @ApplicationScope
-@IntoComponent
-private fun ComponentBuilder.systemServices() {
+@Module
+private fun ComponentBuilder.systemServicesModule() {
     getSystemServicesClasses()
         .forEach { serviceClass ->
             factory(key = keyOf(serviceClass)) {

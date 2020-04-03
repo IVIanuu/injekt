@@ -27,10 +27,10 @@ object Injekt {
     var logger: Logger? = null
 
     /**
-     * Invokes any of [contributors] on each [ComponentBuilder]
+     * Invokes any of [modules] on each [ComponentBuilder]
      */
-    fun componentBuilderContributors(vararg contributors: ComponentBuilderContributor) {
-        contributors.fastForEach { ComponentBuilderContributors.register(it) }
+    fun modules(vararg modules: Module.Impl) {
+        modules.fastForEach { Modules.register(it) }
     }
 
     fun initializeEndpoint(): Unit = error("Must be compiled with the injekt compiler")
@@ -41,13 +41,13 @@ inline fun Injekt(block: Injekt.() -> Unit) {
     Injekt.block()
 }
 
-inline fun Injekt.componentBuilderContributor(
+inline fun Injekt.module(
     scope: Scope? = null,
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
 ) {
-    componentBuilderContributors(
-        object : ComponentBuilderContributor {
+    modules(
+        object : Module.Impl {
             override val scope: Scope?
                 get() = scope
             override val invokeOnInit: Boolean

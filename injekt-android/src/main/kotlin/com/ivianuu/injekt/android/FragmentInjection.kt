@@ -24,7 +24,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
@@ -78,8 +78,8 @@ class InjektFragmentFactory(
 }
 
 @ApplicationScope
-@IntoComponent
-private fun ComponentBuilder.fragmentInjectionBindings() {
+@Module
+private fun ComponentBuilder.fragmentInjectionModule() {
     map<String, Fragment>(mapQualifier = FragmentsMap)
     alias<InjektFragmentFactory, FragmentFactory>()
 }

@@ -47,8 +47,8 @@ annotation class Eager {
     companion object : Tag
 }
 
-@IntoComponent(invokeOnInit = true)
-private fun ComponentBuilder.eagerBindingInterceptor() {
+@Module(invokeOnInit = true)
+private fun ComponentBuilder.eagerModule() {
     bindingInterceptor { binding ->
         if (Eager in binding.tags) {
             binding.copy(behavior = EagerBehavior + binding.behavior)

@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -61,25 +62,26 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
 
-class ComponentBuilderContributorGenerator(
+class ModuleImplGenerator(
     pluginContext: IrPluginContext,
-    private val contributors: MutableList<IrClass>
+    private val modules: MutableList<IrClass>
 ) : AbstractInjektTransformer(pluginContext) {
 
-    private val componentBuilderContributor = getClass(InjektClassNames.ComponentBuilderContributor)
+    private val moduleImpl = getClass(InjektClassNames.Module)
+        .unsubstitutedMemberScope.getContributedClassifier(Name.identifier("Impl"), NoLookupLocation.FROM_BACKEND)!! as ClassDescriptor
     private val scope = getClass(InjektClassNames.Scope)
 
     override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
         super.visitSimpleFunction(declaration)
         if (pluginContext.irTrace[InjektWritableSlices.IS_INTO_COMPONENT, declaration] == null &&
-            !declaration.descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent)
+            !declaration.descriptor.annotations.hasAnnotation(InjektClassNames.Module)
         ) return declaration
 
-        return componentBuilderContributor(declaration)
+        return moduleImpl(declaration)
     }
 
-    private fun componentBuilderContributor(function: IrSimpleFunction): IrClass {
-        val componentBuilderContributorDescriptor = ClassDescriptorImpl(
+    private fun moduleImpl(function: IrSimpleFunction): IrClass {
+        val moduleDescriptor = ClassDescriptorImpl(
             function.file.packageFragmentDescriptor,
             function.name,
             Modality.FINAL,
@@ -100,15 +102,15 @@ class ComponentBuilderContributorGenerator(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
             InjektOrigin,
-            IrClassSymbolImpl(componentBuilderContributorDescriptor)
+            IrClassSymbolImpl(moduleDescriptor)
         ).apply clazz@{
-            contributors += this
+            modules += this
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            metadata = MetadataSource.Class(componentBuilderContributorDescriptor)
+            metadata = MetadataSource.Class(moduleDescriptor)
 
-            superTypes = superTypes + componentBuilderContributor.defaultType.toIrType()
+            superTypes = superTypes + moduleImpl.defaultType.toIrType()
 
             checkNotNull(thisReceiver)
 
@@ -134,7 +136,7 @@ class ComponentBuilderContributorGenerator(
                 }
             }
 
-            val scopeProperty = componentBuilderContributor.unsubstitutedMemberScope
+            val scopeProperty = moduleImpl.unsubstitutedMemberScope
                 .getContributedVariables(
                     Name.identifier("scope"),
                     NoLookupLocation.FROM_BACKEND
@@ -174,12 +176,12 @@ class ComponentBuilderContributorGenerator(
             }
 
             val invokeOnInit =
-                function.descriptor.annotations.findAnnotation(InjektClassNames.IntoComponent)
+                function.descriptor.annotations.findAnnotation(InjektClassNames.Module)
                     ?.let { annotation ->
                         (annotation.argumentValue("invokeOnInit") as? BooleanValue)?.value
                     } == true
 
-            val invokeOnInitProperty = componentBuilderContributor.unsubstitutedMemberScope
+            val invokeOnInitProperty = moduleImpl.unsubstitutedMemberScope
                 .getContributedVariables(
                     Name.identifier("invokeOnInit"),
                     NoLookupLocation.FROM_BACKEND
@@ -211,7 +213,7 @@ class ComponentBuilderContributorGenerator(
                 isSuspend = false,
                 origin = InjektOrigin
             ).apply func@{
-                val applyFunc = componentBuilderContributor.unsubstitutedMemberScope
+                val applyFunc = moduleImpl.unsubstitutedMemberScope
                     .findSingleFunction(Name.identifier("apply"))
 
                 overriddenSymbols =
