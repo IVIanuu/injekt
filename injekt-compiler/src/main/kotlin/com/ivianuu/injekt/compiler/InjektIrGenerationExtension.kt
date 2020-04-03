@@ -31,8 +31,8 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             .visitModuleFragment(moduleFragment, null)
         InjektInitTransformer(pluginContext, contributors).visitModuleFragment(moduleFragment, null)
         KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
-        KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
 
         AggregateGenerator(
             moduleFragment,

@@ -14,10 +14,11 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -109,9 +110,8 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
 
         return builder.irGetField(
-            null,/*(parent as? IrClass)?.thisReceiver?.let {
-            builder.irGet(it)
-        }, */keyFields.getValue(parent).getValue(expression.type)
+            null,
+            keyFields.getValue(parent).getValue(expression.type)
         )
     }
 
@@ -123,18 +123,18 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
         if (descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.keyOf" ||
             !getTypeArgument(0)!!.toKotlinType().isFullyResolved()
+        ) return false
+
+        if (descriptor.valueParameters.size != 1) return false
+
+        val qualifierExpression = getValueArgument(0)
+
+        if (qualifierExpression != null &&
+            qualifierExpression !is IrGetObjectValue
         ) {
+            message("Lol sad $qualifierExpression ${qualifierExpression.dump()}")
             return false
         }
-
-        if (getValueArgument(0) !is IrClassReference) return false
-
-        val qualifierExpression = if (descriptor.valueParameters.size == 1)
-            getValueArgument(0)
-        else getValueArgument(3)
-
-        // todo check if qualifier is static
-        if (qualifierExpression != null) return false
 
         return true
     }
