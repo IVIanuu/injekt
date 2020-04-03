@@ -93,7 +93,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
         injectClass: IrClass
     ) {
         file.addFunction {
-            name = Name.identifier("bind${injectClass.name.asString()}")
+            name = Name.identifier("${injectClass.name.asString().decapitalize()}Module")
             returnType = pluginContext.irBuiltIns.unitType
             origin = InjektOrigin
         }.apply func@{
