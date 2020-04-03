@@ -34,6 +34,8 @@ object InjektClassNames {
     val Injekt = FqName("com.ivianuu.injekt.Injekt")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
     val IntoComponent = FqName("com.ivianuu.injekt.IntoComponent")
+    val Key = FqName("com.ivianuu.injekt.Key")
+    val KeyOverload = FqName("com.ivianuu.injekt.KeyOverload")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")

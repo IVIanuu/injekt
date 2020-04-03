@@ -53,7 +53,7 @@ import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
-class InjektBindingGenerator(pluginContext: IrPluginContext) :
+class BindingGenerator(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val boundBehavior = getClass(InjektClassNames.BoundBehavior)

@@ -25,6 +25,8 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.IntoComponent
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
@@ -32,30 +34,38 @@ import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.keyOf
+import com.ivianuu.injekt.keyOverloadStub
 
-@ApplicationScope
-@IntoComponent
-private fun ComponentBuilder.fragmentInjectionBindings() {
-    map<String, Fragment>(mapQualifier = FragmentsMap)
-    alias<InjektFragmentFactory, FragmentFactory>()
-}
-
+@KeyOverload
 inline fun <reified T : Fragment> ComponentBuilder.fragment(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
-    factory(qualifier, behavior, duplicateStrategy, provider)
-    bindFragmentIntoMap<T>(fragmentQualifier = qualifier)
+    keyOverloadStub<Unit>()
 }
 
+inline fun <reified T : Fragment> ComponentBuilder.fragment(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    crossinline provider: Component.(Parameters) -> T
+) {
+    factory(key, behavior, duplicateStrategy, provider)
+    bindFragmentIntoMap<T>(fragmentQualifier = key.qualifier)
+}
+
+@KeyOverload
 inline fun <reified T : Fragment> ComponentBuilder.bindFragmentIntoMap(
     fragmentQualifier: Qualifier = Qualifier.None
 ) {
+    keyOverloadStub<Unit>()
+}
+
+fun <T : Fragment> ComponentBuilder.bindFragmentIntoMap(fragmentKey: Key<T>) {
     map<String, Fragment>(mapQualifier = FragmentsMap) {
-        put(T::class.java.name, keyOf<T>(fragmentQualifier))
+        put(fragmentKey.classifier.java.name, fragmentKey)
     }
 }
 
@@ -67,7 +77,14 @@ class InjektFragmentFactory(
         fragments[className]?.invoke() ?: super.instantiate(classLoader, className)
 }
 
+@ApplicationScope
+@IntoComponent
+private fun ComponentBuilder.fragmentInjectionBindings() {
+    map<String, Fragment>(mapQualifier = FragmentsMap)
+    alias<InjektFragmentFactory, FragmentFactory>()
+}
+
 @QualifierMarker
-annotation class FragmentsMap {
+private annotation class FragmentsMap {
     companion object : Qualifier.Element
 }

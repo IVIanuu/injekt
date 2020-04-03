@@ -60,10 +60,11 @@ class Component internal constructor(
         initializedBindings = null // Don't needed anymore
     }
 
+    @KeyOverload
     inline fun <reified T> get(
         qualifier: Qualifier = Qualifier.None,
         parameters: Parameters = emptyParameters()
-    ): T = get(key = keyOf(qualifier = qualifier), parameters = parameters)
+    ): T = keyOverloadStub()
 
     /**
      * Retrieve a instance of type [T] for [key]
@@ -172,10 +173,30 @@ interface ComponentOwner {
 /**
  * @see Component.get
  */
+@KeyOverload
+inline fun <reified T> ComponentOwner.get(
+    qualifier: Qualifier = Qualifier.None,
+    parameters: Parameters = emptyParameters()
+): T = keyOverloadStub()
+
+/**
+ * @see Component.get
+ */
 fun <T> ComponentOwner.get(
     key: Key<T>,
     parameters: Parameters = emptyParameters()
 ): T = component.get(key, parameters)
+
+/**
+ * Lazy version of [get]
+ *
+ * @see Component.get
+ */
+@KeyOverload
+inline fun <reified T> ComponentOwner.getLazy(
+    qualifier: Qualifier = Qualifier.None,
+    crossinline parameters: () -> Parameters = { emptyParameters() }
+): kotlin.Lazy<T> = keyOverloadStub()
 
 /**
  * Lazy version of [get]
@@ -190,24 +211,6 @@ inline fun <T> ComponentOwner.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(key, parameters()) }
-
-/**
- * @see Component.get
- */
-inline fun <reified T> ComponentOwner.get(
-    qualifier: Qualifier = Qualifier.None,
-    parameters: Parameters = emptyParameters()
-): T = get(keyOf(qualifier = qualifier), parameters)
-
-/**
- * Lazy version of [get]
- *
- * @see Component.get
- */
-inline fun <reified T> ComponentOwner.getLazy(
-    qualifier: Qualifier = Qualifier.None,
-    crossinline parameters: () -> Parameters = { emptyParameters() }
-): kotlin.Lazy<T> = getLazy(key = keyOf(qualifier), parameters = parameters)
 
 @IntoComponent(invokeOnInit = true)
 private fun ComponentBuilder.componentBindings() {

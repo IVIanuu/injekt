@@ -27,12 +27,13 @@ class InjektIrGenerationExtension(
 ) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val contributors = mutableListOf<IrClass>()
-        InjektBindingGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
-        ComponentBuilderContributorGenerator(pluginContext, contributors).visitModuleFragment(
-            moduleFragment,
-            null
-        )
+        BindingGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
+        ComponentBuilderContributorGenerator(pluginContext, contributors)
+            .visitModuleFragment(moduleFragment, null)
         InjektInitTransformer(pluginContext, contributors).visitModuleFragment(moduleFragment, null)
+        KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+
         AggregateGenerator(
             moduleFragment,
             pluginContext,

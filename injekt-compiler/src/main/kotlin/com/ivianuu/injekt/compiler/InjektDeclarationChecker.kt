@@ -111,21 +111,5 @@ class InjektDeclarationChecker : DeclarationChecker {
         ) {
             context.trace.report(InjektErrors.NeedsPrimaryConstructorOrAnnotation.on(declaration))
         }
-
-        /*if (descriptor is FunctionDescriptor &&
-                descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent) &&
-            ((descriptor.allParameters.size != 1 ||
-                    descriptor.allParameters.single().type != context.moduleDescriptor.findClassAcrossModuleDependencies(
-                ClassId.topLevel(InjektClassNames.ComponentBuilder)
-            )) || descriptor.returnType?.isUnit() == false)) {
-            context.trace.report(InjektErrors.InvalidIntoComponentFunctionSignature.on(declaration))
-        }*/
-
-        /*if (descriptor is FunctionDescriptor &&
-                descriptor.annotations.hasAnnotation(InjektClassNames.IntoComponent) &&
-            (descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
-                .let { it == null || it.kind == ClassKind.OBJECT }) {
-            context.trace.report(InjektErrors.IntoComponentFunctionMustBeStatic.on(declaration))
-        }*/
     }
 }

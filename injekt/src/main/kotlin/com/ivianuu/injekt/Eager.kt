@@ -58,10 +58,11 @@ private fun ComponentBuilder.eagerBindingInterceptor() {
     }
 }
 
+@KeyOverload
 inline fun <reified T> ComponentBuilder.eager(
     qualifier: Qualifier = Qualifier.None
 ) {
-    eager<T>(keyOf(qualifier))
+    keyOverloadStub<T>()
 }
 
 /**

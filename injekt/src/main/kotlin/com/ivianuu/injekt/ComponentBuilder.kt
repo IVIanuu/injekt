@@ -144,6 +144,7 @@ class ComponentBuilder {
         _jitFactories -= factory
     }
 
+    @KeyOverload
     inline fun <reified T> bind(
         qualifier: Qualifier = Qualifier.None,
         behavior: Behavior = Behavior.None,
@@ -151,13 +152,7 @@ class ComponentBuilder {
         tags: Set<Tag> = emptySet(),
         crossinline provider: Component.(Parameters) -> T
     ) {
-        bind(
-            key = keyOf(qualifier = qualifier),
-            behavior = behavior,
-            duplicateStrategy = duplicateStrategy,
-            tags = tags,
-            provider = provider
-        )
+        keyOverloadStub<Unit>()
     }
 
     inline fun <T> bind(
@@ -340,7 +335,7 @@ class ComponentBuilder {
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
     private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        _parents.fastForEach { it.collectBindings(bindings) }
+        parents.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
 }

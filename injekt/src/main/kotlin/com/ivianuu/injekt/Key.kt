@@ -87,7 +87,7 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
     val args = arrayOfNulls<Key<Any?>>(arguments.size)
 
     for (index in arguments.indices) {
-        args[index] = arguments[index].type?.asKey() ?: keyOf()
+        args[index] = arguments[index].type?.asKey() ?: keyOf(Any::class, isNullable = true)
     }
 
     return Key(
@@ -97,6 +97,11 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
         qualifier = qualifier
     )
 }
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class KeyOverload
+
+fun <T> keyOverloadStub(): T = error("Must be compiled with the injekt compiler")
 
 private fun unboxed(type: KClass<*>): KClass<*> {
     val thisJClass = (type as ClassBasedDeclarationContainer).jClass
