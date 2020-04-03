@@ -26,12 +26,12 @@ import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.IntoComponent
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
-import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
+import com.ivianuu.injekt.keyOverloadStub
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
@@ -39,13 +39,22 @@ class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
         ViewModelProvider(provider, key)
 }
 
+@KeyOverload
 inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
     qualifier: Qualifier = Qualifier.None,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
-    val key = keyOf<T>(qualifier = qualifier)
+    keyOverloadStub<Unit>()
+}
+
+inline fun <T : ViewModel> ComponentBuilder.viewModel(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    crossinline provider: Component.(Parameters) -> T
+) {
     bind(
         key = key,
         behavior = ViewModelBehavior(key) + behavior,
@@ -80,10 +89,10 @@ private class ViewModelProvider<T>(
             viewModelStore,
             object : AndroidViewModelProvider.Factory {
                 override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    this@ViewModelProvider(component, parameters).unsafeCast()
+                    this@ViewModelProvider(component, parameters) as T
             }
         )
 
-        return viewModelProvider[key.hashCode().toString(), ViewModel::class.java].unsafeCast()
+        return viewModelProvider[key.hashCode().toString(), ViewModel::class.java] as T
     }
 }
