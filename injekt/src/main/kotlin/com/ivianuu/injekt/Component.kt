@@ -221,9 +221,10 @@ private fun ComponentBuilder.componentBindings() {
 
     onScopeAdded { scope ->
         bind(
-            behavior = BoundBehavior(scope = scope),
             qualifier = scope,
+            behavior = BoundBehavior(scope = scope),
             duplicateStrategy = DuplicateStrategy.Override
         ) { this }
     }
 }
+

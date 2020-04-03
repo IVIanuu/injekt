@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.toKotlinType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -29,8 +28,33 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
     private val declarationContainers = mutableListOf<IrDeclarationContainer>()
     private val keyFields =
-        mutableMapOf<IrDeclarationContainer, MutableMap<IrType, IrField>>()
+        mutableMapOf<IrDeclarationContainer, MutableMap<KeyId, IrField>>()
     private val ignoredCalls = mutableSetOf<IrCall>()
+
+    private data class KeyId(
+        val type: IrType,
+        val qualifier: IrType?
+    ) {
+
+        constructor(call: IrCall) : this(
+            type = call.getTypeArgument(0)!!,
+            qualifier = (call.getValueArgument(0) as? IrGetObjectValue)?.type
+        )
+
+        val keyName = Name.identifier(
+            type.toKotlinType().toString()
+                .removeIllegalChars()
+                .plus(qualifier?.toKotlinType()?.toString()?.removeIllegalChars().orEmpty())
+                .decapitalize() + "Key"
+        )
+
+        private fun String.removeIllegalChars(): String {
+            return replace("<", "")
+                .replace(">", "")
+                .replace(" ", "")
+                .replace(",", "")
+        }
+    }
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val keyOfCalls =
@@ -62,17 +86,10 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         keyOfCalls.forEach { (parent, calls) ->
             val fields = keyFields.getOrPut(parent) { mutableMapOf() }
             calls.forEach { call ->
-                fields.getOrPut(call.type) {
+                val keyId = KeyId(call)
+                fields.getOrPut(keyId) {
                     parent.addField {
-                        name = Name.identifier(
-                            call.type.toKotlinType().toString()
-                                .replaceFirst("Key", "")
-                                .replace("<", "")
-                                .replace(">", "")
-                                .replace(" ", "")
-                                .replace(",", "")
-                                .decapitalize() + "Key"
-                        )
+                        name = keyId.keyName
                         type = call.type
                         isStatic = true
                         //visibility = Visibilities.PRIVATE
@@ -109,9 +126,14 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
         val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
 
+        val keyId = KeyId(
+            type = expression.getTypeArgument(0)!!,
+            qualifier = (expression.getValueArgument(0) as? IrGetObjectValue)?.type
+        )
+
         return builder.irGetField(
             null,
-            keyFields.getValue(parent).getValue(expression.type)
+            keyFields.getValue(parent).getValue(KeyId(expression))
         )
     }
 
@@ -122,19 +144,16 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         val descriptor = symbol.descriptor
 
         if (descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.keyOf" ||
+            descriptor.valueParameters.size != 1 ||
+            !descriptor.isInline ||
             !getTypeArgument(0)!!.toKotlinType().isFullyResolved()
         ) return false
-
-        if (descriptor.valueParameters.size != 1) return false
 
         val qualifierExpression = getValueArgument(0)
 
         if (qualifierExpression != null &&
             qualifierExpression !is IrGetObjectValue
-        ) {
-            message("Lol sad $qualifierExpression ${qualifierExpression.dump()}")
-            return false
-        }
+        ) return false
 
         return true
     }
