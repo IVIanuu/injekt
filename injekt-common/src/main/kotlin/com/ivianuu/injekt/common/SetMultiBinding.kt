@@ -27,6 +27,7 @@ import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.fastForEach
 import com.ivianuu.injekt.keyOf
 
 /**
@@ -237,7 +238,7 @@ private class SetBindingProvider<E>(
                     ?.provider
                     ?.let { it as? SetBindingProvider<E> }
                     ?.thisSet ?: emptySet()
-            }.forEach { element ->
+            }.fastForEach { element ->
                 mergedBuilder.add(element)
             }
 

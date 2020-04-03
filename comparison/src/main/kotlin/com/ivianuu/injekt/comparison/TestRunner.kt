@@ -27,11 +27,12 @@ import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import com.ivianuu.injekt.comparison.toothpick.ToothpickTest
+import com.ivianuu.injekt.fastForEach
 import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
 
 val defaultConfig = Config(
-    rounds = 100_000,
+    rounds = 10_000,
     timeUnit = TimeUnit.Nanos
 )
 
@@ -74,7 +75,7 @@ fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig
     val timingsPerTest = mutableMapOf<String, MutableList<Timings>>()
 
     repeat(config.rounds) {
-        tests.forEach { test ->
+        tests.fastForEach { test ->
             timingsPerTest.getOrPut(test.name) { mutableListOf() } += measure(test)
         }
     }

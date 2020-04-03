@@ -52,7 +52,7 @@ class ComponentBuilder {
 
     init {
         (ComponentBuilderContributors.get())
-            .forEach { it.apply(this) }
+            .fastForEach { it.apply(this) }
     }
 
     /**
@@ -62,12 +62,12 @@ class ComponentBuilder {
      * @see ScopeMarker
      */
     fun scopes(vararg scopes: Scope) {
-        scopes.forEach { scope ->
+        scopes.fastForEach { scope ->
             check(scope !in this._scopes) { "Duplicated scope $scope" }
             this._scopes += scope
-            onScopeAddedBlocks.toList().forEach { it(scope) }
+            onScopeAddedBlocks.toList().fastForEach { it(scope) }
             ComponentBuilderContributors.get(scope)
-                .forEach { it.apply(this) }
+                .fastForEach { it.apply(this) }
         }
     }
 
@@ -91,10 +91,10 @@ class ComponentBuilder {
      * it will ask it's parents
      */
     fun parents(vararg parents: Component) {
-        parents.forEach { parent ->
+        parents.fastForEach { parent ->
             check(parent !in this._parents) { "Duplicated parent $parent" }
             this._parents += parent
-            onParentAddedBlocks.toList().forEach { it(parent) }
+            onParentAddedBlocks.toList().fastForEach { it(parent) }
         }
     }
 
@@ -189,16 +189,15 @@ class ComponentBuilder {
      * @see single
      */
     fun <T> bind(binding: Binding<T>) {
-        val finalBinding = bindingInterceptors.fold(binding) { acc, interceptor ->
-            interceptor(acc) as Binding<T>
-        }
+        var finalBinding: Binding<*> = binding
+        bindingInterceptors.fastForEach { finalBinding = it(finalBinding) }
         if (finalBinding.duplicateStrategy.check(
                 existsPredicate = { finalBinding.key in _bindings },
                 errorMessage = { "Already declared binding for ${finalBinding.key}" }
             )
         ) {
             _bindings[finalBinding.key] = finalBinding
-            onBindingAddedBlocks.toList().forEach { it(finalBinding) }
+            onBindingAddedBlocks.toList().fastForEach { it(finalBinding) }
         }
     }
 
@@ -207,7 +206,7 @@ class ComponentBuilder {
      */
     fun setBindings(bindings: List<Binding<*>>) {
         _bindings.clear()
-        bindings.forEach { bind(it) }
+        bindings.fastForEach { bind(it) }
     }
 
     /**
@@ -269,7 +268,7 @@ class ComponentBuilder {
 
         val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        _parents.forEach { parent ->
+        _parents.fastForEach { parent ->
             val bindings = parent.getAllBindings()
             for ((key, binding) in bindings) {
                 if (binding.duplicateStrategy.check(
@@ -300,7 +299,7 @@ class ComponentBuilder {
             bindings = finalBindings
         )
 
-        onBuildBlocks.toList().forEach { it(component) }
+        onBuildBlocks.toList().fastForEach { it(component) }
 
         return component
     }
@@ -309,7 +308,7 @@ class ComponentBuilder {
         var run = true
         while (run) {
             run = false
-            onPreBuildBlocks.toList().forEach {
+            onPreBuildBlocks.toList().fastForEach {
                 val result = it()
                 if (!result) onPreBuildBlocks -= it
                 run = run || result
@@ -328,7 +327,7 @@ class ComponentBuilder {
             parentScopes += scope
         }
 
-        _parents.forEach { parent ->
+        _parents.fastForEach { parent ->
             parent.scopes.forEach { scope ->
                 addScope(scope)
             }
@@ -341,7 +340,7 @@ class ComponentBuilder {
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
     private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        parents.forEach { it.collectBindings(bindings) }
+        _parents.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
 }

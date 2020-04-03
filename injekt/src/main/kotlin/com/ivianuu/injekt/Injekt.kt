@@ -30,7 +30,7 @@ object Injekt {
      * Invokes any of [contributors] on each [ComponentBuilder]
      */
     fun componentBuilderContributors(vararg contributors: ComponentBuilderContributor) {
-        contributors.forEach { ComponentBuilderContributors.register(it) }
+        contributors.fastForEach { ComponentBuilderContributors.register(it) }
     }
 
     fun initializeEndpoint(): Unit = error("Must be compiled with the injekt compiler")
