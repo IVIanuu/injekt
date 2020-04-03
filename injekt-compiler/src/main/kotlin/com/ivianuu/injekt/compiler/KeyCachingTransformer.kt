@@ -53,6 +53,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                 .replace(">", "")
                 .replace(" ", "")
                 .replace(",", "")
+                .replace("*", "")
         }
     }
 
