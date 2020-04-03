@@ -31,6 +31,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.keyOf
+import com.jakewharton.confundus.unsafeCast
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
@@ -79,10 +80,10 @@ private class ViewModelProvider<T>(
             viewModelStore,
             object : AndroidViewModelProvider.Factory {
                 override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    this@ViewModelProvider(component, parameters) as T
+                    this@ViewModelProvider(component, parameters).unsafeCast()
             }
         )
 
-        return viewModelProvider[key.hashCode().toString(), ViewModel::class.java] as T
+        return viewModelProvider[key.hashCode().toString(), ViewModel::class.java].unsafeCast()
     }
 }

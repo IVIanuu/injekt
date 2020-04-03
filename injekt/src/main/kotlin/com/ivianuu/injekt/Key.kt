@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
 import kotlin.jvm.internal.ClassBasedDeclarationContainer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -90,12 +91,14 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
         args[index] = arguments[index].type?.asKey() ?: keyOf(Any::class, isNullable = true)
     }
 
-    return Key(
-        classifier = (classifier ?: Any::class) as KClass<*>,
-        arguments = args as Array<Key<*>>,
+    return Key<T>(
+        classifier = (classifier ?: Any::class).unsafeCast(),
+        arguments = args.unsafeCast(),
         isNullable = isMarkedNullable,
         qualifier = qualifier
-    )
+    ).also {
+        Injekt.logger?.warn("keyOf intrinsic called for $it")
+    }
 }
 
 @Target(AnnotationTarget.FUNCTION)
@@ -104,10 +107,10 @@ annotation class KeyOverload
 fun <T> keyOverloadStub(): T = error("Must be compiled with the injekt compiler")
 
 private fun unboxed(type: KClass<*>): KClass<*> {
-    val thisJClass = (type as ClassBasedDeclarationContainer).jClass
-    if (thisJClass.isPrimitive) return type
+    val jClass = type.unsafeCast<ClassBasedDeclarationContainer>().jClass
+    if (jClass.isPrimitive) return type
 
-    return when (thisJClass.name) {
+    return when (jClass.name) {
         "java.lang.Boolean" -> Boolean::class
         "java.lang.Character" -> Char::class
         "java.lang.Byte" -> Byte::class
@@ -121,7 +124,7 @@ private fun unboxed(type: KClass<*>): KClass<*> {
 }
 
 private fun boxed(type: KClass<*>): KClass<*> {
-    val jClass = (type as ClassBasedDeclarationContainer).jClass
+    val jClass = type.unsafeCast<ClassBasedDeclarationContainer>().jClass
     if (!jClass.isPrimitive) return type
 
     return when (jClass.name) {

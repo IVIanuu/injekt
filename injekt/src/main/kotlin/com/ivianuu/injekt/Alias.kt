@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
+
 inline fun <reified S : T, reified T> ComponentBuilder.alias(
     originalQualifier: Qualifier = Qualifier.None,
     aliasQualifier: Qualifier = Qualifier.None,
@@ -72,5 +74,5 @@ fun <S, T> ComponentBuilder.alias(
     bind(
         key = aliasKey,
         duplicateStrategy = duplicateStrategy
-    ) { parameters -> get(originalKey, parameters = parameters) as T }
+    ) { parameters -> get(originalKey, parameters = parameters).unsafeCast() }
 }

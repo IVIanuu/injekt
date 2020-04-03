@@ -7,7 +7,10 @@ class A {
 
     @Test
     fun init() {
-        Injekt.initializeEndpoint()
+        Injekt {
+            initializeEndpoint()
+            logger = PrintLogger()
+        }
     }
 
 }
