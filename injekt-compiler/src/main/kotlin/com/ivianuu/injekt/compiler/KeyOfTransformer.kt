@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -18,7 +17,6 @@ import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
@@ -50,8 +48,6 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         }
     }
 
-    private fun KotlinType.isFullyResolved(): Boolean =
-        constructor.declarationDescriptor is ClassDescriptor && arguments.all { it.type.isFullyResolved() }
 
     private fun irKeyOf(type: IrType, builder: DeclarationIrBuilder): IrCall {
         val keyOf = injektPackage.memberScope

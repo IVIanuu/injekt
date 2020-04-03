@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -23,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.types.KotlinType
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
@@ -60,3 +62,6 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
         module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
     return descriptor.annotations.hasAnnotation(annotation)
 }
+
+fun KotlinType.isFullyResolved(): Boolean =
+    constructor.declarationDescriptor is ClassDescriptor && arguments.all { it.type.isFullyResolved() }

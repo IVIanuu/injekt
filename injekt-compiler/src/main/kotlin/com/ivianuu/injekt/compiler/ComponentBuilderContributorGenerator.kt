@@ -110,6 +110,8 @@ class ComponentBuilderContributorGenerator(
 
             superTypes = superTypes + componentBuilderContributor.defaultType.toIrType()
 
+            checkNotNull(thisReceiver)
+
             addConstructor {
                 origin = InjektOrigin
                 isPrimary = true
