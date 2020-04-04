@@ -92,7 +92,10 @@ class InjektAnalysisHandlerExtension(
 
             if (functions.isNotEmpty()) {
                 generatedFiles = true
-                FileSpec.builder(file.packageFqName.asString(), file.name)
+                FileSpec.builder(
+                        file.packageFqName.asString(),
+                        "${file.name.removeSuffix(".kt")}Stubs.kt"
+                    )
                     .apply {
                         functions.forEach { function ->
                             addFunction(keyOverloadStubFunction(function))
