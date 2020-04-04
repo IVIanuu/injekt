@@ -34,13 +34,7 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         ) return expression
 
         val type = expression.getTypeArgument(0)!!
-
-        if (!type.toKotlinType().isFullyResolved()) {
-            message("Not resolved ${type.toKotlinType()}")
-            return expression
-        }
-
-        message("Resolved ${type.toKotlinType()}")
+        if (!type.toKotlinType().isFullyResolved()) return expression
 
         return irKeyOf(type, DeclarationIrBuilder(pluginContext, expression.symbol)).apply {
             // pass the qualifier
@@ -111,7 +105,6 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                     }
                 )
             }
-
         }
     }
 }

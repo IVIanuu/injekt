@@ -29,7 +29,7 @@ class InjektAnalysisHandlerExtension(
     private val outputDir: String
 ) : AnalysisHandlerExtension {
 
-    private var generatedFiles = false
+    private var runComplete = false
 
     private lateinit var container: ComponentProvider
 
@@ -58,11 +58,13 @@ class InjektAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (generatedFiles) return null
-        generatedFiles = true
+        if (runComplete) return null
+        runComplete = true
 
         val outputDir = File(outputDir)
         outputDir.mkdirs()
+
+        var generatedFiles = false
 
         fun resolveFile(file: KtFile) {
             try {
@@ -89,6 +91,7 @@ class InjektAnalysisHandlerExtension(
             )
 
             if (functions.isNotEmpty()) {
+                generatedFiles = true
                 FileSpec.builder(file.packageFqName.asString(), file.name)
                     .apply {
                         functions.forEach { function ->
@@ -100,12 +103,16 @@ class InjektAnalysisHandlerExtension(
             }
         }
 
-        return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext,
-            module,
-            emptyList(),
-            listOf(outputDir)
-        )
+        return if (generatedFiles) {
+            AnalysisResult.RetryWithAdditionalRoots(
+                bindingTrace.bindingContext,
+                module,
+                emptyList(),
+                listOf(outputDir)
+            )
+        } else {
+            null
+        }
     }
 
     private fun keyOverloadStubFunction(function: FunctionDescriptor): FunSpec {
