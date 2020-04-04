@@ -107,13 +107,13 @@ class BindingGenerator(pluginContext: IrPluginContext) :
             body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
                 +irCall(
                     callee = symbolTable.referenceSimpleFunction(
-                        componentBuilder.unsubstitutedMemberScope.findFirstFunction("bind") {
-                            it.typeParameters.singleOrNull()?.isReified ?: false
+                        injektPackage.memberScope.findFirstFunction("bind") {
+                            it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub)
                         }
                     ),
                     type = pluginContext.irBuiltIns.unitType
                 ).apply {
-                    dispatchReceiver = irGet(extensionReceiver)
+                    this.extensionReceiver = irGet(extensionReceiver)
 
                     putTypeArgument(0, injectClass.descriptor.defaultType.toIrType())
 
@@ -254,10 +254,9 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
             val injektConstructor = descriptor.findInjektConstructor()!!
 
-            val componentGet = component.unsubstitutedMemberScope
+            val componentGet = injektPackage.memberScope
                 .findFirstFunction("get") {
-                    it.typeParameters.first().isReified &&
-                            it.valueParameters.size == 2
+                    it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub)
                 }
 
             val parametersGet = parameters.unsubstitutedMemberScope
@@ -295,7 +294,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                                     ),
                                     param.type.toIrType()
                                 ).apply {
-                                    dispatchReceiver =
+                                    extensionReceiver =
                                         irGet(lambdaFn.valueParameters[0])
                                     putTypeArgument(0, param.type.toIrType())
 

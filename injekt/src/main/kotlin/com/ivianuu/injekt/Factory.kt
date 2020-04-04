@@ -33,19 +33,10 @@ package com.ivianuu.injekt
  */
 object FactoryBehavior : Behavior.Element
 
-@KeyOverload
-inline fun <reified T> ComponentBuilder.factory(
-    qualifier: Qualifier = Qualifier.None,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
-) {
-    keyOverloadStub<Unit>()
-}
-
 /**
  * Dsl builder for the [FactoryBehavior]
  */
+@KeyOverload
 inline fun <T> ComponentBuilder.factory(
     key: Key<T>,
     behavior: Behavior = Behavior.None,

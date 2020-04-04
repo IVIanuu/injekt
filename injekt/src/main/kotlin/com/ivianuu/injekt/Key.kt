@@ -104,7 +104,8 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
 @Target(AnnotationTarget.FUNCTION)
 annotation class KeyOverload
 
-fun <T> keyOverloadStub(): T = error("Must be compiled with the injekt compiler")
+@Target(AnnotationTarget.FUNCTION)
+annotation class KeyOverloadStub
 
 private fun unboxed(type: KClass<*>): KClass<*> {
     val jClass = type.unsafeCast<ClassBasedDeclarationContainer>().jClass

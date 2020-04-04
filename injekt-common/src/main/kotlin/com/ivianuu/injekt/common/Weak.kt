@@ -23,14 +23,13 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
-import com.ivianuu.injekt.keyOf
 import java.lang.ref.WeakReference
 
 /**
@@ -41,23 +40,10 @@ object WeakBehavior : Behavior.Element {
         WeakProvider(provider)
 }
 
-inline fun <reified T> ComponentBuilder.weak(
-    qualifier: Qualifier = Qualifier.None,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
-) {
-    weak(
-        key = keyOf(qualifier = qualifier),
-        behavior = behavior,
-        duplicateStrategy = duplicateStrategy,
-        provider = provider
-    )
-}
-
 /**
  * Dsl builder for [WeakBehavior] + [BoundBehavior]
  */
+@KeyOverload
 inline fun <T> ComponentBuilder.weak(
     key: Key<T>,
     behavior: Behavior = Behavior.None,

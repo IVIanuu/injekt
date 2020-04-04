@@ -19,14 +19,17 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
 import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOption
+import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -35,6 +38,13 @@ class InjektComponentRegistrar : ComponentRegistrar {
         configuration: CompilerConfiguration
     ) {
         StorageComponentContainerContributor.registerExtension(project, InjektStorageComponentContainerContributorExtension())
+
+        val outputDir = configuration.getNotNull(OutputDirKey)
+
+        AnalysisHandlerExtension.registerExtension(
+            project,
+            InjektAnalysisHandlerExtension(outputDir)
+        )
 
         IrGenerationExtension.registerExtension(
             project,
@@ -47,12 +57,27 @@ class InjektComponentRegistrar : ComponentRegistrar {
     }
 }
 
-private lateinit var messageCollector: MessageCollector
+@AutoService(CommandLineProcessor::class)
+class InjektCommandLineProcessor : CommandLineProcessor {
+    override val pluginId = "com.ivianuu.injekt"
 
-fun message(
-    message: String,
-    tag: String = "ddd",
-    severity: CompilerMessageSeverity = CompilerMessageSeverity.WARNING
-) {
-    messageCollector.report(severity, "$tag: $message")
+    override val pluginOptions = listOf(
+        CliOption(
+            optionName = "outputDir",
+            valueDescription = "generated src dir",
+            description = "generated src"
+        )
+    )
+
+    override fun processOption(
+        option: AbstractCliOption,
+        value: String,
+        configuration: CompilerConfiguration
+    ) {
+        when (option.optionName) {
+            "outputDir" -> configuration.put(OutputDirKey, value)
+        }
+    }
 }
+
+val OutputDirKey = CompilerConfigurationKey<String>("outputDir")

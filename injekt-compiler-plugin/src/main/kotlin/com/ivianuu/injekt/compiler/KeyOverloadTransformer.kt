@@ -4,13 +4,13 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class KeyOverloadTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -22,35 +22,28 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         val descriptor = expression.symbol.descriptor
 
-        if (!descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverload)) return expression
+        if (!descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub)) return expression
 
-        val parentMemberScope = when (val parent = descriptor.containingDeclaration) {
-            is ClassDescriptor -> parent.unsubstitutedMemberScope
-            is PackageFragmentDescriptor -> parent.getMemberScope()
-            else -> error("Unexpected parent $parent")
-        }
-
-        val keyOverload = try {
-            parentMemberScope.findFirstFunction(
-                name = descriptor.name.asString()
-            ) { function ->
-                function.valueParameters.first().type.constructor == key.defaultType.constructor &&
-                        function.valueParameters.size == descriptor.valueParameters.size /* &&
-                        function.valueParameters.drop(1)
-                            .all {
-                                val other = descriptor.valueParameters[it.index]
-                                it.name == other.name
-                                        && it.type == other.type
-                            }*/
+        fun MemberScope.findKeyOverloadFunction() = try {
+            findFirstFunction(descriptor.name.asString()) { function ->
+                function.annotations.hasAnnotation(InjektClassNames.KeyOverload)
+                        && (function.extensionReceiverParameter
+                    ?: function.dispatchReceiverParameter)?.type == descriptor.extensionReceiverParameter?.type
+                        && function.valueParameters.firstOrNull()?.name?.asString() == "key"
+                        && function.valueParameters.drop(1).all {
+                    it.name == descriptor.valueParameters.getOrNull(it.index)?.name
+                }
             }
         } catch (e: Exception) {
-            error(
-                "Failed for $descriptor parent ${descriptor.containingDeclaration} member scope ${parentMemberScope.getContributedFunctions(
-                    descriptor.name,
-                    NoLookupLocation.FROM_BACKEND
-                )}"
-            )
+            null
         }
+
+        val keyOverloadFunction = (descriptor.containingDeclaration as PackageFragmentDescriptor)
+            .let { pluginContext.moduleDescriptor.getPackage(it.fqName).memberScope }
+            .findKeyOverloadFunction()
+            ?: (descriptor.extensionReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
+                ?.unsubstitutedMemberScope?.findKeyOverloadFunction()
+            ?: error("Couldn't find @KeyOverload function for $descriptor")
 
         val keyOf = injektPackage.memberScope
             .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
@@ -58,11 +51,14 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
         val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
 
         return builder.irCall(
-            callee = symbolTable.referenceSimpleFunction(keyOverload),
+            callee = symbolTable.referenceSimpleFunction(keyOverloadFunction),
             type = expression.type
         ).apply {
-            dispatchReceiver = expression.dispatchReceiver
-            extensionReceiver = expression.extensionReceiver
+            if (keyOverloadFunction.dispatchReceiverParameter != null) {
+                dispatchReceiver = expression.extensionReceiver
+            } else {
+                extensionReceiver = expression.extensionReceiver
+            }
 
             copyTypeArgumentsFrom(expression)
 

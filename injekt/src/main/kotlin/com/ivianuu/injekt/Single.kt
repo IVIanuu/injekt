@@ -39,19 +39,10 @@ object SingleBehavior : Behavior.Element {
         SingleProvider(provider)
 }
 
-@KeyOverload
-inline fun <reified T> ComponentBuilder.single(
-    qualifier: Qualifier = Qualifier.None,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
-) {
-    keyOverloadStub<Unit>()
-}
-
 /**
  * Dsl builder for [SingleBehavior] + [BoundBehavior]
  */
+@KeyOverload
 inline fun <T> ComponentBuilder.single(
     key: Key<T>,
     behavior: Behavior = Behavior.None,

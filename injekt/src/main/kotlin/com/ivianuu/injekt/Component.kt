@@ -60,15 +60,10 @@ class Component internal constructor(
         initializedBindings = null // Don't needed anymore
     }
 
-    @KeyOverload
-    inline fun <reified T> get(
-        qualifier: Qualifier = Qualifier.None,
-        parameters: Parameters = emptyParameters()
-    ): T = keyOverloadStub()
-
     /**
      * Retrieve a instance of type [T] for [key]
      */
+    @KeyOverload
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
         findExplicitBinding(key)?.let { return it.provider(this, parameters) }
         findJitBinding(key)?.let { return it.provider(this, parameters) }
@@ -174,29 +169,10 @@ interface ComponentOwner {
  * @see Component.get
  */
 @KeyOverload
-inline fun <reified T> ComponentOwner.get(
-    qualifier: Qualifier = Qualifier.None,
-    parameters: Parameters = emptyParameters()
-): T = keyOverloadStub()
-
-/**
- * @see Component.get
- */
 fun <T> ComponentOwner.get(
     key: Key<T>,
     parameters: Parameters = emptyParameters()
 ): T = component.get(key, parameters)
-
-/**
- * Lazy version of [get]
- *
- * @see Component.get
- */
-@KeyOverload
-inline fun <reified T> ComponentOwner.getLazy(
-    qualifier: Qualifier = Qualifier.None,
-    crossinline parameters: () -> Parameters = { emptyParameters() }
-): kotlin.Lazy<T> = keyOverloadStub()
 
 /**
  * Lazy version of [get]
@@ -207,6 +183,7 @@ inline fun <reified T> ComponentOwner.getLazy(
 
  * @see Component.get
  */
+@KeyOverload
 inline fun <T> ComponentOwner.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }

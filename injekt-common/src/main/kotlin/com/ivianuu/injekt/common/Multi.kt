@@ -23,13 +23,12 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
-import com.ivianuu.injekt.keyOf
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -56,21 +55,7 @@ object MultiBehavior : Behavior.Element {
 /**
  * Dsl builder for the [MultiBehavior] + [BoundBehavior]
  */
-inline fun <reified T> ComponentBuilder.multi(
-    qualifier: Qualifier = Qualifier.None,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
-) {
-    multi(
-        key = keyOf(qualifier = qualifier),
-        behavior = behavior,
-        duplicateStrategy = duplicateStrategy,
-        provider = provider
-    )
-}
-
-
+@KeyOverload
 inline fun <T> ComponentBuilder.multi(
     key: Key<T>,
     behavior: Behavior = Behavior.None,

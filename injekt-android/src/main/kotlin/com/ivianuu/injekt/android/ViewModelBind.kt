@@ -24,14 +24,13 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
-import com.ivianuu.injekt.keyOverloadStub
+import com.ivianuu.injekt.get
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
@@ -40,15 +39,6 @@ class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
 }
 
 @KeyOverload
-inline fun <reified T : ViewModel> ComponentBuilder.viewModel(
-    qualifier: Qualifier = Qualifier.None,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
-) {
-    keyOverloadStub<Unit>()
-}
-
 inline fun <T : ViewModel> ComponentBuilder.viewModel(
     key: Key<T>,
     behavior: Behavior = Behavior.None,

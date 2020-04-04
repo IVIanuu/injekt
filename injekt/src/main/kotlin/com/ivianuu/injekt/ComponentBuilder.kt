@@ -145,16 +145,6 @@ class ComponentBuilder {
     }
 
     @KeyOverload
-    inline fun <reified T> bind(
-        qualifier: Qualifier = Qualifier.None,
-        behavior: Behavior = Behavior.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        tags: Set<Tag> = emptySet(),
-        crossinline provider: Component.(Parameters) -> T
-    ) {
-        keyOverloadStub<Unit>()
-    }
-
     inline fun <T> bind(
         key: Key<T>,
         behavior: Behavior = Behavior.None,

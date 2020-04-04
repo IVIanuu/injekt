@@ -16,15 +16,32 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
+import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
+import org.jetbrains.kotlin.builtins.getReturnTypeFromFunctionType
+import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
+import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
@@ -36,6 +53,7 @@ object InjektClassNames {
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
     val Key = FqName("com.ivianuu.injekt.Key")
     val KeyOverload = FqName("com.ivianuu.injekt.KeyOverload")
+    val KeyOverloadStub = FqName("com.ivianuu.injekt.KeyOverloadStub")
     val Module = FqName("com.ivianuu.injekt.Module")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
@@ -64,3 +82,63 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
 
 fun KotlinType.isFullyResolved(): Boolean =
     constructor.declarationDescriptor is ClassDescriptor && arguments.all { it.type.isFullyResolved() }
+
+internal lateinit var messageCollector: MessageCollector
+
+fun message(
+    message: String,
+    tag: String = "ddd",
+    severity: CompilerMessageSeverity = CompilerMessageSeverity.WARNING
+) {
+    messageCollector.report(severity, "$tag: $message")
+}
+
+fun FqName.asClassName(): ClassName = ClassName(parent().asString(), shortName().asString())
+
+fun ClassDescriptor.asClassName(): ClassName? = try {
+    ClassName.bestGuess(fqNameSafe.asString())
+} catch (e: Exception) {
+    null
+}
+
+fun KotlinType.asTypeName(): TypeName? {
+    if (isError) return null
+    if (this.isFunctionType) {
+        return LambdaTypeName.get(
+            receiver = getReceiverTypeFromFunctionType()?.asTypeName(),
+            parameters = *getValueParameterTypesFromFunctionType()
+                .map { it.type.asTypeName()!! }
+                .toTypedArray(),
+            returnType = getReturnTypeFromFunctionType().asTypeName()!!
+        ).copy(nullable = isMarkedNullable)
+    }
+    if (this.isTypeParameter()) {
+        val descriptor = constructor.declarationDescriptor as TypeParameterDescriptor
+        return TypeVariableName(
+            descriptor.name.asString(),
+            *descriptor
+                .upperBounds
+                .map { it.asTypeName()!! }
+                .toTypedArray(),
+            variance = when (descriptor.variance) {
+                Variance.INVARIANT -> null
+                Variance.IN_VARIANCE -> KModifier.IN
+                Variance.OUT_VARIANCE -> KModifier.OUT
+            }
+        ).copy(nullable = isMarkedNullable)
+    }
+    val type = try {
+        ClassName.bestGuess(
+            constructor.declarationDescriptor?.fqNameSafe?.asString() ?: return null
+        )
+    } catch (e: Exception) {
+        return null
+    }
+    return (if (arguments.isNotEmpty()) {
+        val parameters = arguments.map { it.type.asTypeName() }
+        if (parameters.any { it == null }) return null
+        type.parameterizedBy(*parameters.toTypedArray().requireNoNulls())
+    } else type).copy(
+        nullable = isMarkedNullable
+    )
+}
