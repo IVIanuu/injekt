@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
@@ -110,6 +111,24 @@ class InjektDeclarationChecker : DeclarationChecker {
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
         ) {
             context.trace.report(InjektErrors.NeedsPrimaryConstructorOrAnnotation.on(declaration))
+        }
+
+        if (descriptor is FunctionDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverload)
+        ) {
+            if (descriptor.typeParameters.size != 1) {
+                context.trace.report(InjektErrors.KeyOverloadMustHave1TypeParameter.on(declaration))
+            }
+            val firstParameter = descriptor.valueParameters.firstOrNull()
+            if (firstParameter == null || firstParameter.type.constructor.declarationDescriptor !=
+                descriptor.module.findClassAcrossModuleDependencies(
+                    ClassId.topLevel(
+                        InjektClassNames.Key
+                    )
+                )!! || firstParameter.type.arguments.single().type != descriptor.typeParameters.first().defaultType
+            ) {
+                context.trace.report(InjektErrors.KeyOverloadMustHaveKeyParam.on(declaration))
+            }
         }
     }
 }

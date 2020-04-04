@@ -28,9 +28,11 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
             findFirstFunction(descriptor.name.asString()) { function ->
                 function.annotations.hasAnnotation(InjektClassNames.KeyOverload)
                         && (function.extensionReceiverParameter
-                    ?: function.dispatchReceiverParameter)?.type == descriptor.extensionReceiverParameter?.type
-                        && function.valueParameters.firstOrNull()?.name?.asString() == "key"
-                        && function.valueParameters.drop(1).all {
+                    ?: function.dispatchReceiverParameter)?.type == descriptor.extensionReceiverParameter?.type &&
+                        function.typeParameters.size == 1 &&
+                        function.valueParameters.firstOrNull()?.type?.constructor?.declarationDescriptor == key &&
+                        function.valueParameters.first().type.arguments.first().type == function.typeParameters.first().defaultType &&
+                        function.valueParameters.drop(1).all {
                     it.name == descriptor.valueParameters.getOrNull(it.index)?.name
                 }
             }
