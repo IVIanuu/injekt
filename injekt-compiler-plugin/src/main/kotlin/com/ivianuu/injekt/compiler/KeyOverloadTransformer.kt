@@ -17,8 +17,53 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
     private val key = getClass(InjektClassNames.Key)
 
+    private fun newImpl(expression: IrCall): IrExpression? {
+        if (expression.symbol.descriptor !is KeyOverloadFunctionDescriptor) return null
+
+        message("yeiii ${expression.symbol.descriptor}")
+
+        val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
+        return builder.irCall(
+            callee = symbolTable.referenceSimpleFunction(
+                (expression.symbol.descriptor as KeyOverloadFunctionDescriptor).overloadedFunction
+            ),
+            type = expression.type
+        ).apply {
+            dispatchReceiver = expression.dispatchReceiver
+            extensionReceiver = expression.extensionReceiver
+
+            copyTypeArgumentsFrom(expression)
+
+            val keyOf = injektPackage.memberScope
+                .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
+
+            putValueArgument(
+                0,
+                builder.irCall(
+                    callee = symbolTable.referenceSimpleFunction(keyOf),
+                    type = symbolTable.referenceClass(key)
+                        .also {
+                            if (!it.isBound) pluginContext.irProvider.getDeclaration(it)
+                        }
+                        .typeWith(expression.getTypeArgument(0)!!)
+                ).apply {
+                    putTypeArgument(0, expression.getTypeArgument(0))
+                    putValueArgument(0, expression.getValueArgument(0))
+                }
+            )
+
+            (1 until expression.valueArgumentsCount)
+                .map { it to expression.getValueArgument(it) }
+                .forEach { (i, param) ->
+                    putValueArgument(i, param)
+                }
+        }
+    }
+
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)
+
+        newImpl(expression)?.let { return it }
 
         val descriptor = expression.symbol.descriptor
 
@@ -88,5 +133,4 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                 }
         }
     }
-
 }

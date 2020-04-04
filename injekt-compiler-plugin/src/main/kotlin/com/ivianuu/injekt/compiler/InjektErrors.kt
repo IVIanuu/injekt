@@ -110,5 +110,4 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "@Module functions cannot be invoked"
         )
     }
-
 }

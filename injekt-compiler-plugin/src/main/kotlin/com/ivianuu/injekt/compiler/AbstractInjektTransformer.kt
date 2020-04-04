@@ -206,7 +206,6 @@ abstract class AbstractInjektTransformer(
             isActual = false
         }
     }
-
 }
 
 object InjektOrigin : IrDeclarationOrigin

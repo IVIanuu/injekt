@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -41,18 +42,23 @@ class InjektComponentRegistrar : ComponentRegistrar {
             InjektIrGenerationExtension(project)
         )
 
+        PackageFragmentProviderExtension.registerExtension(
+            project,
+            InjektPackageFragmentProviderExtension()
+        )
+
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
         message("Hello from the component registrar")
     }
 }
 
-private lateinit var messageCollector: MessageCollector
+private var messageCollector: MessageCollector? = null
 
 fun message(
     message: String,
     tag: String = "ddd",
     severity: CompilerMessageSeverity = CompilerMessageSeverity.WARNING
 ) {
-    messageCollector.report(severity, "$tag: $message")
+    messageCollector?.report(severity, "$tag: $message") ?: println("$severity $tag: $message")
 }

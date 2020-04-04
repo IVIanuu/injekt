@@ -32,7 +32,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev130"
+    const val version = "${Build.versionName}-dev131"
 }
 
 object Deps {
@@ -67,7 +67,7 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev130"
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev131"
 
     const val junit = "junit:junit:4.12"
 
@@ -91,6 +91,8 @@ object Deps {
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
 
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
+
+    const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:5.2.0"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 

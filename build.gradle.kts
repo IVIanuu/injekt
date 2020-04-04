@@ -27,6 +27,7 @@ buildscript {
         jcenter()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://plugins.gradle.org/m2")
+        maven("https://dl.bintray.com/jetbrains/intellij-plugin-service")
     }
     dependencies {
         classpath(Deps.androidGradlePlugin)
@@ -36,6 +37,7 @@ buildscript {
         classpath(Deps.injektGradlePlugin)
         classpath(Deps.Kotlin.gradlePlugin)
         classpath(Deps.mavenGradlePlugin)
+        classpath(Deps.shadowGradlePlugin)
         classpath(Deps.spotlessGradlePlugin)
     }
 }

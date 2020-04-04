@@ -107,13 +107,14 @@ class BindingGenerator(pluginContext: IrPluginContext) :
             body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
                 +irCall(
                     callee = symbolTable.referenceSimpleFunction(
-                        componentBuilder.unsubstitutedMemberScope.findFirstFunction("bind") {
-                            it.typeParameters.singleOrNull()?.isReified ?: false
+                        injektPackage.memberScope.findFirstFunction("bind") {
+                            it.extensionReceiverParameter?.value?.type == componentBuilder.defaultType &&
+                                    it.valueParameters.firstOrNull()?.name?.asString() == "qualifier"
                         }
                     ),
                     type = pluginContext.irBuiltIns.unitType
                 ).apply {
-                    dispatchReceiver = irGet(extensionReceiver)
+                    this.extensionReceiver = irGet(extensionReceiver)
 
                     putTypeArgument(0, injectClass.descriptor.defaultType.toIrType())
 
@@ -254,9 +255,10 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
             val injektConstructor = descriptor.findInjektConstructor()!!
 
-            val componentGet = component.unsubstitutedMemberScope
+            val componentGet = injektPackage.memberScope
                 .findFirstFunction("get") {
-                    it.typeParameters.first().isReified &&
+                    it.extensionReceiverParameter?.value?.type == component.defaultType &&
+                            it.typeParameters.first().isReified &&
                             it.valueParameters.size == 2
                 }
 
@@ -295,7 +297,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                                     ),
                                     param.type.toIrType()
                                 ).apply {
-                                    dispatchReceiver =
+                                    extensionReceiver =
                                         irGet(lambdaFn.valueParameters[0])
                                     putTypeArgument(0, param.type.toIrType())
 
@@ -348,5 +350,4 @@ class BindingGenerator(pluginContext: IrPluginContext) :
         else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
             ?: unsubstitutedPrimaryConstructor!!
     }
-
 }

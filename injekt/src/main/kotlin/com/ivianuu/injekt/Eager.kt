@@ -58,16 +58,10 @@ private fun ComponentBuilder.eagerModule() {
     }
 }
 
-@KeyOverload
-inline fun <reified T> ComponentBuilder.eager(
-    qualifier: Qualifier = Qualifier.None
-) {
-    keyOverloadStub<T>()
-}
-
 /**
  * Eagerly initializes the [Binding] for [key]
  */
+@KeyOverload
 fun <T> ComponentBuilder.eager(key: Key<T>) {
     bind(
         key = key.copy(qualifier = key.qualifier + EagerQualifier),

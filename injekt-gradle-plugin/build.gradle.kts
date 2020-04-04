@@ -25,7 +25,7 @@ buildConfig {
 
     version = Publishing.version
     buildConfigField("String", "GROUP_ID", Publishing.groupId)
-    buildConfigField("String", "ARTIFACT_ID", "injekt-compiler")
+    buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
 }
 
 dependencies {

@@ -140,7 +140,6 @@ class AggregateGenerator(
             )
         }
     }
-
 }
 
 private class AggregateMemberScope : MemberScopeImpl() {

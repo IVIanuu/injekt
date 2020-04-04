@@ -41,5 +41,4 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             modules
         ).generate()
     }
-
 }

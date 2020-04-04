@@ -144,39 +144,6 @@ class ComponentBuilder {
         _jitFactories -= factory
     }
 
-    @KeyOverload
-    inline fun <reified T> bind(
-        qualifier: Qualifier = Qualifier.None,
-        behavior: Behavior = Behavior.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        tags: Set<Tag> = emptySet(),
-        crossinline provider: Component.(Parameters) -> T
-    ) {
-        keyOverloadStub<Unit>()
-    }
-
-    inline fun <T> bind(
-        key: Key<T>,
-        behavior: Behavior = Behavior.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        tags: Set<Tag> = emptySet(),
-        crossinline provider: Component.(Parameters) -> T
-    ) {
-        bind(
-            Binding(
-                key = key,
-                behavior = behavior,
-                duplicateStrategy = duplicateStrategy,
-                tags = tags,
-                provider = object : BindingProvider<T> {
-                    override fun invoke(component: Component, parameters: Parameters): T {
-                        return provider(component, parameters)
-                    }
-                }
-            )
-        )
-    }
-
     /**
      * Adds the [binding] which can be retrieved by [Binding.key]
      *
@@ -338,4 +305,27 @@ class ComponentBuilder {
         parents.fastForEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
+}
+
+@KeyOverload
+inline fun <T> ComponentBuilder.bind(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    tags: Set<Tag> = emptySet(),
+    crossinline provider: Component.(Parameters) -> T
+) {
+    bind(
+        Binding(
+            key = key,
+            behavior = behavior,
+            duplicateStrategy = duplicateStrategy,
+            tags = tags,
+            provider = object : BindingProvider<T> {
+                override fun invoke(component: Component, parameters: Parameters): T {
+                    return provider(component, parameters)
+                }
+            }
+        )
+    )
 }

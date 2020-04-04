@@ -35,7 +35,7 @@ class InjektInitTransformer(
 
         val allModules = aggregatePackage
             .memberScope
-            .getClassifierNames()!!
+            .let { it.getClassifierNames() ?: emptySet() }
             .map { FqName(it.asString().replace("_", ".")) }
             .map { fqName ->
                 try {

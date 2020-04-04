@@ -18,7 +18,7 @@ package com.ivianuu.injekt
 
 @ScopeMarker
 annotation class ApplicationScope {
-    companion object : Scope
+    // companion object : Scope
 }
 
 @QualifierMarker

@@ -84,7 +84,7 @@ class InjektDeclarationChecker : DeclarationChecker {
                             .defaultType
                     ))
         ) {
-            context.trace.report(InjektErrors.NeedsATagCompanionObject.on(declaration))
+            //context.trace.report(InjektErrors.NeedsATagCompanionObject.on(declaration))
         }
 
         if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).size > 1) {

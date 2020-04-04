@@ -48,7 +48,6 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         }
     }
 
-
     private fun irKeyOf(type: IrType, builder: DeclarationIrBuilder): IrCall {
         val keyOf = injektPackage.memberScope
             .findFirstFunction("keyOf") {
@@ -111,7 +110,6 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                     }
                 )
             }
-
         }
     }
 }

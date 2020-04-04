@@ -192,7 +192,7 @@ class ComponentTest {
     }
 
     // todo how should we fix this
-    //@Test
+    // @Test
     fun testParentOverrideDrop() {
         val parentComponentA = Component {
             factory { "value_a" }

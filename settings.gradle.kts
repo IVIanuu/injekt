@@ -3,7 +3,8 @@ include(
     ":injekt",
     ":injekt-android",
     ":injekt-common",
-    ":injekt-compiler",
+    ":injekt-compiler-plugin",
     ":injekt-gradle-plugin",
+    ":injekt-idea-plugin",
     ":sample"
 )

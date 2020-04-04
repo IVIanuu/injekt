@@ -93,7 +93,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                         name = keyId.keyName
                         type = call.type
                         isStatic = true
-                        //visibility = Visibilities.PRIVATE
+                        // visibility = Visibilities.PRIVATE
                     }.apply {
                         initializer = DeclarationIrBuilder(pluginContext, call.symbol)
                             .irExprBody(call.deepCopyWithVariables().also {
