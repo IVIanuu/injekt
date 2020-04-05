@@ -51,7 +51,7 @@ class ComponentBuilder {
     private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
 
     init {
-        (Modules.get())
+        Modules.get()
             .fastForEach { it.apply(this) }
     }
 
