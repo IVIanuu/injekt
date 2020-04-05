@@ -25,7 +25,7 @@ package com.ivianuu.injekt
  */
 interface Behavior {
 
-    fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
+    fun <T> apply(provider: BindingProvider<T>): BindingProvider<T>
 
     fun <R> foldIn(initial: R, operation: (R, Element) -> R): R
 
@@ -35,6 +35,7 @@ interface Behavior {
         if (other === None) this else foldOut(other, ::CombinedBehavior)
 
     object None : Behavior {
+        override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
         override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R = initial
         override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R = initial
         override operator fun plus(other: Behavior): Behavior = other
@@ -54,6 +55,8 @@ private class CombinedBehavior(
     private val element: Behavior.Element,
     private val wrapped: Behavior
 ) : Behavior {
+    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
+
     override fun <R> foldIn(initial: R, operation: (R, Behavior.Element) -> R): R =
         wrapped.foldIn(operation(initial, element), operation)
 
