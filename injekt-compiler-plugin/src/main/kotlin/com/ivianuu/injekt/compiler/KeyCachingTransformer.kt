@@ -104,9 +104,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             }
         }
 
-        super.visitModuleFragment(declaration)
-
-        return declaration
+        return super.visitModuleFragment(declaration)
     }
 
     override fun visitDeclaration(declaration: IrDeclaration): IrStatement {

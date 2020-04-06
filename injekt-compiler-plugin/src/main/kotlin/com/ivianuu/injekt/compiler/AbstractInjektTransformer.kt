@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
@@ -53,6 +54,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.endOffset
+import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.ClassId
@@ -64,6 +66,11 @@ import org.jetbrains.kotlin.types.KotlinType
 abstract class AbstractInjektTransformer(
     protected val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
+
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+        return super.visitModuleFragment(declaration)
+            .also { it.patchDeclarationParents() }
+    }
 
     protected val symbolTable = pluginContext.symbolTable
     protected val typeTranslator = pluginContext.typeTranslator
