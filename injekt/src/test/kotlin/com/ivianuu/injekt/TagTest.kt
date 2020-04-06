@@ -6,6 +6,15 @@ import org.junit.Test
 class TagTest {
 
     @Test
+    fun testContains() {
+        val tag = Factory + Single + Eager + Bound
+        assertTrue(Factory in tag)
+        assertTrue(Single in tag)
+        assertTrue(Eager in tag)
+        assertTrue(Bound in tag)
+    }
+
+    @Test
     fun testSideEffectTag() {
         var called = false
         val tag = sideEffectTag("test") {

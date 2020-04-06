@@ -19,9 +19,9 @@ package com.ivianuu.injekt
 /**
  * Behavior applies scoping or such to [BindingProvider]s
  *
- * @see BoundBehavior
- * @see EagerBehavior
- * @see SingleBehavior
+ * @see Bound
+ * @see Eager
+ * @see Single
  */
 interface Tag {
 
@@ -104,9 +104,7 @@ private class CombinedTag(
     private val wrapped: Tag
 ) : Tag {
 
-    override fun contains(tag: Tag): Boolean {
-        return tag == element || tag in wrapped
-    }
+    override fun contains(tag: Tag): Boolean = tag == element || tag in wrapped
 
     override fun <R> foldIn(initial: R, operation: (R, Tag.Element) -> R): R =
         wrapped.foldIn(operation(initial, element), operation)
