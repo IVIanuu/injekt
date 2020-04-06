@@ -82,7 +82,10 @@ class MultiBindingSetBuilder<E> internal constructor() {
         add(keyOf<T>(qualifier = elementQualifier), duplicateStrategy)
     }
 
-    fun add(elementKey: Key<*>, duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail) {
+    fun <T : E> add(
+        elementKey: Key<T>,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    ) {
         add(
             KeyWithOverrideInfo(
                 elementKey,

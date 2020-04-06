@@ -84,9 +84,9 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
         )
     }
 
-    fun put(
+    fun <T : V> put(
         entryKey: K,
-        entryValueKey: Key<*>,
+        entryValueKey: Key<T>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
         put(
