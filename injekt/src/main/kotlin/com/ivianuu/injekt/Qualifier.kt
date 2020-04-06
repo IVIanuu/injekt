@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
+
 /**
  *
  * A qualifier can help to distinct between bindings of the same type
@@ -92,11 +94,9 @@ fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
  *
  * @see Qualifier
  */
+@SyntheticAnnotationMarker(Qualifier::class)
 @Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class QualifierAnnotation
 
 private data class SimpleQualifier(val name: Any) : Qualifier.Element
 

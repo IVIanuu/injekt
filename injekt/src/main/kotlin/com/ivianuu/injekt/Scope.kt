@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
+
 /**
  * Scopes are used to name [Component]s
  * This allows annotation api [Binding]s to be associated with a specific [Component]
@@ -48,10 +50,8 @@ fun Scope(name: Any): Scope = SimpleScope(name)
  *
  * @see Scope
  */
+@SyntheticAnnotationMarker(Scope::class)
 @Target(AnnotationTarget.PROPERTY)
 annotation class ScopeMarker
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class ScopeAnnotation
 
 private data class SimpleScope(val name: Any) : Scope

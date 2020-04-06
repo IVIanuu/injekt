@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
+
 /**
  * Behavior applies scoping or such to [BindingProvider]s
  *
@@ -93,11 +95,9 @@ fun interceptingTag(
 /**
  * Marker for [Tag]s
  */
+@SyntheticAnnotationMarker(Tag::class)
 @Target(AnnotationTarget.PROPERTY)
 annotation class TagMarker
-
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class TagAnnotation
 
 private class CombinedTag(
     private val element: Tag.Element,

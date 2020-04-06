@@ -26,6 +26,9 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 interface InjektErrors {
     companion object {
         @JvmField
+        val MustBeStaticProperty = error()
+
+        @JvmField
         val ParamCannotBeNamed = error()
         @JvmField
         val OnlyOneInjektConstructor = error()
@@ -60,6 +63,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
     override fun getMap(): DiagnosticFactoryToRendererMap = map
 
     init {
+        map.put(
+            InjektErrors.MustBeStaticProperty,
+            "Must be a top level property"
+        )
         map.put(
             InjektErrors.OnlyOneScope,
             "Can only have one 1 scope annotation"

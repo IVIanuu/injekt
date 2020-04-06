@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class InjektStorageComponentContainerContributorExtension : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -40,22 +39,47 @@ class InjektStorageComponentContainerContributorExtension : StorageComponentCont
         moduleDescriptor: ModuleDescriptor
     ) {
         super.registerModuleComponents(container, platform, moduleDescriptor)
-        container.useInstance(InjektDeclarationChecker())
+        container.useInstance(InjektDeclarationChecker(moduleDescriptor))
     }
 }
 
-class InjektDeclarationChecker : DeclarationChecker {
+class InjektDeclarationChecker(
+    private val module: ModuleDescriptor
+) : DeclarationChecker {
+
+    private val key by lazy {
+        module.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektClassNames.Key)
+        )!!
+    }
+    private val qualifier by lazy {
+        module.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektClassNames.Qualifier)
+        )!!
+    }
+    private val scope by lazy {
+        module.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektClassNames.Scope)
+        )!!
+    }
+    private val tag by lazy {
+        module.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektClassNames.Scope)
+        )!!
+    }
+
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeAnnotation).size > 1) {
+        if (descriptor.getSyntheticAnnotationPropertiesOfType(scope.defaultType).size > 1) {
             context.trace.report(InjektErrors.OnlyOneScope.on(declaration))
         }
 
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Param) &&
-            descriptor.hasAnnotatedAnnotations(InjektClassNames.QualifierAnnotation)
+            descriptor.getSyntheticAnnotationPropertiesOfType(qualifier.defaultType)
+                .isNotEmpty()
         ) {
             context.trace.report(InjektErrors.ParamCannotBeNamed.on(declaration))
         }
@@ -68,7 +92,7 @@ class InjektDeclarationChecker : DeclarationChecker {
 
         if (descriptor is ClassDescriptor &&
             descriptor.kind != ClassKind.OBJECT &&
-            descriptor.getAnnotatedAnnotations(InjektClassNames.TagMarker).isNotEmpty() &&
+            descriptor.getSyntheticAnnotationPropertiesOfType(tag.defaultType).isNotEmpty() &&
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
         ) {
@@ -82,12 +106,8 @@ class InjektDeclarationChecker : DeclarationChecker {
                 context.trace.report(InjektErrors.KeyOverloadMustHave1TypeParameter.on(declaration))
             }
             val firstParameter = descriptor.valueParameters.firstOrNull()
-            if (firstParameter == null || firstParameter.type.constructor.declarationDescriptor !=
-                descriptor.module.findClassAcrossModuleDependencies(
-                    ClassId.topLevel(
-                        InjektClassNames.Key
-                    )
-                )!! || firstParameter.type.arguments.single().type != descriptor.typeParameters.first().defaultType
+            if (firstParameter == null || firstParameter.type.constructor.declarationDescriptor != key ||
+                firstParameter.type.arguments.single().type != descriptor.typeParameters.first().defaultType
             ) {
                 context.trace.report(InjektErrors.KeyOverloadMustHaveKeyParam.on(declaration))
             }

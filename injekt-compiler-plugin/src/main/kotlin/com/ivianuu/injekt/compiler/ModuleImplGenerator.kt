@@ -154,35 +154,21 @@ class ModuleImplGenerator(
                     dispatchReceiverParameter = thisReceiver!!.deepCopyWithVariables()
 
                     body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                        val scopeAnnotation =
+                        val scopeAnnotationProperty =
                             pluginContext.irTrace[InjektWritableSlices.SCOPE, function]
-                                ?: function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeAnnotation)
+                                ?: function.descriptor.getSyntheticAnnotationPropertiesOfType(
+                                        this@ModuleImplGenerator.scope.defaultType
+                                    )
                                     .singleOrNull()
 
-                        val scopeExpression = if (scopeAnnotation != null) {
-                            val scopeAnnotationProperty =
-                                pluginContext.moduleDescriptor.getPackage(
-                                        scopeAnnotation.fqName!!.parent().parent()
-                                    )
-                                    .memberScope
-                                    .getContributedVariables(
-                                        scopeAnnotation.fqName!!.shortName(),
-                                        NoLookupLocation.FROM_BACKEND
-                                    )
-                                    .single()
+                        val scopeExpression = if (scopeAnnotationProperty != null) {
                             irCall(
                                 symbolTable.referenceSimpleFunction(scopeAnnotationProperty.getter!!),
                                 scopeAnnotationProperty.type.toIrType()
                             )
                         } else null
 
-                        +irReturn(
-                            if (scopeExpression != null) {
-                                scopeExpression
-                            } else {
-                                irNull()
-                            }
-                        )
+                        +irReturn(scopeExpression ?: irNull())
                     }
                 }
             }

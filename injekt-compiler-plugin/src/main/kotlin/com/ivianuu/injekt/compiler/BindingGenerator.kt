@@ -21,9 +21,6 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -42,8 +39,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
@@ -58,6 +53,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
     private val duplicateStrategy = getClass(InjektClassNames.DuplicateStrategy)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val qualifier = getClass(InjektClassNames.Qualifier)
+    private val scope = getClass(InjektClassNames.Scope)
     private val tag = getClass(InjektClassNames.Tag)
 
     override fun visitFile(declaration: IrFile): IrFile {
@@ -67,7 +63,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.descriptor.getAnnotatedAnnotations(InjektClassNames.TagAnnotation)
+                if (declaration.descriptor.getSyntheticAnnotationPropertiesOfType(tag.defaultType)
                         .isNotEmpty()
                 ) {
                     injectableClasses += declaration
@@ -114,21 +110,9 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                     putTypeArgument(0, injectClass.descriptor.defaultType.toIrType())
 
                     val tags =
-                        injectClass.descriptor.annotations.getAnnotatedAnnotationsRecursive(
-                                InjektClassNames.TagAnnotation
-                            )
+                        injectClass.descriptor.getSyntheticAnnotationPropertiesOfType(tag.defaultType)
                             .toSet()
-                            .map { tagAnnotation ->
-                                val tagProperty =
-                                    pluginContext.moduleDescriptor.getPackage(
-                                            tagAnnotation.fqName!!.parent().parent()
-                                        )
-                                        .memberScope
-                                        .getContributedVariables(
-                                            tagAnnotation.fqName!!.shortName(),
-                                            NoLookupLocation.FROM_BACKEND
-                                        )
-                                        .single()
+                            .map { tagProperty ->
                                 irCall(
                                     symbolTable.referenceSimpleFunction(tagProperty.getter!!),
                                     tagProperty.type.toIrType()
@@ -158,20 +142,11 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                         )
                     }
 
-                    val scopeAnnotation =
-                        injectClass.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeAnnotation)
+                    val scopeAnnotationProperty =
+                        injectClass.descriptor
+                            .getSyntheticAnnotationPropertiesOfType(this@BindingGenerator.scope.defaultType)
                             .singleOrNull()
-                    if (scopeAnnotation != null) {
-                        val scopeAnnotationProperty =
-                            pluginContext.moduleDescriptor.getPackage(
-                                    scopeAnnotation.fqName!!.parent().parent()
-                                )
-                                .memberScope
-                                .getContributedVariables(
-                                    scopeAnnotation.fqName!!.shortName(),
-                                    NoLookupLocation.FROM_BACKEND
-                                )
-                                .single()
+                    if (scopeAnnotationProperty != null) {
                         putValueArgument(
                             2,
                             irCall(
@@ -181,7 +156,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                         )
                         pluginContext.irTrace.record(
                             InjektWritableSlices.SCOPE,
-                            this@func, scopeAnnotation
+                            this@func, scopeAnnotationProperty
                         )
                     }
 
@@ -204,26 +179,6 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                     putValueArgument(4, bindingProvider(injectClass.descriptor))
                 }
             }
-        }
-    }
-
-    private fun Annotations.getAnnotatedAnnotationsRecursive(
-        annotation: FqName
-    ) = mutableListOf<AnnotationDescriptor>().also {
-        collectAnnotatedAnnotationsRecursive(annotation, it)
-    }
-
-    private fun Annotations.collectAnnotatedAnnotationsRecursive(
-        annotation: FqName,
-        allAnnotations: MutableList<AnnotationDescriptor>
-    ) {
-        filter {
-            it.hasAnnotation(annotation, pluginContext.moduleDescriptor)
-        }.forEach { currentTag ->
-            pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(
-                ClassId.topLevel(currentTag.fqName!!)
-            )!!.annotations.collectAnnotatedAnnotationsRecursive(annotation, allAnnotations)
-            allAnnotations += currentTag
         }
     }
 
@@ -295,19 +250,8 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                                     putTypeArgument(0, param.type.toIrType())
 
                                     val qualifiers: List<IrExpression> = param
-                                        .getAnnotatedAnnotations(InjektClassNames.QualifierAnnotation)
-                                        .map { qualifierAnnotation ->
-                                            val qualifierProperty =
-                                                pluginContext.moduleDescriptor.getPackage(
-                                                        qualifierAnnotation.fqName!!.parent()
-                                                            .parent()
-                                                    )
-                                                    .memberScope
-                                                    .getContributedVariables(
-                                                        qualifierAnnotation.fqName!!.shortName(),
-                                                        NoLookupLocation.FROM_BACKEND
-                                                    )
-                                                    .single()
+                                        .getSyntheticAnnotationPropertiesOfType(qualifier.defaultType)
+                                        .map { qualifierProperty ->
                                             irCall(
                                                 symbolTable.referenceSimpleFunction(
                                                     qualifierProperty.getter!!

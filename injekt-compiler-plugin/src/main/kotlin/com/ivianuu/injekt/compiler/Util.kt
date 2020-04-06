@@ -31,9 +31,11 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -41,6 +43,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 object InjektClassNames {
@@ -52,18 +55,17 @@ object InjektClassNames {
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
     val Key = FqName("com.ivianuu.injekt.Key")
     val KeyOverload = FqName("com.ivianuu.injekt.KeyOverload")
-    val KeyOverloadStub = FqName("com.ivianuu.injekt.KeyOverloadStub")
+    val KeyOverloadStub = FqName("com.ivianuu.injekt.internal.KeyOverloadStub")
     val Module = FqName("com.ivianuu.injekt.Module")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val QualifierAnnotation = FqName("com.ivianuu.injekt.QualifierAnnotation")
     val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
     val Scope = FqName("com.ivianuu.injekt.Scope")
-    val ScopeAnnotation = FqName("com.ivianuu.injekt.ScopeAnnotation")
     val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
+    val SyntheticAnnotation = FqName("com.ivianuu.injekt.internal.SyntheticAnnotation")
+    val SyntheticAnnotationMarker = FqName("com.ivianuu.injekt.internal.SyntheticAnnotationMarker")
     val Tag = FqName("com.ivianuu.injekt.Tag")
-    val TagAnnotation = FqName("com.ivianuu.injekt.TagAnnotation")
     val TagMarker = FqName("com.ivianuu.injekt.TagMarker")
 }
 
@@ -143,4 +145,24 @@ fun KotlinType.asTypeName(): TypeName? {
     } else type).copy(
         nullable = isMarkedNullable
     )
+}
+
+fun AnnotationDescriptor.getPropertyForSyntheticAnnotation(
+    module: ModuleDescriptor
+): PropertyDescriptor {
+    return module.getPackage(fqName!!.parent().parent())
+        .memberScope
+        .getContributedVariables(
+            fqName!!.shortName(),
+            NoLookupLocation.FROM_BACKEND
+        )
+        .single()
+}
+
+fun DeclarationDescriptor.getSyntheticAnnotationPropertiesOfType(
+    type: KotlinType
+): List<PropertyDescriptor> {
+    return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
+        .map { it.getPropertyForSyntheticAnnotation(module) }
+        .filter { it.type.isSubtypeOf(type) }
 }
