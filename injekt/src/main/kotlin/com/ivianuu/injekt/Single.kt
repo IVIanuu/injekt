@@ -25,7 +25,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  * ´´´
  * val component = Component {
- *     bind(behavior = SingleBehavior) { Database(get()) }
+ *     bind(tag = Single) { Database(get()) }
  * }
  *
  * val db1 = component.get<Database>()
@@ -34,44 +34,27 @@ import com.jakewharton.confundus.unsafeCast
  * ´´´
  *
  */
-object SingleBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        SingleProvider(provider)
+@TagMarker
+val Single = interceptingTag("com.ivianuu.injekt.Single") {
+    it.copy(provider = SingleProvider(it.provider))
 }
 
 /**
- * Dsl builder for [SingleBehavior] + [BoundBehavior]
+ * Dsl builder for [Single] + [Bound] tag
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.single(
     key: Key<T>,
-    behavior: Behavior = Behavior.None,
+    tag: Tag = Tag.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
     bind(
         key = key,
-        behavior = SingleBehavior + BoundBehavior + behavior,
+        tag = Bound + Single + tag,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-/**
- * Annotation for the [SingleBehavior]
- */
-@TagMarker
-val Single = Tag()
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.singleModule() {
-    bindingInterceptor { binding ->
-        if (Single in binding.tags) {
-            binding.copy(behavior = SingleBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
 }
 
 private class SingleProvider<T>(

@@ -16,64 +16,45 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BindingProvider
-import com.ivianuu.injekt.BoundBehavior
+import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Single
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
+import com.ivianuu.injekt.interceptingTag
 import java.lang.ref.WeakReference
 
 /**
  * Holds instances in a [WeakReference]
  */
-object WeakBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        WeakProvider(provider)
+@TagMarker
+val Weak = interceptingTag("com.ivianuu.injekt.common.Weak") {
+    it.copy(provider = WeakProvider(it.provider))
 }
 
 /**
- * Dsl builder for [WeakBehavior] + [BoundBehavior]
+ * Dsl builder for [Weak] + [Bound]
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.weak(
     key: Key<T>,
-    behavior: Behavior = Behavior.None,
+    tag: Tag = Tag.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 
 ) {
     bind(
         key = key,
-        behavior = WeakBehavior + BoundBehavior + behavior,
+        tag = Bound + Weak + tag,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-/**
- * Annotation for the [WeakBehavior]
- */
-@TagMarker
-val Weak = Tag()
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.weakModule() {
-    bindingInterceptor { binding ->
-        if (Single in binding.tags) {
-            binding.copy(behavior = WeakBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
 }
 
 private class WeakProvider<T>(delegate: BindingProvider<T>) :

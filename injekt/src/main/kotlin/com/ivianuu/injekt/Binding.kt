@@ -32,17 +32,17 @@ class Binding<T> private constructor(
      */
     val key: Key<T>,
     /**
-     * Behavior applied to the [provider]
+     * All tags of this binding
      */
-    val behavior: Behavior = Behavior.None,
+    val tag: Tag = Tag.None,
+    /**
+     * The target scope of this binding
+     */
+    val scope: Scope? = null,
     /**
      * How overrides should be handled
      */
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    /**
-     * All tags of this binding
-     */
-    val tags: Set<Tag> = emptySet(),
     /**
      * Creates instances for this binding
      */
@@ -51,14 +51,14 @@ class Binding<T> private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other != null && this::class != other::class) return false
+        if (javaClass != other?.javaClass) return false
 
         other as Binding<*>
 
         if (key != other.key) return false
-        if (behavior != other.behavior) return false
+        if (tag != other.tag) return false
+        if (scope != other.scope) return false
         if (duplicateStrategy != other.duplicateStrategy) return false
-        if (tags != other.tags) return false
         if (provider != other.provider) return false
 
         return true
@@ -66,43 +66,42 @@ class Binding<T> private constructor(
 
     override fun hashCode(): Int {
         var result = key.hashCode()
-        result = 31 * result + behavior.hashCode()
+        result = 31 * result + tag.hashCode()
+        result = 31 * result + (scope?.hashCode() ?: 0)
         result = 31 * result + duplicateStrategy.hashCode()
-        result = 31 * result + tags.hashCode()
         result = 31 * result + provider.hashCode()
         return result
     }
 
-    override fun toString(): String {
-        return "Binding(key=$key, behavior=$behavior, duplicateStrategy=$duplicateStrategy, tags=$tags, provider=$provider)"
-    }
+    override fun toString(): String =
+        "Binding(key=$key, tag=$tag, scope=$scope, duplicateStrategy=$duplicateStrategy, provider=$provider)"
 
     fun copy(
         key: Key<T> = this.key,
-        behavior: Behavior = this.behavior,
+        tag: Tag = this.tag,
+        scope: Scope? = this.scope,
         duplicateStrategy: DuplicateStrategy = this.duplicateStrategy,
-        tags: Set<Tag> = this.tags,
         provider: BindingProvider<T> = this.provider
     ) = invoke(
         key,
-        behavior,
+        tag,
+        scope,
         duplicateStrategy,
-        tags,
         provider
     )
 
     companion object {
         inline operator fun <T> invoke(
             key: Key<T>,
-            behavior: Behavior = Behavior.None,
+            tag: Tag = Tag.None,
+            scope: Scope? = null,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-            tags: Set<Tag> = emptySet(),
             crossinline provider: Component.(Parameters) -> T
         ): Binding<T> = invoke(
             key = key,
-            behavior = behavior,
+            tag = tag,
+            scope = scope,
             duplicateStrategy = duplicateStrategy,
-            tags = tags,
             provider = object : BindingProvider<T> {
                 override fun invoke(component: Component, parameters: Parameters): T {
                     return provider(component, parameters)
@@ -115,18 +114,16 @@ class Binding<T> private constructor(
          */
         operator fun <T> invoke(
             key: Key<T>,
-            behavior: Behavior = Behavior.None,
+            tag: Tag = Tag.None,
+            scope: Scope? = null,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-            tags: Set<Tag> = emptySet(),
             provider: BindingProvider<T>
         ): Binding<T> = Binding(
             key = key,
-            behavior = behavior,
+            tag = tag,
+            scope = scope,
             duplicateStrategy = duplicateStrategy,
-            tags = tags,
-            provider = behavior.foldIn(provider) { currentProvider, currentBehavior ->
-                currentBehavior.apply(currentProvider)
-            }
+            provider = provider
         )
     }
 

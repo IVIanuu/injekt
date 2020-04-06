@@ -86,15 +86,12 @@ class InjektAnalysisHandlerExtension(
             resolveFile(file)
             processTags(
                 file,
-                bindingTrace,
-                onFileGenerated = { generatedFiles = true },
-                needToRunAgain = { processingFinished = false }
-            )
+                bindingTrace
+            ) { generatedFiles = true }
             processKeyOverloads(
                 file = file,
-                bindingTrace = bindingTrace,
-                onFileGenerated = { generatedFiles = true }
-            )
+                bindingTrace = bindingTrace
+            ) { generatedFiles = true }
         }
 
         return if (generatedFiles) {
@@ -112,8 +109,7 @@ class InjektAnalysisHandlerExtension(
     private fun processTags(
         file: KtFile,
         bindingTrace: BindingTrace,
-        onFileGenerated: () -> Unit,
-        needToRunAgain: () -> Unit
+        onFileGenerated: () -> Unit
     ) {
         val tagProperties = mutableListOf<PropertyDescriptor>()
         file.accept(
@@ -123,7 +119,14 @@ class InjektAnalysisHandlerExtension(
 
                 if (descriptor.annotations.hasAnnotation(InjektClassNames.TagMarker) &&
                     descriptor.dispatchReceiverParameter == null &&
-                    descriptor.extensionReceiverParameter == null
+                    descriptor.extensionReceiverParameter == null &&
+                    descriptor.module.findClassAcrossModuleDependencies(
+                        ClassId.topLevel(
+                            file.packageFqName.child(Name.identifier("synthetic")).child(
+                                Name.identifier(descriptor.name.asString().capitalize())
+                            )
+                        )
+                    ) == null
                 ) {
                     tagProperties += descriptor
                 }
@@ -150,6 +153,7 @@ class InjektAnalysisHandlerExtension(
         }
     }
 
+    // todo generate file per overload and only generate if it does not exist
     private fun processKeyOverloads(
         file: KtFile,
         bindingTrace: BindingTrace,

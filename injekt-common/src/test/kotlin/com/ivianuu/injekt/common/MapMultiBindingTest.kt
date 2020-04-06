@@ -16,13 +16,14 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.BoundBehavior
+import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.EagerBehavior
+import com.ivianuu.injekt.Eager
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.get
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -237,7 +238,7 @@ class MapMultiBindingTest {
     @Test
     fun testEagerBoundBindingDependsOnMapOfProvider() {
         Component {
-            factory(behavior = BoundBehavior + EagerBehavior) {
+            factory(tag = Bound + Eager) {
                 get<Map<String, Provider<String>>>()
                     .forEach { it.value() }
             }

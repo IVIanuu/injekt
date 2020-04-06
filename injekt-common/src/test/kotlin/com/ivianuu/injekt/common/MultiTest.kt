@@ -17,20 +17,19 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.parametersOf
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class MultiBehaviorTest {
+class MultiTest {
 
     @Test
     fun testMultiBehavior() {
         val component = Component {
             multi { (arg: String) ->
-                MultiDep(
-                    arg
-                )
+                MultiDep(arg)
             }
         }
 

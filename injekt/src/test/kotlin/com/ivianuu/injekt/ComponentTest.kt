@@ -318,8 +318,8 @@ class ComponentTest {
     fun testMultipleBoundEagerBindings() {
         Component {
             factory(qualifier = Qualifier(UUID.randomUUID())) { get<TestDep3>() }
-            bind(behavior = BoundBehavior + EagerBehavior) { TestDep2(get()) }
-            bind(behavior = BoundBehavior + EagerBehavior) { TestDep1() }
+            bind(tag = Bound + Eager) { TestDep2(get()) }
+            bind(tag = Bound + Eager) { TestDep1() }
         }
     }
 }

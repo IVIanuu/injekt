@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
+import com.ivianuu.injekt.synthetic.Factory
 
 interface Command
 

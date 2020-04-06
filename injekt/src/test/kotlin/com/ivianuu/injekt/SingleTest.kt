@@ -19,17 +19,12 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class SingleBehaviorTest {
+class SingleTest {
 
     @Test
     fun testSingleBehavior() {
         val componentA = Component {
-            bind(
-                Binding(
-                    key = keyOf(),
-                    behavior = SingleBehavior
-                ) { TestDep1() }
-            )
+            bind(tag = Single) { TestDep1() }
         }
 
         val componentB = Component { parents(componentA) }

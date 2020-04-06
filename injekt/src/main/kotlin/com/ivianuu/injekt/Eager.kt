@@ -24,36 +24,14 @@ package com.ivianuu.injekt
  *
  * ´´´
  * val component = Component {
- *     single(behavior = EagerBehavior) { Analytics() }
+ *     single(tag = Eager) { Analytics() }
  * }
  * ´´´
  *
  */
-object EagerBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        EagerProvider(provider)
-}
-
-private class EagerProvider<T>(delegate: BindingProvider<T>) :
-    DelegatingBindingProvider<T>(delegate) {
-    override fun onAttach(component: Component) {
-        super.onAttach(component)
-        invoke(component, emptyParameters())
-    }
-}
-
 @TagMarker
-val Eager = Tag()
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.eagerModule() {
-    bindingInterceptor { binding ->
-        if (Eager in binding.tags) {
-            binding.copy(behavior = EagerBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
+val Eager = interceptingTag("com.ivianuu.injekt.Eager") {
+    it.copy(provider = EagerProvider(it.provider))
 }
 
 /**
@@ -63,7 +41,7 @@ private fun ComponentBuilder.eagerModule() {
 fun <T> ComponentBuilder.eager(key: Key<T>) {
     bind(
         key = key.copy(qualifier = key.qualifier + EagerQualifier),
-        behavior = EagerBehavior,
+        tag = Eager,
         duplicateStrategy = DuplicateStrategy.Drop
     ) { get(key) }
 }
@@ -71,4 +49,12 @@ fun <T> ComponentBuilder.eager(key: Key<T>) {
 @QualifierMarker
 private annotation class EagerQualifier {
     companion object : Qualifier.Element
+}
+
+private class EagerProvider<T>(delegate: BindingProvider<T>) :
+    DelegatingBindingProvider<T>(delegate) {
+    override fun onAttach(component: Component) {
+        super.onAttach(component)
+        invoke(component, emptyParameters())
+    }
 }

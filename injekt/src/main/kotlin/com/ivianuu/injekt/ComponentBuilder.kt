@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
+
 /**
  * Create a [Component] configured by [block]
  *
@@ -45,10 +47,10 @@ class ComponentBuilder {
 
     private val onPreBuildBlocks = mutableListOf<() -> Boolean>()
     private val onBuildBlocks = mutableListOf<(Component) -> Unit>()
-    private val onBindingAddedBlocks = mutableListOf<(Binding<*>) -> Unit>()
+    private val onBindingAddedBlocks = mutableListOf<(Binding<Any?>) -> Unit>()
     private val onScopeAddedBlocks = mutableListOf<(Scope) -> Unit>()
     private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
-    private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
+    private val bindingInterceptors = mutableListOf<(Binding<Any?>) -> Binding<Any?>>()
 
     private val moduleRegisterListener: (Module.Impl) -> Unit = {
         if (it.scope == null || it.scope in scopes) {
@@ -154,17 +156,17 @@ class ComponentBuilder {
     @KeyOverload
     inline fun <T> bind(
         key: Key<T>,
-        behavior: Behavior = Behavior.None,
+        tag: Tag = Tag.None,
+        scope: Scope? = null,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        tags: Set<Tag> = emptySet(),
         crossinline provider: Component.(Parameters) -> T
     ) {
         bind(
             Binding(
                 key = key,
-                behavior = behavior,
+                tag = tag,
+                scope = scope,
                 duplicateStrategy = duplicateStrategy,
-                tags = tags,
                 provider = object : BindingProvider<T> {
                     override fun invoke(component: Component, parameters: Parameters): T {
                         return provider(component, parameters)
@@ -181,7 +183,7 @@ class ComponentBuilder {
      * @see single
      */
     fun <T> bind(binding: Binding<T>) {
-        var finalBinding: Binding<*> = binding
+        var finalBinding: Binding<Any?> = binding.unsafeCast()
         bindingInterceptors.fastForEach { finalBinding = it(finalBinding) }
         if (finalBinding.duplicateStrategy.check(
                 existsPredicate = { finalBinding.key in _bindings },
@@ -211,14 +213,14 @@ class ComponentBuilder {
     /**
      * Invokes the [block] for every binding which gets added
      */
-    fun onBindingAdded(block: (Binding<*>) -> Unit) {
+    fun onBindingAdded(block: (Binding<Any?>) -> Unit) {
         onBindingAddedBlocks += block
     }
 
     /**
      * Invokes the [block] when ever a binding gets added
      */
-    fun bindingInterceptor(block: (Binding<*>) -> Binding<*>) {
+    fun bindingInterceptor(block: (Binding<Any?>) -> Binding<Any?>) {
         bindingInterceptors += block
     }
 

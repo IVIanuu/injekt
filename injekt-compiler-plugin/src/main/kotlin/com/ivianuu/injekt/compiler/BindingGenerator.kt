@@ -38,12 +38,8 @@ import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
@@ -51,14 +47,12 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 class BindingGenerator(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
-    private val boundBehavior = getClass(InjektClassNames.BoundBehavior)
     private val component = getClass(InjektClassNames.Component)
     private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
     private val duplicateStrategy = getClass(InjektClassNames.DuplicateStrategy)
@@ -119,34 +113,69 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
                     putTypeArgument(0, injectClass.descriptor.defaultType.toIrType())
 
+                    val tags =
+                        injectClass.descriptor.annotations.getAnnotatedAnnotationsRecursive(
+                                InjektClassNames.TagAnnotation
+                            )
+                            .toSet()
+                            .map { tagAnnotation ->
+                                val tagProperty =
+                                    pluginContext.moduleDescriptor.getPackage(
+                                            tagAnnotation.fqName!!.parent().parent()
+                                        )
+                                        .memberScope
+                                        .getContributedVariables(
+                                            tagAnnotation.fqName!!.shortName(),
+                                            NoLookupLocation.FROM_BACKEND
+                                        )
+                                        .single()
+                                irCall(
+                                    symbolTable.referenceSimpleFunction(tagProperty.getter!!),
+                                    tagProperty.type.toIrType()
+                                )
+                            }
+
+                    if (tags.isNotEmpty()) {
+                        putValueArgument(
+                            1,
+                            tags
+                                .reduceRight { currentTag, acc ->
+                                    irCall(
+                                        symbolTable.referenceSimpleFunction(
+                                            tag.unsubstitutedMemberScope
+                                                .findSingleFunction(
+                                                    Name.identifier(
+                                                        "plus"
+                                                    )
+                                                )
+                                        ),
+                                        tag.defaultType.toIrType()
+                                    ).apply {
+                                        dispatchReceiver = currentTag
+                                        putValueArgument(0, acc)
+                                    }
+                                }
+                        )
+                    }
+
                     val scopeAnnotation =
                         injectClass.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
                             .singleOrNull()
                     if (scopeAnnotation != null) {
+                        val scopeObject =
+                            getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
                         putValueArgument(
-                            1,
-                            irCall(
-                                symbolTable.referenceConstructor(
-                                    boundBehavior.unsubstitutedPrimaryConstructor!!
-                                ),
-                                boundBehavior.defaultType.toIrType()
-                            ).apply {
-                                val scopeObject =
-                                    getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
-                                putValueArgument(
-                                    0,
-                                    irGetObject(symbolTable.referenceClass(scopeObject))
-                                )
-                                pluginContext.irTrace.record(
-                                    InjektWritableSlices.SCOPE,
-                                    this@func, getClass(scopeAnnotation.fqName!!)
-                                )
-                            }
+                            2,
+                            irGetObject(symbolTable.referenceClass(scopeObject))
+                        )
+                        pluginContext.irTrace.record(
+                            InjektWritableSlices.SCOPE,
+                            this@func, getClass(scopeAnnotation.fqName!!)
                         )
                     }
 
                     putValueArgument(
-                        2,
+                        3,
                         IrGetEnumValueImpl(
                             UNDEFINED_OFFSET,
                             UNDEFINED_OFFSET,
@@ -160,61 +189,6 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                             )
                         )
                     )
-
-                    val tags =
-                        injectClass.descriptor.annotations.getAnnotatedAnnotationsRecursive(
-                                InjektClassNames.TagAnnotation
-                            )
-                            .toSet()
-
-                    if (tags.isNotEmpty()) {
-                        val setOf =
-                            pluginContext.moduleDescriptor.getPackage(FqName("kotlin.collections"))
-                                .memberScope
-                                .findFirstFunction("setOf") {
-                                    it.valueParameters.singleOrNull()?.isVararg ?: false
-                                }
-                        putValueArgument(
-                            3,
-                            DeclarationIrBuilder(context, symbol).irCall(
-                                symbolTable.referenceSimpleFunction(setOf),
-                                type = KotlinTypeFactory.simpleType(
-                                    pluginContext.builtIns.set.defaultType,
-                                    arguments = listOf(
-                                        tag.defaultType.asTypeProjection()
-                                    )
-                                ).toIrType()
-                            ).apply {
-                                putTypeArgument(0, tag.defaultType.toIrType())
-                                putValueArgument(
-                                    0,
-                                    IrVarargImpl(
-                                        UNDEFINED_OFFSET,
-                                        UNDEFINED_OFFSET,
-                                        pluginContext.irBuiltIns.arrayClass
-                                            .typeWith(getTypeArgument(0)!!),
-                                        getTypeArgument(0)!!,
-                                        tags.map { tagAnnotation ->
-                                            val tagProperty =
-                                                pluginContext.moduleDescriptor.getPackage(
-                                                        tagAnnotation.fqName!!.parent().parent()
-                                                    )
-                                                    .memberScope
-                                                    .getContributedVariables(
-                                                        tagAnnotation.fqName!!.shortName(),
-                                                        NoLookupLocation.FROM_BACKEND
-                                                    )
-                                                    .single()
-                                            irCall(
-                                                symbolTable.referenceSimpleFunction(tagProperty.getter!!),
-                                                tagProperty.type.toIrType()
-                                            )
-                                        }
-                                    )
-                                )
-                            }
-                        )
-                    }
 
                     putValueArgument(4, bindingProvider(injectClass.descriptor))
                 }
