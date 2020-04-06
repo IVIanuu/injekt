@@ -62,7 +62,7 @@ class InjektDeclarationChecker(
             ClassId.topLevel(InjektClassNames.Scope)
         )!!
     }
-    private val tag by lazy {
+    private val behavior by lazy {
         module.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Scope)
         )!!
@@ -92,7 +92,7 @@ class InjektDeclarationChecker(
 
         if (descriptor is ClassDescriptor &&
             descriptor.kind != ClassKind.OBJECT &&
-            descriptor.getSyntheticAnnotationPropertiesOfType(tag.defaultType).isNotEmpty() &&
+            descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType).isNotEmpty() &&
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
         ) {

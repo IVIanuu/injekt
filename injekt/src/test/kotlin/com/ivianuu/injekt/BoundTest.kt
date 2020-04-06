@@ -26,7 +26,7 @@ class BoundTest {
         val usedComponents = mutableListOf<Component>()
 
         val componentA = Component {
-            bind(tag = Bound) { usedComponents += this }
+            bind(behavior = Bound) { usedComponents += this }
         }
 
         val componentB = Component {
@@ -51,7 +51,7 @@ class BoundTest {
             parents(componentA)
 
             bind(
-                tag = Bound,
+                behavior = Bound,
                 scope = TestScope1
             ) { usedComponents += this }
         }

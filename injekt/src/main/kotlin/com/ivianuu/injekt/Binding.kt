@@ -32,9 +32,9 @@ class Binding<T> private constructor(
      */
     val key: Key<T>,
     /**
-     * All tags of this binding
+     * All behaviors of this binding
      */
-    val tag: Tag = Tag.None,
+    val behavior: Behavior = Behavior.None,
     /**
      * The target scope of this binding
      */
@@ -56,7 +56,7 @@ class Binding<T> private constructor(
         other as Binding<*>
 
         if (key != other.key) return false
-        if (tag != other.tag) return false
+        if (behavior != other.behavior) return false
         if (scope != other.scope) return false
         if (duplicateStrategy != other.duplicateStrategy) return false
         if (provider != other.provider) return false
@@ -66,7 +66,7 @@ class Binding<T> private constructor(
 
     override fun hashCode(): Int {
         var result = key.hashCode()
-        result = 31 * result + tag.hashCode()
+        result = 31 * result + behavior.hashCode()
         result = 31 * result + (scope?.hashCode() ?: 0)
         result = 31 * result + duplicateStrategy.hashCode()
         result = 31 * result + provider.hashCode()
@@ -74,17 +74,17 @@ class Binding<T> private constructor(
     }
 
     override fun toString(): String =
-        "Binding(key=$key, tag=$tag, scope=$scope, duplicateStrategy=$duplicateStrategy, provider=$provider)"
+        "Binding(key=$key, tag=$behavior, scope=$scope, duplicateStrategy=$duplicateStrategy, provider=$provider)"
 
     fun copy(
         key: Key<T> = this.key,
-        tag: Tag = this.tag,
+        behavior: Behavior = this.behavior,
         scope: Scope? = this.scope,
         duplicateStrategy: DuplicateStrategy = this.duplicateStrategy,
         provider: BindingProvider<T> = this.provider
     ) = invoke(
         key,
-        tag,
+        behavior,
         scope,
         duplicateStrategy,
         provider
@@ -93,13 +93,13 @@ class Binding<T> private constructor(
     companion object {
         inline operator fun <T> invoke(
             key: Key<T>,
-            tag: Tag = Tag.None,
+            behavior: Behavior = Behavior.None,
             scope: Scope? = null,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
             crossinline provider: Component.(Parameters) -> T
         ): Binding<T> = invoke(
             key = key,
-            tag = tag,
+            behavior = behavior,
             scope = scope,
             duplicateStrategy = duplicateStrategy,
             provider = object : BindingProvider<T> {
@@ -114,13 +114,13 @@ class Binding<T> private constructor(
          */
         operator fun <T> invoke(
             key: Key<T>,
-            tag: Tag = Tag.None,
+            behavior: Behavior = Behavior.None,
             scope: Scope? = null,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
             provider: BindingProvider<T>
         ): Binding<T> = Binding(
             key = key,
-            tag = tag,
+            behavior = behavior,
             scope = scope,
             duplicateStrategy = duplicateStrategy,
             provider = provider

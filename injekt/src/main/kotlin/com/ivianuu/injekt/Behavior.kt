@@ -19,34 +19,34 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
 
 /**
- * Tag applies scoping or such to [BindingProvider]s
+ * Behavior applies scoping or such to [BindingProvider]s
  *
  * @see Bound
  * @see Eager
  * @see Single
  */
-interface Tag {
+interface Behavior {
 
-    operator fun contains(tag: Tag): Boolean
+    operator fun contains(behavior: Behavior): Boolean
 
     fun <R> foldIn(initial: R, operation: (R, Element) -> R): R
 
     fun <R> foldOut(initial: R, operation: (Element, R) -> R): R
 
-    operator fun plus(other: Tag): Tag =
-        if (other === None) this else foldOut(other, ::CombinedTag)
+    operator fun plus(other: Behavior): Behavior =
+        if (other === None) this else foldOut(other, ::CombinedBehavior)
 
-    object None : Tag {
-        override fun contains(tag: Tag): Boolean = false
+    object None : Behavior {
+        override fun contains(behavior: Behavior): Boolean = false
         override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R = initial
         override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R = initial
-        override operator fun plus(other: Tag): Tag = other
-        override fun toString() = "Tag.None"
+        override operator fun plus(other: Behavior): Behavior = other
+        override fun toString() = "Behavior.None"
     }
 
-    interface Element : Tag {
+    interface Element : Behavior {
 
-        override fun contains(tag: Tag): Boolean = this == tag
+        override fun contains(behavior: Behavior): Boolean = this == behavior
 
         override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R =
             operation(initial, this)
@@ -57,71 +57,71 @@ interface Tag {
 }
 
 /**
- * Returns a tag which uses [name] for comparisons
+ * Returns a [Behavior] which uses [name] for comparisons
  */
-fun Tag(name: Any): Tag = DefaultTag(name)
+fun Behavior(name: Any): Behavior = DefaultBehavior(name)
 
 /**
- * Returns a new [Tag] for [name] and invokes [onBindingAdded] when ever
- * a [Binding] with the returned tag was added to a [ComponentBuilder] with [scope]
+ * Returns a new [Behavior] for [name] and invokes [onBindingAdded] when ever
+ * a [Binding] with the returned [Behavior] was added to a [ComponentBuilder] with [scope]
  */
-fun sideEffectTag(
+fun sideEffectBehavior(
     name: Any,
     scope: Scope? = null,
     onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
-): Tag {
-    val tag = Tag(name)
+): Behavior {
+    val behavior = Behavior(name)
     Injekt {
         module(scope = scope, invokeOnInit = true) {
             onBindingAdded {
-                if (tag in it.tag) {
+                if (behavior in it.behavior) {
                     onBindingAdded(it)
                 }
             }
         }
     }
-    return tag
+    return behavior
 }
 
 /**
- * Returns a new [Tag] for [name] and invokes [intercept] when ever
- * a binding with the tag was added to a [ComponentBuilder] with [scope]
+ * Returns a new [Behavior] for [name] and invokes [intercept] when ever
+ * a binding with the [Behavior] was added to a [ComponentBuilder] with [scope]
  *
  * @see Bound
  * @see Factory
  * @see Single
  *
  */
-fun interceptingTag(
+fun interceptingBehavior(
     name: Any,
     scope: Scope? = null,
     intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>
-): Tag {
-    val tag = Tag(name)
+): Behavior {
+    val behavior = Behavior(name)
     Injekt {
         module(scope = scope, invokeOnInit = true) {
             bindingInterceptor {
-                if (tag in it.tag) intercept(it) else it
+                if (behavior in it.behavior) intercept(it) else it
             }
         }
     }
-    return tag
+    return behavior
 }
 
 /**
- * Annotating a [Tag] property allows to use it as an annotation
+ * Annotating a [Behavior] property allows to use it as an annotation
  *
  * For example:
  *
  * ´´´
- * @TagMarker val BindWorker = Tag()
+ * @BehaviorMarker val BindWorker = Behavior()
  *
  * ´´´
  *
  * In dsl:
  *
  * ´´´
- * factory(tag = BindWorker) { ... }
+ * factory(behavior = BindWorker) { ... }
  *
  * ```
  *
@@ -133,25 +133,25 @@ fun interceptingTag(
  * ´´´
  *
  */
-@SyntheticAnnotationMarker(Tag::class)
+@SyntheticAnnotationMarker(Behavior::class)
 @Target(AnnotationTarget.PROPERTY)
-annotation class TagMarker
+annotation class BehaviorMarker
 
-private class CombinedTag(
-    private val element: Tag.Element,
-    private val wrapped: Tag
-) : Tag {
+private class CombinedBehavior(
+    private val element: Behavior.Element,
+    private val wrapped: Behavior
+) : Behavior {
 
-    override fun contains(tag: Tag): Boolean = tag == element || tag in wrapped
+    override fun contains(behavior: Behavior): Boolean = behavior == element || behavior in wrapped
 
-    override fun <R> foldIn(initial: R, operation: (R, Tag.Element) -> R): R =
+    override fun <R> foldIn(initial: R, operation: (R, Behavior.Element) -> R): R =
         wrapped.foldIn(operation(initial, element), operation)
 
-    override fun <R> foldOut(initial: R, operation: (Tag.Element, R) -> R): R =
+    override fun <R> foldOut(initial: R, operation: (Behavior.Element, R) -> R): R =
         operation(element, wrapped.foldOut(initial, operation))
 
     override fun equals(other: Any?): Boolean =
-        other is CombinedTag && element == other.element && wrapped == other.wrapped
+        other is CombinedBehavior && element == other.element && wrapped == other.wrapped
 
     override fun hashCode(): Int = wrapped.hashCode() + 31 * element.hashCode()
 
@@ -160,5 +160,5 @@ private class CombinedTag(
     } + "]"
 }
 
-private data class DefaultTag(val name: Any) : Tag.Element
+private data class DefaultBehavior(val name: Any) : Behavior.Element
 

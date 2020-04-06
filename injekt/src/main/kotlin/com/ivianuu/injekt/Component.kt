@@ -184,7 +184,7 @@ inline fun <T> ComponentOwner.getLazy(
 @Module(invokeOnInit = true)
 private fun ComponentBuilder.componentModule() {
     bind(
-        tag = Bound,
+        behavior = Bound,
         duplicateStrategy = DuplicateStrategy.Override
     ) { this }
 
@@ -192,7 +192,7 @@ private fun ComponentBuilder.componentModule() {
         bind(
             qualifier = scope,
             scope = scope,
-            tag = Bound,
+            behavior = Bound,
             duplicateStrategy = DuplicateStrategy.Override
         ) { this }
     }

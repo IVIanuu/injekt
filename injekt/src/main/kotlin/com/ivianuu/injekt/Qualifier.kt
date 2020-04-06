@@ -94,28 +94,6 @@ fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
 
 /**
  * Annotating a [Qualifier] property allows to use it as an annotation
- *
- * For example:
- *
- * ´´´
- * @QualifierMarker val BindWorker = Tag()
- *
- * ´´´
- *
- * In dsl:
- *
- * ´´´
- * factory(tag = BindWorker) { ... }
- *
- * ```
- *
- * And as annotation
- *
- * ´´´
- * @BindWorker
- * class MyWorker
- * ´´´
- *
  */
 @SyntheticAnnotationMarker(Qualifier::class)
 @Target(AnnotationTarget.PROPERTY)

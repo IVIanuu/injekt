@@ -18,6 +18,8 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
@@ -28,29 +30,27 @@ import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.android.synthetic.FragmentsMap
 import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.sideEffectTag
+import com.ivianuu.injekt.sideEffectBehavior
 import com.ivianuu.injekt.synthetic.ApplicationScope
 import com.ivianuu.injekt.synthetic.Factory
 
-@TagMarker
-val BindFragment = sideEffectTag("BindFragment") {
+@BehaviorMarker
+val BindFragment = sideEffectBehavior("BindFragment") {
     bindFragmentIntoMap(it.key as Key<out Fragment>)
 }
 
 @KeyOverload
 inline fun <T : Fragment> ComponentBuilder.fragment(
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
-    factory(key, tag, duplicateStrategy, provider)
+    factory(key, behavior, duplicateStrategy, provider)
     bindFragmentIntoMap(fragmentKey = key)
 }
 

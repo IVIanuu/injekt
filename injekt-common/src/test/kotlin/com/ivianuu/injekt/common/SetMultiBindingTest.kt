@@ -206,7 +206,7 @@ class SetMultiBindingTest {
     @Test
     fun testEagerBoundBindingDependsOnSetOfProvider() {
         Component {
-            factory(tag = Bound + Eager) {
+            factory(behavior = Bound + Eager) {
                 get<Set<Provider<String>>>()
                     .forEach { it() }
             }

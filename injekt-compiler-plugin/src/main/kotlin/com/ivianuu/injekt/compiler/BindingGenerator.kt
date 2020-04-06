@@ -48,13 +48,13 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 class BindingGenerator(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
+    private val behavior = getClass(InjektClassNames.Behavior)
     private val component = getClass(InjektClassNames.Component)
     private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
     private val duplicateStrategy = getClass(InjektClassNames.DuplicateStrategy)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val qualifier = getClass(InjektClassNames.Qualifier)
     private val scope = getClass(InjektClassNames.Scope)
-    private val tag = getClass(InjektClassNames.Tag)
 
     override fun visitFile(declaration: IrFile): IrFile {
         super.visitFile(declaration)
@@ -63,7 +63,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.descriptor.getSyntheticAnnotationPropertiesOfType(tag.defaultType)
+                if (declaration.descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType)
                         .isNotEmpty()
                 ) {
                     injectableClasses += declaration
@@ -109,33 +109,33 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
                     putTypeArgument(0, injectClass.descriptor.defaultType.toIrType())
 
-                    val tags =
-                        injectClass.descriptor.getSyntheticAnnotationPropertiesOfType(tag.defaultType)
+                    val behaviors =
+                        injectClass.descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType)
                             .toSet()
-                            .map { tagProperty ->
+                            .map { behaviorProperty ->
                                 irCall(
-                                    symbolTable.referenceSimpleFunction(tagProperty.getter!!),
-                                    tagProperty.type.toIrType()
+                                    symbolTable.referenceSimpleFunction(behaviorProperty.getter!!),
+                                    behaviorProperty.type.toIrType()
                                 )
                             }
 
-                    if (tags.isNotEmpty()) {
+                    if (behaviors.isNotEmpty()) {
                         putValueArgument(
                             1,
-                            tags
-                                .reduceRight { currentTag, acc ->
+                            behaviors
+                                .reduceRight { currentBehavior, acc ->
                                     irCall(
                                         symbolTable.referenceSimpleFunction(
-                                            tag.unsubstitutedMemberScope
+                                            behavior.unsubstitutedMemberScope
                                                 .findSingleFunction(
                                                     Name.identifier(
                                                         "plus"
                                                     )
                                                 )
                                         ),
-                                        tag.defaultType.toIrType()
+                                        behavior.defaultType.toIrType()
                                     ).apply {
-                                        dispatchReceiver = currentTag
+                                        dispatchReceiver = currentBehavior
                                         putValueArgument(0, acc)
                                     }
                                 }

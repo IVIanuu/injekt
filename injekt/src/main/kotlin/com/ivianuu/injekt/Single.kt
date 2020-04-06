@@ -25,7 +25,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  * ´´´
  * val component = Component {
- *     bind(tag = Single) { Database(get()) }
+ *     bind(behavior = Single) { Database(get()) }
  * }
  *
  * val db1 = component.get<Database>()
@@ -34,24 +34,24 @@ import com.jakewharton.confundus.unsafeCast
  * ´´´
  *
  */
-@TagMarker
-val Single = interceptingTag("Single") {
+@BehaviorMarker
+val Single = interceptingBehavior("Single") {
     it.copy(provider = SingleProvider(it.provider))
 }
 
 /**
- * Dsl builder for [Single] + [Bound] tag
+ * Dsl builder for [Single] + [Bound] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.single(
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
     bind(
         key = key,
-        tag = Bound + Single + tag,
+        behavior = Bound + Single + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

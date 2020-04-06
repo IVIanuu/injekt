@@ -156,7 +156,7 @@ class ComponentBuilder {
     @KeyOverload
     inline fun <T> bind(
         key: Key<T>,
-        tag: Tag = Tag.None,
+        behavior: Behavior = Behavior.None,
         scope: Scope? = null,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         crossinline provider: Component.(Parameters) -> T
@@ -164,7 +164,7 @@ class ComponentBuilder {
         bind(
             Binding(
                 key = key,
-                tag = tag,
+                behavior = behavior,
                 scope = scope,
                 duplicateStrategy = duplicateStrategy,
                 provider = object : BindingProvider<T> {

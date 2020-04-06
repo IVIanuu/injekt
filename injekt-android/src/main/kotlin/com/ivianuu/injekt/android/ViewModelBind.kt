@@ -18,6 +18,8 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
@@ -26,30 +28,28 @@ import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.interceptingTag
+import com.ivianuu.injekt.interceptingBehavior
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
-@TagMarker
-val BindViewModel = interceptingTag("BindViewModel") {
+@BehaviorMarker
+val BindViewModel = interceptingBehavior("BindViewModel") {
     it.copy(provider = ViewModelProvider(it.provider, it.key))
 }
 
 /**
- * Dsl builder for the [BindViewModel] tag
+ * Dsl builder for the [BindViewModel] behavior
  */
 @KeyOverload
 inline fun <T : ViewModel> ComponentBuilder.viewModel(
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
     bind(
         key = key,
-        tag = BindViewModel + tag,
+        behavior = BindViewModel + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

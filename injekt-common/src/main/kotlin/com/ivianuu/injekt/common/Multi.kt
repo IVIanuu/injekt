@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
@@ -25,9 +27,7 @@ import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
-import com.ivianuu.injekt.interceptingTag
+import com.ivianuu.injekt.interceptingBehavior
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -46,24 +46,24 @@ import java.util.concurrent.ConcurrentHashMap
  * ´´´
  *
  */
-@TagMarker
-val Multi = interceptingTag("Multi") {
+@BehaviorMarker
+val Multi = interceptingBehavior("Multi") {
     it.copy(provider = MultiProvider(it.provider))
 }
 
 /**
- * Dsl builder for [Multi] + [Bound] tag
+ * Dsl builder for [Multi] + [Bound] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.multi(
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
     bind(
         key = key,
-        tag = Bound + Multi + tag,
+        behavior = Bound + Multi + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

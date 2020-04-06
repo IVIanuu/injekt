@@ -19,8 +19,8 @@ package com.ivianuu.injekt
 /**
  * Ensures instances will be resolved in the specified component
  */
-@TagMarker
-val Bound = interceptingTag("Bound") {
+@BehaviorMarker
+val Bound = interceptingBehavior("Bound") {
     it.copy(provider = BoundProvider(it.scope, it.provider))
 }
 

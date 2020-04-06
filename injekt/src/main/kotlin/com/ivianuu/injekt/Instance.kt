@@ -19,13 +19,13 @@ package com.ivianuu.injekt
 inline fun <reified T> ComponentBuilder.instance(
     instance: T,
     qualifier: Qualifier = Qualifier.None,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
 ) {
     instance(
         instance = instance,
         key = keyOf(qualifier = qualifier),
-        tag = tag,
+        behavior = behavior,
         duplicateStrategy = duplicateStrategy
     )
 }
@@ -36,12 +36,12 @@ inline fun <reified T> ComponentBuilder.instance(
 fun <T> ComponentBuilder.instance(
     instance: T,
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
 ) {
     bind(
         key = key,
-        tag = tag,
+        behavior = behavior,
         duplicateStrategy = duplicateStrategy,
         provider = { instance }
     )

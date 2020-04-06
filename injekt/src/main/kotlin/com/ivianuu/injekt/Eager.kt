@@ -24,13 +24,13 @@ package com.ivianuu.injekt
  *
  * ´´´
  * val component = Component {
- *     single(tag = Eager) { Analytics() }
+ *     single(behavior = Eager) { Analytics() }
  * }
  * ´´´
  *
  */
-@TagMarker
-val Eager = interceptingTag("Eager") {
+@BehaviorMarker
+val Eager = interceptingBehavior("Eager") {
     it.copy(provider = EagerProvider(it.provider))
 }
 
@@ -41,7 +41,7 @@ val Eager = interceptingTag("Eager") {
 fun <T> ComponentBuilder.eager(key: Key<T>) {
     bind(
         key = key.copy(qualifier = key.qualifier + EagerQualifier),
-        tag = Eager,
+        behavior = Eager,
         duplicateStrategy = DuplicateStrategy.Drop
     ) { get(key) }
 }

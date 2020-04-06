@@ -135,15 +135,15 @@ class InjektAnalysisHandlerExtension(
             }
         )
 
-        syntheticAnnotationProperties.forEach { tag ->
+        syntheticAnnotationProperties.forEach { property ->
             FileSpec.builder(
                     file.packageFqName.child(Name.identifier("synthetic")).asString(),
-                    tag.name.asString().capitalize()
+                    property.name.asString().capitalize()
                 )
                 .addType(
-                    TypeSpec.annotationBuilder(tag.name.asString().capitalize())
+                    TypeSpec.annotationBuilder(property.name.asString().capitalize())
                         .addAnnotation(
-                            tag.module.findClassAcrossModuleDependencies(
+                            property.module.findClassAcrossModuleDependencies(
                                 ClassId.topLevel(InjektClassNames.SyntheticAnnotation)
                             )!!.asClassName()!!
                         )

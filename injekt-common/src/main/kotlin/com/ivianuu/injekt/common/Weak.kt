@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
@@ -25,33 +27,30 @@ import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
-import com.ivianuu.injekt.interceptingTag
+import com.ivianuu.injekt.interceptingBehavior
 import java.lang.ref.WeakReference
 
 /**
  * Holds instances in a [WeakReference]
  */
-@TagMarker
-val Weak = interceptingTag("Weak") {
+@BehaviorMarker
+val Weak = interceptingBehavior("Weak") {
     it.copy(provider = WeakProvider(it.provider))
 }
 
 /**
- * Dsl builder for [Weak] + [Bound]
+ * Dsl builder for [Weak] + [Bound] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.weak(
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
-
 ) {
     bind(
         key = key,
-        tag = Bound + Weak + tag,
+        behavior = Bound + Weak + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

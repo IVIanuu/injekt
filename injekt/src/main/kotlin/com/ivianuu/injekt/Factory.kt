@@ -31,8 +31,8 @@ package com.ivianuu.injekt
  * assertSame(logger1, logger2) // false
  * ´´´
  */
-@TagMarker
-val Factory = Tag("Factory")
+@BehaviorMarker
+val Factory = Behavior("Factory")
 
 /**
  * Dsl builder for a factory binding
@@ -42,13 +42,13 @@ val Factory = Tag("Factory")
 @KeyOverload
 inline fun <T> ComponentBuilder.factory(
     key: Key<T>,
-    tag: Tag = Tag.None,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
     bind(
         key = key,
-        tag = tag,
+        behavior = behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

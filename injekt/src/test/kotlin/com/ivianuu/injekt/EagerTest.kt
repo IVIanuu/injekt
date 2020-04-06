@@ -28,7 +28,7 @@ class EagerTest {
         Component { bind { called = true } }
         assertFalse(called)
         Component {
-            bind(tag = Eager) { called = true }
+            bind(behavior = Eager) { called = true }
         }
         assertTrue(called)
     }

@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val Behavior = FqName("com.ivianuu.injekt.Behavior")
     val Component = FqName("com.ivianuu.injekt.Component")
     val ComponentBuilder = FqName("com.ivianuu.injekt.ComponentBuilder")
     val DuplicateStrategy = FqName("com.ivianuu.injekt.DuplicateStrategy")
@@ -60,13 +61,9 @@ object InjektClassNames {
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
     val Scope = FqName("com.ivianuu.injekt.Scope")
-    val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
     val SyntheticAnnotation = FqName("com.ivianuu.injekt.internal.SyntheticAnnotation")
     val SyntheticAnnotationMarker = FqName("com.ivianuu.injekt.internal.SyntheticAnnotationMarker")
-    val Tag = FqName("com.ivianuu.injekt.Tag")
-    val TagMarker = FqName("com.ivianuu.injekt.TagMarker")
 }
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =

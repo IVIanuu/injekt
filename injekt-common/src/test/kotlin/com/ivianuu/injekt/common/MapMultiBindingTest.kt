@@ -238,7 +238,7 @@ class MapMultiBindingTest {
     @Test
     fun testEagerBoundBindingDependsOnMapOfProvider() {
         Component {
-            factory(tag = Bound + Eager) {
+            factory(behavior = Bound + Eager) {
                 get<Map<String, Provider<String>>>()
                     .forEach { it.value() }
             }

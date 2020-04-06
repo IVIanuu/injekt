@@ -24,7 +24,7 @@ class SingleTest {
     @Test
     fun testSingleBehavior() {
         val componentA = Component {
-            bind(tag = Single) { TestDep1() }
+            bind(behavior = Single) { TestDep1() }
         }
 
         val componentB = Component { parents(componentA) }
