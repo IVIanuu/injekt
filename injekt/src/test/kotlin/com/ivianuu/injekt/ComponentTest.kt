@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.synthetic.Single
-import com.ivianuu.injekt.synthetic.TestScopeOne
+import com.ivianuu.injekt.synthetic.TestScope1
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -329,6 +329,6 @@ class Context(val component: Component) : Environment
 
 interface Environment
 
-@TestScopeOne
+@TestScope1
 @Single
 class SingleJitDep
