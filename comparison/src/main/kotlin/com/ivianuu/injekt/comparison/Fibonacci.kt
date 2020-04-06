@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.comparison
 
-import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.synthetic.Factory
 import javax.inject.Inject
 
 @Factory

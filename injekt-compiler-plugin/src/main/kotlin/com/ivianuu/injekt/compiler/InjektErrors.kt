@@ -31,8 +31,6 @@ interface InjektErrors {
         val NeedsAQualifierCompanionObject = error()
         @JvmField
         val NeedsAScopeCompanionObject = error()
-        @JvmField
-        val NeedsATagCompanionObject = error()
 
         @JvmField
         val ParamCannotBeNamed = error()
@@ -86,10 +84,6 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.NeedsAScopeCompanionObject,
             "Needs a companion object which implements Scope"
-        )
-        map.put(
-            InjektErrors.NeedsATagCompanionObject,
-            "Needs a companion object which implements Tag"
         )
         map.put(
             InjektErrors.ParamCannotBeNamed,

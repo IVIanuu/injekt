@@ -73,21 +73,6 @@ class InjektDeclarationChecker : DeclarationChecker {
             context.trace.report(InjektErrors.NeedsAQualifierCompanionObject.on(declaration))
         }
 
-        if (descriptor is ClassDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.TagMarker) &&
-            (descriptor.companionObjectDescriptor == null ||
-                    !descriptor.companionObjectDescriptor!!.defaultType.isSubtypeOf(
-                        descriptor.module.findClassAcrossModuleDependencies(
-                            ClassId.topLevel(
-                                InjektClassNames.Tag
-                            )
-                        )!!
-                            .defaultType
-                    ))
-        ) {
-            context.trace.report(InjektErrors.NeedsATagCompanionObject.on(declaration))
-        }
-
         if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).size > 1) {
             context.trace.report(InjektErrors.OnlyOneScope.on(declaration))
         }

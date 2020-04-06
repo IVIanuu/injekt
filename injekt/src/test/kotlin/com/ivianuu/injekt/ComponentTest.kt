@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.synthetic.Single
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull

@@ -33,6 +33,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        DefaultTagNameTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
 
         AggregateGenerator(
             moduleFragment,

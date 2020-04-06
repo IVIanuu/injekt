@@ -54,9 +54,7 @@ inline fun <T : ViewModel> ComponentBuilder.viewModel(
 }
 
 @TagMarker
-annotation class ViewModelBind {
-    companion object : Tag
-}
+val ViewModelBind = Tag()
 
 @Module(invokeOnInit = true)
 private fun ComponentBuilder.viewModelModule() {

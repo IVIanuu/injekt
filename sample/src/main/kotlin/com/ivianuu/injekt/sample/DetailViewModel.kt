@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Param
 import com.ivianuu.injekt.android.ForActivity
+import com.ivianuu.injekt.synthetic.Factory
 
 @Factory
 class DetailViewModel(

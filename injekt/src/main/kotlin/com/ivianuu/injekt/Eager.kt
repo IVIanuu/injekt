@@ -43,9 +43,7 @@ private class EagerProvider<T>(delegate: BindingProvider<T>) :
 }
 
 @TagMarker
-annotation class Eager {
-    companion object : Tag
-}
+val Eager = Tag()
 
 @Module(invokeOnInit = true)
 private fun ComponentBuilder.eagerModule() {

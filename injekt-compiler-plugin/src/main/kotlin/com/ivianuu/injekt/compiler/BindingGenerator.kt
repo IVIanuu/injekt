@@ -73,7 +73,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.descriptor.getAnnotatedAnnotations(InjektClassNames.TagMarker)
+                if (declaration.descriptor.getAnnotatedAnnotations(InjektClassNames.TagAnnotation)
                         .isNotEmpty()
                 ) {
                     injectableClasses += declaration
@@ -163,7 +163,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
 
                     val tags =
                         injectClass.descriptor.annotations.getAnnotatedAnnotationsRecursive(
-                                InjektClassNames.TagMarker
+                                InjektClassNames.TagAnnotation
                             )
                             .toSet()
 
@@ -195,9 +195,20 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                                             .typeWith(getTypeArgument(0)!!),
                                         getTypeArgument(0)!!,
                                         tags.map { tagAnnotation ->
-                                            val tagObject =
-                                                getClass(tagAnnotation.fqName!!).companionObjectDescriptor!!
-                                            irGetObject(symbolTable.referenceClass(tagObject))
+                                            val tagProperty =
+                                                pluginContext.moduleDescriptor.getPackage(
+                                                        tagAnnotation.fqName!!.parent().parent()
+                                                    )
+                                                    .memberScope
+                                                    .getContributedVariables(
+                                                        tagAnnotation.fqName!!.shortName(),
+                                                        NoLookupLocation.FROM_BACKEND
+                                                    )
+                                                    .single()
+                                            irCall(
+                                                symbolTable.referenceSimpleFunction(tagProperty.getter!!),
+                                                tagProperty.type.toIrType()
+                                            )
                                         }
                                     )
                                 )

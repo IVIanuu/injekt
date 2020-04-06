@@ -61,9 +61,7 @@ inline fun <T> ComponentBuilder.single(
  * Annotation for the [SingleBehavior]
  */
 @TagMarker
-annotation class Single {
-    companion object : Tag
-}
+val Single = Tag()
 
 @Module(invokeOnInit = true)
 private fun ComponentBuilder.singleModule() {

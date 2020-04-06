@@ -63,9 +63,7 @@ inline fun <T> ComponentBuilder.weak(
  * Annotation for the [WeakBehavior]
  */
 @TagMarker
-annotation class Weak {
-    companion object : Tag
-}
+val Weak = Tag()
 
 @Module(invokeOnInit = true)
 private fun ComponentBuilder.weakModule() {

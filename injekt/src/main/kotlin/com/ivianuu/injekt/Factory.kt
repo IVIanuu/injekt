@@ -57,6 +57,4 @@ inline fun <T> ComponentBuilder.factory(
  * Annotation for the [FactoryBehavior]
  */
 @TagMarker
-annotation class Factory {
-    companion object : Tag
-}
+val Factory = Tag()

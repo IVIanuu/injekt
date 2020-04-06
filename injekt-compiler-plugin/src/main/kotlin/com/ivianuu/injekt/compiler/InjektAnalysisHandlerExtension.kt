@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
@@ -14,24 +15,32 @@ import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
+import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.types.Variance
 import java.io.File
 
 class InjektAnalysisHandlerExtension(
-    private val outputDir: String
+    outputDir: String
 ) : AnalysisHandlerExtension {
 
-    private var runComplete = false
+    private var processingFinished = false
 
     private lateinit var container: ComponentProvider
+
+    private val outputDir = File(outputDir).apply { mkdirs() }
 
     override fun doAnalysis(
         project: Project,
@@ -58,11 +67,8 @@ class InjektAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (runComplete) return null
-        runComplete = true
-
-        val outputDir = File(outputDir)
-        outputDir.mkdirs()
+        if (processingFinished) return null
+        processingFinished = true
 
         var generatedFiles = false
 
@@ -77,33 +83,18 @@ class InjektAnalysisHandlerExtension(
         }
 
         files.forEach { file ->
-            val functions = mutableListOf<FunctionDescriptor>()
-            file.accept(
-                namedFunctionRecursiveVisitor { function ->
-                    if (bindingTrace[BindingContext.FUNCTION, function] == null) {
-                        resolveFile(file)
-                    }
-                    val descriptor = bindingTrace[BindingContext.FUNCTION, function]
-                    if (descriptor?.annotations?.hasAnnotation(InjektClassNames.KeyOverload) == true) {
-                        functions += descriptor
-                    }
-                }
+            resolveFile(file)
+            processTags(
+                file,
+                bindingTrace,
+                onFileGenerated = { generatedFiles = true },
+                needToRunAgain = { processingFinished = false }
             )
-
-            if (functions.isNotEmpty()) {
-                generatedFiles = true
-                FileSpec.builder(
-                        file.packageFqName.asString(),
-                        "${file.name.removeSuffix(".kt")}Stubs.kt"
-                    )
-                    .apply {
-                        functions.forEach { function ->
-                            addFunction(keyOverloadStubFunction(function))
-                        }
-                    }
-                    .build()
-                    .writeTo(outputDir)
-            }
+            processKeyOverloads(
+                file = file,
+                bindingTrace = bindingTrace,
+                onFileGenerated = { generatedFiles = true }
+            )
         }
 
         return if (generatedFiles) {
@@ -115,6 +106,78 @@ class InjektAnalysisHandlerExtension(
             )
         } else {
             null
+        }
+    }
+
+    private fun processTags(
+        file: KtFile,
+        bindingTrace: BindingTrace,
+        onFileGenerated: () -> Unit,
+        needToRunAgain: () -> Unit
+    ) {
+        val tagProperties = mutableListOf<PropertyDescriptor>()
+        file.accept(
+            propertyRecursiveVisitor {
+                val descriptor = bindingTrace[BindingContext.VARIABLE, it] as? PropertyDescriptor
+                    ?: return@propertyRecursiveVisitor
+
+                if (descriptor.annotations.hasAnnotation(InjektClassNames.TagMarker) &&
+                    descriptor.dispatchReceiverParameter == null &&
+                    descriptor.extensionReceiverParameter == null
+                ) {
+                    tagProperties += descriptor
+                }
+            }
+        )
+
+        tagProperties.forEach { tag ->
+            FileSpec.builder(
+                    file.packageFqName.child(Name.identifier("synthetic")).asString(),
+                    tag.name.asString().capitalize()
+                )
+                .addType(
+                    TypeSpec.annotationBuilder(tag.name.asString().capitalize())
+                        .addAnnotation(
+                            tag.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektClassNames.TagAnnotation)
+                            )!!.asClassName()!!
+                        )
+                        .build()
+                )
+                .build()
+                .writeTo(outputDir)
+            onFileGenerated()
+        }
+    }
+
+    private fun processKeyOverloads(
+        file: KtFile,
+        bindingTrace: BindingTrace,
+        onFileGenerated: () -> Unit
+    ) {
+        val functions = mutableListOf<FunctionDescriptor>()
+        file.accept(
+            namedFunctionRecursiveVisitor { function ->
+                val descriptor = bindingTrace[BindingContext.FUNCTION, function]
+                if (descriptor?.annotations?.hasAnnotation(InjektClassNames.KeyOverload) == true) {
+                    functions += descriptor
+                }
+            }
+        )
+
+        if (functions.isNotEmpty()) {
+            FileSpec.builder(
+                    file.packageFqName.asString(),
+                    "${file.name.removeSuffix(".kt")}Stubs.kt"
+                )
+                .apply {
+                    functions.forEach { function ->
+                        addFunction(keyOverloadStubFunction(function))
+                    }
+                }
+                .build()
+                .writeTo(outputDir)
+            onFileGenerated()
         }
     }
 

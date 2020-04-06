@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Module
@@ -34,6 +33,7 @@ import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.synthetic.Factory
 
 @KeyOverload
 inline fun <T : Fragment> ComponentBuilder.fragment(

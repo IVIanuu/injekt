@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.synthetic.Factory
+
 @QualifierMarker
 annotation class TestQualifier1 {
     companion object : Qualifier.Element

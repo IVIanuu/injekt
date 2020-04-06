@@ -70,13 +70,8 @@ inline fun <T> ComponentBuilder.multi(
     )
 }
 
-/**
- * Annotation for the [MultiBehavior]
- */
 @TagMarker
-annotation class Multi {
-    companion object : Tag
-}
+val Multi = Tag()
 
 @Module(invokeOnInit = true)
 private fun ComponentBuilder.multiModule() {

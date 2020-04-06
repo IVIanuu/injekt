@@ -18,8 +18,15 @@ package com.ivianuu.injekt
 
 interface Tag
 
+fun Tag(name: String = error("Not compiled with the injekt plugin")): Tag = DefaultTag(name)
+
+private data class DefaultTag(val name: String) : Tag
+
 /**
  * Marker for [Tag]s
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
+@Target(AnnotationTarget.PROPERTY)
 annotation class TagMarker
+
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class TagAnnotation
