@@ -36,13 +36,28 @@ internal object Modules {
     internal val modulesByScope =
         mutableMapOf<Scope?, MutableList<Module.Impl>>()
 
+    private val listeners = mutableListOf<(Module.Impl) -> Unit>()
+
     fun get(scope: Scope? = null): List<Module.Impl> =
-        modulesByScope.getOrElse(scope) { emptyList() }
+        synchronized(modulesByScope) { modulesByScope.getOrElse(scope) { emptyList() } }
 
     fun register(module: Module.Impl) {
-        modulesByScope.getOrPut(module.scope) { mutableListOf() }.run {
-            this += module
-            sortByDescending { it.invokeOnInit }
+        synchronized(modulesByScope) {
+            modulesByScope.getOrPut(module.scope) { mutableListOf() }.run {
+                this += module
+                sortByDescending { it.invokeOnInit }
+            }
         }
+        synchronized(listeners) { listeners.toList() }
+            .forEach { it(module) }
     }
+
+    fun addRegisterListener(listener: (Module.Impl) -> Unit) {
+        synchronized(listeners) { listeners += listener }
+    }
+
+    fun removeRegisterListener(listener: (Module.Impl) -> Unit) {
+        synchronized(listeners) { listeners -= listener }
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ModulesTest {
@@ -48,6 +49,20 @@ class ModulesTest {
         assertEquals(listOf(initA, initB, nonInitA, nonInitB), Modules.get())
         Modules.modulesByScope.clear()
         Modules.modulesByScope += existingModules
+    }
+
+    @Test
+    fun testGlobalModulesWillBeAppliedToEachOpenComponentBuilderWhenRegister() {
+        var called = false
+        Component {
+            Injekt {
+                module {
+                    called = true
+                }
+            }
+        }
+
+        assertTrue(called)
     }
 
 }

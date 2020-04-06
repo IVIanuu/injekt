@@ -50,7 +50,14 @@ class ComponentBuilder {
     private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
     private val bindingInterceptors = mutableListOf<(Binding<*>) -> Binding<*>>()
 
+    private val moduleRegisterListener: (Module.Impl) -> Unit = {
+        if (it.scope == null || it.scope in scopes) {
+            it.apply(this)
+        }
+    }
+
     init {
+        Modules.addRegisterListener(moduleRegisterListener)
         Modules.get()
             .fastForEach { it.apply(this) }
     }
@@ -248,6 +255,8 @@ class ComponentBuilder {
      */
     fun build(): Component {
         runPreBuildBlocks()
+
+        Modules.removeRegisterListener(moduleRegisterListener)
 
         checkScopes()
 
