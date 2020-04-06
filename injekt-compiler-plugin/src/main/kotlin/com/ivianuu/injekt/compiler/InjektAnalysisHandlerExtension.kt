@@ -142,6 +142,11 @@ class InjektAnalysisHandlerExtension(
                 )
                 .addType(
                     TypeSpec.annotationBuilder(property.name.asString().capitalize())
+                        .apply {
+                            if (property.visibility == Visibilities.INTERNAL) {
+                                addModifiers(KModifier.INTERNAL)
+                            }
+                        }
                         .addAnnotation(
                             property.module.findClassAcrossModuleDependencies(
                                 ClassId.topLevel(InjektClassNames.SyntheticAnnotation)
