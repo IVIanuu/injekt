@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.sample.data
 
+import com.ivianuu.injekt.sample.data.synthetic.WebApiUrl
 import com.ivianuu.injekt.synthetic.Factory
 
 @Factory

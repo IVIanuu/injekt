@@ -33,7 +33,7 @@ import com.ivianuu.injekt.interceptingTag
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 @TagMarker
-val BindViewModel = interceptingTag("com.ivianuu.injekt.android.BindViewModel") {
+val BindViewModel = interceptingTag("BindViewModel") {
     it.copy(provider = ViewModelProvider(it.provider, it.key))
 }
 

@@ -34,7 +34,7 @@ import java.lang.ref.WeakReference
  * Holds instances in a [WeakReference]
  */
 @TagMarker
-val Weak = interceptingTag("com.ivianuu.injekt.common.Weak") {
+val Weak = interceptingTag("Weak") {
     it.copy(provider = WeakProvider(it.provider))
 }
 

@@ -85,17 +85,20 @@ interface Qualifier {
     }
 }
 
-fun Qualifier(value: Any): Qualifier = SimpleQualifier(value = value)
-
-private data class SimpleQualifier(val value: Any) : Qualifier.Element
+fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
 
 /**
  * Marker for [Qualifier]s
  *
  * @see Qualifier
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
+@Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
+
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class QualifierAnnotation
+
+private data class SimpleQualifier(val name: Any) : Qualifier.Element
 
 private class CombinedQualifier(
     private val element: Qualifier.Element,

@@ -32,7 +32,7 @@ package com.ivianuu.injekt
  * ´´´
  */
 @TagMarker
-val Factory = Tag("com.ivianuu.injekt.Factory")
+val Factory = Tag("Factory")
 
 /**
  * Dsl builder for a factory binding

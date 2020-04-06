@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.synthetic.Single
+import com.ivianuu.injekt.synthetic.TestScopeOne
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -255,18 +256,18 @@ class ComponentTest {
     @Test
     fun testImplicitComponentBindings() {
         Injekt.logger = PrintLogger()
-        val componentA = Component { scopes(TestScopeOne) }
+        val componentA = Component { scopes(TestScope1) }
         val componentB = Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(componentA)
         }
 
         assertEquals(componentA, componentA.get<Component>())
-        assertEquals(componentA, componentA.get<Component>(qualifier = TestScopeOne))
+        assertEquals(componentA, componentA.get<Component>(qualifier = TestScope1))
 
         assertEquals(componentB, componentB.get<Component>())
-        assertEquals(componentB, componentB.get<Component>(qualifier = TestScopeTwo))
-        assertEquals(componentA, componentB.get<Component>(qualifier = TestScopeOne))
+        assertEquals(componentB, componentB.get<Component>(qualifier = TestScope2))
+        assertEquals(componentA, componentB.get<Component>(qualifier = TestScope1))
     }
 
     @Test
@@ -302,10 +303,10 @@ class ComponentTest {
     @Test
     fun testAddsJitBindingToTheCorrectScope() {
         val componentA = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
         val componentB = Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(componentA)
         }
 

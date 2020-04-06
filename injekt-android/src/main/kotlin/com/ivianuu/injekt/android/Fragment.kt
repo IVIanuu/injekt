@@ -80,24 +80,16 @@ fun <T : Fragment> ComponentBuilder.fragmentBindings(
 }
 
 @ScopeMarker
-annotation class FragmentScope {
-    companion object : Scope
-}
+val FragmentScope = Scope("FragmentScope")
 
 @ScopeMarker
-annotation class ChildFragmentScope {
-    companion object : Scope
-}
+val ChildFragmentScope = Scope("ChildFragmentScope")
 
 @QualifierMarker
-annotation class ForFragment {
-    companion object : Qualifier.Element
-}
+val ForFragment = Qualifier("ForFragment")
 
 @QualifierMarker
-annotation class ForChildFragment {
-    companion object : Qualifier.Element
-}
+val ForChildFragment = Qualifier("ForChildFragment")
 
 fun Fragment.getClosestComponentOrNull(): Component? {
     return getParentFragmentComponentOrNull()

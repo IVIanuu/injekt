@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
-import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
@@ -32,13 +31,15 @@ import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.android.synthetic.FragmentsMap
 import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.sideEffectTag
+import com.ivianuu.injekt.synthetic.ApplicationScope
 import com.ivianuu.injekt.synthetic.Factory
 
 @TagMarker
-val BindFragment = sideEffectTag("com.ivianuu.injekt.android.BindFragment") {
+val BindFragment = sideEffectTag("BindFragment") {
     bindFragmentIntoMap(it.key as Key<out Fragment>)
 }
 
@@ -76,6 +77,4 @@ private fun ComponentBuilder.fragmentInjectionModule() {
 }
 
 @QualifierMarker
-private annotation class FragmentsMap {
-    companion object : Qualifier.Element
-}
+internal val FragmentsMap = Qualifier("FragmentsMap")

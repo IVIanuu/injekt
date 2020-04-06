@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 class InjektStorageComponentContainerContributorExtension : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -51,34 +50,12 @@ class InjektDeclarationChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is ClassDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
-            descriptor.companionObjectDescriptor == null
-        ) {
-            context.trace.report(InjektErrors.NeedsAScopeCompanionObject.on(declaration))
-        }
-
-        if (descriptor is ClassDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker) &&
-            (descriptor.companionObjectDescriptor == null ||
-                    !descriptor.companionObjectDescriptor!!.defaultType.isSubtypeOf(
-                        descriptor.module.findClassAcrossModuleDependencies(
-                            ClassId.topLevel(
-                                InjektClassNames.Qualifier
-                            )
-                        )!!
-                            .defaultType
-                    ))
-        ) {
-            context.trace.report(InjektErrors.NeedsAQualifierCompanionObject.on(declaration))
-        }
-
-        if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker).size > 1) {
+        if (descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeAnnotation).size > 1) {
             context.trace.report(InjektErrors.OnlyOneScope.on(declaration))
         }
 
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Param) &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.Qualifier)
+            descriptor.hasAnnotatedAnnotations(InjektClassNames.QualifierAnnotation)
         ) {
             context.trace.report(InjektErrors.ParamCannotBeNamed.on(declaration))
         }

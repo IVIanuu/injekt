@@ -42,14 +42,14 @@ class SingleTest {
 
     @Test
     fun testReusesSingleJitBindings() {
-        val componentA = Component { scopes(TestScopeOne) }
+        val componentA = Component { scopes(TestScope1) }
 
         val componentB = Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(componentA)
         }
         val componentC = Component {
-            scopes(TestScopeThree)
+            scopes(TestScope3)
             parents(componentB)
         }
 

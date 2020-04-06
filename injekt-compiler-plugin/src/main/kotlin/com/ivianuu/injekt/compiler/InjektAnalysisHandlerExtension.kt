@@ -84,6 +84,14 @@ class InjektAnalysisHandlerExtension(
 
         files.forEach { file ->
             resolveFile(file)
+            processQualifiers(
+                file,
+                bindingTrace
+            ) { generatedFiles = true }
+            processScopes(
+                file,
+                bindingTrace
+            ) { generatedFiles = true }
             processTags(
                 file,
                 bindingTrace
@@ -103,6 +111,105 @@ class InjektAnalysisHandlerExtension(
             )
         } else {
             null
+        }
+    }
+
+    private fun processQualifiers(
+        file: KtFile,
+        bindingTrace: BindingTrace,
+        onFileGenerated: () -> Unit
+    ) {
+        val qualifierProperties = mutableListOf<PropertyDescriptor>()
+        file.accept(
+            propertyRecursiveVisitor {
+                val descriptor = bindingTrace[BindingContext.VARIABLE, it] as? PropertyDescriptor
+                    ?: return@propertyRecursiveVisitor
+
+                if (descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker) &&
+                    descriptor.dispatchReceiverParameter == null &&
+                    descriptor.extensionReceiverParameter == null &&
+                    descriptor.module.findClassAcrossModuleDependencies(
+                        ClassId.topLevel(
+                            file.packageFqName.child(Name.identifier("synthetic")).child(
+                                Name.identifier(descriptor.name.asString().capitalize())
+                            )
+                        )
+                    ) == null
+                ) {
+                    qualifierProperties += descriptor
+                }
+            }
+        )
+
+        qualifierProperties.forEach { tag ->
+            FileSpec.builder(
+                    file.packageFqName.child(Name.identifier("synthetic")).asString(),
+                    tag.name.asString().capitalize()
+                )
+                .addType(
+                    TypeSpec.annotationBuilder(tag.name.asString().capitalize())
+                        .addAnnotation(
+                            tag.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektClassNames.QualifierAnnotation)
+                            )!!.asClassName()!!
+                        )
+                        .build()
+                )
+                .build()
+                .writeTo(outputDir)
+            onFileGenerated()
+        }
+    }
+
+    private fun processScopes(
+        file: KtFile,
+        bindingTrace: BindingTrace,
+        onFileGenerated: () -> Unit
+    ) {
+        val scopeProperties = mutableListOf<PropertyDescriptor>()
+        file.accept(
+            propertyRecursiveVisitor {
+                val descriptor = bindingTrace[BindingContext.VARIABLE, it] as? PropertyDescriptor
+                    ?: return@propertyRecursiveVisitor
+
+                if (descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
+                    descriptor.dispatchReceiverParameter == null &&
+                    descriptor.extensionReceiverParameter == null &&
+                    descriptor.module.findClassAcrossModuleDependencies(
+                        ClassId.topLevel(
+                            file.packageFqName.child(Name.identifier("synthetic")).child(
+                                Name.identifier(descriptor.name.asString().capitalize())
+                            )
+                        )
+                    ) == null
+                ) {
+                    scopeProperties += descriptor
+                }
+            }
+        )
+
+        scopeProperties.forEach { tag ->
+            FileSpec.builder(
+                    file.packageFqName.child(Name.identifier("synthetic")).asString(),
+                    tag.name.asString().capitalize()
+                )
+                .addType(
+                    TypeSpec.annotationBuilder(tag.name.asString().capitalize())
+                        .addAnnotation(
+                            tag.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektClassNames.QualifierAnnotation)
+                            )!!.asClassName()!!
+                        )
+                        .addAnnotation(
+                            tag.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektClassNames.ScopeAnnotation)
+                            )!!.asClassName()!!
+                        )
+                        .build()
+                )
+                .build()
+                .writeTo(outputDir)
+            onFileGenerated()
         }
     }
 

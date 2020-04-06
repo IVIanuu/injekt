@@ -36,8 +36,8 @@ import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irBoolean
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -57,7 +57,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
@@ -73,7 +72,7 @@ class ModuleImplGenerator(
 
     override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
         super.visitSimpleFunction(declaration)
-        if (pluginContext.irTrace[InjektWritableSlices.IS_INTO_COMPONENT, declaration] == null &&
+        if (pluginContext.irTrace[InjektWritableSlices.IS_MODULE, declaration] == null &&
             !declaration.descriptor.annotations.hasAnnotation(InjektClassNames.Module)
         ) return declaration
 
@@ -157,16 +156,29 @@ class ModuleImplGenerator(
                     body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
                         val scopeAnnotation =
                             pluginContext.irTrace[InjektWritableSlices.SCOPE, function]
-                                ?: function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
-                                    .singleOrNull()?.annotationClass
+                                ?: function.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeAnnotation)
+                                    .singleOrNull()
+
+                        val scopeExpression = if (scopeAnnotation != null) {
+                            val scopeAnnotationProperty =
+                                pluginContext.moduleDescriptor.getPackage(
+                                        scopeAnnotation.fqName!!.parent().parent()
+                                    )
+                                    .memberScope
+                                    .getContributedVariables(
+                                        scopeAnnotation.fqName!!.shortName(),
+                                        NoLookupLocation.FROM_BACKEND
+                                    )
+                                    .single()
+                            irCall(
+                                symbolTable.referenceSimpleFunction(scopeAnnotationProperty.getter!!),
+                                scopeAnnotationProperty.type.toIrType()
+                            )
+                        } else null
 
                         +irReturn(
-                            if (scopeAnnotation != null) {
-                                irGetObject(
-                                    symbolTable.referenceClass(
-                                        scopeAnnotation.companionObjectDescriptor!!
-                                    )
-                                )
+                            if (scopeExpression != null) {
+                                scopeExpression
                             } else {
                                 irNull()
                             }

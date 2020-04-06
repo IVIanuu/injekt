@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Param
-import com.ivianuu.injekt.android.ForActivity
+import com.ivianuu.injekt.android.synthetic.ForActivity
 import com.ivianuu.injekt.synthetic.Factory
 
 @Factory

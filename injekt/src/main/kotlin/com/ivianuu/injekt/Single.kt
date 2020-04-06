@@ -35,7 +35,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  */
 @TagMarker
-val Single = interceptingTag("com.ivianuu.injekt.Single") {
+val Single = interceptingTag("Single") {
     it.copy(provider = SingleProvider(it.provider))
 }
 

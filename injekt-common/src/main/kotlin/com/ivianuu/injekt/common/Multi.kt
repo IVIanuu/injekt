@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  */
 @TagMarker
-val Multi = interceptingTag("com.ivianuu.injekt.common.Multi") {
+val Multi = interceptingTag("Multi") {
     it.copy(provider = MultiProvider(it.provider))
 }
 

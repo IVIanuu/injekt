@@ -17,24 +17,20 @@
 package com.ivianuu.injekt.sample.data
 
 import android.content.Context
-import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.single
+import com.ivianuu.injekt.synthetic.ApplicationScope
 import java.io.File
 
 @QualifierMarker
-annotation class WebApiUrl {
-    companion object : Qualifier.Element
-}
+val WebApiUrl = Qualifier("WebApiUrl")
 
 @QualifierMarker
-annotation class DatabaseFile {
-    companion object : Qualifier.Element
-}
+val DatabaseFile = Qualifier("WebApiUrl")
 
 @ApplicationScope
 @Module

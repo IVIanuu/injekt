@@ -41,10 +41,17 @@ package com.ivianuu.injekt
  */
 interface Scope : Qualifier.Element
 
+fun Scope(name: Any): Scope = SimpleScope(name)
+
 /**
  * Marker for [Scope]s
  *
  * @see Scope
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
+@Target(AnnotationTarget.PROPERTY)
 annotation class ScopeMarker
+
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class ScopeAnnotation
+
+private data class SimpleScope(val name: Any) : Scope

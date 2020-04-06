@@ -16,7 +16,8 @@
 
 package com.ivianuu.injekt.sample.data
 
-import com.ivianuu.injekt.ApplicationScope
+import com.ivianuu.injekt.sample.data.synthetic.DatabaseFile
+import com.ivianuu.injekt.synthetic.ApplicationScope
 import com.ivianuu.injekt.synthetic.Single
 import java.io.File
 

@@ -97,7 +97,7 @@ class BindingGenerator(pluginContext: IrPluginContext) :
             val extensionReceiver = this.extensionReceiverParameter!!
 
             pluginContext.irTrace.record(
-                InjektWritableSlices.IS_INTO_COMPONENT, this, Unit
+                InjektWritableSlices.IS_MODULE, this, Unit
             )
 
             body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
@@ -159,18 +159,29 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                     }
 
                     val scopeAnnotation =
-                        injectClass.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeMarker)
+                        injectClass.descriptor.getAnnotatedAnnotations(InjektClassNames.ScopeAnnotation)
                             .singleOrNull()
                     if (scopeAnnotation != null) {
-                        val scopeObject =
-                            getClass(scopeAnnotation.fqName!!).companionObjectDescriptor!!
+                        val scopeAnnotationProperty =
+                            pluginContext.moduleDescriptor.getPackage(
+                                    scopeAnnotation.fqName!!.parent().parent()
+                                )
+                                .memberScope
+                                .getContributedVariables(
+                                    scopeAnnotation.fqName!!.shortName(),
+                                    NoLookupLocation.FROM_BACKEND
+                                )
+                                .single()
                         putValueArgument(
                             2,
-                            irGetObject(symbolTable.referenceClass(scopeObject))
+                            irCall(
+                                symbolTable.referenceSimpleFunction(scopeAnnotationProperty.getter!!),
+                                scopeAnnotationProperty.type.toIrType()
+                            )
                         )
                         pluginContext.irTrace.record(
                             InjektWritableSlices.SCOPE,
-                            this@func, getClass(scopeAnnotation.fqName!!)
+                            this@func, scopeAnnotation
                         )
                     }
 
@@ -284,13 +295,24 @@ class BindingGenerator(pluginContext: IrPluginContext) :
                                     putTypeArgument(0, param.type.toIrType())
 
                                     val qualifiers: List<IrExpression> = param
-                                        .getAnnotatedAnnotations(InjektClassNames.QualifierMarker)
-                                        .map { getClass(it.fqName!!).companionObjectDescriptor!! }
-                                        .map {
-                                            irGetObject(
-                                                symbolTable.referenceClass(
-                                                    it
-                                                )
+                                        .getAnnotatedAnnotations(InjektClassNames.QualifierAnnotation)
+                                        .map { qualifierAnnotation ->
+                                            val qualifierProperty =
+                                                pluginContext.moduleDescriptor.getPackage(
+                                                        qualifierAnnotation.fqName!!.parent()
+                                                            .parent()
+                                                    )
+                                                    .memberScope
+                                                    .getContributedVariables(
+                                                        qualifierAnnotation.fqName!!.shortName(),
+                                                        NoLookupLocation.FROM_BACKEND
+                                                    )
+                                                    .single()
+                                            irCall(
+                                                symbolTable.referenceSimpleFunction(
+                                                    qualifierProperty.getter!!
+                                                ),
+                                                qualifierProperty.type.toIrType()
                                             )
                                         }
 

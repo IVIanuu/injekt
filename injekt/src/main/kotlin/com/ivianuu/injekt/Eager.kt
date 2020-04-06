@@ -30,7 +30,7 @@ package com.ivianuu.injekt
  *
  */
 @TagMarker
-val Eager = interceptingTag("com.ivianuu.injekt.Eager") {
+val Eager = interceptingTag("Eager") {
     it.copy(provider = EagerProvider(it.provider))
 }
 
@@ -47,9 +47,7 @@ fun <T> ComponentBuilder.eager(key: Key<T>) {
 }
 
 @QualifierMarker
-private annotation class EagerQualifier {
-    companion object : Qualifier.Element
-}
+private val EagerQualifier = Qualifier("Eager")
 
 private class EagerProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {

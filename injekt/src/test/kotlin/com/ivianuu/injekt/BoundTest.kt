@@ -44,7 +44,7 @@ class BoundTest {
         val usedComponents = mutableListOf<Component>()
 
         val componentA = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         val componentB = Component {
@@ -52,7 +52,7 @@ class BoundTest {
 
             bind(
                 tag = Bound,
-                scope = TestScopeOne
+                scope = TestScope1
             ) { usedComponents += this }
         }
 

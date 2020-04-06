@@ -26,13 +26,6 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 interface InjektErrors {
     companion object {
         @JvmField
-        val BehaviorMarkerBehaviorMustBeObject = error()
-        @JvmField
-        val NeedsAQualifierCompanionObject = error()
-        @JvmField
-        val NeedsAScopeCompanionObject = error()
-
-        @JvmField
         val ParamCannotBeNamed = error()
         @JvmField
         val OnlyOneInjektConstructor = error()
@@ -46,10 +39,8 @@ interface InjektErrors {
         val ModuleMustBeStatic = error()
         @JvmField
         val CannotInvokeModuleFunctions = error()
-
         @JvmField
         val KeyOverloadMustHave1TypeParameter = error()
-
         @JvmField
         val KeyOverloadMustHaveKeyParam = error()
 
@@ -70,20 +61,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
 
     init {
         map.put(
-            InjektErrors.BehaviorMarkerBehaviorMustBeObject,
-            "Behavior must be an object"
-        )
-        map.put(
             InjektErrors.OnlyOneScope,
             "Can only have one 1 scope annotation"
-        )
-        map.put(
-            InjektErrors.NeedsAQualifierCompanionObject,
-            "Needs a companion object which implements Qualifier"
-        )
-        map.put(
-            InjektErrors.NeedsAScopeCompanionObject,
-            "Needs a companion object which implements Scope"
         )
         map.put(
             InjektErrors.ParamCannotBeNamed,

@@ -24,11 +24,11 @@ class ComponentBuilderTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val parent = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
             parents(parent)
         }
     }
@@ -36,15 +36,15 @@ class ComponentBuilderTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnParentsWithSameScope() {
         val parent1 = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         val parent2 = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(parent1, parent2)
         }
     }

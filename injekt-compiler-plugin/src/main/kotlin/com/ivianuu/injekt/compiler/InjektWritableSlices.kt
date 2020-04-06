@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 
 object InjektWritableSlices {
-    val IS_INTO_COMPONENT = BasicWritableSlice<IrSimpleFunction, Unit>(RewritePolicy.DO_NOTHING)
-    val SCOPE = BasicWritableSlice<IrSimpleFunction, ClassDescriptor>(RewritePolicy.DO_NOTHING)
+    val IS_MODULE = BasicWritableSlice<IrSimpleFunction, Unit>(RewritePolicy.DO_NOTHING)
+    val SCOPE = BasicWritableSlice<IrSimpleFunction, AnnotationDescriptor>(RewritePolicy.DO_NOTHING)
 }
