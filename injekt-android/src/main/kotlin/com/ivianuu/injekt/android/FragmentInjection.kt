@@ -40,9 +40,14 @@ import com.ivianuu.injekt.synthetic.Factory
 
 @BehaviorMarker
 val BindFragment = sideEffectBehavior("BindFragment") {
-    bindFragmentIntoMap(it.key as Key<out Fragment>)
+    map<String, Fragment>(mapQualifier = FragmentsMap) {
+        put(it.key.classifier.java.name, it.key as Key<out Fragment>)
+    }
 }
 
+/**
+ * Dsl builder for the [BindFragment] behavior
+ */
 @KeyOverload
 inline fun <T : Fragment> ComponentBuilder.fragment(
     key: Key<T>,
@@ -50,15 +55,7 @@ inline fun <T : Fragment> ComponentBuilder.fragment(
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
 ) {
-    factory(key, behavior, duplicateStrategy, provider)
-    bindFragmentIntoMap(fragmentKey = key)
-}
-
-@KeyOverload
-fun <T : Fragment> ComponentBuilder.bindFragmentIntoMap(fragmentKey: Key<T>) {
-    map<String, Fragment>(mapQualifier = FragmentsMap) {
-        put(fragmentKey.classifier.java.name, fragmentKey)
-    }
+    factory(key, BindFragment + behavior, duplicateStrategy, provider)
 }
 
 @Factory

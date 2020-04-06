@@ -49,10 +49,10 @@ import java.util.concurrent.ConcurrentHashMap
 @BehaviorMarker
 val Multi = interceptingBehavior("Multi") {
     it.copy(provider = MultiProvider(it.provider))
-}
+} + Bound
 
 /**
- * Dsl builder for [Multi] + [Bound] behavior
+ * Dsl builder for [Multi] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.multi(
@@ -63,7 +63,7 @@ inline fun <T> ComponentBuilder.multi(
 ) {
     bind(
         key = key,
-        behavior = Bound + Multi + behavior,
+        behavior = Multi + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )

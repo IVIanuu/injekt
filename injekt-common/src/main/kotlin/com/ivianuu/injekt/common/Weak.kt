@@ -36,10 +36,10 @@ import java.lang.ref.WeakReference
 @BehaviorMarker
 val Weak = interceptingBehavior("Weak") {
     it.copy(provider = WeakProvider(it.provider))
-}
+} + Bound
 
 /**
- * Dsl builder for [Weak] + [Bound] behavior
+ * Dsl builder for [Weak] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.weak(
@@ -50,7 +50,7 @@ inline fun <T> ComponentBuilder.weak(
 ) {
     bind(
         key = key,
-        behavior = Bound + Weak + behavior,
+        behavior = Weak + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
