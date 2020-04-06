@@ -87,12 +87,35 @@ interface Qualifier {
     }
 }
 
+/**
+ * Returns a qualifier which uses [name] for comparisons
+ */
 fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
 
 /**
- * Marker for [Qualifier]s
+ * Annotating a [Qualifier] property allows to use it as an annotation
  *
- * @see Qualifier
+ * For example:
+ *
+ * ´´´
+ * @QualifierMarker val BindWorker = Tag()
+ *
+ * ´´´
+ *
+ * In dsl:
+ *
+ * ´´´
+ * factory(tag = BindWorker) { ... }
+ *
+ * ```
+ *
+ * And as annotation
+ *
+ * ´´´
+ * @BindWorker
+ * class MyWorker
+ * ´´´
+ *
  */
 @SyntheticAnnotationMarker(Qualifier::class)
 @Target(AnnotationTarget.PROPERTY)

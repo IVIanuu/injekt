@@ -19,7 +19,7 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
 
 /**
- * Behavior applies scoping or such to [BindingProvider]s
+ * Tag applies scoping or such to [BindingProvider]s
  *
  * @see Bound
  * @see Eager
@@ -41,7 +41,7 @@ interface Tag {
         override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R = initial
         override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R = initial
         override operator fun plus(other: Tag): Tag = other
-        override fun toString() = "Behavior.None"
+        override fun toString() = "Tag.None"
     }
 
     interface Element : Tag {
@@ -56,8 +56,15 @@ interface Tag {
     }
 }
 
+/**
+ * Returns a tag which uses [name] for comparisons
+ */
 fun Tag(name: Any): Tag = DefaultTag(name)
 
+/**
+ * Returns a new [Tag] for [name] and invokes [onBindingAdded] when ever
+ * a [Binding] with the returned tag was added to a [ComponentBuilder] with [scope]
+ */
 fun sideEffectTag(
     name: Any,
     scope: Scope? = null,
@@ -76,6 +83,15 @@ fun sideEffectTag(
     return tag
 }
 
+/**
+ * Returns a new [Tag] for [name] and invokes [intercept] when ever
+ * a binding with the tag was added to a [ComponentBuilder] with [scope]
+ *
+ * @see Bound
+ * @see Factory
+ * @see Single
+ *
+ */
 fun interceptingTag(
     name: Any,
     scope: Scope? = null,
@@ -93,7 +109,29 @@ fun interceptingTag(
 }
 
 /**
- * Marker for [Tag]s
+ * Annotating a [Tag] property allows to use it as an annotation
+ *
+ * For example:
+ *
+ * ´´´
+ * @TagMarker val BindWorker = Tag()
+ *
+ * ´´´
+ *
+ * In dsl:
+ *
+ * ´´´
+ * factory(tag = BindWorker) { ... }
+ *
+ * ```
+ *
+ * And as annotation
+ *
+ * ´´´
+ * @BindWorker
+ * class MyWorker
+ * ´´´
+ *
  */
 @SyntheticAnnotationMarker(Tag::class)
 @Target(AnnotationTarget.PROPERTY)

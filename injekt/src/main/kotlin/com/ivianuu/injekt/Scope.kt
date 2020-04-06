@@ -43,6 +43,9 @@ import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
  */
 interface Scope : Qualifier.Element
 
+/**
+ * Returns a scope which uses [name] for comparisons
+ */
 fun Scope(name: Any): Scope = SimpleScope(name)
 
 /**
