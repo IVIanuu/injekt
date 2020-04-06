@@ -31,7 +31,9 @@ package com.ivianuu.injekt
  * assertSame(logger1, logger2) // false
  * ´´´
  */
-object FactoryBehavior : Behavior.Element
+object FactoryBehavior : Behavior.Element {
+    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
+}
 
 /**
  * Dsl builder for the [FactoryBehavior]
