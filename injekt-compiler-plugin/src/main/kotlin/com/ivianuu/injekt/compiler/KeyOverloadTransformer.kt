@@ -16,6 +16,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val key = getClass(InjektClassNames.Key)
+    private val qualifier = getClass(InjektClassNames.Qualifier)
 
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)
@@ -26,21 +27,29 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         fun MemberScope.findKeyOverloadFunction() = try {
             findFirstFunction(descriptor.name.asString()) { function ->
-                function.annotations.hasAnnotation(InjektClassNames.KeyOverload)
-                        && (function.extensionReceiverParameter
-                    ?: function.dispatchReceiverParameter)?.type == descriptor.extensionReceiverParameter?.type &&
-                        function.typeParameters.size == 1 &&
-                        function.valueParameters.firstOrNull()?.type?.constructor?.declarationDescriptor == key &&
-                        function.valueParameters.first().type.arguments.first().type == function.typeParameters.first().defaultType &&
-                        function.valueParameters.drop(1).all {
-                    it.name == descriptor.valueParameters.getOrNull(it.index)?.name
-                }
+                function.annotations.hasAnnotation(InjektClassNames.KeyOverload) &&
+                        (function.dispatchReceiverParameter
+                            ?: function.extensionReceiverParameter)?.type == descriptor.extensionReceiverParameter?.type &&
+                        function.typeParameters.size == descriptor.typeParameters.size &&
+                        function.typeParameters.all { typeParameter ->
+                            val other = descriptor.typeParameters[typeParameter.index]
+                            other.name == typeParameter.name
+                        } &&
+                        function.valueParameters.size == descriptor.valueParameters.size &&
+                        function.valueParameters.all { valueParameter ->
+                            val other = descriptor.valueParameters[valueParameter.index]
+                            if (valueParameter.type.constructor.declarationDescriptor == key) {
+                                other.type.constructor.declarationDescriptor == qualifier
+                            } else {
+                                other.type.constructor == valueParameter.type.constructor
+                            }
+                        }
             }
         } catch (e: Exception) {
             null
         }
 
-        val keyOverloadFunction = (descriptor.containingDeclaration as PackageFragmentDescriptor)
+        val function = (descriptor.containingDeclaration as PackageFragmentDescriptor)
             .let { pluginContext.moduleDescriptor.getPackage(it.fqName).memberScope }
             .findKeyOverloadFunction()
             ?: (descriptor.extensionReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
@@ -53,10 +62,10 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
         val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
 
         return builder.irCall(
-            callee = symbolTable.referenceSimpleFunction(keyOverloadFunction),
+            callee = symbolTable.referenceSimpleFunction(function),
             type = expression.type
         ).apply {
-            if (keyOverloadFunction.dispatchReceiverParameter != null) {
+            if (function.dispatchReceiverParameter != null) {
                 dispatchReceiver = expression.extensionReceiver
             } else {
                 extensionReceiver = expression.extensionReceiver
@@ -64,26 +73,39 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
             copyTypeArgumentsFrom(expression)
 
-            putValueArgument(
-                0,
-                builder.irCall(
-                    callee = symbolTable.referenceSimpleFunction(keyOf),
-                    type = symbolTable.referenceClass(key)
-                        .also {
-                            if (!it.isBound) pluginContext.irProvider.getDeclaration(it)
+            function.valueParameters.forEach { valueParameter ->
+                if (valueParameter.type.constructor.declarationDescriptor == key) {
+                    val typeArgument = (0 until expression.typeArgumentsCount)
+                        .map { expression.getTypeArgument(it)!! }
+                        .mapIndexedNotNull { index, type ->
+                            if (function.typeParameters[index]?.name ==
+                                valueParameter.type.arguments.single().type.constructor.declarationDescriptor?.name
+                            )
+                                type else null
                         }
-                        .typeWith(expression.getTypeArgument(0)!!)
-                ).apply {
-                    putTypeArgument(0, expression.getTypeArgument(0))
-                    putValueArgument(0, expression.getValueArgument(0))
-                }
-            )
+                        .single()
 
-            (1 until expression.valueArgumentsCount)
-                .map { it to expression.getValueArgument(it) }
-                .forEach { (i, param) ->
-                    putValueArgument(i, param)
+                    putValueArgument(
+                        valueParameter.index,
+                        builder.irCall(
+                            callee = symbolTable.referenceSimpleFunction(keyOf),
+                            type = symbolTable.referenceClass(key)
+                                .also {
+                                    if (!it.isBound) pluginContext.irProvider.getDeclaration(it)
+                                }
+                                .typeWith(typeArgument)
+                        ).apply {
+                            putTypeArgument(0, typeArgument)
+                            putValueArgument(0, expression.getValueArgument(valueParameter.index))
+                        }
+                    )
+                } else {
+                    putValueArgument(
+                        valueParameter.index,
+                        expression.getValueArgument(valueParameter.index)
+                    )
                 }
+            }
         }
     }
 

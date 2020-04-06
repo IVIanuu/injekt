@@ -15,12 +15,15 @@ import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.types.Variance
 import java.io.File
@@ -155,43 +158,53 @@ class InjektAnalysisHandlerExtension(
                     receiver(dispatchReceiver.type.asTypeName()!!)
                 }
             }
-            .addParameter(
-                ParameterSpec.builder(
-                        "qualifier",
-                        InjektClassNames.Qualifier.asClassName()
-                    )
-                    .defaultValue("error(\"stub\")\n")
-                    .build()
-            )
             .addParameters(
                 function.valueParameters
-                    .drop(1)
                     .map { valueParameter ->
-                        ParameterSpec.builder(
-                                valueParameter.name.asString(),
-                                valueParameter.type.asTypeName()!!
+                        if (valueParameter.type.constructor.declarationDescriptor ==
+                            function.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(InjektClassNames.Key)
                             )
-                            .apply {
-                                if (valueParameter.declaresDefaultValue()) {
-                                    if (valueParameter.type.isFunctionType &&
-                                        function.isInline && !valueParameter.isNoinline
-                                    ) {
-                                        defaultValue("{ ${
-                                        valueParameter.type.getValueParameterTypesFromFunctionType()
-                                            .indices.joinToString(", ") { "_" }
-                                        } error(\"stub\") }")
-                                    } else {
-                                        defaultValue("error(\"stub\")")
+                        ) {
+                            val parameterName = when {
+                                valueParameter.name.asString() == "key" -> "qualifier"
+                                valueParameter.name.asString().endsWith("Key") ->
+                                    valueParameter.name.asString().removeSuffix("Key") + "Qualifier"
+                                else -> (valueParameter.name.asString() + "Qualifier")
+                            }
+                            ParameterSpec.builder(
+                                    parameterName,
+                                    InjektClassNames.Qualifier.asClassName()
+                                )
+                                .defaultValue("error(\"stub\")\n")
+                                .build()
+                        } else {
+                            ParameterSpec.builder(
+                                    valueParameter.name.asString(),
+                                    valueParameter.type.asTypeName()!!
+                                )
+                                .apply {
+                                    if (valueParameter.declaresDefaultValue()) {
+                                        if (valueParameter.type.isFunctionType &&
+                                            function.isInline && !valueParameter.isNoinline
+                                        ) {
+                                            defaultValue("{ ${
+                                            valueParameter.type.getValueParameterTypesFromFunctionType()
+                                                .indices.joinToString(", ") { "_" }
+                                            } error(\"stub\") }")
+                                        } else {
+                                            defaultValue("error(\"stub\")")
+                                        }
+                                    }
+
+                                    if (valueParameter.isCrossinline) {
+                                        addModifiers(KModifier.CROSSINLINE)
+                                    } else if (valueParameter.isNoinline) {
+                                        addModifiers(KModifier.NOINLINE)
                                     }
                                 }
-
-                                if (valueParameter.isCrossinline) {
-                                    addModifiers(KModifier.CROSSINLINE)
-                                } else if (valueParameter.isNoinline) {
-                                    addModifiers(KModifier.NOINLINE)
-                                }
-                            }
-                            .build()
+                                .build()
+                        }
                     }
             )
             .apply { function.returnType?.let { returns(it.asTypeName()!!) } }

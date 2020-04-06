@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
@@ -116,18 +117,21 @@ class InjektDeclarationChecker : DeclarationChecker {
         if (descriptor is FunctionDescriptor &&
             descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverload)
         ) {
-            if (descriptor.typeParameters.size != 1) {
-                context.trace.report(InjektErrors.KeyOverloadMustHave1TypeParameter.on(declaration))
-            }
-            val firstParameter = descriptor.valueParameters.firstOrNull()
-            if (firstParameter == null || firstParameter.type.constructor.declarationDescriptor !=
-                descriptor.module.findClassAcrossModuleDependencies(
-                    ClassId.topLevel(
-                        InjektClassNames.Key
-                    )
-                )!! || firstParameter.type.arguments.single().type != descriptor.typeParameters.first().defaultType
+            val keyParameters = descriptor.valueParameters
+                .filter {
+                    it.type.constructor.declarationDescriptor ==
+                            descriptor.module.findClassAcrossModuleDependencies(
+                                ClassId.topLevel(
+                                    InjektClassNames.Key
+                                )
+                            )
+                }
+
+            if (keyParameters.isEmpty() || keyParameters.any {
+                    it.type.arguments.first().type.constructor.declarationDescriptor !is TypeParameterDescriptor
+                }
             ) {
-                context.trace.report(InjektErrors.KeyOverloadMustHaveKeyParam.on(declaration))
+                context.trace.report(InjektErrors.KeyOverloadMustHaveGenericKeyParam.on(declaration))
             }
         }
     }

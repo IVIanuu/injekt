@@ -50,10 +50,7 @@ interface InjektErrors {
         val CannotInvokeModuleFunctions = error()
 
         @JvmField
-        val KeyOverloadMustHave1TypeParameter = error()
-
-        @JvmField
-        val KeyOverloadMustHaveKeyParam = error()
+        val KeyOverloadMustHaveGenericKeyParam = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -116,13 +113,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "@Module functions cannot be invoked"
         )
         map.put(
-            InjektErrors.KeyOverloadMustHave1TypeParameter,
-            "@KeyOverload function must have exactly 1 type parameter"
+            InjektErrors.KeyOverloadMustHaveGenericKeyParam,
+            "@KeyOverload function must have at least one generic key parameter. E.g. key: Key<T>"
         )
-        map.put(
-            InjektErrors.KeyOverloadMustHaveKeyParam,
-            "@KeyOverload function must have key: Key<T> as first parameter"
-        )
+
     }
 
 }
