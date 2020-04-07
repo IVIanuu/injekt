@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.FieldDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
@@ -105,7 +106,15 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         PropertyDescriptorImpl(
             injectClass.descriptor.containingDeclaration,
             null,
-            Annotations.EMPTY,
+            Annotations.create(
+                listOf(
+                    AnnotationDescriptorImpl(
+                        moduleMarker.defaultType,
+                        emptyMap(),
+                        SourceElement.NO_SOURCE
+                    )
+                )
+            ),
             Modality.FINAL,
             Visibilities.PRIVATE,
             false,

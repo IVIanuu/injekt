@@ -45,11 +45,11 @@ class BindingProviderLambdaToClassTransformer(
     private val parameters = getClass(InjektClassNames.Parameters)
 
     override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
-        if (expression.origin == IrStatementOrigin.LAMBDA &&
+        return if (expression.origin == IrStatementOrigin.LAMBDA &&
             expression.function.explicitParameters.size == 2 &&
             expression.function.explicitParameters[0].type.toKotlinType() == component.defaultType &&
             expression.function.explicitParameters[1].type.toKotlinType() == parameters.defaultType
-        ) return convertLambdaToClass(expression) else super.visitFunctionExpression(expression)
+        ) convertLambdaToClass(expression) else super.visitFunctionExpression(expression)
     }
 
     private fun convertLambdaToClass(functionExpression: IrFunctionExpression): IrExpression {
