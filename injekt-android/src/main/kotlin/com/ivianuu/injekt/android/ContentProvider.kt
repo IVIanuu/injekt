@@ -57,10 +57,10 @@ fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
 }
 
 @ScopeMarker
-val ContentProviderScope = Scope("ContentProviderScope")
+val ContentProviderScope = Scope()
 
 @QualifierMarker
-val ForContentProvider = Qualifier("ForContentProvider")
+val ForContentProvider = Qualifier()
 
 fun ContentProvider.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

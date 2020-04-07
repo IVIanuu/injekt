@@ -65,10 +65,10 @@ fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
 }
 
 @ScopeMarker
-val ReceiverScope = Scope("ReceiverScope")
+val ReceiverScope = Scope()
 
 @QualifierMarker
-val ForReceiver = Qualifier("ForReceiver")
+val ForReceiver = Qualifier()
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
     getApplicationComponentOrNull(context)

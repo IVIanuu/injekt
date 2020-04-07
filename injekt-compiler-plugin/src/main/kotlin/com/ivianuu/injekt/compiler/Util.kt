@@ -61,6 +61,7 @@ object InjektClassNames {
     val ModuleMarker = FqName("com.ivianuu.injekt.ModuleMarker")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
+    val PropertyName = FqName("com.ivianuu.injekt.internal.PropertyName")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
     val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
     val Scope = FqName("com.ivianuu.injekt.Scope")

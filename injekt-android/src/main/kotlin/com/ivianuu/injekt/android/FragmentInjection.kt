@@ -39,7 +39,7 @@ import com.ivianuu.injekt.sideEffectBehavior
 import com.ivianuu.injekt.synthetic.Factory
 
 @BehaviorMarker
-val BindFragment = sideEffectBehavior("BindFragment") {
+val BindFragment = sideEffectBehavior {
     map<String, Fragment>(mapQualifier = FragmentsMap) {
         put(it.key.classifier.java.name, it.key as Key<out Fragment>)
     }

@@ -19,22 +19,22 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.synthetic.Factory
 
 @QualifierMarker
-val TestQualifier1 = Qualifier("TestQualifier1")
+val TestQualifier1 = Qualifier()
 
 @QualifierMarker
-val TestQualifier2 = Qualifier("TestQualifier2")
+val TestQualifier2 = Qualifier()
 
 @QualifierMarker
-val TestQualifier3 = Qualifier("TestQualifier3")
+val TestQualifier3 = Qualifier()
 
 @ScopeMarker
-val TestScope1 = Scope("TestScope1")
+val TestScope1 = Scope()
 
 @ScopeMarker
-val TestScope2 = Scope("TestScope2")
+val TestScope2 = Scope()
 
 @ScopeMarker
-val TestScope3 = Scope("TestScope3")
+val TestScope3 = Scope()
 
 class TestDep1
 

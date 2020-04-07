@@ -35,7 +35,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  */
 @BehaviorMarker
-val Single = interceptingBehavior("Single") {
+val Single = interceptingBehavior {
     it.copy(provider = SingleProvider(it.provider))
 } + Bound
 

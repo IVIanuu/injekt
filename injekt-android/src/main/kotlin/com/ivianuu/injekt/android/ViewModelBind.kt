@@ -33,7 +33,7 @@ import com.ivianuu.injekt.interceptingBehavior
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 @BehaviorMarker
-val BindViewModel = interceptingBehavior("BindViewModel") {
+val BindViewModel = interceptingBehavior {
     it.copy(provider = ViewModelProvider(it.provider, it.key))
 }
 

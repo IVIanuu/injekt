@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.PropertyName
 import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
+import com.ivianuu.injekt.internal.propertyName
 
 /**
  *
@@ -90,7 +92,7 @@ interface Qualifier {
 /**
  * Returns a qualifier which uses [name] for comparisons
  */
-fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
+fun Qualifier(@PropertyName name: Any = propertyName()): Qualifier = DefaultQualifier(name = name)
 
 /**
  * Annotating a [Qualifier] property allows to use it as an annotation
@@ -99,7 +101,7 @@ fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
 @Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
 
-private data class SimpleQualifier(val name: Any) : Qualifier.Element
+private data class DefaultQualifier(val name: Any) : Qualifier.Element
 
 private class CombinedQualifier(
     private val element: Qualifier.Element,

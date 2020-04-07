@@ -34,7 +34,7 @@ import java.lang.ref.WeakReference
  * Holds instances in a [WeakReference]
  */
 @BehaviorMarker
-val Weak = interceptingBehavior("Weak") {
+val Weak = interceptingBehavior {
     it.copy(provider = WeakProvider(it.provider))
 } + Bound
 

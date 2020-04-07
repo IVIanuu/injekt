@@ -80,16 +80,16 @@ fun <T : Fragment> ComponentBuilder.fragmentBindings(
 }
 
 @ScopeMarker
-val FragmentScope = Scope("FragmentScope")
+val FragmentScope = Scope()
 
 @ScopeMarker
-val ChildFragmentScope = Scope("ChildFragmentScope")
+val ChildFragmentScope = Scope()
 
 @QualifierMarker
-val ForFragment = Qualifier("ForFragment")
+val ForFragment = Qualifier()
 
 @QualifierMarker
-val ForChildFragment = Qualifier("ForChildFragment")
+val ForChildFragment = Qualifier()
 
 fun Fragment.getClosestComponentOrNull(): Component? {
     return getParentFragmentComponentOrNull()

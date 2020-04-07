@@ -51,6 +51,8 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
 
         // perform several optimizations
         BindingProviderCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+
+        PropertyNameIntrinsicTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
     }
 
 }

@@ -77,16 +77,16 @@ fun <T : View> ComponentBuilder.viewBindings(
 }
 
 @ScopeMarker
-val ViewScope = Scope("ViewScope")
+val ViewScope = Scope()
 
 @ScopeMarker
-val ChildViewScope = Scope("ChildViewScope")
+val ChildViewScope = Scope()
 
 @QualifierMarker
-val ForView = Qualifier("ForView")
+val ForView = Qualifier()
 
 @QualifierMarker
-val ForChildView = Qualifier("ForChildView")
+val ForChildView = Qualifier()
 
 fun View.getClosestComponentOrNull(): Component? {
     return getParentViewComponentOrNull()

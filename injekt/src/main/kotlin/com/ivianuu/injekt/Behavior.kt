@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.PropertyName
 import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
+import com.ivianuu.injekt.internal.propertyName
 
 /**
  * Behavior applies scoping or such to [BindingProvider]s
@@ -59,14 +61,14 @@ interface Behavior {
 /**
  * Returns a [Behavior] which uses [name] for comparisons
  */
-fun Behavior(name: Any): Behavior = DefaultBehavior(name)
+fun Behavior(@PropertyName name: Any = propertyName()): Behavior = DefaultBehavior(name)
 
 /**
  * Returns a new [Behavior] for [name] and invokes [onBindingAdded] when ever
  * a [Binding] with the returned [Behavior] was added to a [ComponentBuilder] with [scope]
  */
 fun sideEffectBehavior(
-    name: Any,
+    @PropertyName name: Any = propertyName(),
     scopes: List<Scope> = emptyList(),
     onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
 ): Behavior {
@@ -93,7 +95,7 @@ fun sideEffectBehavior(
  *
  */
 fun interceptingBehavior(
-    name: Any,
+    @PropertyName name: Any = propertyName(),
     scopes: List<Scope> = emptyList(),
     intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>
 ): Behavior {

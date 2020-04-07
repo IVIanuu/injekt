@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  */
 @BehaviorMarker
-val Multi = interceptingBehavior("Multi") {
+val Multi = interceptingBehavior {
     it.copy(provider = MultiProvider(it.provider))
 } + Bound
 

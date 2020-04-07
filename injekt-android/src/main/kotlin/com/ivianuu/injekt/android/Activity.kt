@@ -74,10 +74,10 @@ fun <T : Activity> ComponentBuilder.activityBindings(
 }
 
 @ScopeMarker
-val ActivityScope = Scope("ActivityScope")
+val ActivityScope = Scope()
 
 @QualifierMarker
-val ForActivity = Qualifier("ForActivity")
+val ForActivity = Qualifier()
 
 fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

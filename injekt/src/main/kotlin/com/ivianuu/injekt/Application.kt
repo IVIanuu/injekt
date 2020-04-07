@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 @ScopeMarker
-val ApplicationScope = Scope("ApplicationScope")
+val ApplicationScope = Scope()
 
 @QualifierMarker
-val ForApplication = Qualifier("ForApplication")
+val ForApplication = Qualifier()
