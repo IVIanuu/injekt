@@ -40,26 +40,4 @@ class SingleTest {
         assertEquals(depA, depC)
     }
 
-    @Test
-    fun testReusesSingleJitBindings() {
-        val componentA = Component { scopes(TestScope1) }
-
-        val componentB = Component {
-            scopes(TestScope2)
-            parents(componentA)
-        }
-        val componentC = Component {
-            scopes(TestScope3)
-            parents(componentB)
-        }
-
-        val depA = componentA.get<SingleJitDep>()
-        val depA2 = componentA.get<SingleJitDep>()
-        val depB = componentB.get<SingleJitDep>()
-        val depC = componentC.get<SingleJitDep>()
-
-        assertEquals(depA, depA2)
-        assertEquals(depA, depB)
-        assertEquals(depA, depC)
-    }
 }

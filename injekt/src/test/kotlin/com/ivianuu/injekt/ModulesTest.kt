@@ -28,7 +28,7 @@ class ModulesTest {
     }
 
     @Test
-    fun testGlobalModulesWillBeAppliedToEachOpenComponentBuilderWhenRegister() {
+    fun testGlobalModulesWillBeAppliedToEachOpenComponentBuilderOnRegister() {
         var called = false
         Component {
             Injekt {
