@@ -49,7 +49,7 @@ fun <T> ComponentBuilder.eager(key: Key<T>) {
 }
 
 @QualifierMarker
-private val EagerQualifier = Qualifier("Eager")
+internal val EagerQualifier = Qualifier("Eager")
 
 private class EagerProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {
