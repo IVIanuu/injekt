@@ -63,28 +63,19 @@ class Component internal constructor(
     }
 
     /**
-     * Retrieve a instance of type [T] for [key]
+     * Return a instance of type [T] for [key]
      */
     @KeyOverload
-    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
-        findExplicitBinding(key)?.provider?.let { return it(this, parameters) }
-        findJitBinding(key)?.provider?.let { return it(this, parameters) }
-        if (key.isNullable) return null as T
-        error("Couldn't get instance for $key")
-    }
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+        getBindingProvider(key)(parameters)
 
     /**
-     * Returns the [Component] for [scope] or throws
+     * Returns the [BindingProvider] for [key]
      */
-    fun getComponent(scope: Scope): Component =
-        findComponent(scope) ?: error("Couldn't find component for scope $scope")
-
-    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> {
-        return getBinding(key).provider
-    }
+    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> = getBinding(key).provider
 
     /**
-     * Retrieve the binding for [key]
+     * Returns the binding for [key]
      */
     fun <T> getBinding(key: Key<T>): Binding<T> {
         findExplicitBinding(key)?.let { return it }
@@ -94,6 +85,12 @@ class Component internal constructor(
         ) { null as T }.unsafeCast()
         error("Couldn't get instance for $key")
     }
+
+    /**
+     * Returns the [Component] for [scope] or throws
+     */
+    fun getComponent(scope: Scope): Component =
+        findComponent(scope) ?: error("Couldn't find component for scope $scope")
 
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
