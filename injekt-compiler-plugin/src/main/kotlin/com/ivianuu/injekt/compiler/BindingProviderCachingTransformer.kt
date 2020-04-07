@@ -18,6 +18,8 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irSetVar
+import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -164,28 +166,36 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
                     val fieldForDependency =
                         fieldsByDependency[expression] ?: return super.visitCall(expression)
                     return irBlock {
-                        +irIfThen(
-                            irEqualsNull(
-                                irGetField(
-                                    irGet(invokeFunction.dispatchReceiverParameter!!),
-                                    fieldForDependency
-                                )
-                            ),
-                            irSetField(
+                        val providerVar = irTemporaryVar(
+                            irGetField(
                                 irGet(invokeFunction.dispatchReceiverParameter!!),
-                                fieldForDependency,
-                                irCall(
-                                    symbolTable.referenceFunction(
-                                        component.unsubstitutedMemberScope
-                                            .findSingleFunction(Name.identifier("getBindingProvider"))
-                                    ),
-                                    fieldForDependency.type.makeNotNull()
-                                ).apply {
-                                    dispatchReceiver = irGet(invokeFunction.valueParameters.first())
-                                    putTypeArgument(0, expression.getTypeArgument(0)!!)
-                                    putValueArgument(0, expression.getValueArgument(0)!!)
-                                }
+                                fieldForDependency
                             )
+                        )
+                        +irIfThen(
+                            irEqualsNull(irGet(providerVar)),
+                            irBlock {
+                                +irSetVar(
+                                    providerVar.symbol,
+                                    irCall(
+                                        symbolTable.referenceFunction(
+                                            component.unsubstitutedMemberScope
+                                                .findSingleFunction(Name.identifier("getBindingProvider"))
+                                        ),
+                                        fieldForDependency.type.makeNotNull()
+                                    ).apply {
+                                        dispatchReceiver =
+                                            irGet(invokeFunction.valueParameters.first())
+                                        putTypeArgument(0, expression.getTypeArgument(0)!!)
+                                        putValueArgument(0, expression.getValueArgument(0)!!)
+                                    }
+                                )
+                                +irSetField(
+                                    irGet(invokeFunction.dispatchReceiverParameter!!),
+                                    fieldForDependency,
+                                    irGet(providerVar)
+                                )
+                            }
                         )
 
                         +irCall(
@@ -199,10 +209,7 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
                             (fieldForDependency.type as IrSimpleType).arguments.last()
                                 .typeOrNull!!
                         ).apply {
-                            dispatchReceiver = irGetField(
-                                irGet(invokeFunction.dispatchReceiverParameter!!),
-                                fieldForDependency
-                            )
+                            dispatchReceiver = irGet(providerVar)
                             putValueArgument(
                                 0,
                                 irGet(invokeFunction.valueParameters.first())

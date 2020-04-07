@@ -157,10 +157,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
     private fun IrCall.isValidKeyOfCall(): Boolean {
         if (this in ignoredCalls) return false
 
-        if (declarationContainers.isEmpty()) {
-            error("lol ${this.dump()}")
-            return false
-        }
+        if (declarationContainers.isEmpty()) return false
 
         val descriptor = symbol.descriptor
 
@@ -168,10 +165,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             descriptor.valueParameters.size != 1 ||
             !descriptor.isInline ||
             !getTypeArgument(0)!!.toKotlinType().isFullyResolved()
-        ) {
-            //error("${this.dump()}")
-            return false
-        }
+        ) return false
 
         val qualifierExpression = getValueArgument(0)
 
@@ -179,10 +173,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             (qualifierExpression !is IrCall ||
                     qualifierExpression.symbol.descriptor.referencedProperty
                         ?.annotations?.hasAnnotation(InjektClassNames.QualifierMarker) != true)
-        ) {
-            // error("${this.dump()}")
-            return false
-        }
+        ) return false
 
         message("valid key cache ${this.dump()}")
 
