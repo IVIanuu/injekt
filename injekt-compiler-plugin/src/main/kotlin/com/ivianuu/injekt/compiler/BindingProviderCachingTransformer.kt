@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -69,12 +68,7 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        classes.forEach {
-            val pre = it.dump()
-            transformClass(it)
-            val post = it.dump()
-            //if (pre != post) error("Transformed ${it.descriptor}\n\nPre:\n$pre\n\nPost:\n$post")
-        }
+        classes.forEach { transformClass(it) }
 
         return super.visitModuleFragment(declaration)
     }

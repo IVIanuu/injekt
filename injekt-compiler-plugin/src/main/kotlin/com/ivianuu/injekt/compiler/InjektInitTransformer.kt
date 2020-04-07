@@ -17,7 +17,9 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.calls.components.isVararg
 
 class InjektInitTransformer(
     pluginContext: IrPluginContext
@@ -64,7 +66,9 @@ class InjektInitTransformer(
             .map { symbolTable.referenceFunction(it) } + thisModules
 
         val addModules = injekt.unsubstitutedMemberScope
-            .findSingleFunction(Name.identifier("modules"))
+            .findFirstFunction("modules") {
+                it.valueParameters.firstOrNull()?.isVararg == true
+            }
 
         return DeclarationIrBuilder(pluginContext, expression.symbol).irCall(
             callee = symbolTable.referenceSimpleFunction(addModules),

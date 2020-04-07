@@ -157,7 +157,9 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
     private fun IrCall.isValidKeyOfCall(): Boolean {
         if (this in ignoredCalls) return false
 
-        if (declarationContainers.isEmpty()) return false
+        check(declarationContainers.isNotEmpty()) {
+            "Is empty for ${this.dump()}"
+        }
 
         val descriptor = symbol.descriptor
 

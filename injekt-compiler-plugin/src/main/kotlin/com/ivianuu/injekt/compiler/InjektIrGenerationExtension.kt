@@ -44,11 +44,12 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
 
         // rewrite key overload stub calls to the right calls
         KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
-        // rewrite keyOf<String>() -> keyOf(String::class)
-        KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         // memoize static keyOf calls
         KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        // rewrite keyOf<String>() -> keyOf(String::class)
+        KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
 
+        // perform several optimizations
         BindingProviderCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
     }
 
