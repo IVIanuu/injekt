@@ -32,7 +32,6 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
     private val keyFields =
         mutableMapOf<IrDeclarationContainer, MutableMap<KeyId, IrField>>()
     private val ignoredCalls = mutableSetOf<IrCall>()
-    private val qualifier = getClass(InjektClassNames.Qualifier)
 
     private data class KeyId(
         val type: IrType,
