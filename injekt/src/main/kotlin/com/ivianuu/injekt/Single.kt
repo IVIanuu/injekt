@@ -25,7 +25,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  * ´´´
  * val component = Component {
- *     bind(behavior = Single) { Database(get()) }
+ *     single { Database(get()) }
  * }
  *
  * val db1 = component.get<Database>()
