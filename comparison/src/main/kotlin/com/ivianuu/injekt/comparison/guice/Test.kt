@@ -26,9 +26,6 @@ object GuiceTest : InjectionTest {
 
     private var injector: Injector? = null
 
-    override fun moduleCreation() {
-    }
-
     override fun setup() {
         injector = Guice.createInjector()
     }

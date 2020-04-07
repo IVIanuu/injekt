@@ -26,10 +26,6 @@ object KatanaTest : InjectionTest {
 
     private var component: Component? = null
 
-    override fun moduleCreation() {
-        createModule()
-    }
-
     override fun setup() {
         component = Component(modules = listOf(createModule()))
     }

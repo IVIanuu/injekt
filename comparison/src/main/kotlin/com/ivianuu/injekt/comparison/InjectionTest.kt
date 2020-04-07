@@ -20,8 +20,6 @@ interface InjectionTest {
 
     val name: String
 
-    fun moduleCreation()
-
     fun setup()
 
     fun inject()

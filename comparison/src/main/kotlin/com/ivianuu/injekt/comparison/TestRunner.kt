@@ -89,17 +89,15 @@ fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig
 }
 
 fun measure(test: InjectionTest): Timings {
-    val moduleCreation = measureNanoTime { test.moduleCreation() }
     val setup = measureNanoTime { test.setup() }
     val firstInjection = measureNanoTime { test.inject() }
     val secondInjection = measureNanoTime { test.inject() }
     test.shutdown()
-    return Timings(test.name, moduleCreation, setup, firstInjection, secondInjection)
+    return Timings(test.name, setup, firstInjection, secondInjection)
 }
 
 data class Timings(
     val injectorName: String,
-    val moduleCreation: Long,
     val setup: Long,
     val firstInjection: Long,
     val secondInjection: Long
@@ -117,7 +115,6 @@ data class Result(
 
 data class Results(
     val injectorName: String,
-    val moduleCreation: Result,
     val setup: Result,
     val firstInjection: Result,
     val secondInjection: Result
@@ -126,7 +123,6 @@ data class Results(
 fun List<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName,
-        moduleCreation = Result("Module creation", map { it.moduleCreation }),
         setup = Result("Setup", map { it.setup }),
         firstInjection = Result("First injection", map { it.firstInjection }),
         secondInjection = Result("Second injection", map { it.secondInjection })
@@ -151,16 +147,6 @@ fun Result.print(name: String, config: Config) {
 }
 
 fun Map<String, Results>.print(config: Config) {
-    println("Module:")
-    println("Library | Average | Median | Min | Max")
-    toList()
-        .sortedBy { it.second.moduleCreation.average }
-        .forEach { (name, results) ->
-            results.moduleCreation.print(name, config)
-        }
-
-    println()
-
     println("Setup:")
     println("Library | Average | Median | Min | Max")
     toList()

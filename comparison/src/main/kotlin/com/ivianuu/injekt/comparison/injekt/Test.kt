@@ -26,9 +26,6 @@ object InjektTest : InjectionTest {
 
     private var component: Component? = null
 
-    override fun moduleCreation() {
-    }
-
     override fun setup() {
         component = Component()
     }

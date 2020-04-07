@@ -27,9 +27,6 @@ object ToothpickTest : InjectionTest {
 
     private var scope: Scope? = null
 
-    override fun moduleCreation() {
-    }
-
     override fun setup() {
         scope = Toothpick.openScope(this)
     }

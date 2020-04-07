@@ -26,9 +26,6 @@ object DaggerTest : InjectionTest {
 
     private var graph: ObjectGraph? = null
 
-    override fun moduleCreation() {
-    }
-
     override fun setup() {
         graph = ObjectGraph.create(DaggerModule())
     }

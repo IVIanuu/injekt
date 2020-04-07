@@ -26,9 +26,6 @@ object Dagger2ReflectTest : InjectionTest {
 
     private var component: Dagger2Component? = null
 
-    override fun moduleCreation() {
-    }
-
     override fun setup() {
         component = Dagger.factory(Dagger2Component.Factory::class.java).create()
     }

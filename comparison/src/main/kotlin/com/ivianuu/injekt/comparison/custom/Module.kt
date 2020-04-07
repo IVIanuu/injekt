@@ -117,9 +117,7 @@ import com.ivianuu.injekt.comparison.Fib97
 import com.ivianuu.injekt.comparison.Fib98
 import com.ivianuu.injekt.comparison.Fib99
 
-val customModule = createModule()
-
-fun createModule() = module {
+fun customModule() = module {
     factory { Fib1() }
     factory { Fib2() }
     factory { Fib3(get(), get()) }
