@@ -49,6 +49,11 @@ private class KeyedProvider<T>(
     private val component: Component,
     private val key: Key<T>
 ) : Provider<T> {
-    override fun invoke(parameters: Parameters): T =
-        component.get(key = key, parameters = parameters)
+    private var provider: BindingProvider<T>? = null
+    override fun invoke(parameters: Parameters): T {
+        if (provider == null) {
+            provider = component.getBindingProvider(key)
+        }
+        return provider!!(component, parameters)
+    }
 }
