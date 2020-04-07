@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
 import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
@@ -26,18 +27,19 @@ import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.interceptingBehavior
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
-class ViewModelBehavior(private val key: Key<*>) : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        ViewModelProvider(provider, key)
+@BehaviorMarker
+val BindViewModel = interceptingBehavior("BindViewModel") {
+    it.copy(provider = ViewModelProvider(it.provider, it.key))
 }
 
+/**
+ * Dsl builder for the [BindViewModel] behavior
+ */
 @KeyOverload
 inline fun <T : ViewModel> ComponentBuilder.viewModel(
     key: Key<T>,
@@ -47,26 +49,10 @@ inline fun <T : ViewModel> ComponentBuilder.viewModel(
 ) {
     bind(
         key = key,
-        behavior = ViewModelBehavior(key) + behavior,
+        behavior = BindViewModel + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-@TagMarker
-annotation class ViewModelBind {
-    companion object : Tag
-}
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.viewModelModule() {
-    bindingInterceptor { binding ->
-        if (ViewModelBind in binding.tags) {
-            binding.copy(behavior = ViewModelBehavior(binding.key) + binding.behavior)
-        } else {
-            binding
-        }
-    }
 }
 
 private class ViewModelProvider<T>(
@@ -86,3 +72,4 @@ private class ViewModelProvider<T>(
         return viewModelProvider[key.hashCode().toString(), ViewModel::class.java] as T
     }
 }
+

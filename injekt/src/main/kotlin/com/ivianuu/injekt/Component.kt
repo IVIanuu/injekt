@@ -117,16 +117,8 @@ class Component internal constructor(
         for (index in jitFactories.lastIndex downTo 0) {
             val binding = jitFactories[index].create(key, this)
             if (binding != null) {
-                // todo finding the right component is relatively small maybe
-                //  we can cache the scope bound of the behaviors when combining them
-                var boundBehavior: BoundBehavior? = null
-                binding.behavior.foldOut(null) { behavior, element ->
-                    if (boundBehavior == null && behavior is BoundBehavior)
-                        boundBehavior = behavior
-                    element
-                }
-                val component = if (boundBehavior != null && boundBehavior!!.scope != null) {
-                    getComponent(boundBehavior!!.scope!!)
+                val component = if (binding.scope != null) {
+                    getComponent(binding.scope)
                 } else {
                     this
                 }
@@ -189,19 +181,19 @@ inline fun <T> ComponentOwner.getLazy(
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(key, parameters()) }
 
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.componentModule() {
+@ModuleMarker
+private val ComponentModule = Module(invokeOnInit = true) {
     bind(
-        behavior = BoundBehavior,
+        behavior = Bound,
         duplicateStrategy = DuplicateStrategy.Override
     ) { this }
 
     onScopeAdded { scope ->
         bind(
             qualifier = scope,
-            behavior = BoundBehavior(scope = scope),
+            scope = scope,
+            behavior = Bound,
             duplicateStrategy = DuplicateStrategy.Override
         ) { this }
     }
 }
-

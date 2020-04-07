@@ -19,22 +19,14 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class BoundBehaviorTest {
+class BoundTest {
 
     @Test
     fun testWithoutScope() {
         val usedComponents = mutableListOf<Component>()
 
         val componentA = Component {
-            bind(
-                Binding(
-                    keyOf(),
-                    behavior = BoundBehavior
-                ) {
-                    usedComponents += this
-                    Unit
-                }
-            )
+            bind(behavior = Bound) { usedComponents += this }
         }
 
         val componentB = Component {
@@ -52,21 +44,16 @@ class BoundBehaviorTest {
         val usedComponents = mutableListOf<Component>()
 
         val componentA = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         val componentB = Component {
             parents(componentA)
 
             bind(
-                Binding(
-                    keyOf(),
-                    behavior = BoundBehavior(scope = TestScopeOne)
-                ) {
-                    usedComponents += this
-                    Unit
-                }
-            )
+                behavior = Bound,
+                scope = TestScope1
+            ) { usedComponents += this }
         }
 
         val componentC = Component {

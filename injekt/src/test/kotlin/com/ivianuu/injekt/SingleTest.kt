@@ -19,17 +19,12 @@ package com.ivianuu.injekt
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class SingleBehaviorTest {
+class SingleTest {
 
     @Test
     fun testSingleBehavior() {
         val componentA = Component {
-            bind(
-                Binding(
-                    key = keyOf(),
-                    behavior = SingleBehavior
-                ) { TestDep1() }
-            )
+            single { TestDep1() }
         }
 
         val componentB = Component { parents(componentA) }
@@ -45,26 +40,4 @@ class SingleBehaviorTest {
         assertEquals(depA, depC)
     }
 
-    @Test
-    fun testReusesSingleJitBindings() {
-        val componentA = Component { scopes(TestScopeOne) }
-
-        val componentB = Component {
-            scopes(TestScopeTwo)
-            parents(componentA)
-        }
-        val componentC = Component {
-            scopes(TestScopeThree)
-            parents(componentB)
-        }
-
-        val depA = componentA.get<SingleJitDep>()
-        val depA2 = componentA.get<SingleJitDep>()
-        val depB = componentB.get<SingleJitDep>()
-        val depC = componentC.get<SingleJitDep>()
-
-        assertEquals(depA, depA2)
-        assertEquals(depA, depB)
-        assertEquals(depA, depC)
-    }
 }

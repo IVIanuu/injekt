@@ -1,6 +1,7 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ModulesTest {
@@ -10,34 +11,10 @@ class ModulesTest {
         val existingModules = Modules.modulesByScope.toMap()
         Modules.modulesByScope.clear()
 
-        val initA = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = true
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
-        val initB = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = true
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
-        val nonInitA = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = false
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
-        val nonInitB = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = false
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
+        val initA = Module(invokeOnInit = true) { }
+        val initB = Module(invokeOnInit = true) { }
+        val nonInitA = Module(invokeOnInit = false) { }
+        val nonInitB = Module(invokeOnInit = false) { }
 
         Injekt {
             modules(
@@ -48,6 +25,20 @@ class ModulesTest {
         assertEquals(listOf(initA, initB, nonInitA, nonInitB), Modules.get())
         Modules.modulesByScope.clear()
         Modules.modulesByScope += existingModules
+    }
+
+    @Test
+    fun testGlobalModulesWillBeAppliedToEachOpenComponentBuilderOnRegister() {
+        var called = false
+        Component {
+            Injekt {
+                module {
+                    called = true
+                }
+            }
+        }
+
+        assertTrue(called)
     }
 
 }

@@ -52,7 +52,7 @@ fun <T> ComponentBuilder.alias(
 /**
  * Makes the [Binding] for [originalKey] retrievable via [aliasKey]
  *
- * For example the following code points the Repository request to RepositoryImpl
+ * For example the following code delegates the Repository request to RepositoryImpl
  *
  * ´´´
  * val component = Component {

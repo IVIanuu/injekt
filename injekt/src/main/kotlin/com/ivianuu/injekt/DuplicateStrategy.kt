@@ -17,14 +17,16 @@
 package com.ivianuu.injekt
 
 /**
- * All strategies for handling duplicated bindings
+ * All strategies for handling duplicated elements
  */
 enum class DuplicateStrategy {
-    /** Overrides the existing binding */
+    /** Overrides the existing element */
     Override,
-    /** Throws an exception if there's an existing binding */
+
+    /** Throws an exception if there's an existing element */
     Fail,
-    /** Keeps the existing binding and drops this one */
+
+    /** Keeps the existing element and drops the new one */
     Drop;
 
     inline fun check(

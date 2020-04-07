@@ -74,14 +74,10 @@ fun <T : Activity> ComponentBuilder.activityBindings(
 }
 
 @ScopeMarker
-annotation class ActivityScope {
-    companion object : Scope
-}
+val ActivityScope = Scope("ActivityScope")
 
 @QualifierMarker
-annotation class ForActivity {
-    companion object : Qualifier.Element
-}
+val ForActivity = Qualifier("ForActivity")
 
 fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.gradle
 
+import com.android.build.gradle.BaseExtension
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
@@ -55,6 +57,18 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
             sourceSet.kotlin.srcDir(outputDir)
             sourceSet.kotlin.exclude { it.file.startsWith(outputDir) }
         }
+
+        val androidExtension = project.extensions.findByName("android") as? BaseExtension
+        androidExtension?.sourceSets
+            ?.findByName(sourceSetName)
+            ?.java
+            ?.srcDir(outputDir)
+
+        val sets = project.extensions.findByName("sourceSets") as SourceSetContainer
+        sets.findByName(sourceSetName)
+            ?.java
+            ?.srcDir(outputDir)
+
 
         kotlinCompile.outputs.upToDateWhen { outputDir.exists() }
 

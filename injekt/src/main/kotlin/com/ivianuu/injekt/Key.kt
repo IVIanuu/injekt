@@ -101,11 +101,11 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
     }
 }
 
+/**
+ * Creates a convenient overload for a function with [Key] as the first parameter
+ */
 @Target(AnnotationTarget.FUNCTION)
 annotation class KeyOverload
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class KeyOverloadStub
 
 private fun unboxed(type: KClass<*>): KClass<*> {
     val jClass = type.unsafeCast<ClassBasedDeclarationContainer>().jClass

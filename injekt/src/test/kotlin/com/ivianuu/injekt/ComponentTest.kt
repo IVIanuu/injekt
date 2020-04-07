@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.synthetic.Single
+import com.ivianuu.injekt.synthetic.TestScope1
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -106,137 +108,6 @@ class ComponentTest {
     }
 
     @Test
-    fun testOverride() {
-        val component = Component {
-            factory { "my_value" }
-            factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
-        }
-
-        assertEquals("my_overridden_value", component.get<String>())
-    }
-
-    @Test
-    fun testOverrideDrop() {
-        val component = Component {
-            factory { "my_value" }
-            factory(duplicateStrategy = DuplicateStrategy.Drop) { "my_overridden_value" }
-        }
-
-        assertEquals("my_value", component.get<String>())
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testOverrideFail() {
-        Component {
-            factory { "my_value" }
-            factory { "my_overridden_value" }
-        }
-    }
-
-    @Test
-    fun testNestedOverride() {
-        val parentComponent = Component {
-            factory { "my_value" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
-        }
-
-        assertEquals("my_value", parentComponent.get<String>())
-        assertEquals("my_overridden_value", childComponent.get<String>())
-    }
-
-    @Test
-    fun testNestedOverrideDrop() {
-        val parentComponent = Component {
-            factory { "my_value" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Drop) { "my_overridden_value" }
-        }
-
-        assertEquals("my_value", parentComponent.get<String>())
-        assertEquals("my_value", childComponent.get<String>())
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testNestedOverrideFail() {
-        val parentComponent = Component {
-            factory { "my_value" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponent)
-            factory(duplicateStrategy = DuplicateStrategy.Fail) { "my_overridden_value" }
-        }
-    }
-
-    @Test
-    fun testParentOverride() {
-        val parentComponentA = Component {
-            factory { "value_a" }
-        }
-        val parentComponentB = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Override) { "value_b" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponentA, parentComponentB)
-        }
-
-        assertEquals("value_b", childComponent.get<String>())
-    }
-
-    // todo how should we fix this
-    //@Test
-    fun testParentOverrideDrop() {
-        val parentComponentA = Component {
-            factory { "value_a" }
-        }
-        val parentComponentB = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Drop) { "value_b" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponentA, parentComponentB)
-        }
-
-        assertEquals("value_a", childComponent.get<String>())
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testParentOverrideFail() {
-        val parentComponentA = Component {
-            factory { "value_a" }
-        }
-        val parentComponentB = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponentA, parentComponentB)
-        }
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun testReverseParentOverrideFail() {
-        val parentComponentA = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Override) { "value_a" }
-        }
-        val parentComponentB = Component {
-            factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }
-        }
-
-        val childComponent = Component {
-            parents(parentComponentA, parentComponentB)
-        }
-    }
-
-    @Test
     fun testTypeDistinction() {
         val component = Component {
             factory { listOf(1, 2, 3) }
@@ -254,18 +125,18 @@ class ComponentTest {
     @Test
     fun testImplicitComponentBindings() {
         Injekt.logger = PrintLogger()
-        val componentA = Component { scopes(TestScopeOne) }
+        val componentA = Component { scopes(TestScope1) }
         val componentB = Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(componentA)
         }
 
         assertEquals(componentA, componentA.get<Component>())
-        assertEquals(componentA, componentA.get<Component>(qualifier = TestScopeOne))
+        assertEquals(componentA, componentA.get<Component>(qualifier = TestScope1))
 
         assertEquals(componentB, componentB.get<Component>())
-        assertEquals(componentB, componentB.get<Component>(qualifier = TestScopeTwo))
-        assertEquals(componentA, componentB.get<Component>(qualifier = TestScopeOne))
+        assertEquals(componentB, componentB.get<Component>(qualifier = TestScope2))
+        assertEquals(componentA, componentB.get<Component>(qualifier = TestScope1))
     }
 
     @Test
@@ -301,10 +172,10 @@ class ComponentTest {
     @Test
     fun testAddsJitBindingToTheCorrectScope() {
         val componentA = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
         val componentB = Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(componentA)
         }
 
@@ -317,8 +188,8 @@ class ComponentTest {
     fun testMultipleBoundEagerBindings() {
         Component {
             factory(qualifier = Qualifier(UUID.randomUUID())) { get<TestDep3>() }
-            bind(behavior = BoundBehavior + EagerBehavior) { TestDep2(get()) }
-            bind(behavior = BoundBehavior + EagerBehavior) { TestDep1() }
+            bind(behavior = Bound + Eager) { TestDep2(get()) }
+            bind(behavior = Bound + Eager) { TestDep1() }
         }
     }
 }
@@ -327,6 +198,6 @@ class Context(val component: Component) : Environment
 
 interface Environment
 
-@TestScopeOne
+@TestScope1
 @Single
 class SingleJitDep

@@ -24,11 +24,11 @@ class ComponentBuilderTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsWhenOverridingScope() {
         val parent = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
             parents(parent)
         }
     }
@@ -36,15 +36,15 @@ class ComponentBuilderTest {
     @Test(expected = IllegalStateException::class)
     fun testThrowsOnParentsWithSameScope() {
         val parent1 = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         val parent2 = Component {
-            scopes(TestScopeOne)
+            scopes(TestScope1)
         }
 
         Component {
-            scopes(TestScopeTwo)
+            scopes(TestScope2)
             parents(parent1, parent2)
         }
     }
@@ -79,5 +79,136 @@ class ComponentBuilderTest {
         val binding = Binding(key = keyOf()) { "value" }
         val component = Component { bind(binding) }
         assertEquals(binding, component.bindings[keyOf<String>()])
+    }
+
+    @Test
+    fun testOverride() {
+        val component = Component {
+            factory { "my_value" }
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
+        }
+
+        assertEquals("my_overridden_value", component.get<String>())
+    }
+
+    @Test
+    fun testOverrideDrop() {
+        val component = Component {
+            factory { "my_value" }
+            factory(duplicateStrategy = DuplicateStrategy.Drop) { "my_overridden_value" }
+        }
+
+        assertEquals("my_value", component.get<String>())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testOverrideFail() {
+        Component {
+            factory { "my_value" }
+            factory { "my_overridden_value" }
+        }
+    }
+
+    @Test
+    fun testNestedOverride() {
+        val parentComponent = Component {
+            factory { "my_value" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponent)
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "my_overridden_value" }
+        }
+
+        assertEquals("my_value", parentComponent.get<String>())
+        assertEquals("my_overridden_value", childComponent.get<String>())
+    }
+
+    @Test
+    fun testNestedOverrideDrop() {
+        val parentComponent = Component {
+            factory { "my_value" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponent)
+            factory(duplicateStrategy = DuplicateStrategy.Drop) { "my_overridden_value" }
+        }
+
+        assertEquals("my_value", parentComponent.get<String>())
+        assertEquals("my_value", childComponent.get<String>())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testNestedOverrideFail() {
+        val parentComponent = Component {
+            factory { "my_value" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponent)
+            factory(duplicateStrategy = DuplicateStrategy.Fail) { "my_overridden_value" }
+        }
+    }
+
+    @Test
+    fun testParentOverride() {
+        val parentComponentA = Component {
+            factory { "value_a" }
+        }
+        val parentComponentB = Component {
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "value_b" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponentA, parentComponentB)
+        }
+
+        assertEquals("value_b", childComponent.get<String>())
+    }
+
+    // todo how should we fix this
+    //@Test
+    fun testParentOverrideDrop() {
+        val parentComponentA = Component {
+            factory { "value_a" }
+        }
+        val parentComponentB = Component {
+            factory(duplicateStrategy = DuplicateStrategy.Drop) { "value_b" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponentA, parentComponentB)
+        }
+
+        assertEquals("value_a", childComponent.get<String>())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testParentOverrideFail() {
+        val parentComponentA = Component {
+            factory { "value_a" }
+        }
+        val parentComponentB = Component {
+            factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponentA, parentComponentB)
+        }
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testReverseParentOverrideFail() {
+        val parentComponentA = Component {
+            factory(duplicateStrategy = DuplicateStrategy.Override) { "value_a" }
+        }
+        val parentComponentB = Component {
+            factory(duplicateStrategy = DuplicateStrategy.Fail) { "value_b" }
+        }
+
+        val childComponent = Component {
+            parents(parentComponentA, parentComponentB)
+        }
     }
 }

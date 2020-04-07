@@ -31,12 +31,13 @@ package com.ivianuu.injekt
  * assertSame(logger1, logger2) // false
  * ´´´
  */
-object FactoryBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> = provider
-}
+@BehaviorMarker
+val Factory = Behavior("Factory")
 
 /**
- * Dsl builder for the [FactoryBehavior]
+ * Dsl builder for a factory binding
+ *
+ * @see Factory
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.factory(
@@ -51,12 +52,4 @@ inline fun <T> ComponentBuilder.factory(
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-/**
- * Annotation for the [FactoryBehavior]
- */
-@TagMarker
-annotation class Factory {
-    companion object : Tag
 }

@@ -19,27 +19,27 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val modules = mutableListOf<IrClass>()
-        BindingGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
-        ModuleImplGenerator(pluginContext, modules)
-            .visitModuleFragment(moduleFragment, null)
-        InjektInitTransformer(pluginContext, modules).visitModuleFragment(moduleFragment, null)
+        // generate a module for each binding class
+        BindingModuleGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
+
+        // generate accessors for each module
+        ModuleAccessorGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
+
+        // generate dummy classes
+        AggregateGenerator(pluginContext, project).visitModuleFragment(moduleFragment, null)
+
+        // transform init calls
+        InjektInitTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+
+        // key optimizations
         KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
         KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
-
-        AggregateGenerator(
-            moduleFragment,
-            pluginContext,
-            project,
-            modules
-        ).generate()
     }
 
 }

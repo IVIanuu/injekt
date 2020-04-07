@@ -25,19 +25,10 @@ class EagerTest {
     @Test
     fun testEagerBehavior() {
         var called = false
-        Component {
-            bind(
-                Binding(key = keyOf()) { called = true }
-            )
-        }
+        Component { bind { called = true } }
         assertFalse(called)
         Component {
-            bind(
-                Binding(
-                    key = keyOf(),
-                    behavior = EagerBehavior
-                ) { called = true }
-            )
+            bind(behavior = Eager) { called = true }
         }
         assertTrue(called)
     }

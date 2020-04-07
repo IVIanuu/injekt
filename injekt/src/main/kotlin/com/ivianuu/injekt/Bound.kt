@@ -19,11 +19,15 @@ package com.ivianuu.injekt
 /**
  * Ensures instances will be resolved in the specified component
  */
-open class BoundBehavior(val scope: Scope? = null) : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        BoundProvider(scope, provider)
+@BehaviorMarker
+val Bound = interceptingBehavior("Bound") {
+    it.copy(provider = BoundProvider(it.scope, it.provider))
+}
 
-    companion object : BoundBehavior()
+annotation class Bound2 {
+    companion object : Behavior by interceptingBehavior("Bound", intercept = {
+        it.copy(provider = BoundProvider(it.scope, it.provider))
+    })
 }
 
 private class BoundProvider<T>(

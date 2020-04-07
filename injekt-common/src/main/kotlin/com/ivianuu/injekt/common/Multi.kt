@@ -17,18 +17,17 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
-import com.ivianuu.injekt.BoundBehavior
+import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
+import com.ivianuu.injekt.interceptingBehavior
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -47,13 +46,13 @@ import java.util.concurrent.ConcurrentHashMap
  * ´´´
  *
  */
-object MultiBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        MultiProvider(provider)
-}
+@BehaviorMarker
+val Multi = interceptingBehavior("Multi") {
+    it.copy(provider = MultiProvider(it.provider))
+} + Bound
 
 /**
- * Dsl builder for the [MultiBehavior] + [BoundBehavior]
+ * Dsl builder for [Multi] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.multi(
@@ -64,29 +63,10 @@ inline fun <T> ComponentBuilder.multi(
 ) {
     bind(
         key = key,
-        behavior = BoundBehavior + MultiBehavior + behavior,
+        behavior = Multi + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-/**
- * Annotation for the [MultiBehavior]
- */
-@TagMarker
-annotation class Multi {
-    companion object : Tag
-}
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.multiModule() {
-    bindingInterceptor { binding ->
-        if (Multi in binding.tags) {
-            binding.copy(behavior = MultiBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
 }
 
 private class MultiProvider<T>(

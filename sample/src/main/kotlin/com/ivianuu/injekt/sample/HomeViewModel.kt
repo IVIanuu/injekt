@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.android.ActivityScope
+import com.ivianuu.injekt.android.synthetic.ActivityScope
 import com.ivianuu.injekt.sample.data.Repository
+import com.ivianuu.injekt.synthetic.Single
 
 @ActivityScope
 @Single

@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
+
 /**
  *
  * A qualifier can help to distinct between bindings of the same type
@@ -85,17 +87,19 @@ interface Qualifier {
     }
 }
 
-fun Qualifier(value: Any): Qualifier = SimpleQualifier(value = value)
-
-private data class SimpleQualifier(val value: Any) : Qualifier.Element
+/**
+ * Returns a qualifier which uses [name] for comparisons
+ */
+fun Qualifier(name: Any): Qualifier = SimpleQualifier(name = name)
 
 /**
- * Marker for [Qualifier]s
- *
- * @see Qualifier
+ * Annotating a [Qualifier] property allows to use it as an annotation
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
+@SyntheticAnnotationMarker(Qualifier::class)
+@Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
+
+private data class SimpleQualifier(val name: Any) : Qualifier.Element
 
 private class CombinedQualifier(
     private val element: Qualifier.Element,

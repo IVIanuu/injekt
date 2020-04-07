@@ -17,44 +17,35 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.parametersOf
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class MultiBehaviorTest {
+class MultiTest {
 
     @Test
     fun testMultiBehavior() {
         val component = Component {
             multi { (arg: String) ->
-                MultiDep(
-                    arg
-                )
+                MultiDep(arg)
             }
         }
 
         val aDep1 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "a"
-            )
+            parameters = parametersOf("a")
         )
         val aDep2 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "a"
-            )
+            parameters = parametersOf("a")
         )
         assertSame(aDep1, aDep2)
 
         val bDep1 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "b"
-            )
+            parameters = parametersOf("b")
         )
         val bDep2 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "b"
-            )
+            parameters = parametersOf("b")
         )
         assertSame(bDep1, bDep2)
 

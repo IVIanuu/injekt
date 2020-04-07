@@ -19,20 +19,37 @@ package com.ivianuu.injekt
 /**
  * Creates a instance once the component is initialized
  *
- *
- * Analytics will be instantiated directly without explicitly requesting it
+ * In the following example analytics will be instantiated directly
+ * without explicitly requesting it:
  *
  * ´´´
  * val component = Component {
- *     single(behavior = EagerBehavior) { Analytics() }
+ *     single(behavior = Eager) { Analytics() }
  * }
  * ´´´
  *
  */
-object EagerBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        EagerProvider(provider)
+@BehaviorMarker
+val Eager = interceptingBehavior("Eager") {
+    it.copy(provider = EagerProvider(it.provider))
 }
+
+/**
+ * Eagerly initializes the [Binding] for [key]
+ *
+ * @see Eager
+ */
+@KeyOverload
+fun <T> ComponentBuilder.eager(key: Key<T>) {
+    bind(
+        key = key.copy(qualifier = key.qualifier + EagerQualifier),
+        behavior = Eager,
+        duplicateStrategy = DuplicateStrategy.Drop
+    ) { get(key) }
+}
+
+@QualifierMarker
+internal val EagerQualifier = Qualifier("Eager")
 
 private class EagerProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {
@@ -40,37 +57,4 @@ private class EagerProvider<T>(delegate: BindingProvider<T>) :
         super.onAttach(component)
         invoke(component, emptyParameters())
     }
-}
-
-@TagMarker
-annotation class Eager {
-    companion object : Tag
-}
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.eagerModule() {
-    bindingInterceptor { binding ->
-        if (Eager in binding.tags) {
-            binding.copy(behavior = EagerBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
-}
-
-/**
- * Eagerly initializes the [Binding] for [key]
- */
-@KeyOverload
-fun <T> ComponentBuilder.eager(key: Key<T>) {
-    bind(
-        key = key.copy(qualifier = key.qualifier + EagerQualifier),
-        behavior = EagerBehavior,
-        duplicateStrategy = DuplicateStrategy.Drop
-    ) { get(key) }
-}
-
-@QualifierMarker
-private annotation class EagerQualifier {
-    companion object : Qualifier.Element
 }

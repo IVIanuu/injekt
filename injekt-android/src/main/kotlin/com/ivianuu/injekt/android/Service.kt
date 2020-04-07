@@ -57,14 +57,10 @@ fun <T : Service> ComponentBuilder.serviceBindings(
 }
 
 @ScopeMarker
-annotation class ServiceScope {
-    companion object : Scope
-}
+val ServiceScope = Scope("ServiceScope")
 
 @QualifierMarker
-annotation class ForService {
-    companion object : Qualifier.Element
-}
+val ForService = Qualifier("ForService")
 
 fun Service.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

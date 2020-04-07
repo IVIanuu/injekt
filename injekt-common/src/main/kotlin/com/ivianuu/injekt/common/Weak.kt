@@ -17,31 +17,29 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
-import com.ivianuu.injekt.BoundBehavior
+import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Single
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.TagMarker
+import com.ivianuu.injekt.interceptingBehavior
 import java.lang.ref.WeakReference
 
 /**
  * Holds instances in a [WeakReference]
  */
-object WeakBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        WeakProvider(provider)
-}
+@BehaviorMarker
+val Weak = interceptingBehavior("Weak") {
+    it.copy(provider = WeakProvider(it.provider))
+} + Bound
 
 /**
- * Dsl builder for [WeakBehavior] + [BoundBehavior]
+ * Dsl builder for [Weak] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.weak(
@@ -49,33 +47,13 @@ inline fun <T> ComponentBuilder.weak(
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     crossinline provider: Component.(Parameters) -> T
-
 ) {
     bind(
         key = key,
-        behavior = WeakBehavior + BoundBehavior + behavior,
+        behavior = Weak + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-/**
- * Annotation for the [WeakBehavior]
- */
-@TagMarker
-annotation class Weak {
-    companion object : Tag
-}
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.weakModule() {
-    bindingInterceptor { binding ->
-        if (Single in binding.tags) {
-            binding.copy(behavior = WeakBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
 }
 
 private class WeakProvider<T>(delegate: BindingProvider<T>) :

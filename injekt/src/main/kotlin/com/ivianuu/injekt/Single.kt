@@ -25,7 +25,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  * ´´´
  * val component = Component {
- *     bind(behavior = SingleBehavior) { Database(get()) }
+ *     single { Database(get()) }
  * }
  *
  * val db1 = component.get<Database>()
@@ -34,13 +34,13 @@ import com.jakewharton.confundus.unsafeCast
  * ´´´
  *
  */
-object SingleBehavior : Behavior.Element {
-    override fun <T> apply(provider: BindingProvider<T>): BindingProvider<T> =
-        SingleProvider(provider)
-}
+@BehaviorMarker
+val Single = interceptingBehavior("Single") {
+    it.copy(provider = SingleProvider(it.provider))
+} + Bound
 
 /**
- * Dsl builder for [SingleBehavior] + [BoundBehavior]
+ * Dsl builder for [Single] behavior
  */
 @KeyOverload
 inline fun <T> ComponentBuilder.single(
@@ -51,29 +51,10 @@ inline fun <T> ComponentBuilder.single(
 ) {
     bind(
         key = key,
-        behavior = SingleBehavior + BoundBehavior + behavior,
+        behavior = Single + behavior,
         duplicateStrategy = duplicateStrategy,
         provider = provider
     )
-}
-
-/**
- * Annotation for the [SingleBehavior]
- */
-@TagMarker
-annotation class Single {
-    companion object : Tag
-}
-
-@Module(invokeOnInit = true)
-private fun ComponentBuilder.singleModule() {
-    bindingInterceptor { binding ->
-        if (Single in binding.tags) {
-            binding.copy(behavior = SingleBehavior + binding.behavior)
-        } else {
-            binding
-        }
-    }
 }
 
 private class SingleProvider<T>(
