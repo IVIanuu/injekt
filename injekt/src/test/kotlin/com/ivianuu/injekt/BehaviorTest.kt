@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -22,10 +23,10 @@ class BehaviorTest {
             called = true
         }
         Component {
+            assertFalse(called)
             bind(behavior = behavior) { }
+            assertTrue(called)
         }
-
-        assertTrue(called)
     }
 
     @Test
@@ -36,10 +37,10 @@ class BehaviorTest {
             it
         }
         Component {
+            assertFalse(called)
             bind(behavior = behavior) { }
+            assertTrue(called)
         }
-
-        assertTrue(called)
     }
 
 }
