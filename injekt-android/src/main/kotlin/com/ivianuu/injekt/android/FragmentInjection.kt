@@ -21,14 +21,13 @@ import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BehaviorMarker
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleMarker
-import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
@@ -50,11 +49,11 @@ val BindFragment = sideEffectBehavior("BindFragment") {
  * Dsl builder for the [BindFragment] behavior
  */
 @KeyOverload
-inline fun <T : Fragment> ComponentBuilder.fragment(
+fun <T : Fragment> ComponentBuilder.fragment(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
+    provider: BindingProvider<T>
 ) {
     factory(key, BindFragment + behavior, duplicateStrategy, provider)
 }

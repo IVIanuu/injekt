@@ -55,11 +55,11 @@ val Multi = interceptingBehavior("Multi") {
  * Dsl builder for [Multi] behavior
  */
 @KeyOverload
-inline fun <T> ComponentBuilder.multi(
+fun <T> ComponentBuilder.multi(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
+    provider: Component.(Parameters) -> T
 ) {
     bind(
         key = key,

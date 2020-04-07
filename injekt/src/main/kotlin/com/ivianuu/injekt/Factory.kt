@@ -40,11 +40,11 @@ val Factory = Behavior("Factory")
  * @see Factory
  */
 @KeyOverload
-inline fun <T> ComponentBuilder.factory(
+fun <T> ComponentBuilder.factory(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
+    provider: BindingProvider<T>
 ) {
     bind(
         key = key,

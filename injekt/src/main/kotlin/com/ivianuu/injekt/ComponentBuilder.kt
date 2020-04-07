@@ -154,12 +154,12 @@ class ComponentBuilder {
     }
 
     @KeyOverload
-    inline fun <T> bind(
+    fun <T> bind(
         key: Key<T>,
         behavior: Behavior = Behavior.None,
         scope: Scope? = null,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        crossinline provider: Component.(Parameters) -> T
+        provider: BindingProvider<T>
     ) {
         bind(
             Binding(
@@ -167,11 +167,7 @@ class ComponentBuilder {
                 behavior = behavior,
                 scope = scope,
                 duplicateStrategy = duplicateStrategy,
-                provider = object : BindingProvider<T> {
-                    override fun invoke(component: Component, parameters: Parameters): T {
-                        return provider(component, parameters)
-                    }
-                }
+                provider = provider
             )
         )
     }

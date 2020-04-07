@@ -42,11 +42,11 @@ val Weak = interceptingBehavior("Weak") {
  * Dsl builder for [Weak] behavior
  */
 @KeyOverload
-inline fun <T> ComponentBuilder.weak(
+fun <T> ComponentBuilder.weak(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
+    provider: BindingProvider<T>
 ) {
     bind(
         key = key,

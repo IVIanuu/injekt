@@ -41,11 +41,11 @@ val BindViewModel = interceptingBehavior("BindViewModel") {
  * Dsl builder for the [BindViewModel] behavior
  */
 @KeyOverload
-inline fun <T : ViewModel> ComponentBuilder.viewModel(
+fun <T : ViewModel> ComponentBuilder.viewModel(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
+    provider: BindingProvider<T>
 ) {
     bind(
         key = key,

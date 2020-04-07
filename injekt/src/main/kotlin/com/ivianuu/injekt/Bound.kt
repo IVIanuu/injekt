@@ -24,12 +24,6 @@ val Bound = interceptingBehavior("Bound") {
     it.copy(provider = BoundProvider(it.scope, it.provider))
 }
 
-annotation class Bound2 {
-    companion object : Behavior by interceptingBehavior("Bound", intercept = {
-        it.copy(provider = BoundProvider(it.scope, it.provider))
-    })
-}
-
 private class BoundProvider<T>(
     private val scope: Scope? = null,
     delegate: BindingProvider<T>
@@ -42,10 +36,8 @@ private class BoundProvider<T>(
         super.onAttach(boundComponent)
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T {
-        findComponentIfNeeded(component)
-        return super.invoke(boundComponent, parameters)
-    }
+    override fun invoke(component: Component, parameters: Parameters): T =
+        super.invoke(boundComponent, parameters)
 
     private fun findComponentIfNeeded(component: Component) {
         if (!this::boundComponent.isInitialized) {

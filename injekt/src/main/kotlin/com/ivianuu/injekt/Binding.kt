@@ -91,24 +91,6 @@ class Binding<T> private constructor(
     )
 
     companion object {
-        inline operator fun <T> invoke(
-            key: Key<T>,
-            behavior: Behavior = Behavior.None,
-            scope: Scope? = null,
-            duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-            crossinline provider: Component.(Parameters) -> T
-        ): Binding<T> = invoke(
-            key = key,
-            behavior = behavior,
-            scope = scope,
-            duplicateStrategy = duplicateStrategy,
-            provider = object : BindingProvider<T> {
-                override fun invoke(component: Component, parameters: Parameters): T {
-                    return provider(component, parameters)
-                }
-            }
-        )
-
         /**
          * Returns a new [Binding] instance
          */
@@ -132,26 +114,23 @@ class Binding<T> private constructor(
 /**
  * Provides instances of T
  */
-interface BindingProvider<T> {
-    fun onAttach(component: Component) {
-    }
+typealias BindingProvider<T> = Component.(Parameters) -> T
 
-    operator fun invoke(component: Component, parameters: Parameters): T
-}
+abstract class AbstractBindingProvider<T> : (Component, Parameters) -> T, ComponentAttachListener
 
 /**
  * Wraps a existing [BindingProvider]
  */
 abstract class DelegatingBindingProvider<T>(
     private val delegate: BindingProvider<T>
-) : BindingProvider<T> {
+) : AbstractBindingProvider<T>() {
 
     private var initialized = false
 
     override fun onAttach(component: Component) {
         check(!initialized) { "Binding providers should not be reused" }
         initialized = true
-        delegate.onAttach(component)
+        (delegate as? ComponentAttachListener)?.onAttach(component)
     }
 
     override fun invoke(component: Component, parameters: Parameters): T =
