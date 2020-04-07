@@ -29,7 +29,7 @@ object Injekt {
     /**
      * Invokes any of [modules] on each [ComponentBuilder]
      */
-    fun modules(vararg modules: Module.Impl) {
+    fun modules(vararg modules: Module) {
         modules.fastForEach { Modules.register(it) }
     }
 
@@ -42,19 +42,17 @@ inline fun Injekt(block: Injekt.() -> Unit) {
 }
 
 inline fun Injekt.module(
-    scope: Scope? = null,
+    scope: Scope,
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
 ) {
-    modules(
-        object : Module.Impl {
-            override val scope: Scope?
-                get() = scope
-            override val invokeOnInit: Boolean
-                get() = invokeOnInit
-            override fun apply(builder: ComponentBuilder) {
-                builder.block()
-            }
-        }
-    )
+    modules(Module(scope, invokeOnInit = invokeOnInit, block = block))
+}
+
+inline fun Injekt.module(
+    scopes: List<Scope> = emptyList(),
+    invokeOnInit: Boolean = false,
+    crossinline block: ComponentBuilder.() -> Unit
+) {
+    modules(Module(scopes, invokeOnInit = invokeOnInit, block = block))
 }

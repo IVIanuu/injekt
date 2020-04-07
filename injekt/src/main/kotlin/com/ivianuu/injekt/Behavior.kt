@@ -67,12 +67,12 @@ fun Behavior(name: Any): Behavior = DefaultBehavior(name)
  */
 fun sideEffectBehavior(
     name: Any,
-    scope: Scope? = null,
+    scopes: List<Scope> = emptyList(),
     onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
 ): Behavior {
     val behavior = Behavior(name)
     Injekt {
-        module(scope = scope, invokeOnInit = true) {
+        module(scopes, invokeOnInit = true) {
             onBindingAdded {
                 if (behavior in it.behavior) {
                     onBindingAdded(it)
@@ -94,12 +94,12 @@ fun sideEffectBehavior(
  */
 fun interceptingBehavior(
     name: Any,
-    scope: Scope? = null,
+    scopes: List<Scope> = emptyList(),
     intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>
 ): Behavior {
     val behavior = Behavior(name)
     Injekt {
-        module(scope = scope, invokeOnInit = true) {
+        module(scopes, invokeOnInit = true) {
             bindingInterceptor {
                 if (behavior in it.behavior) intercept(it) else it
             }
@@ -142,7 +142,13 @@ private class CombinedBehavior(
     private val wrapped: Behavior
 ) : Behavior {
 
-    override fun contains(behavior: Behavior): Boolean = behavior == element || behavior in wrapped
+    override fun contains(behavior: Behavior): Boolean {
+        val left = mutableListOf<Behavior.Element>()
+        foldIn(Unit) { _, element -> left += element }
+        val right = mutableListOf<Behavior.Element>()
+        foldIn(Unit) { _, element -> right += element }
+        return left.all { it in right }
+    }
 
     override fun <R> foldIn(initial: R, operation: (R, Behavior.Element) -> R): R =
         wrapped.foldIn(operation(initial, element), operation)
@@ -160,5 +166,6 @@ private class CombinedBehavior(
     } + "]"
 }
 
-private data class DefaultBehavior(val name: Any) : Behavior.Element
-
+private data class DefaultBehavior(val name: Any) : Behavior.Element {
+    override fun toString(): String = name.toString()
+}

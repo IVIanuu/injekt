@@ -11,34 +11,10 @@ class ModulesTest {
         val existingModules = Modules.modulesByScope.toMap()
         Modules.modulesByScope.clear()
 
-        val initA = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = true
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
-        val initB = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = true
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
-        val nonInitA = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = false
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
-        val nonInitB = object : Module.Impl {
-            override val invokeOnInit: Boolean
-                get() = false
-
-            override fun apply(builder: ComponentBuilder) {
-            }
-        }
+        val initA = Module(invokeOnInit = true) { }
+        val initB = Module(invokeOnInit = true) { }
+        val nonInitA = Module(invokeOnInit = false) { }
+        val nonInitB = Module(invokeOnInit = false) { }
 
         Injekt {
             modules(

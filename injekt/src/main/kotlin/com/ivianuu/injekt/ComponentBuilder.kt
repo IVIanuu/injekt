@@ -52,16 +52,16 @@ class ComponentBuilder {
     private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
     private val bindingInterceptors = mutableListOf<(Binding<Any?>) -> Binding<Any?>>()
 
-    private val moduleRegisterListener: (Module.Impl) -> Unit = {
-        if (it.scope == null || it.scope in scopes) {
-            it.apply(this)
+    private val moduleRegisterListener: (Module) -> Unit = { module ->
+        if (module.scopes.isEmpty() || module.scopes.any { it in scopes }) {
+            module(this)
         }
     }
 
     init {
         Modules.addRegisterListener(moduleRegisterListener)
         Modules.get()
-            .fastForEach { it.apply(this) }
+            .fastForEach { it(this) }
     }
 
     /**
@@ -76,7 +76,7 @@ class ComponentBuilder {
             this._scopes += scope
             onScopeAddedBlocks.toList().fastForEach { it(scope) }
             Modules.get(scope)
-                .fastForEach { it.apply(this) }
+                .fastForEach { it(this) }
         }
     }
 

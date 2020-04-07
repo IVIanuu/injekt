@@ -24,6 +24,12 @@ val Bound = interceptingBehavior("Bound") {
     it.copy(provider = BoundProvider(it.scope, it.provider))
 }
 
+annotation class Bound2 {
+    companion object : Behavior by interceptingBehavior("Bound", intercept = {
+        it.copy(provider = BoundProvider(it.scope, it.provider))
+    })
+}
+
 private class BoundProvider<T>(
     private val scope: Scope? = null,
     delegate: BindingProvider<T>

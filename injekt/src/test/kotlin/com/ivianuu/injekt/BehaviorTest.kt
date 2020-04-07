@@ -7,7 +7,8 @@ class BehaviorTest {
 
     @Test
     fun testContains() {
-        val behavior = Factory + Single + Eager + Bound
+        val behavior = Factory + Single + Eager
+
         assertTrue(Factory in behavior)
         assertTrue(Single in behavior)
         assertTrue(Eager in behavior)
