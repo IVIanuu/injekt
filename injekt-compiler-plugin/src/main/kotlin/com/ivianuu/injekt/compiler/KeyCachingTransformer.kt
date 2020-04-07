@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -117,46 +118,49 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             }
         }
 
+        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFile(declaration: IrFile): IrFile {
+                return try {
+                    declarationContainers.push(declaration)
+                    super.visitFile(declaration)
+                } finally {
+                    declarationContainers.pop()
+                }
+            }
+
+            override fun visitClass(declaration: IrClass): IrStatement {
+                return try {
+                    declarationContainers.push(declaration)
+                    super.visitClass(declaration)
+                } finally {
+                    declarationContainers.pop()
+                }
+            }
+
+            override fun visitCall(expression: IrCall): IrExpression {
+                super.visitCall(expression)
+
+                if (!expression.isValidKeyOfCall()) return expression
+
+                val parent = declarationContainers.last()
+
+                return DeclarationIrBuilder(pluginContext, expression.symbol).irGetField(
+                    null,
+                    keyFields.getValue(parent).getValue(KeyId(expression))
+                )
+            }
+        })
+
         return super.visitModuleFragment(declaration)
-    }
-
-    override fun visitFile(declaration: IrFile): IrFile {
-        return try {
-            declarationContainers.push(declaration)
-            super.visitFile(declaration)
-        } finally {
-            declarationContainers.pop()
-        }
-    }
-
-    override fun visitClass(declaration: IrClass): IrStatement {
-        return try {
-            declarationContainers.push(declaration)
-            super.visitClass(declaration)
-        } finally {
-            declarationContainers.pop()
-        }
-    }
-
-    override fun visitCall(expression: IrCall): IrExpression {
-        super.visitCall(expression)
-
-        if (!expression.isValidKeyOfCall()) return expression
-
-        val parent = declarationContainers.last()
-
-        val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
-
-        return builder.irGetField(
-            null,
-            keyFields.getValue(parent).getValue(KeyId(expression))
-        )
     }
 
     private fun IrCall.isValidKeyOfCall(): Boolean {
         if (this in ignoredCalls) return false
 
-        if (declarationContainers.isEmpty()) return false
+        if (declarationContainers.isEmpty()) {
+            error("lol ${this.dump()}")
+            return false
+        }
 
         val descriptor = symbol.descriptor
 
@@ -164,7 +168,10 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             descriptor.valueParameters.size != 1 ||
             !descriptor.isInline ||
             !getTypeArgument(0)!!.toKotlinType().isFullyResolved()
-        ) return false
+        ) {
+            //error("${this.dump()}")
+            return false
+        }
 
         val qualifierExpression = getValueArgument(0)
 
@@ -172,7 +179,12 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             (qualifierExpression !is IrCall ||
                     qualifierExpression.symbol.descriptor.referencedProperty
                         ?.annotations?.hasAnnotation(InjektClassNames.QualifierMarker) != true)
-        ) return false
+        ) {
+            // error("${this.dump()}")
+            return false
+        }
+
+        message("valid key cache ${this.dump()}")
 
         return true
     }
