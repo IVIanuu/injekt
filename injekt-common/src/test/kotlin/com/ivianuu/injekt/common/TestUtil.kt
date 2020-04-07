@@ -31,34 +31,22 @@ object Command2 : Command
 object Command3 : Command
 
 @QualifierMarker
-annotation class TestQualifier1 {
-    companion object : Qualifier.Element
-}
+val TestQualifier1 = Qualifier("TestQualifier1")
 
 @QualifierMarker
-annotation class TestQualifier2 {
-    companion object : Qualifier.Element
-}
+val TestQualifier2 = Qualifier("TestQualifier2")
 
 @QualifierMarker
-annotation class TestQualifier3 {
-    companion object : Qualifier.Element
-}
+val TestQualifier3 = Qualifier("TestQualifier3")
 
 @ScopeMarker
-annotation class TestScopeOne {
-    companion object : Scope
-}
+val TestScope1 = Scope("TestScope1")
 
 @ScopeMarker
-annotation class TestScopeTwo {
-    companion object : Scope
-}
+val TestScope2 = Scope("TestScope2")
 
 @ScopeMarker
-annotation class TestScopeThree {
-    companion object : Scope
-}
+val TestScope3 = Scope("TestScope3")
 
 @Factory
 class TestDep1

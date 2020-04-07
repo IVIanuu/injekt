@@ -34,26 +34,18 @@ class MultiTest {
         }
 
         val aDep1 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "a"
-            )
+            parameters = parametersOf("a")
         )
         val aDep2 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "a"
-            )
+            parameters = parametersOf("a")
         )
         assertSame(aDep1, aDep2)
 
         val bDep1 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "b"
-            )
+            parameters = parametersOf("b")
         )
         val bDep2 = component.get<MultiDep>(
-            parameters = parametersOf(
-                "b"
-            )
+            parameters = parametersOf("b")
         )
         assertSame(bDep1, bDep2)
 
