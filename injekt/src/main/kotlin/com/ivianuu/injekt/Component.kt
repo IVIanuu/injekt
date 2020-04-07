@@ -199,9 +199,11 @@ inline fun <T> ComponentOwner.getLazy(
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(key, parameters()) }
 
-interface ComponentAttachListener {
-    fun onAttach(component: Component) {
-    }
+/**
+ * Used to notify [BindingProvider]s when they get attach to a [Component]
+ */
+fun interface ComponentAttachListener {
+    fun onAttach(component: Component)
 }
 
 @ModuleMarker

@@ -116,7 +116,13 @@ class Binding<T> private constructor(
  */
 typealias BindingProvider<T> = Component.(Parameters) -> T
 
-abstract class AbstractBindingProvider<T> : (Component, Parameters) -> T, ComponentAttachListener
+/**
+ * A [BindingProvider] + [ComponentAttachListener]
+ */
+abstract class AbstractBindingProvider<T> : (Component, Parameters) -> T, ComponentAttachListener {
+    override fun onAttach(component: Component) {
+    }
+}
 
 /**
  * Wraps a existing [BindingProvider]
