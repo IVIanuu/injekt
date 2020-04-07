@@ -19,8 +19,8 @@ package com.ivianuu.injekt
 /**
  * Creates a instance once the component is initialized
  *
- *
- * Analytics will be instantiated directly without explicitly requesting it
+ * In the following example analytics will be instantiated directly
+ * without explicitly requesting it:
  *
  * ´´´
  * val component = Component {
@@ -36,6 +36,8 @@ val Eager = interceptingBehavior("Eager") {
 
 /**
  * Eagerly initializes the [Binding] for [key]
+ *
+ * @see Eager
  */
 @KeyOverload
 fun <T> ComponentBuilder.eager(key: Key<T>) {
