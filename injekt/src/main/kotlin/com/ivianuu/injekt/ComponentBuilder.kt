@@ -60,24 +60,24 @@ class ComponentBuilder {
 
     init {
         Modules.addRegisterListener(moduleRegisterListener)
-        Modules.get()
-            .fastForEach { it(this) }
+        Modules.get().fastForEach { it(this) }
+    }
+
+    fun scopes(vararg scopes: Scope) {
+        scopes.fastForEach { scopes(it) }
     }
 
     /**
-     * Adds the [scopes] this allows generated [Binding]s
+     * Adds the [scope] this allows generated [Binding]s
      * to be associated with components.
      *
      * @see ScopeMarker
      */
-    fun scopes(vararg scopes: Scope) {
-        scopes.fastForEach { scope ->
-            check(scope !in this._scopes) { "Duplicated scope $scope" }
-            this._scopes += scope
-            onScopeAddedBlocks.toList().fastForEach { it(scope) }
-            Modules.get(scope)
-                .fastForEach { it(this) }
-        }
+    fun scopes(scope: Scope) {
+        check(scope !in this._scopes) { "Duplicated scope $scope" }
+        this._scopes += scope
+        onScopeAddedBlocks.toList().fastForEach { it(scope) }
+        Modules.get(scope).fastForEach { it(this) }
     }
 
     /**
@@ -85,7 +85,7 @@ class ComponentBuilder {
      */
     fun setScopes(scopes: List<Scope>) {
         _scopes.clear()
-        scopes(*scopes.toTypedArray())
+        scopes.fastForEach { scopes(it) }
     }
 
     /**
@@ -95,16 +95,18 @@ class ComponentBuilder {
         _scopes -= scope
     }
 
+    fun parents(vararg parents: Component) {
+        parents.fastForEach { parents(it) }
+    }
+
     /**
-     * Adds the [parents] to the component if this component cannot resolve a instance
+     * Adds the [parent] to the component if this component cannot resolve a instance
      * it will ask it's parents
      */
-    fun parents(vararg parents: Component) {
-        parents.fastForEach { parent ->
-            check(parent !in this._parents) { "Duplicated parent $parent" }
-            this._parents += parent
-            onParentAddedBlocks.toList().fastForEach { it(parent) }
-        }
+    fun parents(parent: Component) {
+        check(parent !in this._parents) { "Duplicated parent $parent" }
+        this._parents += parent
+        onParentAddedBlocks.toList().fastForEach { it(parent) }
     }
 
     /**
@@ -135,7 +137,14 @@ class ComponentBuilder {
      * Adds the [factories]
      */
     fun jitFactories(vararg factories: JitFactory) {
-        _jitFactories += factories
+        factories.fastForEach { jitFactories(it) }
+    }
+
+    /**
+     * Adds the [factory]
+     */
+    fun jitFactories(factory: JitFactory) {
+        _jitFactories += factory
     }
 
     /**
@@ -154,12 +163,12 @@ class ComponentBuilder {
     }
 
     @KeyOverload
-    inline fun <T> bind(
+    fun <T> bind(
         key: Key<T>,
         behavior: Behavior = Behavior.None,
         scope: Scope? = null,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        crossinline provider: Component.(Parameters) -> T
+        provider: BindingProvider<T>
     ) {
         bind(
             Binding(
@@ -167,11 +176,7 @@ class ComponentBuilder {
                 behavior = behavior,
                 scope = scope,
                 duplicateStrategy = duplicateStrategy,
-                provider = object : BindingProvider<T> {
-                    override fun invoke(component: Component, parameters: Parameters): T {
-                        return provider(component, parameters)
-                    }
-                }
+                provider = provider
             )
         )
     }

@@ -30,16 +30,27 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // generate accessors for each module
         ModuleAccessorGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
 
-        // generate dummy classes
+        // generate metadata classes in the aggregate package
         AggregateGenerator(pluginContext, project).visitModuleFragment(moduleFragment, null)
 
         // transform init calls
         InjektInitTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
 
-        // key optimizations
+        // transform binding provider lambdas to classes
+        BindingProviderLambdaToClassTransformer(pluginContext).visitModuleFragment(
+            moduleFragment,
+            null
+        )
+
+        // rewrite key overload stub calls to the right calls
         KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        // memoize static keyOf calls
         KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        // rewrite keyOf<String>() -> keyOf(String::class)
         KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+
+        // perform several optimizations
+        BindingProviderCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
     }
 
 }

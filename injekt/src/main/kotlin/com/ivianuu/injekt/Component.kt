@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.jakewharton.confundus.unsafeCast
+
 /**
  * The heart of the library which provides instances
  * Instances can be requested by calling [get]
@@ -54,7 +56,7 @@ class Component internal constructor(
             val initializedBindings = initializedBindings!!
             if (binding.key !in initializedBindings) {
                 initializedBindings += binding.key
-                binding.provider.onAttach(this)
+                (binding.provider as? ComponentAttachListener)?.onAttach(this)
             }
         }
         initializedBindings = null // Don't needed anymore
@@ -65,8 +67,8 @@ class Component internal constructor(
      */
     @KeyOverload
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
-        findExplicitBinding(key)?.let { return it.provider(this, parameters) }
-        findJitBinding(key)?.let { return it.provider(this, parameters) }
+        findExplicitBinding(key)?.provider?.let { return it(this, parameters) }
+        findJitBinding(key)?.provider?.let { return it(this, parameters) }
         if (key.isNullable) return null as T
         error("Couldn't get instance for $key")
     }
@@ -76,6 +78,22 @@ class Component internal constructor(
      */
     fun getComponent(scope: Scope): Component =
         findComponent(scope) ?: error("Couldn't find component for scope $scope")
+
+    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> {
+        return getBinding(key).provider
+    }
+
+    /**
+     * Retrieve the binding for [key]
+     */
+    fun <T> getBinding(key: Key<T>): Binding<T> {
+        findExplicitBinding(key)?.let { return it }
+        findJitBinding(key)?.let { return it }
+        if (key.isNullable) return Binding(
+            key = key
+        ) { null as T }.unsafeCast()
+        error("Couldn't get instance for $key")
+    }
 
     private fun findComponent(scope: Scope): Component? {
         if (scope in scopes) return this
@@ -99,7 +117,7 @@ class Component internal constructor(
                 // make sure that the requested binding gets also initialized
                 if (binding!!.key !in it) {
                     it += binding!!.key
-                    binding!!.provider.onAttach(this)
+                    (binding!!.provider as? ComponentAttachListener)?.onAttach(this)
                 }
             }
             return binding
@@ -124,7 +142,7 @@ class Component internal constructor(
                 }
                 synchronized(component._bindings) { component._bindings[key] = binding }
                 initializedBindings?.let { it += key }
-                binding.provider.onAttach(component)
+                (binding.provider as? ComponentAttachListener)?.onAttach(this)
                 return binding
             }
         }
@@ -180,6 +198,13 @@ inline fun <T> ComponentOwner.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(key, parameters()) }
+
+/**
+ * Used to notify [BindingProvider]s when they get attach to a [Component]
+ */
+fun interface ComponentAttachListener {
+    fun onAttach(component: Component)
+}
 
 @ModuleMarker
 private val ComponentModule = Module(invokeOnInit = true) {

@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.AbstractBindingProvider
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
@@ -232,7 +232,7 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
 
 private class MapBindingProvider<K, V>(
     private val mapOfKeyWithOverrideInfo: Key<Map<K, KeyWithOverrideInfo>>
-) : BindingProvider<Map<K, KeyWithOverrideInfo>> {
+) : AbstractBindingProvider<Map<K, KeyWithOverrideInfo>>() {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
     var thisMap: Map<K, KeyWithOverrideInfo>? = null

@@ -56,7 +56,7 @@ data class Key<T> internal constructor(
     }
 
     private fun generateHashCode(): Int {
-        var result = classifier.hashCode()
+        var result = classifier.java.name.hashCode()
         // todo result = 31 * result + isNullable.hashCode()
         result = 31 * result + arguments.contentHashCode()
         result = 31 * result + qualifier.hashCode()

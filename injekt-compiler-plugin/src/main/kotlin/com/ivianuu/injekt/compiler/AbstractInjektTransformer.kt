@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
-import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -48,8 +47,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.typeParametersCount
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
@@ -142,23 +140,13 @@ abstract class AbstractInjektTransformer(
                 .irBlockBody { body(it) }
         }
 
-        return irBlock(
+        return IrFunctionExpressionImpl(
             startOffset = startOffset,
             endOffset = endOffset,
+            type = type,
             origin = IrStatementOrigin.LAMBDA,
-            resultType = type
-        ) {
-            +lambda
-            +IrFunctionReferenceImpl(
-                startOffset = startOffset,
-                endOffset = endOffset,
-                type = type,
-                symbol = symbol,
-                typeArgumentsCount = descriptor.typeParametersCount,
-                origin = IrStatementOrigin.LAMBDA,
-                reflectionTarget = null
-            )
-        }
+            function = lambda
+        )
     }
 
     protected fun IrBuilderWithScope.createFunctionDescriptor(

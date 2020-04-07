@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.AbstractBindingProvider
 import com.ivianuu.injekt.Binding
-import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
@@ -225,7 +225,7 @@ internal fun <E> ComponentBuilder.getSetBuilder(
 
 private class SetBindingProvider<E>(
     private val setOfKeyWithOverrideInfoKey: Key<Set<KeyWithOverrideInfo>>
-) : BindingProvider<Set<KeyWithOverrideInfo>> {
+) : AbstractBindingProvider<Set<KeyWithOverrideInfo>>() {
     var thisBuilder: MultiBindingSetBuilder<E>? =
         MultiBindingSetBuilder()
     var thisSet: Set<KeyWithOverrideInfo>? = null

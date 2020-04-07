@@ -43,11 +43,11 @@ val Single = interceptingBehavior("Single") {
  * Dsl builder for [Single] behavior
  */
 @KeyOverload
-inline fun <T> ComponentBuilder.single(
+fun <T> ComponentBuilder.single(
     key: Key<T>,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    crossinline provider: Component.(Parameters) -> T
+    provider: BindingProvider<T>
 ) {
     bind(
         key = key,
