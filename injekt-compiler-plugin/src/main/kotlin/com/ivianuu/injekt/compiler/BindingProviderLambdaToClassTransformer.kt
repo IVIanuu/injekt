@@ -49,12 +49,7 @@ class BindingProviderLambdaToClassTransformer(
             expression.function.explicitParameters.size == 2 &&
             expression.function.explicitParameters[0].type.toKotlinType() == component.defaultType &&
             expression.function.explicitParameters[1].type.toKotlinType() == parameters.defaultType
-        ) {
-            message("Convert lambda to class $expression")
-            return convertLambdaToClass(expression)
-        }
-
-        return super.visitFunctionExpression(expression)
+        ) return convertLambdaToClass(expression) else super.visitFunctionExpression(expression)
     }
 
     private fun convertLambdaToClass(functionExpression: IrFunctionExpression): IrExpression {

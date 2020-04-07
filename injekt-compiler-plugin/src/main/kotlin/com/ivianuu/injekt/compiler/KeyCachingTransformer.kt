@@ -177,8 +177,6 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                         ?.annotations?.hasAnnotation(InjektClassNames.QualifierMarker) != true)
         ) return false
 
-        message("valid key cache ${this.dump()}")
-
         return true
     }
 }
