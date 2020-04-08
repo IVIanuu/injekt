@@ -16,9 +16,9 @@
 
 plugins {
     id("com.android.application")
-    id("com.ivianuu.injekt")
     kotlin("android")
     kotlin("kapt")
+    id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
@@ -55,6 +55,7 @@ dependencies {
     implementation(Deps.guice)
 
     implementation(project(":injekt"))
+    kapt(project(":injekt-annotation-processor"))
 
     implementation(Deps.katana)
 

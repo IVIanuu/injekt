@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -18,8 +16,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
+    kotlin("kapt")
     id("com.ivianuu.injekt")
-    id("com.jakewharton.confundus")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -30,13 +28,5 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 dependencies {
     api(Deps.Kotlin.stdlib)
     testImplementation(Deps.junit)
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xno-param-assertions"
-        freeCompilerArgs += "-Xno-call-assertions"
-        freeCompilerArgs += "-Xno-receiver-assertions"
-        freeCompilerArgs += "-Xassertions=always-disable"
-    }
+    kapt(project(":injekt-annotation-processor"))
 }

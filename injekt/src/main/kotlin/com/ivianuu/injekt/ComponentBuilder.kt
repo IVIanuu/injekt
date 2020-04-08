@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * Create a [Component] configured by [block]
  *
@@ -188,7 +186,7 @@ class ComponentBuilder {
      * @see single
      */
     fun <T> bind(binding: Binding<T>) {
-        var finalBinding: Binding<Any?> = binding.unsafeCast()
+        var finalBinding: Binding<Any?> = binding as Binding<Any?>
         bindingInterceptors.fastForEach { finalBinding = it(finalBinding) }
         if (finalBinding.duplicateStrategy.check(
                 existsPredicate = { finalBinding.key in _bindings },

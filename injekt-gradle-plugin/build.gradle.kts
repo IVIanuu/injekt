@@ -25,11 +25,13 @@ buildConfig {
 
     version = Publishing.version
     buildConfigField("String", "GROUP_ID", Publishing.groupId)
-    buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
+    buildConfigField("String", "COMPILER_PLUGIN_ARTIFACT", "injekt-compiler-plugin")
+    buildConfigField("String", "ANNOTATION_PROCESSOR_ARTIFACT", "injekt-annotation-processor")
 }
 
 dependencies {
     implementation(Deps.androidGradlePlugin)
+    implementation(Deps.Kotlin.gradlePlugin)
     implementation(Deps.Kotlin.gradlePluginApi)
     implementation(Deps.processingX)
     kapt(Deps.processingX)

@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -17,8 +15,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  */
 plugins {
     id("com.android.library")
-    id("com.ivianuu.injekt")
     kotlin("android")
+    kotlin("kapt")
+    id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
@@ -31,17 +30,8 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 dependencies {
     api(project(":injekt"))
     api(project(":injekt-common"))
+    kapt(project(":injekt-annotation-processor"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
     api(Deps.AndroidX.Lifecycle.runtime)
 }
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xno-param-assertions"
-        freeCompilerArgs += "-Xno-call-assertions"
-        freeCompilerArgs += "-Xno-receiver-assertions"
-        freeCompilerArgs += "-Xassertions=always-disable"
-    }
-}
-

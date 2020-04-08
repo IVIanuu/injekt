@@ -22,5 +22,15 @@ import org.gradle.api.Project
 open class InjektGradlePlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
+        /*if (project.plugins.none { it is KotlinBasePluginWrapper }) {
+            error("Kotlin plugin must be applied first")
+        }
+
+        if (!project.plugins.hasPlugin("org.jetbrains.kotlin.kapt")) {
+            project.plugins.apply("org.jetbrains.kotlin.kapt")
+        }
+
+        project.dependencies.add("kapt",
+            "${BuildConfig.GROUP_ID}:${BuildConfig.ANNOTATION_PROCESSOR_ARTIFACT}:${BuildConfig.VERSION}")*/
     }
 }

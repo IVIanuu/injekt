@@ -32,7 +32,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev138"
+    const val version = "${Build.versionName}-dev139"
 }
 
 object Deps {
@@ -53,8 +53,6 @@ object Deps {
     const val buildConfigGradlePlugin =
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
-    const val confundusGradlePlugin = "com.jakewharton.confundus:confundus-gradle:1.0.0"
-
     object Dagger2 {
         private const val version = "2.26"
         const val dagger2 = "com.google.dagger:dagger:$version"
@@ -67,7 +65,7 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev138"
+    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev139"
 
     const val junit = "junit:junit:4.12"
 

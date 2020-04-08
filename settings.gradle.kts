@@ -2,6 +2,7 @@ include(
     ":comparison",
     ":injekt",
     ":injekt-android",
+    ":injekt-annotation-processor",
     ":injekt-common",
     ":injekt-compiler-plugin",
     ":injekt-gradle-plugin",
