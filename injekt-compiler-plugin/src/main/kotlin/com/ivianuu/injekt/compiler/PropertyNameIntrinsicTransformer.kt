@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 
 class PropertyNameIntrinsicTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -29,15 +29,16 @@ class PropertyNameIntrinsicTransformer(pluginContext: IrPluginContext) :
         super.visitCall(expression)
 
         if (propertyStack.isNotEmpty()) {
-            expression.symbol.descriptor.valueParameters.forEach { valueParameterDescriptor ->
-                val valueArgument = expression.getValueArgument(valueParameterDescriptor.index)
+            val callee = expression.symbol.owner
+            callee.valueParameters.forEach { valueParameter ->
+                val valueArgument = expression.getValueArgument(valueParameter.index)
                 if (valueArgument == null &&
-                    valueParameterDescriptor.annotations.hasAnnotation(InjektClassNames.PropertyName)
+                    valueParameter.annotations.hasAnnotation(InjektClassNames.PropertyName)
                 ) {
                     expression.putValueArgument(
-                        valueParameterDescriptor.index,
+                        valueParameter.index,
                         DeclarationIrBuilder(pluginContext, expression.symbol)
-                            .irString(propertyStack.last().descriptor.fqNameSafe.asString())
+                            .irString(propertyStack.last().fqNameWhenAvailable!!.asString())
                     )
                 }
             }

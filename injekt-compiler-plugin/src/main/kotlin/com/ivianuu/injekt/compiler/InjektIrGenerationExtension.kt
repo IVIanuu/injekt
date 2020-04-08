@@ -20,39 +20,80 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
+            generateSymbols(pluginContext)
+            visitModuleFragment(moduleFragment, null)
+            generateSymbols(pluginContext)
+        }
+
         // generate a module for each binding class
-        BindingModuleGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
+        BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
 
         // generate accessors for each module
-        ModuleAccessorGenerator(pluginContext).visitModuleFragment(moduleFragment, null)
+        ModuleAccessorGenerator(pluginContext).visitModuleAndGenerateSymbols()
 
         // generate metadata classes in the aggregate package
-        AggregateGenerator(pluginContext, project).visitModuleFragment(moduleFragment, null)
+        AggregateGenerator(pluginContext, project).visitModuleAndGenerateSymbols()
 
         // transform init calls
-        InjektInitTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        InjektInitTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // transform binding provider lambdas to classes
-        BindingProviderLambdaToClassTransformer(pluginContext).visitModuleFragment(
-            moduleFragment,
-            null
-        )
+        BindingProviderLambdaToClassTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // rewrite key overload stub calls to the right calls
-        KeyOverloadTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        KeyOverloadTransformer(pluginContext).visitModuleAndGenerateSymbols()
+
         // memoize static keyOf calls
-        KeyCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        KeyCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
         // rewrite keyOf<String>() -> keyOf(String::class)
-        KeyOfTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // perform several optimizations
-        BindingProviderCachingTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        BindingProviderCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        PropertyNameIntrinsicTransformer(pluginContext).visitModuleFragment(moduleFragment, null)
+        PropertyNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 
+    val SymbolTable.allUnbound: List<IrSymbol>
+        get() {
+            val r = mutableListOf<IrSymbol>()
+            r.addAll(unboundClasses)
+            r.addAll(unboundConstructors)
+            r.addAll(unboundEnumEntries)
+            r.addAll(unboundFields)
+            r.addAll(unboundSimpleFunctions)
+            r.addAll(unboundProperties)
+            r.addAll(unboundTypeParameters)
+            r.addAll(unboundTypeAliases)
+            return r
+        }
+
+    fun generateSymbols(pluginContext: IrPluginContext) {
+        lateinit var unbound: List<IrSymbol>
+        val visited = mutableSetOf<IrSymbol>()
+        do {
+            unbound = pluginContext.symbolTable.allUnbound
+
+            for (symbol in unbound) {
+                if (visited.contains(symbol)) {
+                    continue
+                }
+                // Symbol could get bound as a side effect of deserializing other symbols.
+                if (!symbol.isBound) {
+                    pluginContext.irProvider.getDeclaration(symbol)
+                }
+                if (!symbol.isBound) {
+                    visited.add(symbol)
+                }
+            }
+        } while ((unbound - visited).isNotEmpty())
+    }
 }

@@ -45,9 +45,11 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
@@ -59,6 +61,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorFactory
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
@@ -79,6 +82,15 @@ abstract class AbstractInjektTransformer(
 
     protected fun getClass(fqName: FqName) =
         pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
+
+    protected fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
+        any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
+
+    protected fun <T : IrSymbol> T.ensureBound(): T {
+        if (!this.isBound) pluginContext.irProvider.getDeclaration(this)
+        check(this.isBound) { "$this is not bound" }
+        return this
+    }
 
     protected fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
         fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(

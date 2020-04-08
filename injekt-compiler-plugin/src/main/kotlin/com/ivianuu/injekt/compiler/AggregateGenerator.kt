@@ -31,13 +31,13 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
+import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi2ir.PsiSourceManager
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
@@ -54,7 +54,7 @@ class AggregateGenerator(
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.descriptor.annotations.hasAnnotation(InjektClassNames.ModuleMarker)) {
+                if (declaration.annotations.hasAnnotation(InjektClassNames.ModuleMarker)) {
                     thisModuleProperties += declaration
                 }
 
@@ -73,7 +73,7 @@ class AggregateGenerator(
         val psiSourceManager = pluginContext.psiSourceManager as PsiSourceManager
 
         val className =
-            Name.identifier(moduleProperty.descriptor.fqNameSafe.asString().replace(".", "_"))
+            Name.identifier(moduleProperty.fqNameWhenAvailable!!.asString().replace(".", "_"))
 
         val sourceFile = File("$className.kt")
 

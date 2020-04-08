@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.backend.common.lower.irNot
 import org.jetbrains.kotlin.builtins.isFunctionType
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
@@ -26,14 +25,14 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.makeNotNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getSimpleFunction
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -51,7 +50,6 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (!declaration.symbol.isBound) pluginContext.irProvider.getDeclaration(declaration.symbol)
                 if (declaration.modality != Modality.ABSTRACT &&
                     declaration.superTypes.any { superType ->
                         val kotlinType = superType.toKotlinType()
@@ -88,9 +86,9 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
 
         invokeFunction.body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                val descriptor = expression.symbol.descriptor
-                if (descriptor.name.asString() == "get" &&
-                    descriptor.dispatchReceiverParameter?.type == component.defaultType
+                val callee = expression.symbol.ensureBound().owner
+                if (callee.name.asString() == "get" &&
+                    callee.dispatchReceiverParameter?.type == component.defaultType.toIrType()
                 ) {
                     dependencies += expression
                 }
@@ -193,15 +191,9 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
                         )
 
                         +irCall(
-                            symbolTable.referenceFunction(
-                                (fieldForDependency.type.toKotlinType()
-                                    .constructor
-                                    .declarationDescriptor as ClassDescriptor)
-                                    .unsubstitutedMemberScope
-                                    .findSingleFunction(Name.identifier("invoke"))
-                            ),
-                            (fieldForDependency.type as IrSimpleType).arguments.last()
-                                .typeOrNull!!
+                            fieldForDependency.type
+                                .classOrNull!!
+                                .getSimpleFunction("invoke")!!
                         ).apply {
                             dispatchReceiver = irGet(providerVar)
                             putValueArgument(

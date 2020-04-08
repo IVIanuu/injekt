@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -52,7 +53,18 @@ class KeyOverloadProcessor(private val outputDir: File) {
 
     private fun keyOverloadStubFunction(function: FunctionDescriptor): FunSpec {
         return FunSpec.builder(function.name.asString())
-            .addAnnotation(InjektClassNames.KeyOverloadStub.asClassName())
+            .addAnnotations(
+                function.annotations
+                    .map {
+                        if (it.fqName == InjektClassNames.KeyOverload) {
+                            AnnotationSpec.builder(InjektClassNames.KeyOverloadStub.asClassName())
+                                .build()
+                        } else {
+                            AnnotationSpec.builder(it.fqName!!.asClassName())
+                                .build()
+                        }
+                    }
+            )
             .apply {
                 if (function.isInline) {
                     addModifiers(KModifier.INLINE)
@@ -62,6 +74,9 @@ class KeyOverloadProcessor(private val outputDir: File) {
                 }
                 if (function.isOperator) {
                     addModifiers(KModifier.OPERATOR)
+                }
+                if (function.isSuspend) {
+                    addModifiers(KModifier.SUSPEND)
                 }
             }
             .addTypeVariables(

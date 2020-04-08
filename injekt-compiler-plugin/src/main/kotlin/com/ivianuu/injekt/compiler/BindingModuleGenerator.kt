@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -45,6 +44,7 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -54,6 +54,10 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrPropertySymbolImpl
+import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -161,7 +165,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             val builder = DeclarationIrBuilder(pluginContext, symbol)
             annotations = annotations + builder.irCallConstructor(
                 symbolTable.referenceConstructor(moduleMarker.constructors.first())
-                    .also { if (!it.isBound) pluginContext.irProvider.getDeclaration(it) },
+                    .ensureBound(),
                 emptyList()
             )
 
@@ -221,7 +225,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
                                     putTypeArgument(
                                         0,
-                                        injectClass.descriptor.defaultType.toIrType()
+                                        injectClass.defaultType
                                     )
 
                                     val behaviors =
@@ -277,7 +281,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                                         )
                                     )
 
-                                    putValueArgument(4, bindingProvider(injectClass.descriptor))
+                                    putValueArgument(4, bindingProvider(injectClass))
                                 }
                             }
                         )
@@ -296,14 +300,14 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
     }
 
     private fun IrBuilderWithScope.bindingProvider(
-        descriptor: ClassDescriptor
+        injectClass: IrClass
     ): IrExpression {
         val providerType = KotlinTypeFactory.simpleType(
             context.builtIns.getFunction(2).defaultType,
             arguments = listOf(
                 component.defaultType.asTypeProjection(),
                 parameters.defaultType.asTypeProjection(),
-                descriptor.defaultType.asTypeProjection()
+                injectClass.defaultType.toKotlinType().asTypeProjection()
             )
         )
 
@@ -311,12 +315,12 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             createFunctionDescriptor(providerType),
             providerType.toIrType()
         ) { lambdaFn ->
-            if (descriptor.kind == ClassKind.OBJECT) {
-                +irReturn(irGetObject(symbolTable.referenceClass(descriptor)))
+            if (injectClass.kind == ClassKind.OBJECT) {
+                +irReturn(irGetObject(injectClass.symbol))
                 return@irLambdaExpression
             }
 
-            val injektConstructor = descriptor.findInjektConstructor()!!
+            val injektConstructor = injectClass.findInjektConstructor()!!
 
             val componentGet = injektPackage.memberScope
                 .findFirstFunction("get") {
@@ -327,10 +331,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 .findSingleFunction(Name.identifier("get"))
 
             +irReturn(
-                irCall(
-                    symbolTable.referenceConstructor(injektConstructor),
-                    descriptor.defaultType.toIrType()
-                ).apply {
+                irCall(injektConstructor).apply {
                     var paramIndex = 0
 
                     injektConstructor.valueParameters
@@ -343,11 +344,11 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                                     callee = symbolTable.referenceSimpleFunction(
                                         parametersGet
                                     ),
-                                    type = param.type.toIrType()
+                                    type = param.type
                                 ).apply {
                                     dispatchReceiver =
                                         irGet(lambdaFn.valueParameters[1])
-                                    putTypeArgument(0, param.type.toIrType())
+                                    putTypeArgument(0, param.type)
                                     putValueArgument(0, irInt(paramIndex))
                                     ++paramIndex
                                 }
@@ -356,13 +357,14 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                                     symbolTable.referenceSimpleFunction(
                                         componentGet
                                     ),
-                                    param.type.toIrType()
+                                    param.type
                                 ).apply {
                                     extensionReceiver =
                                         irGet(lambdaFn.valueParameters[0])
-                                    putTypeArgument(0, param.type.toIrType())
+                                    putTypeArgument(0, param.type)
 
                                     val qualifiers: List<IrExpression> = param
+                                        .descriptor
                                         .getSyntheticAnnotationPropertiesOfType(qualifier.defaultType)
                                         .map { qualifierProperty ->
                                             irCall(
@@ -406,10 +408,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         }
     }
 
-    private fun ClassDescriptor.findInjektConstructor(): ClassConstructorDescriptor? {
+    private fun IrClass.findInjektConstructor(): IrConstructor? {
         return if (kind == ClassKind.OBJECT) null
         else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
-            ?: unsubstitutedPrimaryConstructor!!
+            ?: primaryConstructor
     }
 
 }

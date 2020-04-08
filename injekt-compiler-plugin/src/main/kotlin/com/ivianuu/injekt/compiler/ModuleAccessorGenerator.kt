@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -33,9 +32,6 @@ class ModuleAccessorGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitProperty(declaration: IrProperty): IrStatement {
-                declaration.annotations.forEach {
-                    if (!it.symbol.isBound) pluginContext.irProvider.getDeclaration(it.symbol)
-                }
                 if (declaration.annotations.hasAnnotation(InjektClassNames.ModuleMarker)) {
                     moduleProperties += declaration
                 }

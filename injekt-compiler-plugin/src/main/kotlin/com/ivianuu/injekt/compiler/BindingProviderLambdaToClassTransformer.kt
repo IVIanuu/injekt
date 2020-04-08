@@ -4,7 +4,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
@@ -26,16 +25,17 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.explicitParameters
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
+import org.jetbrains.kotlin.ir.util.getSimpleFunction
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi2ir.findSingleFunction
 
 class BindingProviderLambdaToClassTransformer(
     pluginContext: IrPluginContext
@@ -97,14 +97,9 @@ class BindingProviderLambdaToClassTransformer(
                     isSuspend = false
                 }.apply {
                     overriddenSymbols = overriddenSymbols + listOf(
-                        symbolTable.referenceSimpleFunction(
-                            (functionExpression.type
-                                .toKotlinType()
-                                .constructor
-                                .declarationDescriptor as ClassDescriptor)
-                                .unsubstitutedMemberScope
-                                .findSingleFunction(Name.identifier("invoke"))
-                        )
+                        functionExpression.type
+                            .classOrNull!!
+                            .getSimpleFunction("invoke")!!
                     )
                     dispatchReceiverParameter = parentAsClass.thisReceiver!!.copyTo(this)
                     annotations += function.annotations

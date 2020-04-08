@@ -36,6 +36,10 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -84,8 +88,10 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     return descriptor.annotations.hasAnnotation(annotation)
 }
 
-fun KotlinType.isFullyResolved(): Boolean =
-    constructor.declarationDescriptor is ClassDescriptor && arguments.all { it.type.isFullyResolved() }
+fun IrType.isFullyResolved(): Boolean =
+    this is IrSimpleType && this.classifier is IrClassSymbol && arguments.all {
+        it.typeOrNull?.isFullyResolved() == true
+    }
 
 internal lateinit var messageCollector: MessageCollector
 
@@ -166,3 +172,4 @@ fun DeclarationDescriptor.getSyntheticAnnotationPropertiesOfType(
         .map { it.getPropertyForSyntheticAnnotation(module) }
         .filter { it.type.isSubtypeOf(type) }
 }
+

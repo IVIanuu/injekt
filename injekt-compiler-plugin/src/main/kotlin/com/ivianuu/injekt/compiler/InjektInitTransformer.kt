@@ -40,7 +40,7 @@ class InjektInitTransformer(
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)
 
-        if (expression.symbol.descriptor.name.asString() != "initializeEndpoint") return expression
+        if (expression.symbol.ensureBound().owner.name.asString() != "initializeEndpoint") return expression
 
         val thisModules = mutableListOf<IrFunctionSymbol>()
 

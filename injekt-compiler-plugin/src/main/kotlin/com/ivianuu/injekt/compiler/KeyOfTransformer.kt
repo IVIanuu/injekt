@@ -15,8 +15,9 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
@@ -27,14 +28,23 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)
 
-        val descriptor = expression.symbol.descriptor
-        if (descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.keyOf" ||
-            descriptor.valueParameters.size != 1 ||
-            !descriptor.isInline
+        val callee = expression.symbol.ensureBound().owner
+
+        if ((callee.fqNameForIrSerialization.asString() != "com.ivianuu.injekt.keyOf" &&
+                    callee.fqNameForIrSerialization.asString() != "com.ivianuu.injekt.KeyKt.keyOf") ||
+            callee.valueParameters.size != 1 ||
+            !callee.isInline
         ) return expression
 
         val type = expression.getTypeArgument(0)!!
-        if (!type.toKotlinType().isFullyResolved()) return expression
+        if (!type.isFullyResolved()) {
+            if (callee.fqNameForIrSerialization.asString().contains("keyOf")) {
+                message("Do not transform not resolved ${expression.dump()}")
+            }
+            return expression
+        }
+
+        message("Transform keyOf call ${expression.dump()}")
 
         return irKeyOf(type, DeclarationIrBuilder(pluginContext, expression.symbol)).apply {
             // pass the qualifier
@@ -77,13 +87,7 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                 pluginContext.irBuiltIns.arrayClass
                     .typeWith(getTypeArgument(0)!!)
                 val argumentsType = pluginContext.irBuiltIns.arrayClass
-                    .typeWith(
-                        symbolTable.referenceClass(key)
-                            .also {
-                                if (!it.isBound) pluginContext.irProvider.getDeclaration(it)
-                            }
-                            .starProjectedType
-                    )
+                    .typeWith(symbolTable.referenceClass(key).starProjectedType)
 
                 putValueArgument(
                     2,
