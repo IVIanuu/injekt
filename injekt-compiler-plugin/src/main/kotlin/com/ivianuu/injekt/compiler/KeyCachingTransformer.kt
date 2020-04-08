@@ -49,6 +49,8 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                 .plus(qualifier?.asString()?.removeIllegalChars().orEmpty())
                 .decapitalize()
                 .hashCode()
+                .toString()
+                .removeIllegalChars()
             }"
         )
 
@@ -59,6 +61,8 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                 .replace(",", "")
                 .replace("*", "")
                 .replace(".", "")
+                .replace("-", "")
+
         }
     }
 
