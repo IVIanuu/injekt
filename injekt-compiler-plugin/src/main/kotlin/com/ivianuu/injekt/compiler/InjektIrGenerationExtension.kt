@@ -33,6 +33,9 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             generateSymbols(pluginContext)
         }
 
+        // replace intrinsics with names
+        PropertyNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
+
         // generate a module for each binding class
         BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
 
@@ -58,8 +61,6 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
 
         // perform several optimizations
         BindingProviderCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
-        PropertyNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>
