@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.squareup.kotlinpoet.FileSpec
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -13,7 +14,7 @@ import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
-class InjektAnalysisHandlerExtension(
+class InjektElementProcessing(
     outputDir: String
 ) : AnalysisHandlerExtension {
 
@@ -51,7 +52,28 @@ class InjektAnalysisHandlerExtension(
         if (processingFinished) return null
         processingFinished = true
 
+        val processors = listOf(
+            KeyOverloadProcessor(),
+            SyntheticAnnotationPropertyProcessor()
+        )
+
         var generatedFiles = false
+
+        val generateFile: (FileSpec) -> Unit = generatedFile@{ fileSpec ->
+            val outputFile =
+                File(outputDir, fileSpec.packageName.replace(".", "/") + fileSpec.name + ".kt")
+            if (outputFile.exists()) {
+                val oldContent = outputFile.readText()
+                val newContent = fileSpec.toString()
+                if (oldContent == newContent) {
+                    message("Do not generate file ${fileSpec.packageName}.${fileSpec.name} nothing has changed")
+                    return@generatedFile
+                }
+            }
+
+            fileSpec.writeTo(outputFile)
+            generatedFiles = true
+        }
 
         fun resolveFile(file: KtFile) {
             try {
@@ -65,10 +87,9 @@ class InjektAnalysisHandlerExtension(
 
         files.forEach { file ->
             resolveFile(file)
-            SyntheticAnnotationPropertyProcessor(outputDir)
-                .processSyntheticAnnotationProperties(file, bindingTrace) { generatedFiles = true }
-            KeyOverloadProcessor(module, outputDir)
-                .processKeyOverloads(file, bindingTrace) { generatedFiles = true }
+            processors.forEach {
+                it.processFile(file, bindingTrace, generateFile)
+            }
         }
 
         return if (generatedFiles) {
@@ -80,9 +101,19 @@ class InjektAnalysisHandlerExtension(
                 listOf(outputDir)
             )
         } else {
-            message("Files not generated do not re run analysis")
+            message("No files generated stop analysis")
             null
         }
     }
+
+}
+
+interface ElementProcessor {
+
+    fun processFile(
+        file: KtFile,
+        bindingTrace: BindingTrace,
+        generateFile: (FileSpec) -> Unit
+    )
 
 }

@@ -6,66 +6,29 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeVariableName
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.ir.expressions.typeParametersCount
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
-import java.io.File
 
-class KeyOverloadProcessor(
-    private val module: ModuleDescriptor,
-    private val outputDir: File
-) {
+class KeyOverloadProcessor : ElementProcessor {
 
-    private val qualifier by lazy {
-        module.findClassAcrossModuleDependencies(
-            ClassId.topLevel(InjektClassNames.Qualifier)
-        )!!
-    }
-
-    // todo generate file per overload and only generate if it does not exist
-    fun processKeyOverloads(
+    override fun processFile(
         file: KtFile,
         bindingTrace: BindingTrace,
-        onFileGenerated: () -> Unit
+        generateFile: (FileSpec) -> Unit
     ) {
         val functions = mutableListOf<FunctionDescriptor>()
         file.accept(
             namedFunctionRecursiveVisitor { function ->
                 val descriptor = bindingTrace[BindingContext.FUNCTION, function]
                 if (descriptor?.annotations?.hasAnnotation(InjektClassNames.KeyOverload) == true) {
-                    val packageDescriptor = descriptor.findPackage()
-
-                    val exists = packageDescriptor.getMemberScope()
-                        .getContributedFunctions(descriptor.name, NoLookupLocation.FROM_BACKEND)
-                        .filter { otherFunction ->
-                            otherFunction.typeParametersCount == descriptor.typeParametersCount &&
-                                    otherFunction.valueParameters.size == descriptor.valueParameters.size &&
-                                    otherFunction.valueParameters.all { otherValueParameter ->
-                                        val descriptorValueParameter =
-                                            descriptor.valueParameters[otherValueParameter.index]
-                                        if (descriptorValueParameter.index == 0) {
-                                            otherValueParameter.type.isSubtypeOf(qualifier.defaultType)
-                                        } else {
-                                            otherValueParameter.name == descriptorValueParameter.name
-                                        }
-                                    }
-                        }
-                        .any()
-
-                    if (!exists) functions += descriptor
+                    functions += descriptor
                 }
             }
         )
@@ -73,7 +36,7 @@ class KeyOverloadProcessor(
         if (functions.isNotEmpty()) {
             FileSpec.builder(
                     file.packageFqName.asString(),
-                    "${file.name.removeSuffix(".kt")}Stubs.kt"
+                    "${file.name.removeSuffix(".kt")}Stubs"
                 )
                 .apply {
                     functions.forEach { function ->
@@ -81,8 +44,7 @@ class KeyOverloadProcessor(
                     }
                 }
                 .build()
-                .writeTo(outputDir)
-            onFileGenerated()
+                .let(generateFile)
         }
     }
 

@@ -13,14 +13,13 @@ import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import java.io.File
 
-class SyntheticAnnotationPropertyProcessor(private val outputDir: File) {
+class SyntheticAnnotationPropertyProcessor : ElementProcessor {
 
-    fun processSyntheticAnnotationProperties(
+    override fun processFile(
         file: KtFile,
         bindingTrace: BindingTrace,
-        onFileGenerated: () -> Unit
+        generateFile: (FileSpec) -> Unit
     ) {
         val syntheticAnnotationProperties = mutableListOf<PropertyDescriptor>()
         file.accept(
@@ -65,8 +64,7 @@ class SyntheticAnnotationPropertyProcessor(private val outputDir: File) {
                         .build()
                 )
                 .build()
-                .writeTo(outputDir)
-            onFileGenerated()
+                .let(generateFile)
         }
     }
 

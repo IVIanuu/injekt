@@ -43,7 +43,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
-            InjektAnalysisHandlerExtension(outputDir)
+            InjektElementProcessing(outputDir)
         )
 
         IrGenerationExtension.registerExtension(
