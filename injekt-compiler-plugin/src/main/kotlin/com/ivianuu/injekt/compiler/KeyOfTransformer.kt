@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.types.KotlinTypeFactory
@@ -37,14 +36,7 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         ) return expression
 
         val type = expression.getTypeArgument(0)!!
-        if (!type.isFullyResolved()) {
-            if (callee.fqNameForIrSerialization.asString().contains("keyOf")) {
-                message("Do not transform not resolved ${expression.dump()}")
-            }
-            return expression
-        }
-
-        message("Transform keyOf call ${expression.dump()}")
+        if (!type.isFullyResolved()) return expression
 
         return irKeyOf(type, DeclarationIrBuilder(pluginContext, expression.symbol)).apply {
             // pass the qualifier

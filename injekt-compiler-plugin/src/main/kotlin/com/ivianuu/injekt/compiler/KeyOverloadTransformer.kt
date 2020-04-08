@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
+import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -52,10 +53,10 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
                     otherFunction.valueParameters.all { otherValueParameter ->
                         val calleeValueParameter = callee.valueParameters[otherValueParameter.index]
-                        if (calleeValueParameter.index == 1) {
+                        if (calleeValueParameter.index == 0) {
                             otherValueParameter.type.isSubtypeOfClass(symbolTable.referenceClass(key))
                         } else {
-                            otherValueParameter.type == calleeValueParameter.type
+                            otherValueParameter.name == calleeValueParameter.name
                         }
                     }
                 ) {
@@ -68,15 +69,20 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         if (keyOverloadFunction == null) {
             fun MemberScope.findKeyOverloadFunction() = try {
-                findFirstFunction(callee.name.asString()) { function ->
-                    function.annotations.hasAnnotation(InjektClassNames.KeyOverload)
-                            && (function.extensionReceiverParameter
-                        ?: function.dispatchReceiverParameter)?.type == callee.descriptor.extensionReceiverParameter?.type &&
-                            function.typeParameters.size == 1 &&
-                            function.valueParameters.firstOrNull()?.type?.constructor?.declarationDescriptor == key &&
-                            function.valueParameters.first().type.arguments.first().type == function.typeParameters.first().defaultType &&
-                            function.valueParameters.drop(1).all {
-                                it.name == callee.descriptor.valueParameters.getOrNull(it.index)?.name
+                findFirstFunction(callee.name.asString()) { otherFunction ->
+                    otherFunction.annotations.hasAnnotation(InjektClassNames.KeyOverload)
+                            && (otherFunction.extensionReceiverParameter
+                        ?: otherFunction.dispatchReceiverParameter)?.type == callee.extensionReceiverParameter?.type?.toKotlinType() &&
+                            otherFunction.typeParameters.size == callee.typeParameters.size &&
+                            otherFunction.valueParameters.size == callee.valueParameters.size &&
+                            otherFunction.valueParameters.all { otherValueParameter ->
+                                val calleeValueParameter =
+                                    callee.valueParameters[otherValueParameter.index]
+                                if (calleeValueParameter.index == 0) {
+                                    otherValueParameter.type.constructor.declarationDescriptor == key
+                                } else {
+                                    otherValueParameter.name == calleeValueParameter.name
+                                }
                             }
                 }
             } catch (e: Exception) {
@@ -97,8 +103,6 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
         checkNotNull(keyOverloadFunction) {
             "Couldn't find @KeyOverload function for ${callee.dump()}"
         }
-
-        message("Transform key overload ${keyOverloadFunction!!.dump()}")
 
         val keyOf = injektPackage.memberScope
             .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
@@ -126,11 +130,15 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                 }
             )
 
-            (1 until expression.valueArgumentsCount)
-                .map { it to expression.getValueArgument(it) }
-                .forEach { (i, param) ->
-                    putValueArgument(i, param)
-                }
+            try {
+                (1 until expression.valueArgumentsCount)
+                    .map { it to expression.getValueArgument(it) }
+                    .forEach { (i, param) ->
+                        putValueArgument(i, param)
+                    }
+            } catch (t: Throwable) {
+                error("Wtf original\n${callee.dump()}\n\noverload\n${keyOverloadFunction!!.dump()}\n\nexpr${expression.dump()}")
+            }
         }
     }
 
