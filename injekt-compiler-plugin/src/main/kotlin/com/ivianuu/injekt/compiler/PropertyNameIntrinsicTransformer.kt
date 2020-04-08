@@ -20,7 +20,8 @@ class PropertyNameIntrinsicTransformer(pluginContext: IrPluginContext) :
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = expression.symbol.owner
                 callee.valueParameters.forEach { valueParameter ->
-                    if (valueParameter.annotations.hasAnnotation(InjektClassNames.PropertyName) &&
+                    // todo ir valueParameter has no annotations
+                    if (valueParameter.descriptor.annotations.hasAnnotation(InjektClassNames.PropertyName) &&
                         expression.getValueArgument(valueParameter.index) == null
                     ) {
                         expression.putValueArgument(

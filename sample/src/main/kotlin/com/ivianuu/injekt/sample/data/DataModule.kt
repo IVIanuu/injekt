@@ -27,10 +27,10 @@ import com.ivianuu.injekt.single
 import java.io.File
 
 @QualifierMarker
-val WebApiUrl = Qualifier("WebApiUrl")
+val WebApiUrl = Qualifier()
 
 @QualifierMarker
-val DatabaseFile = Qualifier("WebApiUrl")
+val DatabaseFile = Qualifier()
 
 @ModuleMarker
 private val DataModule = Module(ApplicationScope) {
