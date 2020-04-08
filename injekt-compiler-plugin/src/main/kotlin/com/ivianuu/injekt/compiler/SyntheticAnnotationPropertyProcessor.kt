@@ -28,16 +28,7 @@ class SyntheticAnnotationPropertyProcessor : ElementProcessor {
                     ?: return@propertyRecursiveVisitor
 
                 if (descriptor.getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)
-                        .isNotEmpty() &&
-                    descriptor.dispatchReceiverParameter == null &&
-                    descriptor.extensionReceiverParameter == null &&
-                    descriptor.module.findClassAcrossModuleDependencies(
-                        ClassId.topLevel(
-                            file.packageFqName.child(Name.identifier("synthetic")).child(
-                                Name.identifier(descriptor.name.asString().capitalize())
-                            )
-                        )
-                    ) == null
+                        .isNotEmpty()
                 ) {
                     syntheticAnnotationProperties += descriptor
                 }
