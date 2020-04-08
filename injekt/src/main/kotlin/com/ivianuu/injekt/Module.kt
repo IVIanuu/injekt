@@ -7,7 +7,7 @@ package com.ivianuu.injekt
  * function gets only invoked for [ComponentBuilder]s with a matching scope
  *
  * ```
- * @Module
+ * @ModuleMarker
  * private val MyActivityModule = Module(ActivityScope) {
  *     factory { get<MyActivity>().resources }
  * }
