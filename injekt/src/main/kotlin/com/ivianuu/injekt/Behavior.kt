@@ -135,7 +135,7 @@ fun interceptingBehavior(
  * ´´´
  *
  */
-@SyntheticAnnotationMarker(Behavior::class)
+@SyntheticAnnotationMarker
 @Target(AnnotationTarget.PROPERTY)
 annotation class BehaviorMarker
 

@@ -97,7 +97,7 @@ fun Qualifier(@PropertyName name: Any = propertyName()): Qualifier = DefaultQual
 /**
  * Annotating a [Qualifier] property allows to use it as an annotation
  */
-@SyntheticAnnotationMarker(Qualifier::class)
+@SyntheticAnnotationMarker
 @Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
 

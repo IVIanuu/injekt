@@ -55,7 +55,7 @@ fun Scope(@PropertyName name: Any = propertyName()): Scope = DefaultScope(name)
  *
  * @see Scope
  */
-@SyntheticAnnotationMarker(Scope::class)
+@SyntheticAnnotationMarker
 @Target(AnnotationTarget.PROPERTY)
 annotation class ScopeMarker
 

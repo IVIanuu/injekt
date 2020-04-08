@@ -47,6 +47,15 @@ interface InjektErrors {
         @JvmField
         val KeyOverloadMustHaveKeyParam = error()
 
+        @JvmField
+        val MustBeABehavior = error()
+
+        @JvmField
+        val MustBeAQualifier = error()
+
+        @JvmField
+        val MustBeAScope = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -102,6 +111,18 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.KeyOverloadMustHaveKeyParam,
             "@KeyOverload function must have key: Key<T> as first parameter"
+        )
+        map.put(
+            InjektErrors.MustBeABehavior,
+            "@BehaviorMarker property must be of type Behavior"
+        )
+        map.put(
+            InjektErrors.MustBeAQualifier,
+            "@QualifierMarker property must be of type Qualifier"
+        )
+        map.put(
+            InjektErrors.MustBeAScope,
+            "@ScopeMarker property must be of type Scope"
         )
     }
 

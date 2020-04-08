@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
@@ -31,6 +32,7 @@ import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 class InjektStorageComponentContainerContributorExtension : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -47,6 +49,11 @@ class InjektDeclarationChecker(
     private val module: ModuleDescriptor
 ) : DeclarationChecker {
 
+    private val behavior by lazy {
+        module.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektClassNames.Behavior)
+        )!!
+    }
     private val key by lazy {
         module.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Key)
@@ -58,11 +65,6 @@ class InjektDeclarationChecker(
         )!!
     }
     private val scope by lazy {
-        module.findClassAcrossModuleDependencies(
-            ClassId.topLevel(InjektClassNames.Scope)
-        )!!
-    }
-    private val behavior by lazy {
         module.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Scope)
         )!!
@@ -111,6 +113,27 @@ class InjektDeclarationChecker(
             ) {
                 context.trace.report(InjektErrors.KeyOverloadMustHaveKeyParam.on(declaration))
             }
+        }
+
+        if (descriptor is PropertyDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.BehaviorMarker) &&
+            !descriptor.type.isSubtypeOf(behavior.defaultType)
+        ) {
+            context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
+        }
+
+        if (descriptor is PropertyDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker) &&
+            !descriptor.type.isSubtypeOf(qualifier.defaultType)
+        ) {
+            context.trace.report(InjektErrors.MustBeAQualifier.on(declaration))
+        }
+
+        if (descriptor is PropertyDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
+            !descriptor.type.isSubtypeOf(scope.defaultType)
+        ) {
+            context.trace.report(InjektErrors.MustBeAScope.on(declaration))
         }
     }
 }
