@@ -39,6 +39,9 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // generate a module for each binding class
         BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
 
+        // add scope
+        ModuleScopeAnnotationTransformer(pluginContext).visitModuleAndGenerateSymbols()
+
         // generate accessors for each module
         ModuleAccessorGenerator(pluginContext).visitModuleAndGenerateSymbols()
 

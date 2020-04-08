@@ -106,17 +106,19 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         return declaration
     }
 
-    private inner class ModulePropertyDescriptor(private val injectClass: IrClass) :
+    private inner class ModulePropertyDescriptor(injectClass: IrClass) :
         PropertyDescriptorImpl(
             injectClass.descriptor.containingDeclaration,
             null,
             Annotations.create(
-                listOf(
+                listOfNotNull(
                     AnnotationDescriptorImpl(
                         moduleMarker.defaultType,
                         emptyMap(),
                         SourceElement.NO_SOURCE
-                    )
+                    ),
+                    injectClass.descriptor.getSyntheticAnnotationsForType(scope.defaultType)
+                        .singleOrNull()
                 )
             ),
             Modality.FINAL,
@@ -163,11 +165,22 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             metadata = MetadataSource.Property(descriptor)
 
             val builder = DeclarationIrBuilder(pluginContext, symbol)
-            annotations = annotations + builder.irCallConstructor(
+            annotations += builder.irCallConstructor(
                 symbolTable.referenceConstructor(moduleMarker.constructors.first())
                     .ensureBound(),
                 emptyList()
             )
+
+            val scopeAnnotation =
+                injectClass.descriptor.getSyntheticAnnotationsForType(scope.defaultType)
+                    .singleOrNull()
+            if (scopeAnnotation != null) {
+                annotations += builder.irCallConstructor(
+                    symbolTable.referenceConstructor(getClass(scopeAnnotation.fqName!!).constructors.first())
+                        .ensureBound(),
+                    emptyList()
+                )
+            }
 
             backingField = IrFieldImpl(
                 UNDEFINED_OFFSET,
@@ -176,30 +189,15 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 descriptor,
                 module.defaultType.toIrType()
             ).apply {
-                val scopeAnnotationProperty =
-                    injectClass.descriptor
-                        .getSyntheticAnnotationPropertiesOfType(this@BindingModuleGenerator.scope.defaultType)
-                        .singleOrNull()
                 initializer = builder.irExprBody(
                     builder.irCall(
                         symbolTable.referenceSimpleFunction(
                             injektPackage.memberScope.findFirstFunction("Module") {
-                                if (scopeAnnotationProperty != null)
-                                    it.valueParameters.first().name.asString() == "scope"
-                                else it.valueParameters.first().name.asString() == "scopes"
+                                it.valueParameters.first().name.asString() == "scopes"
                             }
                         ),
                         module.defaultType.toIrType()
                     ).apply {
-                        if (scopeAnnotationProperty != null) {
-                            putValueArgument(
-                                0,
-                                builder.irCall(
-                                    symbolTable.referenceSimpleFunction(scopeAnnotationProperty.getter!!),
-                                    scopeAnnotationProperty.type.toIrType()
-                                )
-                            )
-                        }
                         val blockType = KotlinTypeFactory.simpleType(
                             pluginContext.builtIns.getFunction(1).defaultType,
                             arguments = listOf(

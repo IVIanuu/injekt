@@ -177,3 +177,10 @@ fun DeclarationDescriptor.getSyntheticAnnotationPropertiesOfType(
         .filter { it.type.isSubtypeOf(type) }
 }
 
+fun DeclarationDescriptor.getSyntheticAnnotationsForType(
+    type: KotlinType
+): List<AnnotationDescriptor> {
+    return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
+        .filter { it.getPropertyForSyntheticAnnotation(module).type.isSubtypeOf(type) }
+}
+
