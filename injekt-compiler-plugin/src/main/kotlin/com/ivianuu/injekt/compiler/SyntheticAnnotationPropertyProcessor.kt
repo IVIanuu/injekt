@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class SyntheticAnnotationPropertyProcessor : ElementProcessor {
@@ -28,7 +29,7 @@ class SyntheticAnnotationPropertyProcessor : ElementProcessor {
                     ?: return@propertyRecursiveVisitor
 
                 if (descriptor.getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)
-                        .isNotEmpty()
+                        .isNotEmpty() && descriptor.name.asString() != "Lol"
                 ) {
                     syntheticAnnotationProperties += descriptor
                 }
@@ -52,6 +53,7 @@ class SyntheticAnnotationPropertyProcessor : ElementProcessor {
                                 ClassId.topLevel(InjektClassNames.SyntheticAnnotation)
                             )!!.asClassName()!!
                         )
+                        .addKdoc("Annotation for [${property.fqNameSafe.asString()}]")
                         .build()
                 )
                 .build()

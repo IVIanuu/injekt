@@ -16,16 +16,12 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
-import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
+import com.ivianuu.injekt.GenerateDslBuilder
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.interceptingBehavior
 import java.util.concurrent.ConcurrentHashMap
@@ -35,39 +31,22 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * ´´´
  * val component = Component {
- *     multi { (url: String) -> Api(url = url) }
+ *     multi { (path: String) -> Preferences(path = path) }
  * }
  *
- * val googleApi1 = component.get<Api>(parameters = parametersOf("www.google.com"))
- * val googleApi2 = component.get<Api>(parameters = parametersOf("www.google.com"))
- * val yahooApi = component.get<Api>(parameters = parametersOf("www.yahoo.com"))
- * assertSame(googleApi1, googleApi2) // true
- * assertSame(googleApi1, yahooApi) // false
+ * val userPrefs1 = component.get<Preferences>(parameters = parametersOf("/data/user"))
+ * val userPrefs2 = component.get<Preferences>(parameters = parametersOf("/data/user"))
+ * val libraryPrefs = component.get<Api>(parameters = parametersOf("/data/library"))
+ * assertSame(userPrefs1, userPrefs2) // true
+ * assertSame(userPrefs1, libraryPrefs) // false
  * ´´´
  *
  */
+@GenerateDslBuilder
 @BehaviorMarker
 val Multi = interceptingBehavior {
     it.copy(provider = MultiProvider(it.provider))
 } + Bound
-
-/**
- * Dsl builder for [Multi] behavior
- */
-@KeyOverload
-fun <T> ComponentBuilder.multi(
-    key: Key<T>,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: Component.(Parameters) -> T
-) {
-    bind(
-        key = key,
-        behavior = Multi + behavior,
-        duplicateStrategy = duplicateStrategy,
-        provider = provider
-    )
-}
 
 private class MultiProvider<T>(
     delegate: BindingProvider<T>

@@ -52,7 +52,10 @@ class InjektElementProcessing(
         if (processingFinished) return null
         processingFinished = true
 
+        message("ElementProcessing: run analysis on files ${files.map { it.virtualFilePath }}")
+
         val processors = listOf(
+            GenerateDslBuilderProcessor(),
             KeyOverloadProcessor(),
             SyntheticAnnotationPropertyProcessor()
         )
@@ -61,13 +64,16 @@ class InjektElementProcessing(
 
         val generateFile: (FileSpec) -> Unit = generatedFile@{ fileSpec ->
             val outputFile =
-                File(outputDir, fileSpec.packageName.replace(".", "/") + fileSpec.name + ".kt")
-            message("File request $fileSpec output file is $outputFile")
+                File(
+                    outputDir,
+                    fileSpec.packageName.replace(".", "/") + "/" + fileSpec.name + ".kt"
+                )
+            message("ElementProcessing: new file $outputFile")
             if (outputFile.exists()) {
                 val oldContent = outputFile.readText()
                 val newContent = fileSpec.toString()
                 if (oldContent == newContent) {
-                    message("Do not generate file ${fileSpec.packageName}.${fileSpec.name} nothing has changed")
+                    message("ElementProcessing: do not generate file ${fileSpec.packageName}.${fileSpec.name} nothing has changed")
                     return@generatedFile
                 }
             }
@@ -94,7 +100,7 @@ class InjektElementProcessing(
         }
 
         return if (generatedFiles) {
-            message("Files generated re run analysis")
+            message("ElementProcessing: files generated re run analysis")
             AnalysisResult.RetryWithAdditionalRoots(
                 bindingTrace.bindingContext,
                 module,
@@ -102,7 +108,7 @@ class InjektElementProcessing(
                 listOf(outputDir)
             )
         } else {
-            message("No files generated stop analysis")
+            message("ElementProcessing: no files generated stop analysis")
             null
         }
     }

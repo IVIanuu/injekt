@@ -31,25 +31,6 @@ package com.ivianuu.injekt
  * assertSame(logger1, logger2) // false
  * ´´´
  */
+@GenerateDslBuilder
 @BehaviorMarker
-val Factory = Behavior("Factory")
-
-/**
- * Dsl builder for a factory binding
- *
- * @see Factory
- */
-@KeyOverload
-fun <T> ComponentBuilder.factory(
-    key: Key<T>,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) {
-    bind(
-        key = key,
-        behavior = behavior,
-        duplicateStrategy = duplicateStrategy,
-        provider = provider
-    )
-}
+val Factory = Behavior()

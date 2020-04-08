@@ -16,16 +16,12 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DelegatingBindingProvider
-import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
+import com.ivianuu.injekt.GenerateDslBuilder
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.interceptingBehavior
 import java.lang.ref.WeakReference
@@ -33,28 +29,11 @@ import java.lang.ref.WeakReference
 /**
  * Holds instances in a [WeakReference]
  */
+@GenerateDslBuilder
 @BehaviorMarker
 val Weak = interceptingBehavior {
     it.copy(provider = WeakProvider(it.provider))
 } + Bound
-
-/**
- * Dsl builder for [Weak] behavior
- */
-@KeyOverload
-fun <T> ComponentBuilder.weak(
-    key: Key<T>,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) {
-    bind(
-        key = key,
-        behavior = Weak + behavior,
-        duplicateStrategy = duplicateStrategy,
-        provider = provider
-    )
-}
 
 private class WeakProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {

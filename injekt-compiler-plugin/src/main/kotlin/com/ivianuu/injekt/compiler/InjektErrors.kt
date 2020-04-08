@@ -26,9 +26,6 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 interface InjektErrors {
     companion object {
         @JvmField
-        val MustBeStaticProperty = error()
-
-        @JvmField
         val ParamCannotBeNamed = error()
         @JvmField
         val OnlyOneInjektConstructor = error()
@@ -37,24 +34,21 @@ interface InjektErrors {
         @JvmField
         val NeedsPrimaryConstructorOrAnnotation = error()
         @JvmField
-        val InvalidModuleSignature = error()
-        @JvmField
-        val ModuleMustBeStatic = error()
-        @JvmField
-        val CannotInvokeModuleFunctions = error()
-        @JvmField
         val KeyOverloadMustHave1TypeParameter = error()
         @JvmField
         val KeyOverloadMustHaveKeyParam = error()
-
         @JvmField
         val MustBeABehavior = error()
 
         @JvmField
+        val MustBeAModule = error()
+        @JvmField
         val MustBeAQualifier = error()
-
         @JvmField
         val MustBeAScope = error()
+
+        @JvmField
+        val MustBeStatic = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -73,10 +67,6 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
 
     init {
         map.put(
-            InjektErrors.MustBeStaticProperty,
-            "Must be a top level property"
-        )
-        map.put(
             InjektErrors.OnlyOneScope,
             "Can only have one 1 scope annotation"
         )
@@ -93,18 +83,6 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
         )
         map.put(
-            InjektErrors.InvalidModuleSignature,
-            "@Module functions must take ComponentBuilder as a parameter or extension receiver and must return unit"
-        )
-        map.put(
-            InjektErrors.ModuleMustBeStatic,
-            "@Module functions must be callable from a static context"
-        )
-        map.put(
-            InjektErrors.CannotInvokeModuleFunctions,
-            "@Module functions cannot be invoked"
-        )
-        map.put(
             InjektErrors.KeyOverloadMustHave1TypeParameter,
             "@KeyOverload function must have exactly 1 type parameter"
         )
@@ -117,12 +95,20 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "@BehaviorMarker property must be of type Behavior"
         )
         map.put(
+            InjektErrors.MustBeAModule,
+            "@ModuleMarker property must be of type Qualifier"
+        )
+        map.put(
             InjektErrors.MustBeAQualifier,
             "@QualifierMarker property must be of type Qualifier"
         )
         map.put(
             InjektErrors.MustBeAScope,
             "@ScopeMarker property must be of type Scope"
+        )
+        map.put(
+            InjektErrors.MustBeStatic,
+            "Must be a top-level declaration"
         )
     }
 

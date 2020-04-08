@@ -34,28 +34,11 @@ import com.jakewharton.confundus.unsafeCast
  * ´´´
  *
  */
+@GenerateDslBuilder
 @BehaviorMarker
 val Single = interceptingBehavior {
     it.copy(provider = SingleProvider(it.provider))
 } + Bound
-
-/**
- * Dsl builder for [Single] behavior
- */
-@KeyOverload
-fun <T> ComponentBuilder.single(
-    key: Key<T>,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) {
-    bind(
-        key = key,
-        behavior = Single + behavior,
-        duplicateStrategy = duplicateStrategy,
-        provider = provider
-    )
-}
 
 private class SingleProvider<T>(
     delegate: BindingProvider<T>

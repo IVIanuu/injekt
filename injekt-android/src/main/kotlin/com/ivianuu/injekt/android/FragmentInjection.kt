@@ -19,13 +19,10 @@ package com.ivianuu.injekt.android
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.ApplicationScope
-import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BehaviorMarker
-import com.ivianuu.injekt.BindingProvider
-import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.GenerateDslBuilder
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleMarker
 import com.ivianuu.injekt.Provider
@@ -34,29 +31,16 @@ import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.android.synthetic.FragmentsMap
 import com.ivianuu.injekt.common.map
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.sideEffectBehavior
 import com.ivianuu.injekt.synthetic.Factory
 
+@GenerateDslBuilder
 @BehaviorMarker
 val BindFragment = sideEffectBehavior {
     map<String, Fragment>(mapQualifier = FragmentsMap) {
         put(it.key.classifier.java.name, it.key as Key<out Fragment>)
     }
-}
-
-/**
- * Dsl builder for the [BindFragment] behavior
- */
-@KeyOverload
-fun <T : Fragment> ComponentBuilder.fragment(
-    key: Key<T>,
-    behavior: Behavior = Behavior.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: BindingProvider<T>
-) {
-    factory(key, BindFragment + behavior, duplicateStrategy, provider)
-}
+} + Factory
 
 @Factory
 private class InjektFragmentFactory(

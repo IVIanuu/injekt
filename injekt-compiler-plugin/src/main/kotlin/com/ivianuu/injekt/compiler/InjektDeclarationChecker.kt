@@ -46,26 +46,31 @@ class InjektStorageComponentContainerContributorExtension : StorageComponentCont
 }
 
 class InjektDeclarationChecker(
-    private val module: ModuleDescriptor
+    private val moduleDescriptor: ModuleDescriptor
 ) : DeclarationChecker {
 
     private val behavior by lazy {
-        module.findClassAcrossModuleDependencies(
+        moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Behavior)
         )!!
     }
     private val key by lazy {
-        module.findClassAcrossModuleDependencies(
+        moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Key)
         )!!
     }
+    private val module by lazy {
+        moduleDescriptor.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektClassNames.Module)
+        )!!
+    }
     private val qualifier by lazy {
-        module.findClassAcrossModuleDependencies(
+        moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Qualifier)
         )!!
     }
     private val scope by lazy {
-        module.findClassAcrossModuleDependencies(
+        moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektClassNames.Scope)
         )!!
     }
@@ -116,24 +121,56 @@ class InjektDeclarationChecker(
         }
 
         if (descriptor is PropertyDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.BehaviorMarker) &&
-            !descriptor.type.isSubtypeOf(behavior.defaultType)
+            descriptor.annotations.hasAnnotation(InjektClassNames.ModuleMarker)
         ) {
-            context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
+            if (!descriptor.type.isSubtypeOf(module.defaultType)) {
+                context.trace.report(InjektErrors.MustBeAModule.on(declaration))
+            }
+            if (descriptor.dispatchReceiverParameter != null ||
+                descriptor.extensionReceiverParameter != null
+            ) {
+                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+            }
         }
 
         if (descriptor is PropertyDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker) &&
-            !descriptor.type.isSubtypeOf(qualifier.defaultType)
+            (descriptor.annotations.hasAnnotation(InjektClassNames.BehaviorMarker) ||
+                    descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder))
         ) {
-            context.trace.report(InjektErrors.MustBeAQualifier.on(declaration))
+            if (!descriptor.type.isSubtypeOf(behavior.defaultType)) {
+                context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
+            }
+            if (descriptor.dispatchReceiverParameter != null ||
+                descriptor.extensionReceiverParameter != null
+            ) {
+                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+            }
         }
 
         if (descriptor is PropertyDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker) &&
-            !descriptor.type.isSubtypeOf(scope.defaultType)
+            descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker)
         ) {
-            context.trace.report(InjektErrors.MustBeAScope.on(declaration))
+            if (!descriptor.type.isSubtypeOf(qualifier.defaultType)) {
+                context.trace.report(InjektErrors.MustBeAQualifier.on(declaration))
+            }
+            if (descriptor.dispatchReceiverParameter != null ||
+                descriptor.extensionReceiverParameter != null
+            ) {
+                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+            }
+        }
+
+        if (descriptor is PropertyDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker)
+        ) {
+            if (!descriptor.type.isSubtypeOf(scope.defaultType)) {
+                context.trace.report(InjektErrors.MustBeAScope.on(declaration))
+            }
+            if (descriptor.dispatchReceiverParameter != null ||
+                descriptor.extensionReceiverParameter != null
+            ) {
+                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+            }
         }
     }
 }

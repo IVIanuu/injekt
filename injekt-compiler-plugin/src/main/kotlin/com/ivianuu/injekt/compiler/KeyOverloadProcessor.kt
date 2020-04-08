@@ -50,6 +50,7 @@ class KeyOverloadProcessor : ElementProcessor {
 
     private fun keyOverloadStubFunction(function: FunctionDescriptor): FunSpec {
         return FunSpec.builder(function.name.asString())
+            .addKdoc("Key overloading function for [${function.name}]")
             .addAnnotations(
                 function.annotations
                     .map {
