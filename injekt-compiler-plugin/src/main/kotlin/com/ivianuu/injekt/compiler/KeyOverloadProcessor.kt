@@ -23,6 +23,7 @@ class KeyOverloadProcessor : ElementProcessor {
         bindingTrace: BindingTrace,
         generateFile: (FileSpec) -> Unit
     ) {
+        if (file.name.endsWith("DslBuilders.kt")) return
         val functions = mutableListOf<FunctionDescriptor>()
         file.accept(
             namedFunctionRecursiveVisitor { function ->
