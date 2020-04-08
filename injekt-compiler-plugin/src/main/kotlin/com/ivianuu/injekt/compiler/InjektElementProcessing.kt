@@ -62,6 +62,7 @@ class InjektElementProcessing(
         val generateFile: (FileSpec) -> Unit = generatedFile@{ fileSpec ->
             val outputFile =
                 File(outputDir, fileSpec.packageName.replace(".", "/") + fileSpec.name + ".kt")
+            message("File request $fileSpec output file is $outputFile")
             if (outputFile.exists()) {
                 val oldContent = outputFile.readText()
                 val newContent = fileSpec.toString()
@@ -71,7 +72,7 @@ class InjektElementProcessing(
                 }
             }
 
-            fileSpec.writeTo(outputFile)
+            fileSpec.writeTo(outputDir)
             generatedFiles = true
         }
 
