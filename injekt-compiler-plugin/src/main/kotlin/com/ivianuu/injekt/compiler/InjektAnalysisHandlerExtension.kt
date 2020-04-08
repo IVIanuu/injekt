@@ -67,11 +67,12 @@ class InjektAnalysisHandlerExtension(
             resolveFile(file)
             SyntheticAnnotationPropertyProcessor(outputDir)
                 .processSyntheticAnnotationProperties(file, bindingTrace) { generatedFiles = true }
-            KeyOverloadProcessor(outputDir)
+            KeyOverloadProcessor(module, outputDir)
                 .processKeyOverloads(file, bindingTrace) { generatedFiles = true }
         }
 
         return if (generatedFiles) {
+            message("Files generated re run analysis")
             AnalysisResult.RetryWithAdditionalRoots(
                 bindingTrace.bindingContext,
                 module,
@@ -79,6 +80,7 @@ class InjektAnalysisHandlerExtension(
                 listOf(outputDir)
             )
         } else {
+            message("Files not generated do not re run analysis")
             null
         }
     }
