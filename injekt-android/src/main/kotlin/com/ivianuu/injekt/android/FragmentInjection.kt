@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
+import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.GenerateDslBuilder
@@ -31,7 +32,6 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.android.synthetic.FragmentsMap
 import com.ivianuu.injekt.common.map
 import com.ivianuu.injekt.sideEffectBehavior
-import com.ivianuu.injekt.synthetic.ApplicationScope
 import com.ivianuu.injekt.synthetic.Factory
 
 @GenerateDslBuilder
@@ -50,9 +50,8 @@ private class InjektFragmentFactory(
         fragments[className]?.invoke() ?: super.instantiate(classLoader, className)
 }
 
-@ApplicationScope
 @ModuleMarker
-private val FragmentInjectionModule = Module {
+private val FragmentInjectionModule = Module(ApplicationScope) {
     map<String, Fragment>(mapQualifier = FragmentsMap)
     alias<InjektFragmentFactory, FragmentFactory>()
 }

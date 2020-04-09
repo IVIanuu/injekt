@@ -33,7 +33,7 @@ inline fun Module(
 ): Module = Module(listOf(scope), invokeOnInit, block)
 
 inline fun Module(
-    scopes: List<Scope> = emptyList(),
+    scopes: List<Scope>,
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
 ): Module = object : Module {
@@ -51,7 +51,7 @@ internal object Modules {
 
     private val listeners = mutableListOf<(Module) -> Unit>()
 
-    fun get(scope: Scope? = null): List<Module> =
+    fun get(scope: Scope): List<Module> =
         synchronized(modulesByScope) { modulesByScope.getOrElse(scope) { emptyList() } }
 
     fun register(module: Module) {

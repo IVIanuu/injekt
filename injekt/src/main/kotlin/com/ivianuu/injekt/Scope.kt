@@ -59,4 +59,9 @@ fun Scope(@PropertyName name: Any = propertyName()): Scope = DefaultScope(name)
 @Target(AnnotationTarget.PROPERTY)
 annotation class ScopeMarker
 
+/**
+ * Applies the [Module] to every [ComponentBuilder]
+ */
+val AnyScope = Scope()
+
 private data class DefaultScope(val name: Any) : Scope

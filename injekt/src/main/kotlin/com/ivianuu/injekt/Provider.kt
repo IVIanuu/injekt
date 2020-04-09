@@ -33,7 +33,7 @@ fun interface Provider<T> {
 }
 
 @ModuleMarker
-private val ProviderModule = Module {
+private val ProviderModule = Module(AnyScope) {
     jitFactory { key, _ ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Provider::class) return@jitFactory null

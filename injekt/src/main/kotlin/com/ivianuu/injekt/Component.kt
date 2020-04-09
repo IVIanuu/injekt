@@ -204,7 +204,7 @@ fun interface ComponentAttachListener {
 }
 
 @ModuleMarker
-private val ComponentModule = Module(invokeOnInit = true) {
+private val ComponentModule = Module(scope = AnyScope, invokeOnInit = true) {
     bind(
         behavior = Bound,
         duplicateStrategy = DuplicateStrategy.Override

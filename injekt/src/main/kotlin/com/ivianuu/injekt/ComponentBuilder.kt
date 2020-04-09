@@ -53,14 +53,14 @@ class ComponentBuilder {
     private val bindingInterceptors = mutableListOf<(Binding<Any?>) -> Binding<Any?>>()
 
     private val moduleRegisterListener: (Module) -> Unit = { module ->
-        if (module.scopes.isEmpty() || module.scopes.any { it in scopes }) {
+        if (module.scopes.any { it == AnyScope || it in scopes }) {
             module(this)
         }
     }
 
     init {
         Modules.addRegisterListener(moduleRegisterListener)
-        Modules.get().fastForEach { it(this) }
+        Modules.get(AnyScope).fastForEach { it(this) }
     }
 
     fun scopes(vararg scopes: Scope) {

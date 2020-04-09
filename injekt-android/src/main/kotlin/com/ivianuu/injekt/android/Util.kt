@@ -28,11 +28,16 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import kotlinx.coroutines.CoroutineScope
+import kotlin.reflect.KClass
+
+internal fun Key<*>.isSubTypeOf(classifier: KClass<*>): Boolean =
+    this.classifier.java.isAssignableFrom(classifier.java)
 
 @PublishedApi
 internal fun ComponentBuilder.maybeLifecycleBindings(

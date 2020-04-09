@@ -54,7 +54,7 @@ inline fun Injekt.module(
 }
 
 inline fun Injekt.module(
-    scopes: List<Scope> = emptyList(),
+    scopes: List<Scope>,
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
 ) {

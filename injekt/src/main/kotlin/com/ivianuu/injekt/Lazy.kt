@@ -24,7 +24,7 @@ import com.jakewharton.confundus.unsafeCast
 fun interface Lazy<T> : Provider<T>
 
 @ModuleMarker
-private val LazyModule = Module {
+private val LazyModule = Module(AnyScope) {
     jitFactory { key, _ ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Lazy::class) return@jitFactory null

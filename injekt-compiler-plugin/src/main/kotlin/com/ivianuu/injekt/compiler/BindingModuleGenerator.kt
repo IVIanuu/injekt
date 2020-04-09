@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -52,7 +51,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrPropertySymbolImpl
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.constructors
@@ -111,14 +109,12 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             injectClass.descriptor.containingDeclaration,
             null,
             Annotations.create(
-                listOfNotNull(
+                listOf(
                     AnnotationDescriptorImpl(
                         moduleMarker.defaultType,
                         emptyMap(),
                         SourceElement.NO_SOURCE
-                    ),
-                    injectClass.descriptor.getSyntheticAnnotationsForType(scope.defaultType)
-                        .singleOrNull()
+                    )
                 )
             ),
             Modality.FINAL,
@@ -171,17 +167,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 emptyList()
             )
 
-            val scopeAnnotation =
-                injectClass.descriptor.getSyntheticAnnotationsForType(scope.defaultType)
-                    .singleOrNull()
-            if (scopeAnnotation != null) {
-                annotations += builder.irCallConstructor(
-                    symbolTable.referenceConstructor(getClass(scopeAnnotation.fqName!!).constructors.first())
-                        .ensureBound(),
-                    emptyList()
-                )
-            }
-
             backingField = IrFieldImpl(
                 UNDEFINED_OFFSET,
                 UNDEFINED_OFFSET,
@@ -189,15 +174,33 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 descriptor,
                 module.defaultType.toIrType()
             ).apply {
+                val scopeAnnotationProperty =
+                    injectClass.descriptor
+                        .getSyntheticAnnotationPropertiesOfType(this@BindingModuleGenerator.scope.defaultType)
+                        .singleOrNull()
+                        ?: injektPackage.memberScope
+                            .getContributedVariables(
+                                Name.identifier("ApplicationScope"),
+                                NoLookupLocation.FROM_BACKEND
+                            )
+                            .single()
+
                 initializer = builder.irExprBody(
                     builder.irCall(
                         symbolTable.referenceSimpleFunction(
                             injektPackage.memberScope.findFirstFunction("Module") {
-                                it.valueParameters.first().name.asString() == "scopes"
+                                it.valueParameters.first().name.asString() == "scope"
                             }
                         ),
                         module.defaultType.toIrType()
                     ).apply {
+                        putValueArgument(
+                            0,
+                            builder.irCall(
+                                symbolTable.referenceSimpleFunction(scopeAnnotationProperty.getter!!),
+                                scopeAnnotationProperty.type.toIrType()
+                            )
+                        )
                         val blockType = KotlinTypeFactory.simpleType(
                             pluginContext.builtIns.getFunction(1).defaultType,
                             arguments = listOf(
@@ -262,22 +265,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                                                 }
                                         )
                                     }
-
-                                    putValueArgument(
-                                        3,
-                                        IrGetEnumValueImpl(
-                                            UNDEFINED_OFFSET,
-                                            UNDEFINED_OFFSET,
-                                            duplicateStrategy.defaultType.toIrType(),
-                                            symbolTable.referenceEnumEntry(
-                                                duplicateStrategy.unsubstitutedMemberScope
-                                                    .getContributedClassifier(
-                                                        Name.identifier("Drop"),
-                                                        NoLookupLocation.FROM_BACKEND
-                                                    ) as ClassDescriptor
-                                            )
-                                        )
-                                    )
 
                                     putValueArgument(4, bindingProvider(injectClass))
                                 }
