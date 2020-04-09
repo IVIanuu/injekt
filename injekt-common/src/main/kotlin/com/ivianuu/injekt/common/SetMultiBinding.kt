@@ -41,21 +41,21 @@ import com.jakewharton.confundus.unsafeCast
  * The following is a typical usage of multi binding sets:
  *
  * ´´´
+ * @ModuleMarker
  * val fabricModule = Module {
  *     set<AnalyticsEventHandler> {
  *         add<FabricAnalyticsEventHandler>()
  *     }
  * }
  *
+ * @ModuleMarker
  * val firebaseModule = Module {
  *     set<AnalyticsEventHandler> {
  *         add<FirebaseAnalyticsEventHandler>()
  *     }
  * }
  *
- * val component = Component {
- *     modules(fabricModule, firebaseModule)
- * }
+ * val component = Component()
  *
  * // will include both FabricAnalyticsEventHandler and FirebaseAnalyticsEventHandler
  * val analyticsEventHandlers = component.get<Set<AnalyticsEventHandler>>()

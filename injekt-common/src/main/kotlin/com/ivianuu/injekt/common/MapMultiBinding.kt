@@ -41,21 +41,21 @@ import com.jakewharton.confundus.unsafeCast
  * The following is a typical usage of multi binding maps:
  *
  * ´´´
+ * @ModuleMarker
  * val creditCardModule = Module {
  *     map<String, PaymentHandler> {
  *         put("creditCard", keyOf<CreditcardPaymentHandler>())
  *     }
  * }
  *
+ * @ModuleMarker
  * val paypalModule = Module {
  *     map<String, PaymentHandler> {
  *         put("paypal", keyOf<PaypalPaymentHandler>())
  *     }
  * }
  *
- * val component = Component {
- *     modules(creditCardModule, paypalModule)
- * }
+ * val component = Component()
  *
  * // will include both CreditcardPaymentHandler and PaypalPaymentHandler
  * val paymentHandlers = Component.get<Map<String, PaymentHandler>>()

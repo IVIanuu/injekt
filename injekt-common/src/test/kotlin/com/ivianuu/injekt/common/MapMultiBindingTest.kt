@@ -24,6 +24,7 @@ import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.instance
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -249,8 +250,10 @@ class MapMultiBindingTest {
     @Test
     fun testReusesMapBuildersInsideAComponentBuilder() {
         val component = Component {
-            map<String, Any> { put<TestDep1>("a") }
-            map<String, Any> { put<TestDep2>("b") }
+            instance(Command1)
+            instance(Command2)
+            map<String, Any> { put<Command1>("a") }
+            map<String, Any> { put<Command2>("b") }
         }
 
         assertEquals(2, component.get<Map<String, Any>>().size)

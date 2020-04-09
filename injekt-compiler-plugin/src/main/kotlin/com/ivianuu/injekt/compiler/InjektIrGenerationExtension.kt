@@ -34,7 +34,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         }
 
         // replace intrinsics with names
-        PropertyNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        DeclarationNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // generate a module for each binding class
         BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
@@ -59,7 +59,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // rewrite keyOf<String>() -> keyOf(String::class)
         KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        // perform several optimizations
+        // cache providers
         BindingProviderCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 

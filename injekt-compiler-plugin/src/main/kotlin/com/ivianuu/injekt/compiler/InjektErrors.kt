@@ -34,19 +34,17 @@ interface InjektErrors {
         @JvmField
         val NeedsPrimaryConstructorOrAnnotation = error()
         @JvmField
-        val KeyOverloadMustHave1TypeParameter = error()
+        val KeyOverloadMustHaveAtLeast1TypeParameter = error()
         @JvmField
         val KeyOverloadMustHaveKeyParam = error()
         @JvmField
         val MustBeABehavior = error()
-
         @JvmField
         val MustBeAModule = error()
         @JvmField
         val MustBeAQualifier = error()
         @JvmField
         val MustBeAScope = error()
-
         @JvmField
         val MustBeStatic = error()
 
@@ -83,7 +81,7 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
         )
         map.put(
-            InjektErrors.KeyOverloadMustHave1TypeParameter,
+            InjektErrors.KeyOverloadMustHaveAtLeast1TypeParameter,
             "@KeyOverload function must have exactly 1 type parameter"
         )
         map.put(

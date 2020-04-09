@@ -5,12 +5,20 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeVariableName
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
+import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.declarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class GenerateDslBuilderProcessor : ElementProcessor {
     override fun processFile(
@@ -18,14 +26,29 @@ class GenerateDslBuilderProcessor : ElementProcessor {
         bindingTrace: BindingTrace,
         generateFile: (FileSpec) -> Unit
     ) {
-        val behaviors = mutableListOf<PropertyDescriptor>()
+        val behaviors = mutableListOf<DeclarationDescriptor>()
 
         file.accept(
-            propertyRecursiveVisitor {
-                val descriptor = bindingTrace[BindingContext.VARIABLE, it] as? PropertyDescriptor
-                    ?: return@propertyRecursiveVisitor
-                if (descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder)) {
-                    behaviors += descriptor
+            declarationRecursiveVisitor { declaration ->
+                when (declaration) {
+                    is KtFunction -> {
+                        val descriptor =
+                            bindingTrace[BindingContext.FUNCTION, declaration] as? FunctionDescriptor
+                                ?: return@declarationRecursiveVisitor
+
+                        if (descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder)) {
+                            behaviors += descriptor
+                        }
+                    }
+                    is KtProperty -> {
+                        val descriptor =
+                            bindingTrace[BindingContext.VARIABLE, declaration] as? PropertyDescriptor
+                                ?: return@declarationRecursiveVisitor
+
+                        if (descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder)) {
+                            behaviors += descriptor
+                        }
+                    }
                 }
             }
         )
@@ -46,8 +69,8 @@ class GenerateDslBuilderProcessor : ElementProcessor {
         }
     }
 
-    private fun keyOverloadStub(property: PropertyDescriptor) = baseDslBuilder(
-        property = property,
+    private fun keyOverloadStub(declarationDescriptor: DeclarationDescriptor) = baseDslBuilder(
+        declaration = declarationDescriptor,
         annotation = InjektClassNames.KeyOverloadStub,
         firstParameter = ParameterSpec.builder(
                 "qualifier",
@@ -58,31 +81,77 @@ class GenerateDslBuilderProcessor : ElementProcessor {
         code = "error(\"stub\")"
     )
 
-    private fun keyOverload(property: PropertyDescriptor) = baseDslBuilder(
-        property = property,
+    private fun keyOverload(declarationDescriptor: DeclarationDescriptor) = baseDslBuilder(
+        declaration = declarationDescriptor,
         annotation = InjektClassNames.KeyOverload,
         firstParameter = ParameterSpec.builder(
             "key",
             InjektClassNames.Key.asClassName()
-                .parameterizedBy(TypeVariableName("T"))
+                .parameterizedBy(TypeVariableName("BindingType"))
         ).build(),
         code = "bind(key = key,\n" +
-                "behavior = ${property.name.asString()} + behavior,\n" +
+                "behavior = ${
+                declarationDescriptor.name.asString() + declarationDescriptor.safeAs<FunctionDescriptor>()
+                    ?.let { function ->
+                        function.typeParameters
+                            .takeIf { it.isNotEmpty() }
+                            ?.joinToString(",") { it.name.asString() }
+                            ?.let { "<$it>" }
+                            .orEmpty() + "(" + function.valueParameters.joinToString("") {
+                            "${it.name} = ${it.name},\n"
+                        } + ")"
+                    }.orEmpty()
+                } + behavior,\n" +
                 "duplicateStrategy = duplicateStrategy,\n" +
                 "provider = provider\n)"
     )
 
     private fun baseDslBuilder(
-        property: PropertyDescriptor,
+        declaration: DeclarationDescriptor,
         annotation: FqName,
         firstParameter: ParameterSpec,
         code: String
-    ) = FunSpec.builder(property.name.asString().decapitalize())
-        .addKdoc("Dsl builder for the [${property.name}] behavior")
+    ) = FunSpec.builder(declaration.name.asString().decapitalize())
+        .addKdoc("Dsl builder for the [${declaration.name}] behavior")
         .addAnnotation(annotation.asClassName())
-        .addTypeVariable(TypeVariableName("T"))
+        .addTypeVariable(TypeVariableName("BindingType"))
+        .apply {
+            if (declaration is FunctionDescriptor) {
+                addTypeVariables(
+                    declaration.typeParameters
+                        .map { typeParameter ->
+                            TypeVariableName(
+                                typeParameter.name.asString(),
+                                typeParameter.upperBounds
+                                    .map { it.asTypeName()!! }
+                            )
+                        }
+                )
+            }
+        }
         .receiver(InjektClassNames.ComponentBuilder.asClassName())
         .addParameter(firstParameter)
+        .apply {
+            if (declaration is FunctionDescriptor) {
+                declaration.valueParameters.forEach { valueParameter ->
+                    addParameter(
+                        ParameterSpec.builder(
+                                valueParameter.name.asString(),
+                                valueParameter.type.asTypeName()!!
+                            )
+                            .apply {
+                                if (valueParameter.declaresDefaultValue()) {
+                                    defaultValue(
+                                        valueParameter.findPsi()
+                                            .cast<KtParameter>().defaultValue!!.text
+                                    )
+                                }
+                            }
+                            .build()
+                    )
+                }
+            }
+        }
         .addParameter(
             ParameterSpec.builder(
                     "behavior",
@@ -103,7 +172,7 @@ class GenerateDslBuilderProcessor : ElementProcessor {
             ParameterSpec.builder(
                     "provider",
                     InjektClassNames.BindingProvider.asClassName()
-                        .parameterizedBy(TypeVariableName("T"))
+                        .parameterizedBy(TypeVariableName("BindingType"))
                 )
                 .build()
         )

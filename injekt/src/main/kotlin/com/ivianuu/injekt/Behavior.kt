@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.PropertyName
+import com.ivianuu.injekt.internal.DeclarationName
 import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
-import com.ivianuu.injekt.internal.propertyName
+import com.ivianuu.injekt.internal.declarationName
 
 /**
  * Behavior applies scoping or such to [BindingProvider]s
@@ -58,17 +58,23 @@ interface Behavior {
     }
 }
 
+fun Behavior.toList(): List<Behavior.Element> {
+    val elements = mutableListOf<Behavior.Element>()
+    foldIn(Unit) { _, element -> elements += element }
+    return elements
+}
+
 /**
  * Returns a [Behavior] which uses [name] for comparisons
  */
-fun Behavior(@PropertyName name: Any = propertyName()): Behavior = DefaultBehavior(name)
+fun Behavior(@DeclarationName name: Any = declarationName()): Behavior = DefaultBehavior(name)
 
 /**
  * Returns a new [Behavior] for [name] and invokes [onBindingAdded] when ever
  * a [Binding] with the returned [Behavior] was added to a [ComponentBuilder] with [scopes]
  */
 fun sideEffectBehavior(
-    @PropertyName name: Any = propertyName(),
+    @DeclarationName name: Any = declarationName(),
     scopes: List<Scope> = listOf(AnyScope),
     onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
 ): Behavior {
@@ -95,7 +101,7 @@ fun sideEffectBehavior(
  *
  */
 fun interceptingBehavior(
-    @PropertyName name: Any = propertyName(),
+    @DeclarationName name: Any = declarationName(),
     scopes: List<Scope> = listOf(AnyScope),
     intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>
 ): Behavior {
@@ -136,7 +142,7 @@ fun interceptingBehavior(
  *
  */
 @SyntheticAnnotationMarker
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class BehaviorMarker
 
 private class CombinedBehavior(

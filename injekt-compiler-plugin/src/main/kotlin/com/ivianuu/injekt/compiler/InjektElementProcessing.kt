@@ -57,7 +57,7 @@ class InjektElementProcessing(
         val processors = listOf(
             GenerateDslBuilderProcessor(),
             KeyOverloadProcessor(),
-            SyntheticAnnotationPropertyProcessor()
+            SyntheticAnnotationProcessor()
         )
 
         val newFiles = mutableListOf<File>()

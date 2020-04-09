@@ -20,8 +20,11 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.UnsignedTypes.isUnsignedType
 import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getReturnTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
@@ -30,21 +33,24 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.isError
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
@@ -57,6 +63,7 @@ object InjektClassNames {
     val BindingProvider = FqName("com.ivianuu.injekt.BindingProvider")
     val Component = FqName("com.ivianuu.injekt.Component")
     val ComponentBuilder = FqName("com.ivianuu.injekt.ComponentBuilder")
+    val DeclarationName = FqName("com.ivianuu.injekt.internal.DeclarationName")
     val DuplicateStrategy = FqName("com.ivianuu.injekt.DuplicateStrategy")
     val GenerateDslBuilder = FqName("com.ivianuu.injekt.GenerateDslBuilder")
     val Injekt = FqName("com.ivianuu.injekt.Injekt")
@@ -68,7 +75,6 @@ object InjektClassNames {
     val ModuleMarker = FqName("com.ivianuu.injekt.ModuleMarker")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val PropertyName = FqName("com.ivianuu.injekt.internal.PropertyName")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
     val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
     val Scope = FqName("com.ivianuu.injekt.Scope")
@@ -149,7 +155,9 @@ fun KotlinType.asTypeName(): TypeName? {
         return null
     }
     return (if (arguments.isNotEmpty()) {
-        val parameters = arguments.map { it.type.asTypeName() }
+        val parameters = arguments.map {
+            if (it.isStarProjection) STAR else it.type.asTypeName()
+        }
         if (parameters.any { it == null }) return null
         type.parameterizedBy(*parameters.toTypedArray().requireNoNulls())
     } else type).copy(
@@ -157,30 +165,73 @@ fun KotlinType.asTypeName(): TypeName? {
     )
 }
 
-fun AnnotationDescriptor.getPropertyForSyntheticAnnotation(
+fun AnnotationDescriptor.getDeclarationForSyntheticAnnotation(
     module: ModuleDescriptor
-): PropertyDescriptor {
+): DeclarationDescriptor {
     return module.getPackage(fqName!!.parent().parent())
         .memberScope
-        .getContributedVariables(
-            fqName!!.shortName(),
-            NoLookupLocation.FROM_BACKEND
-        )
-        .single()
+        .getContributedDescriptors(DescriptorKindFilter.ALL) { it == fqName!!.shortName() }
+        .single { it.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker) }
 }
 
-fun DeclarationDescriptor.getSyntheticAnnotationPropertiesOfType(
+fun DeclarationDescriptor.getSyntheticAnnotationDeclarationsOfType(
     type: KotlinType
-): List<PropertyDescriptor> {
+): List<DeclarationDescriptor> {
     return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
-        .map { it.getPropertyForSyntheticAnnotation(module) }
-        .filter { it.type.isSubtypeOf(type) }
+        .map { it.getDeclarationForSyntheticAnnotation(module) }
+        .filter {
+            when (it) {
+                is PropertyDescriptor -> it.type.isSubtypeOf(type)
+                is FunctionDescriptor -> it.returnType!!.isSubtypeOf(type)
+                else -> false
+            }
+        }
 }
 
 fun DeclarationDescriptor.getSyntheticAnnotationsForType(
     type: KotlinType
 ): List<AnnotationDescriptor> {
     return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
-        .filter { it.getPropertyForSyntheticAnnotation(module).type.isSubtypeOf(type) }
+        .filter {
+            when (val declaration = it.getDeclarationForSyntheticAnnotation(module)) {
+                is PropertyDescriptor -> declaration.type.isSubtypeOf(type)
+                is FunctionDescriptor -> declaration.returnType!!.isSubtypeOf(type)
+                else -> false
+            }
+        }
 }
 
+fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
+    if (isError) return true
+    val typeDescriptor =
+        TypeUtils.getClassDescriptor(this) ?: return false
+    if (DescriptorUtils.isEnumClass(typeDescriptor) ||
+        DescriptorUtils.isAnnotationClass(typeDescriptor) ||
+        KotlinBuiltIns.isKClass(typeDescriptor) ||
+        KotlinBuiltIns.isPrimitiveArray(this) ||
+        KotlinBuiltIns.isPrimitiveType(this) ||
+        KotlinBuiltIns.isString(this) ||
+        isUnsignedType(this)
+    ) return true
+
+    if (KotlinBuiltIns.isArray(this)) {
+        val arguments = arguments
+        if (arguments.size == 1) {
+            val arrayType = arguments[0].type
+            if (arrayType.isMarkedNullable) {
+                return false
+            }
+            val arrayTypeDescriptor =
+                TypeUtils.getClassDescriptor(arrayType)
+            if (arrayTypeDescriptor != null) {
+                return DescriptorUtils.isEnumClass(arrayTypeDescriptor) ||
+                        DescriptorUtils.isAnnotationClass(
+                            arrayTypeDescriptor
+                        ) ||
+                        KotlinBuiltIns.isKClass(arrayTypeDescriptor) ||
+                        KotlinBuiltIns.isString(arrayType)
+            }
+        }
+    }
+    return false
+}

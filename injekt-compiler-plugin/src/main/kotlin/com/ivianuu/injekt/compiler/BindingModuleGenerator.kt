@@ -83,7 +83,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType)
+                if (declaration.descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
                         .isNotEmpty()
                 ) {
                     injectableClasses += declaration
@@ -173,17 +173,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 descriptor,
                 module.defaultType.toIrType()
             ).apply {
-                val scopeAnnotationProperty =
-                    injectClass.descriptor
-                        .getSyntheticAnnotationPropertiesOfType(this@BindingModuleGenerator.scope.defaultType)
-                        .singleOrNull()
-                        ?: injektPackage.memberScope
-                            .getContributedVariables(
-                                Name.identifier("ApplicationScope"),
-                                NoLookupLocation.FROM_BACKEND
-                            )
-                            .single()
-
                 initializer = builder.irExprBody(
                     builder.irCall(
                         symbolTable.referenceSimpleFunction(
@@ -193,13 +182,32 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                         ),
                         module.defaultType.toIrType()
                     ).apply {
-                        putValueArgument(
-                            0,
-                            builder.irCall(
-                                symbolTable.referenceSimpleFunction(scopeAnnotationProperty.getter!!),
-                                scopeAnnotationProperty.type.toIrType()
+                        val scopeAnnotation =
+                            injectClass.descriptor
+                                .getSyntheticAnnotationsForType(this@BindingModuleGenerator.scope.defaultType)
+                                .singleOrNull()
+                        if (scopeAnnotation != null) {
+                            putValueArgument(
+                                0,
+                                builder.syntheticAnnotationAccessor(scopeAnnotation)
                             )
-                        )
+                        } else {
+                            putValueArgument(
+                                0,
+                                builder.irCall(
+                                    symbolTable.referenceSimpleFunction(
+                                        injektPackage.memberScope
+                                            .getContributedVariables(
+                                                Name.identifier("ApplicationScope"),
+                                                NoLookupLocation.FROM_BACKEND
+                                            )
+                                            .single()
+                                            .getter!!
+                                    ),
+                                    scope.defaultType.toIrType()
+                                )
+                            )
+                        }
                         val blockType = KotlinTypeFactory.simpleType(
                             pluginContext.builtIns.getFunction(1).defaultType,
                             arguments = listOf(
@@ -229,18 +237,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                                     )
 
                                     val behaviors =
-                                        injectClass.descriptor.getSyntheticAnnotationPropertiesOfType(
+                                        injectClass.descriptor.getSyntheticAnnotationsForType(
                                                 behavior.defaultType
                                             )
-                                            .toSet()
-                                            .map { behaviorProperty ->
-                                                irCall(
-                                                    symbolTable.referenceSimpleFunction(
-                                                        behaviorProperty.getter!!
-                                                    ),
-                                                    behaviorProperty.type.toIrType()
-                                                )
-                                            }
+                                            .map { syntheticAnnotationAccessor(it) }
 
                                     if (behaviors.isNotEmpty()) {
                                         putValueArgument(
@@ -349,15 +349,8 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
                                     val qualifiers: List<IrExpression> = param
                                         .descriptor
-                                        .getSyntheticAnnotationPropertiesOfType(qualifier.defaultType)
-                                        .map { qualifierProperty ->
-                                            irCall(
-                                                symbolTable.referenceSimpleFunction(
-                                                    qualifierProperty.getter!!
-                                                ),
-                                                qualifierProperty.type.toIrType()
-                                            )
-                                        }
+                                        .getSyntheticAnnotationsForType(qualifier.defaultType)
+                                        .map { syntheticAnnotationAccessor(it) }
 
                                     if (qualifiers.isNotEmpty()) {
                                         putValueArgument(

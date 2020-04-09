@@ -6,5 +6,5 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GenerateDslBuilder

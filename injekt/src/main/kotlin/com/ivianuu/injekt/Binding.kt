@@ -74,7 +74,7 @@ class Binding<T> private constructor(
     }
 
     override fun toString(): String =
-        "Binding(key=$key, tag=$behavior, scope=$scope, duplicateStrategy=$duplicateStrategy, provider=$provider)"
+        "Binding(key=$key, behavior=$behavior, scope=$scope, duplicateStrategy=$duplicateStrategy, provider=$provider)"
 
     fun copy(
         key: Key<T> = this.key,

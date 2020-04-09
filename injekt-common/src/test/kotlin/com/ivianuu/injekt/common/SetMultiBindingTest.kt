@@ -24,6 +24,7 @@ import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.instance
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -217,8 +218,10 @@ class SetMultiBindingTest {
     @Test
     fun testReusesSetBuildersInsideAComponentBuilder() {
         val component = Component {
-            set<Any> { add<TestDep1>() }
-            set<Any> { add<TestDep2>() }
+            instance(Command1)
+            instance(Command2)
+            set<Any> { add<Command1>() }
+            set<Any> { add<Command2>() }
         }
 
         assertEquals(2, component.get<Set<Any>>().size)

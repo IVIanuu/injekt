@@ -25,12 +25,15 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetField
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.types.makeNotNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getSimpleFunction
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -43,6 +46,7 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val component = getClass(InjektClassNames.Component)
+    private val key = getClass(InjektClassNames.Key)
     private val parameters = getClass(InjektClassNames.Parameters)
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
@@ -88,9 +92,19 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = expression.symbol.ensureBound().owner
                 if (callee.name.asString() == "get" &&
-                    callee.dispatchReceiverParameter?.type == component.defaultType.toIrType()
+                    callee.dispatchReceiverParameter?.type == component.defaultType.toIrType() &&
+                    callee.valueParameters.first().type.isSubtypeOfClass(
+                        symbolTable.referenceClass(
+                            key
+                        )
+                    ) &&
+                    expression.getValueArgument(0)!!.type.isFullyResolved() &&
+                    expression.getValueArgument(0)!! is IrGetField
                 ) {
                     dependencies += expression
+                    message("Valid dependency ${expression.dump()}")
+                } else {
+                    message("Not a valid dependency ${expression.dump()}")
                 }
                 return super.visitCall(expression)
             }

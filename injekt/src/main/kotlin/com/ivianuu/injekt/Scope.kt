@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.PropertyName
+import com.ivianuu.injekt.internal.DeclarationName
 import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
-import com.ivianuu.injekt.internal.propertyName
+import com.ivianuu.injekt.internal.declarationName
 
 /**
  * Scopes are used to name [Component]s
@@ -48,7 +48,7 @@ interface Scope : Qualifier.Element
 /**
  * Returns a scope which uses [name] for comparisons
  */
-fun Scope(@PropertyName name: Any = propertyName()): Scope = DefaultScope(name)
+fun Scope(@DeclarationName name: Any = declarationName()): Scope = DefaultScope(name)
 
 /**
  * Marker for [Scope]s
@@ -56,7 +56,7 @@ fun Scope(@PropertyName name: Any = propertyName()): Scope = DefaultScope(name)
  * @see Scope
  */
 @SyntheticAnnotationMarker
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class ScopeMarker
 
 /**

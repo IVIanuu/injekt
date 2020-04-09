@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.ScopeMarker
-import com.ivianuu.injekt.synthetic.Factory
 
 interface Command
 
@@ -47,12 +46,3 @@ val TestScope2 = Scope()
 
 @ScopeMarker
 val TestScope3 = Scope()
-
-@Factory
-class TestDep1
-
-@Factory
-class TestDep2(val dep1: TestDep1)
-
-@Factory
-class TestDep3(val dep1: TestDep1, val dep2: TestDep2)

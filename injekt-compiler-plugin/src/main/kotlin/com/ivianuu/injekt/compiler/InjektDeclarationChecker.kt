@@ -18,11 +18,13 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
@@ -80,12 +82,12 @@ class InjektDeclarationChecker(
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor.getSyntheticAnnotationPropertiesOfType(scope.defaultType).size > 1) {
+        if (descriptor.getSyntheticAnnotationDeclarationsOfType(scope.defaultType).size > 1) {
             context.trace.report(InjektErrors.OnlyOneScope.on(declaration))
         }
 
         if (descriptor.annotations.hasAnnotation(InjektClassNames.Param) &&
-            descriptor.getSyntheticAnnotationPropertiesOfType(qualifier.defaultType)
+            descriptor.getSyntheticAnnotationDeclarationsOfType(qualifier.defaultType)
                 .isNotEmpty()
         ) {
             context.trace.report(InjektErrors.ParamCannotBeNamed.on(declaration))
@@ -99,7 +101,8 @@ class InjektDeclarationChecker(
 
         if (descriptor is ClassDescriptor &&
             descriptor.kind != ClassKind.OBJECT &&
-            descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType).isNotEmpty() &&
+            descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
+                .isNotEmpty() &&
             !descriptor.hasPrimaryConstructor() &&
             descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
         ) {
@@ -109,8 +112,12 @@ class InjektDeclarationChecker(
         if (descriptor is FunctionDescriptor &&
             descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverload)
         ) {
-            if (descriptor.typeParameters.size != 1) {
-                context.trace.report(InjektErrors.KeyOverloadMustHave1TypeParameter.on(declaration))
+            if (descriptor.typeParameters.isEmpty()) {
+                context.trace.report(
+                    InjektErrors.KeyOverloadMustHaveAtLeast1TypeParameter.on(
+                        declaration
+                    )
+                )
             }
             val firstParameter = descriptor.valueParameters.firstOrNull()
             if (firstParameter == null || firstParameter.type.constructor.declarationDescriptor != key ||
@@ -120,17 +127,31 @@ class InjektDeclarationChecker(
             }
         }
 
+        fun DeclarationDescriptor.checkStatic() {
+            if (containingDeclaration !is PackageFragmentDescriptor ||
+                (this is CallableDescriptor && extensionReceiverParameter != null)
+            ) {
+                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+            }
+        }
+
+        fun DeclarationDescriptor.checkAnnotationSupportedParams() {
+            when (this) {
+                is FunctionDescriptor -> {
+                    valueParameters.all {
+                        it.type.isAcceptableTypeForAnnotationParameter()
+                    }
+                }
+            }
+        }
+
         if (descriptor is PropertyDescriptor &&
             descriptor.annotations.hasAnnotation(InjektClassNames.ModuleMarker)
         ) {
             if (!descriptor.type.isSubtypeOf(module.defaultType)) {
                 context.trace.report(InjektErrors.MustBeAModule.on(declaration))
             }
-            if (descriptor.dispatchReceiverParameter != null ||
-                descriptor.extensionReceiverParameter != null
-            ) {
-                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
-            }
+            descriptor.checkStatic()
         }
 
         if (descriptor is PropertyDescriptor &&
@@ -140,11 +161,7 @@ class InjektDeclarationChecker(
             if (!descriptor.type.isSubtypeOf(behavior.defaultType)) {
                 context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
             }
-            if (descriptor.dispatchReceiverParameter != null ||
-                descriptor.extensionReceiverParameter != null
-            ) {
-                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
-            }
+            descriptor.checkStatic()
         }
 
         if (descriptor is PropertyDescriptor &&
@@ -153,11 +170,7 @@ class InjektDeclarationChecker(
             if (!descriptor.type.isSubtypeOf(qualifier.defaultType)) {
                 context.trace.report(InjektErrors.MustBeAQualifier.on(declaration))
             }
-            if (descriptor.dispatchReceiverParameter != null ||
-                descriptor.extensionReceiverParameter != null
-            ) {
-                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
-            }
+            descriptor.checkStatic()
         }
 
         if (descriptor is PropertyDescriptor &&
@@ -166,11 +179,35 @@ class InjektDeclarationChecker(
             if (!descriptor.type.isSubtypeOf(scope.defaultType)) {
                 context.trace.report(InjektErrors.MustBeAScope.on(declaration))
             }
-            if (descriptor.dispatchReceiverParameter != null ||
-                descriptor.extensionReceiverParameter != null
-            ) {
-                context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+            descriptor.checkStatic()
+        }
+
+        if (descriptor is FunctionDescriptor &&
+            (descriptor.annotations.hasAnnotation(InjektClassNames.BehaviorMarker) ||
+                    descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder))
+        ) {
+            if (!descriptor.returnType!!.isSubtypeOf(behavior.defaultType)) {
+                context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
             }
+            descriptor.checkStatic()
+        }
+
+        if (descriptor is FunctionDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.QualifierMarker)
+        ) {
+            if (!descriptor.returnType!!.isSubtypeOf(qualifier.defaultType)) {
+                context.trace.report(InjektErrors.MustBeAQualifier.on(declaration))
+            }
+            descriptor.checkStatic()
+        }
+
+        if (descriptor is FunctionDescriptor &&
+            descriptor.annotations.hasAnnotation(InjektClassNames.ScopeMarker)
+        ) {
+            if (!descriptor.returnType!!.isSubtypeOf(scope.defaultType)) {
+                context.trace.report(InjektErrors.MustBeAScope.on(declaration))
+            }
+            descriptor.checkStatic()
         }
     }
 }
