@@ -24,13 +24,11 @@ import com.ivianuu.injekt.internal.declarationName
  * Scopes are used to name [Component]s
  * This allows annotation api [Binding]s to be associated with a specific [Component]
  *
- * A scope must be declared like this
+ * A scope can be declared like this
  *
  * ´´´
  * @ScopeMarker
- * annotation class ActivityScope {
- *     companion object : Scope
- * }
+ * val ActivityScope = Scope()
  * ´´´
  *
  * The following code ensures that the view model will be only instantiated in the activity scoped [Component]
