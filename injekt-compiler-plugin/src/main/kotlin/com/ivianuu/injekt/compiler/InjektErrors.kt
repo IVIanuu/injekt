@@ -87,19 +87,19 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         )
         map.put(
             InjektErrors.MustBeABehavior,
-            "@BehaviorMarker property must be of type Behavior"
+            "@BehaviorMarker declaration must be of type Behavior"
         )
         map.put(
             InjektErrors.MustBeAModule,
-            "@ModuleMarker property must be of type Qualifier"
+            "@ModuleMarker declaration must be of type Qualifier"
         )
         map.put(
             InjektErrors.MustBeAQualifier,
-            "@QualifierMarker property must be of type Qualifier"
+            "@QualifierMarker declaration must be of type Qualifier"
         )
         map.put(
             InjektErrors.MustBeAScope,
-            "@ScopeMarker property must be of type Scope"
+            "@ScopeMarker declaration must be of type Scope"
         )
         map.put(
             InjektErrors.MustBeStatic,
