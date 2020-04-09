@@ -50,7 +50,7 @@ class ComponentBuilder {
     private val onBindingAddedBlocks = mutableListOf<(Binding<Any?>) -> Unit>()
     private val onScopeAddedBlocks = mutableListOf<(Scope) -> Unit>()
     private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
-    private val bindingInterceptors = mutableListOf<(Binding<Any?>) -> Binding<Any?>>()
+    private val bindingInterceptors = mutableListOf<(Binding<Any?>) -> Binding<Any?>?>()
 
     private val moduleRegisterListener: (Module) -> Unit = { module ->
         if (module.scopes.any { it == AnyScope || it in scopes }) {
@@ -189,7 +189,9 @@ class ComponentBuilder {
      */
     fun <T> bind(binding: Binding<T>) {
         var finalBinding: Binding<Any?> = binding.unsafeCast()
-        bindingInterceptors.fastForEach { finalBinding = it(finalBinding) }
+        bindingInterceptors.fastForEach {
+            finalBinding = it(finalBinding) ?: return
+        }
         if (finalBinding.duplicateStrategy.check(
                 existsPredicate = { finalBinding.key in _bindings },
                 errorMessage = { "Already declared binding for ${finalBinding.key}" }
@@ -224,8 +226,10 @@ class ComponentBuilder {
 
     /**
      * Invokes the [block] when ever a binding gets added
+     *
+     * Returning null means that the binding won't get added
      */
-    fun bindingInterceptor(block: (Binding<Any?>) -> Binding<Any?>) {
+    fun bindingInterceptor(block: (Binding<Any?>) -> Binding<Any?>?) {
         bindingInterceptors += block
     }
 
