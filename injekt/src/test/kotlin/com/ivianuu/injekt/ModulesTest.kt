@@ -1,7 +1,6 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -12,10 +11,10 @@ class ModulesTest {
         val existingModules = Modules.modulesByScope.toMap()
         Modules.modulesByScope.clear()
 
-        val initA = Module(AnyScope, invocationPhase = Module.InvocationPhase.Init) { }
-        val initB = Module(AnyScope, invocationPhase = Module.InvocationPhase.Init) { }
-        val nonInitA = Module(AnyScope, invocationPhase = Module.InvocationPhase.Config) { }
-        val nonInitB = Module(AnyScope, invocationPhase = Module.InvocationPhase.Config) { }
+        val initA = Module(AnyScope, invokeOnInit = true) { }
+        val initB = Module(AnyScope, invokeOnInit = true) { }
+        val nonInitA = Module(AnyScope, invokeOnInit = false) { }
+        val nonInitB = Module(AnyScope, invokeOnInit = false) { }
 
         Injekt {
             modules(
@@ -66,11 +65,6 @@ class ModulesTest {
                 called = true
             }
         }
-
-        Component()
-        assertFalse(called)
-        Component { scopes(ApplicationScope) }
-        assertTrue(called)
 
         assertTrue(called)
     }
