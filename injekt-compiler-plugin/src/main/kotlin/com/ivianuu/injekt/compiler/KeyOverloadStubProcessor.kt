@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.Variance
 
-class KeyOverloadProcessor : ElementProcessor {
+class KeyOverloadStubProcessor : ElementProcessor {
 
     override fun processFile(
         file: KtFile,

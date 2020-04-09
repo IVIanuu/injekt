@@ -115,11 +115,7 @@ class InjektDeclarationChecker(
         ) {
             if (descriptor.typeParameters.isEmpty() ||
                 descriptor.valueParameters.none { valueParameter ->
-                    valueParameter.type.constructor.declarationDescriptor == key &&
-                            descriptor.typeParameters.any { typeParameter ->
-                                val keyTypeParam = valueParameter.type.arguments.single()
-                                keyTypeParam.type.isSubtypeOf(typeParameter.defaultType)
-                            }
+                    valueParameter.type.constructor.declarationDescriptor == key
                 }
             ) {
                 context.trace.report(

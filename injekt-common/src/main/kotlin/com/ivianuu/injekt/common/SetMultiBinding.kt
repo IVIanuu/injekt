@@ -29,6 +29,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.fastForEach
 import com.ivianuu.injekt.keyOf
+import com.jakewharton.confundus.unsafeCast
 
 /**
  * A multi binding set is a set of bindings
