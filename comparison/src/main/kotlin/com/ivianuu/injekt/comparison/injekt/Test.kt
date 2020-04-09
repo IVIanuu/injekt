@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
+import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.comparison.Fib8
 import com.ivianuu.injekt.comparison.InjectionTest
@@ -27,7 +28,7 @@ object InjektTest : InjectionTest {
     private var component: Component? = null
 
     override fun setup() {
-        component = Component()
+        component = Component { scopes(ApplicationScope) }
     }
 
     override fun inject() {
