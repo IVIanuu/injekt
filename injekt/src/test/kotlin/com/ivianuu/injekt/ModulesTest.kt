@@ -1,6 +1,7 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -11,10 +12,10 @@ class ModulesTest {
         val existingModules = Modules.modulesByScope.toMap()
         Modules.modulesByScope.clear()
 
-        val initA = Module(invokeOnInit = true) { }
-        val initB = Module(invokeOnInit = true) { }
-        val nonInitA = Module(invokeOnInit = false) { }
-        val nonInitB = Module(invokeOnInit = false) { }
+        val initA = Module(AnyScope, invocationPhase = Module.InvocationPhase.Init) { }
+        val initB = Module(AnyScope, invocationPhase = Module.InvocationPhase.Init) { }
+        val nonInitA = Module(AnyScope, invocationPhase = Module.InvocationPhase.Config) { }
+        val nonInitB = Module(AnyScope, invocationPhase = Module.InvocationPhase.Config) { }
 
         Injekt {
             modules(
@@ -22,7 +23,7 @@ class ModulesTest {
             )
         }
 
-        assertEquals(listOf(initA, initB, nonInitA, nonInitB), Modules.get())
+        assertEquals(listOf(initA, initB, nonInitA, nonInitB), Modules.get(AnyScope))
         Modules.modulesByScope.clear()
         Modules.modulesByScope += existingModules
     }
@@ -32,11 +33,44 @@ class ModulesTest {
         var called = false
         Component {
             Injekt {
-                module {
+                module(AnyScope) {
                     called = true
                 }
             }
         }
+
+        assertTrue(called)
+    }
+
+    @Test
+    fun testAnyScopeWillBeAppliedToEveryComponent() {
+        var called = false
+
+        Injekt {
+            module(AnyScope) {
+                called = true
+            }
+        }
+
+        Component()
+
+        assertTrue(called)
+    }
+
+    @Test
+    fun testOnlyAppliedToSpecifiedScopes() {
+        var called = false
+
+        Injekt {
+            module(ApplicationScope) {
+                called = true
+            }
+        }
+
+        Component()
+        assertFalse(called)
+        Component { scopes(ApplicationScope) }
+        assertTrue(called)
 
         assertTrue(called)
     }

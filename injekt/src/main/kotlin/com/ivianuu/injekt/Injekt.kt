@@ -50,7 +50,7 @@ inline fun Injekt.module(
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
 ) {
-    modules(Module(scope, invokeOnInit = invokeOnInit, block = block))
+    modules(Module(scope = scope, invokeOnInit = invokeOnInit, block = block))
 }
 
 inline fun Injekt.module(
@@ -58,5 +58,5 @@ inline fun Injekt.module(
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
 ) {
-    modules(Module(scopes, invokeOnInit = invokeOnInit, block = block))
+    modules(Module(scopes = scopes, invokeOnInit = invokeOnInit, block = block))
 }

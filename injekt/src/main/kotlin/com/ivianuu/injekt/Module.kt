@@ -47,7 +47,7 @@ inline fun Module(
 internal object Modules {
 
     internal val modulesByScope =
-        mutableMapOf<Scope?, MutableList<Module>>()
+        mutableMapOf<Scope, MutableList<Module>>()
 
     private val listeners = mutableListOf<(Module) -> Unit>()
 
@@ -56,17 +56,10 @@ internal object Modules {
 
     fun register(module: Module) {
         synchronized(modulesByScope) {
-            if (module.scopes.isEmpty()) {
-                modulesByScope.getOrPut(null) { mutableListOf() }.run {
+            module.scopes.fastForEach { scope ->
+                modulesByScope.getOrPut(scope) { mutableListOf() }.run {
                     this += module
                     sortByDescending { it.invokeOnInit }
-                }
-            } else {
-                module.scopes.fastForEach { scope ->
-                    modulesByScope.getOrPut(scope) { mutableListOf() }.run {
-                        this += module
-                        sortByDescending { it.invokeOnInit }
-                    }
                 }
             }
         }

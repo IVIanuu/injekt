@@ -69,7 +69,7 @@ fun Behavior(@PropertyName name: Any = propertyName()): Behavior = DefaultBehavi
  */
 fun sideEffectBehavior(
     @PropertyName name: Any = propertyName(),
-    scopes: List<Scope> = emptyList(),
+    scopes: List<Scope> = listOf(AnyScope),
     onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
 ): Behavior {
     val behavior = Behavior(name)
@@ -96,7 +96,7 @@ fun sideEffectBehavior(
  */
 fun interceptingBehavior(
     @PropertyName name: Any = propertyName(),
-    scopes: List<Scope> = emptyList(),
+    scopes: List<Scope> = listOf(AnyScope),
     intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>
 ): Behavior {
     val behavior = Behavior(name)
