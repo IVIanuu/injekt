@@ -23,6 +23,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -31,38 +32,26 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-inline fun <reified T : View> ViewComponent(
-    instance: T,
-    scope: Scope = ViewScope,
-    qualifier: Qualifier = ForView,
-    block: ComponentBuilder.() -> Unit = {}
-): Component =
-    ViewComponent(
-        instance = instance,
-        key = keyOf(),
-        scope = scope,
-        qualifier = qualifier,
-        block = block
-    )
-
+@KeyOverload
 inline fun <T : View> ViewComponent(
     instance: T,
     key: Key<T>,
     scope: Scope = ViewScope,
-    qualifier: Qualifier = ForView,
+    bindingQualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { parents(it) }
-        viewBindings(instance, key, qualifier)
+        viewBindings(instance, key, bindingQualifier)
         block()
     }
 
+@KeyOverload
 fun <T : View> ComponentBuilder.viewBindings(
     instance: T,
     key: Key<T>,
-    qualifier: Qualifier = ForView
+    bindingQualifier: Qualifier = ForView
 ) {
     instance(
         instance = instance,
@@ -70,10 +59,10 @@ fun <T : View> ComponentBuilder.viewBindings(
         duplicateStrategy = DuplicateStrategy.Override
     )
     alias(originalKey = key, aliasKey = keyOf<View>())
-    alias<View>(aliasQualifier = qualifier)
+    alias<View>(aliasQualifier = bindingQualifier)
 
-    contextBindings(qualifier) { instance.context!! }
-    componentAlias(qualifier)
+    contextBindings(bindingQualifier) { instance.context!! }
+    componentAlias(bindingQualifier)
 }
 
 @ScopeMarker

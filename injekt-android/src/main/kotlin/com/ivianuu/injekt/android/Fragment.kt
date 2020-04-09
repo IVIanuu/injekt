@@ -23,6 +23,7 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -32,51 +33,40 @@ import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-inline fun <reified T : Fragment> FragmentComponent(
-    instance: T,
-    scope: Scope = FragmentScope,
-    qualifier: Qualifier = ForFragment,
-    block: ComponentBuilder.() -> Unit = {}
-): Component = FragmentComponent(
-    instance = instance,
-    key = keyOf(),
-    scope = scope,
-    qualifier = qualifier,
-    block = block
-)
-
+@KeyOverload
 inline fun <T : Fragment> FragmentComponent(
     instance: T,
     key: Key<T>,
     scope: Scope = FragmentScope,
-    qualifier: Qualifier = ForFragment,
+    bindingQualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component =
     Component {
         scopes(scope)
         instance.getClosestComponentOrNull()?.let { parents(it) }
-        fragmentBindings(instance, key, qualifier)
+        fragmentBindings(instance, key, bindingQualifier)
         block()
     }
 
+@KeyOverload
 fun <T : Fragment> ComponentBuilder.fragmentBindings(
     instance: T,
     key: Key<T>,
-    qualifier: Qualifier = ForFragment
+    bindingQualifier: Qualifier = ForFragment
 ) {
     instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
     alias(originalKey = key, aliasKey = keyOf<Fragment>())
-    alias<Fragment>(aliasQualifier = qualifier)
+    alias<Fragment>(aliasQualifier = bindingQualifier)
 
-    maybeLifecycleBindings(instance, qualifier)
-    maybeViewModelStoreBindings(instance, qualifier)
-    maybeSavedStateBindings(instance, qualifier)
+    maybeLifecycleBindings(instance, bindingQualifier)
+    maybeViewModelStoreBindings(instance, bindingQualifier)
+    maybeSavedStateBindings(instance, bindingQualifier)
 
-    contextBindings(qualifier) { instance.requireContext() }
+    contextBindings(bindingQualifier) { instance.requireContext() }
     factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
-    alias<FragmentManager>(aliasQualifier = qualifier)
+    alias<FragmentManager>(aliasQualifier = bindingQualifier)
 
-    componentAlias(qualifier)
+    componentAlias(bindingQualifier)
 }
 
 @ScopeMarker

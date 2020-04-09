@@ -22,6 +22,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -30,17 +31,7 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-inline fun <reified T : BroadcastReceiver> ReceiverComponent(
-    context: Context,
-    instance: T,
-    block: ComponentBuilder.() -> Unit = {}
-): Component = ReceiverComponent(
-    context = context,
-    instance = instance,
-    key = keyOf(),
-    block = block
-)
-
+@KeyOverload
 inline fun <T : BroadcastReceiver> ReceiverComponent(
     context: Context,
     instance: T,
@@ -53,6 +44,7 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
     block()
 }
 
+@KeyOverload
 fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
     context: Context,
     instance: T,

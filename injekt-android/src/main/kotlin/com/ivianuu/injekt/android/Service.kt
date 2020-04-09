@@ -21,6 +21,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
@@ -29,11 +30,7 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-inline fun <reified T : Service> ServiceComponent(
-    instance: T,
-    block: ComponentBuilder.() -> Unit = {}
-): Component = ServiceComponent(instance = instance, key = keyOf(), block = block)
-
+@KeyOverload
 inline fun <T : Service> ServiceComponent(
     instance: T,
     key: Key<T>,
@@ -46,6 +43,7 @@ inline fun <T : Service> ServiceComponent(
         block()
     }
 
+@KeyOverload
 fun <T : Service> ComponentBuilder.serviceBindings(
     instance: T,
     key: Key<T>

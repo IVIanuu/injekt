@@ -18,13 +18,17 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ApplicationScope
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.ForApplication
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 
-inline fun <reified T : Application> ApplicationComponent(
-    instance: T,
-    block: ComponentBuilder.() -> Unit = {}
-): Component = ApplicationComponent(instance = instance, key = keyOf(), block = block)
-
+@KeyOverload
 inline fun <T : Application> ApplicationComponent(
     instance: T,
     key: Key<T>,
@@ -36,6 +40,7 @@ inline fun <T : Application> ApplicationComponent(
         block()
     }
 
+@KeyOverload
 fun <T : Application> ComponentBuilder.applicationBindings(
     instance: T,
     key: Key<T>
