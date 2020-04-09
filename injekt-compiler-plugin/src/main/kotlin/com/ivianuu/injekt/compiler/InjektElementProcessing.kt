@@ -99,18 +99,14 @@ class InjektElementProcessing(
             }
         }
 
-        return if (generatedFiles) {
-            message("ElementProcessing: files generated re run analysis")
-            AnalysisResult.RetryWithAdditionalRoots(
-                bindingTrace.bindingContext,
-                module,
-                emptyList(),
-                listOf(outputDir)
-            )
-        } else {
-            message("ElementProcessing: no files generated stop analysis")
-            null
-        }
+        message("ElementProcessing: processing finished: $generatedFiles")
+
+        return AnalysisResult.RetryWithAdditionalRoots(
+            bindingTrace.bindingContext,
+            module,
+            emptyList(),
+            listOf(outputDir)
+        )
     }
 
 }
