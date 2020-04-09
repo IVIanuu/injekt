@@ -149,7 +149,7 @@ private class CombinedBehavior(
         foldIn(Unit) { _, element -> left += element }
         val right = mutableSetOf<Behavior.Element>()
         behavior.foldIn(Unit) { _, element -> right += element }
-        return right.all { it in left }
+        return left.containsAll(right)
     }
 
     override fun <R> foldIn(initial: R, operation: (R, Behavior.Element) -> R): R =
