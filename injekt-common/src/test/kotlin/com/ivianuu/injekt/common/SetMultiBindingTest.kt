@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Eager
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import junit.framework.Assert.assertEquals
 import org.junit.Test
@@ -36,7 +35,7 @@ class SetMultiBindingTest {
             factory { Command1 }
             factory { Command2 }
             factory { Command3 }
-            set<Command>(setQualifier = TestQualifier1) {
+            set<Command>(TestQualifier1) {
                 add<Command1>()
                 add<Command2>()
                 add<Command3>()

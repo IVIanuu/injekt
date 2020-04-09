@@ -11,20 +11,23 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
-import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.toKotlinType
-import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
+import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 class KeyOverloadTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val key = getClass(InjektClassNames.Key)
+    private val qualifier = getClass(InjektClassNames.Qualifier)
 
     private lateinit var moduleFragment: IrModuleFragment
 
@@ -53,8 +56,9 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
                     otherFunction.valueParameters.all { otherValueParameter ->
                         val calleeValueParameter = callee.valueParameters[otherValueParameter.index]
-                        if (calleeValueParameter.index == 0) {
-                            otherValueParameter.type.isSubtypeOfClass(symbolTable.referenceClass(key))
+                        if (otherValueParameter.type.toKotlinType().constructor.declarationDescriptor == key) {
+                            calleeValueParameter.type.toKotlinType()
+                                .isSubtypeOf(qualifier.defaultType)
                         } else {
                             otherValueParameter.name == calleeValueParameter.name
                         }
@@ -78,8 +82,9 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                             otherFunction.valueParameters.all { otherValueParameter ->
                                 val calleeValueParameter =
                                     callee.valueParameters[otherValueParameter.index]
-                                if (calleeValueParameter.index == 0) {
-                                    otherValueParameter.type.constructor.declarationDescriptor == key
+                                if (otherValueParameter.type.constructor.declarationDescriptor == key) {
+                                    calleeValueParameter.type.toKotlinType()
+                                        .isSubtypeOf(qualifier.defaultType)
                                 } else {
                                     otherValueParameter.name == calleeValueParameter.name
                                 }
@@ -118,26 +123,32 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
             copyTypeArgumentsFrom(expression)
 
-            putValueArgument(
-                0,
-                builder.irCall(
-                    callee = symbolTable.referenceSimpleFunction(keyOf),
-                    type = symbolTable.referenceClass(key)
-                        .typeWith(expression.getTypeArgument(0)!!)
-                ).apply {
-                    putTypeArgument(0, expression.getTypeArgument(0))
-                    putValueArgument(0, expression.getValueArgument(0))
+            keyOverloadFunction!!.valueParameters.forEach { valueParameter ->
+                if (valueParameter.type.toKotlinType().constructor.declarationDescriptor == key) {
+                    val keyType = valueParameter.type
+                        .substitute(
+                            keyOverloadFunction!!.typeParameters
+                                .associate { it.symbol to expression.getTypeArgument(it.index)!! }
+                        )
+                    putValueArgument(
+                        valueParameter.index,
+                        builder.irCall(
+                            callee = symbolTable.referenceSimpleFunction(keyOf),
+                            type = keyType
+                        ).apply {
+                            putTypeArgument(
+                                0,
+                                (keyType as IrSimpleType).arguments.single().typeOrNull!!
+                            )
+                            putValueArgument(0, expression.getValueArgument(valueParameter.index))
+                        }
+                    )
+                } else {
+                    putValueArgument(
+                        valueParameter.index,
+                        expression.getValueArgument(valueParameter.index)
+                    )
                 }
-            )
-
-            try {
-                (1 until expression.valueArgumentsCount)
-                    .map { it to expression.getValueArgument(it) }
-                    .forEach { (i, param) ->
-                        putValueArgument(i, param)
-                    }
-            } catch (t: Throwable) {
-                error("Wtf original\n${callee.dump()}\n\noverload\n${keyOverloadFunction!!.dump()}\n\nexpr${expression.dump()}")
             }
         }
     }

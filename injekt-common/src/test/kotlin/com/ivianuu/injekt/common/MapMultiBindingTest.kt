@@ -23,8 +23,8 @@ import com.ivianuu.injekt.Eager
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -36,10 +36,11 @@ class MapMultiBindingTest {
             factory { Command1 }
             factory { Command2 }
             factory { Command3 }
+
             map<String, Command>(mapQualifier = TestQualifier1) {
-                put<Command1>("one")
-                put<Command2>("two")
-                put<Command3>("three")
+                put("one", keyOf<Command1>())
+                put("two", keyOf<Command2>())
+                put("three", keyOf<Command3>())
             }
         }
 

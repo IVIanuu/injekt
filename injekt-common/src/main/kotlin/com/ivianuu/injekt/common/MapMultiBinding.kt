@@ -22,13 +22,12 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
 
 /**
  * A builder for a "multi binding map"
@@ -73,20 +72,9 @@ import com.jakewharton.confundus.unsafeCast
 class MultiBindingMapBuilder<K, V> internal constructor() {
     private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
 
-    inline fun <reified T : V> put(
+    fun <K, V> MultiBindingMapBuilder<K, V>.put(
         entryKey: K,
-        entryValueQualifier: Qualifier = Qualifier.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-    ) {
-        put(
-            entryKey,
-            keyOf<T>(qualifier = entryValueQualifier), duplicateStrategy
-        )
-    }
-
-    fun <T : V> put(
-        entryKey: K,
-        entryValueKey: Key<T>,
+        entryValueKey: Key<out V>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
         put(
@@ -111,25 +99,10 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
     internal fun build(): Map<K, KeyWithOverrideInfo> = entries
 }
 
-inline fun <reified K, reified V> ComponentBuilder.map(
-    mapQualifier: Qualifier = Qualifier.None,
-    block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
-) {
-    map(
-        mapKey = keyOf(
-            classifier = Map::class,
-            arguments = arrayOf(
-                keyOf<K>(),
-                keyOf<V>()
-            ),
-            qualifier = mapQualifier
-        ), block = block
-    )
-}
-
 /**
- * Runs the [block] in the scope of the [MultiBindingMapBuilder] for [mapKey]
+ * Adds a map binding and runs the [block] in the scope of the [MultiBindingMapBuilder] for [mapKey]
  */
+@KeyOverload
 inline fun <K, V> ComponentBuilder.map(
     mapKey: Key<Map<K, V>>,
     block: MultiBindingMapBuilder<K, V>.() -> Unit = {}

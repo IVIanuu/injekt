@@ -29,7 +29,6 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.fastForEach
 import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
 
 /**
  * A multi binding set is a set of bindings
@@ -82,8 +81,8 @@ class MultiBindingSetBuilder<E> internal constructor() {
         add(keyOf<T>(qualifier = elementQualifier), duplicateStrategy)
     }
 
-    fun <T : E> add(
-        elementKey: Key<T>,
+    fun add(
+        elementKey: Key<out E>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
         add(
@@ -122,7 +121,7 @@ inline fun <reified E> ComponentBuilder.set(
 }
 
 /**
- * Runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
+ * Adds the set binding and runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
  */
 inline fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,

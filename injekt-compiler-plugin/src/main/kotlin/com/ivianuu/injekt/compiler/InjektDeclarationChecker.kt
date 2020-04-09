@@ -113,18 +113,20 @@ class InjektDeclarationChecker(
         if (descriptor is FunctionDescriptor &&
             descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverload)
         ) {
-            if (descriptor.typeParameters.isEmpty()) {
+            if (descriptor.typeParameters.isEmpty() ||
+                descriptor.valueParameters.none { valueParameter ->
+                    valueParameter.type.constructor.declarationDescriptor == key &&
+                            descriptor.typeParameters.any { typeParameter ->
+                                val keyTypeParam = valueParameter.type.arguments.single()
+                                keyTypeParam.type.isSubtypeOf(typeParameter.defaultType)
+                            }
+                }
+            ) {
                 context.trace.report(
-                    InjektErrors.KeyOverloadMustHaveAtLeast1TypeParameter.on(
+                    InjektErrors.InvalidKeyOverload.on(
                         declaration
                     )
                 )
-            }
-            val firstParameter = descriptor.valueParameters.firstOrNull()
-            if (firstParameter == null || firstParameter.type.constructor.declarationDescriptor != key ||
-                firstParameter.type.arguments.single().type != descriptor.typeParameters.first().defaultType
-            ) {
-                context.trace.report(InjektErrors.KeyOverloadMustHaveKeyParam.on(declaration))
             }
         }
 

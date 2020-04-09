@@ -18,18 +18,6 @@ package com.ivianuu.injekt
 
 import com.jakewharton.confundus.unsafeCast
 
-inline fun <reified S : T, reified T> ComponentBuilder.alias(
-    originalQualifier: Qualifier = Qualifier.None,
-    aliasQualifier: Qualifier = Qualifier.None,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
-) {
-    alias<S, T>(
-        originalKey = keyOf(qualifier = originalQualifier),
-        aliasKey = keyOf(qualifier = aliasQualifier),
-        duplicateStrategy = duplicateStrategy
-    )
-}
-
 inline fun <reified T> ComponentBuilder.alias(
     aliasQualifier: Qualifier,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
@@ -66,6 +54,7 @@ fun <T> ComponentBuilder.alias(
  * ´´´
  *
  */
+@KeyOverload
 fun <S, T> ComponentBuilder.alias(
     originalKey: Key<S>,
     aliasKey: Key<T>,
