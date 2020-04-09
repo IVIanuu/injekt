@@ -51,8 +51,8 @@ private class SingleProvider<T>(
             synchronized(this) {
                 value = this.value
                 if (value === this) {
-                    this.value = super.invoke(component, parameters)
-                    value = this.value
+                    value = super.invoke(component, parameters)
+                    this.value = value
                 }
             }
         }
