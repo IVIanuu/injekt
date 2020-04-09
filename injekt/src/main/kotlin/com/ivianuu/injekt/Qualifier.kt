@@ -96,7 +96,7 @@ fun Qualifier(@DeclarationName name: Any = declarationName()): Qualifier =
     DefaultQualifier(name = name)
 
 /**
- * Annotating a [Qualifier] property allows to use it as an annotation
+ * Annotating a [Qualifier] allows to use it as an annotation
  */
 @SyntheticAnnotationMarker
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)

@@ -117,7 +117,7 @@ fun interceptingBehavior(
 }
 
 /**
- * Annotating a [Behavior] property allows to use it as an annotation
+ * Annotating a [Behavior] allows to use it as an annotation
  *
  * For example:
  *
