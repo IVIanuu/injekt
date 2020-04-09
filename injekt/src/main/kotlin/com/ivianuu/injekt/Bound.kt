@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 /**
- * Ensures instances will be resolved in the [Component] the [Binding] was added to
+ * Ensures instances will be resolved with the [Component] the [Binding] was added to
  */
 @BehaviorMarker
 val Bound = interceptingBehavior {
