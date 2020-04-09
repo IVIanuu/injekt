@@ -34,7 +34,3 @@ package com.ivianuu.injekt
 @GenerateDslBuilder
 @BehaviorMarker
 val Factory = Behavior()
-
-@GenerateDslBuilder
-@BehaviorMarker
-fun <T, V> Hehe(duplicateStrategyy: DuplicateStrategy) = Behavior()

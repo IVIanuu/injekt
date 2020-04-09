@@ -48,6 +48,9 @@ interface InjektErrors {
         @JvmField
         val MustBeStatic = error()
 
+        @JvmField
+        val NotAValidAnnotationType = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -107,6 +110,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.MustBeStatic,
             "Must be a top-level declaration"
+        )
+        map.put(
+            InjektErrors.NotAValidAnnotationType,
+            "Not a valid annotation type"
         )
     }
 

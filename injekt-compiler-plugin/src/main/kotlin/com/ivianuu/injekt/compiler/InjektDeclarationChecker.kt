@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.descriptorUtils.hasPrimaryConstructor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -136,10 +137,10 @@ class InjektDeclarationChecker(
         }
 
         fun DeclarationDescriptor.checkAnnotationSupportedParams() {
-            when (this) {
-                is FunctionDescriptor -> {
-                    valueParameters.all {
-                        it.type.isAcceptableTypeForAnnotationParameter()
+            if (this is FunctionDescriptor) {
+                valueParameters.forEach {
+                    if (!it.type.isAcceptableTypeForAnnotationParameter()) {
+                        context.trace.report(InjektErrors.NotAValidAnnotationType.on(it.findPsi()!!))
                     }
                 }
             }
@@ -190,6 +191,7 @@ class InjektDeclarationChecker(
                 context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
             }
             descriptor.checkStatic()
+            descriptor.checkAnnotationSupportedParams()
         }
 
         if (descriptor is FunctionDescriptor &&
@@ -199,6 +201,7 @@ class InjektDeclarationChecker(
                 context.trace.report(InjektErrors.MustBeAQualifier.on(declaration))
             }
             descriptor.checkStatic()
+            descriptor.checkAnnotationSupportedParams()
         }
 
         if (descriptor is FunctionDescriptor &&
@@ -208,6 +211,8 @@ class InjektDeclarationChecker(
                 context.trace.report(InjektErrors.MustBeAScope.on(declaration))
             }
             descriptor.checkStatic()
+            descriptor.checkAnnotationSupportedParams()
+
         }
     }
 }
