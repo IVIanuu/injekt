@@ -166,7 +166,6 @@ class ComponentBuilder {
     fun <T> bind(
         key: Key<T>,
         behavior: Behavior = Behavior.None,
-        scope: Scope? = null,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
         provider: BindingProvider<T>
     ) {
@@ -174,7 +173,6 @@ class ComponentBuilder {
             Binding(
                 key = key,
                 behavior = behavior,
-                scope = scope,
                 duplicateStrategy = duplicateStrategy,
                 provider = provider
             )

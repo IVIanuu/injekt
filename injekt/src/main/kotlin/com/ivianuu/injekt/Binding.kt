@@ -36,10 +36,6 @@ class Binding<T> private constructor(
      */
     val behavior: Behavior = Behavior.None,
     /**
-     * The target scope of this binding
-     */
-    val scope: Scope? = null,
-    /**
      * How overrides should be handled
      */
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
@@ -57,7 +53,6 @@ class Binding<T> private constructor(
 
         if (key != other.key) return false
         if (behavior != other.behavior) return false
-        if (scope != other.scope) return false
         if (duplicateStrategy != other.duplicateStrategy) return false
         if (provider != other.provider) return false
 
@@ -67,25 +62,22 @@ class Binding<T> private constructor(
     override fun hashCode(): Int {
         var result = key.hashCode()
         result = 31 * result + behavior.hashCode()
-        result = 31 * result + (scope?.hashCode() ?: 0)
         result = 31 * result + duplicateStrategy.hashCode()
         result = 31 * result + provider.hashCode()
         return result
     }
 
     override fun toString(): String =
-        "Binding(key=$key, behavior=$behavior, scope=$scope, duplicateStrategy=$duplicateStrategy, provider=$provider)"
+        "Binding(key=$key, behavior=$behavior, duplicateStrategy=$duplicateStrategy, provider=$provider)"
 
     fun copy(
         key: Key<T> = this.key,
         behavior: Behavior = this.behavior,
-        scope: Scope? = this.scope,
         duplicateStrategy: DuplicateStrategy = this.duplicateStrategy,
         provider: BindingProvider<T> = this.provider
     ) = invoke(
         key,
         behavior,
-        scope,
         duplicateStrategy,
         provider
     )
@@ -97,13 +89,11 @@ class Binding<T> private constructor(
         operator fun <T> invoke(
             key: Key<T>,
             behavior: Behavior = Behavior.None,
-            scope: Scope? = null,
             duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
             provider: BindingProvider<T>
         ): Binding<T> = Binding(
             key = key,
             behavior = behavior,
-            scope = scope,
             duplicateStrategy = duplicateStrategy,
             provider = provider
         )

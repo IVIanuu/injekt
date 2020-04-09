@@ -132,12 +132,7 @@ class Component internal constructor(
         for (index in jitFactories.lastIndex downTo 0) {
             val binding = jitFactories[index].create(key, this)
             if (binding != null) {
-                val component = if (binding.scope != null) {
-                    getComponent(binding.scope)
-                } else {
-                    this
-                }
-                synchronized(component._bindings) { component._bindings[key] = binding }
+                synchronized(_bindings) { _bindings[key] = binding }
                 initializedBindings?.let { it += key }
                 (binding.provider as? ComponentAttachListener)?.onAttach(this)
                 return binding
@@ -205,15 +200,14 @@ fun interface ComponentAttachListener {
 
 @ModuleMarker
 private val ComponentModule = Module(scope = AnyScope, invokeOnInit = true) {
-    bind(
+    factory(
         behavior = Bound,
         duplicateStrategy = DuplicateStrategy.Override
     ) { this }
 
     onScopeAdded { scope ->
-        bind(
+        factory(
             qualifier = scope,
-            scope = scope,
             behavior = Bound,
             duplicateStrategy = DuplicateStrategy.Override
         ) { this }

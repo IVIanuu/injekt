@@ -17,17 +17,15 @@
 package com.ivianuu.injekt
 
 /**
- * Ensures instances will be resolved in the component for [Binding.scope]
+ * Ensures instances will be resolved in the [Component] the [Binding] was added to
  */
 @BehaviorMarker
 val Bound = interceptingBehavior {
-    it.copy(provider = BoundProvider(it.scope, it.provider))
+    it.copy(provider = BoundProvider(it.provider))
 }
 
-private class BoundProvider<T>(
-    private val scope: Scope? = null,
-    delegate: BindingProvider<T>
-) : DelegatingBindingProvider<T>(delegate) {
+private class BoundProvider<T>(delegate: BindingProvider<T>) :
+    DelegatingBindingProvider<T>(delegate) {
 
     private lateinit var boundComponent: Component
 
@@ -41,8 +39,7 @@ private class BoundProvider<T>(
 
     private fun findComponentIfNeeded(component: Component) {
         if (!this::boundComponent.isInitialized) {
-            this.boundComponent = if (scope == null) component
-            else component.getComponent(scope)
+            this.boundComponent = component
         }
     }
 }

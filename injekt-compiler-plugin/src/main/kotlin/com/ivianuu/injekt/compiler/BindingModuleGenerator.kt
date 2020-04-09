@@ -265,7 +265,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                                         )
                                     }
 
-                                    putValueArgument(4, bindingProvider(injectClass))
+                                    putValueArgument(3, bindingProvider(injectClass))
                                 }
                             }
                         )
