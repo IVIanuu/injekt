@@ -65,7 +65,7 @@ fun Behavior(@PropertyName name: Any = propertyName()): Behavior = DefaultBehavi
 
 /**
  * Returns a new [Behavior] for [name] and invokes [onBindingAdded] when ever
- * a [Binding] with the returned [Behavior] was added to a [ComponentBuilder] with [scope]
+ * a [Binding] with the returned [Behavior] was added to a [ComponentBuilder] with [scopes]
  */
 fun sideEffectBehavior(
     @PropertyName name: Any = propertyName(),
@@ -87,7 +87,7 @@ fun sideEffectBehavior(
 
 /**
  * Returns a new [Behavior] for [name] and invokes [intercept] when ever
- * a binding with the [Behavior] was added to a [ComponentBuilder] with [scope]
+ * a binding with the [Behavior] was added to a [ComponentBuilder] with [scopes]
  *
  * @see Bound
  * @see Factory
