@@ -95,82 +95,82 @@ private val SystemServicesModule = Module(ApplicationScope) {
 }
 
 @Suppress("DEPRECATION")
-private fun getSystemServicesClasses(): Set<KClass<*>> = mutableSetOf<KClass<out Any>>().apply {
-    this += AccessibilityManager::class
-    this += AccountManager::class
-    this += ActivityManager::class
-    this += AlarmManager::class
-    this += AudioManager::class
-    this += ClipboardManager::class
-    this += ConnectivityManager::class
-    this += DevicePolicyManager::class
-    this += DownloadManager::class
-    this += DropBoxManager::class
-    this += InputMethodManager::class
-    this += KeyguardManager::class
-    this += LayoutInflater::class
-    this += LocationManager::class
-    this += NfcManager::class
-    this += NotificationManager::class
-    this += PowerManager::class
-    this += SearchManager::class
-    this += SensorManager::class
-    this += StorageManager::class
-    this += TelephonyManager::class
-    this += TextServicesManager::class
-    this += UiModeManager::class
-    this += UsbManager::class
-    this += Vibrator::class
-    this += WallpaperManager::class
-    this += WifiP2pManager::class
-    this += WifiManager::class
-    this += WindowManager::class
+private fun getSystemServicesClasses() = buildList<KClass<out Any>> {
+    add(AccessibilityManager::class)
+    add(AccountManager::class)
+    add(ActivityManager::class)
+    add(AlarmManager::class)
+    add(AudioManager::class)
+    add(ClipboardManager::class)
+    add(ConnectivityManager::class)
+    add(DevicePolicyManager::class)
+    add(DownloadManager::class)
+    add(DropBoxManager::class)
+    add(InputMethodManager::class)
+    add(KeyguardManager::class)
+    add(LayoutInflater::class)
+    add(LocationManager::class)
+    add(NfcManager::class)
+    add(NotificationManager::class)
+    add(PowerManager::class)
+    add(SearchManager::class)
+    add(SensorManager::class)
+    add(StorageManager::class)
+    add(TelephonyManager::class)
+    add(TextServicesManager::class)
+    add(UiModeManager::class)
+    add(UsbManager::class)
+    add(Vibrator::class)
+    add(WallpaperManager::class)
+    add(WifiP2pManager::class)
+    add(WifiManager::class)
+    add(WindowManager::class)
 
     if (Build.VERSION.SDK_INT > 16) {
-        this += InputManager::class
-        this += MediaRouter::class
-        this += NsdManager::class
+        add(InputManager::class)
+        add(MediaRouter::class)
+        add(NsdManager::class)
     }
     if (Build.VERSION.SDK_INT > 17) {
-        this += DisplayManager::class
-        this += UserManager::class
+        add(DisplayManager::class)
+        add(UserManager::class)
     }
     if (Build.VERSION.SDK_INT > 18) {
-        this += BluetoothManager::class
+        add(BluetoothManager::class)
     }
     if (Build.VERSION.SDK_INT > 19) {
-        this += AppOpsManager::class
-        this += CaptioningManager::class
-        this += ConsumerIrManager::class
-        this += PrintManager::class
+        add(AppOpsManager::class)
+        add(CaptioningManager::class)
+        add(ConsumerIrManager::class)
+        add(PrintManager::class)
     }
     if (Build.VERSION.SDK_INT > 21) {
-        this += AppWidgetManager::class
-        this += BatteryManager::class
-        this += CameraManager::class
-        this += JobScheduler::class
-        this += LauncherApps::class
-        this += MediaProjectionManager::class
-        this += MediaSessionManager::class
-        this += RestrictionsManager::class
-        this += TelecomManager::class
-        this += TvInputManager::class
+        add(AppWidgetManager::class)
+        add(BatteryManager::class)
+        add(CameraManager::class)
+        add(JobScheduler::class)
+        add(LauncherApps::class)
+        add(MediaProjectionManager::class)
+        add(MediaSessionManager::class)
+        add(RestrictionsManager::class)
+        add(TelecomManager::class)
+        add(TvInputManager::class)
     }
     if (Build.VERSION.SDK_INT > 22) {
-        this += SubscriptionManager::class
-        this += UsageStatsManager::class
+        add(SubscriptionManager::class)
+        add(UsageStatsManager::class)
     }
     if (Build.VERSION.SDK_INT >= 23) {
-        this += CarrierConfigManager::class
-        this += FingerprintManager::class
-        this += MidiManager::class
-        this += NetworkStatsManager::class
+        add(CarrierConfigManager::class)
+        add(FingerprintManager::class)
+        add(MidiManager::class)
+        add(NetworkStatsManager::class)
     }
     if (Build.VERSION.SDK_INT >= 24) {
-        this += HardwarePropertiesManager::class
-        this += SystemHealthManager::class
+        add(HardwarePropertiesManager::class)
+        add(SystemHealthManager::class)
     }
     if (Build.VERSION.SDK_INT >= 25) {
-        this += ShortcutManager::class
+        add(ShortcutManager::class)
     }
 }
