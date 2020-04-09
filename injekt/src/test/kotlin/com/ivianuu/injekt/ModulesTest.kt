@@ -1,6 +1,7 @@
 package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -65,6 +66,12 @@ class ModulesTest {
                 called = true
             }
         }
+
+        Component()
+        assertFalse(called)
+
+        Component { scopes(ApplicationScope) }
+        assertTrue(called)
 
         assertTrue(called)
     }
