@@ -27,7 +27,7 @@ object Injekt {
     var logger: Logger? = null
 
     /**
-     * Invokes any of [modules] on each [ComponentBuilder]
+     * Registers all [modules] and invokes them in matching [ComponentBuilder]s
      */
     fun modules(vararg modules: Module) {
         modules.fastForEach { modules(it) }
