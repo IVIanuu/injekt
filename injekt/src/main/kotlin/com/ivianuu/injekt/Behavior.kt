@@ -103,7 +103,7 @@ fun sideEffectBehavior(
 fun interceptingBehavior(
     @DeclarationName name: Any = declarationName(),
     scopes: List<Scope> = listOf(AnyScope),
-    intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>
+    intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>?
 ): Behavior {
     val behavior = Behavior(name)
     Injekt {
