@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @AutoService(ComponentRegistrar::class)
@@ -49,11 +48,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         AnalysisHandlerExtension.registerExtension(
             project,
             InjektElementProcessing(outputDir)
-        )
-
-        SyntheticResolveExtension.registerExtension(
-            project,
-            InjektResolveExtension()
         )
 
         IrGenerationExtension.registerExtension(
