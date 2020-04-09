@@ -24,7 +24,9 @@ class BehaviorTest {
         }
         Component {
             assertFalse(called)
-            bind(behavior = behavior) { }
+            single { TestDep1() }
+            assertFalse(called)
+            single(behavior = behavior) { TestDep2(get()) }
             assertTrue(called)
         }
     }
@@ -38,7 +40,9 @@ class BehaviorTest {
         }
         Component {
             assertFalse(called)
-            bind(behavior = behavior) { }
+            single { TestDep1() }
+            assertFalse(called)
+            single(behavior = behavior) { TestDep2(get()) }
             assertTrue(called)
         }
     }

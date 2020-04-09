@@ -145,11 +145,11 @@ private class CombinedBehavior(
 ) : Behavior {
 
     override fun contains(behavior: Behavior): Boolean {
-        val left = mutableListOf<Behavior.Element>()
+        val left = mutableSetOf<Behavior.Element>()
         foldIn(Unit) { _, element -> left += element }
-        val right = mutableListOf<Behavior.Element>()
-        foldIn(Unit) { _, element -> right += element }
-        return left.all { it in right }
+        val right = mutableSetOf<Behavior.Element>()
+        behavior.foldIn(Unit) { _, element -> right += element }
+        return right.all { it in left }
     }
 
     override fun <R> foldIn(initial: R, operation: (R, Behavior.Element) -> R): R =
