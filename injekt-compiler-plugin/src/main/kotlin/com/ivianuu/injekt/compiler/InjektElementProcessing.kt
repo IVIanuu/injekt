@@ -60,7 +60,7 @@ class InjektElementProcessing(
             SyntheticAnnotationPropertyProcessor()
         )
 
-        var generatedFiles = false
+        val newFiles = mutableListOf<File>()
 
         val generateFile: (FileSpec) -> Unit = generatedFile@{ fileSpec ->
             val outputFile =
@@ -79,7 +79,7 @@ class InjektElementProcessing(
             }
 
             fileSpec.writeTo(outputDir)
-            generatedFiles = true
+            newFiles += outputFile
         }
 
         fun resolveFile(file: KtFile) {
@@ -99,13 +99,13 @@ class InjektElementProcessing(
             }
         }
 
-        message("ElementProcessing: processing finished: $generatedFiles")
+        message("ElementProcessing: processing finished: $newFiles")
 
         return AnalysisResult.RetryWithAdditionalRoots(
             bindingTrace.bindingContext,
             module,
             emptyList(),
-            listOf(outputDir)
+            newFiles
         )
     }
 

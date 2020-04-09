@@ -70,7 +70,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
     private val behavior = getClass(InjektClassNames.Behavior)
     private val component = getClass(InjektClassNames.Component)
     private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
-    private val duplicateStrategy = getClass(InjektClassNames.DuplicateStrategy)
     private val module = getClass(InjektClassNames.Module)
     private val moduleMarker = getClass(InjektClassNames.ModuleMarker)
     private val parameters = getClass(InjektClassNames.Parameters)
