@@ -74,7 +74,7 @@ import com.jakewharton.confundus.unsafeCast
 class MultiBindingMapBuilder<K, V> internal constructor() {
     private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
 
-    fun <K, V> put(
+    fun put(
         entryKey: K,
         entryValueKey: Key<out V>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
