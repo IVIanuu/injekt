@@ -36,18 +36,9 @@ interface InjektErrors {
         @JvmField
         val InvalidKeyOverload = error()
         @JvmField
-        val MustBeABehavior = error()
-        @JvmField
-        val MustBeAModule = error()
-        @JvmField
-        val MustBeAQualifier = error()
-        @JvmField
-        val MustBeAScope = error()
+        val InvalidType = error()
         @JvmField
         val MustBeStatic = error()
-
-        @JvmField
-        val NotAValidAnnotationType = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -86,28 +77,12 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "@KeyOverload function must have at least one key param and a corresponding function type parameter"
         )
         map.put(
-            InjektErrors.MustBeABehavior,
-            "@BehaviorMarker declaration must be of type Behavior"
-        )
-        map.put(
-            InjektErrors.MustBeAModule,
-            "@ModuleMarker declaration must be of type Qualifier"
-        )
-        map.put(
-            InjektErrors.MustBeAQualifier,
-            "@QualifierMarker declaration must be of type Qualifier"
-        )
-        map.put(
-            InjektErrors.MustBeAScope,
-            "@ScopeMarker declaration must be of type Scope"
+            InjektErrors.InvalidType,
+            "Invalid type"
         )
         map.put(
             InjektErrors.MustBeStatic,
             "Must be a top-level declaration"
-        )
-        map.put(
-            InjektErrors.NotAValidAnnotationType,
-            "Not a valid annotation type"
         )
     }
 
