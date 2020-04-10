@@ -42,14 +42,13 @@ val Eager = interceptingBehavior {
 @KeyOverload
 fun <T> ComponentBuilder.eager(key: Key<T>) {
     bind(
-        key = key.copy(qualifier = key.qualifier + EagerQualifier),
+        key = key.copy(qualifier = key.qualifier + EagerInit),
         behavior = Eager,
         duplicateStrategy = DuplicateStrategy.Drop
     ) { get(key) }
 }
 
-@QualifierMarker
-internal val EagerQualifier = Qualifier("Eager")
+private val EagerInit = Qualifier()
 
 private class EagerProvider<T>(delegate: BindingProvider<T>) :
     DelegatingBindingProvider<T>(delegate) {
