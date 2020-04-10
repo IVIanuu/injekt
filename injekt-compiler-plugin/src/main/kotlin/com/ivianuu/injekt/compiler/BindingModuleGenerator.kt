@@ -308,7 +308,8 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
             val componentGet = injektPackage.memberScope
                 .findFirstFunction("get") {
-                    it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub)
+                    it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
+                            it.extensionReceiverParameter?.type == component.defaultType
                 }
 
             val parametersGet = parameters.unsubstitutedMemberScope
