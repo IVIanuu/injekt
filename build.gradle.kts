@@ -17,7 +17,7 @@
 buildscript {
     // todo remove
     configurations.all {
-        resolutionStrategy.cacheChangingModulesFor(0, java.util.concurrent.TimeUnit.SECONDS)
+        resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
     }
 
     repositories {
@@ -49,7 +49,7 @@ allprojects {
 
     // todo remove
     configurations.all {
-        resolutionStrategy.cacheChangingModulesFor(0, java.util.concurrent.TimeUnit.SECONDS)
+        resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
         resolutionStrategy.force("com.squareup:kotlinpoet:1.5.0")
     }
 

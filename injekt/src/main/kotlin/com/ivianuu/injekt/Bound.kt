@@ -20,10 +20,10 @@ package com.ivianuu.injekt
  * Ensures instances will be resolved with the [Component] the [Binding] was added to
  */
 @BehaviorMarker
-val Bound = InterceptingBehavior {
-    val provider = BoundProvider(it.provider)
+val Bound = InterceptingBehavior { binding ->
+    val provider = BoundProvider(binding.provider)
     onBuild { provider.boundComponent = it }
-    it.copy(provider = provider)
+    binding.copy(provider = provider)
 }
 
 private class BoundProvider<T>(private val wrapped: BindingProvider<T>) :

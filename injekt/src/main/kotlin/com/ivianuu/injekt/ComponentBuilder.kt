@@ -311,7 +311,7 @@ class ComponentBuilder {
             run = false
             onPreBuildBlocks.toList().forEach {
                 val result = it()
-                if (!result) onPreBuildBlocks -= it
+                if (!result) onPreBuildBlocks = onPreBuildBlocks - it
                 run = run || result
             }
         }

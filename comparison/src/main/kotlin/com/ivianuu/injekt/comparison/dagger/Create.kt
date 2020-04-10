@@ -22,7 +22,7 @@ fun main() {
 
 private fun module() = "@Module(\n" +
         "    injects = [\n" +
-        (1..100).map { "Fib$it::class" }.joinToString(",\n") +
+        (1..100).joinToString(",\n") { "Fib$it::class" } +
         "    ]\n" +
         ")\n" +
         "class DaggerModule"
