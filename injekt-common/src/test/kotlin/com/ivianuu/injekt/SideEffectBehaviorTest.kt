@@ -2,6 +2,7 @@ package com.ivianuu.injekt
 
 import junit.framework.Assert
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertFalse
 import org.junit.Test
 
 class SideEffectBehaviorTest {
@@ -13,9 +14,9 @@ class SideEffectBehaviorTest {
             called = true
         }
         Component {
-            Assert.assertFalse(called)
+            assertFalse(called)
             single { TestDep1() }
-            Assert.assertFalse(called)
+            assertFalse(called)
             single(behavior = behavior) { TestDep2(get()) }
             Assert.assertTrue(called)
         }
