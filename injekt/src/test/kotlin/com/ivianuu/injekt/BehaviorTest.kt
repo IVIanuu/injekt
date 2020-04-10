@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -32,9 +33,23 @@ class BehaviorTest {
     }
 
     @Test
+    fun testSideEffectOrdering() {
+        val appliedSideEffects = mutableListOf<SideEffectBehavior>()
+        lateinit var behaviorA: SideEffectBehavior
+        behaviorA = SideEffectBehavior { appliedSideEffects += behaviorA }
+        lateinit var behaviorB: SideEffectBehavior
+        behaviorB = SideEffectBehavior { appliedSideEffects += behaviorB }
+        Component {
+            bind(behavior = behaviorB + behaviorA) {}
+        }
+
+        assertEquals(listOf(behaviorB, behaviorA), appliedSideEffects)
+    }
+
+    @Test
     fun testInterceptingBehavior() {
         var called = false
-        val behavior = InterceptingBehavior("test") {
+        val behavior = InterceptingBehavior {
             called = true
             it
         }
@@ -47,4 +62,17 @@ class BehaviorTest {
         }
     }
 
+    @Test
+    fun testInterceptingOrdering() {
+        val appliedInterceptors = mutableListOf<InterceptingBehavior>()
+        lateinit var behaviorA: InterceptingBehavior
+        behaviorA = InterceptingBehavior { appliedInterceptors += behaviorA; it }
+        lateinit var behaviorB: InterceptingBehavior
+        behaviorB = InterceptingBehavior { appliedInterceptors += behaviorB; it }
+        Component {
+            bind(behavior = behaviorB + behaviorA) {}
+        }
+
+        assertEquals(listOf(behaviorB, behaviorA), appliedInterceptors)
+    }
 }
