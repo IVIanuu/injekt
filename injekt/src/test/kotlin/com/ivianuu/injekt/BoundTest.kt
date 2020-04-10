@@ -22,7 +22,7 @@ import org.junit.Test
 class BoundTest {
 
     @Test
-    fun testWithoutScope() {
+    fun testBound() {
         val usedComponents = mutableListOf<Component>()
 
         val componentA = Component {
@@ -39,30 +39,4 @@ class BoundTest {
         assertEquals(listOf(componentA, componentA), usedComponents)
     }
 
-    @Test
-    fun testWithScope() {
-        val usedComponents = mutableListOf<Component>()
-
-        val componentA = Component {
-            scopes(TestScope1)
-        }
-
-        val componentB = Component {
-            parents(componentA)
-
-            bind(
-                behavior = Bound,
-                scope = TestScope1
-            ) { usedComponents += this }
-        }
-
-        val componentC = Component {
-            parents(componentB)
-        }
-
-        componentB.get<Unit>()
-        componentC.get<Unit>()
-
-        assertEquals(listOf(componentA, componentA), usedComponents)
-    }
 }
