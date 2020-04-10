@@ -31,7 +31,7 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.synthetic.Factory
 
-@GenerateDslBuilder
+@GenerateDslBuilder(name = "fragment")
 @BehaviorMarker
 val BindFragment = SideEffectBehavior {
     map<String, Fragment> {

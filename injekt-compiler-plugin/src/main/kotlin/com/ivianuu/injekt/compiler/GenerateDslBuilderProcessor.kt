@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.declarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -59,9 +60,16 @@ class GenerateDslBuilderProcessor : ElementProcessor {
                     "${file.name.removeSuffix(".kt")}DslBuilders"
                 )
                 .apply {
-                    behaviors.forEach {
-                        addFunction(keyOverloadStub(it))
-                        addFunction(keyOverload(it))
+                    behaviors.forEach { behavior ->
+                        val name =
+                            behavior.annotations.findAnnotation(InjektClassNames.GenerateDslBuilder)!!
+                                .argumentValue("name")
+                                ?.value
+                                ?.cast<String>()
+                                ?.takeIf { it.isNotEmpty() }
+                                ?: behavior.name.asString().decapitalize()
+                        addFunction(keyOverloadStub(behavior, name))
+                        addFunction(keyOverload(behavior, name))
                     }
                 }
                 .build()
@@ -69,7 +77,11 @@ class GenerateDslBuilderProcessor : ElementProcessor {
         }
     }
 
-    private fun keyOverloadStub(declarationDescriptor: DeclarationDescriptor) = baseDslBuilder(
+    private fun keyOverloadStub(
+        declarationDescriptor: DeclarationDescriptor,
+        name: String
+    ) = baseDslBuilder(
+        name = name,
         declaration = declarationDescriptor,
         annotation = InjektClassNames.KeyOverloadStub,
         firstParameter = ParameterSpec.builder(
@@ -81,7 +93,11 @@ class GenerateDslBuilderProcessor : ElementProcessor {
         code = "error(\"stub\")"
     )
 
-    private fun keyOverload(declarationDescriptor: DeclarationDescriptor) = baseDslBuilder(
+    private fun keyOverload(
+        declarationDescriptor: DeclarationDescriptor,
+        name: String
+    ) = baseDslBuilder(
+        name = name,
         declaration = declarationDescriptor,
         annotation = InjektClassNames.KeyOverload,
         firstParameter = ParameterSpec.builder(
@@ -107,11 +123,12 @@ class GenerateDslBuilderProcessor : ElementProcessor {
     )
 
     private fun baseDslBuilder(
+        name: String,
         declaration: DeclarationDescriptor,
         annotation: FqName,
         firstParameter: ParameterSpec,
         code: String
-    ) = FunSpec.builder(declaration.name.asString().decapitalize())
+    ): FunSpec = FunSpec.builder(name)
         .addKdoc("Dsl builder for the [${declaration.name}] behavior")
         .addAnnotation(annotation.asClassName())
         .addTypeVariable(TypeVariableName("BindingType"))
