@@ -28,7 +28,7 @@ import com.ivianuu.injekt.ModuleMarker
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.SideEffectBehavior
 import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.common.map
+import com.ivianuu.injekt.map
 import com.ivianuu.injekt.synthetic.Factory
 
 @GenerateDslBuilder

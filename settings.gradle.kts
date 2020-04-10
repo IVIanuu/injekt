@@ -1,6 +1,6 @@
 include(
     ":comparison",
-    ":injekt",
+    ":injekt-core",
     ":injekt-android",
     ":injekt-common",
     ":injekt-compiler-plugin",

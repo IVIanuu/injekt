@@ -14,17 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    kotlin("jvm")
-    id("com.ivianuu.injekt")
-}
+package com.ivianuu.injekt
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
-
-dependencies {
-    api(project(":injekt-core"))
-    testImplementation(Deps.junit)
-}
+// todo
+class WeakTest
