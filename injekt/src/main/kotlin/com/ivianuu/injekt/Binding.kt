@@ -26,7 +26,7 @@ package com.ivianuu.injekt
  * @see Factory
  * @see Single
  */
-class Binding<T> private constructor(
+data class Binding<T>(
     /**
      * The key which is used to identify this binding
      */
@@ -43,63 +43,7 @@ class Binding<T> private constructor(
      * Creates instances for this binding
      */
     val provider: BindingProvider<T>
-) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Binding<*>
-
-        if (key != other.key) return false
-        if (behavior != other.behavior) return false
-        if (duplicateStrategy != other.duplicateStrategy) return false
-        if (provider != other.provider) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = key.hashCode()
-        result = 31 * result + behavior.hashCode()
-        result = 31 * result + duplicateStrategy.hashCode()
-        result = 31 * result + provider.hashCode()
-        return result
-    }
-
-    override fun toString(): String =
-        "Binding(key=$key, behavior=$behavior, duplicateStrategy=$duplicateStrategy, provider=$provider)"
-
-    fun copy(
-        key: Key<T> = this.key,
-        behavior: Behavior = this.behavior,
-        duplicateStrategy: DuplicateStrategy = this.duplicateStrategy,
-        provider: BindingProvider<T> = this.provider
-    ) = invoke(
-        key,
-        behavior,
-        duplicateStrategy,
-        provider
-    )
-
-    companion object {
-        /**
-         * Returns a new [Binding] instance
-         */
-        operator fun <T> invoke(
-            key: Key<T>,
-            behavior: Behavior = Behavior.None,
-            duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-            provider: BindingProvider<T>
-        ): Binding<T> = Binding(
-            key = key,
-            behavior = behavior,
-            duplicateStrategy = duplicateStrategy,
-            provider = provider
-        )
-    }
-
-}
+)
 
 /**
  * Provides instances of T
