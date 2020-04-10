@@ -30,11 +30,7 @@ object Injekt {
      * Registers all [modules] and invokes them in matching [ComponentBuilder]s
      */
     fun modules(vararg modules: Module) {
-        modules.forEach { modules(it) }
-    }
-
-    fun modules(module: Module) {
-        Modules.register(module)
+        modules.forEach { Modules.register(it) }
     }
 
     fun initializeEndpoint(): Unit = error("Must be compiled with the injekt compiler")

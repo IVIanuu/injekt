@@ -54,21 +54,19 @@ class ComponentBuilder {
         Modules.get(AnyScope).forEach { it(this) }
     }
 
-    fun scopes(vararg scopes: Scope) {
-        scopes.forEach { scopes(it) }
-    }
-
     /**
      * Adds the [scope] this allows generated [Binding]s
      * to be associated with components.
      *
      * @see ScopeMarker
      */
-    fun scopes(scope: Scope) {
-        check(scope !in this._scopes) { "Duplicated scope $scope" }
-        this._scopes += scope
-        onScopeAddedBlocks.forEach { it(scope) }
-        Modules.get(scope).forEach { it(this) }
+    fun scopes(vararg scopes: Scope) {
+        scopes.forEach { scope ->
+            check(scope !in this._scopes) { "Duplicated scope $scope" }
+            this._scopes += scope
+            onScopeAddedBlocks.forEach { it(scope) }
+            Modules.get(scope).forEach { it(this) }
+        }
     }
 
     /**
@@ -86,18 +84,16 @@ class ComponentBuilder {
         _scopes -= scope
     }
 
-    fun parents(vararg parents: Component) {
-        parents.forEach { parents(it) }
-    }
-
     /**
-     * Adds the [parent] to the component if this component cannot resolve a instance
+     * Adds the [parents] to the component if this component cannot resolve a instance
      * it will ask it's parents
      */
-    fun parents(parent: Component) {
-        check(parent !in this._parents) { "Duplicated parent $parent" }
-        this._parents += parent
-        onParentAddedBlocks.forEach { it(parent) }
+    fun parents(vararg parents: Component) {
+        parents.forEach { parent ->
+            check(parent !in this._parents) { "Duplicated parent $parent" }
+            this._parents += parent
+            onParentAddedBlocks.forEach { it(parent) }
+        }
     }
 
     /**
@@ -119,16 +115,12 @@ class ComponentBuilder {
         jitFactories(factory)
     }
 
-    fun jitFactories(vararg factories: (Key<Any?>, Component) -> Binding<Any?>?) {
-        factories.forEach { jitFactories(it) }
-    }
-
     /**
-     * Invokes the [factory] when ever a [Binding] request cannot be fulfilled
-     * If the [factory] returns a non null [Binding] it will be returned
+     * Invokes the [factories] when ever a [Binding] request cannot be fulfilled
+     * If a factory returns a non null [Binding] it will be returned
      */
-    fun jitFactories(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
-        _jitFactories += factory
+    fun jitFactories(vararg factories: (Key<Any?>, Component) -> Binding<Any?>?) {
+        _jitFactories += factories
     }
 
     /**
