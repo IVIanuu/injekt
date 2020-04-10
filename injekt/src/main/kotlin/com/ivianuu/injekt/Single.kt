@@ -36,7 +36,7 @@ import com.jakewharton.confundus.unsafeCast
  */
 @GenerateDslBuilder
 @BehaviorMarker
-val Single = interceptingBehavior {
+val Single = InterceptingBehavior {
     it.copy(provider = SingleProvider(it.provider))
 } + Bound
 

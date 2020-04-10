@@ -20,7 +20,7 @@ package com.ivianuu.injekt
  * Ensures instances will be resolved with the [Component] the [Binding] was added to
  */
 @BehaviorMarker
-val Bound = interceptingBehavior {
+val Bound = InterceptingBehavior {
     it.copy(provider = BoundProvider(it.provider))
 }
 

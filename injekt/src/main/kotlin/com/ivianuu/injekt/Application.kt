@@ -16,6 +16,11 @@
 
 package com.ivianuu.injekt
 
+@BehaviorMarker
+val MyBehavior = InterceptingBehavior {
+    null
+}
+
 @ScopeMarker
 val ApplicationScope = Scope()
 

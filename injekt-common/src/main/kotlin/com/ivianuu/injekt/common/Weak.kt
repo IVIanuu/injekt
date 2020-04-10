@@ -22,8 +22,8 @@ import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.GenerateDslBuilder
+import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.interceptingBehavior
 import java.lang.ref.WeakReference
 
 /**
@@ -31,7 +31,7 @@ import java.lang.ref.WeakReference
  */
 @GenerateDslBuilder
 @BehaviorMarker
-val Weak = interceptingBehavior {
+val Weak = InterceptingBehavior {
     it.copy(provider = WeakProvider(it.provider))
 } + Bound
 

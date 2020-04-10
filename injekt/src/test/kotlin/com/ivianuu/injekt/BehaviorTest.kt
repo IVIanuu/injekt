@@ -19,7 +19,7 @@ class BehaviorTest {
     @Test
     fun testSideEffectBehavior() {
         var called = false
-        val behavior = sideEffectBehavior("test") {
+        val behavior = SideEffectBehavior("test") {
             called = true
         }
         Component {
@@ -34,7 +34,7 @@ class BehaviorTest {
     @Test
     fun testInterceptingBehavior() {
         var called = false
-        val behavior = interceptingBehavior("test") {
+        val behavior = InterceptingBehavior("test") {
             called = true
             it
         }

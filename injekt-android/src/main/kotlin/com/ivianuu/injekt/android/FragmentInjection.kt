@@ -26,15 +26,14 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleMarker
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.SideEffectBehavior
 import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.android.synthetic.FragmentsMap
 import com.ivianuu.injekt.common.map
-import com.ivianuu.injekt.sideEffectBehavior
 import com.ivianuu.injekt.synthetic.Factory
 
 @GenerateDslBuilder
 @BehaviorMarker
-val BindFragment = sideEffectBehavior {
+val BindFragment = SideEffectBehavior {
     map<String, Fragment> {
         put(it.key.classifier.java.name, it.key as Key<out Fragment>)
     }
@@ -42,7 +41,7 @@ val BindFragment = sideEffectBehavior {
 
 @Factory
 private class InjektFragmentFactory(
-    @FragmentsMap private val fragments: Map<String, Provider<Fragment>>
+    private val fragments: Map<String, Provider<Fragment>>
 ) : FragmentFactory() {
     override fun instantiate(classLoader: ClassLoader, className: String): Fragment =
         fragments[className]?.invoke() ?: super.instantiate(classLoader, className)

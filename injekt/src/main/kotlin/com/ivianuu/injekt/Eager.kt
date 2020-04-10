@@ -30,7 +30,7 @@ package com.ivianuu.injekt
  *
  */
 @BehaviorMarker
-val Eager = interceptingBehavior {
+val Eager = InterceptingBehavior {
     it.copy(provider = EagerProvider(it.provider))
 }
 

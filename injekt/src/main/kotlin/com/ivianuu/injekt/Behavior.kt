@@ -58,63 +58,10 @@ interface Behavior {
     }
 }
 
-fun Behavior.toList(): List<Behavior.Element> {
-    val elements = mutableListOf<Behavior.Element>()
-    foldIn(Unit) { _, element -> elements += element }
-    return elements
-}
-
 /**
  * Returns a [Behavior] which uses [name] for comparisons
  */
 fun Behavior(@DeclarationName name: Any = declarationName()): Behavior = DefaultBehavior(name)
-
-/**
- * Returns a new [Behavior] for [name] and invokes [onBindingAdded] when ever
- * a [Binding] with the returned [Behavior] was added to a [ComponentBuilder] with [scopes]
- */
-fun sideEffectBehavior(
-    @DeclarationName name: Any = declarationName(),
-    scopes: List<Scope> = listOf(AnyScope),
-    onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
-): Behavior {
-    val behavior = Behavior(name)
-    injekt {
-        module(scopes = scopes, invokeOnInit = true) {
-            onBindingAdded {
-                if (behavior in it.behavior) {
-                    onBindingAdded(it)
-                }
-            }
-        }
-    }
-    return behavior
-}
-
-/**
- * Returns a new [Behavior] for [name] and invokes [intercept] when ever
- * a binding with the [Behavior] was added to a [ComponentBuilder] with [scopes]
- *
- * @see Bound
- * @see Factory
- * @see Single
- *
- */
-fun interceptingBehavior(
-    @DeclarationName name: Any = declarationName(),
-    scopes: List<Scope> = listOf(AnyScope),
-    intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>?
-): Behavior {
-    val behavior = Behavior(name)
-    injekt {
-        module(scopes = scopes, invokeOnInit = true) {
-            bindingInterceptor {
-                if (behavior in it.behavior) intercept(it) else it
-            }
-        }
-    }
-    return behavior
-}
 
 /**
  * Annotating a [Behavior] allows to use it as an annotation
@@ -144,6 +91,79 @@ fun interceptingBehavior(
 @SyntheticAnnotationMarker
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class BehaviorMarker
+
+/**
+ * A behavior which allows to do something when ever a [Binding] gets added to a [ComponentBuilder]
+ */
+class SideEffectBehavior(
+    @DeclarationName val name: Any = declarationName(),
+    val onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
+) : Behavior.Element {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SideEffectBehavior
+
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = name.hashCode()
+
+    override fun toString(): String = name.toString()
+}
+
+@ModuleMarker
+private val SideEffectBehaviorRunnerModule = Module(AnyScope, invokeOnInit = true) {
+    onBindingAdded { binding ->
+        binding.behavior.foldIn(Unit) { _, element ->
+            if (element is SideEffectBehavior) element.onBindingAdded(this, binding)
+        }
+    }
+}
+
+/**
+ * A behavior which allows to modify [Binding]s before they get added to a [ComponentBuilder]
+ *
+ * @see Bound
+ * @see Factory
+ * @see Single
+ *
+ */
+class InterceptingBehavior(
+    @DeclarationName val name: Any = declarationName(),
+    val intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>?
+) : Behavior.Element {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as InterceptingBehavior
+
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = name.hashCode()
+
+    override fun toString(): String = name.toString()
+}
+
+@ModuleMarker
+private val InterceptingBehaviorRunnerModule = Module(AnyScope, invokeOnInit = true) {
+    bindingInterceptor { binding ->
+        binding.behavior.foldIn(binding) { currentBinding: Binding<Any?>?, element ->
+            if (currentBinding != null && element is InterceptingBehavior) element.intercept(
+                this,
+                currentBinding
+            )
+            else currentBinding
+        }
+    }
+}
 
 private class CombinedBehavior(
     private val element: Behavior.Element,

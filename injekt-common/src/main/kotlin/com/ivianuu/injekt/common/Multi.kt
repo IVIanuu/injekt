@@ -22,8 +22,8 @@ import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.GenerateDslBuilder
+import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.interceptingBehavior
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @GenerateDslBuilder
 @BehaviorMarker
-val Multi = interceptingBehavior {
+val Multi = InterceptingBehavior {
     it.copy(provider = MultiProvider(it.provider))
 } + Bound
 
