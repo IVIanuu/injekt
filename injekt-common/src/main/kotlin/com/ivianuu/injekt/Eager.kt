@@ -59,7 +59,7 @@ private class EagerProvider<T>(
 ) : (Component, Parameters) -> T {
     private var initialized = false
     override fun invoke(component: Component, parameters: Parameters): T {
-        initializeIfNeeded(component)
+        initialized = true
         return wrapped(component, parameters)
     }
 
