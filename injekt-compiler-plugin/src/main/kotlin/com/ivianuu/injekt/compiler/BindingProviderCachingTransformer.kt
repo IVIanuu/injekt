@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -26,6 +27,8 @@ import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetField
+import org.jetbrains.kotlin.ir.expressions.impl.IrBranchImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrIfThenElseImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
@@ -140,31 +143,50 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
 
         with(DeclarationIrBuilder(pluginContext, clazz.symbol)) {
             val resetFieldsExpression = irBlock {
-                +irIfThen(
-                    condition = irNot(
-                        irEqeqeq(
+                +IrIfThenElseImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.unitType
+                ).apply {
+                    branches += IrBranchImpl(
+                        condition = irEqualsNull(
                             irGetField(
                                 irGet(invokeFunction.dispatchReceiverParameter!!),
                                 boundComponentField
-                            ),
-                            irGet(invokeFunction.valueParameters.first())
-                        )
-                    ),
-                    thenPart = irBlock {
-                        +irSetField(
+                            )
+                        ),
+                        result = irSetField(
                             irGet(invokeFunction.dispatchReceiverParameter!!),
                             boundComponentField,
                             irGet(invokeFunction.valueParameters.first())
                         )
-                        fieldsByDependency.values.forEach {
+                    )
+                    branches += IrBranchImpl(
+                        condition = irNot(
+                            irEqeqeq(
+                                irGetField(
+                                    irGet(invokeFunction.dispatchReceiverParameter!!),
+                                    boundComponentField
+                                ),
+                                irGet(invokeFunction.valueParameters.first())
+                            )
+                        ),
+                        result = irBlock {
                             +irSetField(
                                 irGet(invokeFunction.dispatchReceiverParameter!!),
-                                it,
-                                irNull()
+                                boundComponentField,
+                                irGet(invokeFunction.valueParameters.first())
                             )
+                            fieldsByDependency.values.forEach {
+                                +irSetField(
+                                    irGet(invokeFunction.dispatchReceiverParameter!!),
+                                    it,
+                                    irNull()
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             invokeFunction.body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
