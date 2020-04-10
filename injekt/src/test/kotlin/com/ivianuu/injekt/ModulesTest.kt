@@ -17,7 +17,7 @@ class ModulesTest {
         val nonInitA = Module(AnyScope, invokeOnInit = false) { }
         val nonInitB = Module(AnyScope, invokeOnInit = false) { }
 
-        Injekt {
+        injekt {
             modules(
                 initA, nonInitA, nonInitB, initB
             )
@@ -32,7 +32,7 @@ class ModulesTest {
     fun testGlobalModulesWillBeAppliedToEachOpenComponentBuilderOnRegister() {
         var called = false
         Component {
-            Injekt {
+            injekt {
                 module(AnyScope) {
                     called = true
                 }
@@ -46,7 +46,7 @@ class ModulesTest {
     fun testAnyScopeWillBeAppliedToEveryComponent() {
         var called = false
 
-        Injekt {
+        injekt {
             module(AnyScope) {
                 called = true
             }
@@ -61,7 +61,7 @@ class ModulesTest {
     fun testOnlyAppliedToSpecifiedScopes() {
         var called = false
 
-        Injekt {
+        injekt {
             module(ApplicationScope) {
                 called = true
             }

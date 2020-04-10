@@ -45,12 +45,12 @@ class ComponentBuilder {
     private val _jitFactories = mutableListOf<JitFactory>()
     val jitFactories: List<JitFactory> get() = _jitFactories
 
-    private val onPreBuildBlocks = mutableListOf<() -> Boolean>()
-    private val onBuildBlocks = mutableListOf<(Component) -> Unit>()
-    private val onBindingAddedBlocks = mutableListOf<(Binding<Any?>) -> Unit>()
-    private val onScopeAddedBlocks = mutableListOf<(Scope) -> Unit>()
-    private val onParentAddedBlocks = mutableListOf<(Component) -> Unit>()
-    private val bindingInterceptors = mutableListOf<(Binding<Any?>) -> Binding<Any?>?>()
+    private var onPreBuildBlocks = emptyList<() -> Boolean>()
+    private var onBuildBlocks = emptyList<(Component) -> Unit>()
+    private var onBindingAddedBlocks = emptyList<(Binding<Any?>) -> Unit>()
+    private var onScopeAddedBlocks = emptyList<(Scope) -> Unit>()
+    private var onParentAddedBlocks = emptyList<(Component) -> Unit>()
+    private var bindingInterceptors = emptyList<(Binding<Any?>) -> Binding<Any?>?>()
 
     private val moduleRegisterListener: (Module) -> Unit = { module ->
         if (module.scopes.any { it == AnyScope || it in scopes }) {
@@ -76,7 +76,7 @@ class ComponentBuilder {
     fun scopes(scope: Scope) {
         check(scope !in this._scopes) { "Duplicated scope $scope" }
         this._scopes += scope
-        onScopeAddedBlocks.toList().fastForEach { it(scope) }
+        onScopeAddedBlocks.fastForEach { it(scope) }
         Modules.get(scope).fastForEach { it(this) }
     }
 
@@ -106,7 +106,7 @@ class ComponentBuilder {
     fun parents(parent: Component) {
         check(parent !in this._parents) { "Duplicated parent $parent" }
         this._parents += parent
-        onParentAddedBlocks.toList().fastForEach { it(parent) }
+        onParentAddedBlocks.fastForEach { it(parent) }
     }
 
     /**
@@ -196,7 +196,7 @@ class ComponentBuilder {
             )
         ) {
             _bindings[finalBinding.key] = finalBinding
-            onBindingAddedBlocks.toList().fastForEach { it(finalBinding) }
+            onBindingAddedBlocks.fastForEach { it(finalBinding) }
         }
     }
 
@@ -219,7 +219,7 @@ class ComponentBuilder {
      * Invokes the [block] for every binding which gets added
      */
     fun onBindingAdded(block: (Binding<Any?>) -> Unit) {
-        onBindingAddedBlocks += block
+        onBindingAddedBlocks = onBindingAddedBlocks + block
     }
 
     /**
@@ -228,35 +228,35 @@ class ComponentBuilder {
      * Returning null means that the binding won't get added
      */
     fun bindingInterceptor(block: (Binding<Any?>) -> Binding<Any?>?) {
-        bindingInterceptors += block
+        bindingInterceptors = bindingInterceptors + block
     }
 
     /**
      * Invokes the [block] for every scope which gets added
      */
     fun onScopeAdded(block: (Scope) -> Unit) {
-        onScopeAddedBlocks += block
+        onScopeAddedBlocks = onScopeAddedBlocks + block
     }
 
     /**
      * Invokes the [block] for every parent which gets added
      */
     fun onParentAdded(block: (Component) -> Unit) {
-        onParentAddedBlocks += block
+        onParentAddedBlocks = onParentAddedBlocks + block
     }
 
     /**
      * Invokes the [block] before building the [Component] until it returns false
      */
     fun onPreBuild(block: () -> Boolean) {
-        onPreBuildBlocks += block
+        onPreBuildBlocks = onPreBuildBlocks + block
     }
 
     /**
      * Invokes the [block] right after [Component] gets build
      */
     fun onBuild(block: (Component) -> Unit) {
-        onBuildBlocks += block
+        onBuildBlocks = onBuildBlocks + block
     }
 
     /**

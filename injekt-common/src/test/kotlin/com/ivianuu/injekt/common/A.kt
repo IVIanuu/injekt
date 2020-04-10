@@ -1,11 +1,11 @@
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Injekt
+import com.ivianuu.injekt.injekt
 import org.junit.Test
 
 class A {
     @Test
     fun init() {
-        Injekt { initializeEndpoint() }
+        injekt { initializeEndpoint() }
     }
 }

@@ -79,8 +79,8 @@ fun sideEffectBehavior(
     onBindingAdded: ComponentBuilder.(Binding<*>) -> Unit
 ): Behavior {
     val behavior = Behavior(name)
-    Injekt {
-        module(scopes, invokeOnInit = true) {
+    injekt {
+        module(scopes = scopes, invokeOnInit = true) {
             onBindingAdded {
                 if (behavior in it.behavior) {
                     onBindingAdded(it)
@@ -106,8 +106,8 @@ fun interceptingBehavior(
     intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>?
 ): Behavior {
     val behavior = Behavior(name)
-    Injekt {
-        module(scopes, invokeOnInit = true) {
+    injekt {
+        module(scopes = scopes, invokeOnInit = true) {
             bindingInterceptor {
                 if (behavior in it.behavior) intercept(it) else it
             }

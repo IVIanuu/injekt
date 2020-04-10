@@ -41,7 +41,7 @@ object Injekt {
 
 }
 
-inline fun Injekt(block: Injekt.() -> Unit) {
+inline fun injekt(block: Injekt.() -> Unit) {
     Injekt.block()
 }
 

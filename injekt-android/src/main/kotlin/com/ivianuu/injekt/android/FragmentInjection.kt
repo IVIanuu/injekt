@@ -26,8 +26,6 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleMarker
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.android.synthetic.FragmentsMap
 import com.ivianuu.injekt.common.map
@@ -37,7 +35,7 @@ import com.ivianuu.injekt.synthetic.Factory
 @GenerateDslBuilder
 @BehaviorMarker
 val BindFragment = sideEffectBehavior {
-    map<String, Fragment>(mapQualifier = FragmentsMap) {
+    map<String, Fragment> {
         put(it.key.classifier.java.name, it.key as Key<out Fragment>)
     }
 } + Factory
@@ -52,9 +50,6 @@ private class InjektFragmentFactory(
 
 @ModuleMarker
 private val FragmentInjectionModule = Module(ApplicationScope) {
-    map<String, Fragment>(mapQualifier = FragmentsMap)
+    map<String, Fragment>()
     alias<InjektFragmentFactory, FragmentFactory>()
 }
-
-@QualifierMarker
-internal val FragmentsMap = Qualifier("FragmentsMap")
