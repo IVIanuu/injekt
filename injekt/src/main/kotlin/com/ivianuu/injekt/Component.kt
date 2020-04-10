@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * The heart of the library which provides instances
  * Instances can be requested by calling [get]
@@ -69,7 +67,7 @@ class Component internal constructor(
         findJitBinding(key)?.let { return it }
         if (key.isNullable) return Binding(
             key = key
-        ) { null as T }.unsafeCast()
+        ) { null as T } as Binding<T>
         error("Couldn't get instance for $key")
     }
 

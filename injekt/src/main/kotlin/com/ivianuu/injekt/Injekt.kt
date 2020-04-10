@@ -30,7 +30,7 @@ object Injekt {
      * Registers all [modules] and invokes them in matching [ComponentBuilder]s
      */
     fun modules(vararg modules: Module) {
-        modules.fastForEach { modules(it) }
+        modules.forEach { modules(it) }
     }
 
     fun modules(module: Module) {

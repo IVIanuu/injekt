@@ -27,9 +27,7 @@ import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.fastForEach
 import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
 
 /**
  * A multi binding set is a set of bindings
@@ -150,7 +148,7 @@ internal fun <E> ComponentBuilder.getSetBuilder(
         ) {
             get(setOfKeyWithOverrideInfoKey)
                 .mapTo(mutableSetOf()) { element ->
-                    get(element.key).unsafeCast()
+                    get(element.key) as E
                 }
         }
 
@@ -235,7 +233,7 @@ private class SetBindingProvider<E>(
                     ?.provider
                     ?.let { it as? SetBindingProvider<E> }
                     ?.thisSet ?: emptySet()
-            }.fastForEach { element ->
+            }.forEach { element ->
                 mergedBuilder.add(element)
             }
 

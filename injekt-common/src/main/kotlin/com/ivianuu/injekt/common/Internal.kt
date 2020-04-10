@@ -19,13 +19,12 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.fastForEach
 
 internal fun Component.getAllParents(): List<Component> =
     mutableListOf<Component>().also { collectParents(it) }
 
 private fun Component.collectParents(parents: MutableList<Component>) {
-    this.parents.fastForEach { it.collectParents(parents) }
+    this.parents.forEach { it.collectParents(parents) }
     parents += this.parents
 }
 

@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * A provider which reuses instances after the first call to [invoke]
  */
@@ -30,7 +28,7 @@ private val LazyModule = Module(AnyScope) {
         if (key.classifier != Lazy::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-        return@jitFactory Binding(key.unsafeCast()) {
+        return@jitFactory Binding(key) {
             KeyedLazy(this, instanceKey)
         }
     }
@@ -55,6 +53,6 @@ private class KeyedLazy<T>(
             }
         }
 
-        return value.unsafeCast()
+        return value as T
     }
 }

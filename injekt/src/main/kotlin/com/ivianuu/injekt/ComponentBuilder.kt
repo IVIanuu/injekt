@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * Create a [Component] configured by [block]
  *
@@ -60,11 +58,11 @@ class ComponentBuilder {
 
     init {
         Modules.addRegisterListener(moduleRegisterListener)
-        Modules.get(AnyScope).fastForEach { it(this) }
+        Modules.get(AnyScope).forEach { it(this) }
     }
 
     fun scopes(vararg scopes: Scope) {
-        scopes.fastForEach { scopes(it) }
+        scopes.forEach { scopes(it) }
     }
 
     /**
@@ -76,8 +74,8 @@ class ComponentBuilder {
     fun scopes(scope: Scope) {
         check(scope !in this._scopes) { "Duplicated scope $scope" }
         this._scopes += scope
-        onScopeAddedBlocks.fastForEach { it(scope) }
-        Modules.get(scope).fastForEach { it(this) }
+        onScopeAddedBlocks.forEach { it(scope) }
+        Modules.get(scope).forEach { it(this) }
     }
 
     /**
@@ -85,7 +83,7 @@ class ComponentBuilder {
      */
     fun setScopes(scopes: List<Scope>) {
         _scopes.clear()
-        scopes.fastForEach { scopes(it) }
+        scopes.forEach { scopes(it) }
     }
 
     /**
@@ -96,7 +94,7 @@ class ComponentBuilder {
     }
 
     fun parents(vararg parents: Component) {
-        parents.fastForEach { parents(it) }
+        parents.forEach { parents(it) }
     }
 
     /**
@@ -106,7 +104,7 @@ class ComponentBuilder {
     fun parents(parent: Component) {
         check(parent !in this._parents) { "Duplicated parent $parent" }
         this._parents += parent
-        onParentAddedBlocks.fastForEach { it(parent) }
+        onParentAddedBlocks.forEach { it(parent) }
     }
 
     /**
@@ -124,11 +122,11 @@ class ComponentBuilder {
         _parents -= parent
     }
 
-    inline fun jitFactory(crossinline block: (Key<*>, Component) -> Binding<*>?) {
+    inline fun jitFactory(crossinline block: (Key<Any?>, Component) -> Binding<Any?>?) {
         jitFactories(
             object : JitFactory {
                 override fun <T> create(key: Key<T>, component: Component): Binding<T>? =
-                    block(key, component) as? Binding<T>
+                    block(key as Key<Any?>, component) as? Binding<T>
             }
         )
     }
@@ -137,7 +135,7 @@ class ComponentBuilder {
      * Adds the [factories]
      */
     fun jitFactories(vararg factories: JitFactory) {
-        factories.fastForEach { jitFactories(it) }
+        factories.forEach { jitFactories(it) }
     }
 
     /**
@@ -186,8 +184,8 @@ class ComponentBuilder {
      * @see single
      */
     fun <T> bind(binding: Binding<T>) {
-        var finalBinding: Binding<Any?> = binding.unsafeCast()
-        bindingInterceptors.fastForEach {
+        var finalBinding: Binding<Any?> = binding as Binding<Any?>
+        bindingInterceptors.forEach {
             finalBinding = it(finalBinding) ?: return
         }
         if (finalBinding.duplicateStrategy.check(
@@ -196,7 +194,7 @@ class ComponentBuilder {
             )
         ) {
             _bindings[finalBinding.key] = finalBinding
-            onBindingAddedBlocks.fastForEach { it(finalBinding) }
+            onBindingAddedBlocks.forEach { it(finalBinding) }
         }
     }
 
@@ -205,7 +203,7 @@ class ComponentBuilder {
      */
     fun setBindings(bindings: List<Binding<*>>) {
         _bindings.clear()
-        bindings.fastForEach { bind(it) }
+        bindings.forEach { bind(it) }
     }
 
     /**
@@ -271,7 +269,7 @@ class ComponentBuilder {
 
         val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        _parents.fastForEach { parent ->
+        _parents.forEach { parent ->
             val bindings = parent.getAllBindings()
             for ((key, binding) in bindings) {
                 if (binding.duplicateStrategy.check(
@@ -302,7 +300,7 @@ class ComponentBuilder {
             bindings = finalBindings
         )
 
-        onBuildBlocks.toList().fastForEach { it(component) }
+        onBuildBlocks.toList().forEach { it(component) }
 
         return component
     }
@@ -311,7 +309,7 @@ class ComponentBuilder {
         var run = true
         while (run) {
             run = false
-            onPreBuildBlocks.toList().fastForEach {
+            onPreBuildBlocks.toList().forEach {
                 val result = it()
                 if (!result) onPreBuildBlocks -= it
                 run = run || result
@@ -330,7 +328,7 @@ class ComponentBuilder {
             parentScopes += scope
         }
 
-        _parents.fastForEach { parent ->
+        _parents.forEach { parent ->
             parent.scopes.forEach { scope ->
                 addScope(scope)
             }
@@ -343,7 +341,7 @@ class ComponentBuilder {
         mutableMapOf<Key<*>, Binding<*>>().also { collectBindings(it) }
 
     private fun Component.collectBindings(bindings: MutableMap<Key<*>, Binding<*>>) {
-        parents.fastForEach { it.collectBindings(bindings) }
+        parents.forEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
 }

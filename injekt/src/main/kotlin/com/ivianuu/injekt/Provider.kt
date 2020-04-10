@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.jakewharton.confundus.unsafeCast
-
 /**
  * Provides instances of type [T]
  * For any type [T] that can be injected, you can also inject Provider<T>.
@@ -39,7 +37,7 @@ private val ProviderModule = Module(AnyScope) {
         if (key.classifier != Provider::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-        return@jitFactory Binding(key.unsafeCast()) {
+        return@jitFactory Binding(key) {
             KeyedProvider(this, instanceKey)
         }
     }

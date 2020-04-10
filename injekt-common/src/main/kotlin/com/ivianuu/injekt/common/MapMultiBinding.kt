@@ -28,7 +28,6 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
-import com.jakewharton.confundus.unsafeCast
 
 /**
  * A builder for a "multi binding map"
@@ -144,7 +143,7 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
         ) {
             get(key = mapOfKeyWithOverrideInfo)
                 .mapValues { (_, value) ->
-                    get(value.key).unsafeCast()
+                    get(value.key) as V
                 }
         }
 

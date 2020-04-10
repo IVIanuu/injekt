@@ -56,7 +56,7 @@ internal object Modules {
 
     fun register(module: Module) {
         synchronized(modulesByScope) {
-            module.scopes.fastForEach { scope ->
+            module.scopes.forEach { scope ->
                 modulesByScope.getOrPut(scope) { mutableListOf() }.run {
                     this += module
                     sortByDescending { it.invokeOnInit }
