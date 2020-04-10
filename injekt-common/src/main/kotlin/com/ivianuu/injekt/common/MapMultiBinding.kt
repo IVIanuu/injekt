@@ -45,7 +45,7 @@ import com.jakewharton.confundus.unsafeCast
  * @ModuleMarker
  * val creditCardModule = Module {
  *     map<String, PaymentHandler> {
- *         put("creditCard", keyOf<CreditcardPaymentHandler>())
+ *         put("creditCard", keyOf<CreditCardPaymentHandler>())
  *     }
  * }
  *
@@ -58,7 +58,7 @@ import com.jakewharton.confundus.unsafeCast
  *
  * val component = Component()
  *
- * // will include both CreditcardPaymentHandler and PaypalPaymentHandler
+ * // will include both CreditCardPaymentHandler and PaypalPaymentHandler
  * val paymentHandlers = Component.get<Map<String, PaymentHandler>>()
  *
  * paymentHandlers.get(paymentMethod).processPayment(shoppingCart)
@@ -74,7 +74,7 @@ import com.jakewharton.confundus.unsafeCast
 class MultiBindingMapBuilder<K, V> internal constructor() {
     private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
 
-    fun <K, V> MultiBindingMapBuilder<K, V>.put(
+    fun <K, V> put(
         entryKey: K,
         entryValueKey: Key<out V>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
