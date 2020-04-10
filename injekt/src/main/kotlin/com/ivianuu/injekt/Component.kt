@@ -67,7 +67,7 @@ class Component internal constructor(
         findJitBinding(key)?.let { return it }
         if (key.isNullable) return Binding(
             key = key
-        ) { null as T } as Binding<T>
+        ) { null as T }
         error("Couldn't get instance for $key")
     }
 
