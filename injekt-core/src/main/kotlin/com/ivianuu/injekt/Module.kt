@@ -49,8 +49,6 @@ internal object Modules {
     internal val modulesByScope =
         mutableMapOf<Scope, MutableList<Module>>()
 
-    private val listeners = mutableListOf<(Module) -> Unit>()
-
     fun get(scope: Scope): List<Module> =
         synchronized(modulesByScope) { modulesByScope.getOrElse(scope) { emptyList() } }
 
@@ -63,16 +61,6 @@ internal object Modules {
                 }
             }
         }
-        synchronized(listeners) { listeners.toList() }
-            .forEach { it(module) }
-    }
-
-    fun addRegisterListener(listener: (Module) -> Unit) {
-        synchronized(listeners) { listeners += listener }
-    }
-
-    fun removeRegisterListener(listener: (Module) -> Unit) {
-        synchronized(listeners) { listeners -= listener }
     }
 
 }

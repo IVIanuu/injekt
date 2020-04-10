@@ -50,14 +50,7 @@ class ComponentBuilder {
     private var onParentAddedBlocks = emptyList<(Component) -> Unit>()
     private var bindingInterceptors = emptyList<(Binding<Any?>) -> Binding<Any?>?>()
 
-    private val moduleRegisterListener: (Module) -> Unit = { module ->
-        if (module.scopes.any { it == AnyScope || it in scopes }) {
-            module(this)
-        }
-    }
-
     init {
-        Modules.addRegisterListener(moduleRegisterListener)
         Modules.get(AnyScope).forEach { it(this) }
     }
 
@@ -259,8 +252,6 @@ class ComponentBuilder {
      */
     fun build(): Component {
         runPreBuildBlocks()
-
-        Modules.removeRegisterListener(moduleRegisterListener)
 
         checkScopes()
 

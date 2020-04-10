@@ -59,10 +59,6 @@ import com.ivianuu.injekt.internal.declarationName
  * ´´´
  * val combinedQualifier = PaypalQualifier + MockedQualifier
  * ´´´
- *
- * @see Component.get
- * @see Factory
- * @see Single
  */
 interface Qualifier {
 
