@@ -16,5 +16,24 @@
 
 package com.ivianuu.injekt
 
-// todo
-class WeakTest
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertSame
+import org.junit.Test
+
+class WeakTest {
+
+    @Test
+    fun testWeakBehavior() {
+        val component = Component {
+            weak { TestDep1() }
+        }
+
+        val valueA = component.get<TestDep1>()
+        val valueB = component.get<TestDep1>()
+        assertSame(valueA, valueB)
+        System.gc()
+        val valueC = component.get<TestDep1>()
+        assertNotSame(valueB, valueC)
+    }
+
+}

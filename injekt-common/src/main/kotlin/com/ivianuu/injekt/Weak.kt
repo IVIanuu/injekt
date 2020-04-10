@@ -46,8 +46,5 @@ private class WeakProvider<T>(private val wrapped: BindingProvider<T>) :
         return valueWrapper.value
     }
 
-    /**
-     * We need the wrapper because [T] might be nullable
-     */
     private class Wrapper<T>(val value: T)
 }
