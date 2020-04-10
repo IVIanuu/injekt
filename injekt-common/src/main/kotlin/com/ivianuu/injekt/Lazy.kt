@@ -22,18 +22,17 @@ package com.ivianuu.injekt
 fun interface Lazy<T> : Provider<T>
 
 @ModuleMarker
-private val LazyModule =
-    Module(AnyScope) {
-        jitFactory { key, _ ->
-            if (key.arguments.size != 1) return@jitFactory null
-            if (key.classifier != Lazy::class) return@jitFactory null
-            val instanceKey = key.arguments.single()
-                .copy(qualifier = key.qualifier)
-            return@jitFactory Binding(key) {
-                KeyedLazy(this, instanceKey)
-            }
+private val LazyModule = Module(AnyScope) {
+    jitFactory { key, _ ->
+        if (key.arguments.size != 1) return@jitFactory null
+        if (key.classifier != Lazy::class) return@jitFactory null
+        val instanceKey = key.arguments.single()
+            .copy(qualifier = key.qualifier)
+        return@jitFactory Binding(key) {
+            KeyedLazy(this, instanceKey)
         }
     }
+}
 
 private class KeyedLazy<T>(
     private val component: Component,
