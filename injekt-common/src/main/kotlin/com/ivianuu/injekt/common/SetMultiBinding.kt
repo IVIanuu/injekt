@@ -22,6 +22,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Provider
@@ -107,23 +108,10 @@ class MultiBindingSetBuilder<E> internal constructor() {
     internal fun build(): Set<KeyWithOverrideInfo> = elements
 }
 
-inline fun <reified E> ComponentBuilder.set(
-    setQualifier: Qualifier = Qualifier.None,
-    block: MultiBindingSetBuilder<E>.() -> Unit = {}
-) {
-    set(
-        setKey = keyOf(
-            classifier = Set::class,
-            arguments = arrayOf(keyOf<E>()),
-            qualifier = setQualifier
-        ),
-        block = block
-    )
-}
-
 /**
  * Adds the set binding and runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
  */
+@KeyOverload
 inline fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,
     block: MultiBindingSetBuilder<E>.() -> Unit = {}

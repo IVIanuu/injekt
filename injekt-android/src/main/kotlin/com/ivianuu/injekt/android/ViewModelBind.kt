@@ -52,4 +52,3 @@ private class ViewModelProvider<T>(
         return viewModelProvider[key.hashCode().toString(), ViewModel::class.java] as T
     }
 }
-
