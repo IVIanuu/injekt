@@ -29,20 +29,6 @@ class ModulesTest {
     }
 
     @Test
-    fun testGlobalModulesWillBeAppliedToEachOpenComponentBuilderOnRegister() {
-        var called = false
-        Component {
-            injekt {
-                module(AnyScope) {
-                    called = true
-                }
-            }
-        }
-
-        assertTrue(called)
-    }
-
-    @Test
     fun testAnyScopeWillBeAppliedToEveryComponent() {
         var called = false
 
