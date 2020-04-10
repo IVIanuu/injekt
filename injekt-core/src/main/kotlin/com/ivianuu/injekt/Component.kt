@@ -41,11 +41,8 @@ class Component internal constructor(
     val scopes: Set<Scope>,
     val parents: List<Component>,
     val jitFactories: List<JitFactory>,
-    bindings: MutableMap<Key<*>, Binding<*>>
+    val bindings: Map<Key<*>, Binding<*>>
 ) {
-
-    private val _bindings = bindings
-    val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
     /**
      * Return a instance of type [T] for [key]
@@ -63,39 +60,31 @@ class Component internal constructor(
      * Returns the binding for [key]
      */
     fun <T> getBinding(key: Key<T>): Binding<T> {
-        findExplicitBinding(key)?.let { return it }
-        findJitBinding(key)?.let { return it }
+        findBinding(key)?.let { return it }
         if (key.isNullable) return Binding(
             key = key
         ) { null as T }
         error("Couldn't get instance for $key")
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> findExplicitBinding(key: Key<T>): Binding<T>? {
-        var binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
+    private fun <T> findBinding(key: Key<T>): Binding<T>? {
+        var binding = bindings[key] as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
         if (binding != null) return binding
 
         for (index in parents.lastIndex downTo 0) {
-            binding = parents[index].findExplicitBinding(key)
+            binding = parents[index].findBinding(key)
+            if (binding != null) return binding
+        }
+
+        for (index in jitFactories.lastIndex downTo 0) {
+            binding = jitFactories[index].create(key, this)
             if (binding != null) return binding
         }
 
         return null
     }
 
-    private fun <T> findJitBinding(key: Key<T>): Binding<T>? {
-        for (index in jitFactories.lastIndex downTo 0) {
-            val binding = jitFactories[index].create(key, this)
-            if (binding != null) {
-                synchronized(_bindings) { _bindings[key] = binding }
-                return binding
-            }
-        }
-
-        return null
-    }
 }
