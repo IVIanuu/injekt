@@ -49,19 +49,6 @@ class Component internal constructor(
     private val _bindings = bindings
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private var initializedBindings: MutableSet<Key<*>>? = mutableSetOf()
-
-    init {
-        for (binding in _bindings.values.toList()) {
-            val initializedBindings = initializedBindings!!
-            if (binding.key !in initializedBindings) {
-                initializedBindings += binding.key
-                (binding.provider as? ComponentAttachListener)?.onAttach(this)
-            }
-        }
-        initializedBindings = null // Don't needed anymore
-    }
-
     /**
      * Return a instance of type [T] for [key]
      */
@@ -86,39 +73,13 @@ class Component internal constructor(
         error("Couldn't get instance for $key")
     }
 
-    /**
-     * Returns the [Component] for [scope] or throws
-     */
-    fun getComponent(scope: Scope): Component =
-        findComponent(scope) ?: error("Couldn't find component for scope $scope")
-
-    private fun findComponent(scope: Scope): Component? {
-        if (scope in scopes) return this
-
-        for (index in parents.indices) {
-            parents[index].findComponent(scope)?.let { return it }
-        }
-
-        return null
-    }
-
     @Suppress("UNCHECKED_CAST")
     private fun <T> findExplicitBinding(key: Key<T>): Binding<T>? {
         var binding = synchronized(_bindings) { _bindings[key] } as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
-        if (binding != null) {
-            initializedBindings?.let {
-                // we currently initialize bindings
-                // make sure that the requested binding gets also initialized
-                if (binding!!.key !in it) {
-                    it += binding!!.key
-                    (binding!!.provider as? ComponentAttachListener)?.onAttach(this)
-                }
-            }
-            return binding
-        }
+        if (binding != null) return binding
 
         for (index in parents.lastIndex downTo 0) {
             binding = parents[index].findExplicitBinding(key)
@@ -133,8 +94,6 @@ class Component internal constructor(
             val binding = jitFactories[index].create(key, this)
             if (binding != null) {
                 synchronized(_bindings) { _bindings[key] = binding }
-                initializedBindings?.let { it += key }
-                (binding.provider as? ComponentAttachListener)?.onAttach(this)
                 return binding
             }
         }
@@ -190,13 +149,6 @@ inline fun <T> ComponentOwner.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): kotlin.Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { get(key, parameters()) }
-
-/**
- * Used to notify [BindingProvider]s when they get attach to a [Component]
- */
-fun interface ComponentAttachListener {
-    fun onAttach(component: Component)
-}
 
 @ModuleMarker
 private val ComponentModule = Module(scope = AnyScope, invokeOnInit = true) {

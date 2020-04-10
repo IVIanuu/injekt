@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.AbstractBindingProvider
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
@@ -127,6 +126,8 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
     if (bindingProvider == null) {
         bindingProvider = MapBindingProvider(mapOfKeyWithOverrideInfo)
 
+        onBuild { bindingProvider.ensureInitialized(it) }
+
         // bind the map with keys
         bind(
             Binding(
@@ -207,13 +208,19 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
 
 private class MapBindingProvider<K, V>(
     private val mapOfKeyWithOverrideInfo: Key<Map<K, KeyWithOverrideInfo>>
-) : AbstractBindingProvider<Map<K, KeyWithOverrideInfo>>() {
+) : (Component, Parameters) -> Map<K, KeyWithOverrideInfo> {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
     var thisMap: Map<K, KeyWithOverrideInfo>? = null
     var mergedMap: Map<K, KeyWithOverrideInfo>? = null
 
-    override fun onAttach(component: Component) {
+    override fun invoke(component: Component, parameters: Parameters): Map<K, KeyWithOverrideInfo> {
+        ensureInitialized(component)
+        return mergedMap!!
+    }
+
+    fun ensureInitialized(component: Component) {
+        if (mergedMap != null) return
         checkNotNull(thisBuilder)
         val mergedBuilder = MultiBindingMapBuilder<K, V>()
 
@@ -235,9 +242,5 @@ private class MapBindingProvider<K, V>(
         }
 
         mergedMap = mergedBuilder.build()
-    }
-
-    override fun invoke(component: Component, parameters: Parameters): Map<K, KeyWithOverrideInfo> {
-        return mergedMap!!
     }
 }

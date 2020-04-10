@@ -41,8 +41,8 @@ val Single = InterceptingBehavior {
 } + Bound
 
 private class SingleProvider<T>(
-    delegate: BindingProvider<T>
-) : DelegatingBindingProvider<T>(delegate) {
+    private val wrapped: BindingProvider<T>
+) : (Component, Parameters) -> T {
     private var value: Any? = this
 
     override fun invoke(component: Component, parameters: Parameters): T {
@@ -51,7 +51,7 @@ private class SingleProvider<T>(
             synchronized(this) {
                 value = this.value
                 if (value === this) {
-                    value = super.invoke(component, parameters)
+                    value = wrapped(component, parameters)
                     this.value = value
                 }
             }

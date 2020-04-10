@@ -105,30 +105,3 @@ class Binding<T> private constructor(
  * Provides instances of T
  */
 typealias BindingProvider<T> = Component.(Parameters) -> T
-
-/**
- * A [BindingProvider] + [ComponentAttachListener]
- */
-abstract class AbstractBindingProvider<T> : (Component, Parameters) -> T, ComponentAttachListener {
-    override fun onAttach(component: Component) {
-    }
-}
-
-/**
- * Wraps a existing [BindingProvider]
- */
-abstract class DelegatingBindingProvider<T>(
-    private val delegate: BindingProvider<T>
-) : AbstractBindingProvider<T>() {
-
-    private var initialized = false
-
-    override fun onAttach(component: Component) {
-        check(!initialized) { "Binding providers should not be reused" }
-        initialized = true
-        (delegate as? ComponentAttachListener)?.onAttach(component)
-    }
-
-    override fun invoke(component: Component, parameters: Parameters): T =
-        delegate(component, parameters)
-}

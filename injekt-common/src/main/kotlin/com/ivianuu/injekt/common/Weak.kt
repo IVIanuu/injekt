@@ -20,7 +20,6 @@ import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Bound
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.DelegatingBindingProvider
 import com.ivianuu.injekt.GenerateDslBuilder
 import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Parameters
@@ -35,15 +34,14 @@ val Weak = InterceptingBehavior {
     it.copy(provider = WeakProvider(it.provider))
 } + Bound
 
-private class WeakProvider<T>(delegate: BindingProvider<T>) :
-    DelegatingBindingProvider<T>(delegate) {
-
+private class WeakProvider<T>(private val wrapped: BindingProvider<T>) :
+        (Component, Parameters) -> T {
     private var ref: WeakReference<Wrapper<T>>? = null
 
     override fun invoke(component: Component, parameters: Parameters): T {
         var valueWrapper = ref?.get()
         if (valueWrapper == null) {
-            valueWrapper = Wrapper(super.invoke(component, parameters))
+            valueWrapper = Wrapper(wrapped(component, parameters))
             ref = WeakReference(valueWrapper)
         }
 
