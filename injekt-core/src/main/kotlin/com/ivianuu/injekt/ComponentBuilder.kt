@@ -119,15 +119,13 @@ class ComponentBuilder {
         jitFactories(factory)
     }
 
-    /**
-     * Adds the [factories]
-     */
     fun jitFactories(vararg factories: (Key<Any?>, Component) -> Binding<Any?>?) {
         factories.forEach { jitFactories(it) }
     }
 
     /**
-     * Adds the [factory]
+     * Invokes the [factory] when ever a [Binding] request cannot be fulfilled
+     * If the [factory] returns a non null [Binding] it will be returned
      */
     fun jitFactories(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
         _jitFactories += factory
