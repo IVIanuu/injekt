@@ -40,7 +40,7 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scopes: Set<Scope>,
     val parents: List<Component>,
-    val jitFactories: List<JitFactory>,
+    val jitFactories: List<(Key<Any?>, Component) -> Binding<Any?>?>,
     val bindings: Map<Key<*>, Binding<*>>
 ) {
 
@@ -80,7 +80,7 @@ class Component internal constructor(
         }
 
         for (index in jitFactories.lastIndex downTo 0) {
-            binding = jitFactories[index].create(key, this)
+            binding = jitFactories[index](key as Key<Any?>, this) as? Binding<T>
             if (binding != null) return binding
         }
 

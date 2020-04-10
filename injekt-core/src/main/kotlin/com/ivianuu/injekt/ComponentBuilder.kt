@@ -40,8 +40,8 @@ class ComponentBuilder {
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private val _jitFactories = mutableListOf<JitFactory>()
-    val jitFactories: List<JitFactory> get() = _jitFactories
+    private val _jitFactories = mutableListOf<(Key<Any?>, Component) -> Binding<Any?>?>()
+    val jitFactories: List<(Key<Any?>, Component) -> Binding<Any?>?> get() = _jitFactories
 
     private var onPreBuildBlocks = emptyList<() -> Boolean>()
     private var onBuildBlocks = emptyList<(Component) -> Unit>()
@@ -115,33 +115,28 @@ class ComponentBuilder {
         _parents -= parent
     }
 
-    inline fun jitFactory(crossinline block: (Key<Any?>, Component) -> Binding<Any?>?) {
-        jitFactories(
-            object : JitFactory {
-                override fun <T> create(key: Key<T>, component: Component): Binding<T>? =
-                    block(key as Key<Any?>, component) as? Binding<T>
-            }
-        )
+    fun jitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
+        jitFactories(factory)
     }
 
     /**
      * Adds the [factories]
      */
-    fun jitFactories(vararg factories: JitFactory) {
+    fun jitFactories(vararg factories: (Key<Any?>, Component) -> Binding<Any?>?) {
         factories.forEach { jitFactories(it) }
     }
 
     /**
      * Adds the [factory]
      */
-    fun jitFactories(factory: JitFactory) {
+    fun jitFactories(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
         _jitFactories += factory
     }
 
     /**
      * Replaces all existing jit factories with [factories]
      */
-    fun setJitFactories(factories: List<JitFactory>) {
+    fun setJitFactories(factories: List<(Key<Any?>, Component) -> Binding<Any?>?>) {
         _jitFactories.clear()
         jitFactories(*factories.toTypedArray())
     }
@@ -149,7 +144,7 @@ class ComponentBuilder {
     /**
      * Removes the [factory]
      */
-    fun removeJitFactory(factory: JitFactory) {
+    fun removeJitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
         _jitFactories -= factory
     }
 
