@@ -55,6 +55,7 @@ dependencies {
     implementation(Deps.guice)
 
     implementation(project(":injekt-core"))
+    implementation(project(":injekt-common"))
 
     implementation(Deps.katana)
 
