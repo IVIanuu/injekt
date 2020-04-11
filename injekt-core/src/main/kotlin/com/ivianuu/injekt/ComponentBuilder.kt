@@ -31,17 +31,17 @@ inline fun Component(block: ComponentBuilder.() -> Unit = {}): Component =
  */
 class ComponentBuilder {
 
-    private val _scopes = mutableSetOf<Scope>()
-    val scopes: Set<Scope> get() = _scopes
+    var scopes = emptySet<Scope>()
+        private set
 
-    private val _parents = mutableListOf<Component>()
-    val parents: List<Component> get() = _parents
+    var parents = emptyList<Component>()
+        private set
 
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    private val _jitFactories = mutableListOf<(Key<Any?>, Component) -> Binding<Any?>?>()
-    val jitFactories: List<(Key<Any?>, Component) -> Binding<Any?>?> get() = _jitFactories
+    var jitFactories = emptyList<(Key<Any?>, Component) -> Binding<Any?>?>()
+        private set
 
     private var onPreBuildBlocks = emptyList<() -> Boolean>()
     private var onBuildBlocks = emptyList<(Component) -> Unit>()
@@ -62,8 +62,8 @@ class ComponentBuilder {
      */
     fun scopes(vararg scopes: Scope) {
         scopes.forEach { scope ->
-            check(scope !in this._scopes) { "Duplicated scope $scope" }
-            this._scopes += scope
+            check(scope !in this.scopes) { "Duplicated scope $scope" }
+            this.scopes = this.scopes + scope
             onScopeAddedBlocks.forEach { it(scope) }
             Modules.get(scope).forEach { it(this) }
         }
@@ -72,8 +72,8 @@ class ComponentBuilder {
     /**
      * Replaces all existing scopes with [scopes]
      */
-    fun setScopes(scopes: List<Scope>) {
-        _scopes.clear()
+    fun setScopes(scopes: Set<Scope>) {
+        this.scopes = emptySet()
         scopes.forEach { scopes(it) }
     }
 
@@ -81,7 +81,7 @@ class ComponentBuilder {
      * Removes the [scope]
      */
     fun removeScope(scope: Scope) {
-        _scopes -= scope
+        scopes = scopes - scope
     }
 
     /**
@@ -90,8 +90,8 @@ class ComponentBuilder {
      */
     fun parents(vararg parents: Component) {
         parents.forEach { parent ->
-            check(parent !in this._parents) { "Duplicated parent $parent" }
-            this._parents += parent
+            check(parent !in this.parents) { "Duplicated parent $parent" }
+            this.parents = this.parents + parent
             onParentAddedBlocks.forEach { it(parent) }
         }
     }
@@ -100,7 +100,7 @@ class ComponentBuilder {
      * Replaces all existing parents with [parents]
      */
     fun setParents(parents: List<Component>) {
-        _parents.clear()
+        this.parents = emptyList()
         parents(*parents.toTypedArray())
     }
 
@@ -108,26 +108,26 @@ class ComponentBuilder {
      * Removes the [parent]
      */
     fun removeParent(parent: Component) {
-        _parents -= parent
-    }
-
-    fun jitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
-        jitFactories(factory)
+        this.parents = this.parents - parent
     }
 
     /**
      * Invokes the [factories] when ever a [Binding] request cannot be fulfilled
      * If a factory returns a non null [Binding] it will be returned
      */
+    fun jitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
+        jitFactories(factory)
+    }
+
     fun jitFactories(vararg factories: (Key<Any?>, Component) -> Binding<Any?>?) {
-        _jitFactories += factories
+        jitFactories = jitFactories + factories
     }
 
     /**
      * Replaces all existing jit factories with [factories]
      */
     fun setJitFactories(factories: List<(Key<Any?>, Component) -> Binding<Any?>?>) {
-        _jitFactories.clear()
+        jitFactories = emptyList()
         jitFactories(*factories.toTypedArray())
     }
 
@@ -135,7 +135,7 @@ class ComponentBuilder {
      * Removes the [factory]
      */
     fun removeJitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
-        _jitFactories -= factory
+        jitFactories = jitFactories - factory
     }
 
     @KeyOverload
@@ -242,7 +242,7 @@ class ComponentBuilder {
 
         val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
 
-        _parents.forEach { parent ->
+        parents.forEach { parent ->
             val bindings = parent.getAllBindings()
             for ((key, binding) in bindings) {
                 if (binding.duplicateStrategy.check(
@@ -267,13 +267,13 @@ class ComponentBuilder {
         }
 
         val component = Component(
-            scopes = _scopes,
-            parents = _parents,
-            jitFactories = _jitFactories,
-            bindings = finalBindings
+            scopes = scopes.toSet(),
+            parents = parents.toList(),
+            jitFactories = jitFactories.toList(),
+            bindings = finalBindings.toMap()
         )
 
-        onBuildBlocks.toList().forEach { it(component) }
+        onBuildBlocks.forEach { it(component) }
 
         return component
     }
@@ -282,7 +282,7 @@ class ComponentBuilder {
         var run = true
         while (run) {
             run = false
-            onPreBuildBlocks.toList().forEach {
+            onPreBuildBlocks.forEach {
                 val result = it()
                 if (!result) onPreBuildBlocks = onPreBuildBlocks - it
                 run = run || result
@@ -301,13 +301,13 @@ class ComponentBuilder {
             parentScopes += scope
         }
 
-        _parents.forEach { parent ->
+        parents.forEach { parent ->
             parent.scopes.forEach { scope ->
                 addScope(scope)
             }
         }
 
-        _scopes.forEach { addScope(it) }
+        scopes.forEach { addScope(it) }
     }
 
     private fun Component.getAllBindings(): Map<Key<*>, Binding<*>> =
