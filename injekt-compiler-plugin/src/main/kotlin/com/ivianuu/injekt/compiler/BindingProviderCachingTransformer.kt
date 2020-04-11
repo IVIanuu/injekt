@@ -105,9 +105,6 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
                     expression.getValueArgument(0)!! is IrGetField
                 ) {
                     dependencies += expression
-                    message("Valid dependency ${expression.dump()}")
-                } else {
-                    message("Not a valid dependency ${expression.dump()}")
                 }
                 return super.visitCall(expression)
             }

@@ -52,8 +52,6 @@ class InjektElementProcessing(
         if (processingFinished) return null
         processingFinished = true
 
-        message("ElementProcessing: run analysis on files ${files.map { it.virtualFilePath }}")
-
         val processors = listOf(
             GenerateDslBuilderProcessor(),
             KeyOverloadStubProcessor(),
@@ -68,14 +66,10 @@ class InjektElementProcessing(
                     outputDir,
                     fileSpec.packageName.replace(".", "/") + "/" + fileSpec.name + ".kt"
                 )
-            message("ElementProcessing: new file $outputFile")
             if (outputFile.exists()) {
                 val oldContent = outputFile.readText()
                 val newContent = fileSpec.toString()
-                if (oldContent == newContent) {
-                    message("ElementProcessing: do not generate file ${fileSpec.packageName}.${fileSpec.name} nothing has changed")
-                    return@generatedFile
-                }
+                if (oldContent == newContent) return@generatedFile
             }
 
             fileSpec.writeTo(outputDir)
@@ -98,8 +92,6 @@ class InjektElementProcessing(
                 it.processFile(file, bindingTrace, generateFile)
             }
         }
-
-        message("ElementProcessing: processing finished: $newFiles")
 
         return AnalysisResult.RetryWithAdditionalRoots(
             bindingTrace.bindingContext,
