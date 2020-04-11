@@ -95,7 +95,7 @@ fun Qualifier(@DeclarationName name: Any = declarationName()): Qualifier =
  * Annotating a [Qualifier] allows to use it as an annotation
  */
 @SyntheticAnnotationMarker
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
 
 private data class DefaultQualifier(val name: Any) : Qualifier.Element
