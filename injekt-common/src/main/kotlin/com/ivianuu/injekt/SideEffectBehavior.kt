@@ -29,7 +29,7 @@ class SideEffectBehavior(
 @ModuleMarker
 private val SideEffectBehaviorRunnerModule = Module(AnyScope, invokeOnInit = true) {
     onBindingAdded { binding ->
-        binding.behavior.foldIn(Unit) { _, element ->
+        binding.behavior.foldInBehavior(Unit) { _, element ->
             if (element is SideEffectBehavior) element.onBindingAdded(this, binding)
         }
     }

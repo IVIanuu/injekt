@@ -69,7 +69,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
     private val behavior = getClass(InjektClassNames.Behavior)
     private val component = getClass(InjektClassNames.Component)
-    private val componentBuilder = getClass(InjektClassNames.ComponentBuilder)
     private val module = getClass(InjektClassNames.Module)
     private val moduleMarker = getClass(InjektClassNames.ModuleMarker)
     private val parameters = getClass(InjektClassNames.Parameters)
@@ -103,51 +102,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         return declaration
     }
 
-    private inner class ModulePropertyDescriptor(injectClass: IrClass) :
-        PropertyDescriptorImpl(
-            injectClass.descriptor.containingDeclaration,
-            null,
-            Annotations.create(
-                listOf(
-                    AnnotationDescriptorImpl(
-                        moduleMarker.defaultType,
-                        emptyMap(),
-                        SourceElement.NO_SOURCE
-                    )
-                )
-            ),
-            Modality.FINAL,
-            Visibilities.PRIVATE,
-            false,
-            Name.identifier("${injectClass.name.asString()}Module"),
-            CallableMemberDescriptor.Kind.DECLARATION,
-            SourceElement.NO_SOURCE,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false
-    ) {
-        init {
-            initialize(
-                null,
-                null,
-                FieldDescriptorImpl(
-                    Annotations.EMPTY,
-                    this
-                ),
-                null
-            )
-            setType(
-                module.defaultType,
-                emptyList(),
-                null,
-                null
-            )
-        }
-    }
-
     private fun moduleProperty(injectClass: IrClass): IrProperty {
         val descriptor = ModulePropertyDescriptor(injectClass)
         return IrPropertyImpl(
@@ -176,99 +130,60 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 initializer = builder.irExprBody(
                     builder.irCall(
                         symbolTable.referenceSimpleFunction(
-                            injektPackage.memberScope.findFirstFunction("Module") {
-                                it.valueParameters.first().name.asString() == "scope"
+                            injektInternalPackage.memberScope.findFirstFunction("BindingModule") {
+                                it.valueParameters.firstOrNull()?.type == qualifier.defaultType
                             }
                         ),
                         module.defaultType.toIrType()
                     ).apply {
-                        val scopeAnnotation =
-                            injectClass.descriptor
-                                .getSyntheticAnnotationsForType(this@BindingModuleGenerator.scope.defaultType)
-                                .singleOrNull()
-                        if (scopeAnnotation != null) {
-                            putValueArgument(
-                                0,
-                                builder.syntheticAnnotationAccessor(scopeAnnotation)
-                            )
-                        } else {
-                            putValueArgument(
-                                0,
-                                builder.irCall(
-                                    symbolTable.referenceSimpleFunction(
-                                        injektPackage.memberScope
-                                            .getContributedVariables(
-                                                Name.identifier("ApplicationScope"),
-                                                NoLookupLocation.FROM_BACKEND
-                                            )
-                                            .single()
-                                            .getter!!
-                                    ),
-                                    scope.defaultType.toIrType()
+                        putTypeArgument(0, injectClass.defaultType)
+
+                        val behavior =
+                            injectClass.descriptor.getSyntheticAnnotationsForType(
+                                    behavior.defaultType
                                 )
+                                .map { builder.syntheticAnnotationAccessor(it) }
+
+                        if (behavior.isNotEmpty()) {
+                            putValueArgument(
+                                1,
+                                behavior
+                                    .reduceRight { currentBehavior, acc ->
+                                        builder.irCall(
+                                            symbolTable.referenceSimpleFunction(
+                                                this@BindingModuleGenerator.behavior.unsubstitutedMemberScope
+                                                    .findSingleFunction(
+                                                        Name.identifier(
+                                                            "plus"
+                                                        )
+                                                    )
+                                            ),
+                                            this@BindingModuleGenerator.behavior.defaultType.toIrType()
+                                        ).apply {
+                                            dispatchReceiver = currentBehavior
+                                            putValueArgument(0, acc)
+                                        }
+                                    }
                             )
                         }
-                        val blockType = KotlinTypeFactory.simpleType(
-                            pluginContext.builtIns.getFunction(1).defaultType,
-                            arguments = listOf(
-                                componentBuilder.defaultType.asTypeProjection(),
-                                pluginContext.builtIns.unitType.asTypeProjection()
-                            )
-                        )
+
                         putValueArgument(
                             2,
-                            builder.irLambdaExpression(
-                                builder.createFunctionDescriptor(blockType),
-                                blockType.toIrType()
-                            ) { lambdaFn ->
-                                +irCall(
-                                    callee = symbolTable.referenceSimpleFunction(
-                                        injektPackage.memberScope.findFirstFunction("bind") {
-                                            it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub)
-                                        }
-                                    ),
-                                    type = pluginContext.irBuiltIns.unitType
-                                ).apply {
-                                    this.extensionReceiver = irGet(lambdaFn.valueParameters[0])
-
-                                    putTypeArgument(
-                                        0,
-                                        injectClass.defaultType
-                                    )
-
-                                    val behaviors =
-                                        injectClass.descriptor.getSyntheticAnnotationsForType(
-                                                behavior.defaultType
-                                            )
-                                            .map { syntheticAnnotationAccessor(it) }
-
-                                    if (behaviors.isNotEmpty()) {
-                                        putValueArgument(
-                                            1,
-                                            behaviors
-                                                .reduceRight { currentBehavior, acc ->
-                                                    irCall(
-                                                        symbolTable.referenceSimpleFunction(
-                                                            behavior.unsubstitutedMemberScope
-                                                                .findSingleFunction(
-                                                                    Name.identifier(
-                                                                        "plus"
-                                                                    )
-                                                                )
-                                                        ),
-                                                        behavior.defaultType.toIrType()
-                                                    ).apply {
-                                                        dispatchReceiver = currentBehavior
-                                                        putValueArgument(0, acc)
-                                                    }
-                                                }
+                            builder.irCall(
+                                symbolTable.referenceSimpleFunction(
+                                    injektPackage.memberScope
+                                        .getContributedVariables(
+                                            Name.identifier("ApplicationScope"),
+                                            NoLookupLocation.FROM_BACKEND
                                         )
-                                    }
-
-                                    putValueArgument(3, bindingProvider(injectClass))
-                                }
-                            }
+                                        .single()
+                                        .getter!!
+                                ),
+                                scope.defaultType.toIrType()
+                            )
                         )
+
+                        putValueArgument(3, builder.bindingProvider(injectClass))
                     }
                 )
             }
@@ -280,6 +195,51 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                     +irReturn(irGetField(null, backingField!!))
                 }
             }
+        }
+    }
+
+    private inner class ModulePropertyDescriptor(injectClass: IrClass) :
+        PropertyDescriptorImpl(
+            injectClass.descriptor.containingDeclaration,
+            null,
+            Annotations.create(
+                listOf(
+                    AnnotationDescriptorImpl(
+                        moduleMarker.defaultType,
+                        emptyMap(),
+                        SourceElement.NO_SOURCE
+                    )
+                )
+            ),
+            Modality.FINAL,
+            Visibilities.PRIVATE,
+            false,
+            Name.identifier("${injectClass.name.asString()}Module"),
+            CallableMemberDescriptor.Kind.DECLARATION,
+            SourceElement.NO_SOURCE,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ) {
+        init {
+            initialize(
+                null,
+                null,
+                FieldDescriptorImpl(
+                    Annotations.EMPTY,
+                    this
+                ),
+                null
+            )
+            setType(
+                module.defaultType,
+                emptyList(),
+                null,
+                null
+            )
         }
     }
 

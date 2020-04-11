@@ -125,6 +125,8 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                             .irExprBody(call.deepCopyWithVariables().also {
                                 ignoredCalls += it
                             })
+                        parent.declarations -= this
+                        parent.declarations.add(0, this)
                     }
                 }
             }

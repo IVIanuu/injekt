@@ -41,7 +41,7 @@ import com.ivianuu.injekt.internal.declarationName
  *
  * @see ComponentBuilder.scopes
  */
-interface Scope : Qualifier.Element
+interface Scope : Behavior.Element, Qualifier.Element
 
 /**
  * Returns a scope which uses [name] for comparisons
@@ -62,4 +62,6 @@ annotation class ScopeMarker
  */
 val AnyScope = Scope()
 
-private data class DefaultScope(val name: Any) : Scope
+private data class DefaultScope(val name: Any) : Scope {
+    override fun toString(): String = name.toString()
+}

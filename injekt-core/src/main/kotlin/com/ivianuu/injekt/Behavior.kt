@@ -27,17 +27,17 @@ interface Behavior {
 
     operator fun contains(behavior: Behavior): Boolean
 
-    fun <R> foldIn(initial: R, operation: (R, Element) -> R): R
+    fun <R> foldInBehavior(initial: R, operation: (R, Element) -> R): R
 
-    fun <R> foldOut(initial: R, operation: (Element, R) -> R): R
+    fun <R> foldOutBehavior(initial: R, operation: (Element, R) -> R): R
 
     operator fun plus(other: Behavior): Behavior =
-        if (other === None) this else foldOut(other, ::CombinedBehavior)
+        if (other === None) this else foldOutBehavior(other, ::CombinedBehavior)
 
     object None : Behavior {
         override fun contains(behavior: Behavior): Boolean = false
-        override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R = initial
-        override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R = initial
+        override fun <R> foldInBehavior(initial: R, operation: (R, Element) -> R): R = initial
+        override fun <R> foldOutBehavior(initial: R, operation: (Element, R) -> R): R = initial
         override operator fun plus(other: Behavior): Behavior = other
         override fun toString() = "Behavior.None"
     }
@@ -46,10 +46,10 @@ interface Behavior {
 
         override fun contains(behavior: Behavior): Boolean = this == behavior
 
-        override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R =
+        override fun <R> foldInBehavior(initial: R, operation: (R, Element) -> R): R =
             operation(initial, this)
 
-        override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R =
+        override fun <R> foldOutBehavior(initial: R, operation: (Element, R) -> R): R =
             operation(this, initial)
     }
 }
@@ -95,24 +95,24 @@ private class CombinedBehavior(
 
     override fun contains(behavior: Behavior): Boolean {
         val left = mutableSetOf<Behavior.Element>()
-        foldIn(Unit) { _, element -> left += element }
+        foldInBehavior(Unit) { _, element -> left += element }
         val right = mutableSetOf<Behavior.Element>()
-        behavior.foldIn(Unit) { _, element -> right += element }
+        behavior.foldInBehavior(Unit) { _, element -> right += element }
         return left.containsAll(right)
     }
 
-    override fun <R> foldIn(initial: R, operation: (R, Behavior.Element) -> R): R =
-        wrapped.foldIn(operation(initial, element), operation)
+    override fun <R> foldInBehavior(initial: R, operation: (R, Behavior.Element) -> R): R =
+        wrapped.foldInBehavior(operation(initial, element), operation)
 
-    override fun <R> foldOut(initial: R, operation: (Behavior.Element, R) -> R): R =
-        operation(element, wrapped.foldOut(initial, operation))
+    override fun <R> foldOutBehavior(initial: R, operation: (Behavior.Element, R) -> R): R =
+        operation(element, wrapped.foldOutBehavior(initial, operation))
 
     override fun equals(other: Any?): Boolean =
         other is CombinedBehavior && element == other.element && wrapped == other.wrapped
 
     override fun hashCode(): Int = wrapped.hashCode() + 31 * element.hashCode()
 
-    override fun toString() = "[" + foldIn("") { acc, element ->
+    override fun toString() = "[" + foldInBehavior("") { acc, element ->
         if (acc.isEmpty()) element.toString() else "$acc, $element"
     } + "]"
 }

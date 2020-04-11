@@ -39,4 +39,23 @@ class BoundTest {
         assertEquals(listOf(componentA, componentA), usedComponents)
     }
 
+    @Test
+    fun testBoundWithScope() {
+        var usedComponent: Component? = null
+
+        val componentA = Component {
+            scopes(TestScope1)
+        }
+
+        val componentB = Component {
+            scopes(TestScope2)
+            parents(componentA)
+            bind(behavior = Bound + TestScope1) { usedComponent = this }
+        }
+
+        componentB.get<Unit>()
+
+        assertEquals(componentA, usedComponent)
+    }
+
 }

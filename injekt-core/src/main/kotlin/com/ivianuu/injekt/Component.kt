@@ -67,6 +67,22 @@ class Component internal constructor(
         error("Couldn't get instance for $key")
     }
 
+    /**
+     * Returns the [Component] for [scope] or throws
+     */
+    fun getComponent(scope: Scope): Component =
+        findComponent(scope) ?: error("Couldn't find component for scope $scope")
+
+    private fun findComponent(scope: Scope): Component? {
+        if (scope in scopes) return this
+
+        for (index in parents.indices) {
+            parents[index].findComponent(scope)?.let { return it }
+        }
+
+        return null
+    }
+
     private fun <T> findBinding(key: Key<T>): Binding<T>? {
         var binding = bindings[key] as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {

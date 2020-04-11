@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
     val Behavior = FqName("com.ivianuu.injekt.Behavior")
     val BehaviorMarker = FqName("com.ivianuu.injekt.BehaviorMarker")
     val BindingProvider = FqName("com.ivianuu.injekt.BindingProvider")

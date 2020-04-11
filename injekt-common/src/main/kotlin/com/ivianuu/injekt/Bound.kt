@@ -21,19 +21,31 @@ package com.ivianuu.injekt
  */
 @BehaviorMarker
 val Bound = InterceptingBehavior { binding ->
-    val provider = BoundProvider(binding.provider)
-    onBuild { provider.boundComponent = it }
+    val scope = binding.behavior.foldInBehavior(null) { acc: Scope?, element ->
+        acc ?: element as? Scope
+    }
+    val provider = BoundProvider(binding.provider, scope)
+    onBuild { provider.initializeComponentIfNeeded(it) }
     binding.copy(provider = provider)
 }
 
-private class BoundProvider<T>(private val wrapped: BindingProvider<T>) :
-        (Component, Parameters) -> T {
+private class BoundProvider<T>(
+    private val wrapped: BindingProvider<T>,
+    private val scope: Scope?
+) : (Component, Parameters) -> T {
 
-    lateinit var boundComponent: Component
+    private lateinit var boundComponent: Component
 
     override fun invoke(component: Component, parameters: Parameters): T {
-        if (!this::boundComponent.isInitialized) boundComponent = component
+        initializeComponentIfNeeded(component)
         return wrapped(boundComponent, parameters)
     }
 
+    fun initializeComponentIfNeeded(component: Component) {
+        if (!this::boundComponent.isInitialized) {
+            boundComponent = if (scope != null) component.getComponent(scope)
+            else component
+        }
+
+    }
 }

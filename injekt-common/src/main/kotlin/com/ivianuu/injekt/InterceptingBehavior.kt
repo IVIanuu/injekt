@@ -34,7 +34,7 @@ class InterceptingBehavior(
 @ModuleMarker
 private val InterceptingBehaviorRunnerModule = Module(AnyScope, invokeOnInit = true) {
     bindingInterceptor { binding ->
-        binding.behavior.foldIn(binding) { currentBinding: Binding<Any?>?, element ->
+        binding.behavior.foldInBehavior(binding) { currentBinding: Binding<Any?>?, element ->
             if (currentBinding != null && element is InterceptingBehavior) element.intercept(
                 this,
                 currentBinding

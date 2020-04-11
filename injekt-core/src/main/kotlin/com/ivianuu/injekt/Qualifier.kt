@@ -62,25 +62,25 @@ import com.ivianuu.injekt.internal.declarationName
  */
 interface Qualifier {
 
-    fun <R> foldIn(initial: R, operation: (R, Element) -> R): R
+    fun <R> foldInQualifier(initial: R, operation: (R, Element) -> R): R
 
-    fun <R> foldOut(initial: R, operation: (Element, R) -> R): R
+    fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R
 
     operator fun plus(other: Qualifier): Qualifier =
-        if (other === None) this else foldOut(other, ::CombinedQualifier)
+        if (other === None) this else foldOutQualifier(other, ::CombinedQualifier)
 
     object None : Qualifier {
-        override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R = initial
-        override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R = initial
+        override fun <R> foldInQualifier(initial: R, operation: (R, Element) -> R): R = initial
+        override fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R = initial
         override operator fun plus(other: Qualifier): Qualifier = other
         override fun toString() = "Qualifier.None"
     }
 
     interface Element : Qualifier {
-        override fun <R> foldIn(initial: R, operation: (R, Element) -> R): R =
+        override fun <R> foldInQualifier(initial: R, operation: (R, Element) -> R): R =
             operation(initial, this)
 
-        override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R =
+        override fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R =
             operation(this, initial)
     }
 }
@@ -98,24 +98,26 @@ fun Qualifier(@DeclarationName name: Any = declarationName()): Qualifier =
 @Target(AnnotationTarget.PROPERTY)
 annotation class QualifierMarker
 
-private data class DefaultQualifier(val name: Any) : Qualifier.Element
+private data class DefaultQualifier(val name: Any) : Qualifier.Element {
+    override fun toString(): String = name.toString()
+}
 
 private class CombinedQualifier(
     private val element: Qualifier.Element,
     private val wrapped: Qualifier
 ) : Qualifier {
-    override fun <R> foldIn(initial: R, operation: (R, Qualifier.Element) -> R): R =
-        wrapped.foldIn(operation(initial, element), operation)
+    override fun <R> foldInQualifier(initial: R, operation: (R, Qualifier.Element) -> R): R =
+        wrapped.foldInQualifier(operation(initial, element), operation)
 
-    override fun <R> foldOut(initial: R, operation: (Qualifier.Element, R) -> R): R =
-        operation(element, wrapped.foldOut(initial, operation))
+    override fun <R> foldOutQualifier(initial: R, operation: (Qualifier.Element, R) -> R): R =
+        operation(element, wrapped.foldOutQualifier(initial, operation))
 
     override fun equals(other: Any?): Boolean =
         other is CombinedQualifier && element == other.element && wrapped == other.wrapped
 
     override fun hashCode(): Int = wrapped.hashCode() + 31 * element.hashCode()
 
-    override fun toString() = "[" + foldIn("") { acc, element ->
+    override fun toString() = "[" + foldInQualifier("") { acc, element ->
         if (acc.isEmpty()) element.toString() else "$acc, $element"
     } + "]"
 }
