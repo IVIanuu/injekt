@@ -1,6 +1,6 @@
 package com.ivianuu.injekt
 
-import junit.framework.Assert
+import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class ComponentBindingsTest {
@@ -14,18 +14,18 @@ class ComponentBindingsTest {
             parents(componentA)
         }
 
-        Assert.assertEquals(componentA, componentA.get<Component>())
-        Assert.assertEquals(
+        assertEquals(componentA, componentA.get<Component>())
+        assertEquals(
             componentA,
             componentA.get<Component>(qualifier = TestScope1)
         )
 
-        Assert.assertEquals(componentB, componentB.get<Component>())
-        Assert.assertEquals(
+        assertEquals(componentB, componentB.get<Component>())
+        assertEquals(
             componentB,
             componentB.get<Component>(qualifier = TestScope2)
         )
-        Assert.assertEquals(
+        assertEquals(
             componentA,
             componentB.get<Component>(qualifier = TestScope1)
         )
