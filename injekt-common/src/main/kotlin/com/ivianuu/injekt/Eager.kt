@@ -64,9 +64,6 @@ private class EagerProvider<T>(
     }
 
     fun initializeIfNeeded(component: Component) {
-        if (!initialized) {
-            initialized = true
-            component.get(key)
-        }
+        if (!initialized) invoke(component, emptyParameters())
     }
 }

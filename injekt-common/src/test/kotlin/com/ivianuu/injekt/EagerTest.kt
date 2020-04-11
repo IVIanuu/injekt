@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -56,4 +57,15 @@ class EagerTest {
         }
     }
 
+    @Test
+    fun testOnlyInitializedOnceIfCalledFromAnotherEagerBinding() {
+        var callCount = 0
+        Component {
+            factory(behavior = Eager) { get<String>(); Unit }
+            factory(behavior = Eager) {
+                callCount++; ""
+            }
+        }
+        assertEquals(1, callCount)
+    }
 }
