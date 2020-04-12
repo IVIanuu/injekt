@@ -13,4 +13,5 @@ dependencies {
     kapt(Deps.processingX)
     compileOnly(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.Kotlin.stdlib)
+    testImplementation(Deps.kotlinCompileTesting)
 }

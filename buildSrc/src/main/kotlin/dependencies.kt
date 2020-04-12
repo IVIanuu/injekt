@@ -83,6 +83,7 @@ object Deps {
         const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version"
     }
 
+    const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.2.7"
     const val kotlinStatistics = "org.nield:kotlin-statistics:1.2.1"
 
     const val mavenGradlePlugin =
