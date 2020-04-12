@@ -82,7 +82,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType)
+                if (declaration.descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
                         .isNotEmpty()
                 ) {
                     injectableClasses += declaration
