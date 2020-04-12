@@ -210,6 +210,17 @@ fun DeclarationDescriptor.getSyntheticAnnotationsForType(
         }
 }
 
+fun String.removeIllegalChars(): String {
+    return replace("<", "")
+        .replace(">", "")
+        .replace(" ", "")
+        .replace(",", "")
+        .replace("*", "")
+        .replace(".", "")
+        .replace("-", "")
+
+}
+
 fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
     if (isError) return true
     val typeDescriptor =

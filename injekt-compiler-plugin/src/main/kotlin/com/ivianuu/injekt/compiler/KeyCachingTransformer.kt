@@ -53,17 +53,6 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                 .removeIllegalChars()
             }"
         )
-
-        private fun String.removeIllegalChars(): String {
-            return replace("<", "")
-                .replace(">", "")
-                .replace(" ", "")
-                .replace(",", "")
-                .replace("*", "")
-                .replace(".", "")
-                .replace("-", "")
-
-        }
     }
 
     private fun KeyId(call: IrCall): KeyId {

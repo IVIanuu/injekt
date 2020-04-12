@@ -244,7 +244,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             Modality.FINAL,
             Visibilities.PRIVATE,
             false,
-            Name.identifier("${injectable.descriptor.name.asString()}Module"),
+            Name.identifier("${injectable.descriptor.name.asString().removeIllegalChars()}Module"),
             CallableMemberDescriptor.Kind.DECLARATION,
             SourceElement.NO_SOURCE,
             false,
