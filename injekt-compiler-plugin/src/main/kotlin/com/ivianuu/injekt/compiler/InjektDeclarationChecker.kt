@@ -94,20 +94,12 @@ class InjektDeclarationChecker(
             context.trace.report(InjektErrors.ParamCannotBeNamed.on(declaration))
         }
 
-        if (descriptor is ClassDescriptor && descriptor.constructors.filter {
-                it.annotations.hasAnnotation(InjektClassNames.InjektConstructor)
-            }.size > 1) {
-            context.trace.report(InjektErrors.OnlyOneInjektConstructor.on(declaration))
-        }
-
         if (descriptor is ClassDescriptor &&
             descriptor.kind != ClassKind.OBJECT &&
             descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
-                .isNotEmpty() &&
-            !descriptor.hasPrimaryConstructor() &&
-            descriptor.constructors.none { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
+                .isNotEmpty() && !descriptor.hasPrimaryConstructor()
         ) {
-            context.trace.report(InjektErrors.NeedsPrimaryConstructorOrAnnotation.on(declaration))
+            context.trace.report(InjektErrors.NeedsPrimaryConstructor.on(declaration))
         }
 
         if (descriptor is FunctionDescriptor &&
@@ -153,7 +145,8 @@ class InjektDeclarationChecker(
         fun DeclarationDescriptor.checkAnnotationSupportedParams() {
             val valueParameters = when (this) {
                 is FunctionDescriptor -> valueParameters
-                is ClassDescriptor -> findInjektConstructor()?.valueParameters ?: emptyList()
+                is ClassDescriptor -> unsubstitutedPrimaryConstructor?.valueParameters
+                    ?: emptyList()
                 else -> emptyList()
             }
             valueParameters.forEach {

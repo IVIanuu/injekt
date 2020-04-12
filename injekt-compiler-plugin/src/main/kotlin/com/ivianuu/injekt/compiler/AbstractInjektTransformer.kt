@@ -213,7 +213,7 @@ abstract class AbstractInjektTransformer(
                 if (declaration.kind == ClassKind.OBJECT) {
                     irGetObject(symbolTable.referenceClass(declaration))
                 } else {
-                    val constructor = declaration.findInjektConstructor()!!
+                    val constructor = declaration.unsubstitutedPrimaryConstructor!!
                     irCall(
                         symbolTable.referenceConstructor(constructor as ClassConstructorDescriptor),
                         declaration.defaultType.toIrType()

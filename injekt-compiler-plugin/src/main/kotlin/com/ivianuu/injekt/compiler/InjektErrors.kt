@@ -32,7 +32,7 @@ interface InjektErrors {
         @JvmField
         val OnlyOneScope = error()
         @JvmField
-        val NeedsPrimaryConstructorOrAnnotation = error()
+        val NeedsPrimaryConstructor = error()
         @JvmField
         val InvalidKeyOverload = error()
         @JvmField
@@ -81,8 +81,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Only one constructor can be annotated"
         )
         map.put(
-            InjektErrors.NeedsPrimaryConstructorOrAnnotation,
-            "Class needs a primary constructor or a constructor must be annotated with @InjektConstructor"
+            InjektErrors.NeedsPrimaryConstructor,
+            "Class needs a primary constructor or the constructor must be annotated"
         )
         map.put(
             InjektErrors.InvalidKeyOverload,

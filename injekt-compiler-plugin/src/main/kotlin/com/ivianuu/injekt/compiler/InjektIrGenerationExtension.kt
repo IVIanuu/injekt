@@ -36,22 +36,24 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // replace intrinsics with names
         DeclarationNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        // generate a module for each binding class
+        // generate modules for bindings
         BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
 
         // generate accessors for each module
         ModuleAccessorGenerator(pluginContext).visitModuleAndGenerateSymbols()
 
         // generate metadata classes in the aggregate package
+        // which allows to access all classes even from different compilations
         AggregateGenerator(pluginContext, project).visitModuleAndGenerateSymbols()
 
-        // transform init calls
+        // transform initializeEndpoint calls
         InjektInitTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // transform binding provider lambdas to classes
+        // to allow further transformations
         BindingProviderLambdaToClassTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        // rewrite key overload stub calls to the right calls
+        // rewrite key overload stub calls to the real calls
         KeyOverloadTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // memoize static keyOf calls

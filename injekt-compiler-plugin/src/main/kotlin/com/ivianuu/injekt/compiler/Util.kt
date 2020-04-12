@@ -32,8 +32,6 @@ import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -41,15 +39,10 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -66,6 +59,7 @@ import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
+
     val Behavior = FqName("com.ivianuu.injekt.Behavior")
     val BehaviorMarker = FqName("com.ivianuu.injekt.BehaviorMarker")
     val BindingProvider = FqName("com.ivianuu.injekt.BindingProvider")
@@ -75,7 +69,6 @@ object InjektClassNames {
     val DuplicateStrategy = FqName("com.ivianuu.injekt.DuplicateStrategy")
     val GenerateDsl = FqName("com.ivianuu.injekt.GenerateDsl")
     val Injekt = FqName("com.ivianuu.injekt.Injekt")
-    val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
     val Key = FqName("com.ivianuu.injekt.Key")
     val KeyOverload = FqName("com.ivianuu.injekt.KeyOverload")
     val KeyOverloadStub = FqName("com.ivianuu.injekt.internal.KeyOverloadStub")
@@ -254,16 +247,4 @@ fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
         }
     }
     return false
-}
-
-fun ClassDescriptor.findInjektConstructor(): ConstructorDescriptor? {
-    return if (kind == ClassKind.OBJECT) null
-    else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
-        ?: unsubstitutedPrimaryConstructor
-}
-
-fun IrClass.findInjektConstructor(): IrConstructor? {
-    return if (kind == ClassKind.OBJECT) null
-    else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
-        ?: primaryConstructor
 }

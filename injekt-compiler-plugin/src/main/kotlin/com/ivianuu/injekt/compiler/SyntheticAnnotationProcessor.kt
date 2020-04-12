@@ -41,7 +41,7 @@ class SyntheticAnnotationProcessor : ElementProcessor {
                 when (declaration) {
                     is KtClassOrObject -> {
                         val descriptor =
-                            bindingTrace[BindingContext.CLASS, declaration] as? ClassDescriptor
+                            bindingTrace[BindingContext.CLASS, declaration]
                                 ?: return@declarationRecursiveVisitor
 
                         if (descriptor.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)) {
@@ -75,71 +75,72 @@ class SyntheticAnnotationProcessor : ElementProcessor {
                     file.packageFqName.child(Name.identifier("synthetic")).asString(),
                     declaration.name.asString().capitalize()
                 )
-                .addType(
-                    TypeSpec.annotationBuilder(declaration.name.asString().capitalize())
-                        .apply {
-                            if ((declaration as MemberDescriptor).visibility == Visibilities.INTERNAL) {
-                                addModifiers(KModifier.INTERNAL)
-                            }
-                        }
-                        .addKdoc("Annotation for [${declaration.fqNameSafe.asString()}]")
-                        .addAnnotation(
-                            declaration.module.findClassAcrossModuleDependencies(
-                                ClassId.topLevel(InjektClassNames.SyntheticAnnotation)
-                            )!!.asClassName()!!
-                        )
-                        .apply {
-                            val function = when (declaration) {
-                                is FunctionDescriptor -> declaration
-                                is ClassDescriptor -> declaration.findInjektConstructor()
-                                else -> null
-                            }
-                            if (function != null) {
-                                addTypeVariables(
-                                    function.typeParameters.map { typeParameter ->
-                                        TypeVariableName(
-                                            typeParameter.name.asString(),
-                                            typeParameter.upperBounds
-                                                .map { it.asTypeName()!! }
-                                        )
-                                    }
-                                )
-
-                                addProperties(
-                                    function.valueParameters.map { valueParameter ->
-                                        PropertySpec.builder(
-                                                valueParameter.name.asString(),
-                                                valueParameter.type.asTypeName()!!
-                                            )
-                                            .initializer(valueParameter.name.asString())
-                                            .build()
-                                    }
-                                )
-                                primaryConstructor(
-                                    FunSpec.constructorBuilder()
-                                        .addParameters(
-                                            function.valueParameters.map { valueParameter ->
-                                                ParameterSpec.builder(
-                                                        valueParameter.name.asString(),
-                                                        valueParameter.type.asTypeName()!!
-                                                    )
-                                                    .apply {
-                                                        if (valueParameter.declaresDefaultValue()) {
-                                                            defaultValue((valueParameter.findPsi() as KtParameter).defaultValue!!.text)
-                                                        }
-                                                    }
-                                                    .build()
-                                            }
-                                        )
-                                        .build()
-                                )
-                            }
-                        }
-                        .build()
-                )
+                .addType(syntheticAnnotation(declaration))
                 .build()
                 .let(generateFile)
         }
     }
 
+    private fun syntheticAnnotation(
+        declaration: DeclarationDescriptor
+    ) = TypeSpec.annotationBuilder(declaration.name.asString().capitalize())
+        .apply {
+            if ((declaration as MemberDescriptor).visibility == Visibilities.INTERNAL) {
+                addModifiers(KModifier.INTERNAL)
+            }
+        }
+        .addKdoc("Annotation for [${declaration.fqNameSafe.asString()}]")
+        .addAnnotation(
+            declaration.module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(InjektClassNames.SyntheticAnnotation)
+            )!!.asClassName()!!
+        )
+        .apply {
+            val function = when (declaration) {
+                is FunctionDescriptor -> declaration
+                is ClassDescriptor -> declaration.unsubstitutedPrimaryConstructor!!
+                else -> null
+            }
+            if (function != null) {
+                addTypeVariables(
+                    function.typeParameters.map { typeParameter ->
+                        TypeVariableName(
+                            typeParameter.name.asString(),
+                            typeParameter.upperBounds
+                                .map { it.asTypeName()!! }
+                        )
+                    }
+                )
+
+                addProperties(
+                    function.valueParameters.map { valueParameter ->
+                        PropertySpec.builder(
+                                valueParameter.name.asString(),
+                                valueParameter.type.asTypeName()!!
+                            )
+                            .initializer(valueParameter.name.asString())
+                            .build()
+                    }
+                )
+                primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .addParameters(
+                            function.valueParameters.map { valueParameter ->
+                                ParameterSpec.builder(
+                                        valueParameter.name.asString(),
+                                        valueParameter.type.asTypeName()!!
+                                    )
+                                    .apply {
+                                        if (valueParameter.declaresDefaultValue()) {
+                                            defaultValue((valueParameter.findPsi() as KtParameter).defaultValue!!.text)
+                                        }
+                                    }
+                                    .build()
+                            }
+                        )
+                        .build()
+                )
+            }
+        }
+        .build()
 }

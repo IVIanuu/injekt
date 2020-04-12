@@ -57,6 +57,7 @@ import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -307,7 +308,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                         irGetObject(injectable.symbol)
                     } else {
                         injectableCall(
-                            injectable.findInjektConstructor()!!,
+                            injectable.primaryConstructor!!,
                             component = { irGet(lambdaFn.valueParameters[0]) },
                             parameters = { irGet(lambdaFn.valueParameters[1]) }
                         )
