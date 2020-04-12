@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -77,6 +78,9 @@ class ModuleAccessorGenerator(pluginContext: IrPluginContext) :
             InjektOrigin,
             descriptor
         ) {
+            if (it.isBound) {
+                error("Already bound ${it.owner.dump()}")
+            }
             IrFunctionImpl(
                 UNDEFINED_OFFSET,
                 UNDEFINED_OFFSET,

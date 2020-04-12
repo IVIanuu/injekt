@@ -111,6 +111,22 @@ class InjektDeclarationChecker(
         }
 
         if (descriptor is FunctionDescriptor &&
+            descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
+                .isNotEmpty() &&
+            (descriptor.dispatchReceiverParameter != null || descriptor.extensionReceiverParameter != null)
+        ) {
+            context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+        }
+
+        if (descriptor is PropertyDescriptor &&
+            descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
+                .isNotEmpty() &&
+            (descriptor.dispatchReceiverParameter != null || descriptor.extensionReceiverParameter != null)
+        ) {
+            context.trace.report(InjektErrors.MustBeStatic.on(declaration))
+        }
+
+        if (descriptor is FunctionDescriptor &&
             descriptor.annotations.hasAnnotation(InjektClassNames.KeyOverload)
         ) {
             if (descriptor.typeParameters.isEmpty() ||

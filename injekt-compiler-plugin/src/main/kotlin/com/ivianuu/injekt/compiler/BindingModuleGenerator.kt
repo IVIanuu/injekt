@@ -43,7 +43,9 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
@@ -51,8 +53,10 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.impl.IrPropertySymbolImpl
+import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -75,21 +79,20 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
     override fun visitFile(declaration: IrFile): IrFile {
         super.visitFile(declaration)
 
-        val injectableClasses = mutableListOf<IrClass>()
+        val injectables = mutableListOf<IrDeclaration>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitClass(declaration: IrClass): IrStatement {
+            override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
                 if (declaration.descriptor.getSyntheticAnnotationDeclarationsOfType(behavior.defaultType)
                         .isNotEmpty()
                 ) {
-                    injectableClasses += declaration
+                    injectables += declaration
                 }
-
-                return super.visitClass(declaration)
+                return super.visitDeclaration(declaration)
             }
         })
 
-        injectableClasses.forEach { declaration.addChild(moduleProperty(it)) }
+        injectables.forEach { declaration.addChild(moduleForInjectable(it)) }
 
         (declaration as IrFileImpl).metadata = MetadataSource.File(
             declaration.declarations
@@ -99,15 +102,15 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         return declaration
     }
 
-    private fun moduleProperty(injectClass: IrClass): IrProperty {
-        val descriptor = ModulePropertyDescriptor(injectClass)
+    private fun moduleForInjectable(injectable: IrDeclaration): IrProperty {
+        val descriptor = ModulePropertyDescriptor(injectable)
         return IrPropertyImpl(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
             InjektOrigin,
             IrPropertySymbolImpl(descriptor)
         ).apply property@{
-            parent = injectClass.parent
+            parent = injectable.parent
             metadata = MetadataSource.Property(descriptor)
 
             val builder = DeclarationIrBuilder(pluginContext, symbol)
@@ -133,18 +136,48 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                         ),
                         module.defaultType.toIrType()
                     ).apply {
-                        putTypeArgument(0, injectClass.defaultType)
+                        putTypeArgument(0, injectable.injectType())
 
-                        val behavior =
-                            injectClass.descriptor.getSyntheticAnnotationsForType(
+                        val qualifiers =
+                            injectable.descriptor.getSyntheticAnnotationsForType(qualifier.defaultType)
+                                .map { builder.syntheticAnnotationAccessor(it) }
+                                .filterNot {
+                                    it.type.isSubtypeOfClass(symbolTable.referenceClass(scope))
+                                }
+
+                        if (qualifiers.isNotEmpty()) {
+                            putValueArgument(
+                                1,
+                                qualifiers
+                                    .reduceRight { currentBehavior, acc ->
+                                        builder.irCall(
+                                            symbolTable.referenceSimpleFunction(
+                                                this@BindingModuleGenerator.qualifier.unsubstitutedMemberScope
+                                                    .findSingleFunction(
+                                                        Name.identifier(
+                                                            "plus"
+                                                        )
+                                                    )
+                                            ),
+                                            this@BindingModuleGenerator.qualifier.defaultType.toIrType()
+                                        ).apply {
+                                            dispatchReceiver = currentBehavior
+                                            putValueArgument(0, acc)
+                                        }
+                                    }
+                            )
+                        }
+
+                        val behaviors =
+                            injectable.descriptor.getSyntheticAnnotationsForType(
                                     behavior.defaultType
                                 )
                                 .map { builder.syntheticAnnotationAccessor(it) }
 
-                        if (behavior.isNotEmpty()) {
+                        if (behaviors.isNotEmpty()) {
                             putValueArgument(
                                 1,
-                                behavior
+                                behaviors
                                     .reduceRight { currentBehavior, acc ->
                                         builder.irCall(
                                             symbolTable.referenceSimpleFunction(
@@ -180,7 +213,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                             )
                         )
 
-                        putValueArgument(3, builder.bindingProvider(injectClass))
+                        putValueArgument(3, builder.bindingProvider(injectable))
                     }
                 )
             }
@@ -195,9 +228,9 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         }
     }
 
-    private inner class ModulePropertyDescriptor(injectClass: IrClass) :
+    private inner class ModulePropertyDescriptor(injectable: IrDeclaration) :
         PropertyDescriptorImpl(
-            injectClass.descriptor.containingDeclaration,
+            injectable.descriptor.containingDeclaration!!,
             null,
             Annotations.create(
                 listOf(
@@ -211,7 +244,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             Modality.FINAL,
             Visibilities.PRIVATE,
             false,
-            Name.identifier("${injectClass.name.asString()}Module"),
+            Name.identifier("${injectable.descriptor.name.asString()}Module"),
             CallableMemberDescriptor.Kind.DECLARATION,
             SourceElement.NO_SOURCE,
             false,
@@ -240,15 +273,24 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         }
     }
 
+    private fun IrDeclaration.injectType() = when (this) {
+        is IrClass -> defaultType
+        is IrFunction -> returnType
+        is IrProperty -> descriptor.type.toIrType()
+        else -> error("Unexpected declaration $this -> ${this.dump()}")
+    }
+
     private fun IrBuilderWithScope.bindingProvider(
-        injectClass: IrClass
+        injectable: IrDeclaration
     ): IrExpression {
+        val injectableType = injectable.injectType()
+
         val providerType = KotlinTypeFactory.simpleType(
             context.builtIns.getFunction(2).defaultType,
             arguments = listOf(
                 component.defaultType.asTypeProjection(),
                 parameters.defaultType.asTypeProjection(),
-                injectClass.defaultType.toKotlinType().asTypeProjection()
+                injectableType.toKotlinType().asTypeProjection()
             )
         )
 
@@ -256,91 +298,112 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             createFunctionDescriptor(providerType),
             providerType.toIrType()
         ) { lambdaFn ->
-            if (injectClass.kind == ClassKind.OBJECT) {
-                +irReturn(irGetObject(injectClass.symbol))
-                return@irLambdaExpression
+            val injectExpr = when (injectable) {
+                is IrProperty -> {
+                    irCall(injectable.getter!!.also { it.symbol.ensureBound() })
+                }
+                is IrClass -> {
+                    if (injectable.kind == ClassKind.OBJECT) {
+                        irGetObject(injectable.symbol)
+                    } else {
+                        injectableCall(
+                            injectable.findInjektConstructor()!!,
+                            component = { irGet(lambdaFn.valueParameters[0]) },
+                            parameters = { irGet(lambdaFn.valueParameters[1]) }
+                        )
+                    }
+                }
+                is IrFunction -> {
+                    injectableCall(
+                        injectable,
+                        component = { irGet(lambdaFn.valueParameters[0]) },
+                        parameters = { irGet(lambdaFn.valueParameters[1]) }
+                    )
+                }
+                else -> error("Unexpected declaration $injectable")
             }
 
-            val constructor = injectClass.findInjektConstructor()!!
-
-            val componentGet = injektPackage.memberScope
-                .findFirstFunction("get") {
-                    it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
-                            it.extensionReceiverParameter?.type == component.defaultType
-                }
-
-            val parametersGet = parameters.unsubstitutedMemberScope
-                .findSingleFunction(Name.identifier("get"))
-
-            +irReturn(
-                irCall(constructor).apply {
-                    var paramIndex = 0
-
-                    constructor.valueParameters
-                        .map { param ->
-                            val paramExpr = if (param.annotations.hasAnnotation(
-                                    InjektClassNames.Param
-                                )
-                            ) {
-                                irCall(
-                                    callee = symbolTable.referenceSimpleFunction(
-                                        parametersGet
-                                    ),
-                                    type = param.type
-                                ).apply {
-                                    dispatchReceiver =
-                                        irGet(lambdaFn.valueParameters[1])
-                                    putTypeArgument(0, param.type)
-                                    putValueArgument(0, irInt(paramIndex))
-                                    ++paramIndex
-                                }
-                            } else {
-                                irCall(
-                                    symbolTable.referenceSimpleFunction(
-                                        componentGet
-                                    ),
-                                    param.type
-                                ).apply {
-                                    extensionReceiver =
-                                        irGet(lambdaFn.valueParameters[0])
-                                    putTypeArgument(0, param.type)
-
-                                    val qualifiers: List<IrExpression> = param
-                                        .descriptor
-                                        .getSyntheticAnnotationsForType(qualifier.defaultType)
-                                        .map { syntheticAnnotationAccessor(it) }
-
-                                    if (qualifiers.isNotEmpty()) {
-                                        putValueArgument(
-                                            0,
-                                            qualifiers
-                                                .reduceRight { currentQualifier, acc ->
-                                                    irCall(
-                                                        symbolTable.referenceSimpleFunction(
-                                                            qualifier.unsubstitutedMemberScope
-                                                                .findSingleFunction(
-                                                                    Name.identifier(
-                                                                        "plus"
-                                                                    )
-                                                                )
-                                                        ),
-                                                        qualifier.defaultType.toIrType()
-                                                    ).apply {
-                                                        dispatchReceiver =
-                                                            currentQualifier
-                                                        putValueArgument(0, acc)
-                                                    }
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-
-                            putValueArgument(param.index, paramExpr)
-                        }
-                }
-            )
+            +irReturn(injectExpr)
         }
     }
 
+    private fun IrBuilderWithScope.injectableCall(
+        function: IrFunction,
+        component: () -> IrExpression,
+        parameters: () -> IrExpression
+    ): IrExpression {
+        val componentGet = injektPackage.memberScope
+            .findFirstFunction("get") {
+                it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
+                        it.extensionReceiverParameter?.type == this@BindingModuleGenerator.component.defaultType
+            }
+
+        val parametersGet = this@BindingModuleGenerator.parameters.unsubstitutedMemberScope
+            .findSingleFunction(Name.identifier("get"))
+
+        return irCall(function).apply {
+            var paramIndex = 0
+
+            function.valueParameters
+                .map { param ->
+                    val paramExpr = if (param.annotations.hasAnnotation(
+                            InjektClassNames.Param
+                        )
+                    ) {
+                        irCall(
+                            callee = symbolTable.referenceSimpleFunction(
+                                parametersGet
+                            ),
+                            type = param.type
+                        ).apply {
+                            dispatchReceiver = parameters()
+                            putTypeArgument(0, param.type)
+                            putValueArgument(0, irInt(paramIndex))
+                            ++paramIndex
+                        }
+                    } else {
+                        irCall(
+                            symbolTable.referenceSimpleFunction(
+                                componentGet
+                            ),
+                            param.type
+                        ).apply {
+                            extensionReceiver = component()
+                            putTypeArgument(0, param.type)
+
+                            val qualifiers: List<IrExpression> = param
+                                .descriptor
+                                .getSyntheticAnnotationsForType(qualifier.defaultType)
+                                .map { syntheticAnnotationAccessor(it) }
+
+                            if (qualifiers.isNotEmpty()) {
+                                putValueArgument(
+                                    0,
+                                    qualifiers
+                                        .reduceRight { currentQualifier, acc ->
+                                            irCall(
+                                                symbolTable.referenceSimpleFunction(
+                                                    qualifier.unsubstitutedMemberScope
+                                                        .findSingleFunction(
+                                                            Name.identifier(
+                                                                "plus"
+                                                            )
+                                                        )
+                                                ),
+                                                qualifier.defaultType.toIrType()
+                                            ).apply {
+                                                dispatchReceiver =
+                                                    currentQualifier
+                                                putValueArgument(0, acc)
+                                            }
+                                        }
+                                )
+                            }
+                        }
+                    }
+
+                    putValueArgument(param.index, paramExpr)
+                }
+        }
+    }
 }
