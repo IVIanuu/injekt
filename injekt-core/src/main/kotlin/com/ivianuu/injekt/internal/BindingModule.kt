@@ -10,11 +10,11 @@ import com.ivianuu.injekt.Scope
 
 /* Used in codegen */
 @KeyOverload
-fun <T> BindingModule(
+inline fun <T> BindingModule(
     key: Key<T>,
     behavior: Behavior,
     defaultScope: Scope,
-    provider: BindingProvider<T>
+    noinline provider: BindingProvider<T>
 ): Module {
     val scope = foldInBehavior(null) { acc: Scope?, element ->
         acc ?: element as? Scope

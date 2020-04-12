@@ -31,6 +31,6 @@ package com.ivianuu.injekt
  * assertSame(logger1, logger2) // false
  * ´´´
  */
-@GenerateDslBuilder
+@GenerateDsl
 @BehaviorMarker
 val Factory = Behavior()

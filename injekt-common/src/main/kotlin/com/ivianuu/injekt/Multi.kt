@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap
  * ´´´
  *
  */
-@GenerateDslBuilder
+@GenerateDsl
 @BehaviorMarker
 val Multi = InterceptingBehavior {
     it.copy(provider = MultiProvider(it.provider))

@@ -85,7 +85,7 @@ fun Behavior(@DeclarationName name: Any = declarationName()): Behavior = Default
  *
  */
 @SyntheticAnnotationMarker
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class BehaviorMarker
 
 private class CombinedBehavior(

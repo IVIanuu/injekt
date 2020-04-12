@@ -3,7 +3,7 @@ package com.ivianuu.injekt
 /**
  * Holds instances in a thread local
  */
-@GenerateDslBuilder
+@GenerateDsl
 @BehaviorMarker
 val ThreadLocal = InterceptingBehavior {
     it.copy(provider = ThreadLocalProvider(it.provider))

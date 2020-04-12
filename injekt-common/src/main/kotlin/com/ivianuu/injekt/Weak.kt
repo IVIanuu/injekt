@@ -21,7 +21,7 @@ import java.lang.ref.WeakReference
 /**
  * Holds instances in a [WeakReference]
  */
-@GenerateDslBuilder
+@GenerateDsl
 @BehaviorMarker
 val Weak = InterceptingBehavior {
     it.copy(provider = WeakProvider(it.provider))

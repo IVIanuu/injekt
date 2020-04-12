@@ -21,14 +21,14 @@ import androidx.lifecycle.ViewModelStore
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.GenerateDslBuilder
+import com.ivianuu.injekt.GenerateDsl
 import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.get
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
-@GenerateDslBuilder(name = "viewModel")
+@GenerateDsl(builderName = "viewModel")
 @BehaviorMarker
 val BindViewModel = InterceptingBehavior {
     it.copy(provider = ViewModelProvider(it.provider, it.key))

@@ -32,7 +32,7 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
-@GenerateDslBuilder
+@GenerateDsl
 @BehaviorMarker
 val Single = InterceptingBehavior {
     it.copy(provider = SingleProvider(it.provider))

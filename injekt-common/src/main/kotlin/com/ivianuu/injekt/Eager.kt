@@ -29,33 +29,17 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
+@GenerateDsl(generateBuilder = true, generateDelegate = true)
 @BehaviorMarker
 val Eager = InterceptingBehavior { binding ->
     val provider =
-        EagerProvider(binding.provider, binding.key)
+        EagerProvider(binding.provider)
     onBuild { provider.initializeIfNeeded(it) }
     binding.copy(provider = provider)
 }
 
-/**
- * Eagerly initializes the [Binding] for [key]
- *
- * @see Eager
- */
-@KeyOverload
-fun <T> ComponentBuilder.eager(key: Key<T>) {
-    bind(
-        key = key.copy(qualifier = key.qualifier + EagerInit),
-        behavior = Eager,
-        duplicateStrategy = DuplicateStrategy.Drop
-    ) { get(key) }
-}
-
-private val EagerInit = Qualifier()
-
 private class EagerProvider<T>(
-    private val wrapped: BindingProvider<T>,
-    private val key: Key<T>
+    private val wrapped: BindingProvider<T>
 ) : (Component, Parameters) -> T {
     private var initialized = false
     override fun invoke(component: Component, parameters: Parameters): T {

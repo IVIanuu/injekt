@@ -66,7 +66,7 @@ object InjektClassNames {
     val ComponentBuilder = FqName("com.ivianuu.injekt.ComponentBuilder")
     val DeclarationName = FqName("com.ivianuu.injekt.internal.DeclarationName")
     val DuplicateStrategy = FqName("com.ivianuu.injekt.DuplicateStrategy")
-    val GenerateDslBuilder = FqName("com.ivianuu.injekt.GenerateDslBuilder")
+    val GenerateDsl = FqName("com.ivianuu.injekt.GenerateDsl")
     val Injekt = FqName("com.ivianuu.injekt.Injekt")
     val InjektConstructor = FqName("com.ivianuu.injekt.InjektConstructor")
     val Key = FqName("com.ivianuu.injekt.Key")

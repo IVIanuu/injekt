@@ -155,7 +155,7 @@ class InjektDeclarationChecker(
 
         if (descriptor is PropertyDescriptor &&
             (descriptor.annotations.hasAnnotation(InjektClassNames.BehaviorMarker) ||
-                    descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder))
+                    descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDsl))
         ) {
             if (!descriptor.type.isSubtypeOf(behavior.defaultType)) {
                 context.trace.report(InjektErrors.MustBeABehavior.on(declaration))
@@ -183,7 +183,7 @@ class InjektDeclarationChecker(
 
         if (descriptor is FunctionDescriptor &&
             (descriptor.annotations.hasAnnotation(InjektClassNames.BehaviorMarker) ||
-                    descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDslBuilder))
+                    descriptor.annotations.hasAnnotation(InjektClassNames.GenerateDsl))
         ) {
             if (!descriptor.returnType!!.isSubtypeOf(behavior.defaultType)) {
                 context.trace.report(InjektErrors.MustBeABehavior.on(declaration))

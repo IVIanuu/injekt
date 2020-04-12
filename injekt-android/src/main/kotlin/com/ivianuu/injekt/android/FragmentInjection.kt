@@ -21,7 +21,7 @@ import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.GenerateDslBuilder
+import com.ivianuu.injekt.GenerateDsl
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleMarker
@@ -31,7 +31,11 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.synthetic.Factory
 
-@GenerateDslBuilder(name = "fragment")
+@GenerateDsl(
+    generateBuilder = true,
+    builderName = "fragment",
+    generateDelegate = true
+)
 @BehaviorMarker
 val BindFragment = SideEffectBehavior {
     map<String, Fragment> {
