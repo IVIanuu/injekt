@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.MemberDescriptor
@@ -16,6 +17,7 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtParameter
@@ -37,6 +39,15 @@ class SyntheticAnnotationProcessor : ElementProcessor {
         file.accept(
             declarationRecursiveVisitor { declaration ->
                 when (declaration) {
+                    is KtClassOrObject -> {
+                        val descriptor =
+                            bindingTrace[BindingContext.CLASS, declaration] as? ClassDescriptor
+                                ?: return@declarationRecursiveVisitor
+
+                        if (descriptor.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)) {
+                            syntheticAnnotationDeclarations += descriptor
+                        }
+                    }
                     is KtFunction -> {
                         val descriptor =
                             bindingTrace[BindingContext.FUNCTION, declaration] as? FunctionDescriptor
@@ -78,9 +89,14 @@ class SyntheticAnnotationProcessor : ElementProcessor {
                             )!!.asClassName()!!
                         )
                         .apply {
-                            if (declaration is FunctionDescriptor) {
+                            val function = when (declaration) {
+                                is FunctionDescriptor -> declaration
+                                is ClassDescriptor -> declaration.findInjektConstructor()
+                                else -> null
+                            }
+                            if (function != null) {
                                 addTypeVariables(
-                                    declaration.typeParameters.map { typeParameter ->
+                                    function.typeParameters.map { typeParameter ->
                                         TypeVariableName(
                                             typeParameter.name.asString(),
                                             typeParameter.upperBounds
@@ -90,7 +106,7 @@ class SyntheticAnnotationProcessor : ElementProcessor {
                                 )
 
                                 addProperties(
-                                    declaration.valueParameters.map { valueParameter ->
+                                    function.valueParameters.map { valueParameter ->
                                         PropertySpec.builder(
                                                 valueParameter.name.asString(),
                                                 valueParameter.type.asTypeName()!!
@@ -102,7 +118,7 @@ class SyntheticAnnotationProcessor : ElementProcessor {
                                 primaryConstructor(
                                     FunSpec.constructorBuilder()
                                         .addParameters(
-                                            declaration.valueParameters.map { valueParameter ->
+                                            function.valueParameters.map { valueParameter ->
                                                 ParameterSpec.builder(
                                                         valueParameter.name.asString(),
                                                         valueParameter.type.asTypeName()!!

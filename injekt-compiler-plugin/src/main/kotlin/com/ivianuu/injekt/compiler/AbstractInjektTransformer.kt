@@ -23,7 +23,9 @@ import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getReturnTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
@@ -45,6 +47,7 @@ import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -206,6 +209,31 @@ abstract class AbstractInjektTransformer(
     ): IrExpression {
         return when (val declaration =
             annotation.getDeclarationForSyntheticAnnotation(pluginContext.moduleDescriptor)) {
+            is ClassDescriptor -> {
+                if (declaration.kind == ClassKind.OBJECT) {
+                    irGetObject(symbolTable.referenceClass(declaration))
+                } else {
+                    val constructor = declaration.findInjektConstructor()!!
+                    irCall(
+                        symbolTable.referenceConstructor(constructor as ClassConstructorDescriptor),
+                        declaration.defaultType.toIrType()
+                    ).apply {
+                        annotation.type.arguments.forEachIndexed { index, typeArgument ->
+                            putTypeArgument(
+                                index,
+                                typeArgument.type.toIrType()
+                            )
+                        }
+
+                        annotation.allValueArguments.toList().forEach { (name, value) ->
+                            putValueArgument(
+                                constructor.valueParameters.single { it.name == name }.index,
+                                generateConstantOrAnnotationValueAsExpression(constantValue = value)
+                            )
+                        }
+                    }
+                }
+            }
             is FunctionDescriptor -> {
                 irCall(
                     symbolTable.referenceSimpleFunction(declaration),

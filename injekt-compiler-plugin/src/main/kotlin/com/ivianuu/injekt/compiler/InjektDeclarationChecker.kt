@@ -135,11 +135,14 @@ class InjektDeclarationChecker(
         }
 
         fun DeclarationDescriptor.checkAnnotationSupportedParams() {
-            if (this is FunctionDescriptor) {
-                valueParameters.forEach {
-                    if (!it.type.isAcceptableTypeForAnnotationParameter()) {
-                        context.trace.report(InjektErrors.NotAValidAnnotationType.on(it.findPsi()!!))
-                    }
+            val valueParameters = when (this) {
+                is FunctionDescriptor -> valueParameters
+                is ClassDescriptor -> findInjektConstructor()?.valueParameters ?: emptyList()
+                else -> emptyList()
+            }
+            valueParameters.forEach {
+                if (!it.type.isAcceptableTypeForAnnotationParameter()) {
+                    context.trace.report(InjektErrors.NotAValidAnnotationType.on(it.findPsi()!!))
                 }
             }
         }

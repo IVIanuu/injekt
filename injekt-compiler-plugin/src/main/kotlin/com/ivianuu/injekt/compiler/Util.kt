@@ -32,6 +32,8 @@ import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -39,10 +41,15 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -195,6 +202,7 @@ fun DeclarationDescriptor.getSyntheticAnnotationsForType(
     return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
         .filter {
             when (val declaration = it.getDeclarationForSyntheticAnnotation(module)) {
+                is ClassDescriptor -> declaration.defaultType.isSubtypeOf(type)
                 is PropertyDescriptor -> declaration.type.isSubtypeOf(type)
                 is FunctionDescriptor -> declaration.returnType!!.isSubtypeOf(type)
                 else -> false
@@ -235,4 +243,16 @@ fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
         }
     }
     return false
+}
+
+fun ClassDescriptor.findInjektConstructor(): ConstructorDescriptor? {
+    return if (kind == ClassKind.OBJECT) null
+    else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
+        ?: unsubstitutedPrimaryConstructor
+}
+
+fun IrClass.findInjektConstructor(): IrConstructor? {
+    return if (kind == ClassKind.OBJECT) null
+    else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
+        ?: primaryConstructor
 }

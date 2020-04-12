@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -53,9 +52,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.impl.IrPropertySymbolImpl
 import org.jetbrains.kotlin.ir.types.toKotlinType
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -264,7 +261,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 return@irLambdaExpression
             }
 
-            val injektConstructor = injectClass.findInjektConstructor()!!
+            val constructor = injectClass.findInjektConstructor()!!
 
             val componentGet = injektPackage.memberScope
                 .findFirstFunction("get") {
@@ -276,10 +273,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 .findSingleFunction(Name.identifier("get"))
 
             +irReturn(
-                irCall(injektConstructor).apply {
+                irCall(constructor).apply {
                     var paramIndex = 0
 
-                    injektConstructor.valueParameters
+                    constructor.valueParameters
                         .map { param ->
                             val paramExpr = if (param.annotations.hasAnnotation(
                                     InjektClassNames.Param
@@ -344,12 +341,6 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 }
             )
         }
-    }
-
-    private fun IrClass.findInjektConstructor(): IrConstructor? {
-        return if (kind == ClassKind.OBJECT) null
-        else constructors.singleOrNull { it.annotations.hasAnnotation(InjektClassNames.InjektConstructor) }
-            ?: primaryConstructor
     }
 
 }
