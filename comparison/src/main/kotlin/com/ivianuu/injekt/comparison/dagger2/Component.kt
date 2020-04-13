@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.comparison.dagger2
 
-import com.ivianuu.injekt.comparison.Fib8
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import dagger.Component
 
 @Component

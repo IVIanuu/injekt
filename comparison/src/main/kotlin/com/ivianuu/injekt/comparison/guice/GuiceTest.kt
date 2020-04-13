@@ -18,8 +18,8 @@ package com.ivianuu.injekt.comparison.guice
 
 import com.google.inject.Guice
 import com.google.inject.Injector
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
 
 object GuiceTest : InjectionTest {
     override val name = "Guice"

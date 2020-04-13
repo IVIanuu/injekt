@@ -101,4 +101,5 @@ object Deps {
             "com.github.stephanenicolas.toothpick:toothpick-compiler:$version"
     }
 
+    const val winter = "io.jentz.winter:winter:0.7.0"
 }

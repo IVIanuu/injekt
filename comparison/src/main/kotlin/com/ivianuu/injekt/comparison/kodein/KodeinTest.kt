@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger2reflect
+package com.ivianuu.injekt.comparison.kodein
 
-import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.comparison.dagger2.Dagger2Component
-import dagger.Dagger
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import org.kodein.di.Kodein
+import org.kodein.di.direct
+import org.kodein.di.erased.instance
 
-object Dagger2ReflectTest : InjectionTest {
+object KodeinTest : InjectionTest {
 
-    override val name = "Dagger 2 Reflect"
+    override val name = "Kodein"
 
-    private var component: Dagger2Component? = null
+    private var kodein: Kodein? = null
 
     override fun setup() {
-        component = Dagger.factory(Dagger2Component.Factory::class.java).create()
+        kodein = Kodein { import(createModule()) }
     }
 
     override fun inject() {
-        component!!.fib8
+        kodein!!.direct.instance<Fib8>()
     }
 
     override fun shutdown() {
-        component = null
     }
 }

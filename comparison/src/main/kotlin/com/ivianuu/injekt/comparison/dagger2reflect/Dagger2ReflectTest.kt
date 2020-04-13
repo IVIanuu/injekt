@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger2
+package com.ivianuu.injekt.comparison.dagger2reflect
 
-import com.ivianuu.injekt.comparison.InjectionTest
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.dagger2.Dagger2Component
+import dagger.Dagger
 
-object Dagger2Test : InjectionTest {
+object Dagger2ReflectTest : InjectionTest {
 
-    override val name = "Dagger 2"
+    override val name = "Dagger 2 Reflect"
 
     private var component: Dagger2Component? = null
 
     override fun setup() {
-        component = DaggerDagger2Component.create()
+        component = Dagger.factory(Dagger2Component.Factory::class.java).create()
     }
 
     override fun inject() {

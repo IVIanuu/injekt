@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.base
 
 import com.ivianuu.injekt.comparison.dagger.DaggerTest
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
@@ -26,6 +26,7 @@ import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import com.ivianuu.injekt.comparison.toothpick.ToothpickTest
+import com.ivianuu.injekt.comparison.winter.WinterTest
 import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
 
@@ -54,7 +55,8 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             KatanaTest,
             KodeinTest,
             KoinTest,
-            ToothpickTest
+            ToothpickTest,
+            WinterTest
         ).shuffled(),
         config
     )
@@ -73,7 +75,9 @@ fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig
 
     repeat(config.rounds) {
         tests.forEach { test ->
-            timingsPerTest.getOrPut(test.name) { mutableListOf() } += measure(test)
+            timingsPerTest.getOrPut(test.name) { mutableListOf() } += measure(
+                test
+            )
         }
     }
 
@@ -90,7 +94,12 @@ fun measure(test: InjectionTest): Timings {
     val firstInjection = measureNanoTime { test.inject() }
     val secondInjection = measureNanoTime { test.inject() }
     test.shutdown()
-    return Timings(test.name, setup, firstInjection, secondInjection)
+    return Timings(
+        test.name,
+        setup,
+        firstInjection,
+        secondInjection
+    )
 }
 
 data class Timings(
@@ -120,9 +129,15 @@ data class Results(
 fun List<Timings>.results(): Results {
     return Results(
         injectorName = first().injectorName,
-        setup = Result("Setup", map { it.setup }),
-        firstInjection = Result("First injection", map { it.firstInjection }),
-        secondInjection = Result("Second injection", map { it.secondInjection })
+        setup = Result(
+            "Setup",
+            map { it.setup }),
+        firstInjection = Result(
+            "First injection",
+            map { it.firstInjection }),
+        secondInjection = Result(
+            "Second injection",
+            map { it.secondInjection })
     )
 }
 

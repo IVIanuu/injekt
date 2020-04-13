@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.dagger
+package com.ivianuu.injekt.comparison.koin
 
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
-import daggerone.ObjectGraph
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import org.koin.core.KoinComponent
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.core.get
 
-object DaggerTest : InjectionTest {
+object KoinTest : InjectionTest, KoinComponent {
 
-    override val name = "Dagger 1"
-
-    private var graph: ObjectGraph? = null
+    override val name = "Koin"
 
     override fun setup() {
-        graph = ObjectGraph.create(DaggerModule())
+        startKoin { modules(createModule()) }
     }
 
     override fun inject() {
-        graph!![Fib8::class.java]
+        get<Fib8>()
     }
 
     override fun shutdown() {
-        graph = null
+        stopKoin()
     }
 }

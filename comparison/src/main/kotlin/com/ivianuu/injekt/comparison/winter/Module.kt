@@ -1,20 +1,4 @@
-/*
- * Copyright 2020 Manuel Wrage
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package com.ivianuu.injekt.comparison.kodein
+package com.ivianuu.injekt.comparison.winter
 
 import com.ivianuu.injekt.comparison.fibonacci.Fib1
 import com.ivianuu.injekt.comparison.fibonacci.Fib10
@@ -116,597 +100,594 @@ import com.ivianuu.injekt.comparison.fibonacci.Fib96
 import com.ivianuu.injekt.comparison.fibonacci.Fib97
 import com.ivianuu.injekt.comparison.fibonacci.Fib98
 import com.ivianuu.injekt.comparison.fibonacci.Fib99
-import org.kodein.di.Kodein
-import org.kodein.di.erased.bind
-import org.kodein.di.erased.instance
-import org.kodein.di.erased.provider
+import io.jentz.winter.Component
 
-fun createModule() = Kodein.Module("fib") {
-    bind<Fib1>() with provider { Fib1() }
-    bind<Fib2>() with provider { Fib2() }
-    bind<Fib3>() with provider {
+fun Component.Builder.fib() {
+    prototype { Fib1() }
+    prototype { Fib2() }
+    prototype {
         Fib3(
             instance(),
             instance()
         )
     }
-    bind<Fib4>() with provider {
+    prototype {
         Fib4(
             instance(),
             instance()
         )
     }
-    bind<Fib5>() with provider {
+    prototype {
         Fib5(
             instance(),
             instance()
         )
     }
-    bind<Fib6>() with provider {
+    prototype {
         Fib6(
             instance(),
             instance()
         )
     }
-    bind<Fib7>() with provider {
+    prototype {
         Fib7(
             instance(),
             instance()
         )
     }
-    bind<Fib8>() with provider {
+    prototype {
         Fib8(
             instance(),
             instance()
         )
     }
-    bind<Fib9>() with provider {
+    prototype {
         Fib9(
             instance(),
             instance()
         )
     }
-    bind<Fib10>() with provider {
+    prototype {
         Fib10(
             instance(),
             instance()
         )
     }
-    bind<Fib11>() with provider {
+    prototype {
         Fib11(
             instance(),
             instance()
         )
     }
-    bind<Fib12>() with provider {
+    prototype {
         Fib12(
             instance(),
             instance()
         )
     }
-    bind<Fib13>() with provider {
+    prototype {
         Fib13(
             instance(),
             instance()
         )
     }
-    bind<Fib14>() with provider {
+    prototype {
         Fib14(
             instance(),
             instance()
         )
     }
-    bind<Fib15>() with provider {
+    prototype {
         Fib15(
             instance(),
             instance()
         )
     }
-    bind<Fib16>() with provider {
+    prototype {
         Fib16(
             instance(),
             instance()
         )
     }
-    bind<Fib17>() with provider {
+    prototype {
         Fib17(
             instance(),
             instance()
         )
     }
-    bind<Fib18>() with provider {
+    prototype {
         Fib18(
             instance(),
             instance()
         )
     }
-    bind<Fib19>() with provider {
+    prototype {
         Fib19(
             instance(),
             instance()
         )
     }
-    bind<Fib20>() with provider {
+    prototype {
         Fib20(
             instance(),
             instance()
         )
     }
-    bind<Fib21>() with provider {
+    prototype {
         Fib21(
             instance(),
             instance()
         )
     }
-    bind<Fib22>() with provider {
+    prototype {
         Fib22(
             instance(),
             instance()
         )
     }
-    bind<Fib23>() with provider {
+    prototype {
         Fib23(
             instance(),
             instance()
         )
     }
-    bind<Fib24>() with provider {
+    prototype {
         Fib24(
             instance(),
             instance()
         )
     }
-    bind<Fib25>() with provider {
+    prototype {
         Fib25(
             instance(),
             instance()
         )
     }
-    bind<Fib26>() with provider {
+    prototype {
         Fib26(
             instance(),
             instance()
         )
     }
-    bind<Fib27>() with provider {
+    prototype {
         Fib27(
             instance(),
             instance()
         )
     }
-    bind<Fib28>() with provider {
+    prototype {
         Fib28(
             instance(),
             instance()
         )
     }
-    bind<Fib29>() with provider {
+    prototype {
         Fib29(
             instance(),
             instance()
         )
     }
-    bind<Fib30>() with provider {
+    prototype {
         Fib30(
             instance(),
             instance()
         )
     }
-    bind<Fib31>() with provider {
+    prototype {
         Fib31(
             instance(),
             instance()
         )
     }
-    bind<Fib32>() with provider {
+    prototype {
         Fib32(
             instance(),
             instance()
         )
     }
-    bind<Fib33>() with provider {
+    prototype {
         Fib33(
             instance(),
             instance()
         )
     }
-    bind<Fib34>() with provider {
+    prototype {
         Fib34(
             instance(),
             instance()
         )
     }
-    bind<Fib35>() with provider {
+    prototype {
         Fib35(
             instance(),
             instance()
         )
     }
-    bind<Fib36>() with provider {
+    prototype {
         Fib36(
             instance(),
             instance()
         )
     }
-    bind<Fib37>() with provider {
+    prototype {
         Fib37(
             instance(),
             instance()
         )
     }
-    bind<Fib38>() with provider {
+    prototype {
         Fib38(
             instance(),
             instance()
         )
     }
-    bind<Fib39>() with provider {
+    prototype {
         Fib39(
             instance(),
             instance()
         )
     }
-    bind<Fib40>() with provider {
+    prototype {
         Fib40(
             instance(),
             instance()
         )
     }
-    bind<Fib41>() with provider {
+    prototype {
         Fib41(
             instance(),
             instance()
         )
     }
-    bind<Fib42>() with provider {
+    prototype {
         Fib42(
             instance(),
             instance()
         )
     }
-    bind<Fib43>() with provider {
+    prototype {
         Fib43(
             instance(),
             instance()
         )
     }
-    bind<Fib44>() with provider {
+    prototype {
         Fib44(
             instance(),
             instance()
         )
     }
-    bind<Fib45>() with provider {
+    prototype {
         Fib45(
             instance(),
             instance()
         )
     }
-    bind<Fib46>() with provider {
+    prototype {
         Fib46(
             instance(),
             instance()
         )
     }
-    bind<Fib47>() with provider {
+    prototype {
         Fib47(
             instance(),
             instance()
         )
     }
-    bind<Fib48>() with provider {
+    prototype {
         Fib48(
             instance(),
             instance()
         )
     }
-    bind<Fib49>() with provider {
+    prototype {
         Fib49(
             instance(),
             instance()
         )
     }
-    bind<Fib50>() with provider {
+    prototype {
         Fib50(
             instance(),
             instance()
         )
     }
-    bind<Fib51>() with provider {
+    prototype {
         Fib51(
             instance(),
             instance()
         )
     }
-    bind<Fib52>() with provider {
+    prototype {
         Fib52(
             instance(),
             instance()
         )
     }
-    bind<Fib53>() with provider {
+    prototype {
         Fib53(
             instance(),
             instance()
         )
     }
-    bind<Fib54>() with provider {
+    prototype {
         Fib54(
             instance(),
             instance()
         )
     }
-    bind<Fib55>() with provider {
+    prototype {
         Fib55(
             instance(),
             instance()
         )
     }
-    bind<Fib56>() with provider {
+    prototype {
         Fib56(
             instance(),
             instance()
         )
     }
-    bind<Fib57>() with provider {
+    prototype {
         Fib57(
             instance(),
             instance()
         )
     }
-    bind<Fib58>() with provider {
+    prototype {
         Fib58(
             instance(),
             instance()
         )
     }
-    bind<Fib59>() with provider {
+    prototype {
         Fib59(
             instance(),
             instance()
         )
     }
-    bind<Fib60>() with provider {
+    prototype {
         Fib60(
             instance(),
             instance()
         )
     }
-    bind<Fib61>() with provider {
+    prototype {
         Fib61(
             instance(),
             instance()
         )
     }
-    bind<Fib62>() with provider {
+    prototype {
         Fib62(
             instance(),
             instance()
         )
     }
-    bind<Fib63>() with provider {
+    prototype {
         Fib63(
             instance(),
             instance()
         )
     }
-    bind<Fib64>() with provider {
+    prototype {
         Fib64(
             instance(),
             instance()
         )
     }
-    bind<Fib65>() with provider {
+    prototype {
         Fib65(
             instance(),
             instance()
         )
     }
-    bind<Fib66>() with provider {
+    prototype {
         Fib66(
             instance(),
             instance()
         )
     }
-    bind<Fib67>() with provider {
+    prototype {
         Fib67(
             instance(),
             instance()
         )
     }
-    bind<Fib68>() with provider {
+    prototype {
         Fib68(
             instance(),
             instance()
         )
     }
-    bind<Fib69>() with provider {
+    prototype {
         Fib69(
             instance(),
             instance()
         )
     }
-    bind<Fib70>() with provider {
+    prototype {
         Fib70(
             instance(),
             instance()
         )
     }
-    bind<Fib71>() with provider {
+    prototype {
         Fib71(
             instance(),
             instance()
         )
     }
-    bind<Fib72>() with provider {
+    prototype {
         Fib72(
             instance(),
             instance()
         )
     }
-    bind<Fib73>() with provider {
+    prototype {
         Fib73(
             instance(),
             instance()
         )
     }
-    bind<Fib74>() with provider {
+    prototype {
         Fib74(
             instance(),
             instance()
         )
     }
-    bind<Fib75>() with provider {
+    prototype {
         Fib75(
             instance(),
             instance()
         )
     }
-    bind<Fib76>() with provider {
+    prototype {
         Fib76(
             instance(),
             instance()
         )
     }
-    bind<Fib77>() with provider {
+    prototype {
         Fib77(
             instance(),
             instance()
         )
     }
-    bind<Fib78>() with provider {
+    prototype {
         Fib78(
             instance(),
             instance()
         )
     }
-    bind<Fib79>() with provider {
+    prototype {
         Fib79(
             instance(),
             instance()
         )
     }
-    bind<Fib80>() with provider {
+    prototype {
         Fib80(
             instance(),
             instance()
         )
     }
-    bind<Fib81>() with provider {
+    prototype {
         Fib81(
             instance(),
             instance()
         )
     }
-    bind<Fib82>() with provider {
+    prototype {
         Fib82(
             instance(),
             instance()
         )
     }
-    bind<Fib83>() with provider {
+    prototype {
         Fib83(
             instance(),
             instance()
         )
     }
-    bind<Fib84>() with provider {
+    prototype {
         Fib84(
             instance(),
             instance()
         )
     }
-    bind<Fib85>() with provider {
+    prototype {
         Fib85(
             instance(),
             instance()
         )
     }
-    bind<Fib86>() with provider {
+    prototype {
         Fib86(
             instance(),
             instance()
         )
     }
-    bind<Fib87>() with provider {
+    prototype {
         Fib87(
             instance(),
             instance()
         )
     }
-    bind<Fib88>() with provider {
+    prototype {
         Fib88(
             instance(),
             instance()
         )
     }
-    bind<Fib89>() with provider {
+    prototype {
         Fib89(
             instance(),
             instance()
         )
     }
-    bind<Fib90>() with provider {
+    prototype {
         Fib90(
             instance(),
             instance()
         )
     }
-    bind<Fib91>() with provider {
+    prototype {
         Fib91(
             instance(),
             instance()
         )
     }
-    bind<Fib92>() with provider {
+    prototype {
         Fib92(
             instance(),
             instance()
         )
     }
-    bind<Fib93>() with provider {
+    prototype {
         Fib93(
             instance(),
             instance()
         )
     }
-    bind<Fib94>() with provider {
+    prototype {
         Fib94(
             instance(),
             instance()
         )
     }
-    bind<Fib95>() with provider {
+    prototype {
         Fib95(
             instance(),
             instance()
         )
     }
-    bind<Fib96>() with provider {
+    prototype {
         Fib96(
             instance(),
             instance()
         )
     }
-    bind<Fib97>() with provider {
+    prototype {
         Fib97(
             instance(),
             instance()
         )
     }
-    bind<Fib98>() with provider {
+    prototype {
         Fib98(
             instance(),
             instance()
         )
     }
-    bind<Fib99>() with provider {
+    prototype {
         Fib99(
             instance(),
             instance()
         )
     }
-    bind<Fib100>() with provider {
+    prototype {
         Fib100(
             instance(),
             instance()

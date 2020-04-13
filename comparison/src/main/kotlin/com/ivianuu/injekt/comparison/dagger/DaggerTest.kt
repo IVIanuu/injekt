@@ -14,28 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.kodein
+package com.ivianuu.injekt.comparison.dagger
 
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
-import org.kodein.di.Kodein
-import org.kodein.di.direct
-import org.kodein.di.erased.instance
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import daggerone.ObjectGraph
 
-object KodeinTest : InjectionTest {
+object DaggerTest : InjectionTest {
 
-    override val name = "Kodein"
+    override val name = "Dagger 1"
 
-    private var kodein: Kodein? = null
+    private var graph: ObjectGraph? = null
 
     override fun setup() {
-        kodein = Kodein { import(createModule()) }
+        graph = ObjectGraph.create(DaggerModule())
     }
 
     override fun inject() {
-        kodein!!.direct.instance<Fib8>()
+        graph!![Fib8::class.java]
     }
 
     override fun shutdown() {
+        graph = null
     }
 }

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Color
 import android.os.Bundle
 import android.widget.FrameLayout
+import com.ivianuu.injekt.comparison.base.runInjectionTests
 import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.injekt
 

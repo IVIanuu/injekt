@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injekt
+package com.ivianuu.injekt.comparison.katana
 
-import com.ivianuu.injekt.ApplicationScope
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import org.rewedigital.katana.Component
 
-object InjektTest : InjectionTest {
-    override val name = "Injekt"
+object KatanaTest : InjectionTest {
+
+    override val name = "Katana"
 
     private var component: Component? = null
 
     override fun setup() {
-        component = Component { scopes(ApplicationScope) }
+        component = Component(modules = listOf(createModule()))
     }
 
     override fun inject() {
-        component!!.get<Fib8>()
+        component!!.injectNow<Fib8>()
     }
 
     override fun shutdown() {

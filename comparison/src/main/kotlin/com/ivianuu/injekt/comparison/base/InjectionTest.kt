@@ -14,28 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.koin
+package com.ivianuu.injekt.comparison.base
 
-import com.ivianuu.injekt.comparison.Fib8
-import com.ivianuu.injekt.comparison.InjectionTest
-import org.koin.core.KoinComponent
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.get
+interface InjectionTest {
 
-object KoinTest : InjectionTest, KoinComponent {
+    val name: String
 
-    override val name = "Koin"
+    fun setup()
 
-    override fun setup() {
-        startKoin { modules(createModule()) }
-    }
+    fun inject()
 
-    override fun inject() {
-        get<Fib8>()
-    }
-
-    override fun shutdown() {
-        stopKoin()
-    }
+    fun shutdown()
 }

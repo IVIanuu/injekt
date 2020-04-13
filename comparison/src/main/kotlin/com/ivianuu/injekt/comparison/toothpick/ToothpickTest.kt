@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.toothpick
 
-interface InjectionTest {
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import toothpick.Scope
+import toothpick.Toothpick
 
-    val name: String
+object ToothpickTest : InjectionTest {
+    override val name: String
+        get() = "Toothpick"
 
-    fun setup()
+    private var scope: Scope? = null
 
-    fun inject()
+    override fun setup() {
+        scope = Toothpick.openScope(this)
+    }
 
-    fun shutdown()
+    override fun inject() {
+        scope!!.getInstance(Fib8::class.java)
+    }
+
+    override fun shutdown() {
+        Toothpick.closeScope(this)
+    }
 }

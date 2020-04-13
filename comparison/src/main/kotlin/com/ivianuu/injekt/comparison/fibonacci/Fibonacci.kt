@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison
+package com.ivianuu.injekt.comparison.fibonacci
 
 import com.ivianuu.injekt.synthetic.Factory
 import javax.inject.Inject
