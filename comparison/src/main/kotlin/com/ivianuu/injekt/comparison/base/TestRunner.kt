@@ -25,6 +25,7 @@ import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
+import com.ivianuu.injekt.comparison.magnet.MagnetTest
 import com.ivianuu.injekt.comparison.toothpick.ToothpickTest
 import com.ivianuu.injekt.comparison.winter.WinterTest
 import org.nield.kotlinstatistics.median
@@ -55,6 +56,7 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             KatanaTest,
             KodeinTest,
             KoinTest,
+            MagnetTest,
             ToothpickTest,
             WinterTest
         ).shuffled(),
