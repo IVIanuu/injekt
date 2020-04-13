@@ -23,14 +23,12 @@ fun interface Lazy<T> : Provider<T>
 
 @ModuleMarker
 private val LazyModule = Module(AnyScope) {
-    jitFactory { key, _ ->
+    jitFactory { _, key ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Lazy::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-        return@jitFactory Binding(key) {
-            KeyedLazy(this, instanceKey)
-        }
+        return@jitFactory { KeyedLazy(this, instanceKey) }
     }
 }
 

@@ -40,7 +40,7 @@ class ComponentBuilder {
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    var jitFactories = emptyList<(Key<Any?>, Component) -> Binding<Any?>?>()
+    var jitFactories = emptyList<(Component, Key<Any?>) -> BindingProvider<Any?>?>()
         private set
 
     private var onPreBuildBlocks = emptyList<() -> Boolean>()
@@ -115,18 +115,18 @@ class ComponentBuilder {
      * Invokes the [factories] when ever a [Binding] request cannot be fulfilled
      * If a factory returns a non null [Binding] it will be returned
      */
-    fun jitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
+    fun jitFactory(factory: (Component, Key<Any?>) -> BindingProvider<Any?>?) {
         jitFactories(factory)
     }
 
-    fun jitFactories(vararg factories: (Key<Any?>, Component) -> Binding<Any?>?) {
+    fun jitFactories(vararg factories: (Component, Key<Any?>) -> BindingProvider<Any?>?) {
         jitFactories = jitFactories + factories
     }
 
     /**
      * Replaces all existing jit factories with [factories]
      */
-    fun setJitFactories(factories: List<(Key<Any?>, Component) -> Binding<Any?>?>) {
+    fun setJitFactories(factories: List<(Component, Key<Any?>) -> BindingProvider<Any?>?>) {
         jitFactories = emptyList()
         jitFactories(*factories.toTypedArray())
     }
@@ -134,7 +134,7 @@ class ComponentBuilder {
     /**
      * Removes the [factory]
      */
-    fun removeJitFactory(factory: (Key<Any?>, Component) -> Binding<Any?>?) {
+    fun removeJitFactory(factory: (Component, Key<Any?>) -> BindingProvider<Any?>?) {
         jitFactories = jitFactories - factory
     }
 

@@ -133,4 +133,19 @@ class ComponentTest {
         assertEquals(componentC, componentCResult)
     }
 
+    @Test
+    fun testJitFactory() {
+        val component = Component {
+            jitFactory { _, key ->
+                if (key.classifier == String::class) {
+                    { "hello" }
+                } else {
+                    null
+                }
+            }
+        }
+
+        assertEquals(component.get<String>(), "hello")
+    }
+
 }

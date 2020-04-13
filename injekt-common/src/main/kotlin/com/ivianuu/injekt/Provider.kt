@@ -32,14 +32,12 @@ fun interface Provider<T> {
 
 @ModuleMarker
 private val ProviderModule = Module(AnyScope) {
-    jitFactory { key, _ ->
+    jitFactory { _, key ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Provider::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-        return@jitFactory Binding(key) {
-            KeyedProvider(this, instanceKey)
-        }
+        return@jitFactory { KeyedProvider(this, instanceKey) }
     }
 }
 
