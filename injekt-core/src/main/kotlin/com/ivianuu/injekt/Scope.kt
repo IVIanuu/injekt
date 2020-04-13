@@ -60,6 +60,7 @@ annotation class ScopeMarker
 /**
  * Applies the [Module] to every [ComponentBuilder]
  */
+@ScopeMarker
 val AnyScope = Scope()
 
 private data class DefaultScope(val name: Any) : Scope {

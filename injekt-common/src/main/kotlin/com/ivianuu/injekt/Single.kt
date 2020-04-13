@@ -40,16 +40,20 @@ val Single = InterceptingBehavior {
 
 private class SingleProvider<T>(
     private val wrapped: BindingProvider<T>
-) : (Component, Parameters) -> T {
+) : AbstractBindingProvider<T>() {
     private var value: Any? = this
 
-    override fun invoke(component: Component, parameters: Parameters): T {
+    override fun doLink(linker: Linker) {
+        wrapped.link(linker)
+    }
+
+    override fun invoke(parameters: Parameters): T {
         var value = this.value
         if (value === this) {
             synchronized(this) {
                 value = this.value
                 if (value === this) {
-                    value = wrapped(component, parameters)
+                    value = wrapped(parameters)
                     this.value = value
                 }
             }

@@ -25,27 +25,21 @@ val Bound = InterceptingBehavior { binding ->
         acc ?: element as? Scope
     }
     val provider = BoundProvider(binding.provider, scope)
-    onBuild { provider.initializeComponentIfNeeded(it) }
     binding.copy(provider = provider)
 }
 
 private class BoundProvider<T>(
     private val wrapped: BindingProvider<T>,
     private val scope: Scope?
-) : (Component, Parameters) -> T {
+) : BindingProvider<T> {
 
-    private lateinit var boundComponent: Component
-
-    override fun invoke(component: Component, parameters: Parameters): T {
-        initializeComponentIfNeeded(component)
-        return wrapped(boundComponent, parameters)
+    override fun link(linker: Linker) {
+        wrapped.link(
+            if (scope == null) linker
+            else linker.getLinker(scope)
+        )
     }
 
-    fun initializeComponentIfNeeded(component: Component) {
-        if (!this::boundComponent.isInitialized) {
-            boundComponent = if (scope != null) component.getComponent(scope)
-            else component
-        }
+    override fun invoke(parameters: Parameters): T = wrapped(parameters)
 
-    }
 }

@@ -28,17 +28,18 @@ val Weak = InterceptingBehavior {
 } + Bound
 
 private class WeakProvider<T>(private val wrapped: BindingProvider<T>) :
-        (Component, Parameters) -> T {
+    AbstractBindingProvider<T>() {
     private var ref: WeakReference<Wrapper<T>>? = null
 
-    override fun invoke(component: Component, parameters: Parameters): T {
+    override fun doLink(linker: Linker) {
+        wrapped.link(linker)
+    }
+
+    override fun invoke(parameters: Parameters): T {
         var valueWrapper = ref?.get()
         if (valueWrapper == null) {
             valueWrapper = Wrapper(
-                wrapped(
-                    component,
-                    parameters
-                )
+                wrapped(parameters)
             )
             ref = WeakReference(valueWrapper)
         }

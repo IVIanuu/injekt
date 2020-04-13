@@ -73,7 +73,9 @@ class GenerateDslProcessor(
                     file.packageFqName.asString(),
                     "${file.name.removeSuffix(".kt")}GeneratedDsl"
                 )
+                .addImport("com.ivianuu.injekt", "bind")
                 .apply {
+
                     behaviors.forEach { behavior ->
                         val annotation = behavior.annotations
                             .findAnnotation(InjektClassNames.GenerateDsl)!!
@@ -92,6 +94,13 @@ class GenerateDslProcessor(
                         if (generateBuilder) {
                             addFunction(keyOverloadStubBuilder(behavior, builderName))
                             addFunction(keyOverloadBuilder(behavior, builderName))
+                            addFunction(
+                                keyOverloadStubAndDslOverloadStubBuilder(
+                                    behavior,
+                                    builderName
+                                )
+                            )
+                            addFunction(keyOverloadAndDslOverloadBuilder(behavior, builderName))
                         }
 
                         val generateDelegate =
@@ -118,36 +127,73 @@ class GenerateDslProcessor(
     }
 
     private fun keyOverloadStubBuilder(
-        declarationDescriptor: DeclarationDescriptor,
+        declaration: DeclarationDescriptor,
         name: String
+    ) = baseKeyOverloadStubBuilder(
+        declaration = declaration,
+        name = name,
+        annotations = listOf(InjektClassNames.KeyOverloadStub),
+        lastParameter = providerParameter()
+    )
+
+    private fun keyOverloadStubAndDslOverloadStubBuilder(
+        declaration: DeclarationDescriptor,
+        name: String
+    ) = baseKeyOverloadStubBuilder(
+        declaration = declaration,
+        name = name,
+        annotations = listOf(InjektClassNames.KeyOverloadStub, InjektClassNames.DslOverloadStub),
+        lastParameter = definitionParameter()
+    )
+
+    private fun baseKeyOverloadStubBuilder(
+        declaration: DeclarationDescriptor,
+        name: String,
+        annotations: List<FqName>,
+        lastParameter: ParameterSpec
     ) = baseDslBuilder(
         name = name,
-        declaration = declarationDescriptor,
-        annotation = InjektClassNames.KeyOverloadStub,
-        firstParameter = ParameterSpec.builder(
-                "qualifier",
-                InjektClassNames.Qualifier.asClassName()
-            )
-            .defaultValue("error(\"stub\")")
-            .build(),
+        declaration = declaration,
+        annotations = annotations,
+        firstParameter = qualifierParameter(),
+        lastParameter = lastParameter,
         code = "error(\"stub\")"
     )
 
     private fun keyOverloadBuilder(
-        declarationDescriptor: DeclarationDescriptor,
+        declaration: DeclarationDescriptor,
         name: String
+    ) = baseKeyOverloadBuilder(
+        declaration = declaration,
+        name = name,
+        annotations = listOf(InjektClassNames.KeyOverload),
+        lastParameter = providerParameter()
+    )
+
+    private fun keyOverloadAndDslOverloadBuilder(
+        declaration: DeclarationDescriptor,
+        name: String
+    ) = baseKeyOverloadBuilder(
+        declaration = declaration,
+        name = name,
+        annotations = listOf(InjektClassNames.KeyOverload, InjektClassNames.DslOverload),
+        lastParameter = definitionParameter()
+    )
+
+    private fun baseKeyOverloadBuilder(
+        declaration: DeclarationDescriptor,
+        name: String,
+        annotations: List<FqName>,
+        lastParameter: ParameterSpec
     ) = baseDslBuilder(
         name = name,
-        declaration = declarationDescriptor,
-        annotation = InjektClassNames.KeyOverload,
-        firstParameter = ParameterSpec.builder(
-            "key",
-            InjektClassNames.Key.asClassName()
-                .parameterizedBy(TypeVariableName("BindingType"))
-        ).build(),
+        declaration = declaration,
+        annotations = annotations,
+        firstParameter = keyParameter(),
+        lastParameter = lastParameter,
         code = "bind(key = key,\n" +
                 "behavior = ${
-                declarationDescriptor.name.asString() + declarationDescriptor.safeAs<FunctionDescriptor>()
+                declaration.name.asString() + declaration.safeAs<FunctionDescriptor>()
                     ?.let { function ->
                         function.typeParameters
                             .takeIf { it.isNotEmpty() }
@@ -159,18 +205,19 @@ class GenerateDslProcessor(
                     }.orEmpty()
                 } + behavior,\n" +
                 "duplicateStrategy = duplicateStrategy,\n" +
-                "provider = provider\n)"
+                "${lastParameter.name} = ${lastParameter.name}\n)"
     )
 
     private fun baseDslBuilder(
         name: String,
         declaration: DeclarationDescriptor,
-        annotation: FqName,
+        annotations: List<FqName>,
         firstParameter: ParameterSpec,
+        lastParameter: ParameterSpec,
         code: String
     ): FunSpec = FunSpec.builder(name)
         .addKdoc("Dsl builder for the [${declaration.name}] behavior")
-        .addAnnotation(annotation.asClassName())
+        .apply { annotations.forEach { addAnnotation(it.asClassName()) } }
         .addTypeVariable(TypeVariableName("BindingType"))
         .apply {
             if (declaration is FunctionDescriptor) {
@@ -225,14 +272,7 @@ class GenerateDslProcessor(
                 .defaultValue("DuplicateStrategy.Fail")
                 .build()
         )
-        .addParameter(
-            ParameterSpec.builder(
-                    "provider",
-                    InjektClassNames.BindingProvider.asClassName()
-                        .parameterizedBy(TypeVariableName("BindingType"))
-                )
-                .build()
-        )
+        .addParameter(lastParameter)
         .addCode(code)
         .build()
 
@@ -243,12 +283,7 @@ class GenerateDslProcessor(
         name = name,
         declaration = declaration,
         annotation = InjektClassNames.KeyOverloadStub,
-        firstParameter = ParameterSpec.builder(
-                "qualifier",
-                InjektClassNames.Qualifier.asClassName()
-            )
-            .defaultValue("error(\"stub\")")
-            .build(),
+        firstParameter = qualifierParameter(),
         code = "error(\"stub\")"
     )
 
@@ -259,11 +294,7 @@ class GenerateDslProcessor(
         name = name,
         declaration = declaration,
         annotation = InjektClassNames.KeyOverload,
-        firstParameter = ParameterSpec.builder(
-            "key",
-            InjektClassNames.Key.asClassName()
-                .parameterizedBy(TypeVariableName("BindingType"))
-        ).build(),
+        firstParameter = keyParameter(),
         code = "bind(key = key.copy(qualifier = key.qualifier + ${declaration.name}Init),\n" +
                 "behavior = ${
                 declaration.name.asString() + declaration.safeAs<FunctionDescriptor>()
@@ -277,7 +308,7 @@ class GenerateDslProcessor(
                         } + ")"
                     }.orEmpty()
                 },\nduplicateStrategy = com.ivianuu.injekt.DuplicateStrategy.Drop,\n" +
-                "provider = { get(key) })"
+                "definition = { get(key) })"
     )
 
     private fun baseDslDelegate(
@@ -328,6 +359,33 @@ class GenerateDslProcessor(
             }
         }
         .addCode(code)
+        .build()
+
+    private fun keyParameter() = ParameterSpec.builder(
+        "key",
+        InjektClassNames.Key.asClassName()
+            .parameterizedBy(TypeVariableName("BindingType"))
+    ).build()
+
+    private fun qualifierParameter() = ParameterSpec.builder(
+            "qualifier",
+            InjektClassNames.Qualifier.asClassName()
+        )
+        .defaultValue("error(\"stub\")")
+        .build()
+
+    private fun definitionParameter() = ParameterSpec.builder(
+            "definition",
+            InjektClassNames.BindingDefinition.asClassName()
+                .parameterizedBy(TypeVariableName("BindingType"))
+        )
+        .build()
+
+    private fun providerParameter() = ParameterSpec.builder(
+            "provider",
+            InjektClassNames.BindingProvider.asClassName()
+                .parameterizedBy(TypeVariableName("BindingType"))
+        )
         .build()
 
     private fun delegateQualifierProperty(

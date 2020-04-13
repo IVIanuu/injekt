@@ -17,12 +17,34 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.ApplicationScope
+import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.Linker
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.injekt
 import com.ivianuu.injekt.sample.data.Repository
+
+val MyModule = Module(ApplicationScope) {
+    bind { MyClass(get()) }
+    bind(provider = object : BindingProvider<MyClass> {
+        private lateinit var provider0: BindingProvider<Repository>
+        override fun link(linker: Linker) {
+            provider0 = linker.get()
+        }
+
+        override fun invoke(parameters: Parameters): MyClass {
+            return MyClass(provider0())
+        }
+    })
+}
+
+class MyClass(private val repository: Repository)
 
 class App : Application(), ComponentOwner {
 

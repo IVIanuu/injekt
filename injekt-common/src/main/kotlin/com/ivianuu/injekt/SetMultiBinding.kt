@@ -198,24 +198,18 @@ internal fun <E> ComponentBuilder.getSetBuilder(
 
 private class SetBindingProvider<E>(
     private val setOfKeyWithOverrideInfoKey: Key<Set<KeyWithOverrideInfo>>
-) : (Component, Parameters) -> Set<KeyWithOverrideInfo> {
+) : AbstractBindingProvider<Set<KeyWithOverrideInfo>>() {
     var thisBuilder: MultiBindingSetBuilder<E>? =
         MultiBindingSetBuilder()
     var thisSet: Set<KeyWithOverrideInfo>? = null
     private var mergedSet: Set<KeyWithOverrideInfo>? = null
 
-    override fun invoke(component: Component, parameters: Parameters): Set<KeyWithOverrideInfo> {
-        ensureInitialized(component)
-        return mergedSet!!
-    }
-
-    fun ensureInitialized(component: Component) {
-        if (mergedSet != null) return
+    override fun doLink(linker: Linker) {
         checkNotNull(thisBuilder)
 
         val mergedBuilder = MultiBindingSetBuilder<E>()
 
-        component.getAllParents()
+        linker.component.getAllParents()
             .flatMap { parent ->
                 parent.bindings[setOfKeyWithOverrideInfoKey]
                     ?.provider
@@ -234,4 +228,7 @@ private class SetBindingProvider<E>(
 
         mergedSet = mergedBuilder.build()
     }
+
+    override fun invoke(parameters: Parameters): Set<KeyWithOverrideInfo> = mergedSet!!
+
 }

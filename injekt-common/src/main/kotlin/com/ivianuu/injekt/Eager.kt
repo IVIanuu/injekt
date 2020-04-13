@@ -31,23 +31,6 @@ package com.ivianuu.injekt
  */
 @GenerateDsl(generateBuilder = true, generateDelegate = true)
 @BehaviorMarker
-val Eager = InterceptingBehavior { binding ->
-    val provider =
-        EagerProvider(binding.provider)
-    onBuild { provider.initializeIfNeeded(it) }
-    binding.copy(provider = provider)
-}
-
-private class EagerProvider<T>(
-    private val wrapped: BindingProvider<T>
-) : (Component, Parameters) -> T {
-    private var initialized = false
-    override fun invoke(component: Component, parameters: Parameters): T {
-        initialized = true
-        return wrapped(component, parameters)
-    }
-
-    fun initializeIfNeeded(component: Component) {
-        if (!initialized) invoke(component, emptyParameters())
-    }
+val Eager = SideEffectBehavior { binding ->
+    onBuild { it.get(binding.key) }
 }

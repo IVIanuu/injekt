@@ -42,8 +42,13 @@ val Multi = InterceptingBehavior {
 
 private class MultiProvider<T>(
     private val wrapped: BindingProvider<T>
-) : (Component, Parameters) -> T {
+) : AbstractBindingProvider<T>() {
     private val values = ConcurrentHashMap<Int, T>()
-    override fun invoke(component: Component, parameters: Parameters): T =
-        values.getOrPut(parameters.hashCode()) { wrapped(component, parameters) }
+
+    override fun doLink(linker: Linker) {
+        wrapped.link(linker)
+    }
+
+    override fun invoke(parameters: Parameters): T =
+        values.getOrPut(parameters.hashCode()) { wrapped(parameters) }
 }

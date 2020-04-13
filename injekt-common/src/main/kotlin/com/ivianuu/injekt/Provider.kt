@@ -32,15 +32,20 @@ fun interface Provider<T> {
 
 @ModuleMarker
 private val ProviderModule = Module(AnyScope) {
-    jitFactory { key, _ ->
+    jitFactory { key, component ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Provider::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-        return@jitFactory Binding(key) {
-            KeyedProvider(this, instanceKey)
-        }
+        ProviderProvider(component, instanceKey) as BindingProvider<Any?>
     }
+}
+
+private class ProviderProvider<T>(
+    private val component: Component,
+    private val key: Key<T>
+) : BindingProvider<Provider<T>> {
+    override fun invoke(parameters: Parameters): Provider<T> = KeyedProvider(component, key)
 }
 
 private class KeyedProvider<T>(
@@ -52,6 +57,6 @@ private class KeyedProvider<T>(
         if (provider == null) {
             provider = component.getBindingProvider(key)
         }
-        return provider!!(component, parameters)
+        return provider!!(parameters)
     }
 }

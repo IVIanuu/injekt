@@ -70,10 +70,11 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val behavior = getClass(InjektClassNames.Behavior)
-    private val component = getClass(InjektClassNames.Component)
+    private val bindingDefinition = getClass(InjektClassNames.Component)
     private val module = getClass(InjektClassNames.Module)
     private val moduleMarker = getClass(InjektClassNames.ModuleMarker)
     private val parameters = getClass(InjektClassNames.Parameters)
+    private val providerContext = getClass(InjektClassNames.ProviderContext)
     private val qualifier = getClass(InjektClassNames.Qualifier)
     private val scope = getClass(InjektClassNames.Scope)
 
@@ -132,7 +133,8 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                     builder.irCall(
                         symbolTable.referenceSimpleFunction(
                             injektInternalPackage.memberScope.findFirstFunction("BindingModule") {
-                                it.valueParameters.firstOrNull()?.type == qualifier.defaultType
+                                it.valueParameters.firstOrNull()?.name?.asString() == "qualifier" &&
+                                        it.valueParameters.lastOrNull()?.name?.asString() == "definition"
                             }
                         ),
                         module.defaultType.toIrType()
@@ -214,7 +216,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                             )
                         )
 
-                        putValueArgument(3, builder.bindingProvider(injectable))
+                        putValueArgument(3, builder.bindingDefinition(injectable))
                     }
                 )
             }
@@ -281,7 +283,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         else -> error("Unexpected declaration $this -> ${this.dump()}")
     }
 
-    private fun IrBuilderWithScope.bindingProvider(
+    private fun IrBuilderWithScope.bindingDefinition(
         injectable: IrDeclaration
     ): IrExpression {
         val injectableType = injectable.injectType()
@@ -289,7 +291,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         val providerType = KotlinTypeFactory.simpleType(
             context.builtIns.getFunction(2).defaultType,
             arguments = listOf(
-                component.defaultType.asTypeProjection(),
+                providerContext.defaultType.asTypeProjection(),
                 parameters.defaultType.asTypeProjection(),
                 injectableType.toKotlinType().asTypeProjection()
             )
@@ -333,10 +335,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         component: () -> IrExpression,
         parameters: () -> IrExpression
     ): IrExpression {
-        val componentGet = injektPackage.memberScope
+        val providerContextGet = injektPackage.memberScope
             .findFirstFunction("get") {
                 it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
-                        it.extensionReceiverParameter?.type == this@BindingModuleGenerator.component.defaultType
+                        it.extensionReceiverParameter?.type == this@BindingModuleGenerator.providerContext.defaultType
             }
 
         val parametersGet = this@BindingModuleGenerator.parameters.unsubstitutedMemberScope
@@ -365,7 +367,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                     } else {
                         irCall(
                             symbolTable.referenceSimpleFunction(
-                                componentGet
+                                providerContextGet
                             ),
                             param.type
                         ).apply {

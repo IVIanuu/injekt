@@ -23,15 +23,20 @@ fun interface Lazy<T> : Provider<T>
 
 @ModuleMarker
 private val LazyModule = Module(AnyScope) {
-    jitFactory { key, _ ->
+    jitFactory { key, component ->
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Lazy::class) return@jitFactory null
         val instanceKey = key.arguments.single()
             .copy(qualifier = key.qualifier)
-        return@jitFactory Binding(key) {
-            KeyedLazy(this, instanceKey)
-        }
+        LazyProvider(component, instanceKey) as BindingProvider<Any?>
     }
+}
+
+private class LazyProvider<T>(
+    private val component: Component,
+    private val key: Key<T>
+) : BindingProvider<Lazy<T>> {
+    override fun invoke(parameters: Parameters): Lazy<T> = KeyedLazy(component, key)
 }
 
 private class KeyedLazy<T>(

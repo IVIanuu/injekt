@@ -49,10 +49,6 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // transform initializeEndpoint calls
         InjektInitTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        // transform binding provider lambdas to classes
-        // to allow further transformations
-        BindingProviderLambdaToClassTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
         // rewrite key overload stub calls to the real calls
         KeyOverloadTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
@@ -62,7 +58,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // cache providers
-        BindingProviderCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        BindingDefinitionTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>

@@ -40,9 +40,11 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scopes: Set<Scope>,
     val parents: List<Component>,
-    val jitFactories: List<(Key<Any?>, Component) -> Binding<Any?>?>,
+    val jitFactories: List<(Key<Any?>, Component) -> BindingProvider<Any?>?>,
     val bindings: Map<Key<*>, Binding<*>>
 ) {
+
+    val linker = Linker(this)
 
     /**
      * Return a instance of type [T] for [key]
@@ -52,19 +54,16 @@ class Component internal constructor(
         getBindingProvider(key)(parameters)
 
     /**
-     * Returns the [BindingProvider] for [key]
-     */
-    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> = getBinding(key).provider
-
-    /**
      * Returns the binding for [key]
      */
-    fun <T> getBinding(key: Key<T>): Binding<T> {
-        findBinding(key)?.let { return it }
-        if (key.isNullable) return Binding(
-            key = key
-        ) { null as T }
+    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> {
+        findBindingProvider(key)?.let { return it }
+        if (key.isNullable) return NullLinkedBindingProvider as BindingProvider<T>
         error("Couldn't get instance for $key")
+    }
+
+    private object NullLinkedBindingProvider : BindingProvider<Any?> {
+        override fun invoke(parameters: Parameters): Any? = null
     }
 
     /**
@@ -83,21 +82,28 @@ class Component internal constructor(
         return null
     }
 
-    private fun <T> findBinding(key: Key<T>): Binding<T>? {
+    private fun <T> findBindingProvider(key: Key<T>): BindingProvider<T>? {
         var binding = bindings[key] as? Binding<T>
         if (binding != null && !key.isNullable && binding.key.isNullable) {
             binding = null
         }
-        if (binding != null) return binding
+
+        if (binding != null) {
+            binding.provider.link(linker)
+            return binding.provider
+        }
 
         for (index in parents.lastIndex downTo 0) {
-            binding = parents[index].findBinding(key)
-            if (binding != null) return binding
+            parents[index].findBindingProvider(key)
+                ?.let { return it }
         }
 
         for (index in jitFactories.lastIndex downTo 0) {
-            binding = jitFactories[index](key as Key<Any?>, this) as? Binding<T>
-            if (binding != null) return binding
+            (jitFactories[index](key as Key<Any?>, this) as? Binding<T>)
+                ?.let {
+                    it.provider.link(linker)
+                    return it.provider
+                }
         }
 
         return null
