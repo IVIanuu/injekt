@@ -63,3 +63,10 @@ fun <S, T> ComponentBuilder.alias(
         duplicateStrategy = duplicateStrategy
     ) { parameters -> get(originalKey, parameters = parameters) as T }
 }
+
+@BehaviorMarker
+fun Alias(vararg aliases: Key<*>) = SideEffectBehavior(
+    name = "com.ivianuu.injekt.Alias(${aliases.joinToString(",")})"
+) { binding ->
+    aliases.forEach { alias(binding.key, it) }
+}

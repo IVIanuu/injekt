@@ -22,6 +22,16 @@ import org.junit.Test
 class AliasTest {
 
     @Test
+    fun testAliasBehavior() {
+        val component = Component {
+            single(behavior = Alias(keyOf<Any>())) { TestDep1() }
+        }
+        val declared = component.get<TestDep1>()
+        val aliased = component.get<Any>()
+        assertSame(declared, aliased)
+    }
+
+    @Test
     fun testAlias() {
         val component = Component {
             single { TestDep1() }

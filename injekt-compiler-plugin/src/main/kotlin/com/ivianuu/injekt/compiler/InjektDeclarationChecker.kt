@@ -123,7 +123,7 @@ class InjektDeclarationChecker(
         ) {
             if (descriptor.typeParameters.isEmpty() ||
                 descriptor.valueParameters.none { valueParameter ->
-                    valueParameter.type.constructor.declarationDescriptor == key
+                    valueParameter.type.typeEquals(InjektClassNames.Key)
                 }
             ) {
                 context.trace.report(

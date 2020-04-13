@@ -106,6 +106,11 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
 @Target(AnnotationTarget.FUNCTION)
 annotation class KeyOverload
 
+annotation class KeyOf(
+    val classifier: KClass<*>,
+    val qualifier: KClass<*> = Nothing::class
+)
+
 private fun unboxed(type: KClass<*>): KClass<*> {
     val jClass = (type as ClassBasedDeclarationContainer).jClass
     if (jClass.isPrimitive) return type

@@ -7,10 +7,12 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.MemberDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
@@ -25,10 +27,18 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.declarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.types.Variance
 
-class SyntheticAnnotationProcessor : ElementProcessor {
+class SyntheticAnnotationProcessor(
+    private val module: ModuleDescriptor
+) : ElementProcessor {
+
+    private val keyOf = module.findClassAcrossModuleDependencies(
+        ClassId.topLevel(InjektClassNames.KeyOf)
+    )!!
 
     override fun processFile(
         file: KtFile,
@@ -114,28 +124,69 @@ class SyntheticAnnotationProcessor : ElementProcessor {
 
                 addProperties(
                     function.valueParameters.map { valueParameter ->
-                        PropertySpec.builder(
-                                valueParameter.name.asString(),
-                                valueParameter.type.asTypeName()!!
-                            )
-                            .initializer(valueParameter.name.asString())
-                            .build()
+                        val type = valueParameter.type
+                        if (type.typeEquals(InjektClassNames.Key)) {
+                            PropertySpec.builder(
+                                    valueParameter.name.asString(),
+                                    keyOf.defaultType.asTypeName()!!
+                                )
+                                .initializer(valueParameter.name.asString())
+                                .build()
+                        } else if (KotlinBuiltIns.isArray(type) &&
+                            type.arguments.single().type.typeEquals(InjektClassNames.Key)
+                        ) {
+                            PropertySpec.builder(
+                                    valueParameter.name.asString(),
+                                    valueParameter.builtIns.getArrayType(
+                                        Variance.INVARIANT,
+                                        keyOf.defaultType
+                                    ).asTypeName()!!
+                                )
+                                .initializer(valueParameter.name.asString())
+                                .build()
+                        } else {
+                            PropertySpec.builder(
+                                    valueParameter.name.asString(),
+                                    valueParameter.type.asTypeName()!!
+                                )
+                                .initializer(valueParameter.name.asString())
+                                .build()
+                        }
                     }
                 )
                 primaryConstructor(
                     FunSpec.constructorBuilder()
                         .addParameters(
                             function.valueParameters.map { valueParameter ->
-                                ParameterSpec.builder(
+                                val type = valueParameter.type
+                                if (type.typeEquals(InjektClassNames.Key)) {
+                                    ParameterSpec.builder(
+                                            valueParameter.name.asString(),
+                                            keyOf.defaultType.asTypeName()!!
+                                        )
+                                        .build()
+                                } else if (KotlinBuiltIns.isArray(type) &&
+                                    type.arguments.single().type.typeEquals(InjektClassNames.Key)
+                                ) {
+                                    ParameterSpec.builder(
                                         valueParameter.name.asString(),
-                                        valueParameter.type.asTypeName()!!
-                                    )
-                                    .apply {
-                                        if (valueParameter.declaresDefaultValue()) {
-                                            defaultValue((valueParameter.findPsi() as KtParameter).defaultValue!!.text)
+                                        valueParameter.builtIns.getArrayType(
+                                            Variance.INVARIANT,
+                                            keyOf.defaultType
+                                        ).asTypeName()!!
+                                    ).build()
+                                } else {
+                                    ParameterSpec.builder(
+                                            valueParameter.name.asString(),
+                                            valueParameter.type.asTypeName()!!
+                                        )
+                                        .apply {
+                                            if (valueParameter.declaresDefaultValue()) {
+                                                defaultValue((valueParameter.findPsi() as KtParameter).defaultValue!!.text)
+                                            }
                                         }
-                                    }
-                                    .build()
+                                        .build()
+                                }
                             }
                         )
                         .build()

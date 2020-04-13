@@ -23,13 +23,11 @@ import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getReturnTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.NotFoundClasses
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -46,6 +44,7 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
@@ -54,12 +53,12 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
@@ -67,6 +66,11 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
+import org.jetbrains.kotlin.ir.types.starProjectedType
+import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.referenceClassifier
@@ -75,10 +79,10 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -100,9 +104,11 @@ import org.jetbrains.kotlin.resolve.constants.UIntValue
 import org.jetbrains.kotlin.resolve.constants.ULongValue
 import org.jetbrains.kotlin.resolve.constants.UShortValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 abstract class AbstractInjektTransformer(
@@ -122,6 +128,8 @@ abstract class AbstractInjektTransformer(
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
     protected val injektInternalPackage =
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
+
+    private val key = getClass(InjektClassNames.Key)
 
     protected fun getClass(fqName: FqName) =
         pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
@@ -207,25 +215,39 @@ abstract class AbstractInjektTransformer(
     protected fun IrBuilderWithScope.syntheticAnnotationAccessor(
         annotation: AnnotationDescriptor
     ): IrExpression {
-        return when (val declaration =
-            annotation.getDeclarationForSyntheticAnnotation(pluginContext.moduleDescriptor)) {
+        return syntheticAnnotationAccessor(
+            declaration = getDeclarationForSyntheticAnnotation(
+                annotation.fqName!!,
+                pluginContext.moduleDescriptor
+            ),
+            typeArguments = annotation.type.arguments.map { it.type },
+            valueArguments = annotation.allValueArguments
+        )
+    }
+
+    protected fun IrBuilderWithScope.syntheticAnnotationAccessor(
+        declaration: DeclarationDescriptor,
+        typeArguments: List<KotlinType>,
+        valueArguments: Map<Name, ConstantValue<*>>
+    ): IrExpression {
+        return when (declaration) {
             is ClassDescriptor -> {
                 if (declaration.kind == ClassKind.OBJECT) {
                     irGetObject(symbolTable.referenceClass(declaration))
                 } else {
                     val constructor = declaration.unsubstitutedPrimaryConstructor!!
                     irCall(
-                        symbolTable.referenceConstructor(constructor as ClassConstructorDescriptor),
+                        symbolTable.referenceConstructor(constructor),
                         declaration.defaultType.toIrType()
                     ).apply {
-                        annotation.type.arguments.forEachIndexed { index, typeArgument ->
+                        typeArguments.forEachIndexed { index, typeArgument ->
                             putTypeArgument(
                                 index,
-                                typeArgument.type.toIrType()
+                                typeArgument.toIrType()
                             )
                         }
 
-                        annotation.allValueArguments.toList().forEach { (name, value) ->
+                        valueArguments.forEach { (name, value) ->
                             putValueArgument(
                                 constructor.valueParameters.single { it.name == name }.index,
                                 generateConstantOrAnnotationValueAsExpression(constantValue = value)
@@ -239,14 +261,14 @@ abstract class AbstractInjektTransformer(
                     symbolTable.referenceSimpleFunction(declaration),
                     declaration.returnType!!.toIrType()
                 ).apply {
-                    annotation.type.arguments.forEachIndexed { index, typeArgument ->
+                    typeArguments.forEachIndexed { index, typeArgument ->
                         putTypeArgument(
                             index,
-                            typeArgument.type.toIrType()
+                            typeArgument.toIrType()
                         )
                     }
 
-                    annotation.allValueArguments.toList().forEach { (name, value) ->
+                    valueArguments.forEach { (name, value) ->
                         putValueArgument(
                             declaration.valueParameters.single { it.name == name }.index,
                             generateConstantOrAnnotationValueAsExpression(constantValue = value)
@@ -260,11 +282,11 @@ abstract class AbstractInjektTransformer(
                     declaration.type.toIrType()
                 )
             }
-            else -> error("Unexpected declaration for $annotation -> $declaration")
+            else -> error("Unexpected declaration $declaration")
         }
     }
 
-    private fun generateConstantOrAnnotationValueAsExpression(
+    private fun IrBuilderWithScope.generateConstantOrAnnotationValueAsExpression(
         startOffset: Int = UNDEFINED_OFFSET,
         endOffset: Int = UNDEFINED_OFFSET,
         constantValue: ConstantValue<*>,
@@ -397,7 +419,9 @@ abstract class AbstractInjektTransformer(
                 )
             }
 
-            is AnnotationValue -> generateAnnotationConstructorCall(constantValue.value)
+            is AnnotationValue -> {
+                keyOfAnnotationCall(constantValue.value)
+            }
 
             is KClassValue -> {
                 val classifierKtType = constantValue.getArgumentType(pluginContext.moduleDescriptor)
@@ -421,50 +445,26 @@ abstract class AbstractInjektTransformer(
         }
     }
 
-    private fun generateAnnotationConstructorCall(annotationDescriptor: AnnotationDescriptor): IrConstructorCall? {
-        val annotationType = annotationDescriptor.type
-        val annotationClassDescriptor = annotationType.constructor.declarationDescriptor
-        if (annotationClassDescriptor !is ClassDescriptor) return null
-        if (annotationClassDescriptor is NotFoundClasses.MockClassDescriptor) return null
+    private fun IrBuilderWithScope.keyOfAnnotationCall(annotationDescriptor: AnnotationDescriptor): IrExpression? {
+        val classifier = annotationDescriptor.argumentValue("classifier")
+            .cast<KClassValue>().getArgumentType(pluginContext.moduleDescriptor)
+        val qualifierAnnotation = annotationDescriptor.argumentValue("qualifier")
+            .safeAs<KClassValue>()?.getArgumentType(pluginContext.moduleDescriptor)
+            ?.constructor?.declarationDescriptor
 
-        assert(DescriptorUtils.isAnnotationClass(annotationClassDescriptor)) {
-            "Annotation class expected: $annotationClassDescriptor"
-        }
-
-        val primaryConstructorDescriptor = annotationClassDescriptor.unsubstitutedPrimaryConstructor
-            ?: annotationClassDescriptor.constructors.singleOrNull()
-            ?: throw AssertionError("No constructor for annotation class $annotationClassDescriptor")
-        val primaryConstructorSymbol =
-            symbolTable.referenceConstructor(primaryConstructorDescriptor)
-
-        val psi = annotationDescriptor.source.safeAs<PsiSourceElement>()?.psi
-        val startOffset =
-            psi?.takeUnless { it.containingFile.fileType.isBinary }?.startOffset ?: UNDEFINED_OFFSET
-        val endOffset =
-            psi?.takeUnless { it.containingFile.fileType.isBinary }?.endOffset ?: UNDEFINED_OFFSET
-
-        val irCall = IrConstructorCallImpl.fromSymbolDescriptor(
-            startOffset, endOffset,
-            annotationType.toIrType(),
-            primaryConstructorSymbol
-        )
-
-        for (valueParameter in primaryConstructorDescriptor.valueParameters) {
-            val argumentIndex = valueParameter.index
-            val argumentValue =
-                annotationDescriptor.allValueArguments[valueParameter.name] ?: continue
-            val irArgument = generateConstantOrAnnotationValueAsExpression(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                argumentValue,
-                valueParameter.varargElementType
-            )
-            if (irArgument != null) {
-                irCall.putValueArgument(argumentIndex, irArgument)
+        return irKeyOf(
+            classifier.toIrType(),
+            qualifierAnnotation?.let {
+                syntheticAnnotationAccessor(
+                    declaration = getDeclarationForSyntheticAnnotation(
+                        it.fqNameSafe,
+                        pluginContext.moduleDescriptor
+                    ),
+                    emptyList(),
+                    emptyMap()
+                )
             }
-        }
-
-        return irCall
+        )
     }
 
     protected fun IrBuilderWithScope.createFunctionDescriptor(
@@ -517,6 +517,70 @@ abstract class AbstractInjektTransformer(
             isSuspend = false
             isExpect = false
             isActual = false
+        }
+    }
+
+    protected fun IrBuilderWithScope.irKeyOf(
+        type: IrType,
+        qualifier: IrExpression?
+    ): IrCall {
+        val keyOf = injektPackage.memberScope
+            .findFirstFunction("keyOf") {
+                it.valueParameters.size == 4
+            }
+
+        return irCall(
+            symbolTable.referenceSimpleFunction(keyOf),
+            KotlinTypeFactory.simpleType(
+                baseType = key.defaultType,
+                arguments = listOf(type.toKotlinType().asTypeProjection())
+            ).toIrType()
+        ).apply {
+            putTypeArgument(0, type)
+
+            putValueArgument(
+                0,
+                IrClassReferenceImpl(
+                    startOffset,
+                    endOffset,
+                    pluginContext.irBuiltIns.kClassClass.typeWith(type),
+                    type.classifierOrFail,
+                    type
+                )
+            )
+
+            if (type.isMarkedNullable()) {
+                putValueArgument(1, irBoolean(true))
+            }
+
+            if (type.toKotlinType().arguments.isNotEmpty()) {
+                pluginContext.irBuiltIns.arrayClass
+                    .typeWith(getTypeArgument(0)!!)
+                val argumentsType = pluginContext.irBuiltIns.arrayClass
+                    .typeWith(symbolTable.referenceClass(key).starProjectedType)
+
+                putValueArgument(
+                    2,
+                    irCall(
+                        pluginContext.symbols.arrayOf,
+                        argumentsType
+                    ).apply {
+                        putValueArgument(
+                            0,
+                            IrVarargImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                argumentsType,
+                                argumentsType,
+                                type.toKotlinType().arguments
+                                    .map { irKeyOf(it.type.toIrType(), null) }
+                            )
+                        )
+                    }
+                )
+            }
+
+            putValueArgument(3, qualifier)
         }
     }
 

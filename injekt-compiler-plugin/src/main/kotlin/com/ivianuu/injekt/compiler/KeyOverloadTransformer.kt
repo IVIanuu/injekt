@@ -56,7 +56,9 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
                     otherFunction.valueParameters.all { otherValueParameter ->
                         val calleeValueParameter = callee.valueParameters[otherValueParameter.index]
-                        if (otherValueParameter.type.toKotlinType().constructor.declarationDescriptor == key) {
+                        if (otherValueParameter.type.toKotlinType()
+                                .typeEquals(InjektClassNames.Key)
+                        ) {
                             calleeValueParameter.type.toKotlinType()
                                 .isSubtypeOf(qualifier.defaultType)
                         } else {
@@ -82,7 +84,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                             otherFunction.valueParameters.all { otherValueParameter ->
                                 val calleeValueParameter =
                                     callee.valueParameters[otherValueParameter.index]
-                                if (otherValueParameter.type.constructor.declarationDescriptor == key) {
+                                if (otherValueParameter.type.typeEquals(InjektClassNames.Key)) {
                                     calleeValueParameter.type.toKotlinType()
                                         .isSubtypeOf(qualifier.defaultType)
                                 } else {
@@ -124,7 +126,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
             copyTypeArgumentsFrom(expression)
 
             keyOverloadFunction!!.valueParameters.forEach { valueParameter ->
-                if (valueParameter.type.toKotlinType().constructor.declarationDescriptor == key) {
+                if (valueParameter.type.toKotlinType().typeEquals(InjektClassNames.Key)) {
                     val keyType = valueParameter.type
                         .substitute(
                             keyOverloadFunction!!.typeParameters

@@ -23,6 +23,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.UnsignedTypes.isUnsignedType
 import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
@@ -50,6 +51,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeProjection
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.isError
@@ -70,6 +72,7 @@ object InjektClassNames {
     val GenerateDsl = FqName("com.ivianuu.injekt.GenerateDsl")
     val Injekt = FqName("com.ivianuu.injekt.Injekt")
     val Key = FqName("com.ivianuu.injekt.Key")
+    val KeyOf = FqName("com.ivianuu.injekt.KeyOf")
     val KeyOverload = FqName("com.ivianuu.injekt.KeyOverload")
     val KeyOverloadStub = FqName("com.ivianuu.injekt.internal.KeyOverloadStub")
     val Module = FqName("com.ivianuu.injekt.Module")
@@ -122,6 +125,17 @@ fun ClassDescriptor.asClassName(): ClassName? = try {
     null
 }
 
+fun TypeProjection.asTypeName(): TypeName? {
+    return when {
+        isStarProjection -> STAR
+        else -> when (projectionKind) {
+            Variance.INVARIANT -> type.asTypeName()
+            Variance.IN_VARIANCE -> WildcardTypeName.consumerOf(type.asTypeName()!!)
+            Variance.OUT_VARIANCE -> WildcardTypeName.producerOf(type.asTypeName()!!)
+        }
+    }
+}
+
 fun KotlinType.asTypeName(): TypeName? {
     if (isError) return null
     if (this.isFunctionType) {
@@ -166,12 +180,13 @@ fun KotlinType.asTypeName(): TypeName? {
     )
 }
 
-fun AnnotationDescriptor.getDeclarationForSyntheticAnnotation(
+fun getDeclarationForSyntheticAnnotation(
+    fqName: FqName,
     module: ModuleDescriptor
 ): DeclarationDescriptor {
-    return module.getPackage(fqName!!.parent().parent())
+    return module.getPackage(fqName.parent().parent())
         .memberScope
-        .getContributedDescriptors(DescriptorKindFilter.ALL) { it == fqName!!.shortName() }
+        .getContributedDescriptors(DescriptorKindFilter.ALL) { it == fqName.shortName() }
         .single { it.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker) }
 }
 
@@ -179,7 +194,7 @@ fun DeclarationDescriptor.getSyntheticAnnotationDeclarationsOfType(
     type: KotlinType
 ): List<DeclarationDescriptor> {
     return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
-        .map { it.getDeclarationForSyntheticAnnotation(module) }
+        .map { getDeclarationForSyntheticAnnotation(it.fqName!!, module) }
         .filter {
             when (it) {
                 is PropertyDescriptor -> it.type.isSubtypeOf(type)
@@ -194,7 +209,7 @@ fun DeclarationDescriptor.getSyntheticAnnotationsForType(
 ): List<AnnotationDescriptor> {
     return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
         .filter {
-            when (val declaration = it.getDeclarationForSyntheticAnnotation(module)) {
+            when (val declaration = getDeclarationForSyntheticAnnotation(it.fqName!!, module)) {
                 is ClassDescriptor -> declaration.defaultType.isSubtypeOf(type)
                 is PropertyDescriptor -> declaration.type.isSubtypeOf(type)
                 is FunctionDescriptor -> declaration.returnType!!.isSubtypeOf(type)
@@ -214,6 +229,9 @@ fun String.removeIllegalChars(): String {
 
 }
 
+fun KotlinType.typeEquals(fqName: FqName) =
+    constructor.declarationDescriptor?.fqNameSafe == fqName
+
 fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
     if (isError) return true
     val typeDescriptor =
@@ -224,7 +242,8 @@ fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
         KotlinBuiltIns.isPrimitiveArray(this) ||
         KotlinBuiltIns.isPrimitiveType(this) ||
         KotlinBuiltIns.isString(this) ||
-        isUnsignedType(this)
+        isUnsignedType(this) ||
+        typeEquals(InjektClassNames.Key)
     ) return true
 
     if (KotlinBuiltIns.isArray(this)) {
@@ -238,11 +257,10 @@ fun KotlinType.isAcceptableTypeForAnnotationParameter(): Boolean {
                 TypeUtils.getClassDescriptor(arrayType)
             if (arrayTypeDescriptor != null) {
                 return DescriptorUtils.isEnumClass(arrayTypeDescriptor) ||
-                        DescriptorUtils.isAnnotationClass(
-                            arrayTypeDescriptor
-                        ) ||
                         KotlinBuiltIns.isKClass(arrayTypeDescriptor) ||
-                        KotlinBuiltIns.isString(arrayType)
+                        KotlinBuiltIns.isString(arrayType) ||
+                        arrayType.typeEquals(InjektClassNames.Key)
+
             }
         }
     }

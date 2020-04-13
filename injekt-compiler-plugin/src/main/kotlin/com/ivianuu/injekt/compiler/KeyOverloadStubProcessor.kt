@@ -10,13 +10,10 @@ import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.Variance
 
 class KeyOverloadStubProcessor : ElementProcessor {
@@ -107,11 +104,7 @@ class KeyOverloadStubProcessor : ElementProcessor {
             .addParameters(
                 function.valueParameters
                     .map { valueParameter ->
-                        if (valueParameter.type.constructor.declarationDescriptor ==
-                            function.module.findClassAcrossModuleDependencies(
-                                ClassId.topLevel(InjektClassNames.Key)
-                            )
-                        ) {
+                        if (valueParameter.type.typeEquals(InjektClassNames.Key)) {
                             val parameterName = when {
                                 valueParameter.name.asString() == "key" -> "qualifier"
                                 valueParameter.name.asString().endsWith("Key") ->

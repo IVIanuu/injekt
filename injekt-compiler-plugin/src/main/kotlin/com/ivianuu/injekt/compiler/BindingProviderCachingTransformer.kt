@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.ir.types.makeNotNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getSimpleFunction
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -62,8 +61,8 @@ class BindingProviderCachingTransformer(pluginContext: IrPluginContext) :
                         val kotlinType = superType.toKotlinType()
                         kotlinType.isFunctionType &&
                                 kotlinType.arguments.size == 3 &&
-                                kotlinType.arguments[0].type == component.defaultType &&
-                                kotlinType.arguments[1].type == parameters.defaultType
+                                kotlinType.arguments[0].type.typeEquals(InjektClassNames.Component) &&
+                                kotlinType.arguments[1].type.typeEquals(InjektClassNames.Parameters)
                     }
                 ) {
                     classes += declaration
