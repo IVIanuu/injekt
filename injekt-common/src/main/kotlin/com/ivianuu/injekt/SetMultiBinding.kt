@@ -137,6 +137,8 @@ inline fun <E> ComponentBuilder.set(
 internal fun <E> ComponentBuilder.getSetBuilder(
     setKey: Key<Set<E>>
 ): MultiBindingSetBuilder<E> {
+    setKey as Key.ParameterizedKey
+
     val setOfKeyElements = keyOf<Set<Element<E>>>(
         classifier = Set::class,
         arguments = arrayOf(

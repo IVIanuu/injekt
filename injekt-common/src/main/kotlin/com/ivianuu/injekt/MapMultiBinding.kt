@@ -109,6 +109,7 @@ inline fun <K, V> ComponentBuilder.map(
 
 @PublishedApi
 internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): MultiBindingMapBuilder<K, V> {
+    mapKey as Key.ParameterizedKey
     val mapOfEntries = keyOf<Map<K, Entry<K, V>>>(
         classifier = Map::class,
         arguments = arrayOf(

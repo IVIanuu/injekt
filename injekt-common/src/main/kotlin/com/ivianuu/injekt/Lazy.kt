@@ -24,6 +24,7 @@ fun interface Lazy<T> : Provider<T>
 @ModuleMarker
 private val LazyModule = Module(AnyScope) {
     jitFactory { _, key ->
+        if (key !is Key.ParameterizedKey) return@jitFactory null
         if (key.arguments.size != 1) return@jitFactory null
         if (key.classifier != Lazy::class) return@jitFactory null
         val instanceKey = key.arguments.single()

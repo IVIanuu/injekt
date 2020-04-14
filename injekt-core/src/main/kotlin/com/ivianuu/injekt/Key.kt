@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.jvm.internal.ClassBasedDeclarationContainer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -27,40 +26,119 @@ import kotlin.reflect.typeOf
  * @see Component.get
  * @see ComponentBuilder.bind
  */
-data class Key<T> internal constructor(
+sealed class Key<T>(
     val classifier: KClass<*>,
-    val isNullable: Boolean,
-    val arguments: Array<Key<*>>,
-    val qualifier: Qualifier
+    val qualifier: Qualifier,
+    val isNullable: Boolean
 ) {
 
-    private val hashCode = generateHashCode()
+    fun copy(
+        classifier: KClass<*> = this.classifier,
+        qualifier: Qualifier = this.qualifier,
+        isNullable: Boolean = this.isNullable,
+        arguments: Array<Key<*>>? = (this as? ParameterizedKey)?.arguments
+    ): Key<T> {
+        return if (arguments != null) ParameterizedKey(classifier, qualifier, isNullable, arguments)
+        else SimpleKey(classifier, qualifier, isNullable)
+    }
 
-    override fun hashCode(): Int = hashCode
+    class SimpleKey<T> : Key<T> {
 
-    override fun equals(other: Any?): Boolean = other is Key<*> && hashCode == other.hashCode
+        private val hashCode: Int
 
-    override fun toString(): String {
-        val params = if (arguments.isNotEmpty()) {
-            arguments.joinToString(
-                separator = ", ",
-                prefix = "<",
-                postfix = ">"
-            ) { it.toString() }
-        } else {
-            ""
+        constructor(
+            classifier: KClass<*>,
+            qualifier: Qualifier,
+            isNullable: Boolean
+        ) : super(classifier, qualifier, isNullable) {
+            this.hashCode = generateHashCode()
         }
 
-        return "Key(type=${classifier.java.name}${if (isNullable) "?" else ""}$params, qualifier=$qualifier)"
+        constructor(
+            classifier: KClass<*>,
+            qualifier: Qualifier,
+            isNullable: Boolean,
+            hashCode: Int
+        ) : super(classifier, qualifier, isNullable) {
+            this.hashCode = hashCode
+        }
+
+        override fun hashCode(): Int = hashCode
+
+        override fun equals(other: Any?): Boolean =
+            other is SimpleKey<*> && hashCode == other.hashCode
+
+        private fun generateHashCode(): Int {
+            var result = classifier.java.name.hashCode()
+            // todo result = 31 * result + isNullable.hashCode()
+            result = 31 * result + qualifier.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "${qualifier.takeIf { it != Qualifier.None }?.toString().orEmpty()}" +
+                    "${classifier.java.name}${if (isNullable) "?" else ""})"
+        }
+
     }
 
-    private fun generateHashCode(): Int {
-        var result = classifier.java.name.hashCode()
-        // todo result = 31 * result + isNullable.hashCode()
-        result = 31 * result + arguments.contentHashCode()
-        result = 31 * result + qualifier.hashCode()
-        return result
+    class ParameterizedKey<T> : Key<T> {
+
+        val arguments: Array<Key<*>>
+
+        private val hashCode: Int
+
+        constructor(
+            classifier: KClass<*>,
+            qualifier: Qualifier,
+            isNullable: Boolean,
+            arguments: Array<Key<*>>
+        ) : super(classifier, qualifier, isNullable) {
+            this.arguments = arguments
+            this.hashCode = generateHashCode()
+        }
+
+        constructor(
+            classifier: KClass<*>,
+            qualifier: Qualifier,
+            isNullable: Boolean,
+            hashCode: Int,
+            arguments: Array<Key<*>>
+        ) : super(classifier, qualifier, isNullable) {
+            this.arguments = arguments
+            this.hashCode = hashCode
+        }
+
+        override fun hashCode(): Int = hashCode
+
+        override fun equals(other: Any?): Boolean =
+            other is ParameterizedKey<*> && hashCode == other.hashCode
+
+        private fun generateHashCode(): Int {
+            var result = classifier.java.name.hashCode()
+            // todo result = 31 * result + isNullable.hashCode()
+            result = 31 * result + arguments.contentHashCode()
+            result = 31 * result + qualifier.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            val params = if (arguments.isNotEmpty()) {
+                arguments.joinToString(
+                    separator = ", ",
+                    prefix = "<",
+                    postfix = ">"
+                ) { it.toString() }
+            } else {
+                ""
+            }
+            return "${qualifier.takeIf { it != Qualifier.None }?.toString()?.let { "$it " }
+                .orEmpty()}" +
+                    "${classifier.java.name}$params${if (isNullable) "?" else ""}"
+        }
+
     }
+
 }
 
 inline fun <reified T> keyOf(qualifier: Qualifier = Qualifier.None): Key<T> =
@@ -68,14 +146,24 @@ inline fun <reified T> keyOf(qualifier: Qualifier = Qualifier.None): Key<T> =
 
 fun <T> keyOf(
     classifier: KClass<*>,
-    isNullable: Boolean = false,
-    arguments: Array<Key<*>> = emptyArray(),
-    qualifier: Qualifier = Qualifier.None
-): Key<T> {
-    // todo check for the type marker https://youtrack.jetbrains.com/issue/KT-34900
-    val finalClassifier = if (isNullable) boxed(classifier) else unboxed(classifier)
-    return Key(
-        classifier = finalClassifier,
+    qualifier: Qualifier = Qualifier.None,
+    isNullable: Boolean = false
+): Key.SimpleKey<T> {
+    return Key.SimpleKey(
+        classifier = classifier,
+        isNullable = isNullable,
+        qualifier = qualifier
+    )
+}
+
+fun <T> keyOf(
+    classifier: KClass<*>,
+    arguments: Array<Key<*>>,
+    qualifier: Qualifier = Qualifier.None,
+    isNullable: Boolean = false
+): Key.ParameterizedKey<T> {
+    return Key.ParameterizedKey(
+        classifier = classifier,
         isNullable = isNullable,
         arguments = arguments,
         qualifier = qualifier
@@ -84,20 +172,20 @@ fun <T> keyOf(
 
 @PublishedApi
 internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
-    val args = arrayOfNulls<Key<Any?>>(arguments.size)
-
-    for (index in arguments.indices) {
-        args[index] = arguments[index].type?.asKey() ?: keyOf(Any::class, isNullable = true)
+    val classifier = (classifier ?: Any::class) as KClass<*>
+    val key: Key<T> = if (arguments.isEmpty()) {
+        keyOf(classifier, qualifier, isMarkedNullable)
+    } else {
+        val args = arrayOfNulls<Key<Any?>>(arguments.size)
+        for (index in arguments.indices) {
+            args[index] = arguments[index].type?.asKey() ?: keyOf(Any::class, isNullable = true)
+        }
+        keyOf(classifier, args as Array<Key<*>>, qualifier, isMarkedNullable)
     }
 
-    return Key<T>(
-        classifier = (classifier ?: Any::class) as KClass<*>,
-        arguments = args as Array<Key<*>>,
-        isNullable = isMarkedNullable,
-        qualifier = qualifier
-    ).also {
-        Injekt.logger?.warn("keyOf intrinsic called for $it")
-    }
+    Injekt.logger?.warn("keyOf intrinsic called for $key")
+
+    return key
 }
 
 /**
@@ -105,37 +193,3 @@ internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
  */
 @Target(AnnotationTarget.FUNCTION)
 annotation class KeyOverload
-
-private fun unboxed(type: KClass<*>): KClass<*> {
-    val jClass = (type as ClassBasedDeclarationContainer).jClass
-    if (jClass.isPrimitive) return type
-
-    return when (jClass.name) {
-        "java.lang.Boolean" -> Boolean::class
-        "java.lang.Character" -> Char::class
-        "java.lang.Byte" -> Byte::class
-        "java.lang.Short" -> Short::class
-        "java.lang.Integer" -> Int::class
-        "java.lang.Float" -> Float::class
-        "java.lang.Long" -> Long::class
-        "java.lang.Double" -> Double::class
-        else -> type
-    }
-}
-
-private fun boxed(type: KClass<*>): KClass<*> {
-    val jClass = (type as ClassBasedDeclarationContainer).jClass
-    if (!jClass.isPrimitive) return type
-
-    return when (jClass.name) {
-        "boolean" -> java.lang.Boolean::class
-        "char" -> java.lang.Character::class
-        "byte" -> java.lang.Byte::class
-        "short" -> java.lang.Short::class
-        "int" -> java.lang.Integer::class
-        "float" -> java.lang.Float::class
-        "long" -> java.lang.Long::class
-        "double" -> java.lang.Double::class
-        else -> type
-    }
-}

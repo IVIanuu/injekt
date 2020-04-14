@@ -2,9 +2,13 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -16,13 +20,16 @@ import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
-import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
 
     private val key = getClass(InjektClassNames.Key)
+    private val qualifier = getClass(InjektClassNames.Qualifier)
 
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)
@@ -38,52 +45,65 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         val type = expression.getTypeArgument(0)!!
         if (!type.isFullyResolved()) return expression
 
-        return irKeyOf(type, DeclarationIrBuilder(pluginContext, expression.symbol)).apply {
-            // pass the qualifier
-            putValueArgument(3, expression.getValueArgument(0))
-        }
+        return DeclarationIrBuilder(pluginContext, expression.symbol)
+            .irKeyOf(type, expression.getValueArgument(0))
     }
 
+    private fun IrBuilderWithScope.irKeyOf(
+        type: IrType,
+        qualifier: IrExpression? = null
+    ): IrExpression {
+        val kotlinType = type.toKotlinType()
 
-    private fun irKeyOf(type: IrType, builder: DeclarationIrBuilder): IrCall {
-        val keyOf = injektPackage.memberScope
-            .findFirstFunction("keyOf") {
-                it.valueParameters.size == 4
-            }
+        return if (kotlinType.arguments.isNotEmpty()) {
+            val parameterizedKey = key.sealedSubclasses
+                .single { it.name.asString() == "ParameterizedKey" }
 
-        return builder.irCall(
-            symbolTable.referenceSimpleFunction(keyOf),
-            KotlinTypeFactory.simpleType(
-                baseType = key.defaultType,
-                arguments = listOf(type.toKotlinType().asTypeProjection())
-            ).toIrType()
-        ).apply {
-            putTypeArgument(0, type)
+            irCall(
+                symbolTable.referenceConstructor(parameterizedKey.constructors.first {
+                    it.valueParameters.size == if (qualifier != null) 4 else 4
+                }),
+                KotlinTypeFactory.simpleType(
+                    baseType = parameterizedKey.defaultType,
+                    arguments = listOf(type.toKotlinType().asTypeProjection())
+                ).toIrType()
+            ).apply {
+                putTypeArgument(0, type)
 
-            putValueArgument(
-                0,
-                IrClassReferenceImpl(
-                    startOffset,
-                    endOffset,
-                    pluginContext.irBuiltIns.kClassClass.typeWith(type),
-                    type.classifierOrFail,
-                    type
+                putValueArgument(
+                    0,
+                    IrClassReferenceImpl(
+                        startOffset,
+                        endOffset,
+                        pluginContext.irBuiltIns.kClassClass.typeWith(type),
+                        type.classifierOrFail,
+                        type
+                    )
                 )
-            )
 
-            if (type.isMarkedNullable()) {
-                putValueArgument(1, builder.irBoolean(true))
-            }
+                putValueArgument(
+                    1, qualifier ?: irGetObject(
+                        symbolTable.referenceClass(
+                            this@KeyOfTransformer.qualifier.unsubstitutedMemberScope
+                                .getContributedClassifier(
+                                    Name.identifier("None"),
+                                    NoLookupLocation.FROM_BACKEND
+                                )
+                                .cast()
+                        )
+                    )
+                )
 
-            if (type.toKotlinType().arguments.isNotEmpty()) {
+                putValueArgument(2, irBoolean(type.isMarkedNullable()))
+
                 pluginContext.irBuiltIns.arrayClass
                     .typeWith(getTypeArgument(0)!!)
                 val argumentsType = pluginContext.irBuiltIns.arrayClass
                     .typeWith(symbolTable.referenceClass(key).starProjectedType)
 
                 putValueArgument(
-                    2,
-                    builder.irCall(
+                    3,
+                    irCall(
                         pluginContext.symbols.arrayOf,
                         argumentsType
                     ).apply {
@@ -95,11 +115,68 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                                 argumentsType,
                                 argumentsType,
                                 type.toKotlinType().arguments
-                                    .map { irKeyOf(it.type.toIrType(), builder) }
+                                    .map { irKeyOf(it.type.toIrType()) }
                             )
                         )
                     }
                 )
+
+                /*if (qualifier == null) {
+                    val hashCode = kotlinType.constructor.declarationDescriptor!!.fqNameSafe.toString().hashCode()
+                    var hashCode = kotlinType.constructor.declarationDescriptor!!.fqNameSafe.toString().hashCode()
+                    hashCode = 31 * hashCode + "Qualifier.None".hashCode()
+                    putValueArgument(3, irInt(hashCode))
+                    putValueArgument(4, irInt(hashCode))
+                }*/
+            }
+        } else {
+            val simpleKey = key.sealedSubclasses
+                .single { it.name.asString() == "SimpleKey" }
+
+            irCall(
+                symbolTable.referenceConstructor(simpleKey.constructors.first {
+                    it.valueParameters.size == if (qualifier != null) 3 else 4
+                }),
+                KotlinTypeFactory.simpleType(
+                    baseType = simpleKey.defaultType,
+                    arguments = listOf(type.toKotlinType().asTypeProjection())
+                ).toIrType()
+            ).apply {
+                putTypeArgument(0, type)
+
+                putValueArgument(
+                    0,
+                    IrClassReferenceImpl(
+                        startOffset,
+                        endOffset,
+                        pluginContext.irBuiltIns.kClassClass.typeWith(type),
+                        type.classifierOrFail,
+                        type
+                    )
+                )
+
+                putValueArgument(
+                    1, qualifier ?: irGetObject(
+                        symbolTable.referenceClass(
+                            this@KeyOfTransformer.qualifier.unsubstitutedMemberScope
+                                .getContributedClassifier(
+                                    Name.identifier("None"),
+                                    NoLookupLocation.FROM_BACKEND
+                                )
+                                .cast()
+                        )
+                    )
+                )
+
+                putValueArgument(2, irBoolean(type.isMarkedNullable()))
+
+                if (qualifier == null) {
+                    var hashCode =
+                        kotlinType.constructor.declarationDescriptor!!.fqNameSafe.toString()
+                            .hashCode()
+                    hashCode = 31 * hashCode + "Qualifier.None".hashCode()
+                    putValueArgument(3, irInt(hashCode))
+                }
             }
         }
     }

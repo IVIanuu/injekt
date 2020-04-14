@@ -74,6 +74,7 @@ interface Qualifier {
         override fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R = initial
         override operator fun plus(other: Qualifier): Qualifier = other
         override fun toString() = "Qualifier.None"
+        override fun hashCode(): Int = toString().hashCode()
     }
 
     interface Element : Qualifier {
