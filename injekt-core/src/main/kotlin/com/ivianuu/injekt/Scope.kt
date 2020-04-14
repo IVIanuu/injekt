@@ -54,7 +54,7 @@ fun Scope(@DeclarationName name: Any = declarationName()): Scope = DefaultScope(
  * @see Scope
  */
 @SyntheticAnnotationMarker
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.PROPERTY)
 annotation class ScopeMarker
 
 /**

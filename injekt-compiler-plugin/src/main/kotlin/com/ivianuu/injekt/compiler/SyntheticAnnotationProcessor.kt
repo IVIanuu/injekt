@@ -17,12 +17,9 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.declarationRecursiveVisitor
+import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -37,35 +34,13 @@ class SyntheticAnnotationProcessor : ElementProcessor {
     ) {
         val syntheticAnnotationDeclarations = mutableListOf<DeclarationDescriptor>()
         file.accept(
-            declarationRecursiveVisitor { declaration ->
-                when (declaration) {
-                    is KtClassOrObject -> {
-                        val descriptor =
-                            bindingTrace[BindingContext.CLASS, declaration]
-                                ?: return@declarationRecursiveVisitor
+            propertyRecursiveVisitor { property ->
+                val descriptor =
+                    bindingTrace[BindingContext.VARIABLE, property] as? PropertyDescriptor
+                        ?: return@propertyRecursiveVisitor
 
-                        if (descriptor.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)) {
-                            syntheticAnnotationDeclarations += descriptor
-                        }
-                    }
-                    is KtFunction -> {
-                        val descriptor =
-                            bindingTrace[BindingContext.FUNCTION, declaration] as? FunctionDescriptor
-                                ?: return@declarationRecursiveVisitor
-
-                        if (descriptor.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)) {
-                            syntheticAnnotationDeclarations += descriptor
-                        }
-                    }
-                    is KtProperty -> {
-                        val descriptor =
-                            bindingTrace[BindingContext.VARIABLE, declaration] as? PropertyDescriptor
-                                ?: return@declarationRecursiveVisitor
-
-                        if (descriptor.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)) {
-                            syntheticAnnotationDeclarations += descriptor
-                        }
-                    }
+                if (descriptor.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker)) {
+                    syntheticAnnotationDeclarations += descriptor
                 }
             }
         )
