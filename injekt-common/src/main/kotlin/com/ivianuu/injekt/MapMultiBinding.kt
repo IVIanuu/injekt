@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.MultiBindingMapBuilder.Entry
+
 /**
  * A builder for a "multi binding map"
  *
@@ -57,23 +59,25 @@ package com.ivianuu.injekt
  * @see MultiBindingMapBuilder
  */
 class MultiBindingMapBuilder<K, V> internal constructor() {
-    private val entries = mutableMapOf<K, KeyWithOverrideInfo>()
+    private val entries = mutableMapOf<K, Entry<K, V>>()
 
     fun put(
         entryKey: K,
         entryValueKey: Key<out V>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        put(
-            entryKey,
-            KeyWithOverrideInfo(
-                entryValueKey,
-                duplicateStrategy
-            )
-        )
+        put(entryKey, duplicateStrategy) { get(entryValueKey) }
     }
 
-    internal fun put(entryKey: K, entry: KeyWithOverrideInfo) {
+    fun put(
+        entryKey: K,
+        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+        provider: BindingProvider<out V>
+    ) {
+        put(entryKey, Entry(duplicateStrategy, provider))
+    }
+
+    internal fun put(entryKey: K, entry: Entry<K, V>) {
         if (entry.duplicateStrategy.check(
                 existsPredicate = { entryKey in entries },
                 errorMessage = { "Already declared $entryKey" }
@@ -83,7 +87,13 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
         }
     }
 
-    internal fun build(): Map<K, KeyWithOverrideInfo> = entries
+    internal fun build(): Map<K, Entry<K, V>> = entries
+
+    class Entry<K, V>(
+        val duplicateStrategy: DuplicateStrategy,
+        val provider: BindingProvider<out V>
+    )
+
 }
 
 /**
@@ -99,26 +109,26 @@ inline fun <K, V> ComponentBuilder.map(
 
 @PublishedApi
 internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): MultiBindingMapBuilder<K, V> {
-    val mapOfKeyWithOverrideInfo = keyOf<Map<K, KeyWithOverrideInfo>>(
+    val mapOfEntries = keyOf<Map<K, Entry<K, V>>>(
         classifier = Map::class,
         arguments = arrayOf(
             mapKey.arguments.first(),
-            keyOf<KeyWithOverrideInfo>(qualifier = Qualifier(mapKey))
+            keyOf<Entry<K, V>>(qualifier = Qualifier(mapKey))
         ),
         qualifier = mapKey.qualifier
     )
 
-    var bindingProvider = bindings[mapOfKeyWithOverrideInfo]?.provider as? MapBindingProvider<K, V>
+    var bindingProvider = bindings[mapOfEntries]?.provider as? MapBindingProvider<K, V>
     if (bindingProvider == null) {
         bindingProvider =
-            MapBindingProvider(mapOfKeyWithOverrideInfo)
+            MapBindingProvider(mapOfEntries)
 
         onBuild { bindingProvider.ensureInitialized(it) }
 
         // bind the map with keys
         bind(
             Binding(
-                key = mapOfKeyWithOverrideInfo,
+                key = mapOfEntries,
                 duplicateStrategy = DuplicateStrategy.Override,
                 provider = bindingProvider
             )
@@ -129,9 +139,9 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
             key = mapKey,
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            get(key = mapOfKeyWithOverrideInfo)
+            get(key = mapOfEntries)
                 .mapValues { (_, value) ->
-                    get(value.key) as V
+                    value.provider(this, emptyParameters())
                 }
         }
 
@@ -150,15 +160,9 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            get(key = mapOfKeyWithOverrideInfo)
+            get(key = mapOfEntries)
                 .mapValues { (_, value) ->
-                    get(
-                        key = keyOf(
-                            classifier = Provider::class,
-                            arguments = arrayOf(value.key),
-                            qualifier = value.key.qualifier
-                        )
-                    )
+                    BindingProviderProvider(this, value.provider)
                 }
         }
 
@@ -177,14 +181,11 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
             ),
             duplicateStrategy = DuplicateStrategy.Override
         ) {
-            get(key = mapOfKeyWithOverrideInfo)
+            get(key = mapOfEntries)
                 .mapValues { (_, value) ->
-                    get(
-                        key = keyOf(
-                            classifier = Lazy::class,
-                            arguments = arrayOf(value.key),
-                            qualifier = value.key.qualifier
-                        )
+                    BindingProviderLazy(
+                        this,
+                        value.provider
                     )
                 }
         }
@@ -194,14 +195,14 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
 }
 
 private class MapBindingProvider<K, V>(
-    private val mapOfKeyWithOverrideInfo: Key<Map<K, KeyWithOverrideInfo>>
-) : (Component, Parameters) -> Map<K, KeyWithOverrideInfo> {
+    private val mapOfEntries: Key<Map<K, Entry<K, V>>>
+) : (Component, Parameters) -> Map<K, Entry<K, V>> {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
-    var thisMap: Map<K, KeyWithOverrideInfo>? = null
-    var mergedMap: Map<K, KeyWithOverrideInfo>? = null
+    var thisMap: Map<K, Entry<K, V>>? = null
+    var mergedMap: Map<K, Entry<K, V>>? = null
 
-    override fun invoke(component: Component, parameters: Parameters): Map<K, KeyWithOverrideInfo> {
+    override fun invoke(component: Component, parameters: Parameters): Map<K, Entry<K, V>> {
         ensureInitialized(component)
         return mergedMap!!
     }
@@ -213,7 +214,7 @@ private class MapBindingProvider<K, V>(
 
         component.getAllParents()
             .flatMap { parent ->
-                (parent.bindings[mapOfKeyWithOverrideInfo]
+                (parent.bindings[mapOfEntries]
                     ?.provider
                     ?.let { it as? MapBindingProvider<K, V> }
                     ?.thisMap ?: emptyMap()).entries

@@ -24,14 +24,10 @@ class MapMultiBindingTest {
     @Test
     fun testMapBinding() {
         val component = Component {
-            factory { Command1 }
-            factory { Command2 }
-            factory { Command3 }
-
             map<String, Command>(mapQualifier = TestQualifier1) {
-                put("one", keyOf<Command1>())
-                put("two", keyOf<Command2>())
-                put("three", keyOf<Command3>())
+                put("one") { Command1 }
+                put("two") { Command2 }
+                put("three") { Command3 }
             }
         }
 
@@ -75,8 +71,7 @@ class MapMultiBindingTest {
     @Test
     fun testNestedMapBindings() {
         val componentA = Component {
-            factory { Command1 }
-            map<String, Command> { put("one", keyOf<Command1>()) }
+            map<String, Command> { put("one") { Command1 } }
         }
 
         val mapA = componentA.get<Map<String, Command>>()
@@ -89,8 +84,7 @@ class MapMultiBindingTest {
                     parents(componentA)
                 }
             )
-            factory { Command2 }
-            map<String, Command> { put("two", keyOf<Command2>()) }
+            map<String, Command> { put("two") { Command2 } }
         }
 
         val mapB = componentB.get<Map<String, Command>>()
@@ -104,8 +98,7 @@ class MapMultiBindingTest {
                     parents(componentB)
                 }
             )
-            factory { Command3 }
-            map<String, Command> { put("three", keyOf<Command3>()) }
+            map<String, Command> { put("three") { Command3 } }
         }
 
         val mapC = componentC.get<Map<String, Command>>()
@@ -118,11 +111,11 @@ class MapMultiBindingTest {
     @Test
     fun testOverride() {
         val component = Component {
-            factory { Command1 }
-            factory { Command2 }
             map<String, Command> {
-                put("key", keyOf<Command1>())
-                put("key", keyOf<Command2>(), duplicateStrategy = DuplicateStrategy.Override)
+                put("key") { Command1 }
+                put("key", duplicateStrategy = DuplicateStrategy.Override) {
+                    Command2
+                }
             }
         }
 
@@ -135,11 +128,11 @@ class MapMultiBindingTest {
     @Test
     fun testOverrideDrop() {
         val component = Component {
-            factory { Command1 }
-            factory { Command2 }
             map<String, Command> {
-                put("key", keyOf<Command1>())
-                put("key", keyOf<Command2>(), duplicateStrategy = DuplicateStrategy.Drop)
+                put("key") { Command1 }
+                put("key", duplicateStrategy = DuplicateStrategy.Drop) {
+                    Command2
+                }
             }
         }
 
@@ -152,11 +145,11 @@ class MapMultiBindingTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         Component {
-            factory { Command1 }
-            factory { Command2 }
             map<String, Command> {
-                put("key", keyOf<Command1>())
-                put("key", keyOf<Command2>(), duplicateStrategy = DuplicateStrategy.Fail)
+                put("key") { Command1 }
+                put("key", duplicateStrategy = DuplicateStrategy.Fail) {
+                    Command2
+                }
             }
         }
     }

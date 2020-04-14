@@ -24,13 +24,10 @@ class SetMultiBindingTest {
     @Test
     fun testSetBinding() {
         val component = Component {
-            factory { Command1 }
-            factory { Command2 }
-            factory { Command3 }
             set<Command>(TestQualifier1) {
-                add<Command1>()
-                add<Command2>()
-                add<Command3>()
+                add { Command1 }
+                add { Command2 }
+                add { Command3 }
             }
         }
 
@@ -71,8 +68,7 @@ class SetMultiBindingTest {
     @Test
     fun testNestedSetBindings() {
         val componentA = Component {
-            factory { Command1 }
-            set<Command> { add<Command1>() }
+            set<Command> { add { Command1 } }
         }
 
         val setA = componentA.get<Set<Command>>()
@@ -81,8 +77,7 @@ class SetMultiBindingTest {
 
         val componentB = Component {
             parents(componentA)
-            factory { Command2 }
-            set<Command> { add<Command2>() }
+            set<Command> { add { Command2 } }
         }
 
         val setB = componentB.get<Set<Command>>()
@@ -92,8 +87,7 @@ class SetMultiBindingTest {
 
         val componentC = Component {
             parents(componentB)
-            factory { Command3 }
-            set<Command> { add<Command3>() }
+            set<Command> { add { Command3 } }
         }
 
         val setC = componentC.get<Set<Command>>()
@@ -106,13 +100,13 @@ class SetMultiBindingTest {
     @Test
     fun testOverride() {
         val originalValueComponent = Component {
-            factory<Command> { Command1 }
-            set<Command> { add<Command>() }
+            set<Command> { add<Command> { Command1 } }
         }
         val overriddenValueComponent = Component {
             parents(originalValueComponent)
-            factory<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
-            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) }
+            set<Command> {
+                add<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
+            }
         }
 
         assertEquals(Command2, overriddenValueComponent.get<Set<Command>>().single())
@@ -121,13 +115,13 @@ class SetMultiBindingTest {
     @Test
     fun testOverrideDrop() {
         val originalValueComponent = Component {
-            factory<Command> { Command1 }
-            set<Command> { add<Command>() }
+            set<Command> { add<Command> { Command1 } }
         }
         val overriddenValueComponent = Component {
             parents(originalValueComponent)
-            factory<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
-            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) }
+            set<Command> {
+                add<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
+            }
         }
 
         assertEquals(Command1, overriddenValueComponent.get<Set<Command>>().single())
@@ -136,26 +130,24 @@ class SetMultiBindingTest {
     @Test(expected = IllegalStateException::class)
     fun testOverrideFail() {
         val originalValueComponent = Component {
-            factory<Command> { Command1 }
-            set<Command> { add<Command>() }
+            set<Command> { add<Command> { Command1 } }
         }
         val overriddenValueComponent = Component {
             parents(originalValueComponent)
-            factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
-            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
+            set<Command> {
+                add<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
+            }
         }
     }
 
     @Test
     fun testNestedOverride() {
         val componentA = Component {
-            factory<Command> { Command1 }
-            set<Command> { add<Command>() }
+            set<Command> { add<Command> { Command1 } }
         }
         val componentB = Component {
             parents(componentA)
-            factory<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 }
-            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Override) { Command2 } }
         }
 
         val setA = componentA.get<Set<Command>>()
@@ -167,13 +159,11 @@ class SetMultiBindingTest {
     @Test
     fun testNestedOverrideDrop() {
         val componentA = Component {
-            factory<Command> { Command1 }
-            set<Command> { add<Command>() }
+            set<Command> { add<Command> { Command1 } }
         }
         val componentB = Component {
             parents(componentA)
-            factory<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 }
-            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Drop) { Command2 } }
         }
 
         val setA = componentA.get<Set<Command>>()
@@ -185,13 +175,11 @@ class SetMultiBindingTest {
     @Test(expected = IllegalStateException::class)
     fun testNestedOverrideFail() {
         val componentA = Component {
-            factory<Command> { Command1 }
-            set<Command> { add<Command>() }
+            set<Command> { add<Command> { Command1 } }
         }
         val componentB = Component {
             parents(componentA)
-            factory<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
-            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) }
+            set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 } }
         }
     }
 
@@ -209,10 +197,8 @@ class SetMultiBindingTest {
     @Test
     fun testReusesSetBuildersInsideAComponentBuilder() {
         val component = Component {
-            instance(Command1)
-            instance(Command2)
-            set<Any> { add<Command1>() }
-            set<Any> { add<Command2>() }
+            set<Any> { add { Command1 } }
+            set<Any> { add { Command2 } }
         }
 
         assertEquals(2, component.get<Set<Any>>().size)

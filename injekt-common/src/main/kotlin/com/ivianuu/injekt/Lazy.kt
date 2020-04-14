@@ -54,3 +54,26 @@ private class KeyedLazy<T>(
         return value as T
     }
 }
+
+class BindingProviderLazy<T>(
+    private val component: Component,
+    private val provider: BindingProvider<T>
+) : Lazy<T> {
+
+    private var value: Any? = this
+
+    override fun invoke(parameters: Parameters): T {
+        var value = this.value
+        if (value === this) {
+            synchronized(this) {
+                value = this.value
+                if (value === this) {
+                    value = provider(component, parameters)
+                    this.value = value
+                }
+            }
+        }
+
+        return value as T
+    }
+}

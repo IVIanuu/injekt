@@ -23,8 +23,3 @@ private fun Component.collectParents(parents: MutableList<Component>) {
     this.parents.forEach { it.collectParents(parents) }
     parents += this.parents
 }
-
-internal data class KeyWithOverrideInfo(
-    val key: Key<*>,
-    val duplicateStrategy: DuplicateStrategy
-)

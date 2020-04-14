@@ -53,3 +53,11 @@ private class KeyedProvider<T>(
         return provider!!(component, parameters)
     }
 }
+
+class BindingProviderProvider<T>(
+    private val component: Component,
+    private val provider: BindingProvider<T>
+) : Lazy<T> {
+
+    override fun invoke(parameters: Parameters): T = provider(component, parameters)
+}
