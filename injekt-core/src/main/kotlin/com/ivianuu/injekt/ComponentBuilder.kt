@@ -40,7 +40,7 @@ class ComponentBuilder {
     private val _bindings = mutableMapOf<Key<*>, Binding<*>>()
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
 
-    var jitFactories = emptyList<(Component, Key<Any?>) -> BindingProvider<Any?>?>()
+    var jitFactories = emptyList<(Linker, Key<Any?>) -> BindingProvider<Any?>?>()
         private set
 
     private var onPreBuildBlocks = emptyList<() -> Boolean>()
@@ -115,18 +115,18 @@ class ComponentBuilder {
      * Invokes the [factories] when ever a [Binding] request cannot be fulfilled
      * If a factory returns a non null [Binding] it will be returned
      */
-    fun jitFactory(factory: (Component, Key<Any?>) -> BindingProvider<Any?>?) {
+    fun jitFactory(factory: (Linker, Key<Any?>) -> BindingProvider<Any?>?) {
         jitFactories(factory)
     }
 
-    fun jitFactories(vararg factories: (Component, Key<Any?>) -> BindingProvider<Any?>?) {
+    fun jitFactories(vararg factories: (Linker, Key<Any?>) -> BindingProvider<Any?>?) {
         jitFactories = jitFactories + factories
     }
 
     /**
      * Replaces all existing jit factories with [factories]
      */
-    fun setJitFactories(factories: List<(Component, Key<Any?>) -> BindingProvider<Any?>?>) {
+    fun setJitFactories(factories: List<(Linker, Key<Any?>) -> BindingProvider<Any?>?>) {
         jitFactories = emptyList()
         jitFactories(*factories.toTypedArray())
     }
@@ -134,10 +134,11 @@ class ComponentBuilder {
     /**
      * Removes the [factory]
      */
-    fun removeJitFactory(factory: (Component, Key<Any?>) -> BindingProvider<Any?>?) {
+    fun removeJitFactory(factory: (Linker, Key<Any?>) -> BindingProvider<Any?>?) {
         jitFactories = jitFactories - factory
     }
 
+    @DslOverload
     @KeyOverload
     fun <T> bind(
         key: Key<T>,
@@ -255,22 +256,32 @@ class ComponentBuilder {
             }
         }
 
-        val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
+        val tmpBindings = mutableMapOf<Key<*>, Binding<*>>()
 
         _bindings.forEach { (key, binding) ->
             if (binding.duplicateStrategy.check(
                     existsPredicate = { key in parentBindings },
                     errorMessage = { "Already declared binding for $key" })
             ) {
-                finalBindings[key] = binding
+                tmpBindings[key] = binding
             }
         }
+
+        val finalBindings = tmpBindings.toMap()
+
+        // todo
+        val linker = Linker(
+            finalBindings,
+            parents.map { it.linker },
+            scopes.toSet(),
+            jitFactories
+        )
 
         val component = Component(
             scopes = scopes.toSet(),
             parents = parents.toList(),
-            jitFactories = jitFactories.toList(),
-            bindings = finalBindings.toMap()
+            bindings = finalBindings,
+            linker = linker
         )
 
         onBuildBlocks.forEach { it(component) }

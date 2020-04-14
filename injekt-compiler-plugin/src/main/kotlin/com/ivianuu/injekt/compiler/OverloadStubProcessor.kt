@@ -1,0 +1,241 @@
+package com.ivianuu.injekt.compiler
+
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeVariableName
+import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
+import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.types.Variance
+
+class OverloadStubProcessor : ElementProcessor {
+
+    override fun processFile(
+        file: KtFile,
+        bindingTrace: BindingTrace,
+        generateFile: (FileSpec) -> Unit
+    ) {
+        if (file.name.endsWith("GeneratedDsl.kt")) return
+        val functions = mutableListOf<FunctionDescriptor>()
+        file.accept(
+            namedFunctionRecursiveVisitor { function ->
+                val descriptor = bindingTrace[BindingContext.FUNCTION, function]
+                if (descriptor?.annotations?.hasAnnotation(InjektClassNames.DslOverload) == true ||
+                    descriptor?.annotations?.hasAnnotation(InjektClassNames.KeyOverload) == true
+                ) {
+                    functions += descriptor
+                }
+            }
+        )
+
+        if (functions.isNotEmpty()) {
+            FileSpec.builder(
+                    file.packageFqName.asString(),
+                    "${file.name.removeSuffix(".kt")}Stubs"
+                )
+                .apply {
+                    functions.forEach { function ->
+                        val dslOverload =
+                            function.annotations.hasAnnotation(InjektClassNames.DslOverload)
+                        val keyOverload =
+                            function.annotations.hasAnnotation(InjektClassNames.KeyOverload)
+                        if (dslOverload) addFunction(dslOverloadStubFunction(function))
+                        if (keyOverload) addFunction(keyOverloadStubFunction(function))
+                        if (dslOverload && keyOverload) addFunction(
+                            keyOverloadAndDslOverloadStubFunction(function)
+                        )
+                    }
+                }
+                .build()
+                .let(generateFile)
+        }
+    }
+
+    private fun dslOverloadStubFunction(function: FunctionDescriptor): FunSpec {
+        return baseOverloadStubFunction(
+            function = function,
+            kdoc = "Dsl overloading function for [${function.name}]",
+            annotations = function.annotations
+                .map {
+                    if (it.fqName == InjektClassNames.DslOverload) InjektClassNames.DslOverloadStub
+                    else it.fqName!!
+                },
+            valueParameterInterceptor = definitionOrNull
+        )
+    }
+
+    private fun keyOverloadStubFunction(function: FunctionDescriptor): FunSpec {
+        return baseOverloadStubFunction(
+            function = function,
+            kdoc = "Key overloading function for [${function.name}]",
+            annotations = function.annotations
+                .map {
+                    if (it.fqName == InjektClassNames.KeyOverload) InjektClassNames.KeyOverloadStub
+                    else it.fqName!!
+                },
+            valueParameterInterceptor = qualifierOrNull
+        )
+    }
+
+    private fun keyOverloadAndDslOverloadStubFunction(function: FunctionDescriptor): FunSpec {
+        return baseOverloadStubFunction(
+            function = function,
+            kdoc = "Key and dsl overloading function for [${function.name}]",
+            annotations = function.annotations
+                .map {
+                    when (it.fqName) {
+                        InjektClassNames.DslOverload -> InjektClassNames.KeyOverloadStub
+                        InjektClassNames.KeyOverload -> InjektClassNames.DslOverloadStub
+                        else -> it.fqName!!
+                    }
+                },
+            valueParameterInterceptor = { definitionOrNull(it) ?: qualifierOrNull(it) }
+        )
+    }
+
+    private fun baseOverloadStubFunction(
+        function: FunctionDescriptor,
+        kdoc: String,
+        annotations: List<FqName>,
+        valueParameterInterceptor: (ValueParameterDescriptor) -> ParameterSpec?
+    ): FunSpec {
+        return FunSpec.builder(function.name.asString())
+            .addKdoc(kdoc)
+            .apply { annotations.forEach { addAnnotation(it.asClassName()) } }
+            .apply {
+                if (function.isInline) {
+                    addModifiers(KModifier.INLINE)
+                }
+                if (function.visibility == Visibilities.INTERNAL) {
+                    addModifiers(KModifier.INTERNAL)
+                }
+                if (function.isOperator) {
+                    addModifiers(KModifier.OPERATOR)
+                }
+                if (function.isSuspend) {
+                    addModifiers(KModifier.SUSPEND)
+                }
+            }
+            .addTypeVariables(
+                function.typeParameters
+                    .map { typeParameter ->
+                        TypeVariableName(
+                            typeParameter.name.asString(),
+                            *typeParameter.upperBounds
+                                .map { it.asTypeName()!! }
+                                .toTypedArray(),
+                            variance = when (typeParameter.variance) {
+                                Variance.INVARIANT -> null
+                                Variance.IN_VARIANCE -> KModifier.IN
+                                Variance.OUT_VARIANCE -> KModifier.OUT
+                            }
+                        )
+                    }
+            )
+            .apply {
+                function.extensionReceiverParameter?.let { extensionReceiver ->
+                    receiver(extensionReceiver.type.asTypeName()!!)
+                } ?: function.dispatchReceiverParameter?.let { dispatchReceiver ->
+                    receiver(dispatchReceiver.type.asTypeName()!!)
+                }
+            }
+            .addParameters(
+                function.valueParameters
+                    .map { valueParameter ->
+                        valueParameterInterceptor(valueParameter)
+                            ?: ParameterSpec.builder(
+                                    valueParameter.name.asString(),
+                                    valueParameter.type.asTypeName()!!
+                                )
+                                .apply {
+                                    if (valueParameter.declaresDefaultValue()) {
+                                        if (valueParameter.type.isFunctionType &&
+                                            function.isInline && !valueParameter.isNoinline
+                                        ) {
+                                            defaultValue("{ ${
+                                            valueParameter.type.getValueParameterTypesFromFunctionType()
+                                                .indices.joinToString(", ") { "_" }
+                                            } error(\"stub\") }")
+                                        } else {
+                                            defaultValue("error(\"stub\")")
+                                        }
+                                    }
+
+                                    if (valueParameter.isCrossinline) {
+                                        addModifiers(KModifier.CROSSINLINE)
+                                    } else if (valueParameter.isNoinline) {
+                                        addModifiers(KModifier.NOINLINE)
+                                    }
+                                }
+                                .build()
+                    }
+            )
+            .apply { function.returnType?.let { returns(it.asTypeName()!!) } }
+            .addCode("error(\"stub\")\n")
+            .build()
+    }
+
+    private val definitionOrNull: (ValueParameterDescriptor) -> ParameterSpec? = { valueParameter ->
+        if (valueParameter.type.constructor.declarationDescriptor ==
+            valueParameter.module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(InjektClassNames.BindingProvider)
+            )
+        ) {
+            val parameterName = when {
+                valueParameter.name.asString() == "provider" -> "definition"
+                valueParameter.name.asString().endsWith("Provider") ->
+                    valueParameter.name.asString().removeSuffix("Key") + "Definition"
+                else -> (valueParameter.name.asString() + "Definition")
+            }
+            ParameterSpec.builder(
+                    parameterName,
+                    InjektClassNames.BindingDefinition.asClassName()
+                        .parameterizedBy(
+                            valueParameter.type.arguments.first().type.asTypeName()!!
+                        )
+                )
+                .apply {
+                    if ((valueParameter.containingDeclaration as FunctionDescriptor).isInline) {
+                        addModifiers(KModifier.NOINLINE)
+                    }
+                }
+                .defaultValue("error(\"stub\")\n")
+                .build()
+        } else null
+    }
+
+    private val qualifierOrNull: (ValueParameterDescriptor) -> ParameterSpec? = { valueParameter ->
+        if (valueParameter.type.constructor.declarationDescriptor ==
+            valueParameter.module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(InjektClassNames.Key)
+            )
+        ) {
+            val parameterName = when {
+                valueParameter.name.asString() == "key" -> "qualifier"
+                valueParameter.name.asString().endsWith("Key") ->
+                    valueParameter.name.asString().removeSuffix("Key") + "Qualifier"
+                else -> (valueParameter.name.asString() + "Qualifier")
+            }
+            ParameterSpec.builder(
+                    parameterName,
+                    InjektClassNames.Qualifier.asClassName()
+                )
+                .defaultValue("error(\"stub\")\n")
+                .build()
+        } else null
+    }
+
+}

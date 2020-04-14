@@ -30,6 +30,10 @@ fun <T> ComponentBuilder.instance(
         key = key,
         behavior = behavior,
         duplicateStrategy = duplicateStrategy,
-        provider = { instance }
+        provider = InstanceProvider(instance)
     )
+}
+
+private class InstanceProvider<T>(val instance: T) : BindingProvider<T> {
+    override fun invoke(parameters: Parameters): T = instance
 }

@@ -54,7 +54,7 @@ class InjektElementProcessing(
 
         val processors = listOf(
             GenerateDslProcessor(module),
-            KeyOverloadStubProcessor(),
+            OverloadStubProcessor(),
             SyntheticAnnotationProcessor()
         )
 

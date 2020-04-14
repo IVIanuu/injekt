@@ -73,13 +73,13 @@ class MultiBindingSetBuilder<E> internal constructor() {
         elementKey: Key<out E>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        add(elementKey, duplicateStrategy) { get(elementKey) }
+        add(elementKey, duplicateStrategy, KeyedBindingProvider(elementKey))
     }
 
     inline fun <reified T : E> add(
         elementQualifier: Qualifier = Qualifier.None,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        noinline provider: BindingProvider<T>
+        provider: BindingProvider<T>
     ) {
         add(
             keyOf<T>(elementQualifier),
@@ -97,7 +97,7 @@ class MultiBindingSetBuilder<E> internal constructor() {
             Element(
                 elementKey,
                 duplicateStrategy,
-                provider
+                provider as BindingProvider<E>
             )
         )
     }
@@ -130,93 +130,94 @@ inline fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,
     block: MultiBindingSetBuilder<E>.() -> Unit = {}
 ) {
-    getSetBuilder(setKey).block()
+    //getSetBuilder(setKey).block()
 }
 
+/**
 @PublishedApi
 internal fun <E> ComponentBuilder.getSetBuilder(
-    setKey: Key<Set<E>>
+setKey: Key<Set<E>>
 ): MultiBindingSetBuilder<E> {
-    setKey as Key.ParameterizedKey
+setKey as Key.ParameterizedKey
 
-    val setOfKeyElements = keyOf<Set<Element<E>>>(
-        classifier = Set::class,
-        arguments = arrayOf(
-            keyOf<Element<E>>(qualifier = Qualifier(setKey))
-        ),
-        qualifier = setKey.qualifier
-    )
+val setOfKeyElements = keyOf<Set<Element<E>>>(
+classifier = Set::class,
+arguments = arrayOf(
+keyOf<Element<E>>(qualifier = Qualifier(setKey))
+),
+qualifier = setKey.qualifier
+)
 
-    var bindingProvider = bindings[setOfKeyElements]?.provider as? SetBindingProvider<E>
-    if (bindingProvider == null) {
-        bindingProvider =
-            SetBindingProvider(setOfKeyElements)
+var bindingProvider = bindings[setOfKeyElements]?.provider as? SetBindingProvider<E>
+if (bindingProvider == null) {
+bindingProvider =
+SetBindingProvider(setOfKeyElements)
 
-        onBuild { bindingProvider.ensureInitialized(it) }
+onBuild { bindingProvider.ensureInitialized(it) }
 
-        // bind the set
-        bind(
-            Binding(
-                key = setOfKeyElements,
-                duplicateStrategy = DuplicateStrategy.Override,
-                provider = bindingProvider
-            )
-        )
+// bind the set
+bind(
+Binding(
+key = setOfKeyElements,
+duplicateStrategy = DuplicateStrategy.Override,
+provider = bindingProvider
+)
+)
 
-        // value set
-        factory(
-            key = setKey,
-            duplicateStrategy = DuplicateStrategy.Override
-        ) {
-            get(setOfKeyElements)
-                .mapTo(mutableSetOf()) { element ->
-                    element.provider(this, emptyParameters())
-                }
-        }
-
-        // provider set
-        factory(
-            key = keyOf<Set<Provider<E>>>(
-                classifier = Set::class,
-                arguments = arrayOf(
-                    keyOf<Provider<E>>(
-                        classifier = Provider::class,
-                        arguments = arrayOf(setKey.arguments[0])
-                    )
-                ),
-                qualifier = setKey.qualifier
-            ),
-            duplicateStrategy = DuplicateStrategy.Override
-        ) {
-            get(setOfKeyElements)
-                .mapTo(mutableSetOf()) { element ->
-                    BindingProviderProvider(this, element.provider)
-                }
-        }
-
-        // lazy set
-        factory(
-            key = keyOf<Set<Lazy<E>>>(
-                classifier = Set::class,
-                arguments = arrayOf(
-                    keyOf<Lazy<E>>(
-                        classifier = Lazy::class,
-                        arguments = arrayOf(setKey.arguments[0])
-                    )
-                ),
-                qualifier = setKey.qualifier
-            ),
-            duplicateStrategy = DuplicateStrategy.Override
-        ) {
-            get(setOfKeyElements)
-                .mapTo(mutableSetOf()) { element ->
-                    BindingProviderLazy(this, element.provider)
-                }
-        }
-    }
-
-    return bindingProvider.thisBuilder!!
+// value set
+factory(
+key = setKey,
+duplicateStrategy = DuplicateStrategy.Override
+) {
+get(setOfKeyElements)
+.mapTo(mutableSetOf()) { element ->
+element.provider(this, emptyParameters())
 }
+}
+
+// provider set
+factory(
+key = keyOf<Set<Provider<E>>>(
+classifier = Set::class,
+arguments = arrayOf(
+keyOf<Provider<E>>(
+classifier = Provider::class,
+arguments = arrayOf(setKey.arguments[0])
+)
+),
+qualifier = setKey.qualifier
+),
+duplicateStrategy = DuplicateStrategy.Override
+) {
+get(setOfKeyElements)
+.mapTo(mutableSetOf()) { element ->
+BindingProviderProvider(this, element.provider)
+}
+}
+
+// lazy set
+factory(
+key = keyOf<Set<Lazy<E>>>(
+classifier = Set::class,
+arguments = arrayOf(
+keyOf<Lazy<E>>(
+classifier = Lazy::class,
+arguments = arrayOf(setKey.arguments[0])
+)
+),
+qualifier = setKey.qualifier
+),
+duplicateStrategy = DuplicateStrategy.Override
+) {
+get(setOfKeyElements)
+.mapTo(mutableSetOf()) { element ->
+BindingProviderLazy(this, element.provider)
+}
+}
+}
+
+return bindingProvider.thisBuilder!!
+}*/
 
 private class SetBindingProvider<E>(
     private val setOfKeyElements: Key<Set<Element<E>>>

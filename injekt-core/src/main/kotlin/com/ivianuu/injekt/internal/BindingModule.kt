@@ -2,18 +2,20 @@ package com.ivianuu.injekt.internal
 
 import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BindingProvider
+import com.ivianuu.injekt.DslOverload
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scope
 
 /* Used in codegen */
+@DslOverload
 @KeyOverload
 inline fun <T> BindingModule(
     key: Key<T>,
     behavior: Behavior,
     defaultScope: Scope,
-    noinline provider: BindingProvider<T>
+    provider: BindingProvider<T>
 ): Module {
     val scope = behavior.foldInBehavior(null) { acc: Scope?, element ->
         acc ?: element as? Scope

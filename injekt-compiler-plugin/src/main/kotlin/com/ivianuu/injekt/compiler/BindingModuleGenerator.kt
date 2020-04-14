@@ -69,10 +69,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val behavior = getClass(InjektClassNames.Behavior)
-    private val component = getClass(InjektClassNames.Component)
     private val module = getClass(InjektClassNames.Module)
     private val moduleMarker = getClass(InjektClassNames.ModuleMarker)
     private val parameters = getClass(InjektClassNames.Parameters)
+    private val providerContext = getClass(InjektClassNames.ProviderContext)
     private val qualifier = getClass(InjektClassNames.Qualifier)
     private val scope = getClass(InjektClassNames.Scope)
 
@@ -281,27 +281,27 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                 )
             )
 
-            putValueArgument(3, bindingProvider(injectable))
+            putValueArgument(3, bindingDefinition(injectable))
         }
     }
 
-    private fun IrBuilderWithScope.bindingProvider(
+    private fun IrBuilderWithScope.bindingDefinition(
         injectable: IrClass
     ): IrExpression {
         val injectableType = injectable.defaultType
 
-        val providerType = KotlinTypeFactory.simpleType(
+        val definitionType = KotlinTypeFactory.simpleType(
             context.builtIns.getFunction(2).defaultType,
             arguments = listOf(
-                component.defaultType.asTypeProjection(),
+                providerContext.defaultType.asTypeProjection(),
                 parameters.defaultType.asTypeProjection(),
                 injectableType.toKotlinType().asTypeProjection()
             )
         )
 
         return irLambdaExpression(
-            createFunctionDescriptor(providerType),
-            providerType.toIrType()
+            createFunctionDescriptor(definitionType),
+            definitionType.toIrType()
         ) { lambdaFn ->
             +irReturn(if (injectable.kind == ClassKind.OBJECT) {
                 irGetObject(injectable.symbol)
@@ -323,7 +323,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
         val componentGet = injektPackage.memberScope
             .findFirstFunction("get") {
                 it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
-                        it.extensionReceiverParameter?.type == this@BindingModuleGenerator.component.defaultType
+                        it.extensionReceiverParameter?.type == this@BindingModuleGenerator.providerContext.defaultType
             }
 
         val parametersGet = this@BindingModuleGenerator.parameters.unsubstitutedMemberScope

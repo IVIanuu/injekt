@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -86,6 +87,9 @@ abstract class AbstractInjektTransformer(
 
     protected fun getClass(fqName: FqName) =
         pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
+
+    protected fun getTypeAlias(fqName: FqName) =
+        pluginContext.moduleDescriptor.findTypeAliasAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
     protected fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
         any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }

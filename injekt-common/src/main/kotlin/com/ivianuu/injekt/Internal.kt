@@ -23,3 +23,11 @@ private fun Component.collectParents(parents: MutableList<Component>) {
     this.parents.forEach { it.collectParents(parents) }
     parents += this.parents
 }
+
+internal fun Linker.getAllParents(): List<Linker> =
+    mutableListOf<Linker>().also { collectParents(it) }
+
+private fun Linker.collectParents(parents: MutableList<Linker>) {
+    this.parents.forEach { it.collectParents(parents) }
+    parents += this.parents
+}

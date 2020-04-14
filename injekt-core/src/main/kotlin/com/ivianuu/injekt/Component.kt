@@ -40,8 +40,8 @@ package com.ivianuu.injekt
 class Component internal constructor(
     val scopes: Set<Scope>,
     val parents: List<Component>,
-    val jitFactories: List<(Component, Key<Any?>) -> BindingProvider<Any?>?>,
-    val bindings: Map<Key<*>, Binding<*>>
+    val bindings: Map<Key<*>, Binding<*>>,
+    val linker: Linker
 ) {
 
     /**
@@ -49,52 +49,6 @@ class Component internal constructor(
      */
     @KeyOverload
     fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
-        getBindingProvider(key)(parameters)
+        linker.get(key)(parameters)
 
-    /**
-     * Returns the binding for [key]
-     */
-    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> {
-        findBindingProvider(key)?.let { return it }
-        if (key.isNullable) return NullBindingProvider as BindingProvider<T>
-        error("Couldn't get instance for $key")
-    }
-
-    /**
-     * Returns the [Component] for [scope] or throws
-     */
-    fun getComponent(scope: Scope): Component =
-        findComponent(scope) ?: error("Couldn't find component for scope $scope")
-
-    private fun findComponent(scope: Scope): Component? {
-        if (scope in scopes) return this
-
-        for (index in parents.indices) {
-            parents[index].findComponent(scope)?.let { return it }
-        }
-
-        return null
-    }
-
-    private fun <T> findBindingProvider(key: Key<T>): BindingProvider<T>? {
-        (bindings[key] as? Binding<T>)
-            ?.takeUnless { !key.isNullable && it.key.isNullable }
-            ?.provider
-            ?.let { return it }
-
-        for (index in parents.lastIndex downTo 0) {
-            parents[index].findBindingProvider(key)?.let { return it }
-        }
-
-        for (index in jitFactories.lastIndex downTo 0) {
-            (jitFactories[index](this, key as Key<Any?>) as? BindingProvider<T>)
-                ?.let { return it }
-        }
-
-        return null
-    }
-
-    private companion object {
-        private val NullBindingProvider: BindingProvider<Any?> = { null }
-    }
 }

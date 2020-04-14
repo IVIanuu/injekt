@@ -23,29 +23,16 @@ package com.ivianuu.injekt
 val Bound = InterceptingBehavior { binding ->
     val scope = binding.behavior.foldInBehavior(null) { acc: Scope?, element ->
         acc ?: element as? Scope
-    }
+    } ?: error("Cannot use bound without a scope annotation")
     val provider = BoundProvider(binding.provider, scope)
-    onBuild { provider.initializeComponentIfNeeded(it) }
     binding.copy(provider = provider)
 }
 
 private class BoundProvider<T>(
     private val wrapped: BindingProvider<T>,
-    private val scope: Scope?
-) : (Component, Parameters) -> T {
-
-    private lateinit var boundComponent: Component
-
-    override fun invoke(component: Component, parameters: Parameters): T {
-        initializeComponentIfNeeded(component)
-        return wrapped(boundComponent, parameters)
-    }
-
-    fun initializeComponentIfNeeded(component: Component) {
-        if (!this::boundComponent.isInitialized) {
-            boundComponent = if (scope != null) component.getComponent(scope)
-            else component
-        }
-
+    private val scope: Scope
+) : BindingProvider<T> by wrapped {
+    override fun link(linker: Linker) {
+        super.link(linker.getLinker(scope))
     }
 }

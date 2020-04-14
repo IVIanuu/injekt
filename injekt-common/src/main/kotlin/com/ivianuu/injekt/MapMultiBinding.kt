@@ -66,7 +66,7 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
         entryValueKey: Key<out V>,
         duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
     ) {
-        put(entryKey, duplicateStrategy) { get(entryValueKey) }
+        put(entryKey, duplicateStrategy, KeyedBindingProvider(entryValueKey))
     }
 
     fun put(
@@ -104,116 +104,109 @@ inline fun <K, V> ComponentBuilder.map(
     mapKey: Key<Map<K, V>>,
     block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
 ) {
-    getMapBuilder(mapKey).block()
+    // getMapBuilder(mapKey).block()
 }
 
+/**
 @PublishedApi
 internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): MultiBindingMapBuilder<K, V> {
-    mapKey as Key.ParameterizedKey
-    val mapOfEntries = keyOf<Map<K, Entry<K, V>>>(
-        classifier = Map::class,
-        arguments = arrayOf(
-            mapKey.arguments.first(),
-            keyOf<Entry<K, V>>(qualifier = Qualifier(mapKey))
-        ),
-        qualifier = mapKey.qualifier
-    )
+mapKey as Key.ParameterizedKey
+val mapOfEntries = keyOf<Map<K, Entry<K, V>>>(
+classifier = Map::class,
+arguments = arrayOf(
+mapKey.arguments.first(),
+keyOf<Entry<K, V>>(qualifier = Qualifier(mapKey))
+),
+qualifier = mapKey.qualifier
+)
 
-    var bindingProvider = bindings[mapOfEntries]?.provider as? MapBindingProvider<K, V>
-    if (bindingProvider == null) {
-        bindingProvider =
-            MapBindingProvider(mapOfEntries)
+var bindingProvider = bindings[mapOfEntries]?.provider as? MapBindingProvider<K, V>
+if (bindingProvider == null) {
+bindingProvider = MapBindingProvider(mapOfEntries)
 
-        onBuild { bindingProvider.ensureInitialized(it) }
+// bind the map with keys
+bind(
+Binding(
+key = mapOfEntries,
+duplicateStrategy = DuplicateStrategy.Override,
+provider = bindingProvider
+)
+)
 
-        // bind the map with keys
-        bind(
-            Binding(
-                key = mapOfEntries,
-                duplicateStrategy = DuplicateStrategy.Override,
-                provider = bindingProvider
-            )
-        )
-
-        // value map
-        factory(
-            key = mapKey,
-            duplicateStrategy = DuplicateStrategy.Override
-        ) {
-            get(key = mapOfEntries)
-                .mapValues { (_, value) ->
-                    value.provider(this, emptyParameters())
-                }
-        }
-
-        // provider map
-        factory(
-            key = keyOf<Map<K, Provider<V>>>(
-                classifier = Map::class,
-                arguments = arrayOf(
-                    mapKey.arguments[0],
-                    keyOf<Provider<V>>(
-                        classifier = Provider::class,
-                        arguments = arrayOf(mapKey.arguments[1])
-                    )
-                ),
-                qualifier = mapKey.qualifier
-            ),
-            duplicateStrategy = DuplicateStrategy.Override
-        ) {
-            get(key = mapOfEntries)
-                .mapValues { (_, value) ->
-                    BindingProviderProvider(this, value.provider)
-                }
-        }
-
-        // lazy map
-        factory(
-            key = keyOf<Map<K, Lazy<V>>>(
-                classifier = Map::class,
-                arguments = arrayOf(
-                    mapKey.arguments[0],
-                    keyOf<Lazy<V>>(
-                        classifier = Lazy::class,
-                        arguments = arrayOf(mapKey.arguments[1])
-                    )
-                ),
-                qualifier = mapKey.qualifier
-            ),
-            duplicateStrategy = DuplicateStrategy.Override
-        ) {
-            get(key = mapOfEntries)
-                .mapValues { (_, value) ->
-                    BindingProviderLazy(
-                        this,
-                        value.provider
-                    )
-                }
-        }
-    }
-
-    return bindingProvider.thisBuilder!!
+// value map
+factory(
+key = mapKey,
+duplicateStrategy = DuplicateStrategy.Override
+) {
+get(key = mapOfEntries)
+.mapValues { (_, value) ->
+value.provider(emptyParameters())
 }
+}
+
+// provider map
+factory(
+key = keyOf<Map<K, Provider<V>>>(
+classifier = Map::class,
+arguments = arrayOf(
+mapKey.arguments[0],
+keyOf<Provider<V>>(
+classifier = Provider::class,
+arguments = arrayOf(mapKey.arguments[1])
+)
+),
+qualifier = mapKey.qualifier
+),
+duplicateStrategy = DuplicateStrategy.Override
+) {
+get(key = mapOfEntries)
+.mapValues { (_, value) ->
+BindingProviderProvider(this, value.provider)
+}
+}
+
+// lazy map
+factory(
+key = keyOf<Map<K, Lazy<V>>>(
+classifier = Map::class,
+arguments = arrayOf(
+mapKey.arguments[0],
+keyOf<Lazy<V>>(
+classifier = Lazy::class,
+arguments = arrayOf(mapKey.arguments[1])
+)
+),
+qualifier = mapKey.qualifier
+),
+duplicateStrategy = DuplicateStrategy.Override
+) {
+get(key = mapOfEntries)
+.mapValues { (_, value) ->
+BindingProviderLazy(
+this,
+value.provider
+)
+}
+}
+}
+
+return bindingProvider.thisBuilder!!
+}*/
 
 private class MapBindingProvider<K, V>(
     private val mapOfEntries: Key<Map<K, Entry<K, V>>>
-) : (Component, Parameters) -> Map<K, Entry<K, V>> {
+) : BindingProvider<Map<K, Entry<K, V>>> {
     var thisBuilder: MultiBindingMapBuilder<K, V>? =
         MultiBindingMapBuilder()
     var thisMap: Map<K, Entry<K, V>>? = null
     var mergedMap: Map<K, Entry<K, V>>? = null
 
-    override fun invoke(component: Component, parameters: Parameters): Map<K, Entry<K, V>> {
-        ensureInitialized(component)
-        return mergedMap!!
-    }
-
-    fun ensureInitialized(component: Component) {
+    override fun link(linker: Linker) {
         if (mergedMap != null) return
         checkNotNull(thisBuilder)
         val mergedBuilder = MultiBindingMapBuilder<K, V>()
 
-        component.getAllParents()
+        linker.getAllParents()
             .flatMap { parent ->
                 (parent.bindings[mapOfEntries]
                     ?.provider
@@ -232,4 +225,9 @@ private class MapBindingProvider<K, V>(
 
         mergedMap = mergedBuilder.build()
     }
+
+    override fun invoke(parameters: Parameters): Map<K, Entry<K, V>> {
+        return mergedMap!!
+    }
+
 }

@@ -34,20 +34,20 @@ package com.ivianuu.injekt
 val Eager = InterceptingBehavior { binding ->
     val provider =
         EagerProvider(binding.provider)
-    onBuild { provider.initializeIfNeeded(it) }
+    onBuild { provider.initializeIfNeeded() }
     binding.copy(provider = provider)
 }
 
 private class EagerProvider<T>(
     private val wrapped: BindingProvider<T>
-) : (Component, Parameters) -> T {
+) : BindingProvider<T> by wrapped {
     private var initialized = false
-    override fun invoke(component: Component, parameters: Parameters): T {
+    override fun invoke(parameters: Parameters): T {
         initialized = true
-        return wrapped(component, parameters)
+        return wrapped(parameters)
     }
 
-    fun initializeIfNeeded(component: Component) {
-        if (!initialized) invoke(component, emptyParameters())
+    fun initializeIfNeeded() {
+        if (!initialized) invoke(emptyParameters())
     }
 }

@@ -10,16 +10,16 @@ val ThreadLocal = InterceptingBehavior {
 } + Bound
 
 private class ThreadLocalProvider<T>(private val wrapped: BindingProvider<T>) :
-        (Component, Parameters) -> T {
+    BindingProvider<T> by wrapped {
 
     private val threadLocal = object : ThreadLocal<Any?>() {
         override fun initialValue() = this@ThreadLocalProvider
     }
 
-    override fun invoke(component: Component, parameters: Parameters): T {
+    override fun invoke(parameters: Parameters): T {
         var value = threadLocal.get()
         if (value === this) {
-            value = wrapped(component, parameters)
+            value = wrapped(parameters)
             threadLocal.set(value)
         }
 

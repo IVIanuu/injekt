@@ -39,7 +39,29 @@ data class Binding<T>(
     val provider: BindingProvider<T>
 )
 
-/**
- * Provides instances of T
- */
-typealias BindingProvider<T> = Component.(Parameters) -> T
+interface BindingProvider<T> {
+    fun link(linker: Linker) {
+    }
+
+    operator fun invoke(parameters: Parameters): T
+    operator fun invoke(): T = invoke(emptyParameters())
+}
+
+class KeyedBindingProvider<T>(val key: Key<T>) : BindingProvider<T> {
+    private lateinit var provider: BindingProvider<T>
+    override fun link(linker: Linker) {
+        provider = linker.get(key)
+    }
+
+    override fun invoke(parameters: Parameters): T = provider(parameters)
+}
+
+typealias BindingDefinition<T> = ProviderContext.(Parameters) -> T
+
+class ProviderContext {
+    @KeyOverload
+    fun <T> get(
+        key: Key<T>,
+        parameters: Parameters = emptyParameters()
+    ): T = error("Stub")
+}

@@ -20,12 +20,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.BindingProvider
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.GenerateDsl
 import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Linker
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.get
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 @GenerateDsl(builderName = "viewModel")
@@ -37,14 +36,21 @@ val BindViewModel = InterceptingBehavior {
 private class ViewModelProvider<T>(
     private val wrapped: BindingProvider<T>,
     private val key: Key<*>
-) : (Component, Parameters) -> T {
-    override fun invoke(component: Component, parameters: Parameters): T {
-        val viewModelStore = component.get<ViewModelStore>()
+) : BindingProvider<T> {
+
+    private lateinit var viewModelStoreProvider: BindingProvider<ViewModelStore>
+
+    override fun link(linker: Linker) {
+        wrapped.link(linker)
+    }
+
+    override fun invoke(parameters: Parameters): T {
+        val viewModelStore = viewModelStoreProvider()
         val viewModelProvider = AndroidViewModelProvider(
             viewModelStore,
             object : AndroidViewModelProvider.Factory {
                 override fun <T : ViewModel?> create(modelClass: Class<T>): T =
-                    wrapped(component, parameters) as T
+                    wrapped(parameters) as T
             }
         )
 
