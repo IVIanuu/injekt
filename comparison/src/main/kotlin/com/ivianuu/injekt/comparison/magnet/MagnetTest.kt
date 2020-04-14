@@ -22,6 +22,7 @@ object MagnetTest : InjectionTest {
     }
 
     override fun shutdown() {
+        scope = null
     }
 }
 
