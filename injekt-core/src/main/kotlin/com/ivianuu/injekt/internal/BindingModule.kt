@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.internal
 
 import com.ivianuu.injekt.Behavior
-import com.ivianuu.injekt.Behavior.None.foldInBehavior
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
@@ -16,7 +15,7 @@ inline fun <T> BindingModule(
     defaultScope: Scope,
     noinline provider: BindingProvider<T>
 ): Module {
-    val scope = foldInBehavior(null) { acc: Scope?, element ->
+    val scope = behavior.foldInBehavior(null) { acc: Scope?, element ->
         acc ?: element as? Scope
     } ?: defaultScope
 
