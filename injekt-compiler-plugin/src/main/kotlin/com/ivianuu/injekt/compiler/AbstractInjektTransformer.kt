@@ -82,8 +82,6 @@ abstract class AbstractInjektTransformer(
 
     protected val injektPackage =
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
-    protected val injektInternalPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
 
     protected fun getClass(fqName: FqName) =
         pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
@@ -163,14 +161,6 @@ abstract class AbstractInjektTransformer(
             type = type,
             origin = IrStatementOrigin.LAMBDA,
             function = lambda
-        )
-    }
-
-    protected fun IrBuilderWithScope.annotationTypeAccessor(
-        annotation: AnnotationDescriptor
-    ): IrExpression {
-        return irGetObject(
-            symbolTable.referenceClass(annotation.annotationClass!!.companionObjectDescriptor!!),
         )
     }
 

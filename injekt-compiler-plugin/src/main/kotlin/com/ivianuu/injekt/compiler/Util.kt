@@ -60,12 +60,16 @@ object InjektClassNames {
     val Component = FqName("com.ivianuu.injekt.Component")
     val Injekt = FqName("com.ivianuu.injekt.Injekt")
     val Key = FqName("com.ivianuu.injekt.Key")
+    val ComponentDsl = FqName("com.ivianuu.injekt.ComponentDsl")
     val Module = FqName("com.ivianuu.injekt.Module")
     val ModuleImpl = FqName("com.ivianuu.injekt.ModuleImpl")
     val Param = FqName("com.ivianuu.injekt.Param")
     val Parameters = FqName("com.ivianuu.injekt.Parameters")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
     val Scope = FqName("com.ivianuu.injekt.Scope")
+    val ModuleDsl = FqName("com.ivianuu.injekt.Module")
+    val Provider = FqName("com.ivianuu.injekt.Provider")
+    val ProviderDsl = FqName("com.ivianuu.injekt.ProviderDsl")
 }
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
@@ -181,5 +185,11 @@ fun String.removeIllegalChars(): String {
         .replace("*", "")
         .replace(".", "")
         .replace("-", "")
+}
 
+fun keyHash(
+    type: KotlinType,
+    qualifierType: KotlinType? = null
+): Int {
+    return type.hashCode() + (qualifierType?.hashCode() ?: 0)
 }
