@@ -17,9 +17,6 @@
 package com.ivianuu.injekt.sample
 
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.android.ActivityComponent
 
-class MainActivity : AppCompatActivity(), ComponentOwner {
-    override val component by lazy { ActivityComponent(this) }
+class MainActivity : AppCompatActivity() {
 }

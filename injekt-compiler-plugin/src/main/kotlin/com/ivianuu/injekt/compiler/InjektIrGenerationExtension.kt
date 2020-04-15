@@ -33,36 +33,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             generateSymbols(pluginContext)
         }
 
-        // replace intrinsics with names
-        DeclarationNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
-        // generate modules for bindings
-        BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
-
-        // generate accessors for each module
-        ModuleAccessorGenerator(pluginContext).visitModuleAndGenerateSymbols()
-
-        // generate metadata classes in the aggregate package
-        // which allows to access all classes even from different compilations
-        AggregateGenerator(pluginContext, project).visitModuleAndGenerateSymbols()
-
-        // transform initializeEndpoint calls
-        InjektInitTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
-        // transform binding provider lambdas to classes
-        // to allow further transformations
-        BindingProviderLambdaToClassTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
-        // rewrite key overload stub calls to the real calls
-        KeyOverloadTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
-        // memoize static keyOf calls
-        KeyCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
-        // rewrite keyOf<String>() -> keyOf(String::class)
-        KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
-        // cache providers
-        BindingProviderCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        ModuleTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>

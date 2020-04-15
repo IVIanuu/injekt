@@ -81,8 +81,6 @@ abstract class AbstractInjektTransformer(
 
     protected val injektPackage =
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
-    protected val injektInternalPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
 
     protected fun getClass(fqName: FqName) =
         pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
@@ -162,17 +160,6 @@ abstract class AbstractInjektTransformer(
             type = type,
             origin = IrStatementOrigin.LAMBDA,
             function = lambda
-        )
-    }
-
-    protected fun IrBuilderWithScope.syntheticAnnotationAccessor(
-        annotation: AnnotationDescriptor
-    ): IrExpression {
-        val declaration =
-            annotation.getPropertyForSyntheticAnnotation(pluginContext.moduleDescriptor)
-        return irCall(
-            symbolTable.referenceSimpleFunction(declaration.getter!!),
-            declaration.type.toIrType()
         )
     }
 

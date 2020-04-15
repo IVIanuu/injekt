@@ -37,17 +37,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        StorageComponentContainerContributor.registerExtension(project, InjektStorageComponentContainerContributorExtension())
+        //StorageComponentContainerContributor.registerExtension(project, InjektStorageComponentContainerContributorExtension())
 
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
-
-        val outputDir = configuration.getNotNull(OutputDirKey)
-
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            InjektElementProcessing(outputDir)
-        )
 
         IrGenerationExtension.registerExtension(
             project,
@@ -55,28 +48,3 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
     }
 }
-
-@AutoService(CommandLineProcessor::class)
-class InjektCommandLineProcessor : CommandLineProcessor {
-    override val pluginId = "com.ivianuu.injekt"
-
-    override val pluginOptions = listOf(
-        CliOption(
-            optionName = "outputDir",
-            valueDescription = "generated src dir",
-            description = "generated src"
-        )
-    )
-
-    override fun processOption(
-        option: AbstractCliOption,
-        value: String,
-        configuration: CompilerConfiguration
-    ) {
-        when (option.optionName) {
-            "outputDir" -> configuration.put(OutputDirKey, value)
-        }
-    }
-}
-
-val OutputDirKey = CompilerConfigurationKey<String>("outputDir")

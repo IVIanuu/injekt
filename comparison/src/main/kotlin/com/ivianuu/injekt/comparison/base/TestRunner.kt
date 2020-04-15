@@ -19,13 +19,12 @@ package com.ivianuu.injekt.comparison.base
 
 import com.ivianuu.injekt.comparison.dagger.DaggerTest
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
+import com.ivianuu.injekt.comparison.dagger2.Dagger2TestModules
 import com.ivianuu.injekt.comparison.dagger2reflect.Dagger2ReflectTest
 import com.ivianuu.injekt.comparison.guice.GuiceTest
-import com.ivianuu.injekt.comparison.injekt.InjektTest
 import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
-import com.ivianuu.injekt.comparison.lightsaber.LightsaberTest
 import com.ivianuu.injekt.comparison.magnet.MagnetTest
 import com.ivianuu.injekt.comparison.toothpick.ToothpickTest
 import com.ivianuu.injekt.comparison.winter.WinterTest
@@ -52,12 +51,11 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             DaggerTest,
             Dagger2Test,
             Dagger2ReflectTest,
+            Dagger2TestModules,
             GuiceTest,
-            InjektTest,
             KatanaTest,
             KodeinTest,
             KoinTest,
-            LightsaberTest,
             MagnetTest,
             ToothpickTest,
             WinterTest

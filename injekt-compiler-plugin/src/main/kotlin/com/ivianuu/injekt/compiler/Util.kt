@@ -55,28 +55,12 @@ object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
 
-    val Behavior = FqName("com.ivianuu.injekt.Behavior")
-    val BehaviorMarker = FqName("com.ivianuu.injekt.BehaviorMarker")
-    val BindingProvider = FqName("com.ivianuu.injekt.BindingProvider")
     val Component = FqName("com.ivianuu.injekt.Component")
-    val ComponentBuilder = FqName("com.ivianuu.injekt.ComponentBuilder")
-    val DeclarationName = FqName("com.ivianuu.injekt.internal.DeclarationName")
-    val DuplicateStrategy = FqName("com.ivianuu.injekt.DuplicateStrategy")
-    val GenerateDsl = FqName("com.ivianuu.injekt.GenerateDsl")
-    val Injekt = FqName("com.ivianuu.injekt.Injekt")
-    val Key = FqName("com.ivianuu.injekt.Key")
-    val KeyOverload = FqName("com.ivianuu.injekt.KeyOverload")
-    val KeyOverloadStub = FqName("com.ivianuu.injekt.internal.KeyOverloadStub")
+    val ComponentDsl = FqName("com.ivianuu.injekt.ComponentDsl")
     val Module = FqName("com.ivianuu.injekt.Module")
-    val ModuleMarker = FqName("com.ivianuu.injekt.ModuleMarker")
-    val Param = FqName("com.ivianuu.injekt.Param")
-    val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val QualifierMarker = FqName("com.ivianuu.injekt.QualifierMarker")
-    val Scope = FqName("com.ivianuu.injekt.Scope")
-    val ScopeMarker = FqName("com.ivianuu.injekt.ScopeMarker")
-    val SyntheticAnnotation = FqName("com.ivianuu.injekt.internal.SyntheticAnnotation")
-    val SyntheticAnnotationMarker = FqName("com.ivianuu.injekt.internal.SyntheticAnnotationMarker")
+    val ModuleDsl = FqName("com.ivianuu.injekt.Module")
+    val Provider = FqName("com.ivianuu.injekt.Provider")
+    val ProviderDsl = FqName("com.ivianuu.injekt.ProviderDsl")
 }
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
@@ -161,33 +145,6 @@ fun KotlinType.asTypeName(): TypeName? {
     )
 }
 
-fun AnnotationDescriptor.getPropertyForSyntheticAnnotation(
-    module: ModuleDescriptor
-): PropertyDescriptor {
-    return module.getPackage(fqName!!.parent().parent())
-        .memberScope
-        .getContributedVariables(fqName!!.shortName(), NoLookupLocation.FROM_BACKEND)
-        .single { it.hasAnnotatedAnnotations(InjektClassNames.SyntheticAnnotationMarker) }
-}
-
-fun DeclarationDescriptor.getSyntheticAnnotationPropertiesOfType(
-    type: KotlinType
-): List<PropertyDescriptor> {
-    return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
-        .map { it.getPropertyForSyntheticAnnotation(module) }
-        .filter { it.type.isSubtypeOf(type) }
-}
-
-fun DeclarationDescriptor.getSyntheticAnnotationsForType(
-    type: KotlinType
-): List<AnnotationDescriptor> {
-    return getAnnotatedAnnotations(InjektClassNames.SyntheticAnnotation)
-        .filter {
-            it.getPropertyForSyntheticAnnotation(module)
-                .type.isSubtypeOf(type)
-        }
-}
-
 fun String.removeIllegalChars(): String {
     return replace("<", "")
         .replace(">", "")
@@ -196,5 +153,11 @@ fun String.removeIllegalChars(): String {
         .replace("*", "")
         .replace(".", "")
         .replace("-", "")
+}
 
+fun keyHash(
+    type: KotlinType,
+    qualifierType: KotlinType? = null
+): Int {
+    return type.hashCode() + (qualifierType?.hashCode() ?: 0)
 }
