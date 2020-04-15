@@ -16,10 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.DeclarationName
-import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
-import com.ivianuu.injekt.internal.declarationName
-
 /**
  *
  * A qualifier can help to distinct between bindings of the same type
@@ -84,23 +80,6 @@ interface Qualifier {
         override fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R =
             operation(this, initial)
     }
-}
-
-/**
- * Returns a qualifier which uses [name] for comparisons
- */
-fun Qualifier(@DeclarationName name: Any = declarationName()): Qualifier =
-    DefaultQualifier(name = name)
-
-/**
- * Annotating a [Qualifier] allows to use it as an annotation
- */
-@SyntheticAnnotationMarker
-@Target(AnnotationTarget.PROPERTY)
-annotation class QualifierMarker
-
-private data class DefaultQualifier(val name: Any) : Qualifier.Element {
-    override fun toString(): String = name.toString()
 }
 
 private class CombinedQualifier(

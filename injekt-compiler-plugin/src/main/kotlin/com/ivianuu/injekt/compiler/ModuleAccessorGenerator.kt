@@ -32,7 +32,7 @@ class ModuleAccessorGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.annotations.hasAnnotation(InjektClassNames.ModuleMarker)) {
+                if (declaration.annotations.hasAnnotation(InjektClassNames.Module)) {
                     moduleProperties += declaration
                 }
                 return super.visitProperty(declaration)

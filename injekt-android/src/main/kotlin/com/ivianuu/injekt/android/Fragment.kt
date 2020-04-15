@@ -23,32 +23,33 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
+inline fun <reified T : Fragment> FragmentComponent(
+    instance: T,
+    scope: Scope = FragmentScope,
+    bindingQualifier: Qualifier = ForFragment,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = FragmentComponent(instance, keyOf(), scope, bindingQualifier, block)
+
 inline fun <T : Fragment> FragmentComponent(
     instance: T,
     key: Key<T>,
     scope: Scope = FragmentScope,
     bindingQualifier: Qualifier = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
-): Component =
-    Component {
-        scopes(scope)
-        instance.getClosestComponentOrNull()?.let { parents(it) }
-        fragmentBindings(instance, key, bindingQualifier)
-        block()
-    }
+): Component = Component {
+    scopes(scope)
+    instance.getClosestComponentOrNull()?.let { parents(it) }
+    fragmentBindings(instance, key, bindingQualifier)
+    block()
+}
 
-@KeyOverload
 fun <T : Fragment> ComponentBuilder.fragmentBindings(
     instance: T,
     key: Key<T>,
@@ -69,17 +70,21 @@ fun <T : Fragment> ComponentBuilder.fragmentBindings(
     componentAlias(bindingQualifier)
 }
 
-@ScopeMarker
-val FragmentScope = Scope()
+annotation class FragmentScope {
+    companion object : Scope
+}
 
-@ScopeMarker
-val ChildFragmentScope = Scope()
+annotation class ChildFragmentScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForFragment = Qualifier()
+annotation class ForFragment {
+    companion object : Qualifier.Element
+}
 
-@QualifierMarker
-val ForChildFragment = Qualifier()
+annotation class ForChildFragment {
+    companion object : Qualifier.Element
+}
 
 fun Fragment.getClosestComponentOrNull(): Component? {
     return getParentFragmentComponentOrNull()

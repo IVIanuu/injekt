@@ -31,6 +31,34 @@ package com.ivianuu.injekt
  * assertSame(logger1, logger2) // false
  * ´´´
  */
-@GenerateDsl
-@BehaviorMarker
-val Factory = Behavior()
+annotation class Factory {
+    companion object : Behavior.Element
+}
+
+inline fun <reified T> ComponentBuilder.factory(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    factory(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.factory(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = Factory + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}

@@ -18,20 +18,52 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
-import com.ivianuu.injekt.BehaviorMarker
+import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.GenerateDsl
+import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.keyOf
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
-@GenerateDsl(builderName = "viewModel")
-@BehaviorMarker
-val BindViewModel = InterceptingBehavior {
-    it.copy(provider = ViewModelProvider(it.provider, it.key))
+annotation class BindViewModel {
+    companion object : Behavior by (InterceptingBehavior {
+        it.copy(provider = ViewModelProvider(it.provider, it.key))
+    })
+}
+
+inline fun <reified T> ComponentBuilder.viewModel(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    viewModel(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.viewModel(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = BindViewModel + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
 }
 
 private class ViewModelProvider<T>(

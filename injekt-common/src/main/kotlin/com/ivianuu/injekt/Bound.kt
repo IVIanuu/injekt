@@ -19,14 +19,15 @@ package com.ivianuu.injekt
 /**
  * Ensures instances will be resolved with the [Component] the [Binding] was added to
  */
-@BehaviorMarker
-val Bound = InterceptingBehavior { binding ->
-    val scope = binding.behavior.foldInBehavior(null) { acc: Scope?, element ->
-        acc ?: element as? Scope
-    }
-    val provider = BoundProvider(binding.provider, scope)
-    onBuild { provider.initializeComponentIfNeeded(it) }
-    binding.copy(provider = provider)
+annotation class Bound {
+    companion object : Behavior by (InterceptingBehavior { binding ->
+        val scope = binding.behavior.foldInBehavior(null) { acc: Scope?, element ->
+            acc ?: element as? Scope
+        }
+        val provider = BoundProvider(binding.provider, scope)
+        onBuild { provider.initializeComponentIfNeeded(it) }
+        binding.copy(provider = provider)
+    })
 }
 
 private class BoundProvider<T>(

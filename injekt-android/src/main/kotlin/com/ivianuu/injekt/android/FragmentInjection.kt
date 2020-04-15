@@ -19,29 +19,74 @@ package com.ivianuu.injekt.android
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.ApplicationScope
-import com.ivianuu.injekt.BehaviorMarker
+import com.ivianuu.injekt.Behavior
+import com.ivianuu.injekt.BindingProvider
+import com.ivianuu.injekt.ComponentBuilder
+import com.ivianuu.injekt.DuplicateStrategy
+import com.ivianuu.injekt.Eager
 import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.GenerateDsl
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.ModuleMarker
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.SideEffectBehavior
 import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.bind
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.map
-import com.ivianuu.injekt.synthetic.Factory
 
-@GenerateDsl(
-    generateBuilder = true,
-    builderName = "fragment",
-    generateDelegate = true
-)
-@BehaviorMarker
-val BindFragment = SideEffectBehavior {
-    map<String, Fragment> {
-        put(it.key.classifier.java.name, it.key as Key<out Fragment>)
-    }
-} + Factory
+annotation class BindFragment {
+    companion object : Behavior by (SideEffectBehavior {
+        map<String, Fragment> {
+            put(it.key.classifier.java.name, it.key as Key<out Fragment>)
+        }
+    } + Factory)
+}
+
+inline fun <reified T> ComponentBuilder.fragment(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    fragment(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.fragment(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = BindFragment + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+inline fun <reified T> ComponentBuilder.bindFragment(
+    qualifier: Qualifier = Qualifier.None
+) {
+    bindFragment(key = keyOf<T>(qualifier))
+}
+
+fun <T> ComponentBuilder.bindFragment(key: Key<T>) {
+    alias(
+        originalKey = key,
+        aliasKey = key.copy(qualifier = BindFragmentDelegate),
+        behavior = Eager,
+        duplicateStrategy = DuplicateStrategy.Drop
+    )
+}
+
+private object BindFragmentDelegate : Qualifier.Element
 
 @Factory
 private class InjektFragmentFactory(
@@ -51,7 +96,7 @@ private class InjektFragmentFactory(
         fragments[className]?.invoke() ?: super.instantiate(classLoader, className)
 }
 
-@ModuleMarker
+@Module
 private val FragmentInjectionModule = Module(ApplicationScope) {
     map<String, Fragment>()
     alias<InjektFragmentFactory, FragmentFactory>()

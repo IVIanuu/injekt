@@ -16,10 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.DeclarationName
-import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
-import com.ivianuu.injekt.internal.declarationName
-
 /**
  * Scopes are used to name [Component]s
  * This allows annotation api [Binding]s to be associated with a specific [Component]
@@ -44,24 +40,8 @@ import com.ivianuu.injekt.internal.declarationName
 interface Scope : Behavior.Element, Qualifier.Element
 
 /**
- * Returns a scope which uses [name] for comparisons
+ * Applies the [ModuleImpl] to every [ComponentBuilder]
  */
-fun Scope(@DeclarationName name: Any = declarationName()): Scope = DefaultScope(name)
-
-/**
- * Marker for [Scope]s
- *
- * @see Scope
- */
-@SyntheticAnnotationMarker
-@Target(AnnotationTarget.PROPERTY)
-annotation class ScopeMarker
-
-/**
- * Applies the [Module] to every [ComponentBuilder]
- */
-val AnyScope = Scope()
-
-private data class DefaultScope(val name: Any) : Scope {
-    override fun toString(): String = name.toString()
+annotation class AnyScope {
+    companion object : Scope
 }

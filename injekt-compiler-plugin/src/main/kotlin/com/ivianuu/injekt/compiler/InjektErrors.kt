@@ -34,18 +34,7 @@ interface InjektErrors {
         @JvmField
         val NeedsPrimaryConstructor = error()
         @JvmField
-        val InvalidKeyOverload = error()
-        @JvmField
-        val MustBeABehavior = error()
-
-        @JvmField
         val MustBeAModule = error()
-
-        @JvmField
-        val MustBeAQualifier = error()
-
-        @JvmField
-        val MustBeAScope = error()
         @JvmField
         val MustBeStatic = error()
 
@@ -85,24 +74,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Class needs a primary constructor or the constructor must be annotated"
         )
         map.put(
-            InjektErrors.InvalidKeyOverload,
-            "@KeyOverload function must have at least one key param and a corresponding function type parameter"
-        )
-        map.put(
-            InjektErrors.MustBeABehavior,
-            "@BehaviorMarker declaration must be of type Behavior"
-        )
-        map.put(
             InjektErrors.MustBeAModule,
             "@ModuleMarker declaration must be of type Qualifier"
-        )
-        map.put(
-            InjektErrors.MustBeAQualifier,
-            "@QualifierMarker declaration must be of type Qualifier"
-        )
-        map.put(
-            InjektErrors.MustBeAScope,
-            "@ScopeMarker declaration must be of type Scope"
         )
         map.put(
             InjektErrors.MustBeStatic,

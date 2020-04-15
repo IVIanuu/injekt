@@ -21,29 +21,28 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
+inline fun <reified T : Service> ServiceComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ServiceComponent(instance, keyOf(), block)
+
 inline fun <T : Service> ServiceComponent(
     instance: T,
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
-): Component =
-    Component {
-        scopes(ServiceScope)
-        instance.getClosestComponentOrNull()?.let { parents(it) }
-        serviceBindings(instance, key)
-        block()
-    }
+): Component = Component {
+    scopes(ServiceScope)
+    instance.getClosestComponentOrNull()?.let { parents(it) }
+    serviceBindings(instance, key)
+    block()
+}
 
-@KeyOverload
 fun <T : Service> ComponentBuilder.serviceBindings(
     instance: T,
     key: Key<T>
@@ -54,11 +53,13 @@ fun <T : Service> ComponentBuilder.serviceBindings(
     componentAlias(ForService)
 }
 
-@ScopeMarker
-val ServiceScope = Scope()
+annotation class ServiceScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForService = Qualifier()
+annotation class ForService {
+    companion object : Qualifier.Element
+}
 
 fun Service.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

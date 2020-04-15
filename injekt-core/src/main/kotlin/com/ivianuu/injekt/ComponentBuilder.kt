@@ -302,7 +302,15 @@ class ComponentBuilder {
     }
 }
 
-@KeyOverload
+inline fun <reified T> ComponentBuilder.bind(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    bind(keyOf(qualifier), behavior, duplicateStrategy, provider)
+}
+
 fun <T> ComponentBuilder.bind(
     key: Key<T>,
     behavior: Behavior = Behavior.None,

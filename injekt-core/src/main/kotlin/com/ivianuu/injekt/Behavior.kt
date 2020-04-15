@@ -16,10 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.DeclarationName
-import com.ivianuu.injekt.internal.SyntheticAnnotationMarker
-import com.ivianuu.injekt.internal.declarationName
-
 /**
  * Behavior applies scoping or such to [BindingProvider]s
  */
@@ -53,40 +49,6 @@ interface Behavior {
             operation(this, initial)
     }
 }
-
-/**
- * Returns a [Behavior] which uses [name] for comparisons
- */
-fun Behavior(@DeclarationName name: Any = declarationName()): Behavior = DefaultBehavior(name)
-
-/**
- * Annotating a [Behavior] allows to use it as an annotation
- *
- * For example:
- *
- * ´´´
- * @BehaviorMarker val BindWorker = Behavior()
- *
- * ´´´
- *
- * In dsl:
- *
- * ´´´
- * factory(behavior = BindWorker) { ... }
- *
- * ```
- *
- * And as annotation
- *
- * ´´´
- * @BindWorker
- * class MyWorker
- * ´´´
- *
- */
-@SyntheticAnnotationMarker
-@Target(AnnotationTarget.PROPERTY)
-annotation class BehaviorMarker
 
 private class CombinedBehavior(
     private val element: Behavior.Element,

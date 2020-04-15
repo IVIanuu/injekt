@@ -20,7 +20,6 @@ import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
 import org.junit.Test
-import java.util.UUID
 
 class EagerTest {
 
@@ -51,7 +50,7 @@ class EagerTest {
     @Test
     fun testMultipleBoundEagerBindings() {
         Component {
-            factory(qualifier = Qualifier(UUID.randomUUID())) { get<TestDep3>() }
+            factory(qualifier = object : Qualifier.Element {}) { get<TestDep3>() }
             factory(behavior = Bound + Eager) { TestDep2(get()) }
             factory(behavior = Bound + Eager) { TestDep1() }
         }

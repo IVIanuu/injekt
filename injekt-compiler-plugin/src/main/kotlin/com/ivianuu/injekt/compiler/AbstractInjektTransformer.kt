@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -63,6 +63,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorFactory
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -165,14 +166,11 @@ abstract class AbstractInjektTransformer(
         )
     }
 
-    protected fun IrBuilderWithScope.syntheticAnnotationAccessor(
+    protected fun IrBuilderWithScope.annotationTypeAccessor(
         annotation: AnnotationDescriptor
     ): IrExpression {
-        val declaration =
-            annotation.getPropertyForSyntheticAnnotation(pluginContext.moduleDescriptor)
-        return irCall(
-            symbolTable.referenceSimpleFunction(declaration.getter!!),
-            declaration.type.toIrType()
+        return irGetObject(
+            symbolTable.referenceClass(annotation.annotationClass!!.companionObjectDescriptor!!),
         )
     }
 

@@ -54,7 +54,7 @@ class AggregateGenerator(
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.annotations.hasAnnotation(InjektClassNames.ModuleMarker)) {
+                if (declaration.annotations.hasAnnotation(InjektClassNames.Module)) {
                     thisModuleProperties += declaration
                 }
 

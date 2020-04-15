@@ -18,19 +18,40 @@ package com.ivianuu.injekt
 
 inline fun <reified T> ComponentBuilder.alias(
     aliasQualifier: Qualifier,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
 ) {
-    alias<T, T>(aliasQualifier = aliasQualifier, duplicateStrategy = duplicateStrategy)
+    alias<T, T>(
+        aliasQualifier = aliasQualifier,
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy
+    )
 }
 
 fun <T> ComponentBuilder.alias(
     originalKey: Key<T>,
     aliasQualifier: Qualifier,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
 ) {
     alias(
         originalKey = originalKey,
         aliasKey = originalKey.copy(qualifier = aliasQualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy
+    )
+}
+
+inline fun <reified S, reified T> ComponentBuilder.alias(
+    originalQualifier: Qualifier = Qualifier.None,
+    aliasQualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+) {
+    alias(
+        originalKey = keyOf<S>(originalQualifier),
+        aliasKey = keyOf<T>(aliasQualifier),
+        behavior = behavior,
         duplicateStrategy = duplicateStrategy
     )
 }
@@ -52,14 +73,15 @@ fun <T> ComponentBuilder.alias(
  * ´´´
  *
  */
-@KeyOverload
 fun <S, T> ComponentBuilder.alias(
     originalKey: Key<S>,
     aliasKey: Key<T>,
+    behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
 ) {
     bind(
         key = aliasKey,
+        behavior = behavior,
         duplicateStrategy = duplicateStrategy
     ) { parameters -> get(originalKey, parameters = parameters) as T }
 }

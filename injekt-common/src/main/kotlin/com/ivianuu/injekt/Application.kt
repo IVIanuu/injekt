@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt
 
-@ScopeMarker
-val ApplicationScope = Scope()
+annotation class ApplicationScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForApplication = Qualifier()
+annotation class ForApplication {
+    companion object : Qualifier.Element
+}

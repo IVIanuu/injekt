@@ -7,6 +7,7 @@ class BehaviorTest {
 
     @Test
     fun testContains() {
+        fun Behavior() = object : Behavior.Element {}
         val behaviorA = Behavior()
         val behaviorB = Behavior()
         val behaviorC = Behavior()

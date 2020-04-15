@@ -92,9 +92,14 @@ class Component internal constructor(
     }
 }
 
+inline fun <reified T> Component.get(
+    qualifier: Qualifier = Qualifier.None,
+    parameters: Parameters = emptyParameters()
+): T =
+    get(keyOf(qualifier), parameters)
+
 /**
  * Return a instance of type [T] for [key]
  */
-@KeyOverload
 fun <T> Component.get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
     getBindingProvider(key)(parameters)

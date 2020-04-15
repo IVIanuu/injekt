@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.comparison.fibonacci
 
-import com.ivianuu.injekt.synthetic.Factory
+import com.ivianuu.injekt.Factory
 import magnet.Instance
 import magnet.Scoping
 import javax.inject.Inject

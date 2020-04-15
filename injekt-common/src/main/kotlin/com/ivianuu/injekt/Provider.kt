@@ -30,7 +30,7 @@ fun interface Provider<T> {
     operator fun invoke(): T = invoke(emptyParameters())
 }
 
-@ModuleMarker
+@Module
 private val ProviderModule = Module(AnyScope) {
     jitFactory { _, key ->
         if (key !is Key.ParameterizedKey) return@jitFactory null

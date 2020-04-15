@@ -34,11 +34,39 @@ import java.util.concurrent.ConcurrentHashMap
  * ´´´
  *
  */
-@GenerateDsl
-@BehaviorMarker
-val Multi = InterceptingBehavior {
-    it.copy(provider = MultiProvider(it.provider))
-} + Bound
+annotation class Multi {
+    companion object : Behavior by (InterceptingBehavior {
+        it.copy(provider = MultiProvider(it.provider))
+    } + Bound)
+}
+
+inline fun <reified T> ComponentBuilder.multi(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    multi(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.multi(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = Multi + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
 private class MultiProvider<T>(
     private val wrapped: BindingProvider<T>

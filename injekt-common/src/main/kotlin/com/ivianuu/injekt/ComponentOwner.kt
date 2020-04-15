@@ -24,14 +24,23 @@ interface ComponentOwner {
     val component: Component
 }
 
+inline fun <reified T> ComponentOwner.get(
+    qualifier: Qualifier = Qualifier.None,
+    parameters: Parameters = emptyParameters()
+): T = get(keyOf(qualifier), parameters)
+
 /**
  * @see Component.get
  */
-@KeyOverload
 fun <T> ComponentOwner.get(
     key: Key<T>,
     parameters: Parameters = emptyParameters()
 ): T = component.get(key, parameters)
+
+inline fun <reified T> ComponentOwner.getLazy(
+    qualifier: Qualifier = Qualifier.None,
+    crossinline parameters: () -> Parameters = { emptyParameters() }
+): kotlin.Lazy<T> = getLazy(keyOf(qualifier), parameters)
 
 /**
  * Lazy version of [get]
@@ -42,7 +51,6 @@ fun <T> ComponentOwner.get(
 
  * @see Component.get
  */
-@KeyOverload
 inline fun <T> ComponentOwner.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }

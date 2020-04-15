@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -41,7 +40,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         val callee = expression.symbol.owner
 
-        if (!callee.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub)) return expression
+        if (callee.valueParameters.none { it.type.toKotlinType().constructor.declarationDescriptor == qualifier }) return expression
 
         var keyOverloadFunction: IrFunction? = null
 
@@ -49,8 +48,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (keyOverloadFunction != null) return declaration
                 val otherFunction = declaration.symbol.owner
-                if (otherFunction.annotations.hasAnnotation(InjektClassNames.KeyOverload) &&
-                    (otherFunction.extensionReceiverParameter
+                if ((otherFunction.extensionReceiverParameter
                         ?: otherFunction.dispatchReceiverParameter)?.type == callee.extensionReceiverParameter?.type &&
                     otherFunction.typeParameters.size == callee.typeParameters.size &&
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
@@ -74,8 +72,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
         if (keyOverloadFunction == null) {
             fun MemberScope.findKeyOverloadFunction() = try {
                 findFirstFunction(callee.name.asString()) { otherFunction ->
-                    otherFunction.annotations.hasAnnotation(InjektClassNames.KeyOverload)
-                            && (otherFunction.extensionReceiverParameter
+                    (otherFunction.extensionReceiverParameter
                         ?: otherFunction.dispatchReceiverParameter)?.type == callee.extensionReceiverParameter?.type?.toKotlinType() &&
                             otherFunction.typeParameters.size == callee.typeParameters.size &&
                             otherFunction.valueParameters.size == callee.valueParameters.size &&
@@ -95,9 +92,9 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
             }
 
             keyOverloadFunction =
-                ((callee.descriptor.containingDeclaration as PackageFragmentDescriptor)
-                    .let { pluginContext.moduleDescriptor.getPackage(it.fqName).memberScope }
-                    .findKeyOverloadFunction()
+                ((callee.descriptor.containingDeclaration as? PackageFragmentDescriptor)
+                    ?.let { pluginContext.moduleDescriptor.getPackage(it.fqName).memberScope }
+                    ?.findKeyOverloadFunction()
                     ?: (callee.descriptor.extensionReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
                         ?.unsubstitutedMemberScope?.findKeyOverloadFunction())
                     ?.let { symbolTable.referenceFunction(it) }
@@ -105,9 +102,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                     ?.owner
         }
 
-        checkNotNull(keyOverloadFunction) {
-            "Couldn't find @KeyOverload function for ${callee.dump()}"
-        }
+        if (keyOverloadFunction == null) return expression
 
         val keyOf = injektPackage.memberScope
             .findFirstFunction("keyOf") { it.valueParameters.size == 1 }

@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -41,13 +40,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
-
-        val outputDir = configuration.getNotNull(OutputDirKey)
-
-        AnalysisHandlerExtension.registerExtension(
-            project,
-            InjektElementProcessing(outputDir)
-        )
 
         IrGenerationExtension.registerExtension(
             project,

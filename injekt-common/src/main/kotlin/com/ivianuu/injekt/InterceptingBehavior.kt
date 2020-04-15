@@ -1,8 +1,5 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.DeclarationName
-import com.ivianuu.injekt.internal.declarationName
-
 /**
  * A behavior which allows to modify [Binding]s before they get added to a [ComponentBuilder]
  *
@@ -11,27 +8,10 @@ import com.ivianuu.injekt.internal.declarationName
  * @see Single
  *
  */
-class InterceptingBehavior(
-    @DeclarationName val name: Any = declarationName(),
-    val intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>?
-) : Behavior.Element {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+class InterceptingBehavior(val intercept: ComponentBuilder.(Binding<Any?>) -> Binding<Any?>?) :
+    Behavior.Element
 
-        other as InterceptingBehavior
-
-        if (name != other.name) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = name.hashCode()
-
-    override fun toString(): String = name.toString()
-}
-
-@ModuleMarker
+@Module
 private val InterceptingBehaviorRunnerModule = Module(AnyScope, invokeOnInit = true) {
     bindingInterceptor { binding ->
         binding.behavior.foldInBehavior(binding) { currentBinding: Binding<Any?>?, element ->

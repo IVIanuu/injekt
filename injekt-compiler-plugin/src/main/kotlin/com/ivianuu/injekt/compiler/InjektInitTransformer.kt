@@ -27,7 +27,7 @@ class InjektInitTransformer(
 
     private val aggregatePackage =
         pluginContext.moduleDescriptor.getPackage(FqName("com.ivianuu.injekt.aggregate"))
-    private val module = getClass(InjektClassNames.Module)
+    private val module = getClass(InjektClassNames.ModuleImpl)
     private val injekt = getClass(InjektClassNames.Injekt)
 
     private lateinit var moduleFragment: IrModuleFragment

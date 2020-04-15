@@ -96,10 +96,16 @@ class MultiBindingMapBuilder<K, V> internal constructor() {
 
 }
 
+inline fun <reified K, reified V> ComponentBuilder.map(
+    mapQualifier: Qualifier = Qualifier.None,
+    block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
+) {
+    map(keyOf(mapQualifier), block)
+}
+
 /**
  * Adds a map binding and runs the [block] in the scope of the [MultiBindingMapBuilder] for [mapKey]
  */
-@KeyOverload
 inline fun <K, V> ComponentBuilder.map(
     mapKey: Key<Map<K, V>>,
     block: MultiBindingMapBuilder<K, V>.() -> Unit = {}
@@ -114,7 +120,7 @@ internal fun <K, V> ComponentBuilder.getMapBuilder(mapKey: Key<Map<K, V>>): Mult
         classifier = Map::class,
         arguments = arrayOf(
             mapKey.arguments.first(),
-            keyOf<Entry<K, V>>(qualifier = Qualifier(mapKey))
+            keyOf<Entry<K, V>>(qualifier = mapKey.qualifier)
         ),
         qualifier = mapKey.qualifier
     )

@@ -33,9 +33,6 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             generateSymbols(pluginContext)
         }
 
-        // replace intrinsics with names
-        DeclarationNameIntrinsicTransformer(pluginContext).visitModuleAndGenerateSymbols()
-
         // generate modules for bindings
         BindingModuleGenerator(pluginContext).visitModuleAndGenerateSymbols()
 

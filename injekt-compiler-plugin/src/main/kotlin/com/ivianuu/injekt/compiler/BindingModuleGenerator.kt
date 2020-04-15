@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.FieldDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -53,6 +52,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.impl.IrPropertySymbolImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -70,8 +70,8 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
     private val behavior = getClass(InjektClassNames.Behavior)
     private val component = getClass(InjektClassNames.Component)
-    private val module = getClass(InjektClassNames.Module)
-    private val moduleMarker = getClass(InjektClassNames.ModuleMarker)
+    private val module = getClass(InjektClassNames.ModuleImpl)
+    private val moduleMarker = getClass(InjektClassNames.Module)
     private val parameters = getClass(InjektClassNames.Parameters)
     private val qualifier = getClass(InjektClassNames.Qualifier)
     private val scope = getClass(InjektClassNames.Scope)
@@ -83,7 +83,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.descriptor.getSyntheticAnnotationPropertiesOfType(behavior.defaultType)
+                if (declaration.descriptor.getTypeAnnotationCompanionsOfType(behavior.defaultType)
                         .isNotEmpty()
                 ) {
                     injectables += declaration
@@ -205,9 +205,16 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             putTypeArgument(0, injectable.defaultType)
 
             val qualifiers =
-                injectable.descriptor.getSyntheticAnnotationsForType(qualifier.defaultType)
-                    .map { syntheticAnnotationAccessor(it) }
+                injectable.descriptor.getTypeAnnotationsForType(qualifier.defaultType)
+                    .map { annotationTypeAccessor(it) }
                     .filterNot {
+                        it.type.classOrNull?.let { symbol ->
+                            if (!symbol.isBound) pluginContext.irProviders.forEach {
+                                it.getDeclaration(
+                                    symbol
+                                )
+                            }
+                        }
                         it.type.isSubtypeOfClass(
                             symbolTable.referenceClass(this@BindingModuleGenerator.scope)
                         )
@@ -237,10 +244,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             }
 
             val behaviors =
-                injectable.descriptor.getSyntheticAnnotationsForType(
+                injectable.descriptor.getTypeAnnotationsForType(
                         behavior.defaultType
                     )
-                    .map { syntheticAnnotationAccessor(it) }
+                    .map { annotationTypeAccessor(it) }
 
             if (behaviors.isNotEmpty()) {
                 putValueArgument(
@@ -267,17 +274,8 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
             putValueArgument(
                 2,
-                irCall(
-                    symbolTable.referenceSimpleFunction(
-                        injektPackage.memberScope
-                            .getContributedVariables(
-                                Name.identifier("ApplicationScope"),
-                                NoLookupLocation.FROM_BACKEND
-                            )
-                            .single()
-                            .getter!!
-                    ),
-                    this@BindingModuleGenerator.scope.defaultType.toIrType()
+                irGetObject(
+                    symbolTable.referenceClass(getClass(InjektClassNames.ApplicationScope).companionObjectDescriptor!!)
                 )
             )
 
@@ -322,7 +320,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
     ): IrExpression {
         val componentGet = injektPackage.memberScope
             .findFirstFunction("get") {
-                it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
+                it.valueParameters.firstOrNull()?.name?.asString() == "qualifier" &&
                         it.extensionReceiverParameter?.type == this@BindingModuleGenerator.component.defaultType
             }
 
@@ -361,8 +359,8 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
                             val qualifiers: List<IrExpression> = param
                                 .descriptor
-                                .getSyntheticAnnotationsForType(qualifier.defaultType)
-                                .map { syntheticAnnotationAccessor(it) }
+                                .getTypeAnnotationsForType(qualifier.defaultType)
+                                .map { annotationTypeAccessor(it) }
 
                             if (qualifiers.isNotEmpty()) {
                                 putValueArgument(

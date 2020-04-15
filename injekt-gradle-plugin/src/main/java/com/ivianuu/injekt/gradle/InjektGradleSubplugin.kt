@@ -16,16 +16,14 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.android.build.gradle.BaseExtension
 import com.google.auto.service.AutoService
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.AbstractCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
-import java.io.File
 
 @AutoService(KotlinGradleSubplugin::class)
 open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
@@ -39,45 +37,8 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         javaCompile: AbstractCompile?,
         variantData: Any?,
         androidProjectHandler: Any?,
-        kotlinCompilation: KotlinCompilation<*>?
-    ): List<SubpluginOption> {
-        val sourceSetName = if (variantData != null) {
-            // Lol
-            variantData.javaClass.getMethod("getName").run {
-                isAccessible = true
-                invoke(variantData) as String
-            }
-        } else {
-            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
-            kotlinCompilation.compilationName
-        }
-
-        val outputDir = File(project.buildDir, "generated/source/injekt/$sourceSetName/kotlin")
-        kotlinCompilation?.allKotlinSourceSets?.forEach { sourceSet ->
-            sourceSet.kotlin.srcDir(outputDir)
-            sourceSet.kotlin.exclude { it.file.startsWith(outputDir) }
-        }
-
-        val androidExtension = project.extensions.findByName("android") as? BaseExtension
-        androidExtension?.sourceSets
-            ?.findByName(sourceSetName)
-            ?.java
-            ?.srcDir(outputDir)
-
-        val sets = project.extensions.findByName("sourceSets") as SourceSetContainer
-        sets.findByName(sourceSetName)
-            ?.java
-            ?.srcDir(outputDir)
-
-
-        kotlinCompile.outputs.upToDateWhen { outputDir.exists() }
-
-        return listOf(
-            SubpluginOption(
-                "outputDir", outputDir.absolutePath
-            )
-        )
-    }
+        kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
+    ): List<SubpluginOption> = emptyList()
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 

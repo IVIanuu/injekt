@@ -10,7 +10,7 @@ class SideEffectBehaviorTest {
     @Test
     fun testSideEffectBehavior() {
         var called = false
-        val behavior = SideEffectBehavior("test") {
+        val behavior = SideEffectBehavior {
             called = true
         }
         Component {

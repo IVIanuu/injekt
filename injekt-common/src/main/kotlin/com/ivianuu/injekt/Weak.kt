@@ -21,11 +21,39 @@ import java.lang.ref.WeakReference
 /**
  * Holds instances in a [WeakReference]
  */
-@GenerateDsl
-@BehaviorMarker
-val Weak = InterceptingBehavior {
-    it.copy(provider = WeakProvider(it.provider))
-} + Bound
+annotation class Weak {
+    companion object : Behavior by (InterceptingBehavior {
+        it.copy(provider = WeakProvider(it.provider))
+    } + Bound)
+}
+
+inline fun <reified T> ComponentBuilder.weak(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    weak(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.weak(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = Weak + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
 private class WeakProvider<T>(private val wrapped: BindingProvider<T>) :
         (Component, Parameters) -> T {

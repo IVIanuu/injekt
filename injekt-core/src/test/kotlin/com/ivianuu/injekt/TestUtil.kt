@@ -16,31 +16,37 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.synthetic.TestBehavior
+annotation class ApplicationScope {
+    companion object : Scope
+}
 
-@ScopeMarker
-val ApplicationScope = Scope()
+annotation class TestBehavior {
+    companion object : Behavior.Element
+}
 
-@BehaviorMarker
-val TestBehavior = Behavior()
+annotation class TestQualifier1 {
+    companion object : Qualifier.Element
+}
 
-@QualifierMarker
-val TestQualifier1 = Qualifier()
+annotation class TestQualifier2 {
+    companion object : Qualifier.Element
+}
 
-@QualifierMarker
-val TestQualifier2 = Qualifier()
+annotation class TestQualifier3 {
+    companion object : Qualifier.Element
+}
 
-@QualifierMarker
-val TestQualifier3 = Qualifier()
+annotation class TestScope1 {
+    companion object : Scope
+}
 
-@ScopeMarker
-val TestScope1 = Scope()
+annotation class TestScope2 {
+    companion object : Scope
+}
 
-@ScopeMarker
-val TestScope2 = Scope()
-
-@ScopeMarker
-val TestScope3 = Scope()
+annotation class TestScope3 {
+    companion object : Scope
+}
 
 class TestDep1
 

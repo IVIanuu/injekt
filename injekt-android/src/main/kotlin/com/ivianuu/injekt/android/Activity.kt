@@ -26,17 +26,18 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
+inline fun <reified T : Activity> ActivityComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ActivityComponent(instance, keyOf(), block)
+
 inline fun <T : Activity> ActivityComponent(
     instance: T,
     key: Key<T>,
@@ -48,7 +49,6 @@ inline fun <T : Activity> ActivityComponent(
     block()
 }
 
-@KeyOverload
 fun <T : Activity> ComponentBuilder.activityBindings(
     instance: T,
     key: Key<T>
@@ -71,11 +71,13 @@ fun <T : Activity> ComponentBuilder.activityBindings(
     componentAlias(ForActivity)
 }
 
-@ScopeMarker
-val ActivityScope = Scope()
+annotation class ActivityScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForActivity = Qualifier()
+annotation class ForActivity {
+    companion object : Qualifier.Element
+}
 
 fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

@@ -21,7 +21,7 @@ package com.ivianuu.injekt
  */
 fun interface Lazy<T> : Provider<T>
 
-@ModuleMarker
+@Module
 private val LazyModule = Module(AnyScope) {
     jitFactory { _, key ->
         if (key !is Key.ParameterizedKey) return@jitFactory null

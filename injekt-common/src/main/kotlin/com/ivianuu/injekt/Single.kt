@@ -32,11 +32,39 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
-@GenerateDsl
-@BehaviorMarker
-val Single = InterceptingBehavior {
-    it.copy(provider = SingleProvider(it.provider))
-} + Bound
+annotation class Single {
+    companion object : Behavior by (InterceptingBehavior {
+        it.copy(provider = SingleProvider(it.provider))
+    } + Bound)
+}
+
+inline fun <reified T> ComponentBuilder.single(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    single(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.single(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = Single + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
 
 private class SingleProvider<T>(
     private val wrapped: BindingProvider<T>

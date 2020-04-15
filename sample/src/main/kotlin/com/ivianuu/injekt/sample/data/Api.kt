@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt.sample.data
 
-import com.ivianuu.injekt.sample.data.synthetic.WebApiUrl
-import com.ivianuu.injekt.synthetic.Factory
+import com.ivianuu.injekt.Factory
 
 @Factory
 class Api(@WebApiUrl private val url: String) {

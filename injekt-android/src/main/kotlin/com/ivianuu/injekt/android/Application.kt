@@ -23,24 +23,25 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
+inline fun <reified T : Application> ApplicationComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ApplicationComponent(instance, keyOf(), block)
+
 inline fun <T : Application> ApplicationComponent(
     instance: T,
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
-): Component =
-    Component {
-        scopes(ApplicationScope)
-        applicationBindings(instance, key)
-        block()
-    }
+): Component = Component {
+    scopes(ApplicationScope)
+    applicationBindings(instance, key)
+    block()
+}
 
-@KeyOverload
 fun <T : Application> ComponentBuilder.applicationBindings(
     instance: T,
     key: Key<T>

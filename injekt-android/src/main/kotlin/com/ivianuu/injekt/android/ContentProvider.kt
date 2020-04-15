@@ -21,29 +21,28 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
+inline fun <reified T : ContentProvider> ContentProviderComponent(
+    instance: T,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ContentProviderComponent(instance, keyOf(), block)
+
 inline fun <T : ContentProvider> ContentProviderComponent(
     instance: T,
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
-): Component =
-    Component {
-        scopes(ContentProviderScope)
-        instance.getClosestComponentOrNull()?.let { parents(it) }
-        contentProviderBindings(instance, key)
-        block()
-    }
+): Component = Component {
+    scopes(ContentProviderScope)
+    instance.getClosestComponentOrNull()?.let { parents(it) }
+    contentProviderBindings(instance, key)
+    block()
+}
 
-@KeyOverload
 fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
     instance: T,
     key: Key<T>
@@ -54,11 +53,13 @@ fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
     componentAlias(ForContentProvider)
 }
 
-@ScopeMarker
-val ContentProviderScope = Scope()
+annotation class ContentProviderScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForContentProvider = Qualifier()
+annotation class ForContentProvider {
+    companion object : Qualifier.Element
+}
 
 fun ContentProvider.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

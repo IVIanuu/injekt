@@ -16,10 +16,23 @@
 
 package com.ivianuu.injekt
 
+inline fun <reified T> ComponentBuilder.instance(
+    instance: T,
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+) {
+    instance(
+        instance = instance,
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy
+    )
+}
+
 /**
  * Adds the [instance] as a binding for [key]
  */
-@KeyOverload
 fun <T> ComponentBuilder.instance(
     instance: T,
     key: Key<T>,

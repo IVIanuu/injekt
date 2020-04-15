@@ -122,10 +122,16 @@ class MultiBindingSetBuilder<E> internal constructor() {
     )
 }
 
+inline fun <reified E> ComponentBuilder.set(
+    setQualifier: Qualifier = Qualifier.None,
+    noinline block: MultiBindingSetBuilder<E>.() -> Unit = {}
+) {
+    set(keyOf(setQualifier), block)
+}
+
 /**
  * Adds the set binding and runs the [block] in the scope of the [MultiBindingSetBuilder] for [setKey]
  */
-@KeyOverload
 inline fun <E> ComponentBuilder.set(
     setKey: Key<Set<E>>,
     block: MultiBindingSetBuilder<E>.() -> Unit = {}
@@ -142,7 +148,7 @@ internal fun <E> ComponentBuilder.getSetBuilder(
     val setOfKeyElements = keyOf<Set<Element<E>>>(
         classifier = Set::class,
         arguments = arrayOf(
-            keyOf<Element<E>>(qualifier = Qualifier(setKey))
+            keyOf<Element<E>>(qualifier = setKey.qualifier)
         ),
         qualifier = setKey.qualifier
     )

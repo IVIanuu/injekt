@@ -23,31 +23,33 @@ import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
+inline fun <reified T : View> ViewComponent(
+    instance: T,
+    qualifier: Qualifier = Qualifier.None,
+    scope: Scope = ViewScope,
+    bindingQualifier: Qualifier = ForView,
+    block: ComponentBuilder.() -> Unit = {}
+): Component = ViewComponent(instance, keyOf(qualifier), scope, bindingQualifier, block)
+
 inline fun <T : View> ViewComponent(
     instance: T,
     key: Key<T>,
     scope: Scope = ViewScope,
     bindingQualifier: Qualifier = ForView,
     block: ComponentBuilder.() -> Unit = {}
-): Component =
-    Component {
-        scopes(scope)
-        instance.getClosestComponentOrNull()?.let { parents(it) }
-        viewBindings(instance, key, bindingQualifier)
-        block()
-    }
+): Component = Component {
+    scopes(scope)
+    instance.getClosestComponentOrNull()?.let { parents(it) }
+    viewBindings(instance, key, bindingQualifier)
+    block()
+}
 
-@KeyOverload
 fun <T : View> ComponentBuilder.viewBindings(
     instance: T,
     key: Key<T>,
@@ -65,17 +67,21 @@ fun <T : View> ComponentBuilder.viewBindings(
     componentAlias(bindingQualifier)
 }
 
-@ScopeMarker
-val ViewScope = Scope()
+annotation class ViewScope {
+    companion object : Scope
+}
 
-@ScopeMarker
-val ChildViewScope = Scope()
+annotation class ChildViewScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForView = Qualifier()
+annotation class ForView {
+    companion object : Qualifier.Element
+}
 
-@QualifierMarker
-val ForChildView = Qualifier()
+annotation class ForChildView {
+    companion object : Qualifier.Element
+}
 
 fun View.getClosestComponentOrNull(): Component? {
     return getParentViewComponentOrNull()

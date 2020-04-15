@@ -29,14 +29,59 @@ package com.ivianuu.injekt
  * ´´´
  *
  */
-@GenerateDsl(generateBuilder = true, generateDelegate = true)
-@BehaviorMarker
-val Eager = InterceptingBehavior { binding ->
-    val provider =
-        EagerProvider(binding.provider)
-    onBuild { provider.initializeIfNeeded(it) }
-    binding.copy(provider = provider)
+annotation class Eager {
+    companion object : Behavior by (InterceptingBehavior { binding ->
+        val provider =
+            EagerProvider(binding.provider)
+        onBuild { provider.initializeIfNeeded(it) }
+        binding.copy(provider = provider)
+    })
 }
+
+inline fun <reified T> ComponentBuilder.eager(
+    qualifier: Qualifier = Qualifier.None,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    noinline provider: BindingProvider<T>
+) {
+    eager(
+        key = keyOf(qualifier),
+        behavior = behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+fun <T> ComponentBuilder.eager(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        key = key,
+        behavior = Eager + behavior,
+        duplicateStrategy = duplicateStrategy,
+        provider = provider
+    )
+}
+
+inline fun <reified T> ComponentBuilder.eager(
+    qualifier: Qualifier = Qualifier.None
+) {
+    eager(key = keyOf<T>(qualifier))
+}
+
+fun <T> ComponentBuilder.eager(key: Key<T>) {
+    alias(
+        originalKey = key,
+        aliasKey = key.copy(qualifier = EagerDelegate),
+        behavior = Eager,
+        duplicateStrategy = DuplicateStrategy.Drop
+    )
+}
+
+private object EagerDelegate : Qualifier.Element
 
 private class EagerProvider<T>(
     private val wrapped: BindingProvider<T>

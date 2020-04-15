@@ -14,7 +14,7 @@ package com.ivianuu.injekt
  * ```
  *
  */
-interface Module {
+interface ModuleImpl {
     val scopes: List<Scope> get() = emptyList()
     val invokeOnInit: Boolean get() = false
     operator fun invoke(builder: ComponentBuilder)
@@ -24,19 +24,19 @@ interface Module {
  * Invokes the [apply] function on any matching [Component]
  */
 @Target(AnnotationTarget.PROPERTY)
-annotation class ModuleMarker
+annotation class Module
 
 inline fun Module(
     scope: Scope,
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
-): Module = Module(listOf(scope), invokeOnInit, block)
+): ModuleImpl = Module(listOf(scope), invokeOnInit, block)
 
 inline fun Module(
     scopes: List<Scope>,
     invokeOnInit: Boolean = false,
     crossinline block: ComponentBuilder.() -> Unit
-): Module = object : Module {
+): ModuleImpl = object : ModuleImpl {
     override val scopes: List<Scope> = scopes
     override val invokeOnInit: Boolean = invokeOnInit
     override fun invoke(builder: ComponentBuilder) {
@@ -47,12 +47,12 @@ inline fun Module(
 internal object Modules {
 
     internal val modulesByScope =
-        mutableMapOf<Scope, MutableList<Module>>()
+        mutableMapOf<Scope, MutableList<ModuleImpl>>()
 
-    fun get(scope: Scope): List<Module> =
+    fun get(scope: Scope): List<ModuleImpl> =
         synchronized(modulesByScope) { modulesByScope.getOrElse(scope) { emptyList() } }
 
-    fun register(module: Module) {
+    fun register(module: ModuleImpl) {
         synchronized(modulesByScope) {
             module.scopes.forEach { scope ->
                 modulesByScope.getOrPut(scope) { mutableListOf() }.run {

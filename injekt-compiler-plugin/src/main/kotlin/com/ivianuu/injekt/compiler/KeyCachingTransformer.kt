@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.dump
@@ -175,11 +176,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
         val qualifierExpression = getValueArgument(0)
 
-        if (qualifierExpression != null &&
-            (qualifierExpression !is IrCall ||
-                    qualifierExpression.symbol.ensureBound().owner.propertyIfAccessor.safeAs<IrProperty>()
-                        ?.annotations?.hasAnnotation(InjektClassNames.QualifierMarker) != true)
-        ) return false
+        if (qualifierExpression != null && qualifierExpression !is IrGetObjectValue) return false
 
         return true
     }

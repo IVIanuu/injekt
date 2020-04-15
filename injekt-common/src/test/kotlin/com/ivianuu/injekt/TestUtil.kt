@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.synthetic.Factory
-
 interface Command
 
 object Command1 : Command
@@ -26,23 +24,37 @@ object Command2 : Command
 
 object Command3 : Command
 
-@QualifierMarker
-val TestQualifier1 = Qualifier()
+annotation class ApplicationScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val TestQualifier2 = Qualifier()
+annotation class TestBehavior {
+    companion object : Behavior.Element
+}
 
-@QualifierMarker
-val TestQualifier3 = Qualifier()
+annotation class TestQualifier1 {
+    companion object : Qualifier.Element
+}
 
-@ScopeMarker
-val TestScope1 = Scope()
+annotation class TestQualifier2 {
+    companion object : Qualifier.Element
+}
 
-@ScopeMarker
-val TestScope2 = Scope()
+annotation class TestQualifier3 {
+    companion object : Qualifier.Element
+}
 
-@ScopeMarker
-val TestScope3 = Scope()
+annotation class TestScope1 {
+    companion object : Scope
+}
+
+annotation class TestScope2 {
+    companion object : Scope
+}
+
+annotation class TestScope3 {
+    companion object : Scope
+}
 
 class TestDep1
 

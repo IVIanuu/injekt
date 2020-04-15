@@ -1,6 +1,6 @@
 package com.ivianuu.injekt
 
-@ModuleMarker
+@Module
 private val ComponentModule = Module(scope = AnyScope, invokeOnInit = true) {
     factory(
         behavior = Bound,

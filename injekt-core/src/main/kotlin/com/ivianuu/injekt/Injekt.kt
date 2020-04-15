@@ -29,7 +29,7 @@ object Injekt {
     /**
      * Registers all [modules] and invokes them in matching [ComponentBuilder]s
      */
-    fun modules(vararg modules: Module) {
+    fun modules(vararg modules: ModuleImpl) {
         modules.forEach { Modules.register(it) }
     }
 

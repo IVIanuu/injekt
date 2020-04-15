@@ -22,16 +22,12 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.ScopeMarker
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
-@KeyOverload
 inline fun <T : BroadcastReceiver> ReceiverComponent(
     context: Context,
     instance: T,
@@ -44,7 +40,6 @@ inline fun <T : BroadcastReceiver> ReceiverComponent(
     block()
 }
 
-@KeyOverload
 fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
     context: Context,
     instance: T,
@@ -56,11 +51,13 @@ fun <T : BroadcastReceiver> ComponentBuilder.receiverBindings(
     componentAlias(ForReceiver)
 }
 
-@ScopeMarker
-val ReceiverScope = Scope()
+annotation class ReceiverScope {
+    companion object : Scope
+}
 
-@QualifierMarker
-val ForReceiver = Qualifier()
+annotation class ForReceiver {
+    companion object : Qualifier.Element
+}
 
 fun BroadcastReceiver.getClosestComponentOrNull(context: Context): Component? =
     getApplicationComponentOrNull(context)

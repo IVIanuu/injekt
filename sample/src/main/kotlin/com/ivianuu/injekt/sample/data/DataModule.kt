@@ -19,20 +19,20 @@ package com.ivianuu.injekt.sample.data
 import android.content.Context
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.ModuleMarker
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.QualifierMarker
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.single
 import java.io.File
 
-@QualifierMarker
-val WebApiUrl = Qualifier()
+annotation class WebApiUrl {
+    companion object : Qualifier.Element
+}
 
-@QualifierMarker
-val DatabaseFile = Qualifier()
+annotation class DatabaseFile {
+    companion object : Qualifier.Element
+}
 
-@ModuleMarker
+@Module
 private val DataModule = Module(ApplicationScope) {
     single(qualifier = WebApiUrl) { "https://baseurl/" }
     single(qualifier = DatabaseFile) { File(get<Context>().cacheDir.absolutePath + "/db") }
