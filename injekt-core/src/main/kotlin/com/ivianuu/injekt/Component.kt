@@ -45,13 +45,6 @@ class Component internal constructor(
 ) {
 
     /**
-     * Return a instance of type [T] for [key]
-     */
-    @KeyOverload
-    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
-        getBindingProvider(key)(parameters)
-
-    /**
      * Returns the binding for [key]
      */
     fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> {
@@ -98,3 +91,10 @@ class Component internal constructor(
         private val NullBindingProvider: BindingProvider<Any?> = { null }
     }
 }
+
+/**
+ * Return a instance of type [T] for [key]
+ */
+@KeyOverload
+fun <T> Component.get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+    getBindingProvider(key)(parameters)

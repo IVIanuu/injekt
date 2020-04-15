@@ -73,6 +73,7 @@ class GenerateDslProcessor(
                     file.packageFqName.asString(),
                     "${file.name.removeSuffix(".kt")}GeneratedDsl"
                 )
+                .addImport(InjektClassNames.InjektPackage.asString(), "bind")
                 .apply {
                     behaviors.forEach { behavior ->
                         val annotation = behavior.annotations
@@ -106,6 +107,7 @@ class GenerateDslProcessor(
                                 ?: behavior.name.asString().decapitalize()
 
                         if (generateDelegate) {
+                            addImport(InjektClassNames.InjektPackage.asString(), "get")
                             addFunction(keyOverloadStubDelegate(behavior, delegateName))
                             addFunction(keyOverloadDelegate(behavior, delegateName))
                             addProperty(delegateQualifierProperty(behavior))

@@ -91,7 +91,7 @@ abstract class AbstractInjektTransformer(
         any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
 
     protected fun <T : IrSymbol> T.ensureBound(): T {
-        if (!this.isBound) pluginContext.irProvider.getDeclaration(this)
+        if (!this.isBound) pluginContext.irProviders.forEach { it.getDeclaration(this) }
         check(this.isBound) { "$this is not bound" }
         return this
     }

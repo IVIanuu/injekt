@@ -6,6 +6,7 @@ import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.KeyOverload
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.bind
 
 /* Used in codegen */
 @KeyOverload

@@ -138,23 +138,6 @@ class ComponentBuilder {
         jitFactories = jitFactories - factory
     }
 
-    @KeyOverload
-    fun <T> bind(
-        key: Key<T>,
-        behavior: Behavior = Behavior.None,
-        duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-        provider: BindingProvider<T>
-    ) {
-        bind(
-            Binding(
-                key = key,
-                behavior = behavior,
-                duplicateStrategy = duplicateStrategy,
-                provider = provider
-            )
-        )
-    }
-
     /**
      * Adds the [binding] which can be retrieved by [Binding.key]
      */
@@ -317,4 +300,21 @@ class ComponentBuilder {
         parents.forEach { it.collectBindings(bindings) }
         bindings += this.bindings
     }
+}
+
+@KeyOverload
+fun <T> ComponentBuilder.bind(
+    key: Key<T>,
+    behavior: Behavior = Behavior.None,
+    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
+    provider: BindingProvider<T>
+) {
+    bind(
+        Binding(
+            key = key,
+            behavior = behavior,
+            duplicateStrategy = duplicateStrategy,
+            provider = provider
+        )
+    )
 }

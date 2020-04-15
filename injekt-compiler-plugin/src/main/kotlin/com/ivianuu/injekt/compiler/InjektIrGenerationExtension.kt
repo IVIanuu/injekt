@@ -91,7 +91,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
                 }
                 // Symbol could get bound as a side effect of deserializing other symbols.
                 if (!symbol.isBound) {
-                    pluginContext.irProvider.getDeclaration(symbol)
+                    pluginContext.irProviders.forEach { it.getDeclaration(symbol) }
                 }
                 if (!symbol.isBound) {
                     visited.add(symbol)
