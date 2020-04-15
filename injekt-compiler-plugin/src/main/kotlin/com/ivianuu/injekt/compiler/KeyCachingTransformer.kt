@@ -45,12 +45,12 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         val keyName = Name.identifier(
             "key${
             type.toKotlinType().toString()
-                .removeIllegalChars()
-                .plus(qualifier?.asString()?.removeIllegalChars().orEmpty())
+                .removeIllegalClassNameChars()
+                .plus(qualifier?.asString()?.removeIllegalClassNameChars().orEmpty())
                 .decapitalize()
                 .hashCode()
                 .toString()
-                .removeIllegalChars()
+                .removeIllegalClassNameChars()
             }"
         )
     }

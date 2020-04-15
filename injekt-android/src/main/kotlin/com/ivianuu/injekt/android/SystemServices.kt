@@ -79,7 +79,7 @@ import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.ModuleMarker
-import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.bind
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
@@ -88,7 +88,8 @@ import kotlin.reflect.KClass
 private val SystemServicesModule = Module(ApplicationScope) {
     getSystemServicesClasses()
         .forEach { serviceClass ->
-            factory(key = keyOf(serviceClass)) {
+            // todo use factory
+            bind(key = keyOf(serviceClass)) {
                 ContextCompat.getSystemService(get(), serviceClass.java)!!
             }
         }

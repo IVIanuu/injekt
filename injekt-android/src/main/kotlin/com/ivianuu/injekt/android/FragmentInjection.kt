@@ -17,19 +17,12 @@
 package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentFactory
-import com.ivianuu.injekt.ApplicationScope
 import com.ivianuu.injekt.BehaviorMarker
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.GenerateDsl
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.ModuleMarker
-import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.SideEffectBehavior
-import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.map
-import com.ivianuu.injekt.synthetic.Factory
 
 @GenerateDsl(
     generateBuilder = true,
@@ -43,16 +36,3 @@ val BindFragment = SideEffectBehavior {
     }
 } + Factory
 
-@Factory
-private class InjektFragmentFactory(
-    private val fragments: Map<String, Provider<Fragment>>
-) : FragmentFactory() {
-    override fun instantiate(classLoader: ClassLoader, className: String): Fragment =
-        fragments[className]?.invoke() ?: super.instantiate(classLoader, className)
-}
-
-@ModuleMarker
-private val FragmentInjectionModule = Module(ApplicationScope) {
-    map<String, Fragment>()
-    alias<InjektFragmentFactory, FragmentFactory>()
-}

@@ -55,7 +55,6 @@ object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
 
-    val AbstractBindingProvider = FqName("com.ivianuu.injekt.AbstractBindingProvider")
     val Behavior = FqName("com.ivianuu.injekt.Behavior")
     val BehaviorMarker = FqName("com.ivianuu.injekt.BehaviorMarker")
     val BindingDefinition = FqName("com.ivianuu.injekt.BindingDefinition")
@@ -194,7 +193,7 @@ fun DeclarationDescriptor.getSyntheticAnnotationsForType(
         }
 }
 
-fun String.removeIllegalChars(): String {
+fun String.removeIllegalClassNameChars(): String {
     return replace("<", "")
         .replace(">", "")
         .replace(" ", "")

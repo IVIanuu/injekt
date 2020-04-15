@@ -162,7 +162,9 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             Modality.FINAL,
             Visibilities.PRIVATE,
             false,
-            Name.identifier("${injectable.descriptor.name.asString().removeIllegalChars()}Module"),
+            Name.identifier(
+                "${injectable.descriptor.name.asString().removeIllegalClassNameChars()}Module"
+            ),
             CallableMemberDescriptor.Kind.DECLARATION,
             SourceElement.NO_SOURCE,
             false,
@@ -308,7 +310,7 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
             } else {
                 injectableConstructorCall(
                     injectable.primaryConstructor!!,
-                    component = { irGet(lambdaFn.valueParameters[0]) },
+                    providerContext = { irGet(lambdaFn.valueParameters[0]) },
                     parameters = { irGet(lambdaFn.valueParameters[1]) }
                 )
             })
@@ -317,10 +319,10 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
 
     private fun IrBuilderWithScope.injectableConstructorCall(
         function: IrFunction,
-        component: () -> IrExpression,
+        providerContext: () -> IrExpression,
         parameters: () -> IrExpression
     ): IrExpression {
-        val componentGet = injektPackage.memberScope
+        val providerContextGet = injektPackage.memberScope
             .findFirstFunction("get") {
                 it.annotations.hasAnnotation(InjektClassNames.KeyOverloadStub) &&
                         it.extensionReceiverParameter?.type == this@BindingModuleGenerator.providerContext.defaultType
@@ -352,11 +354,11 @@ class BindingModuleGenerator(pluginContext: IrPluginContext) :
                     } else {
                         irCall(
                             symbolTable.referenceSimpleFunction(
-                                componentGet
+                                providerContextGet
                             ),
                             param.type
                         ).apply {
-                            extensionReceiver = component()
+                            extensionReceiver = providerContext()
                             putTypeArgument(0, param.type)
 
                             val qualifiers: List<IrExpression> = param

@@ -43,8 +43,7 @@ interface BindingProvider<T> {
     fun link(linker: Linker) {
     }
 
-    operator fun invoke(parameters: Parameters): T
-    operator fun invoke(): T = invoke(emptyParameters())
+    operator fun invoke(parameters: Parameters = emptyParameters()): T
 }
 
 class KeyedBindingProvider<T>(val key: Key<T>) : BindingProvider<T> {

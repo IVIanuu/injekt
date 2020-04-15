@@ -2,7 +2,7 @@ package com.ivianuu.injekt
 
 @ModuleMarker
 private val ComponentModule = Module(scope = AnyScope, invokeOnInit = true) {
-    factory(
+    /*factory(
         behavior = Bound,
         duplicateStrategy = DuplicateStrategy.Override
     ) { this }
@@ -13,5 +13,5 @@ private val ComponentModule = Module(scope = AnyScope, invokeOnInit = true) {
             behavior = Bound,
             duplicateStrategy = DuplicateStrategy.Override
         ) { this }
-    }
+    }*/
 }
