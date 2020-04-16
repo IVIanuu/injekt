@@ -48,6 +48,9 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             pluginContext,
             bindingTrace
         ).visitModuleAndGenerateSymbols()
+
+        // transform component.get<String>() to component.get("java.lang.String")
+        ComponentGetTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>
