@@ -80,8 +80,6 @@ abstract class AbstractInjektTransformer(
 
     protected val injektPackage =
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
-    protected val injektInternalPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
 
     protected fun getTopLevelClass(fqName: FqName) =
         pluginContext.moduleDescriptor.getTopLevelClass(fqName)!!
