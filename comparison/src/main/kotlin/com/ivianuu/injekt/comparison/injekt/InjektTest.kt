@@ -1,17 +1,49 @@
-/*
- * Copyright 2020 Manuel Wrage
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.ivianuu.injekt.comparison.injekt
+
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDsl
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib1
+import com.ivianuu.injekt.comparison.fibonacci.Fib2
+import com.ivianuu.injekt.comparison.fibonacci.Fib3
+import com.ivianuu.injekt.comparison.fibonacci.Fib4
+import com.ivianuu.injekt.comparison.fibonacci.Fib5
+import com.ivianuu.injekt.comparison.fibonacci.Fib6
+import com.ivianuu.injekt.comparison.fibonacci.Fib7
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import com.ivianuu.injekt.get
+
+object InjektTest : InjectionTest {
+
+    override val name = "Injekt"
+
+    private var component: Component? = null
+
+    override fun setup() {
+        component = Component("injekt_test") {
+            fibModule()
+        }
+    }
+
+    override fun inject() {
+        component!!.get<Fib8>()
+    }
+
+    override fun shutdown() {
+
+    }
+
+}
+
+@Module
+private fun ComponentDsl.fibModule() {
+    factory { Fib1() }
+    factory { Fib2() }
+    factory { Fib3(get(), get()) }
+    factory { Fib4(get(), get()) }
+    factory { Fib5(get(), get()) }
+    factory { Fib6(get(), get()) }
+    factory { Fib7(get(), get()) }
+    factory { Fib8(get(), get()) }
+}

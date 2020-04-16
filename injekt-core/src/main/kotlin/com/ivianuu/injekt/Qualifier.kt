@@ -1,9 +1,8 @@
 package com.ivianuu.injekt
 
-interface Qualifier {
-    fun plus(qualifier: Qualifier): Qualifier = stub()
-}
+import com.ivianuu.injekt.internal.stub
 
-annotation class ExampleQualifier {
-    companion object : Qualifier
+interface Qualifier {
+    operator fun plus(qualifier: Qualifier): Qualifier =
+        stub()
 }

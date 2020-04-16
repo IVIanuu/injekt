@@ -23,17 +23,31 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        val bindingTrace = DelegatingBindingTrace(
+            pluginContext.bindingContext, "trace in " +
+                    "ComposeIrGenerationExtension"
+        )
+
         fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
             generateSymbols(pluginContext)
             visitModuleFragment(moduleFragment, null)
             generateSymbols(pluginContext)
         }
 
+        // transform all @Module fun ComponentDsl.module() { ... } to classes
         ModuleTransformer(pluginContext).visitModuleAndGenerateSymbols()
+
+        // transform all Component { ... } calls to a Component implementation
+        ComponentTransformer(
+            project,
+            pluginContext,
+            bindingTrace
+        ).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>

@@ -30,5 +30,4 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 dependencies {
     implementation(Deps.AndroidX.appCompat)
     implementation(project(":injekt-core"))
-    implementation(project(":injekt-android"))
 }

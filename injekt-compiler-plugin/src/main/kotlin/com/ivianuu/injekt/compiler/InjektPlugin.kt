@@ -22,13 +22,9 @@ import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
 import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOption
-import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.CompilerConfigurationKey
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -36,10 +32,13 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        //StorageComponentContainerContributor.registerExtension(project, InjektStorageComponentContainerContributorExtension())
-
         messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
             ?: PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, true)
+
+        TypeResolutionInterceptor.registerExtension(
+            project,
+            InjektTypeResolutionInterceptorExtension()
+        )
 
         IrGenerationExtension.registerExtension(
             project,

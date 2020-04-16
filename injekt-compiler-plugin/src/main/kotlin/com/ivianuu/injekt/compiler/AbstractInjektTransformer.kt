@@ -31,16 +31,14 @@ import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -57,13 +55,13 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.DescriptorFactory
-import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -82,9 +80,11 @@ abstract class AbstractInjektTransformer(
 
     protected val injektPackage =
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
+    protected val injektInternalPackage =
+        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
 
-    protected fun getClass(fqName: FqName) =
-        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
+    protected fun getTopLevelClass(fqName: FqName) =
+        pluginContext.moduleDescriptor.getTopLevelClass(fqName)!!
 
     protected fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
         any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
@@ -215,6 +215,16 @@ abstract class AbstractInjektTransformer(
             isExpect = false
             isActual = false
         }
+    }
+
+    fun IrBuilderWithScope.irInjektStubUnit(): IrExpression {
+        return irCall(
+            symbolTable.referenceFunction(
+                injektInternalPackage.memberScope
+                    .findFirstFunction("stub") { it.typeParameters.isEmpty() }
+            ),
+            pluginContext.irBuiltIns.unitType
+        )
     }
 
 }

@@ -55,22 +55,18 @@ object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
 
-    val ApplicationScope = FqName("com.ivianuu.injekt.ApplicationScope")
-    val Behavior = FqName("com.ivianuu.injekt.Behavior")
     val Component = FqName("com.ivianuu.injekt.Component")
-    val Injekt = FqName("com.ivianuu.injekt.Injekt")
-    val Key = FqName("com.ivianuu.injekt.Key")
     val ComponentDsl = FqName("com.ivianuu.injekt.ComponentDsl")
-    val Module = FqName("com.ivianuu.injekt.Module")
-    val ModuleImpl = FqName("com.ivianuu.injekt.ModuleImpl")
-    val Param = FqName("com.ivianuu.injekt.Param")
-    val Parameters = FqName("com.ivianuu.injekt.Parameters")
+    val ComponentMetadata = FqName("com.ivianuu.injekt.internal.ComponentMetadata")
     val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val Scope = FqName("com.ivianuu.injekt.Scope")
-    val ModuleDsl = FqName("com.ivianuu.injekt.Module")
+    val Module = FqName("com.ivianuu.injekt.Module")
+    val ModuleMetadata = FqName("com.ivianuu.injekt.internal.ModuleMetadata")
     val Provider = FqName("com.ivianuu.injekt.Provider")
     val ProviderDsl = FqName("com.ivianuu.injekt.ProviderDsl")
 }
+
+fun ModuleDescriptor.getTopLevelClass(fqName: FqName) =
+    findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -185,11 +181,4 @@ fun String.removeIllegalChars(): String {
         .replace("*", "")
         .replace(".", "")
         .replace("-", "")
-}
-
-fun keyHash(
-    type: KotlinType,
-    qualifierType: KotlinType? = null
-): Int {
-    return type.hashCode() + (qualifierType?.hashCode() ?: 0)
 }
