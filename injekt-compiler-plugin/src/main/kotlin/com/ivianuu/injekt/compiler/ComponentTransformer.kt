@@ -59,6 +59,7 @@ import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -396,6 +397,7 @@ class ComponentTransformer(
             }
 
             annotations += componentMetadata(
+                graph.allScopes,
                 graph.allBindings,
                 providerFields
             )
@@ -452,6 +454,7 @@ class ComponentTransformer(
     }
 
     private fun IrBuilderWithScope.componentMetadata(
+        scopes: List<FqName>,
         bindings: Map<Key, Binding>,
         providers: Map<Binding, IrField>
     ): IrConstructorCall {
@@ -460,9 +463,22 @@ class ComponentTransformer(
                 .ensureBound(pluginContext.irProviders),
             emptyList()
         ).apply {
-            // binding keys
+            // scopes
             putValueArgument(
                 0,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    scopes.map { irString(it.asString()) }
+                )
+            )
+
+            // binding keys
+            putValueArgument(
+                1,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -480,7 +496,7 @@ class ComponentTransformer(
             )
             // binding providers
             putValueArgument(
-                1,
+                2,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,

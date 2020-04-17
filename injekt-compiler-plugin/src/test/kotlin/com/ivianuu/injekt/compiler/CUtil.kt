@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Scope
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
@@ -83,3 +84,9 @@ fun KotlinCompilation.Result.assertInternalError(
 class Foo
 
 class Bar(foo: Foo)
+
+@Scope
+annotation class TestScope
+
+@Scope
+annotation class TestScope2

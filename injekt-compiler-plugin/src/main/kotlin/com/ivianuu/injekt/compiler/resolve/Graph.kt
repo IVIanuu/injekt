@@ -29,6 +29,8 @@ class Graph(
     private val declarationStore: InjektDeclarationStore
 ) {
 
+    val allScopes = mutableListOf<FqName>()
+
     val allBindings = mutableMapOf<Key, Binding>()
 
     private val allModules = mutableListOf<ModuleWithAccessor>()
@@ -36,6 +38,7 @@ class Graph(
 
     init {
         collectModules()
+        collectScopes()
         collectParents()
         collectBindings()
         validate()
@@ -72,6 +75,18 @@ class Graph(
         }
     }
 
+    private fun collectScopes() {
+        allModules.forEach { moduleWithAccessor ->
+            val module = moduleWithAccessor.module
+            val metadata = module.descriptor.annotations.single {
+                it.fqName == InjektClassNames.ModuleMetadata
+            }
+
+            val scopes = metadata.getStringList("scopes")
+            scopes.forEach { addScope(FqName(it)) }
+        }
+    }
+
     private fun collectParents() {
         allModules.forEach { moduleWithAccessor ->
             val module = moduleWithAccessor.module
@@ -84,7 +99,7 @@ class Graph(
 
             val parentsForModule = parentsKeys.zip(parentNames) { key, fieldName ->
                 val component = declarationStore.getComponent(key)
-                ComponentWithAccessor(component) {
+                ComponentWithAccessor(key, component) {
                     DeclarationIrBuilder(context, component.symbol).run {
                         irGetField(
                             moduleWithAccessor.accessor(),
@@ -98,8 +113,16 @@ class Graph(
         }
     }
 
+    private fun addScope(scope: FqName) {
+        check(!allScopes.contains(scope)) {
+            "Duplicated scope $scope"
+        }
+
+        allScopes += scope
+    }
+
     private fun addParent(parent: ComponentWithAccessor) {
-        check(!allParents.contains(parent)) {
+        check(allParents.none { it.key == parent.key }) {
             "Duplicated parent $parent"
         }
 

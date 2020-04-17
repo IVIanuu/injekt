@@ -161,6 +161,7 @@ class ModuleTransformer(
 
                     when {
                         expression.symbol.descriptor.name.asString() == "scope" -> {
+                            scopeCalls += expression
                         }
                         expression.symbol.descriptor.name.asString() == "parent" -> {
                             parentCalls += expression
@@ -186,11 +187,27 @@ class ModuleTransformer(
                 }
             })
 
-            val scopes = scopeCalls.map { FqName.ROOT }
+            val scopes = mutableListOf<FqName>()
 
-            val parentsByCalls = parentCalls.associateWith {
+            scopeCalls.forEach {
+                val fqName = it.getTypeArgument(0)!!
+                    .toKotlinType().constructor.declarationDescriptor!!.fqNameSafe
+                check(fqName !in scopes) {
+                    "Duplicated scope $fqName"
+                }
+
+                scopes += fqName
+            }
+
+            val parentsByCalls = mutableMapOf<IrCall, IrClass>()
+            val parentKeys = mutableSetOf<String>()
+
+            parentCalls.forEach {
                 val key = (it.getValueArgument(0) as IrConst<String>).value
-                declarationStore.getComponent(key)
+                check(key !in parentKeys) {
+                    "Duplicated parent $key"
+                }
+                parentsByCalls[it] = declarationStore.getComponent(key)
             }
 
             val parentFields = parentsByCalls.values.toList().associateWith {
@@ -201,9 +218,16 @@ class ModuleTransformer(
                 )
             }
 
-            val modulesByCalls = moduleCalls.associateWith {
+            val modulesByCalls = mutableMapOf<IrCall, IrClass>()
+            val moduleFqNames = mutableSetOf<FqName>()
+
+            moduleCalls.forEach {
                 val moduleFqName = getModuleName(it.symbol.descriptor)
-                declarationStore.getModule(moduleFqName)
+                check(moduleFqName !in moduleFqNames) {
+                    "Duplicated module $moduleFqName"
+                }
+                modulesByCalls[it] = declarationStore.getModule(moduleFqName)
+                moduleFqNames += moduleFqName
             }
 
             val modulesFields = modulesByCalls.values.toList().associateWith {

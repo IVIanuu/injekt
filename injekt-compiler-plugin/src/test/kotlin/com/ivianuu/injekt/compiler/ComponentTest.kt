@@ -70,7 +70,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedBinding() = codegenTest(
+    fun testDuplicatedBindingFails() = codegenTest(
         """
         val MyComponent = Component("c") {
             factory { "a" }
@@ -82,7 +82,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testMissingBinding() = codegenTest(
+    fun testMissingBindingFails() = codegenTest(
         """
         val MyComponent = Component("c") {
             factory<String> { get<Int>(); "" }
@@ -90,6 +90,70 @@ class ComponentTest {
     """
     ) {
         assertInternalError("missing")
+    }
+
+    @Test
+    fun testDuplicatedScopeFails() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            scope<TestScope>()
+            scope<TestScope>()
+        }
+    """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    @Test
+    fun testMultipleScopes() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            scope<TestScope>()
+            scope<TestScope2>()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+
+    @Test
+    fun testDuplicatedParentFails() = codegenTest(
+        """
+            val ParentComponent = Component("p") {} 
+            
+            val MyComponent = Component("c") {
+                moduleA()
+                moduleB()
+            }
+            
+            @Module
+            fun moduleA() {
+                parent("p", ParentComponent)
+            }
+            
+            @Module
+            fun moduleB() {
+                parent("p", ParentComponent)
+            }
+    """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    @Test
+    fun testMultipleParents() = codegenTest(
+        """
+            val ParentComponentA = Component("a") {} 
+            val ParentComponentB = Component("b") {} 
+
+            val MyComponent = Component("c") {
+                parent("a", ParentComponentA)
+                parent("b", ParentComponentB)
+            }
+    """
+    ) {
+        assertOk()
     }
 
     @Test
@@ -183,6 +247,17 @@ class ComponentTest {
             component.get<Foo>("com.ivianuu.injekt.compiler.Foo"),
             component.get<Foo>("com.ivianuu.injekt.compiler.Foo")
         )
+    }
+
+    @Test
+    fun testWithScope() = codegenTest(
+        """
+            val MyComponent = Component("c") {
+                scope<TestScope>()
+                }
+                """
+    ) {
+        assertOk()
     }
 
     /*@Test

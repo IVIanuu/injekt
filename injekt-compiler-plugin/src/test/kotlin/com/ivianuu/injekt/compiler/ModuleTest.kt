@@ -108,6 +108,117 @@ class ModuleTest {
     }
 
     @Test
+    fun testMultipleParents() = codegenTest(
+        """
+            val parentA = Component("a") {
+            }
+            val parentB = Component("b") {
+            }
+            
+            @Module
+            fun module() {
+                parent("a", parentA)
+                parent("b", parentB)
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testDuplicatedParentsFails() = codegenTest(
+        """
+            val parent = Component("parent") { }
+            @Module
+            fun module() {
+                parent("parent", parent)
+                parent("parent", parent)
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testWithScope() = codegenTest(
+        """
+            @Module
+            fun module() {
+                scope<TestScope>()
+            }
+            """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testMultipleScopes() = codegenTest(
+        """
+            @Module
+            fun module() {
+                scope<TestScope>()
+                scope<TestScope2>()
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testDuplicatedScopesFails() = codegenTest(
+        """
+            @Module
+            fun module() {
+                scope<TestScope>()
+                scope<TestScope>()
+            }
+        """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    @Test
+    fun testInclude() = codegenTest(
+        """
+            @Module
+            fun module() {
+                scope<TestScope>()
+            }
+            """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testMultipleIncludes() = codegenTest(
+        """
+            @Module fun includeA() {}
+            @Module fun includeB() {}
+            @Module
+            fun module() {
+                includeA()
+                includeB()
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testDuplicatedInclude() = codegenTest(
+        """
+            @Module fun include() {}
+            @Module
+            fun module() {
+                include()
+                include()
+            }
+        """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    @Test
     fun testCircularModuleDependency() = codegenTest(
         """
             @Module
