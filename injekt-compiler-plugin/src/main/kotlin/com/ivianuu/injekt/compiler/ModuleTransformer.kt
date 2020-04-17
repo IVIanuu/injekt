@@ -30,12 +30,11 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -45,7 +44,11 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -56,23 +59,22 @@ import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
+class ModuleTransformer(
+    pluginContext: IrPluginContext,
+    private val moduleStore: ModuleStore
+) : AbstractInjektTransformer(pluginContext) {
 
     private val moduleMetadata = getTopLevelClass(InjektClassNames.ModuleMetadata)
     private val provider = getTopLevelClass(InjektClassNames.Provider)
     private val providerDsl = getTopLevelClass(InjektClassNames.ProviderDsl)
 
-    override fun visitFile(declaration: IrFile): IrFile {
-        super.visitFile(declaration)
+    private val moduleFunctions = mutableListOf<IrFunction>()
+    private val processedModules = mutableMapOf<IrFunction, IrClass>()
 
-        val moduleFunctions = mutableListOf<IrFunction>()
-
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val parent = declaration.parent as? IrClass
-                if (declaration.annotations.hasAnnotation(InjektClassNames.Module) ||
-                    (parent != null && parent.annotations.hasAnnotation(InjektClassNames.Module))
-                ) {
+                if (declaration.annotations.hasAnnotation(InjektClassNames.Module)) {
                     moduleFunctions += declaration
                 }
 
@@ -80,22 +82,25 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             }
         })
 
-        moduleFunctions.forEach { moduleFunction ->
-            DeclarationIrBuilder(pluginContext, moduleFunction.symbol).run {
-                declaration.addChild(moduleClass(moduleFunction))
-                moduleFunction.body = irExprBody(irInjektStubUnit())
+        moduleFunctions.forEach { function ->
+            DeclarationIrBuilder(pluginContext, function.symbol).run {
+                getProcessedModule(function)
             }
         }
 
-        if (declaration is IrFileImpl) {
-            declaration.metadata = MetadataSource.File(
-                declaration
-                    .declarations
-                    .map { it.descriptor }
-            )
-        }
+        return super.visitModuleFragment(declaration)
+    }
 
-        return declaration
+    private fun IrBuilderWithScope.getProcessedModule(function: IrFunction): IrClass {
+        check(function in moduleFunctions) {
+            "Unknown function $function"
+        }
+        processedModules[function]?.let { return it }
+        val moduleClass = moduleClass(function)
+        function.file.addChild(moduleClass)
+        function.body = irExprBody(irInjektStubUnit())
+        processedModules[function] = moduleClass
+        return moduleClass
     }
 
     private fun IrBuilderWithScope.moduleClass(
@@ -103,12 +108,52 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
     ): IrClass {
         return buildClass {
             kind = ClassKind.CLASS
-            origin = InjektOrigin
+            origin = InjektDeclarationOrigin
             name = Name.identifier(function.name.asString() + "\$Impl")
             modality = Modality.FINAL
             visibility = function.visibility
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            val definitionCalls = mutableListOf<IrCall>()
+            val moduleCalls = mutableListOf<IrCall>()
+
+            function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitCall(expression: IrCall): IrExpression {
+                    super.visitCall(expression)
+
+                    if (expression.symbol.descriptor.name.asString() == "factory") {
+                        definitionCalls += expression
+                    } else if (expression.symbol.descriptor.annotations.hasAnnotation(
+                            InjektClassNames.Module
+                        )
+                    ) {
+                        moduleCalls += expression
+                    }
+
+                    return expression
+                }
+            })
+
+            val modulesByCalls = moduleCalls.associateWith {
+                val moduleFqName =
+                    it.symbol.owner.fqNameForIrSerialization
+                        .parent()
+                        .child(Name.identifier("${it.symbol.owner.name}\$Impl"))
+                try {
+                    moduleStore.getModule(moduleFqName)
+                } catch (e: Exception) {
+                    getProcessedModule(it.symbol.owner)
+                }
+            }
+
+            val modulesFields = modulesByCalls.values.toList().associateWith {
+                addField(
+                    it.name.asString(),
+                    it.defaultType,
+                    Visibilities.PUBLIC
+                )
+            }
 
             var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
             var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
@@ -146,26 +191,25 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     )
 
                     fieldsByParameters.forEach { (parameter, field) ->
-                        irSetField(
+                        +irSetField(
                             irGet(thisReceiver!!),
                             field,
                             irGet(parameter)
                         )
                     }
+
+                    modulesByCalls.forEach { (call, module) ->
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            modulesFields.getValue(module),
+                            irCall(module.constructors.single()).apply {
+                                copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                                extensionReceiver = null
+                            }
+                        )
+                    }
                 }
             }
-
-            val definitionCalls = mutableListOf<IrCall>()
-            function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitCall(expression: IrCall): IrExpression {
-                    super.visitCall(expression)
-
-                    if (expression.symbol.descriptor.name.asString() == "factory") {
-                        definitionCalls += expression
-                    }
-                    return expression
-                }
-            })
 
             val providerByDefinitionCall = mutableMapOf<IrCall, IrClass>()
 
@@ -175,52 +219,115 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                         name = Name.identifier("provider_$index"),
                         definition = definitionCall.getValueArgument(1)!!.cast(),
                         module = this,
-                        moduleParametersMap = parameterMap,
-                        moduleFieldsByParameter = fieldsByParameters
+                        moduleParametersMap = parameterMap
                     ).also { providerByDefinitionCall[definitionCall] = it }
                 )
             }
 
-            annotations += irCallConstructor(
-                symbolTable.referenceConstructor(moduleMetadata.constructors.single())
-                    .ensureBound(),
-                emptyList()
-            ).apply {
-                if (definitionCalls.isNotEmpty()) {
-                    val bindings = definitionCalls
-                        .map { call ->
-                            irString(
-                                call.getTypeArgument(0)!!.toKotlinType().constructor
-                                    .declarationDescriptor!!.fqNameSafe
-                                    .asString()
-                            ) to irString(
-                                providerByDefinitionCall[call]!!.name.asString()
-                            )
-                        }
-                    putValueArgument(
-                        2,
-                        IrVarargImpl(
-                            UNDEFINED_OFFSET,
-                            UNDEFINED_OFFSET,
-                            pluginContext.irBuiltIns.arrayClass
-                                .typeWith(pluginContext.irBuiltIns.stringType),
-                            pluginContext.irBuiltIns.stringType,
-                            bindings.map { it.first }
+            annotations += moduleMetadata(
+                definitionCalls,
+                providerByDefinitionCall,
+                modulesByCalls,
+                modulesFields
+            )
+
+            transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                    return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
+                        super.visitGetValue(expression)
+                    } else {
+                        val newParameter = parameterMap[expression.symbol.owner]!!
+                        val field = fieldsByParameters[newParameter]!!
+                        return irGetField(
+                            irGet(thisReceiver!!),
+                            field
                         )
-                    )
-                    putValueArgument(
-                        3,
-                        IrVarargImpl(
-                            UNDEFINED_OFFSET,
-                            UNDEFINED_OFFSET,
-                            pluginContext.irBuiltIns.arrayClass
-                                .typeWith(pluginContext.irBuiltIns.stringType),
-                            pluginContext.irBuiltIns.stringType,
-                            bindings.map { it.second }
-                        )
+                    }
+                }
+            })
+        }
+    }
+
+    private fun IrBuilderWithScope.moduleMetadata(
+        definitionCalls: MutableList<IrCall>,
+        providerByDefinitionCall: Map<IrCall, IrClass>,
+        modulesByCalls: Map<IrCall, IrClass>,
+        modulesFields: Map<IrClass, IrField>
+    ): IrConstructorCall {
+        return irCallConstructor(
+            symbolTable.referenceConstructor(moduleMetadata.constructors.single())
+                .ensureBound(pluginContext.irProviders),
+            emptyList()
+        ).apply {
+            val bindings = definitionCalls
+                .map { call ->
+                    irString(
+                        call.getTypeArgument(0)!!.toKotlinType().constructor
+                            .declarationDescriptor!!.fqNameSafe
+                            .asString()
+                    ) to irString(
+                        providerByDefinitionCall[call]!!.name.asString()
                     )
                 }
-            }
+            // binding keys
+            putValueArgument(
+                2,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    bindings.map { it.first }
+                )
+            )
+            // binding providers
+            putValueArgument(
+                3,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    bindings.map { it.second }
+                )
+            )
+
+            // included module types
+            putValueArgument(
+                4,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    modulesByCalls.values.toList()
+                        .map {
+                            irString(it.fqNameForIrSerialization.asString())
+                        }
+                )
+            )
+
+            // included module names
+            putValueArgument(
+                5,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    modulesByCalls.values.toList()
+                        .map {
+                            irString(
+                                modulesFields.getValue(it)
+                                    .name.asString()
+                            )
+                        }
+                )
+            )
         }
     }
 
@@ -228,8 +335,7 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         name: Name,
         definition: IrFunctionExpression,
         module: IrClass,
-        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
-        moduleFieldsByParameter: Map<IrValueParameter, IrField>
+        moduleParametersMap: Map<IrValueParameter, IrValueParameter>
     ): IrClass {
         val definitionFunction = definition.function
 
@@ -266,7 +372,7 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             kind = if (dependencies.isNotEmpty() ||
                 capturedModuleValueParameters.isNotEmpty()
             ) ClassKind.CLASS else ClassKind.OBJECT
-            origin = InjektOrigin
+            origin = InjektDeclarationOrigin
             this.name = name
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
@@ -296,7 +402,7 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     addField {
                         this.name = Name.identifier("p$depIndex")
                         type = symbolTable.referenceClass(provider)
-                            .ensureBound()
+                            .ensureBound(pluginContext.irProviders)
                             .typeWith(expression.type)
                         visibility = Visibilities.PRIVATE
                     }.also { depIndex++ }
@@ -374,22 +480,6 @@ class ModuleTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
                 body = definitionFunction.body
                 body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
-                    override fun visitGetValue(expression: IrGetValue): IrExpression {
-                        return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
-                            super.visitGetValue(expression)
-                        } else {
-                            val newParameter = moduleParametersMap[expression.symbol.owner]!!
-                            val field = moduleFieldsByParameter[newParameter]!!
-                            return irGetField(
-                                irGetField(
-                                    irGet(dispatchReceiverParameter!!),
-                                    moduleField!!
-                                ),
-                                field
-                            )
-                        }
-                    }
-
                     override fun visitReturn(expression: IrReturn): IrExpression {
                         return if (expression.returnTargetSymbol != definitionFunction.symbol) {
                             super.visitReturn(expression)

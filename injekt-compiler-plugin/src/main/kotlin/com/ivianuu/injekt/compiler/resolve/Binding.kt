@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.types.KotlinType
 data class Binding(
     val key: Key,
     val bindingType: BindingType,
+    val module: IrClass,
     val dependencies: List<Key>
 ) {
     sealed class BindingType {

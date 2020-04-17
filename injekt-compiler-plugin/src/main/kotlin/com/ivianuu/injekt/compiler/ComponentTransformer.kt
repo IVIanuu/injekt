@@ -23,7 +23,9 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irBranch
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.builders.irElseBranch
 import org.jetbrains.kotlin.ir.builders.irEquals
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irReturn
@@ -31,7 +33,6 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irWhen
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
@@ -41,8 +42,10 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -57,7 +60,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 class ComponentTransformer(
     private val project: Project,
     pluginContext: IrPluginContext,
-    private val bindingTrace: BindingTrace
+    private val bindingTrace: BindingTrace,
+    private val moduleStore: ModuleStore
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val component = getTopLevelClass(InjektClassNames.Component)
@@ -115,22 +119,9 @@ class ComponentTransformer(
         name: Name,
         componentDefinition: IrFunctionExpression
     ): IrClass {
-        val moduleCalls = mutableListOf<IrCall>()
-
-        componentDefinition.function.body!!.transformChildrenVoid(object :
-            IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                super.visitCall(expression)
-                if (expression.symbol.descriptor.annotations.hasAnnotation(InjektClassNames.Module)) {
-                    moduleCalls += expression
-                }
-                return expression
-            }
-        })
-
         return buildClass {
             kind = ClassKind.CLASS
-            origin = InjektOrigin
+            origin = InjektDeclarationOrigin
             this.name = name
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
@@ -139,22 +130,28 @@ class ComponentTransformer(
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val modules = moduleCalls.map {
+            val moduleCalls = mutableListOf<IrCall>()
+
+            componentDefinition.function.body!!.transformChildrenVoid(object :
+                IrElementTransformerVoid() {
+                override fun visitCall(expression: IrCall): IrExpression {
+                    super.visitCall(expression)
+                    if (expression.symbol.descriptor.annotations.hasAnnotation(InjektClassNames.Module)) {
+                        moduleCalls += expression
+                    }
+                    return expression
+                }
+            })
+
+            val modulesByCalls = moduleCalls.associateWith {
                 val moduleFqName =
                     it.symbol.owner.fqNameForIrSerialization
                         .parent()
                         .child(Name.identifier("${it.symbol.owner.name}\$Impl"))
-                try {
-                    symbolTable.referenceClass(getTopLevelClass(moduleFqName))
-                        .ensureBound()
-                        .owner
-                } catch (e: Exception) {
-                    (it.symbol.owner.parent as IrDeclarationContainer)
-                        .declarations
-                        .filterIsInstance<IrClass>()
-                        .single { it.fqNameForIrSerialization == moduleFqName }
-                }
+                moduleStore.getModule(moduleFqName)
             }
+
+            val modules = modulesByCalls.values.toList()
 
             val moduleFields = modules.associateWith {
                 addField(
@@ -171,13 +168,13 @@ class ComponentTransformer(
                         moduleFields.getValue(module)
                     )
                 }
-            })
+            }, moduleStore)
 
             val providerFields = mutableMapOf<Binding, IrField>()
 
-            graph.bindings.forEach { (key, binding) ->
+            graph.componentBindings.forEach { (key, binding) ->
                 addField(
-                    fieldName = key.fieldName,
+                    fieldName = "${binding.module.name}_${key.fieldName}",
                     fieldType = provider.defaultType.replace(
                         newArguments = listOf(binding.key.type.asTypeProjection())
                     ).toIrType(),
@@ -209,8 +206,21 @@ class ComponentTransformer(
                         context.irBuiltIns.unitType
                     )
 
+                    modulesByCalls.forEach { (call, module) ->
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            moduleFields.getValue(module),
+                            irCall(
+                                module.constructors.single().symbol,
+                                module.defaultType
+                            ).apply {
+                                copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                            }
+                        )
+                    }
+
                     providerFields.forEach {
-                        irSetField(
+                        +irSetField(
                             irGet(thisReceiver!!),
                             it.value,
                             providerInitializer(
@@ -227,7 +237,7 @@ class ComponentTransformer(
                 this.name = Name.identifier("get")
                 visibility = Visibilities.PUBLIC
                 returnType = pluginContext.irBuiltIns.anyNType
-            }.apply {
+            }.apply getFunction@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this)
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
@@ -239,31 +249,51 @@ class ComponentTransformer(
                     pluginContext.irBuiltIns.stringType
                 )
 
-                body = irBlockBody {
+                body = irExprBody(
                     DeclarationIrBuilder(pluginContext, symbol).irReturn(
                         irWhen(
                             type = returnType,
-                            branches = graph.bindings
+                            branches = graph.componentBindings
                                 .map { (key, binding) ->
                                     irBranch(
                                         condition = irEquals(
                                             irString(key.keyConstant),
                                             irGet(valueParameters.single())
                                         ),
-                                        result = irGetField(
-                                            irGet(dispatchReceiverParameter!!),
-                                            providerFields.getValue(binding)
-                                        )
+                                        result = irCall(
+                                            symbolTable.referenceSimpleFunction(
+                                                provider.unsubstitutedMemberScope
+                                                    .findSingleFunction(Name.identifier("invoke"))
+                                            )
+                                        ).apply {
+                                            dispatchReceiver = irGetField(
+                                                irGet(dispatchReceiverParameter!!),
+                                                providerFields.getValue(binding)
+                                            )
+                                        }
                                     )
+                                } + irElseBranch(
+                                irCall(
+                                    symbolTable.referenceFunction(
+                                        component.unsubstitutedMemberScope
+                                            .findSingleFunction(Name.identifier("get"))
+                                    ).ensureBound(pluginContext.irProviders).owner,
+                                    InjektStatementOrigin,
+                                    symbolTable.referenceClass(component)
+                                ).apply {
+                                    val original = this@getFunction
+                                    dispatchReceiver = irGet(original.dispatchReceiverParameter!!)
+                                    putValueArgument(0, irGet(original.valueParameters.single()))
                                 }
+                            )
                         )
                     )
-                }
+                )
             }
 
             annotations += irCallConstructor(
                 symbolTable.referenceConstructor(componentMetadata.constructors.single())
-                    .ensureBound(),
+                    .ensureBound(pluginContext.irProviders),
                 emptyList()
             ).apply {
             }

@@ -8,7 +8,7 @@ interface Component {
 
 inline fun <reified T> Component.get(qualifier: Qualifier? = null): T = stub()
 
-fun Component(key: String, block: @Module ComponentDsl.() -> Unit = {}): Component = stub()
+fun Component(key: String, block: ComponentDsl.() -> Unit = {}): Component = stub()
 
 @InjektDslMarker
 class ComponentDsl {

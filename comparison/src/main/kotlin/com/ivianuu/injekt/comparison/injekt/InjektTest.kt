@@ -27,7 +27,7 @@ object InjektTest : InjectionTest {
     }
 
     override fun inject() {
-        component!!.get<Fib8>()
+        val fib = component!!.get<Fib8>()
     }
 
     override fun shutdown() {
