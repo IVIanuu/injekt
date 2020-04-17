@@ -260,6 +260,38 @@ class ComponentTest {
         assertOk()
     }
 
+    @Test
+    fun testIntermediateModuleRequiredAddsAllModules() = codegenTest(
+        """
+            @Module
+            fun rootModule() {
+            }
+            
+            @Module
+            fun intermediateModule(data: String) {
+                factory { data }
+                rootModule()
+            }
+            
+            @Module
+            fun dummy() {
+            
+            }
+            
+            @Module
+            fun module() {
+                dummy()
+                intermediateModule("data")
+            }
+            
+            val MyComponent = Component("c") {
+                module()
+                }
+                """
+    ) {
+        assertOk()
+    }
+
     /*@Test
     fun test() = codegenTest(
     """

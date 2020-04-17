@@ -229,20 +229,21 @@ class ComponentTransformer(
 
             val modules = modulesByCalls.values.toList()
 
-            // todo do not include fields for modules which arent't referenced somewhere
-            val moduleFields = modules.associateWith {
-                addField(
-                    it.name,
-                    it.defaultType,
-                    Visibilities.PRIVATE
-                )
-            }
+            val lazyModuleFields = modules.associateWith {
+                lazy {
+                    addField(
+                        it.name,
+                        it.defaultType,
+                        Visibilities.PRIVATE
+                    )
+                }
+            }.mapKeys { it.key.fqNameForIrSerialization }
 
             val graph = Graph(pluginContext, bindingTrace, this, modules.map { module ->
                 ModuleWithAccessor(module) {
                     irGetField(
                         irGet(thisReceiver!!),
-                        moduleFields.getValue(module)
+                        lazyModuleFields.getValue(module.fqNameForIrSerialization).value
                     )
                 }
             }, declarationStore)
@@ -266,6 +267,7 @@ class ComponentTransformer(
                 visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
+                // todo do not include captures which are not used
                 captures.forEachIndexed { index, capture ->
                     valueParametersByCapture[capture] = addValueParameter(
                         "p$index",
@@ -291,16 +293,20 @@ class ComponentTransformer(
                     )
 
                     modulesByCalls.forEach { (call, module) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            moduleFields.getValue(module),
-                            irCall(
-                                module.constructors.single().symbol,
-                                module.defaultType
-                            ).apply {
-                                copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                            }
-                        )
+                        val lazyModuleField =
+                            lazyModuleFields.getValue(module.fqNameForIrSerialization)
+                        if (lazyModuleField.isInitialized()) {
+                            +irSetField(
+                                irGet(thisReceiver!!),
+                                lazyModuleField.value,
+                                irCall(
+                                    module.constructors.single().symbol,
+                                    module.defaultType
+                                ).apply {
+                                    copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                                }
+                            )
+                        }
                     }
 
                     val initializedKeys = mutableSetOf<Key>()

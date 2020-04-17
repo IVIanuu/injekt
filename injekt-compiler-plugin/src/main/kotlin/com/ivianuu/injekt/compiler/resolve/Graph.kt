@@ -63,12 +63,14 @@ class Graph(
             metadata.getStringList("includedModuleNames")
         ).forEach { (includedModuleType, includedModuleFieldName) ->
             val includedModule = declarationStore.getModule(FqName(includedModuleType))
-            val field = module.fields.single { it.name.asString() == includedModuleFieldName }
+            val field = if (includedModuleFieldName == "null") null else
+                module.fields.single { it.name.asString() == includedModuleFieldName }
             ModuleWithAccessor(includedModule) {
                 DeclarationIrBuilder(this@Graph.context, module.symbol).run {
                     irGetField(
                         moduleWithAccessor.accessor(),
                         field
+                            ?: error("No field for ${includedModule.dump()} in ${moduleWithAccessor.module.dump()}")
                     )
                 }
             }.also { collectModules(it) }

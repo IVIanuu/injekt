@@ -44,11 +44,14 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -230,15 +233,33 @@ class ModuleTransformer(
                 moduleFqNames += moduleFqName
             }
 
-            val modulesFields = modulesByCalls.values.toList().associateWith {
-                addField(
-                    it.name.asString(),
-                    it.defaultType,
-                    Visibilities.PUBLIC
-                )
+            val moduleFields = mutableMapOf<IrClass, IrField>()
+
+            fun IrClass.isModuleFieldRequired(): Boolean {
+                if (fields.any {
+                        (it.type as IrSimpleType).classOrNull!!.ensureBound(pluginContext.irProviders)
+                            .owner.annotations.hasAnnotation(InjektClassNames.ModuleMetadata)
+                    }) return true
+
+                return declarations
+                    .filterIsInstance<IrClass>()
+                    .flatMap { it.constructors.toList() }
+                    .flatMap { it.valueParameters }
+                    .any { it.name.asString() == "module" }
+            }
+
+            modulesByCalls.values.forEach { module ->
+                if (module.isModuleFieldRequired()) {
+                    moduleFields[module] = addField(
+                        module.name,
+                        module.defaultType,
+                        Visibilities.PRIVATE
+                    )
+                }
             }
 
             var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
+            // todo do not include captures which are not used
             var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
 
             addConstructor {
@@ -290,13 +311,15 @@ class ModuleTransformer(
                     }
 
                     modulesByCalls.forEach { (call, module) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            modulesFields.getValue(module),
-                            irCall(module.constructors.single()).apply {
-                                copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                            }
-                        )
+                        moduleFields[call]?.let { field ->
+                            +irSetField(
+                                irGet(thisReceiver!!),
+                                field,
+                                irCall(module.constructors.single()).apply {
+                                    copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -323,7 +346,7 @@ class ModuleTransformer(
                 definitionCalls,
                 providerByDefinitionCall,
                 modulesByCalls,
-                modulesFields
+                moduleFields
             )
 
             transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -350,7 +373,7 @@ class ModuleTransformer(
         definitionCalls: List<IrCall>,
         providerByDefinitionCall: Map<IrCall, IrClass>,
         modulesByCalls: Map<IrCall, IrClass>,
-        modulesFields: Map<IrClass, IrField>
+        moduleFields: Map<IrClass, IrField>
     ): IrConstructorCall {
         return irCallConstructor(
             symbolTable.referenceConstructor(moduleMetadata.constructors.single())
@@ -461,8 +484,7 @@ class ModuleTransformer(
                     modulesByCalls.values.toList()
                         .map {
                             irString(
-                                modulesFields.getValue(it)
-                                    .name.asString()
+                                moduleFields[it]?.name?.asString() ?: "null"
                             )
                         }
                 )
@@ -532,7 +554,7 @@ class ModuleTransformer(
 
             val moduleField = if (capturedModuleValueParameters.isNotEmpty()) {
                 addField(
-                    module.name.asString(),
+                    "module",
                     module.defaultType
                 )
             } else null
