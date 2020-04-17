@@ -4,7 +4,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.Module
 
-val MyComponent = Component("app") {
+val My2Component = Component("app") {
     foo()
 }
 

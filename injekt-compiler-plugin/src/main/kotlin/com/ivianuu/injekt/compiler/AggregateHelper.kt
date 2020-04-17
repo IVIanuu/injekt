@@ -27,21 +27,18 @@ fun IrModuleFragment.addClass(
     psiSourceManager: PsiSourceManager,
     project: Project,
     irClass: IrClass,
-    fqName: FqName
+    packageFqName: FqName
 ) {
-    files += fileForClass(psiSourceManager, project, irClass, fqName)
+    files += fileForClass(psiSourceManager, project, irClass, packageFqName)
 }
 
 private fun IrModuleFragment.fileForClass(
     psiSourceManager: PsiSourceManager,
     project: Project,
     irClass: IrClass,
-    fqName: FqName
+    packageFqName: FqName
 ): IrFile {
-    val className =
-        Name.identifier(fqName.asString().replace(".", "_"))
-
-    val sourceFile = File("$className.kt")
+    val sourceFile = File("${irClass.name}.kt")
 
     val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), sourceFile)
 
@@ -58,7 +55,7 @@ private fun IrModuleFragment.fileForClass(
     val packageFragmentDescriptor =
         object : PackageFragmentDescriptorImpl(
             descriptor,
-            fqName
+            packageFqName
         ) {
             override fun getMemberScope(): MemberScope = memberScope
         }

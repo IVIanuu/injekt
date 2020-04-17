@@ -5,9 +5,12 @@ import com.ivianuu.injekt.compiler.resolve.Graph
 import com.ivianuu.injekt.compiler.resolve.Key
 import com.ivianuu.injekt.compiler.resolve.ModuleWithAccessor
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -34,6 +37,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irWhen
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -72,14 +76,22 @@ class ComponentTransformer(
         super.visitModuleFragment(declaration)
 
         val componentCalls = mutableListOf<IrCall>()
+        val fileByCall = mutableMapOf<IrCall, IrFile>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            private val fileStack = mutableListOf<IrFile>()
+            override fun visitFile(declaration: IrFile): IrFile {
+                fileStack.push(declaration)
+                return super.visitFile(declaration)
+                    .also { fileStack.pop() }
+            }
             override fun visitCall(expression: IrCall): IrExpression {
                 super.visitCall(expression)
                 if (expression.symbol.descriptor.fqNameSafe
                         .asString() == "com.ivianuu.injekt.Component"
                 ) {
                     componentCalls += expression
+                    fileByCall[expression] = fileStack.last()
                 }
                 return expression
             }
@@ -89,12 +101,44 @@ class ComponentTransformer(
             DeclarationIrBuilder(pluginContext, componentCall.symbol).run {
                 val key = componentCall.getValueArgument(0) as IrConstImpl<String>
                 val componentDefinition = componentCall.getValueArgument(1) as IrFunctionExpression
-                val component = componentClass(Name.identifier(key.value), componentDefinition)
+                val component = componentClass(componentDefinition)
+                val file = fileByCall[componentCall]!!
+                file.addChild(component)
+
                 declaration.addClass(
                     pluginContext.psiSourceManager.cast(),
                     project,
-                    component,
-                    FqName("com.ivianuu.injekt.internal.components.${key.value}")
+                    buildClass {
+                        name = Name.identifier(
+                            "${key.value}\$${component.fqNameForIrSerialization.asString()
+                                .replace(".", "_")}"
+                        )
+                    }.apply clazz@{
+                        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+                        addConstructor {
+                            origin = InjektDeclarationOrigin
+                            isPrimary = true
+                            visibility = Visibilities.PUBLIC
+                        }.apply {
+                            body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                                +IrDelegatingConstructorCallImpl(
+                                    startOffset, endOffset,
+                                    context.irBuiltIns.unitType,
+                                    pluginContext.symbolTable.referenceConstructor(
+                                        context.builtIns.any.unsubstitutedPrimaryConstructor!!
+                                    )
+                                )
+                                +IrInstanceInitializerCallImpl(
+                                    startOffset,
+                                    endOffset,
+                                    this@clazz.symbol,
+                                    context.irBuiltIns.unitType
+                                )
+                            }
+                        }
+                    },
+                    FqName("com.ivianuu.injekt.internal.components")
                 )
                 component
             }
@@ -116,13 +160,12 @@ class ComponentTransformer(
     }
 
     private fun IrBuilderWithScope.componentClass(
-        name: Name,
         componentDefinition: IrFunctionExpression
     ): IrClass {
         return buildClass {
             kind = ClassKind.CLASS
             origin = InjektDeclarationOrigin
-            this.name = name
+            this.name = Name.identifier("Component${componentDefinition.startOffset}")
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
         }.apply clazz@{

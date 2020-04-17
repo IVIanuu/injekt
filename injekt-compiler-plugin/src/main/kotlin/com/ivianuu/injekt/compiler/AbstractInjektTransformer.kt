@@ -54,6 +54,7 @@ abstract class AbstractInjektTransformer(
                             }
                     }
                 })
+
                 it.patchDeclarationParents()
             }
     }

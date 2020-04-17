@@ -100,8 +100,11 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
                 }
 
                 override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
-                    if (declaration.parent == definitionFunction)
-                        declaration.parent = this@apply
+                    try {
+                        if (declaration.parent == definitionFunction)
+                            declaration.parent = this@apply
+                    } catch (e: Exception) {
+                    }
                     return super.visitDeclaration(declaration)
                 }
             })
