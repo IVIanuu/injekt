@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.resolve
 
 import com.ivianuu.injekt.compiler.InjektClassNames
-import com.ivianuu.injekt.compiler.ModuleStore
+import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -20,7 +20,7 @@ class Graph(
     private val context: IrPluginContext,
     private val bindingTrace: BindingTrace,
     private val modules: List<ModuleWithAccessor>,
-    private val moduleStore: ModuleStore
+    private val declarationStore: InjektDeclarationStore
 ) {
 
     val componentBindings = mutableMapOf<Key, Binding>()
@@ -51,12 +51,12 @@ class Graph(
                 it.fqName == InjektClassNames.ModuleMetadata
             }
 
-            val scopes = metadata.getStringList("scopes")
             val parents = metadata.getStringList("parents")
+            val parentNames = metadata.getStringList("parentNames")
 
             val bindingKeys = metadata.getStringList("bindingKeys")
 
-            val bindingProviders = metadata.getStringList("bindingProviders")
+            val bindingProviders = metadata.getStringList("bindingNames")
                 .map { providerName ->
                     module.declarations
                         .filterIsInstance<IrClass>()
@@ -115,7 +115,7 @@ class Graph(
         metadata.getStringList("includedModuleTypes").zip(
             metadata.getStringList("includedModuleNames")
         ).forEach { (includedModuleType, includedModuleFieldName) ->
-            val includedModule = moduleStore.getModule(FqName(includedModuleType))
+            val includedModule = declarationStore.getModule(FqName(includedModuleType))
             val field = module.fields.single { it.name.asString() == includedModuleFieldName }
             ModuleWithAccessor(includedModule) {
                 DeclarationIrBuilder(this@Graph.context, module.symbol).run {

@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -61,7 +62,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ModuleTransformer(
     pluginContext: IrPluginContext,
-    private val moduleStore: ModuleStore
+    private val declarationStore: InjektDeclarationStore
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val moduleMetadata = getTopLevelClass(InjektClassNames.ModuleMetadata)
@@ -115,6 +116,7 @@ class ModuleTransformer(
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
+            val parentCalls = mutableListOf<IrCall>()
             val definitionCalls = mutableListOf<IrCall>()
             val moduleCalls = mutableListOf<IrCall>()
 
@@ -122,18 +124,32 @@ class ModuleTransformer(
                 override fun visitCall(expression: IrCall): IrExpression {
                     super.visitCall(expression)
 
-                    if (expression.symbol.descriptor.name.asString() == "factory") {
-                        definitionCalls += expression
-                    } else if (expression.symbol.descriptor.annotations.hasAnnotation(
+                    when {
+                        expression.symbol.descriptor.name.asString() == "scope" -> {
+                        }
+                        expression.symbol.descriptor.name.asString() == "parent" -> {
+                            parentCalls += expression
+                        }
+                        expression.symbol.descriptor.name.asString() == "factory" -> {
+                            definitionCalls += expression
+                        }
+                        expression.symbol.descriptor.annotations.hasAnnotation(
                             InjektClassNames.Module
                         )
-                    ) {
-                        moduleCalls += expression
+                        -> {
+                            moduleCalls += expression
+                        }
                     }
 
                     return expression
                 }
             })
+
+            val parentFqNameByCalls = parentCalls.associateWith {
+                val key = (it.getValueArgument(0) as IrConst<String>).value
+                val componentFqName = declarationStore.getComponentFqName(key)
+                componentFqName
+            }
 
             val modulesByCalls = moduleCalls.associateWith {
                 val moduleFqName =
@@ -141,7 +157,7 @@ class ModuleTransformer(
                         .parent()
                         .child(Name.identifier("${it.symbol.owner.name}\$Impl"))
                 try {
-                    moduleStore.getModule(moduleFqName)
+                    declarationStore.getModule(moduleFqName)
                 } catch (e: Exception) {
                     getProcessedModule(it.symbol.owner)
                 }

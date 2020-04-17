@@ -20,7 +20,10 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.name.ClassId
@@ -30,6 +33,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 object InjektClassNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
+    val InjektComponentsPackage = FqName("com.ivianuu.injekt.internal.Components")
 
     val Component = FqName("com.ivianuu.injekt.Component")
     val ComponentDsl = FqName("com.ivianuu.injekt.ComponentDsl")
@@ -72,3 +76,16 @@ fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
 
 fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
     any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
+
+fun getComponentFqName(
+    expression: IrExpression,
+    file: IrFile
+): FqName {
+    return FqName(
+        "${file.fqName}.Component${
+        (file.name.removeSuffix(".kt") + expression.startOffset).hashCode()
+            .toString()
+            .removeIllegalChars()
+        }"
+    )
+}

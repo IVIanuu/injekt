@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -40,12 +39,16 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -53,20 +56,17 @@ import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ComponentTransformer(
-    private val project: Project,
     pluginContext: IrPluginContext,
     private val bindingTrace: BindingTrace,
-    private val moduleStore: ModuleStore
+    private val declarationStore: InjektDeclarationStore
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val component = getTopLevelClass(InjektClassNames.Component)
@@ -98,50 +98,15 @@ class ComponentTransformer(
             }
         })
 
-        val componentsByCalls = componentCalls.associateWith { componentCall ->
+        val componentResultsByCalls = componentCalls.associateWith { componentCall ->
             DeclarationIrBuilder(pluginContext, componentCall.symbol).run {
-                val key = componentCall.getValueArgument(0) as IrConstImpl<String>
                 val componentDefinition = componentCall.getValueArgument(1) as IrFunctionExpression
-                val component = componentClass(componentDefinition)
                 val file = fileByCall[componentCall]!!
-                file.addChild(component)
-                //error(component.dump())
-
-                declaration.addClass(
-                    pluginContext.psiSourceManager.cast(),
-                    project,
-                    buildClass {
-                        name = Name.identifier(
-                            "${key.value}\$${component.fqNameForIrSerialization.asString()
-                                .replace(".", "_")}"
-                        )
-                    }.apply clazz@{
-                        createImplicitParameterDeclarationWithWrappedDescriptor()
-
-                        addConstructor {
-                            origin = InjektDeclarationOrigin
-                            isPrimary = true
-                            visibility = Visibilities.PUBLIC
-                        }.apply {
-                            body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                                +IrDelegatingConstructorCallImpl(
-                                    startOffset, endOffset,
-                                    context.irBuiltIns.unitType,
-                                    pluginContext.symbolTable.referenceConstructor(
-                                        context.builtIns.any.unsubstitutedPrimaryConstructor!!
-                                    )
-                                )
-                                +IrInstanceInitializerCallImpl(
-                                    startOffset,
-                                    endOffset,
-                                    this@clazz.symbol,
-                                    context.irBuiltIns.unitType
-                                )
-                            }
-                        }
-                    },
-                    FqName("com.ivianuu.injekt.internal.components")
+                val component = componentClass(
+                    componentDefinition,
+                    getComponentFqName(componentCall, file).shortName()
                 )
+                file.addChild(component.first)
                 component
             }
         }
@@ -149,12 +114,16 @@ class ComponentTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 super.visitCall(expression)
-                return componentsByCalls[expression]?.constructors?.single()
-                    ?.let {
-                        DeclarationIrBuilder(pluginContext, expression.symbol)
-                            .irCall(it.symbol)
+                val (component, valueParametersByCaptures) = componentResultsByCalls[expression]
+                    ?: return expression
+                return DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                    val constructor = component.constructors.single()
+                    irCall(constructor).apply {
+                        valueParametersByCaptures.forEach { (capture, valueParameter) ->
+                            putValueArgument(valueParameter.index, capture)
+                        }
                     }
-                    ?: expression
+                }
             }
         })
 
@@ -162,12 +131,15 @@ class ComponentTransformer(
     }
 
     private fun IrBuilderWithScope.componentClass(
-        componentDefinition: IrFunctionExpression
-    ): IrClass {
+        componentDefinition: IrFunctionExpression,
+        name: Name
+    ): Pair<IrClass, Map<IrGetValue, IrValueParameter>> {
+        val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
+
         return buildClass {
             kind = ClassKind.CLASS
             origin = InjektDeclarationOrigin
-            this.name = Name.identifier("Component${componentDefinition.startOffset}")
+            this.name = name
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
@@ -193,8 +165,19 @@ class ComponentTransformer(
                     it.symbol.owner.fqNameForIrSerialization
                         .parent()
                         .child(Name.identifier("${it.symbol.owner.name}\$Impl"))
-                moduleStore.getModule(moduleFqName)
+                declarationStore.getModule(moduleFqName)
             }
+
+
+            val captures = mutableListOf<IrGetValue>()
+            componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                    if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol) {
+                        captures += expression
+                    }
+                    return super.visitGetValue(expression)
+                }
+            })
 
             val modules = modulesByCalls.values.toList()
 
@@ -214,7 +197,7 @@ class ComponentTransformer(
                         moduleFields.getValue(module)
                     )
                 }
-            }, moduleStore)
+            }, declarationStore)
 
             val providerFields = mutableMapOf<Binding, IrField>()
 
@@ -235,6 +218,13 @@ class ComponentTransformer(
                 visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
+                captures.forEachIndexed { index, capture ->
+                    valueParametersByCapture[capture] = addValueParameter(
+                        "p$index",
+                        capture.type
+                    )
+                }
+
                 body = irBlockBody {
                     +IrDelegatingConstructorCallImpl(
                         UNDEFINED_OFFSET,
@@ -277,6 +267,14 @@ class ComponentTransformer(
                         )
                     }
                 }
+            }.apply {
+                transformChildrenVoid(object : IrElementTransformerVoid() {
+                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                        return valueParametersByCapture[expression]
+                            ?.let { irGet(it) }
+                            ?: super.visitGetValue(expression)
+                    }
+                })
             }
 
             addFunction {
@@ -337,12 +335,11 @@ class ComponentTransformer(
                 )
             }
 
-            annotations += irCallConstructor(
-                symbolTable.referenceConstructor(componentMetadata.constructors.single())
-                    .ensureBound(pluginContext.irProviders),
-                emptyList()
+            annotations += componentMetadata(
+                graph.componentBindings,
+                providerFields
             )
-        }
+        } to valueParametersByCapture
     }
 
     private fun IrBuilderWithScope.providerInitializer(
@@ -376,4 +373,47 @@ class ComponentTransformer(
         }
     }
 
+    private fun IrBuilderWithScope.componentMetadata(
+        bindings: Map<Key, Binding>,
+        providers: Map<Binding, IrField>
+    ): IrConstructorCall {
+        return irCallConstructor(
+            symbolTable.referenceConstructor(componentMetadata.constructors.single())
+                .ensureBound(pluginContext.irProviders),
+            emptyList()
+        ).apply {
+            // binding keys
+            putValueArgument(
+                2,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    bindings.map {
+                        irString(
+                            it.key.type.constructor
+                                .declarationDescriptor!!.fqNameSafe
+                                .asString()
+                        )
+                    }
+                )
+            )
+            // binding providers
+            putValueArgument(
+                3,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    providers.map {
+                        irString(it.value.name.asString())
+                    }
+                )
+            )
+        }
+    }
 }

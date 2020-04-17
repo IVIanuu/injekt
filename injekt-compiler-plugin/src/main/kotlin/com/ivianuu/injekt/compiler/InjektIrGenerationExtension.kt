@@ -33,7 +33,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
                     "ComposeIrGenerationExtension"
         )
 
-        val moduleStore = ModuleStore(pluginContext, moduleFragment)
+        val declarationStore = InjektDeclarationStore(pluginContext, moduleFragment)
 
         fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
             generateSymbols(pluginContext)
@@ -41,18 +41,23 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             generateSymbols(pluginContext)
         }
 
+        ComponentAggregateGenerator(
+            project,
+            pluginContext,
+            declarationStore
+        ).visitModuleAndGenerateSymbols()
+
         // transform the config blocks of Component { ... } to a module
         ComponentBlockTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // transform all @Module fun ComponentDsl.module() { ... } to classes
-        ModuleTransformer(pluginContext, moduleStore).visitModuleAndGenerateSymbols()
+        ModuleTransformer(pluginContext, declarationStore).visitModuleAndGenerateSymbols()
 
         // transform all Component { ... } calls to a Component implementation
         ComponentTransformer(
-            project,
             pluginContext,
             bindingTrace,
-            moduleStore
+            declarationStore
         ).visitModuleAndGenerateSymbols()
 
         // transform component.get<String>() to component.get("java.lang.String")
