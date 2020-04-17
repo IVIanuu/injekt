@@ -1,13 +1,11 @@
-package com.facebook.buck.jvm.java.javax.com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.assertOk
-import com.ivianuu.injekt.compiler.codegenTest
 import org.junit.Test
 
 class ComponentTest {
 
     @Test
-    fun testSimpleComponent() = codegenTest(
+    fun testSimple() = codegenTest(
         """
         val MyComponent = Component("c") {
 
@@ -62,6 +60,56 @@ class ComponentTest {
         
         val MyComponent = Component("c") {
             a()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testDuplicatedBinding() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory { "a" }
+            factory { "b" }
+        }
+    """
+    ) {
+        assertInternalError()
+    }
+
+    @Test
+    fun testMissingBinding() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory<String> { get<Int>(); "" }
+        }
+    """
+    ) {
+        assertInternalError()
+    }
+
+    @Test
+    fun testWithCaptures() = codegenTest(
+        """
+        fun MyComponent(capturedValue: String) = Component("c") {
+            factory { capturedValue }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testWithCaptureModule() = codegenTest(
+        """
+        @Module
+        fun ComponentDsl.module(capturedValue: String) {
+            factory { capturedValue }
+        }
+            
+        fun MyComponent(capturedValue: String) = Component("c") { 
+            module(capturedValue)
         }
     """
     ) {
