@@ -75,7 +75,7 @@ class ComponentTest {
         }
     """
     ) {
-        assertInternalError()
+        assertInternalError("duplicate")
     }
 
     @Test
@@ -86,7 +86,7 @@ class ComponentTest {
         }
     """
     ) {
-        assertInternalError()
+        assertInternalError("missing")
     }
 
     @Test
@@ -115,5 +115,52 @@ class ComponentTest {
     ) {
         assertOk()
     }
+
+    @Test
+    fun testOrder() = codegenTest(
+        """
+            class Foo
+            class Bar(foo: Foo)
+            val MyComponent = Component("c") {
+                factory { Foo() }
+                factory { Bar(get()) }
+                }
+                fun invoke() = MyComponent
+
+                """
+    ) {
+        expectNoErrorsWhileInvokingSingleFile()
+    }
+
+    @Test
+    fun testReverseOrder() = codegenTest(
+        """
+            class Foo
+            class Bar(foo: Foo)
+            val MyComponent = Component("c") { 
+                factory { Bar(get()) }
+                factory { Foo() } 
+                }
+                
+                fun invoke() = MyComponent
+                """
+    ) {
+        expectNoErrorsWhileInvokingSingleFile()
+    }
+
+    /*@Test
+    fun test() = codegenTest(
+    """
+            val MyComponent = Component("c") { 
+                factory { Foo() } 
+                factory { Bar(get()) }
+            }
+            
+            fun invoke() = MyComponent.get<Bar>()
+    """
+    ) {
+        assertOk()
+        invokeSingleFile() is Bar
+    }*/
 
 }

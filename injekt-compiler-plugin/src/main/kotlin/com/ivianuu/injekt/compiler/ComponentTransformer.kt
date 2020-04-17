@@ -255,16 +255,29 @@ class ComponentTransformer(
                         )
                     }
 
-                    providerFields.forEach {
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            it.value,
-                            providerInitializer(
-                                it.key,
-                                { irGet(thisReceiver!!) },
-                                providerFields.mapKeys { it.key.key }
-                            )
-                        )
+                    val initializedKeys = mutableSetOf<Key>()
+                    val processedFields = mutableSetOf<IrField>()
+
+                    while (true) {
+                        val fieldsToProcess = providerFields
+                            .filter { it.value !in processedFields }
+                        if (fieldsToProcess.isEmpty()) break
+
+                        fieldsToProcess
+                            .filter { it.key.dependencies.all { it in initializedKeys } }
+                            .forEach {
+                                initializedKeys += it.key.key
+                                processedFields += it.value
+                                +irSetField(
+                                    irGet(thisReceiver!!),
+                                    it.value,
+                                    providerInitializer(
+                                        it.key,
+                                        { irGet(thisReceiver!!) },
+                                        providerFields.mapKeys { it.key.key }
+                                    )
+                                )
+                            }
                     }
                 }
             }.apply {

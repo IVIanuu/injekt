@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 
 fun source(
@@ -14,6 +15,7 @@ fun source(
     contents = buildString {
         if (injektImports) {
             appendln("import com.ivianuu.injekt.*")
+            appendln("import com.ivianuu.injekt.compiler.*")
             appendln()
         }
 
@@ -22,7 +24,7 @@ fun source(
 )
 
 fun codegenTest(
-    source: String,
+    @Language("kotlin") source: String,
     assertions: KotlinCompilation.Result.() -> Unit = {}
 ) = codegenTest(source(source), assertions = assertions)
 
@@ -43,8 +45,37 @@ fun codegenTest(
     assertions(result)
 }
 
-fun KotlinCompilation.Result.assertOk() =
+fun KotlinCompilation.Result.assertOk() {
     assertEquals(KotlinCompilation.ExitCode.OK, exitCode)
+}
 
-fun KotlinCompilation.Result.assertInternalError() =
+fun KotlinCompilation.Result.expectNoErrorsWhileInvokingSingleFile() {
+    assertOk()
+
+    try {
+        invokeSingleFile()
+    } catch (e: Exception) {
+        throw AssertionError(e)
+    }
+}
+
+@JvmName("invokeSingleFileTypeless")
+fun KotlinCompilation.Result.invokeSingleFile(): Any? = invokeSingleFile<Any?>()
+
+fun <T> KotlinCompilation.Result.invokeSingleFile(): T {
+    val generatedClass = classLoader.loadClass("FileKt")
+    return generatedClass.declaredMethods
+        .single { it.name == "invoke" }
+        .invoke(null) as T
+}
+
+fun KotlinCompilation.Result.assertInternalError(
+    message: String? = null
+) {
     assertEquals(KotlinCompilation.ExitCode.INTERNAL_ERROR, exitCode)
+    message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
+}
+
+class Foo
+
+class Bar(foo: Foo)

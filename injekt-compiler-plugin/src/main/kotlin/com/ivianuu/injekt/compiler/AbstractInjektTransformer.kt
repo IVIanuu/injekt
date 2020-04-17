@@ -69,7 +69,7 @@ abstract class AbstractInjektTransformer(
         pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
 
     protected fun getTopLevelClass(fqName: FqName) =
-        pluginContext.moduleDescriptor.getTopLevelClass(fqName)!!
+        pluginContext.moduleDescriptor.getTopLevelClass(fqName)
 
     fun IrBuilderWithScope.irInjektStubUnit(): IrExpression {
         return irCall(
