@@ -52,5 +52,45 @@ class ModuleTest {
         """
     )
 
+    @Test
+    fun testModuleDependsOnOtherA() = codegenTest(
+        source(
+            """
+            @Module 
+            fun ComponentDsl.a(capturedValue: String) { 
+                b(capturedValue) 
+            }
+        """
+        ),
+        source(
+            """
+                @Module 
+                fun ComponentDsl.b(capturedValue: String) { 
+                    factory { capturedValue } 
+                }
+        """
+        )
+    )
+
+    @Test
+    fun testModuleDependsOnOtherB() = codegenTest(
+        source(
+            """
+                @Module 
+                fun ComponentDsl.b(capturedValue: String) { 
+                    factory { capturedValue } 
+                }
+        """
+        ),
+        source(
+            """
+            @Module 
+            fun ComponentDsl.a(capturedValue: String) { 
+                b(capturedValue) 
+            }
+        """
+        )
+    )
+
 
 }

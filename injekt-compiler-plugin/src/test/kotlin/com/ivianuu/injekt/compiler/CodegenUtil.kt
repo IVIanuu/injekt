@@ -5,25 +5,33 @@ import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
 import org.intellij.lang.annotations.Language
 
-fun codegenTest(
+fun source(
     @Language("kotlin") source: String,
-    fileName: String = "Test.kt",
-    injektImports: Boolean = true,
+    name: String = "File.kt",
+    injektImports: Boolean = true
+) = SourceFile.kotlin(
+    name = name,
+    contents = buildString {
+        if (injektImports) {
+            appendln("import com.ivianuu.injekt.*")
+            appendln()
+        }
+
+        append(source)
+    }
+)
+
+fun codegenTest(
+    source: String,
+    assertions: KotlinCompilation.Result.() -> Unit = {}
+) = codegenTest(source(source), assertions = assertions)
+
+fun codegenTest(
+    vararg sources: SourceFile,
     assertions: KotlinCompilation.Result.() -> Unit = {}
 ) {
     val result = KotlinCompilation().apply {
-        sources = listOf(
-            SourceFile.kotlin(
-                fileName,
-                buildString {
-                    if (injektImports) {
-                        appendln("import com.ivianuu.injekt.*")
-                        appendln()
-                    }
-
-                    append(source)
-                }
-            ))
+        this.sources = sources.toList()
         compilerPlugins = listOf(InjektComponentRegistrar())
         inheritClassPath = true
         useIR = true
