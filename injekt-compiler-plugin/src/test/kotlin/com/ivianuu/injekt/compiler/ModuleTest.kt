@@ -92,5 +92,18 @@ class ModuleTest {
         )
     )
 
+    @Test
+    fun testWithParent() = codegenTest(
+        """
+            val parent = Component("parent") {}
+            
+            @Module
+            fun module() {
+                parent("parent", parent)
+            }
+        """
+    ) {
+        assertOk()
+    }
 
 }

@@ -14,7 +14,7 @@ fun Component(key: String, block: @Module () -> Unit = {}): Component = stub()
 inline fun <reified T> scope(scope: T): Unit = stub()
 
 @Module
-inline fun <reified T : Component> parent(key: String, component: T): Unit = stub()
+inline fun parent(key: String, component: Component): Unit = stub()
 
 @Module
 inline fun <reified T> factory(

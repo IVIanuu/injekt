@@ -51,14 +51,21 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         ComponentBlockTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // transform all @Module fun module() { ... } to classes
-        ModuleTransformer(pluginContext, declarationStore).visitModuleAndGenerateSymbols()
+        val moduleTransformer = ModuleTransformer(pluginContext, declarationStore, moduleFragment)
 
         // transform all Component { ... } calls to a Component implementation
-        ComponentTransformer(
+        val componentTransformer = ComponentTransformer(
             pluginContext,
             bindingTrace,
-            declarationStore
-        ).visitModuleAndGenerateSymbols()
+            declarationStore,
+            moduleFragment
+        )
+
+        declarationStore.componentTransformer = componentTransformer
+        declarationStore.moduleTransformer = moduleTransformer
+
+        moduleTransformer.visitModuleAndGenerateSymbols()
+        componentTransformer.visitModuleAndGenerateSymbols()
 
         // transform component.get<String>() to component.get("java.lang.String")
         ComponentGetTransformer(pluginContext).visitModuleAndGenerateSymbols()

@@ -52,6 +52,7 @@ import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
@@ -62,7 +63,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ModuleTransformer(
     pluginContext: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore
+    private val declarationStore: InjektDeclarationStore,
+    private val moduleFragment: IrModuleFragment
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val moduleMetadata = getTopLevelClass(InjektClassNames.ModuleMetadata)
@@ -71,17 +73,11 @@ class ModuleTransformer(
 
     private val moduleFunctions = mutableListOf<IrFunction>()
     private val processedModules = mutableMapOf<IrFunction, IrClass>()
+    private val processingModules = mutableSetOf<FqName>()
+    private var computedModuleFunctions = false
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.annotations.hasAnnotation(InjektClassNames.Module)) {
-                    moduleFunctions += declaration
-                }
-
-                return super.visitFunction(declaration)
-            }
-        })
+        computeModuleFunctionsIfNeeded()
 
         moduleFunctions.forEach { function ->
             DeclarationIrBuilder(pluginContext, function.symbol).run {
@@ -92,16 +88,52 @@ class ModuleTransformer(
         return super.visitModuleFragment(declaration)
     }
 
-    private fun IrBuilderWithScope.getProcessedModule(function: IrFunction): IrClass {
+    fun getProcessedModule(fqName: FqName): IrClass? {
+        processedModules.values.firstOrNull {
+            it.fqNameForIrSerialization == fqName
+        }?.let { return it }
+
+        val function = moduleFunctions.firstOrNull {
+            getModuleName(it.descriptor) == fqName
+        } ?: return null
+
+        return getProcessedModule(function)
+    }
+
+    fun getProcessedModule(function: IrFunction): IrClass? {
+        computeModuleFunctionsIfNeeded()
+
         check(function in moduleFunctions) {
             "Unknown function $function"
         }
         processedModules[function]?.let { return it }
-        val moduleClass = moduleClass(function)
-        function.file.addChild(moduleClass)
-        function.body = irExprBody(irInjektStubUnit())
-        processedModules[function] = moduleClass
-        return moduleClass
+        return DeclarationIrBuilder(pluginContext, function.symbol).run {
+            val moduleFqName = getModuleName(function.descriptor)
+            check(moduleFqName !in processingModules) {
+                "Circular dependency for module $moduleFqName"
+            }
+            processingModules += moduleFqName
+            val moduleClass = moduleClass(function)
+            function.file.addChild(moduleClass)
+            function.body = irExprBody(irInjektStubUnit())
+            processedModules[function] = moduleClass
+            processingModules -= moduleFqName
+            moduleClass
+        }
+    }
+
+    private fun computeModuleFunctionsIfNeeded() {
+        if (computedModuleFunctions) return
+        computedModuleFunctions = true
+        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.annotations.hasAnnotation(InjektClassNames.Module)) {
+                    moduleFunctions += declaration
+                }
+
+                return super.visitFunction(declaration)
+            }
+        })
     }
 
     private fun IrBuilderWithScope.moduleClass(
@@ -145,19 +177,14 @@ class ModuleTransformer(
                 }
             })
 
-            val parentFqNameByCalls = parentCalls.associateWith {
+            val parentsByCalls = parentCalls.associateWith {
                 val key = (it.getValueArgument(0) as IrConst<String>).value
-                val componentFqName = declarationStore.getComponentFqName(key)
-                componentFqName
+                declarationStore.getComponent(key)
             }
 
             val modulesByCalls = moduleCalls.associateWith {
                 val moduleFqName = getModuleName(it.symbol.descriptor)
-                try {
-                    declarationStore.getModule(moduleFqName)
-                } catch (e: Exception) {
-                    getProcessedModule(it.symbol.owner)
-                }
+                declarationStore.getModule(moduleFqName)
             }
 
             val modulesFields = modulesByCalls.values.toList().associateWith {
@@ -217,7 +244,6 @@ class ModuleTransformer(
                             modulesFields.getValue(module),
                             irCall(module.constructors.single()).apply {
                                 copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                                extensionReceiver = null
                             }
                         )
                     }

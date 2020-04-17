@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -66,20 +67,90 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 class ComponentTransformer(
     pluginContext: IrPluginContext,
     private val bindingTrace: BindingTrace,
-    private val declarationStore: InjektDeclarationStore
+    private val declarationStore: InjektDeclarationStore,
+    private val moduleFragment: IrModuleFragment
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val component = getTopLevelClass(InjektClassNames.Component)
     private val componentMetadata = getTopLevelClass(InjektClassNames.ComponentMetadata)
     private val provider = getTopLevelClass(InjektClassNames.Provider)
 
+    private val componentCalls = mutableListOf<IrCall>()
+    private val fileByCall = mutableMapOf<IrCall, IrFile>()
+    private val valueParametersByCapturesByComponent =
+        mutableMapOf<IrClass, Map<IrGetValue, IrValueParameter>>()
+
+    private var computedComponentCalls = false
+    private val processedComponentsByKey = mutableMapOf<String, IrClass>()
+    private val processedComponentsByCall = mutableMapOf<IrCall, IrClass>()
+    private val processingComponents = mutableSetOf<String>()
+
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
+        computeComponentCallsIfNeeded()
 
-        val componentCalls = mutableListOf<IrCall>()
-        val fileByCall = mutableMapOf<IrCall, IrFile>()
+        componentCalls.forEach { getProcessedComponent(it) }
 
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                super.visitCall(expression)
+
+                return processedComponentsByCall[expression]
+                    ?.let {
+                        DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                            val constructor = it.constructors.single()
+                            irCall(constructor).apply {
+                                valueParametersByCapturesByComponent[it]?.forEach { (capture, valueParameter) ->
+                                    putValueArgument(valueParameter.index, capture)
+                                }
+                            }
+                        }
+                    } ?: expression
+            }
+        })
+
+        return moduleFragment
+    }
+
+    fun getProcessedComponent(key: String): IrClass? {
+        processedComponentsByKey[key]?.let { return it }
+
+        val call = componentCalls.firstOrNull {
+            (it.getValueArgument(0) as IrConst<String>).value == key
+        } ?: return null
+
+        return getProcessedComponent(call)
+    }
+
+    fun getProcessedComponent(call: IrCall): IrClass? {
+        computeComponentCallsIfNeeded()
+        return DeclarationIrBuilder(pluginContext, call.symbol).run {
+            val key = (call.getValueArgument(0) as IrConst<String>).value
+
+            check(key !in processingComponents) {
+                "Circular dependency for component $key"
+            }
+            processingComponents += key
+
+            val componentDefinition = call.getValueArgument(1) as IrFunctionExpression
+            val file = fileByCall[call]!!
+            val component = componentClass(
+                componentDefinition,
+                getComponentFqName(call, file).shortName()
+            )
+            file.addChild(component)
+            processedComponentsByCall[call] = component
+            processedComponentsByKey[key] = component
+            processingComponents -= key
+            component
+        }
+    }
+
+    private fun computeComponentCallsIfNeeded() {
+        if (computedComponentCalls) return
+        computedComponentCalls = true
+
+        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             private val fileStack = mutableListOf<IrFile>()
             override fun visitFile(declaration: IrFile): IrFile {
                 fileStack.push(declaration)
@@ -97,45 +168,12 @@ class ComponentTransformer(
                 return expression
             }
         })
-
-        val componentResultsByCalls = componentCalls.associateWith { componentCall ->
-            DeclarationIrBuilder(pluginContext, componentCall.symbol).run {
-                val componentDefinition = componentCall.getValueArgument(1) as IrFunctionExpression
-                val file = fileByCall[componentCall]!!
-                val component = componentClass(
-                    componentDefinition,
-                    getComponentFqName(componentCall, file).shortName()
-                )
-                file.addChild(component.first)
-                component
-            }
-        }
-
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                super.visitCall(expression)
-                val (component, valueParametersByCaptures) = componentResultsByCalls[expression]
-                    ?: return expression
-                return DeclarationIrBuilder(pluginContext, expression.symbol).run {
-                    val constructor = component.constructors.single()
-                    irCall(constructor).apply {
-                        valueParametersByCaptures.forEach { (capture, valueParameter) ->
-                            putValueArgument(valueParameter.index, capture)
-                        }
-                    }
-                }
-            }
-        })
-
-        return declaration
     }
 
     private fun IrBuilderWithScope.componentClass(
         componentDefinition: IrFunctionExpression,
         name: Name
-    ): Pair<IrClass, Map<IrGetValue, IrValueParameter>> {
-        val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
-
+    ): IrClass {
         return buildClass {
             kind = ClassKind.CLASS
             origin = InjektDeclarationOrigin
@@ -146,6 +184,9 @@ class ComponentTransformer(
             superTypes += component.defaultType.toIrType()
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
+            valueParametersByCapturesByComponent[this] = valueParametersByCapture
 
             val moduleCalls = mutableListOf<IrCall>()
 
@@ -352,7 +393,7 @@ class ComponentTransformer(
                 graph.componentBindings,
                 providerFields
             )
-        } to valueParametersByCapture
+        }
     }
 
     private fun IrBuilderWithScope.providerInitializer(

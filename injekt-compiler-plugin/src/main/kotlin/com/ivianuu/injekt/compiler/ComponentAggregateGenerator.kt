@@ -58,7 +58,7 @@ class ComponentAggregateGenerator(
             val key = (componentCall.getValueArgument(0) as IrConst<String>).value
 
             val existingComponent = try {
-                declarationStore.getComponentFqName(key)
+                declarationStore.getComponent(key)
             } catch (e: Exception) {
                 null
             }
