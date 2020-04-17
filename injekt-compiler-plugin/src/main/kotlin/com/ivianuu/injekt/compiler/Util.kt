@@ -82,7 +82,8 @@ fun getComponentFqName(
     file: IrFile
 ): FqName {
     return FqName(
-        "${file.fqName}.Component${
+        "${file.fqName.takeIf { it != FqName.ROOT }?.asString()?.let { "$it." }
+            .orEmpty()}Component${
         (file.name.removeSuffix(".kt") + expression.startOffset).hashCode()
             .toString()
             .removeIllegalChars()

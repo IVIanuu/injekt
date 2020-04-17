@@ -1,7 +1,7 @@
 include(
     ":comparison",
-    ":injekt-core",
     ":injekt-compiler-plugin",
+    ":injekt-core",
     ":injekt-gradle-plugin",
     ":sample"
 )
