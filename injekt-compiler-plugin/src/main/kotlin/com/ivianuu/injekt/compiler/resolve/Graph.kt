@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -18,13 +17,9 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-
-data class ComponentWithAccessor(
-    val component: IrClass,
-    val accessor: () -> IrExpression
-)
 
 class Graph(
     private val context: IrPluginContext,
@@ -133,14 +128,14 @@ class Graph(
     private fun collectBindings() {
         allParents.forEach { componentWithAccessor ->
             val component = componentWithAccessor.component
-            val metadata = component.descriptor.annotations.singleOrNull {
+            val componentMetadata = component.descriptor.annotations.singleOrNull {
                 it.fqName == InjektClassNames.ComponentMetadata
             }
                 ?: error("Wtf for ${componentWithAccessor.component.dump()} this component is ${this.component.dump()}")
 
-            val bindingKeys = metadata.getStringList("bindingKeys")
+            val bindingKeys = componentMetadata.getStringList("bindingKeys")
 
-            val bindingProviders = metadata.getStringList("bindingNames")
+            val bindingProviders = componentMetadata.getStringList("bindingNames")
                 .map { providerName ->
                     component.declarations
                         .filterIsInstance<IrField>()
@@ -152,11 +147,12 @@ class Graph(
             }
 
             val componentBindings = bindingKeys.zip(bindingProviders) { key, provider ->
-                Binding(
+                ParentComponentBinding(
                     Key((provider.type as IrSimpleType).arguments.single().typeOrNull!!.toKotlinType()),
-                    Binding.BindingType.ComponentProvider(provider, componentWithAccessor),
                     componentWithAccessor.component,
-                    emptyList()
+                    emptyList(),
+                    provider,
+                    componentWithAccessor
                 )
             }
 
@@ -167,13 +163,13 @@ class Graph(
 
         allModules.forEach { moduleWithAccessor ->
             val module = moduleWithAccessor.module
-            val metadata = module.descriptor.annotations.single {
+            val moduleMetadata = module.descriptor.annotations.single {
                 it.fqName == InjektClassNames.ModuleMetadata
             }
 
-            val bindingKeys = metadata.getStringList("bindingKeys")
+            val bindingKeys = moduleMetadata.getStringList("bindingKeys")
 
-            val bindingProviders = metadata.getStringList("bindingNames")
+            val bindingProviders = moduleMetadata.getStringList("bindingNames")
                 .map { providerName ->
                     module.declarations
                         .filterIsInstance<IrClass>()
@@ -185,13 +181,22 @@ class Graph(
             }
 
             val moduleBindings = bindingKeys.zip(bindingProviders) { key, provider ->
-                Binding(
-                    Key(provider.typeParameters.single().superTypes.single().toKotlinType()),
-                    Binding.BindingType.ModuleProvider(provider, moduleWithAccessor),
-                    moduleWithAccessor.module,
-                    provider.constructors.single().valueParameters
+                val providerMetadata = provider.descriptor.annotations.single {
+                    it.fqName == InjektClassNames.ProviderMetadata
+                }
+
+                val isSingle =
+                    providerMetadata.argumentValue("isSingle")?.value as? Boolean ?: false
+
+                ModuleBinding(
+                    key = Key(provider.typeParameters.single().superTypes.single().toKotlinType()),
+                    containingDeclaration = moduleWithAccessor.module,
+                    dependencies = provider.constructors.single().valueParameters
                         .filter { it.name.asString() != "module" }
-                        .map { Key(it.type.toKotlinType().arguments.single().type) }
+                        .map { Key(it.type.toKotlinType().arguments.single().type) },
+                    provider = provider,
+                    module = moduleWithAccessor,
+                    isSingle = isSingle
                 )
             }
 

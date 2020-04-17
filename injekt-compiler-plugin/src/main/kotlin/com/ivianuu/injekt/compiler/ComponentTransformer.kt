@@ -3,7 +3,9 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolve.Binding
 import com.ivianuu.injekt.compiler.resolve.Graph
 import com.ivianuu.injekt.compiler.resolve.Key
+import com.ivianuu.injekt.compiler.resolve.ModuleBinding
 import com.ivianuu.injekt.compiler.resolve.ModuleWithAccessor
+import com.ivianuu.injekt.compiler.resolve.ParentComponentBinding
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -74,6 +76,7 @@ class ComponentTransformer(
     private val component = getTopLevelClass(InjektClassNames.Component)
     private val componentMetadata = getTopLevelClass(InjektClassNames.ComponentMetadata)
     private val provider = getTopLevelClass(InjektClassNames.Provider)
+    private val singleProvider = getTopLevelClass(InjektClassNames.SingleProvider)
 
     private val componentCalls = mutableListOf<IrCall>()
     private val fileByCall = mutableMapOf<IrCall, IrFile>()
@@ -405,14 +408,14 @@ class ComponentTransformer(
         binding: Binding,
         component: () -> IrExpression,
         providerFields: Map<Key, IrField>
-    ): IrExpression = when (binding.bindingType) {
-        is Binding.BindingType.ComponentProvider -> {
-            val provider = binding.bindingType.provider
-            irGetField(binding.bindingType.componentWithAccessor.accessor(), provider)
+    ): IrExpression = when (binding) {
+        is ParentComponentBinding -> {
+            val provider = binding.providerField
+            irGetField(binding.componentWithAccessor.accessor(), provider)
         }
-        is Binding.BindingType.ModuleProvider -> {
-            val provider = binding.bindingType.provider
-            if (provider.kind == ClassKind.OBJECT) {
+        is ModuleBinding -> {
+            val provider = binding.provider
+            val providerExpression = if (provider.kind == ClassKind.OBJECT) {
                 irGetObject(provider.symbol)
             } else {
                 val constructor = provider.constructors.single()
@@ -420,7 +423,7 @@ class ComponentTransformer(
                     val needsModule =
                         constructor.valueParameters.firstOrNull()?.name?.asString() == "module"
                     if (needsModule) {
-                        putValueArgument(0, binding.bindingType.module.accessor())
+                        putValueArgument(0, binding.module.accessor())
                     }
                     binding.dependencies.forEachIndexed { index, key ->
                         putValueArgument(
@@ -432,6 +435,18 @@ class ComponentTransformer(
                         )
                     }
                 }
+            }
+
+            if (binding.isSingle) {
+                irCall(
+                    callee = symbolTable.referenceConstructor(
+                        singleProvider.unsubstitutedPrimaryConstructor!!
+                    ).ensureBound(pluginContext.irProviders).owner,
+                ).apply {
+                    putValueArgument(0, providerExpression)
+                }
+            } else {
+                providerExpression
             }
         }
     }

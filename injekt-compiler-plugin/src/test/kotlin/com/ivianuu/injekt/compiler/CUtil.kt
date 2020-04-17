@@ -6,7 +6,6 @@ import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 import kotlin.reflect.KClass
-import kotlin.reflect.full.declaredFunctions
 
 fun source(
     @Language("kotlin") source: String,
@@ -65,10 +64,10 @@ fun KotlinCompilation.Result.expectNoErrorsWhileInvokingSingleFile() {
 fun KotlinCompilation.Result.invokeSingleFile(): Any? = invokeSingleFile<Any?>()
 
 fun <T> KotlinCompilation.Result.invokeSingleFile(): T {
-    val generatedClass = getSingleClass()
-    return generatedClass.declaredFunctions
+    val generatedClass = getSingleClass().java
+    return generatedClass.declaredMethods
         .single { it.name == "invoke" }
-        .call() as T
+        .invoke(null) as T
 }
 
 private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =

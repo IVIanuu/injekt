@@ -1,5 +1,8 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Component
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class ComponentTest {
@@ -146,6 +149,40 @@ class ComponentTest {
                 """
     ) {
         expectNoErrorsWhileInvokingSingleFile()
+    }
+
+    @Test
+    fun testFactory() = codegenTest(
+        """
+            val MyComponent = Component("c") { 
+                factory { Foo() } 
+                }
+                
+                fun invoke() = MyComponent
+                """
+    ) {
+        val component = invokeSingleFile() as Component
+        assertNotSame(
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo"),
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo")
+        )
+    }
+
+    @Test
+    fun testSingle() = codegenTest(
+        """
+            val MyComponent = Component("c") { 
+                single { Foo() } 
+                }
+                
+                fun invoke() = MyComponent
+                """
+    ) {
+        val component = invokeSingleFile() as Component
+        assertSame(
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo"),
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo")
+        )
     }
 
     /*@Test

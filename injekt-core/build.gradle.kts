@@ -16,7 +16,6 @@
 
 plugins {
     kotlin("jvm")
-    //id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")

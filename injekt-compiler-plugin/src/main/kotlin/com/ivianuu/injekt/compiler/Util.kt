@@ -16,11 +16,18 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -38,6 +45,9 @@ import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 
 object InjektClassNames {
@@ -53,6 +63,8 @@ object InjektClassNames {
     val ModuleMetadata = InjektInternalPackage.child("ModuleMetadata")
     val Provider = InjektPackage.child("Provider")
     val ProviderDsl = InjektPackage.child("ProviderDsl")
+    val ProviderMetadata = InjektInternalPackage.child("ProviderMetadata")
+    val SingleProvider = InjektInternalPackage.child("SingleProvider")
 }
 
 fun ModuleDescriptor.getTopLevelClass(fqName: FqName) =
@@ -136,3 +148,38 @@ internal val KotlinType.isSpecialType: Boolean
         this === TypeUtils.NO_EXPECTED_TYPE || this === TypeUtils.UNIT_EXPECTED_TYPE
 
 val AnnotationDescriptor.isModuleAnnotation: Boolean get() = fqName == InjektClassNames.Module
+
+fun KotlinType.asTypeName(): TypeName? {
+    if (isError) return null
+    if (this.isTypeParameter()) {
+        val descriptor = constructor.declarationDescriptor as TypeParameterDescriptor
+        return TypeVariableName(
+            descriptor.name.asString(),
+            *descriptor
+                .upperBounds
+                .map { it.asTypeName()!! }
+                .toTypedArray(),
+            variance = when (descriptor.variance) {
+                Variance.INVARIANT -> null
+                Variance.IN_VARIANCE -> KModifier.IN
+                Variance.OUT_VARIANCE -> KModifier.OUT
+            }
+        ).copy(nullable = isMarkedNullable)
+    }
+    val type = try {
+        ClassName.bestGuess(
+            constructor.declarationDescriptor?.fqNameSafe?.asString() ?: return null
+        )
+    } catch (e: Exception) {
+        return null
+    }
+    return (if (arguments.isNotEmpty()) {
+        val parameters = arguments.map {
+            if (it.isStarProjection) STAR else it.type.asTypeName()
+        }
+        if (parameters.any { it == null }) return null
+        type.parameterizedBy(*parameters.toTypedArray().requireNoNulls())
+    } else type).copy(
+        nullable = isMarkedNullable
+    )
+}

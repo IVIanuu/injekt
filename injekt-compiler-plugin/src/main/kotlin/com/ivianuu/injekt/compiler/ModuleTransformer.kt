@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addTypeParameter
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -70,6 +71,7 @@ class ModuleTransformer(
     private val moduleMetadata = getTopLevelClass(InjektClassNames.ModuleMetadata)
     private val provider = getTopLevelClass(InjektClassNames.Provider)
     private val providerDsl = getTopLevelClass(InjektClassNames.ProviderDsl)
+    private val providerMetadata = getTopLevelClass(InjektClassNames.ProviderMetadata)
 
     private val moduleFunctions = mutableListOf<IrFunction>()
     private val processedModules = mutableMapOf<IrFunction, IrClass>()
@@ -148,6 +150,7 @@ class ModuleTransformer(
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
+            val scopeCalls = mutableListOf<IrCall>()
             val parentCalls = mutableListOf<IrCall>()
             val definitionCalls = mutableListOf<IrCall>()
             val moduleCalls = mutableListOf<IrCall>()
@@ -165,6 +168,12 @@ class ModuleTransformer(
                         expression.symbol.descriptor.name.asString() == "factory" -> {
                             definitionCalls += expression
                         }
+                        expression.symbol.descriptor.name.asString() == "single" -> {
+                            definitionCalls += expression
+                        }
+                        expression.symbol.descriptor.name.asString() == "instance" -> {
+                            definitionCalls += expression
+                        }
                         expression.symbol.descriptor.annotations.hasAnnotation(
                             InjektClassNames.Module
                         )
@@ -176,6 +185,8 @@ class ModuleTransformer(
                     return expression
                 }
             })
+
+            val scopes = scopeCalls.map { FqName.ROOT }
 
             val parentsByCalls = parentCalls.associateWith {
                 val key = (it.getValueArgument(0) as IrConst<String>).value
@@ -273,6 +284,7 @@ class ModuleTransformer(
                     provider(
                         name = Name.identifier("provider_$index"),
                         definition = definitionCall.getValueArgument(1)!!.cast(),
+                        isSingle = definitionCall.symbol.descriptor.name.asString() == "single",
                         module = this,
                         moduleParametersMap = parameterMap,
                         moduleFieldsByParameter = fieldsByParameters
@@ -281,6 +293,7 @@ class ModuleTransformer(
             }
 
             annotations += moduleMetadata(
+                scopes = scopes,
                 parentCalls,
                 parentFields,
                 definitionCalls,
@@ -307,6 +320,7 @@ class ModuleTransformer(
     }
 
     private fun IrBuilderWithScope.moduleMetadata(
+        scopes: List<FqName>,
         parentCalls: List<IrCall>,
         parentFields: Map<IrClass, IrField>,
         definitionCalls: List<IrCall>,
@@ -319,9 +333,22 @@ class ModuleTransformer(
                 .ensureBound(pluginContext.irProviders),
             emptyList()
         ).apply {
-            // parent keys
+            // scopes
             putValueArgument(
                 0,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    scopes.map { irString(it.asString()) }
+                )
+            )
+
+            // parent keys
+            putValueArgument(
+                1,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -336,7 +363,7 @@ class ModuleTransformer(
 
             // parent names
             putValueArgument(
-                1,
+                2,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -359,7 +386,7 @@ class ModuleTransformer(
                 }
             // binding keys
             putValueArgument(
-                2,
+                3,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -371,7 +398,7 @@ class ModuleTransformer(
             )
             // binding providers
             putValueArgument(
-                3,
+                4,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -384,7 +411,7 @@ class ModuleTransformer(
 
             // included module types
             putValueArgument(
-                4,
+                5,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -400,7 +427,7 @@ class ModuleTransformer(
 
             // included module names
             putValueArgument(
-                5,
+                6,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -422,6 +449,7 @@ class ModuleTransformer(
     private fun IrBuilderWithScope.provider(
         name: Name,
         definition: IrFunctionExpression,
+        isSingle: Boolean,
         module: IrClass,
         moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
         moduleFieldsByParameter: Map<IrValueParameter, IrField>
@@ -623,6 +651,21 @@ class ModuleTransformer(
                     }
                 })
             }
+
+            annotations += providerMetadata(isSingle)
+        }
+    }
+
+    private fun IrBuilderWithScope.providerMetadata(isSingle: Boolean): IrConstructorCall {
+        return irCallConstructor(
+            symbolTable.referenceConstructor(providerMetadata.constructors.single())
+                .ensureBound(pluginContext.irProviders),
+            emptyList()
+        ).apply {
+            putValueArgument(
+                0,
+                irBoolean(isSingle)
+            )
         }
     }
 
