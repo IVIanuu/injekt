@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.builders.irEquals
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
@@ -104,6 +105,7 @@ class ComponentTransformer(
                 val component = componentClass(componentDefinition)
                 val file = fileByCall[componentCall]!!
                 file.addChild(component)
+                //error(component.dump())
 
                 declaration.addClass(
                     pluginContext.psiSourceManager.cast(),
@@ -196,6 +198,7 @@ class ComponentTransformer(
 
             val modules = modulesByCalls.values.toList()
 
+            // todo do not include fields for modules which arent't referenced somewhere
             val moduleFields = modules.associateWith {
                 addField(
                     it.name,
@@ -338,8 +341,7 @@ class ComponentTransformer(
                 symbolTable.referenceConstructor(componentMetadata.constructors.single())
                     .ensureBound(pluginContext.irProviders),
                 emptyList()
-            ).apply {
-            }
+            )
         }
     }
 
@@ -350,21 +352,25 @@ class ComponentTransformer(
     ): IrExpression = when (binding.bindingType) {
         is Binding.BindingType.ModuleProvider -> {
             val provider = binding.bindingType.provider
-            val constructor = provider.constructors.single()
-            irCall(callee = constructor).apply {
-                val needsModule =
-                    constructor.valueParameters.firstOrNull()?.name?.asString() == "module"
-                if (needsModule) {
-                    putValueArgument(0, binding.bindingType.module.accessor())
-                }
-                binding.dependencies.forEachIndexed { index, key ->
-                    putValueArgument(
-                        if (needsModule) index + 1 else index,
-                        irGetField(
-                            component(),
-                            providerFields[key]!!
+            if (provider.kind == ClassKind.OBJECT) {
+                irGetObject(provider.symbol)
+            } else {
+                val constructor = provider.constructors.single()
+                irCall(callee = constructor).apply {
+                    val needsModule =
+                        constructor.valueParameters.firstOrNull()?.name?.asString() == "module"
+                    if (needsModule) {
+                        putValueArgument(0, binding.bindingType.module.accessor())
+                    }
+                    binding.dependencies.forEachIndexed { index, key ->
+                        putValueArgument(
+                            if (needsModule) index + 1 else index,
+                            irGetField(
+                                component(),
+                                providerFields[key]!!
+                            )
                         )
-                    )
+                    }
                 }
             }
         }

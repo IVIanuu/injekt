@@ -219,7 +219,8 @@ class ModuleTransformer(
                         name = Name.identifier("provider_$index"),
                         definition = definitionCall.getValueArgument(1)!!.cast(),
                         module = this,
-                        moduleParametersMap = parameterMap
+                        moduleParametersMap = parameterMap,
+                        moduleFieldsByParameter = fieldsByParameters
                     ).also { providerByDefinitionCall[definitionCall] = it }
                 )
             }
@@ -335,7 +336,8 @@ class ModuleTransformer(
         name: Name,
         definition: IrFunctionExpression,
         module: IrClass,
-        moduleParametersMap: Map<IrValueParameter, IrValueParameter>
+        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
+        moduleFieldsByParameter: Map<IrValueParameter, IrField>
     ): IrClass {
         val definitionFunction = definition.function
 
@@ -390,10 +392,10 @@ class ModuleTransformer(
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             val moduleField = if (capturedModuleValueParameters.isNotEmpty()) {
-                addField {
-                    this.name = module.name
-                    this.type = module.defaultType
-                }
+                addField(
+                    module.name.asString(),
+                    module.defaultType
+                )
             } else null
 
             var depIndex = 0
@@ -416,17 +418,17 @@ class ModuleTransformer(
                 isPrimary = true
             }.apply {
                 if (moduleField != null) {
-                    addValueParameter {
-                        this.name = Name.identifier("module")
-                        this.type = module.defaultType
-                    }
+                    addValueParameter(
+                        "module",
+                        module.defaultType
+                    )
                 }
 
                 fieldsByDependency.forEach { (_, field) ->
-                    addValueParameter {
-                        this.name = field.name
-                        this.type = field.type
-                    }
+                    addValueParameter(
+                        field.name.asString(),
+                        field.type
+                    )
                 }
 
                 body = irBlockBody {
@@ -515,6 +517,22 @@ class ModuleTransformer(
                                 )
                             }
                         } ?: expression
+                    }
+
+                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                        return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
+                            super.visitGetValue(expression)
+                        } else {
+                            val newParameter = moduleParametersMap[expression.symbol.owner]!!
+                            val field = moduleFieldsByParameter[newParameter]!!
+                            return irGetField(
+                                irGetField(
+                                    irGet(dispatchReceiverParameter!!),
+                                    moduleField!!
+                                ),
+                                field
+                            )
+                        }
                     }
                 })
             }

@@ -5,19 +5,18 @@ import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.Module
 
 val My2Component = Component("app") {
-    foo()
+    foo("dataString")
 }
 
 @Module
-fun ComponentDsl.foo() {
-    factory { Foo("data") }
-    factory { "cool" }
-    bar()
+fun ComponentDsl.foo(data: String) {
+    factory { Foo(data) }
+    bar(data)
 }
 
 @Module
-fun ComponentDsl.bar() {
-    factory { Bar(get(), "data") }
+fun ComponentDsl.bar(data: String) {
+    factory { Bar(get(), data) }
 }
 
 class Foo(data: String)

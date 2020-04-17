@@ -2,11 +2,9 @@ package com.ivianuu.injekt.compiler.resolve
 
 import com.ivianuu.injekt.compiler.InjektClassNames
 import com.ivianuu.injekt.compiler.ModuleStore
-import com.ivianuu.injekt.compiler.getTopLevelClass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
@@ -24,10 +22,6 @@ class Graph(
     private val modules: List<ModuleWithAccessor>,
     private val moduleStore: ModuleStore
 ) {
-
-    private val moduleMetadata =
-        context.moduleDescriptor.getTopLevelClass(InjektClassNames.ModuleMetadata)
-    private val provider = context.moduleDescriptor.getTopLevelClass(InjektClassNames.Provider)
 
     val componentBindings = mutableMapOf<Key, Binding>()
 
@@ -123,12 +117,10 @@ class Graph(
         ).forEach { (includedModuleType, includedModuleFieldName) ->
             val includedModule = moduleStore.getModule(FqName(includedModuleType))
             val field = module.fields.single { it.name.asString() == includedModuleFieldName }
-            ModuleWithAccessor(
-                includedModule
-            ) {
+            ModuleWithAccessor(includedModule) {
                 DeclarationIrBuilder(this@Graph.context, module.symbol).run {
                     irGetField(
-                        irGet(module.thisReceiver!!),
+                        moduleWithAccessor.accessor(),
                         field
                     )
                 }
