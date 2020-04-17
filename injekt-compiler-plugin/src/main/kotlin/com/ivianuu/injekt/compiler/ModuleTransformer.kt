@@ -182,6 +182,14 @@ class ModuleTransformer(
                 declarationStore.getComponent(key)
             }
 
+            val parentFields = parentsByCalls.values.toList().associateWith {
+                addField(
+                    it.name.asString(),
+                    it.defaultType,
+                    Visibilities.PUBLIC
+                )
+            }
+
             val modulesByCalls = moduleCalls.associateWith {
                 val moduleFqName = getModuleName(it.symbol.descriptor)
                 declarationStore.getModule(moduleFqName)
@@ -238,6 +246,14 @@ class ModuleTransformer(
                         )
                     }
 
+                    parentsByCalls.forEach { (call, parent) ->
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            parentFields.getValue(parent),
+                            irCall(parent.constructors.single())
+                        )
+                    }
+
                     modulesByCalls.forEach { (call, module) ->
                         +irSetField(
                             irGet(thisReceiver!!),
@@ -265,6 +281,8 @@ class ModuleTransformer(
             }
 
             annotations += moduleMetadata(
+                parentCalls,
+                parentFields,
                 definitionCalls,
                 providerByDefinitionCall,
                 modulesByCalls,
@@ -289,7 +307,9 @@ class ModuleTransformer(
     }
 
     private fun IrBuilderWithScope.moduleMetadata(
-        definitionCalls: MutableList<IrCall>,
+        parentCalls: List<IrCall>,
+        parentFields: Map<IrClass, IrField>,
+        definitionCalls: List<IrCall>,
         providerByDefinitionCall: Map<IrCall, IrClass>,
         modulesByCalls: Map<IrCall, IrClass>,
         modulesFields: Map<IrClass, IrField>
@@ -299,6 +319,34 @@ class ModuleTransformer(
                 .ensureBound(pluginContext.irProviders),
             emptyList()
         ).apply {
+            // parent keys
+            putValueArgument(
+                0,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    parentCalls.map {
+                        irString((it.getValueArgument(0) as IrConst<String>).value)
+                    }
+                )
+            )
+
+            // parent names
+            putValueArgument(
+                1,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    pluginContext.irBuiltIns.arrayClass
+                        .typeWith(pluginContext.irBuiltIns.stringType),
+                    pluginContext.irBuiltIns.stringType,
+                    parentFields.map { irString(it.value.name.asString()) }
+                )
+            )
+
             val bindings = definitionCalls
                 .map { call ->
                     irString(

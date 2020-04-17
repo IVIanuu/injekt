@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -56,6 +55,15 @@ class ComponentAggregateGenerator(
 
         componentCalls.forEach { componentCall ->
             val key = (componentCall.getValueArgument(0) as IrConst<String>).value
+            val componentFqName = getComponentFqName(componentCall, fileByCall[componentCall]!!)
+            val aggregateName = Name.identifier(
+                "${key}\$${componentFqName.asString().replace(".", "_")}"
+            )
+
+            pluginContext.irTrace.record(
+                InjektWritableSlices.COMPONENT_FQ_NAME,
+                componentCall, componentFqName
+            )
 
             val existingComponent = try {
                 declarationStore.getComponent(key)
@@ -71,10 +79,7 @@ class ComponentAggregateGenerator(
                 pluginContext.psiSourceManager.cast(),
                 project,
                 buildClass {
-                    name = Name.identifier(
-                        "${key}\$${getComponentFqName(componentCall, fileByCall[componentCall]!!)
-                            .asString().replace(".", "_")}"
-                    )
+                    name = aggregateName
                 }.apply clazz@{
                     createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -100,7 +105,7 @@ class ComponentAggregateGenerator(
                         }
                     }
                 },
-                FqName("com.ivianuu.injekt.internal.components")
+                InjektClassNames.InjektComponentsPackage
             )
 
         }

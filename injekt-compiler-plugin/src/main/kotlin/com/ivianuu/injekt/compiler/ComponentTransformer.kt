@@ -113,6 +113,8 @@ class ComponentTransformer(
     }
 
     fun getProcessedComponent(key: String): IrClass? {
+        computeComponentCallsIfNeeded()
+
         processedComponentsByKey[key]?.let { return it }
 
         val call = componentCalls.firstOrNull {
@@ -124,6 +126,7 @@ class ComponentTransformer(
 
     fun getProcessedComponent(call: IrCall): IrClass? {
         computeComponentCallsIfNeeded()
+
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
             val key = (call.getValueArgument(0) as IrConst<String>).value
 
@@ -136,7 +139,8 @@ class ComponentTransformer(
             val file = fileByCall[call]!!
             val component = componentClass(
                 componentDefinition,
-                getComponentFqName(call, file).shortName()
+                pluginContext.irTrace.get(InjektWritableSlices.COMPONENT_FQ_NAME, call)!!
+                    .shortName()
             )
             file.addChild(component)
             processedComponentsByCall[call] = component
@@ -209,7 +213,6 @@ class ComponentTransformer(
                 declarationStore.getModule(moduleFqName)
             }
 
-
             val captures = mutableListOf<IrGetValue>()
             componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
                 override fun visitGetValue(expression: IrGetValue): IrExpression {
@@ -231,7 +234,7 @@ class ComponentTransformer(
                 )
             }
 
-            val graph = Graph(pluginContext, bindingTrace, modules.map { module ->
+            val graph = Graph(pluginContext, bindingTrace, this, modules.map { module ->
                 ModuleWithAccessor(module) {
                     irGetField(
                         irGet(thisReceiver!!),
@@ -242,9 +245,9 @@ class ComponentTransformer(
 
             val providerFields = mutableMapOf<Binding, IrField>()
 
-            graph.componentBindings.forEach { (key, binding) ->
+            graph.allBindings.forEach { (key, binding) ->
                 addField(
-                    fieldName = "${binding.module.name}_${key.fieldName}",
+                    fieldName = "${binding.containingDeclaration.name}_${key.fieldName}",
                     fieldType = provider.defaultType.replace(
                         newArguments = listOf(binding.key.type.asTypeProjection())
                     ).toIrType(),
@@ -351,7 +354,7 @@ class ComponentTransformer(
                     DeclarationIrBuilder(pluginContext, symbol).irReturn(
                         irWhen(
                             type = returnType,
-                            branches = graph.componentBindings
+                            branches = graph.allBindings
                                 .map { (key, binding) ->
                                     irBranch(
                                         condition = irEquals(
@@ -362,7 +365,7 @@ class ComponentTransformer(
                                             symbolTable.referenceSimpleFunction(
                                                 provider.unsubstitutedMemberScope
                                                     .findSingleFunction(Name.identifier("invoke"))
-                                            )
+                                            ).ensureBound(pluginContext.irProviders)
                                         ).apply {
                                             dispatchReceiver = irGetField(
                                                 irGet(dispatchReceiverParameter!!),
@@ -390,9 +393,11 @@ class ComponentTransformer(
             }
 
             annotations += componentMetadata(
-                graph.componentBindings,
+                graph.allBindings,
                 providerFields
             )
+
+            check(descriptor.annotations.hasAnnotation(InjektClassNames.ComponentMetadata))
         }
     }
 
@@ -401,6 +406,10 @@ class ComponentTransformer(
         component: () -> IrExpression,
         providerFields: Map<Key, IrField>
     ): IrExpression = when (binding.bindingType) {
+        is Binding.BindingType.ComponentProvider -> {
+            val provider = binding.bindingType.provider
+            irGetField(binding.bindingType.componentWithAccessor.accessor(), provider)
+        }
         is Binding.BindingType.ModuleProvider -> {
             val provider = binding.bindingType.provider
             if (provider.kind == ClassKind.OBJECT) {
@@ -438,7 +447,7 @@ class ComponentTransformer(
         ).apply {
             // binding keys
             putValueArgument(
-                2,
+                0,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
@@ -456,7 +465,7 @@ class ComponentTransformer(
             )
             // binding providers
             putValueArgument(
-                3,
+                1,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,

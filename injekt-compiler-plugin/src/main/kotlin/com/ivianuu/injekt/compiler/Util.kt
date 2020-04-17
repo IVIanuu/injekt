@@ -44,7 +44,7 @@ object InjektClassNames {
     private fun FqName.child(name: String) = child(Name.identifier(name))
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = InjektPackage.child("internal")
-    val InjektComponentsPackage = InjektInternalPackage.child("Components")
+    val InjektComponentsPackage = InjektInternalPackage.child("components")
 
     val Component = InjektPackage.child("Component")
     val ComponentMetadata = InjektInternalPackage.child("ComponentMetadata")

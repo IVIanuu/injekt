@@ -17,27 +17,51 @@ class InjektDeclarationStore(
 
     fun getComponent(key: String): IrClass {
         return try {
-            val componentPackage = pluginContext.moduleDescriptor
-                .getPackage(InjektClassNames.InjektComponentsPackage)
-            return pluginContext.symbolTable.referenceClass(
-                componentPackage.memberScope
-                    .getContributedDescriptors()
-                    .filterIsInstance<ClassDescriptor>()
-                    .single { it.name.asString().startsWith("$key\$") }
-            ).ensureBound(pluginContext.irProviders).owner
-        } catch (e: Exception) {
+            componentTransformer.getProcessedComponent(key)
+                ?: throw DeclarationNotFound("Couldn't find for $key")
+        } catch (e: DeclarationNotFound) {
             try {
                 moduleFragment.files
                     .flatMap { it.declarations }
                     .filterIsInstance<IrClass>()
-                    .singleOrNull { it.name.asString().startsWith("$key\$") }
-                    ?: throw IllegalStateException(e)
-            } catch (e: Exception) {
+                    .singleOrNull {
+                        it.name.asString().startsWith("$key\$")
+                    }
+                    ?.let {
+                        it.name.asString().removePrefix("$key\$")
+                            .replace("_", ".")
+                    }
+                    ?.let { fqName ->
+                        moduleFragment.files
+                            .flatMap { it.declarations }
+                            .filterIsInstance<IrClass>()
+                            .singleOrNull {
+                                it.fqNameForIrSerialization.asString() == fqName
+                            }
+                    }
+                    ?: throw DeclarationNotFound("Decls ${moduleFragment.files.flatMap { it.declarations }
+                        .map { it.descriptor.name }}")
+            } catch (e: DeclarationNotFound) {
                 try {
-                    componentTransformer.getProcessedComponent(key)
-                        ?: throw IllegalStateException(e)
-                } catch (e: Exception) {
-                    throw IllegalStateException("Couldn't find component for $key", e)
+                    val componentPackage = pluginContext.moduleDescriptor
+                        .getPackage(InjektClassNames.InjektComponentsPackage)
+
+                    return componentPackage.memberScope
+                        .getContributedDescriptors()
+                        .filterIsInstance<ClassDescriptor>()
+                        .singleOrNull { it.name.asString().startsWith("$key\$") }
+                        ?.let {
+                            it.name.asString().removePrefix("$key\$")
+                                .replace("_", ".")
+                        }
+                        ?.let {
+                            pluginContext.symbolTable.referenceClass(
+                                pluginContext.moduleDescriptor.getTopLevelClass(FqName(it))
+                            ).owner
+                        }
+                        ?: throw DeclarationNotFound("Found ${componentPackage.memberScope.getClassifierNames()}")
+                } catch (e: DeclarationNotFound) {
+                    throw DeclarationNotFound("Couldn't find component for $key")
                 }
             }
         }
@@ -45,25 +69,27 @@ class InjektDeclarationStore(
 
     fun getModule(fqName: FqName): IrClass {
         return try {
-            pluginContext.symbolTable.referenceClass(
-                pluginContext.moduleDescriptor.getTopLevelClass(fqName)
-            ).ensureBound(pluginContext.irProviders).owner
-        } catch (e: Exception) {
+            moduleTransformer.getProcessedModule(fqName)
+                ?: throw DeclarationNotFound()
+        } catch (e: DeclarationNotFound) {
             try {
                 moduleFragment.files
                     .flatMap { it.declarations }
                     .filterIsInstance<IrClass>()
                     .firstOrNull { it.fqNameForIrSerialization == fqName }
-                    ?: throw IllegalStateException(e)
-            } catch (e: Exception) {
+                    ?: throw DeclarationNotFound()
+            } catch (e: DeclarationNotFound) {
                 try {
-                    moduleTransformer.getProcessedModule(fqName)
-                        ?: throw IllegalStateException(e)
-                } catch (e: Exception) {
-                    throw IllegalStateException("Couldn't find module for $fqName", e)
+                    pluginContext.symbolTable.referenceClass(
+                        pluginContext.moduleDescriptor.getTopLevelClass(fqName)
+                    ).ensureBound(pluginContext.irProviders).owner
+                } catch (e: DeclarationNotFound) {
+                    throw DeclarationNotFound("Couldn't find module for $fqName")
                 }
             }
         }
     }
 
 }
+
+class DeclarationNotFound(message: String? = null) : RuntimeException(message)

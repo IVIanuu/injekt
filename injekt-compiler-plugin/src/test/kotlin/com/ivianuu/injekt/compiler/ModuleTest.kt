@@ -95,7 +95,8 @@ class ModuleTest {
     @Test
     fun testWithParent() = codegenTest(
         """
-            val parent = Component("parent") {}
+            val parent = Component("parent") {
+            }
             
             @Module
             fun module() {
@@ -106,4 +107,49 @@ class ModuleTest {
         assertOk()
     }
 
+    @Test
+    fun testCircularModuleDependency() = codegenTest(
+        """
+            @Module
+            fun a() {
+                b()
+            }
+            
+            @Module
+            fun b() {
+                a()
+            }
+        """
+    ) {
+        assertInternalError()
+    }
+
+    @Test
+    fun testCircularParentDependency() = codegenTest(
+        """
+            val parent = Component("c") {
+                module()
+            }
+            
+            @Module
+            fun module() {
+                parent("c", parent)
+            }
+        """
+    ) {
+        assertInternalError()
+    }
+
+    /**@Test
+    fun testMetadata() = codegenTest(
+    """
+    val parent = Component("c") {
+    }
+
+    @Module
+    fun module() {
+
+    }
+    """
+    )*/
 }
