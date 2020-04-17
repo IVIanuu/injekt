@@ -8,7 +8,7 @@ class ModuleTest {
     fun testSimple() = codegenTest(
         """ 
         @Module
-        fun ComponentDsl.myModule() {
+        fun myModule() {
         }
         """
     ) {
@@ -19,7 +19,7 @@ class ModuleTest {
     fun testWithDeps() = codegenTest(
         """ 
         @Module
-        fun ComponentDsl.myModule() {
+        fun myModule() {
             factory { "" }
         }
         """
@@ -31,7 +31,7 @@ class ModuleTest {
     fun testWithCaptures() = codegenTest(
         """
         @Module
-        fun ComponentDsl.module(capturedValue: String) {
+        fun module(capturedValue: String) {
             factory { capturedValue }
         }
         """
@@ -41,12 +41,12 @@ class ModuleTest {
     fun testWithNestedCaptures() = codegenTest(
         """
         @Module
-        fun ComponentDsl.a(capturedValue: String) {
+        fun a(capturedValue: String) {
             b(capturedValue)
         }
         
         @Module
-        fun ComponentDsl.b(capturedValue: String) {
+        fun b(capturedValue: String) {
             factory { capturedValue }
         }
         """
@@ -57,7 +57,7 @@ class ModuleTest {
         source(
             """
             @Module 
-            fun ComponentDsl.a(capturedValue: String) { 
+            fun a(capturedValue: String) { 
                 b(capturedValue) 
             }
         """
@@ -65,7 +65,7 @@ class ModuleTest {
         source(
             """
                 @Module 
-                fun ComponentDsl.b(capturedValue: String) { 
+                fun b(capturedValue: String) { 
                     factory { capturedValue } 
                 }
         """
@@ -77,7 +77,7 @@ class ModuleTest {
         source(
             """
                 @Module 
-                fun ComponentDsl.b(capturedValue: String) { 
+                fun b(capturedValue: String) { 
                     factory { capturedValue } 
                 }
         """
@@ -85,7 +85,7 @@ class ModuleTest {
         source(
             """
             @Module 
-            fun ComponentDsl.a(capturedValue: String) { 
+            fun a(capturedValue: String) { 
                 b(capturedValue) 
             }
         """

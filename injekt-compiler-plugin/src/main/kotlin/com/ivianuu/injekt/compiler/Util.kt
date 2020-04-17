@@ -18,7 +18,12 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.name
@@ -28,25 +33,31 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 
 object InjektClassNames {
+    private fun FqName.child(name: String) = child(Name.identifier(name))
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
-    val InjektComponentsPackage = FqName("com.ivianuu.injekt.internal.Components")
+    val InjektInternalPackage = InjektPackage.child("internal")
+    val InjektComponentsPackage = InjektInternalPackage.child("Components")
 
-    val Component = FqName("com.ivianuu.injekt.Component")
-    val ComponentDsl = FqName("com.ivianuu.injekt.ComponentDsl")
-    val ComponentMetadata = FqName("com.ivianuu.injekt.internal.ComponentMetadata")
-    val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val Module = FqName("com.ivianuu.injekt.Module")
-    val ModuleMetadata = FqName("com.ivianuu.injekt.internal.ModuleMetadata")
-    val Provider = FqName("com.ivianuu.injekt.Provider")
-    val ProviderDsl = FqName("com.ivianuu.injekt.ProviderDsl")
+    val Component = InjektPackage.child("Component")
+    val ComponentMetadata = InjektInternalPackage.child("ComponentMetadata")
+    val Qualifier = InjektPackage.child("Qualifier")
+    val Module = InjektPackage.child("Module")
+    val ModuleMetadata = InjektInternalPackage.child("ModuleMetadata")
+    val Provider = InjektPackage.child("Provider")
+    val ProviderDsl = InjektPackage.child("ProviderDsl")
 }
 
 fun ModuleDescriptor.getTopLevelClass(fqName: FqName) =
-    findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
+    findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
+        ?: error("No class found for $fqName")
 
 internal lateinit var messageCollector: MessageCollector
 
@@ -90,3 +101,38 @@ fun getComponentFqName(
         }"
     )
 }
+
+fun getModuleName(
+    function: FunctionDescriptor
+): FqName {
+    return FqName(function.fqNameSafe.asString() + "\$Impl")
+}
+
+fun makeModuleAnnotation(module: ModuleDescriptor): AnnotationDescriptor =
+    object : AnnotationDescriptor {
+        override val type: KotlinType
+            get() = module.findClassAcrossModuleDependencies(
+                ClassId.topLevel(InjektClassNames.Module)
+            )!!.defaultType
+        override val allValueArguments: Map<Name, ConstantValue<*>> get() = emptyMap()
+        override val source: SourceElement get() = SourceElement.NO_SOURCE
+        override fun toString() = "[@Module]"
+    }
+
+fun KotlinType.makeModule(module: ModuleDescriptor): KotlinType {
+    if (hasModuleAnnotation()) return this
+    val annotation = makeModuleAnnotation(module)
+    return replaceAnnotations(Annotations.create(annotations + annotation))
+}
+
+fun KotlinType.hasModuleAnnotation(): Boolean =
+    !isSpecialType && annotations.findAnnotation(InjektClassNames.Module) != null
+
+fun Annotated.hasModuleAnnotation(): Boolean =
+    annotations.findAnnotation(InjektClassNames.Module) != null
+
+internal val KotlinType.isSpecialType: Boolean
+    get() =
+        this === TypeUtils.NO_EXPECTED_TYPE || this === TypeUtils.UNIT_EXPECTED_TYPE
+
+val AnnotationDescriptor.isModuleAnnotation: Boolean get() = fqName == InjektClassNames.Module

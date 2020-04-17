@@ -50,7 +50,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // transform the config blocks of Component { ... } to a module
         ComponentBlockTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        // transform all @Module fun ComponentDsl.module() { ... } to classes
+        // transform all @Module fun module() { ... } to classes
         ModuleTransformer(pluginContext, declarationStore).visitModuleAndGenerateSymbols()
 
         // transform all Component { ... } calls to a Component implementation

@@ -102,6 +102,7 @@ import com.ivianuu.injekt.comparison.fibonacci.Fib96
 import com.ivianuu.injekt.comparison.fibonacci.Fib97
 import com.ivianuu.injekt.comparison.fibonacci.Fib98
 import com.ivianuu.injekt.comparison.fibonacci.Fib99
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.get
 
 object InjektTest : InjectionTest {

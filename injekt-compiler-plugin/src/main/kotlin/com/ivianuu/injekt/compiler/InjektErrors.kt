@@ -9,6 +9,10 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 
 interface InjektErrors {
     companion object {
+
+        @JvmField
+        val MODULE_INVOCATION_IN_NON_MODULE = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -24,4 +28,11 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
     private val map = DiagnosticFactoryToRendererMap("Injekt")
     override fun getMap(): DiagnosticFactoryToRendererMap = map
 
+    init {
+        map.put(
+            InjektErrors.MODULE_INVOCATION_IN_NON_MODULE,
+            "Functions which invoke @Module functions must be marked with the @Module " +
+                    "annotation"
+        )
+    }
 }

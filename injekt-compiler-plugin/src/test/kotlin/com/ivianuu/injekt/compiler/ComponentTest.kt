@@ -31,7 +31,7 @@ class ComponentTest {
     fun testWithModule() = codegenTest(
         """
         @Module
-        fun ComponentDsl.module() {
+        fun module() {
             factory { "" }
             factory { 0 }
         }
@@ -48,13 +48,13 @@ class ComponentTest {
     fun testWithNestedModule() = codegenTest(
         """
         @Module
-        fun ComponentDsl.a() {
+        fun a() {
             factory { "" }
             b()
         }
         
         @Module
-        fun ComponentDsl.b() { 
+        fun b() { 
             factory { 0 }
         }
         
@@ -104,7 +104,7 @@ class ComponentTest {
     fun testWithCaptureModule() = codegenTest(
         """
         @Module
-        fun ComponentDsl.module(capturedValue: String) {
+        fun module(capturedValue: String) {
             factory { capturedValue }
         }
             

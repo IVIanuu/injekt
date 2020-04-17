@@ -110,7 +110,7 @@ class ModuleTransformer(
         return buildClass {
             kind = ClassKind.CLASS
             origin = InjektDeclarationOrigin
-            name = Name.identifier(function.name.asString() + "\$Impl")
+            name = getModuleName(function.descriptor).shortName()
             modality = Modality.FINAL
             visibility = function.visibility
         }.apply clazz@{
@@ -152,10 +152,7 @@ class ModuleTransformer(
             }
 
             val modulesByCalls = moduleCalls.associateWith {
-                val moduleFqName =
-                    it.symbol.owner.fqNameForIrSerialization
-                        .parent()
-                        .child(Name.identifier("${it.symbol.owner.name}\$Impl"))
+                val moduleFqName = getModuleName(it.symbol.descriptor)
                 try {
                     declarationStore.getModule(moduleFqName)
                 } catch (e: Exception) {

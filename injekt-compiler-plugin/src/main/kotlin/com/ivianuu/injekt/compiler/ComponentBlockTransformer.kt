@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
-import org.jetbrains.kotlin.ir.builders.declarations.addExtensionReceiver
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -33,7 +32,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ComponentBlockTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
-    private val componentDsl = getTopLevelClass(InjektClassNames.ComponentDsl)
     private val module = getTopLevelClass(InjektClassNames.Module)
     private val providerDsl = getTopLevelClass(InjektClassNames.ProviderDsl)
 
@@ -101,7 +99,6 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
                 ),
                 module.defaultType.toIrType()
             )
-            addExtensionReceiver(componentDsl.defaultType.toIrType())
 
             captures.forEachIndexed { index, capture ->
                 valueParametersByCapture[capture] = addValueParameter(
@@ -112,13 +109,9 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
 
             definitionFunction.body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
                 override fun visitGetValue(expression: IrGetValue): IrExpression {
-                    return if (expression.symbol == definitionFunction.extensionReceiverParameter!!.symbol) {
-                        irGet(extensionReceiverParameter!!)
-                    } else {
-                        valueParametersByCapture[expression]
-                            ?.let { irGet(it) }
-                            ?: super.visitGetValue(expression)
-                    }
+                    return valueParametersByCapture[expression]
+                        ?.let { irGet(it) }
+                        ?: super.visitGetValue(expression)
                 }
 
                 override fun visitReturn(expression: IrReturn): IrExpression {
