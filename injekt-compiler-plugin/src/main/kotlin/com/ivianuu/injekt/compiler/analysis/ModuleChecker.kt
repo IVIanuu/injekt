@@ -58,14 +58,14 @@ import org.jetbrains.kotlin.types.upperIfFlexible
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
+class ModuleChecker : CallChecker, DeclarationChecker,
     AdditionalTypeChecker, StorageComponentContainerContributor {
 
     companion object {
-        fun get(project: Project): ModuleAnnotationChecker {
+        fun get(project: Project): ModuleChecker {
             return StorageComponentContainerContributor.getInstances(project).single {
-                it is ModuleAnnotationChecker
-            } as ModuleAnnotationChecker
+                it is ModuleChecker
+            } as ModuleChecker
         }
     }
 
@@ -94,7 +94,13 @@ class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
                 if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope).size == 1 &&
                     descriptor.valueParameters.isNotEmpty()
                 ) {
-                    trace.report(InjektErrors.IMPLICIT_MODULE_PARAMETERLESS.on(psi))
+                    trace.report(InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS.on(psi))
+                }
+
+                if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope).size == 1 &&
+                    descriptor.typeParameters.isNotEmpty()
+                ) {
+                    trace.report(InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_TYPE_PARAMETERS.on(psi))
                 }
             }
         }
@@ -331,7 +337,7 @@ private val ALLOWED_SCOPE_KINDS = setOf(
 )
 
 private fun findEnclosingModuleFunctionContext(
-    checker: ModuleAnnotationChecker,
+    checker: ModuleChecker,
     context: CallCheckerContext
 ): FunctionDescriptor? = context.scope
     .parentsWithSelf.firstOrNull {

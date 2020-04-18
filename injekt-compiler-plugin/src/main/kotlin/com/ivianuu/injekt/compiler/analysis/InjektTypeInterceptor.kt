@@ -41,8 +41,8 @@ open class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorE
         val module = context.scope.ownerDescriptor.module
         val checker =
             StorageComponentContainerContributor.getInstances(element.project).single {
-                it is ModuleAnnotationChecker
-            } as ModuleAnnotationChecker
+                it is ModuleChecker
+            } as ModuleChecker
         if (context.expectedType.hasModuleAnnotation() || checker.analyze(
                 context.trace,
                 element,

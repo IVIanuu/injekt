@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.ComponentChecker
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
-import com.ivianuu.injekt.compiler.analysis.ModuleAnnotationChecker
+import com.ivianuu.injekt.compiler.analysis.ModuleChecker
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -41,7 +41,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         StorageComponentContainerContributor.registerExtension(
             project,
-            ModuleAnnotationChecker()
+            ModuleChecker()
         )
 
         TypeResolutionInterceptor.registerExtension(
