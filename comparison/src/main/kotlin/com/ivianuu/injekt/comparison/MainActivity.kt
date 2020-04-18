@@ -12,9 +12,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runInjectionTests(InjektTest, config = defaultConfig.copy(rounds = 1000))
+        runInjectionTests(InjektTest, config = defaultConfig.copy(rounds = 100000))
         setContentView(FrameLayout(this).apply { setBackgroundColor(Color.BLACK) })
-
     }
 
 }

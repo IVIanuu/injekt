@@ -92,7 +92,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             unbound = pluginContext.symbolTable.allUnbound
 
             for (symbol in unbound) {
-                if (visited.contains(symbol)) {
+                if (symbol in visited) {
                     continue
                 }
                 // Symbol could get bound as a side effect of deserializing other symbols.

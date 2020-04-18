@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
@@ -229,15 +231,43 @@ class ComponentTransformer(
 
             val modules = modulesByCalls.values.toList()
 
-            val lazyModuleFields = modules.associateWith {
-                lazy {
-                    addField(
-                        it.name,
-                        it.defaultType,
-                        Visibilities.PRIVATE
+            var constructorBodyBuilder: IrBlockBodyBuilder? = null
+            val initializedModules = mutableSetOf<IrClass>()
+
+            fun addModuleInitializerIfNeeded(
+                call: IrCall,
+                module: IrClass,
+                field: IrField
+            ) {
+                if (module in initializedModules) return
+                initializedModules += module
+
+                constructorBodyBuilder?.run {
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        irCall(
+                            module.constructors.single().symbol,
+                            module.defaultType
+                        ).apply {
+                            copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                        }
                     )
                 }
-            }.mapKeys { it.key.fqNameForIrSerialization }
+            }
+
+            val lazyModuleFields = mutableMapOf<FqName, Lazy<IrField>>()
+            modulesByCalls.forEach { (call, module) ->
+                lazyModuleFields[module.fqNameForIrSerialization] = lazy {
+                    addField(
+                        module.name,
+                        module.defaultType,
+                        Visibilities.PRIVATE
+                    ).also {
+                        addModuleInitializerIfNeeded(call, module, it)
+                    }
+                }
+            }
 
             val graph = Graph(pluginContext, bindingTrace, this, modules.map { module ->
                 ModuleWithAccessor(module) {
@@ -276,6 +306,8 @@ class ComponentTransformer(
                 }
 
                 body = irBlockBody {
+                    constructorBodyBuilder = this
+
                     +IrDelegatingConstructorCallImpl(
                         UNDEFINED_OFFSET,
                         UNDEFINED_OFFSET,
@@ -296,16 +328,7 @@ class ComponentTransformer(
                         val lazyModuleField =
                             lazyModuleFields.getValue(module.fqNameForIrSerialization)
                         if (lazyModuleField.isInitialized()) {
-                            +irSetField(
-                                irGet(thisReceiver!!),
-                                lazyModuleField.value,
-                                irCall(
-                                    module.constructors.single().symbol,
-                                    module.defaultType
-                                ).apply {
-                                    copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                                }
-                            )
+                            addModuleInitializerIfNeeded(call, module, lazyModuleField.value)
                         }
                     }
 
@@ -357,7 +380,7 @@ class ComponentTransformer(
 
                 addValueParameter(
                     "key",
-                    pluginContext.irBuiltIns.stringType
+                    pluginContext.irBuiltIns.intType
                 )
 
                 body = irExprBody(
@@ -368,7 +391,7 @@ class ComponentTransformer(
                                 .map { (key, binding) ->
                                     irBranch(
                                         condition = irEquals(
-                                            irString(key.keyConstant),
+                                            irInt(key.keyConstant),
                                             irGet(valueParameters.single())
                                         ),
                                         result = irCall(

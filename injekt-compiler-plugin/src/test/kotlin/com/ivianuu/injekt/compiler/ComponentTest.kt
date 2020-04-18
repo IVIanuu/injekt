@@ -227,8 +227,8 @@ class ComponentTest {
     ) {
         val component = invokeSingleFile() as Component
         assertNotSame(
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo"),
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo")
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode()),
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode())
         )
     }
 
@@ -244,8 +244,8 @@ class ComponentTest {
     ) {
         val component = invokeSingleFile() as Component
         assertSame(
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo"),
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo")
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode()),
+            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode())
         )
     }
 
@@ -290,6 +290,34 @@ class ComponentTest {
                 """
     ) {
         assertOk()
+    }
+
+    @Test
+    fun testAdvancedHierarchy() = codegenTest(
+        """
+            val GrandPa = Component("gp") {
+                factory { 1L }
+            }
+
+            val Parent = Component("p") {
+                factory { 2f }
+                parent("gp", GrandPa)
+                factory { 3 }
+            }
+
+            val Child = Component("c") {
+                parent("p", Parent)
+                factory { get<Int>().toString() }
+                println()
+            }
+            
+            fun invoke() = Child
+        """
+    ) {
+        compiledClassAndResourceFiles.forEach {
+            println(it.readText())
+        }
+        invokeSingleFile<Component>().get("kotlin.Long".hashCode())
     }
 
     /*@Test

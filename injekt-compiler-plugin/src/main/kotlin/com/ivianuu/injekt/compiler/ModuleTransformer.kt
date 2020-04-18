@@ -311,7 +311,7 @@ class ModuleTransformer(
                     }
 
                     modulesByCalls.forEach { (call, module) ->
-                        moduleFields[call]?.let { field ->
+                        moduleFields[module]?.let { field ->
                             +irSetField(
                                 irGet(thisReceiver!!),
                                 field,

@@ -116,7 +116,7 @@ class Graph(
     }
 
     private fun addScope(scope: FqName) {
-        check(!allScopes.contains(scope)) {
+        check(scope !in allScopes) {
             "Duplicated scope $scope"
         }
 
@@ -132,7 +132,7 @@ class Graph(
     }
 
     private fun addBinding(binding: Binding) {
-        check(!allBindings.contains(binding.key)) {
+        check(binding.key !in allBindings) {
             "Duplicated binding ${binding.key}"
         }
 
@@ -143,7 +143,7 @@ class Graph(
         // check
         allBindings.forEach { (_, binding) ->
             binding.dependencies.forEach { dependency ->
-                check(allBindings.contains(dependency)) {
+                check(dependency in allBindings) {
                     "Missing binding for $dependency"
                 }
             }

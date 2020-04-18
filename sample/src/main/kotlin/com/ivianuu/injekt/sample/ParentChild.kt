@@ -18,6 +18,7 @@ val Parent = Component("p") {
 val Child = Component("c") {
     parent("p", Parent)
     factory { get<Int>().toString() }
+    println()
 }
 
 fun main() {

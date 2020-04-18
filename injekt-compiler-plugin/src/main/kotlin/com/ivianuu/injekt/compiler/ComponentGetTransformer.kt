@@ -4,7 +4,7 @@ import com.ivianuu.injekt.compiler.resolve.Key
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.toKotlinType
@@ -33,7 +33,7 @@ class ComponentGetTransformer(pluginContext: IrPluginContext) :
 
                     putValueArgument(
                         0,
-                        irString(
+                        irInt(
                             Key(expression.getTypeArgument(0)!!.toKotlinType())
                                 .keyConstant
                         )

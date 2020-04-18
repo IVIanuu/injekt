@@ -31,7 +31,11 @@ class ModuleBinding(
 
 data class Key(val type: KotlinType) {
     val fieldName get() = type.toString().removeIllegalChars()
-    val keyConstant: String
-        get() = type.asTypeName()!!.toString()
+    val keyConstant: Int
+        get() {
+            return type.asTypeName()!!
+                .toString()
+                .hashCode()
+        }
 }
 
