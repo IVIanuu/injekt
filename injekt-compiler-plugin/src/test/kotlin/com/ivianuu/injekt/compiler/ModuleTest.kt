@@ -251,6 +251,20 @@ class ModuleTest {
         assertInternalError()
     }
 
+    @Test
+    fun testParentDoesNotExist() = codegenTest(
+        """ 
+        val parent = Component("parent") {}
+        @Module
+        fun myModule() {
+            parent("wrong key", parent)
+        }
+        """
+    ) {
+        assertInternalError("found")
+    }
+
+
     /**@Test
     fun testMetadata() = codegenTest(
     """

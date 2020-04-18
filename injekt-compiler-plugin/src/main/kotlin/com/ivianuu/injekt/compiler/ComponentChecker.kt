@@ -28,7 +28,9 @@ class ComponentChecker : StorageComponentContainerContributor, CallChecker {
         context: CallCheckerContext
     ) {
         val descriptor = resolvedCall.candidateDescriptor
-        if (descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.Component") return
+        if (descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.Component" &&
+            descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.parent"
+        ) return
         val keyArg = resolvedCall.call.valueArguments.first()
         val constant =
             ConstantExpressionEvaluator.getConstant(
