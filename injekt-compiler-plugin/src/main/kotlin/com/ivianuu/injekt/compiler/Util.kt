@@ -60,6 +60,7 @@ object InjektClassNames {
 
     val Component = InjektPackage.child("Component")
     val ComponentMetadata = InjektInternalPackage.child("ComponentMetadata")
+    val ComponentOwner = InjektPackage.child("ComponentOwner")
     val Module = InjektPackage.child("Module")
     val ModuleMetadata = InjektInternalPackage.child("ModuleMetadata")
     val Provider = InjektPackage.child("Provider")

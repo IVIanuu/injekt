@@ -16,6 +16,7 @@ class ComponentGetTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val component = getTopLevelClass(InjektClassNames.Component)
+    private val componentOwner = getTopLevelClass(InjektClassNames.ComponentOwner)
 
     override fun visitCall(expression: IrCall): IrExpression {
         return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get" &&
@@ -24,7 +25,9 @@ class ComponentGetTransformer(pluginContext: IrPluginContext) :
             DeclarationIrBuilder(pluginContext, expression.symbol).run {
                 irCall(
                     callee = symbolTable.referenceSimpleFunction(
-                        component.unsubstitutedMemberScope
+                        (if (expression.symbol.descriptor.extensionReceiverParameter?.type == component.defaultType)
+                            component.unsubstitutedMemberScope
+                        else componentOwner.unsubstitutedMemberScope)
                             .findSingleFunction(Name.identifier("get")),
                     ),
                     type = expression.getTypeArgument(0)!!

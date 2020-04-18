@@ -17,8 +17,17 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentOwner
+import com.ivianuu.injekt.factory
 
-class App : Application() {
+class App : Application(), ComponentOwner {
+
+    override val component by lazy {
+        Component("ApplicationComponent") {
+            factory { this@App }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
