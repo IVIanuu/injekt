@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.asTypeName
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.getModuleName
@@ -9,6 +10,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -21,7 +23,6 @@ import org.jetbrains.kotlin.ir.builders.at
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addTypeParameter
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -49,14 +50,11 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -183,6 +181,8 @@ class ModuleTransformer(
                         expression.symbol.descriptor.name.asString() == "single" -> {
                             definitionCalls += expression
                         }
+                        expression.symbol.descriptor.name.asString() == "bind" -> {
+                        }
                         expression.symbol.descriptor.name.asString() == "instance" -> {
                             definitionCalls += expression
                         }
@@ -230,24 +230,22 @@ class ModuleTransformer(
             }
 
             val modulesByCalls = mutableMapOf<IrCall, IrClass>()
-            val moduleFqNames = mutableSetOf<FqName>()
 
             moduleCalls.forEach {
-                val moduleFqName =
-                    getModuleName(it.symbol.descriptor)
-                check(moduleFqName !in moduleFqNames) {
-                    "Duplicated module $moduleFqName"
-                }
+                val moduleFqName = getModuleName(it.symbol.descriptor)
                 modulesByCalls[it] = declarationStore.getModule(moduleFqName)
-                moduleFqNames += moduleFqName
             }
 
             val moduleFields = mutableMapOf<IrClass, IrField>()
 
-            fun IrClass.isModuleFieldRequired(): Boolean {
+            /*fun IrClass.isModuleFieldRequired(): Boolean {
                 if (fields.any {
-                        (it.type as IrSimpleType).classOrNull!!.ensureBound(pluginContext.irProviders)
-                            .owner.annotations.hasAnnotation(InjektFqNames.ModuleMetadata)
+                        try {
+                            (it.type as IrSimpleType).classOrNull!!.ensureBound(pluginContext.irProviders)
+                                .owner.annotations.hasAnnotation(InjektFqNames.ModuleMetadata)
+                        } catch (e: Exception) {
+                            error("Failed for ${it.type.toKotlinType()}")
+                        }
                     }) return true
 
                 return declarations
@@ -255,27 +253,31 @@ class ModuleTransformer(
                     .flatMap { it.constructors.toList() }
                     .flatMap { it.valueParameters }
                     .any { it.name.asString() == "module" }
-            }
+            }*/
 
-            modulesByCalls.values.forEach { module ->
-                if (module.isModuleFieldRequired()) {
-                    moduleFields[module] = addField(
-                        module.name,
-                        module.defaultType,
-                        Visibilities.PRIVATE
-                    )
-                }
+            modulesByCalls.toList().forEachIndexed { index, (call, module) ->
+                moduleFields[module] = addField(
+                    "module_$index",
+                    module.typeWith((0 until call.typeArgumentsCount)
+                        .map { call.getTypeArgument(it)!! }
+                    ),
+                    Visibilities.PRIVATE
+                )
             }
 
             var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
             // todo do not include captures which are not used
             var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
 
+            copyTypeParametersFrom(function)
+
             addConstructor {
                 returnType = defaultType
                 visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
+                copyTypeParametersFrom(this@clazz)
+
                 parameterMap = function.valueParameters
                     .associateWith { it.copyTo(this) }
                 valueParameters = parameterMap.values.toList()
@@ -325,6 +327,11 @@ class ModuleTransformer(
                                 irGet(thisReceiver!!),
                                 field,
                                 irCall(module.constructors.single()).apply {
+                                    (0 until call.typeArgumentsCount)
+                                        .map { call.getTypeArgument(it)!! }
+                                        .forEachIndexed { index, type ->
+                                            putTypeArgument(index, type)
+                                        }
                                     copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
                                 }
                             )
@@ -412,7 +419,7 @@ class ModuleTransformer(
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
                     parentCalls.map {
-                        irString(it.getValueArgument(0)!!.getConstant<String>())
+                        irString(it.getValueArgument(0)!!.getConstant())
                     }
                 )
             )
@@ -433,9 +440,8 @@ class ModuleTransformer(
             val bindings = definitionCalls
                 .map { call ->
                     irString(
-                        call.getTypeArgument(0)!!.toKotlinType().constructor
-                            .declarationDescriptor!!.fqNameSafe
-                            .asString()
+                        call.getTypeArgument(0)!!.toKotlinType().asTypeName()!!
+                            .toString()
                     ) to irString(
                         providerByDefinitionCall[call]!!.name.asString()
                     )
@@ -491,11 +497,8 @@ class ModuleTransformer(
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
                     modulesByCalls.values.toList()
-                        .map {
-                            irString(
-                                moduleFields[it]?.name?.asString() ?: "null"
-                            )
-                        }
+                        .indices
+                        .map { irString("module_$it") }
                 )
             )
         }
@@ -509,6 +512,8 @@ class ModuleTransformer(
         moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
         moduleFieldsByParameter: Map<IrValueParameter, IrField>
     ): IrClass {
+        val resultType = definition.function.returnType
+
         val definitionFunction = definition.function
 
         val dependencies = mutableListOf<IrCall>()
@@ -550,7 +555,6 @@ class ModuleTransformer(
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
-            val resultType = definition.function.returnType
             superTypes += provider
                 .defaultType
                 .replace(
@@ -559,6 +563,8 @@ class ModuleTransformer(
                     )
                 )
                 .toIrType()
+
+            copyTypeParametersFrom(module)
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -581,13 +587,13 @@ class ModuleTransformer(
                     }.also { depIndex++ }
                 }
 
-            addTypeParameter("T", resultType)
-
             addConstructor {
                 returnType = defaultType
                 visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
+                copyTypeParametersFrom(this@clazz)
+
                 if (moduleField != null) {
                     addValueParameter(
                         "module",
@@ -645,7 +651,7 @@ class ModuleTransformer(
                 returnType = resultType
                 visibility = Visibilities.PUBLIC
             }.apply {
-                dispatchReceiverParameter = thisReceiver?.copyTo(this)
+                dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
                     provider.unsubstitutedMemberScope.findSingleFunction(Name.identifier("invoke"))

@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class Graph(
@@ -62,7 +64,10 @@ class Graph(
             val includedModule = declarationStore.getModule(FqName(includedModuleType))
             val field = if (includedModuleFieldName == "null") null else
                 module.fields.single { it.name.asString() == includedModuleFieldName }
-            ModuleWithAccessor(includedModule) {
+            val typeParametersMap = includedModule.typeParameters
+                .map { it.symbol to (field!!.type as IrSimpleType).arguments[it.index].typeOrNull!! }
+                .toMap()
+            ModuleWithAccessor(includedModule, typeParametersMap) {
                 DeclarationIrBuilder(this@Graph.context, module.symbol).run {
                     irGetField(
                         moduleWithAccessor.accessor(),
@@ -129,6 +134,10 @@ class Graph(
     }
 
     private fun addBinding(binding: Binding) {
+        check(!binding.key.type.isTypeParameter()) {
+            "Binding type not refined ${binding.key}"
+        }
+
         check(binding.key !in allBindings) {
             "Duplicated binding ${binding.key}"
         }
@@ -150,10 +159,9 @@ class Graph(
     private fun collectBindings() {
         allParents.forEach { componentWithAccessor ->
             val component = componentWithAccessor.component
-            val componentMetadata = component.descriptor.annotations.singleOrNull {
+            val componentMetadata = component.descriptor.annotations.single {
                 it.fqName == InjektFqNames.ComponentMetadata
             }
-                ?: error("Wtf for ${componentWithAccessor.component.dump()} this component is ${this.component.dump()}")
 
             val bindingKeys = componentMetadata.getStringList("bindingKeys")
 
@@ -210,8 +218,12 @@ class Graph(
                 val isSingle =
                     providerMetadata.argumentValue("isSingle")?.value as? Boolean ?: false
 
+                val typedProviderType = provider.typeWith(
+                    moduleWithAccessor.typeParametersMap.values.toList()
+                )
+
                 ModuleBinding(
-                    key = Key(provider.typeParameters.single().superTypes.single().toKotlinType()),
+                    key = Key(typedProviderType.arguments.single().typeOrNull!!.toKotlinType()),
                     containingDeclaration = moduleWithAccessor.module,
                     dependencies = provider.constructors.single().valueParameters
                         .filter { it.name.asString() != "module" }

@@ -314,9 +314,6 @@ class ComponentTest {
             fun invoke() = Child
         """
     ) {
-        compiledClassAndResourceFiles.forEach {
-            println(it.readText())
-        }
         invokeSingleFile<Component>().get("kotlin.Long".hashCode())
     }
 
@@ -358,6 +355,21 @@ class ComponentTest {
         """
     ) {
         assertInternalError("exists")
+    }
+
+    @Test
+    fun testSameModulesWithDifferentTypes() = codegenTest(
+        """
+            @Module
+            inline fun <reified T> generic(value: T) {
+                factory { value }
+            }
+            val Component = Component("key") {
+                generic("")
+                generic(0)
+            }
+        """
+    ) {
     }
 
     /*@Test

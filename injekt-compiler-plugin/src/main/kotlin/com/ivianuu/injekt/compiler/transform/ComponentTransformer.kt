@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.asTypeName
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.irTrace
@@ -235,8 +236,6 @@ class ComponentTransformer(
                 }
             })
 
-            val modules = modulesByCalls.values.toList()
-
             var constructorBodyBuilder: IrBlockBodyBuilder? = null
             val initializedModules = mutableSetOf<IrClass>()
 
@@ -263,20 +262,25 @@ class ComponentTransformer(
             }
 
             val lazyModuleFields = mutableMapOf<FqName, Lazy<IrField>>()
+            var moduleIndex = 0
             modulesByCalls.forEach { (call, module) ->
                 lazyModuleFields[module.fqNameForIrSerialization] = lazy {
                     addField(
-                        module.name,
+                        "module_$moduleIndex",
                         module.defaultType,
                         Visibilities.PRIVATE
                     ).also {
                         addModuleInitializerIfNeeded(call, module, it)
                     }
                 }
+                moduleIndex++
             }
 
-            val graph = Graph(pluginContext, bindingTrace, this, modules.map { module ->
-                ModuleWithAccessor(module) {
+            val graph =
+                Graph(pluginContext, bindingTrace, this, modulesByCalls.map { (call, module) ->
+                    ModuleWithAccessor(module, module.typeParameters.map {
+                        it.symbol to call.getTypeArgument(it.index)!!
+                    }.toMap()) {
                     irGetField(
                         irGet(thisReceiver!!),
                         lazyModuleFields.getValue(module.fqNameForIrSerialization).value
@@ -521,11 +525,7 @@ class ComponentTransformer(
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
                     bindings.map {
-                        irString(
-                            it.key.type.constructor
-                                .declarationDescriptor!!.fqNameSafe
-                                .asString()
-                        )
+                        irString(it.key.type.asTypeName()!!.toString())
                     }
                 )
             )
