@@ -19,6 +19,9 @@ interface InjektErrors {
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
 
+        @JvmField
+        val COMPONENT_KEY_MUST_BE_CONSTANT = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -47,6 +50,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE,
             "@Module functions cannot return anything"
+        )
+        map.put(
+            InjektErrors.COMPONENT_KEY_MUST_BE_CONSTANT,
+            "Component keys must be constant"
         )
     }
 }

@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -206,7 +205,7 @@ class ModuleTransformer(
             val parentKeys = mutableSetOf<String>()
 
             parentCalls.forEach {
-                val key = (it.getValueArgument(0) as IrConst<String>).value
+                val key = it.getValueArgument(0)!!.getConstant<String>()
                 check(key !in parentKeys) {
                     "Duplicated parent $key"
                 }
@@ -403,7 +402,7 @@ class ModuleTransformer(
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
                     parentCalls.map {
-                        irString((it.getValueArgument(0) as IrConst<String>).value)
+                        irString(it.getValueArgument(0)!!.getConstant<String>())
                     }
                 )
             )

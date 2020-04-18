@@ -261,6 +261,26 @@ class ComponentTest {
     }
 
     @Test
+    fun testConstantKey() = codegenTest(
+        """
+            const val key = "key"
+            val MyComponent = Component(key) { }
+                """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testNonConstantKeyFails() = codegenTest(
+        """
+            fun key() = ""
+            val MyComponent = Component(key()) { }
+                """
+    ) {
+        assertCompileError("constant")
+    }
+
+    @Test
     fun testIntermediateModuleRequiredAddsAllModules() = codegenTest(
         """
             @Module

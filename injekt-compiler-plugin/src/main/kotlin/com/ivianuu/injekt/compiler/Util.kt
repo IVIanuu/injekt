@@ -22,8 +22,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -33,7 +32,10 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.name
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -58,7 +60,6 @@ object InjektClassNames {
 
     val Component = InjektPackage.child("Component")
     val ComponentMetadata = InjektInternalPackage.child("ComponentMetadata")
-    val Qualifier = InjektPackage.child("Qualifier")
     val Module = InjektPackage.child("Module")
     val ModuleMetadata = InjektInternalPackage.child("ModuleMetadata")
     val Provider = InjektPackage.child("Provider")
@@ -70,16 +71,6 @@ object InjektClassNames {
 fun ModuleDescriptor.getTopLevelClass(fqName: FqName) =
     findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
         ?: error("No class found for $fqName")
-
-internal lateinit var messageCollector: MessageCollector
-
-fun message(
-    message: String,
-    tag: String = "ddd",
-    severity: CompilerMessageSeverity = CompilerMessageSeverity.WARNING
-) {
-    messageCollector.report(severity, "$tag: $message")
-}
 
 fun String.removeIllegalChars(): String {
     return replace("<", "")
@@ -182,4 +173,13 @@ fun KotlinType.asTypeName(): TypeName? {
     } else type).copy(
         nullable = isMarkedNullable
     )
+}
+
+fun <T : Any> IrExpression.getConstant(): T {
+    return when (this) {
+        is IrConst<*> -> value as T
+        is IrCall -> ((this.symbol.owner.propertyIfAccessor as? IrProperty)
+            ?.backingField?.initializer?.expression as? IrConst<*>)?.value as T
+        else -> error("Not a constant expression")
+    }
 }

@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -124,7 +123,7 @@ class ComponentTransformer(
         processedComponentsByKey[key]?.let { return it }
 
         val call = componentCalls.firstOrNull {
-            (it.getValueArgument(0) as IrConst<String>).value == key
+            it.getValueArgument(0)!!.getConstant<String>() == key
         } ?: return null
 
         return getProcessedComponent(call)
@@ -134,7 +133,7 @@ class ComponentTransformer(
         computeComponentCallsIfNeeded()
 
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
-            val key = (call.getValueArgument(0) as IrConst<String>).value
+            val key = call.getValueArgument(0)!!.getConstant<String>()
 
             check(key !in processingComponents) {
                 "Circular dependency for component $key"

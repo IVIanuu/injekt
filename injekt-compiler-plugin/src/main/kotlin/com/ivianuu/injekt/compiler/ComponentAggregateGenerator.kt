@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -54,7 +53,8 @@ class ComponentAggregateGenerator(
         })
 
         componentCalls.forEach { componentCall ->
-            val key = (componentCall.getValueArgument(0) as IrConst<String>).value
+            val key = componentCall.getValueArgument(0)!!.getConstant<String>()
+
             val componentFqName = getComponentFqName(componentCall, fileByCall[componentCall]!!)
             val aggregateName = Name.identifier(
                 "${key}\$${componentFqName.asString().replace(".", "_")}"
