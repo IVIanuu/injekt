@@ -90,6 +90,12 @@ class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
                 if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope).size > 1) {
                     trace.report(InjektErrors.ONLY_ONE_SCOPE_ANNOTATION.on(psi))
                 }
+
+                if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope).size == 1 &&
+                    descriptor.valueParameters.isNotEmpty()
+                ) {
+                    trace.report(InjektErrors.IMPLICIT_MODULE_PARAMETERLESS.on(psi))
+                }
             }
         }
 

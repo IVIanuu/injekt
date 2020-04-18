@@ -48,14 +48,12 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
 
         ComponentAggregateGenerator(
             project,
-            pluginContext,
-            declarationStore
+            pluginContext
         ).visitModuleAndGenerateSymbols()
 
         ModuleAggregateGenerator(
             project,
-            pluginContext,
-            declarationStore
+            pluginContext
         ).visitModuleAndGenerateSymbols()
 
         // transform the config blocks of Component { ... } to a module

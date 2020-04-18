@@ -1,38 +1,26 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.addClass
 import com.ivianuu.injekt.compiler.getComponentFqName
 import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.irTrace
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.buildClass
-import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ComponentAggregateGenerator(
     private val project: Project,
-    pluginContext: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore
+    pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
@@ -75,48 +63,11 @@ class ComponentAggregateGenerator(
                 componentCall, componentFqName
             )
 
-            val existingComponent = try {
-                declarationStore.getComponent(key)
-            } catch (e: Exception) {
-                null
-            }
-
-            if (existingComponent != null) {
-                error("Already declared a component for key $key")
-            }
-
-            declaration.addClass(
-                pluginContext.psiSourceManager.cast(),
+            declaration.addEmptyClass(
+                pluginContext,
                 project,
-                buildClass {
-                    name = aggregateName
-                }.apply clazz@{
-                    createImplicitParameterDeclarationWithWrappedDescriptor()
-
-                    addConstructor {
-                        origin =
-                            InjektDeclarationOrigin
-                        isPrimary = true
-                        visibility = Visibilities.PUBLIC
-                    }.apply {
-                        body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                            +IrDelegatingConstructorCallImpl(
-                                startOffset, endOffset,
-                                context.irBuiltIns.unitType,
-                                pluginContext.symbolTable.referenceConstructor(
-                                    context.builtIns.any.unsubstitutedPrimaryConstructor!!
-                                )
-                            )
-                            +IrInstanceInitializerCallImpl(
-                                startOffset,
-                                endOffset,
-                                this@clazz.symbol,
-                                context.irBuiltIns.unitType
-                            )
-                        }
-                    }
-                },
-                InjektFqNames.InjektModulesPackage
+                aggregateName,
+                InjektFqNames.InjektComponentsPackage
             )
 
         }

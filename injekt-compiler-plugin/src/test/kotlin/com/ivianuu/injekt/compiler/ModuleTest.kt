@@ -276,6 +276,28 @@ class ModuleTest {
         assertInternalError("found")
     }
 
+    @Test
+    fun testImplicitModule() = codegenTest(
+        """ 
+            @TestScope 
+            @Module 
+            fun module() {}
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testImplicitModuleWithParameters() = codegenTest(
+        """ 
+            @TestScope 
+            @Module 
+            fun module(p1: String) {}
+        """
+    ) {
+        assertCompileError("parameter")
+    }
+
 
     /**@Test
     fun testMetadata() = codegenTest(

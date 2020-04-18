@@ -350,6 +350,16 @@ class ComponentTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testComponentKeyDuplicate() = codegenTest(
+        """
+        val ComponentA = Component("key") { } 
+        val ComponentB = Component("key") { }
+        """
+    ) {
+        assertInternalError("exists")
+    }
+
     /*@Test
     fun test() = codegenTest(
     """
