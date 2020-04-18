@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -54,6 +53,7 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
@@ -74,6 +74,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ComponentTransformer(
     pluginContext: IrPluginContext,
@@ -205,26 +206,14 @@ class ComponentTransformer(
             val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
             valueParametersByCapturesByComponent[this] = valueParametersByCapture
 
-            val moduleCalls = mutableListOf<IrCall>()
+            val moduleCall = componentDefinition.function.body!!
+                .cast<IrExpressionBody>().expression as IrCall
 
-            componentDefinition.function.body!!.transformChildrenVoid(object :
-                IrElementTransformerVoid() {
-                override fun visitCall(expression: IrCall): IrExpression {
-                    super.visitCall(expression)
-                    if (expression.symbol.descriptor.annotations.hasAnnotation(InjektFqNames.Module)) {
-                        moduleCalls += expression
-                    }
-                    return expression
-                }
-            })
+            val moduleFqName = moduleCall.symbol.owner.fqNameForIrSerialization
+                .parent()
+                .child(Name.identifier("${moduleCall.symbol.owner.name}\$Impl"))
 
-            val modulesByCalls = moduleCalls.associateWith {
-                val moduleFqName =
-                    it.symbol.owner.fqNameForIrSerialization
-                        .parent()
-                        .child(Name.identifier("${it.symbol.owner.name}\$Impl"))
-                declarationStore.getModule(moduleFqName)
-            }
+            val module = declarationStore.getModule(moduleFqName)
 
             val captures = mutableListOf<IrGetValue>()
             componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -236,57 +225,26 @@ class ComponentTransformer(
                 }
             })
 
-            var constructorBodyBuilder: IrBlockBodyBuilder? = null
-            val initializedModules = mutableSetOf<IrClass>()
+            val moduleField = addField(
+                "module",
+                module.defaultType,
+                Visibilities.PRIVATE
+            )
 
-            fun addModuleInitializerIfNeeded(
-                call: IrCall,
-                module: IrClass,
-                field: IrField
-            ) {
-                if (module in initializedModules) return
-                initializedModules += module
-
-                constructorBodyBuilder?.run {
-                    +irSetField(
-                        irGet(thisReceiver!!),
-                        field,
-                        irCall(
-                            module.constructors.single().symbol,
-                            module.defaultType
-                        ).apply {
-                            copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                        }
-                    )
-                }
-            }
-
-            val lazyModuleFields = mutableMapOf<FqName, Lazy<IrField>>()
-            var moduleIndex = 0
-            modulesByCalls.forEach { (call, module) ->
-                lazyModuleFields[module.fqNameForIrSerialization] = lazy {
-                    addField(
-                        "module_$moduleIndex",
-                        module.defaultType,
-                        Visibilities.PRIVATE
-                    ).also {
-                        addModuleInitializerIfNeeded(call, module, it)
-                    }
-                }
-                moduleIndex++
-            }
-
-            val graph =
-                Graph(pluginContext, bindingTrace, this, modulesByCalls.map { (call, module) ->
-                    ModuleWithAccessor(module, module.typeParameters.map {
-                        it.symbol to call.getTypeArgument(it.index)!!
-                    }.toMap()) {
+            val graph = Graph(
+                context = pluginContext,
+                bindingTrace = bindingTrace,
+                component = this,
+                module = ModuleWithAccessor(module, module.typeParameters.map {
+                    it.symbol to moduleCall.getTypeArgument(it.index)!!
+                }.toMap()) {
                     irGetField(
                         irGet(thisReceiver!!),
-                        lazyModuleFields.getValue(module.fqNameForIrSerialization).value
+                        moduleField
                     )
-                }
-            }, declarationStore)
+                },
+                declarationStore = declarationStore
+            )
 
             val providerFields = mutableMapOf<Binding, IrField>()
 
@@ -307,7 +265,6 @@ class ComponentTransformer(
                 visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
-                // todo do not include captures which are not used
                 captures.forEachIndexed { index, capture ->
                     valueParametersByCapture[capture] = addValueParameter(
                         "p$index",
@@ -316,8 +273,6 @@ class ComponentTransformer(
                 }
 
                 body = irBlockBody {
-                    constructorBodyBuilder = this
-
                     +IrDelegatingConstructorCallImpl(
                         UNDEFINED_OFFSET,
                         UNDEFINED_OFFSET,
@@ -334,13 +289,20 @@ class ComponentTransformer(
                         context.irBuiltIns.unitType
                     )
 
-                    modulesByCalls.forEach { (call, module) ->
-                        val lazyModuleField =
-                            lazyModuleFields.getValue(module.fqNameForIrSerialization)
-                        if (lazyModuleField.isInitialized()) {
-                            addModuleInitializerIfNeeded(call, module, lazyModuleField.value)
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        moduleField,
+                        irCall(
+                            module.constructors.single().symbol,
+                            module.defaultType
+                        ).apply {
+                            copyValueArgumentsFrom(
+                                moduleCall,
+                                moduleCall.symbol.owner,
+                                symbol.owner
+                            )
                         }
-                    }
+                    )
 
                     val initializedKeys = mutableSetOf<Key>()
                     val processedFields = mutableSetOf<IrField>()

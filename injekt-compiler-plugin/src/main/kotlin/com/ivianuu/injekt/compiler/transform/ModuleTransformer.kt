@@ -238,23 +238,6 @@ class ModuleTransformer(
 
             val moduleFields = mutableMapOf<IrClass, IrField>()
 
-            /*fun IrClass.isModuleFieldRequired(): Boolean {
-                if (fields.any {
-                        try {
-                            (it.type as IrSimpleType).classOrNull!!.ensureBound(pluginContext.irProviders)
-                                .owner.annotations.hasAnnotation(InjektFqNames.ModuleMetadata)
-                        } catch (e: Exception) {
-                            error("Failed for ${it.type.toKotlinType()}")
-                        }
-                    }) return true
-
-                return declarations
-                    .filterIsInstance<IrClass>()
-                    .flatMap { it.constructors.toList() }
-                    .flatMap { it.valueParameters }
-                    .any { it.name.asString() == "module" }
-            }*/
-
             modulesByCalls.toList().forEachIndexed { index, (call, module) ->
                 moduleFields[module] = addField(
                     "module_$index",
@@ -266,7 +249,6 @@ class ModuleTransformer(
             }
 
             var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
-            // todo do not include captures which are not used
             var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
 
             copyTypeParametersFrom(function)
@@ -357,12 +339,11 @@ class ModuleTransformer(
 
             annotations += moduleMetadata(
                 scopes = scopes,
-                parentCalls,
-                parentFields,
-                definitionCalls,
-                providerByDefinitionCall,
-                modulesByCalls,
-                moduleFields
+                parentCalls = parentCalls,
+                parentFields = parentFields,
+                definitionCalls = definitionCalls,
+                providerByDefinitionCall = providerByDefinitionCall,
+                modulesByCalls = modulesByCalls
             )
 
             transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -388,8 +369,7 @@ class ModuleTransformer(
         parentFields: Map<IrClass, IrField>,
         definitionCalls: List<IrCall>,
         providerByDefinitionCall: Map<IrCall, IrClass>,
-        modulesByCalls: Map<IrCall, IrClass>,
-        moduleFields: Map<IrClass, IrField>
+        modulesByCalls: Map<IrCall, IrClass>
     ): IrConstructorCall {
         return irCallConstructor(
             symbolTable.referenceConstructor(moduleMetadata.constructors.single())

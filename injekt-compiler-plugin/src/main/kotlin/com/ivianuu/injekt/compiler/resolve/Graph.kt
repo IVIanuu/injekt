@@ -8,26 +8,33 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeProjection
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class Graph(
     private val context: IrPluginContext,
     private val bindingTrace: BindingTrace,
     private val component: IrClass,
-    private val modules: List<ModuleWithAccessor>,
+    private val module: ModuleWithAccessor,
     private val declarationStore: InjektDeclarationStore
 ) {
 
@@ -47,7 +54,7 @@ class Graph(
     }
 
     private fun collectModules() {
-        modules.forEach { collectModules(it) }
+        collectModules(module)
     }
 
     private fun collectModules(moduleWithAccessor: ModuleWithAccessor) {
@@ -218,16 +225,26 @@ class Graph(
                 val isSingle =
                     providerMetadata.argumentValue("isSingle")?.value as? Boolean ?: false
 
-                val typedProviderType = provider.typeWith(
-                    moduleWithAccessor.typeParametersMap.values.toList()
-                )
+                val returnType = provider.functions
+                    .single { it.name.asString() == "invoke" && it.valueParameters.isEmpty() }
+                    .returnType
+                    .substituteByName(moduleWithAccessor.typeParametersMap)
 
                 ModuleBinding(
-                    key = Key(typedProviderType.arguments.single().typeOrNull!!.toKotlinType()),
+                    key = Key(returnType.toKotlinType()),
                     containingDeclaration = moduleWithAccessor.module,
                     dependencies = provider.constructors.single().valueParameters
                         .filter { it.name.asString() != "module" }
-                        .map { Key(it.type.toKotlinType().arguments.single().type) },
+                        .map {
+                            Key(
+                                it.type.substituteByName(moduleWithAccessor.typeParametersMap)
+                                    .cast<IrSimpleType>()
+                                    .arguments
+                                    .single()
+                                    .typeOrNull!!
+                                    .toKotlinType()
+                            )
+                        },
                     provider = provider,
                     module = moduleWithAccessor,
                     isSingle = isSingle
@@ -238,6 +255,34 @@ class Graph(
                 addBinding(binding)
             }
         }
+    }
+
+    fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+        if (this !is IrSimpleType) return this
+
+        (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
+            substitutionMap.toList()
+                .firstOrNull { it.first.owner.name == typeParam.owner.name }
+                ?.let { return it.second }
+        }
+
+        substitutionMap[classifier]?.let { return it }
+
+        val newArguments = arguments.map {
+            if (it is IrTypeProjection) {
+                makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
+            } else {
+                it
+            }
+        }
+
+        val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+        return IrSimpleTypeImpl(
+            classifier,
+            hasQuestionMark,
+            newArguments,
+            newAnnotations
+        )
     }
 
     private fun AnnotationDescriptor.getStringList(name: String): List<String> {

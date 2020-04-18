@@ -217,20 +217,6 @@ class ModuleTest {
     }
 
     @Test
-    fun testDuplicatedInclude() = codegenTest(
-        """
-            @Module fun include() {}
-            @Module
-            fun module() {
-                include()
-                include()
-            }
-        """
-    ) {
-        assertInternalError("duplicate")
-    }
-
-    @Test
     fun testCircularModuleDependency() = codegenTest(
         """
             @Module

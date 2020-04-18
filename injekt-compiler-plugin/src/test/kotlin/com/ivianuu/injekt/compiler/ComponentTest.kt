@@ -370,6 +370,36 @@ class ComponentTest {
             }
         """
     ) {
+        assertOk()
+    }
+
+    @Test
+    fun testGenericDependsOnOther() = codegenTest(
+        """
+            @Module
+            inline fun <reified A, reified B> module(a: A, b: B) {
+                factory { a }
+                factory { get<A>(); b }
+            }
+            val Component = Component("key") {
+                module("", 0)
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testComponentWithTypeParameters() = codegenTest(
+        """
+            inline fun <reified A, reified B> createComponent(a: A, b: B) = Component("") {
+                factory { a }
+                factory { b }
+            }
+            val component = createComponent("string", 0)
+        """
+    ) {
+        assertOk()
     }
 
     /*@Test

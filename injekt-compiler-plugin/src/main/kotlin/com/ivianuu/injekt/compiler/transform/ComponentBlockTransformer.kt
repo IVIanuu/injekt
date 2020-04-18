@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
+import org.jetbrains.kotlin.ir.builders.declarations.addTypeParameter
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -18,13 +19,17 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.util.isTypeParameter
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -53,13 +58,14 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
             DeclarationIrBuilder(pluginContext, componentCall.symbol).run {
                 val expr = componentCall.getValueArgument(1) as IrFunctionExpression
 
-                val (function, valueParametersByCaptures) = moduleFunction(expr)
-                declaration.addChild(function)
+                val result = moduleFunction(expr)
+                declaration.addChild(result.function)
 
                 expr.function.body = irExprBody(
-                    irCall(function).apply {
+                    irCall(result.function).apply {
                         extensionReceiver = componentCall.extensionReceiver
-                        valueParametersByCaptures.forEach { (capture, parameter) ->
+
+                        result.valueParametersByCaptures.forEach { (capture, parameter) ->
                             putValueArgument(parameter.index, capture)
                         }
                     }
@@ -70,26 +76,37 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
         return super.visitFile(declaration)
     }
 
+    private data class ModuleFunctionResult(
+        val function: IrFunction,
+        val valueParametersByCaptures: Map<IrGetValue, IrValueParameter>,
+        val capturedTypeParameters: Map<IrTypeParameterSymbol, IrTypeParameter>
+    )
+
     private fun IrBuilderWithScope.moduleFunction(
         componentDefinition: IrFunctionExpression
-    ): Pair<IrFunction, Map<IrGetValue, IrValueParameter>> {
+    ): ModuleFunctionResult {
         val definitionFunction = componentDefinition.function
 
-        val captures = mutableListOf<IrGetValue>()
+        val capturedTypeParameters = mutableListOf<IrTypeParameterSymbol>()
+        val capturedValueParameters = mutableListOf<IrGetValue>()
         componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol &&
                     expression.type.toKotlinType().constructor.declarationDescriptor != providerDsl
                 ) {
-                    captures += expression
+                    capturedValueParameters += expression
+                    if (expression.type.isTypeParameter()) {
+                        capturedTypeParameters += expression.type.classifierOrFail as IrTypeParameterSymbol
+                    }
                 }
                 return super.visitGetValue(expression)
             }
         })
 
         val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
+        val typeParametersMap = mutableMapOf<IrTypeParameterSymbol, IrTypeParameter>()
 
-        return buildFun {
+        val function = buildFun {
             name = Name.identifier("ComponentModule${definitionFunction.startOffset}")
             returnType = pluginContext.irBuiltIns.unitType
             visibility = Visibilities.PRIVATE
@@ -101,7 +118,15 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
                 module.defaultType.toIrType()
             )
 
-            captures.forEachIndexed { index, capture ->
+            capturedTypeParameters.forEach {
+                typeParametersMap[it] = addTypeParameter(
+                    it.owner.name.asString(),
+                    it.owner.superTypes.single(),
+                    it.owner.variance
+                )
+            }
+
+            capturedValueParameters.forEachIndexed { index, capture ->
                 valueParametersByCapture[capture] = addValueParameter(
                     "p$index",
                     capture.type
@@ -142,7 +167,9 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
 
             body = definitionFunction.body!!.deepCopyWithVariables()
 
-        } to valueParametersByCapture
+        }
+
+        return ModuleFunctionResult(function, valueParametersByCapture, typeParametersMap)
     }
 
 }
