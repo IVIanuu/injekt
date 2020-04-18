@@ -14,10 +14,12 @@ inline fun <reified T> factory(noinline definition: ProviderDsl.() -> T): Unit =
 @Module
 inline fun <reified T> single(noinline definition: ProviderDsl.() -> T): Unit = stub()
 
-// todo
 @Module
-inline fun <reified T> instance(instance: T): Unit = stub()
+inline fun <reified T> instance(instance: T) {
+    factory { instance }
+}
 
-// todo
 @Module
-inline fun <reified T : S, reified S> alias(): Unit = stub()
+inline fun <reified T : S, reified S> alias() {
+    factory<S> { get<T>() }
+}
