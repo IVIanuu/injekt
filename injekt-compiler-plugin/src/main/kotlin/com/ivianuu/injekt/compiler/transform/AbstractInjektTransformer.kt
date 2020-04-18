@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getTopLevelClass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -64,9 +66,9 @@ abstract class AbstractInjektTransformer(
     protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     protected val injektPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
+        pluginContext.moduleDescriptor.getPackage(InjektFqNames.InjektPackage)
     protected val injektInternalPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektInternalPackage)
+        pluginContext.moduleDescriptor.getPackage(InjektFqNames.InjektInternalPackage)
 
     protected fun getTopLevelClass(fqName: FqName) =
         pluginContext.moduleDescriptor.getTopLevelClass(fqName)

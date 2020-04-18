@@ -1,5 +1,6 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -32,8 +33,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ComponentBlockTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
-    private val module = getTopLevelClass(InjektClassNames.Module)
-    private val providerDsl = getTopLevelClass(InjektClassNames.ProviderDsl)
+    private val module = getTopLevelClass(InjektFqNames.Module)
+    private val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
 
     override fun visitFile(declaration: IrFile): IrFile {
         val componentCalls = mutableListOf<IrCall>()

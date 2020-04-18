@@ -1,5 +1,6 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolve.Key
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -15,8 +16,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ComponentGetTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
-    private val component = getTopLevelClass(InjektClassNames.Component)
-    private val componentOwner = getTopLevelClass(InjektClassNames.ComponentOwner)
+    private val component = getTopLevelClass(InjektFqNames.Component)
+    private val componentOwner = getTopLevelClass(InjektFqNames.ComponentOwner)
 
     override fun visitCall(expression: IrCall): IrExpression {
         return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get" &&

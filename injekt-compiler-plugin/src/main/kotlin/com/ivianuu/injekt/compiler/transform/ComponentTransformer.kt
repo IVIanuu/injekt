@@ -1,5 +1,11 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.getConstant
+import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.resolve.Binding
 import com.ivianuu.injekt.compiler.resolve.Graph
 import com.ivianuu.injekt.compiler.resolve.Key
@@ -75,10 +81,10 @@ class ComponentTransformer(
     private val moduleFragment: IrModuleFragment
 ) : AbstractInjektTransformer(pluginContext) {
 
-    private val component = getTopLevelClass(InjektClassNames.Component)
-    private val componentMetadata = getTopLevelClass(InjektClassNames.ComponentMetadata)
-    private val provider = getTopLevelClass(InjektClassNames.Provider)
-    private val singleProvider = getTopLevelClass(InjektClassNames.SingleProvider)
+    private val component = getTopLevelClass(InjektFqNames.Component)
+    private val componentMetadata = getTopLevelClass(InjektFqNames.ComponentMetadata)
+    private val provider = getTopLevelClass(InjektFqNames.Provider)
+    private val singleProvider = getTopLevelClass(InjektFqNames.SingleProvider)
 
     private val componentCalls = mutableListOf<IrCall>()
     private val fileByCall = mutableMapOf<IrCall, IrFile>()
@@ -185,7 +191,8 @@ class ComponentTransformer(
     ): IrClass {
         return buildClass {
             kind = ClassKind.CLASS
-            origin = InjektDeclarationOrigin
+            origin =
+                InjektDeclarationOrigin
             this.name = name
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
@@ -203,7 +210,7 @@ class ComponentTransformer(
                 IrElementTransformerVoid() {
                 override fun visitCall(expression: IrCall): IrExpression {
                     super.visitCall(expression)
-                    if (expression.symbol.descriptor.annotations.hasAnnotation(InjektClassNames.Module)) {
+                    if (expression.symbol.descriptor.annotations.hasAnnotation(InjektFqNames.Module)) {
                         moduleCalls += expression
                     }
                     return expression
@@ -430,7 +437,7 @@ class ComponentTransformer(
                 providerFields
             )
 
-            check(descriptor.annotations.hasAnnotation(InjektClassNames.ComponentMetadata))
+            check(descriptor.annotations.hasAnnotation(InjektFqNames.ComponentMetadata))
         }
     }
 

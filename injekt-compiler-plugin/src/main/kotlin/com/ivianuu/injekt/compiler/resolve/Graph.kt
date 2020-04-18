@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.resolve
 
-import com.ivianuu.injekt.compiler.InjektClassNames
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -56,7 +56,7 @@ class Graph(
 
         val module = moduleWithAccessor.module
         val metadata = module.descriptor.annotations.single {
-            it.fqName == InjektClassNames.ModuleMetadata
+            it.fqName == InjektFqNames.ModuleMetadata
         }
 
         metadata.getStringList("includedModuleTypes").zip(
@@ -81,7 +81,7 @@ class Graph(
         allModules.forEach { moduleWithAccessor ->
             val module = moduleWithAccessor.module
             val metadata = module.descriptor.annotations.single {
-                it.fqName == InjektClassNames.ModuleMetadata
+                it.fqName == InjektFqNames.ModuleMetadata
             }
 
             val scopes = metadata.getStringList("scopes")
@@ -93,7 +93,7 @@ class Graph(
         allModules.forEach { moduleWithAccessor ->
             val module = moduleWithAccessor.module
             val metadata = module.descriptor.annotations.single {
-                it.fqName == InjektClassNames.ModuleMetadata
+                it.fqName == InjektFqNames.ModuleMetadata
             }
 
             val parentsKeys = metadata.getStringList("parents")
@@ -154,7 +154,7 @@ class Graph(
         allParents.forEach { componentWithAccessor ->
             val component = componentWithAccessor.component
             val componentMetadata = component.descriptor.annotations.singleOrNull {
-                it.fqName == InjektClassNames.ComponentMetadata
+                it.fqName == InjektFqNames.ComponentMetadata
             }
                 ?: error("Wtf for ${componentWithAccessor.component.dump()} this component is ${this.component.dump()}")
 
@@ -189,7 +189,7 @@ class Graph(
         allModules.forEach { moduleWithAccessor ->
             val module = moduleWithAccessor.module
             val moduleMetadata = module.descriptor.annotations.single {
-                it.fqName == InjektClassNames.ModuleMetadata
+                it.fqName == InjektFqNames.ModuleMetadata
             }
 
             val bindingKeys = moduleMetadata.getStringList("bindingKeys")
@@ -207,7 +207,7 @@ class Graph(
 
             val moduleBindings = bindingKeys.zip(bindingProviders) { key, provider ->
                 val providerMetadata = provider.descriptor.annotations.single {
-                    it.fqName == InjektClassNames.ProviderMetadata
+                    it.fqName == InjektFqNames.ProviderMetadata
                 }
 
                 val isSingle =

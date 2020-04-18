@@ -1,5 +1,8 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.hasModuleAnnotation
+import com.ivianuu.injekt.compiler.makeModule
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints

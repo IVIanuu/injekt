@@ -152,6 +152,18 @@ class ModuleTest {
     }
 
     @Test
+    fun testInvalidScope() = codegenTest(
+        """
+            @Module
+            fun module() {
+                scope<String>()
+            }
+            """
+    ) {
+        assertCompileError("not")
+    }
+
+    @Test
     fun testMultipleScopes() = codegenTest(
         """
             @Module

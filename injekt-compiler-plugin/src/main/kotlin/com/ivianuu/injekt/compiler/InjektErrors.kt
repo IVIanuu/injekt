@@ -22,6 +22,12 @@ interface InjektErrors {
         @JvmField
         val COMPONENT_KEY_MUST_BE_CONSTANT = error()
 
+        @JvmField
+        val ONLY_ONE_SCOPE_ANNOTATION = error()
+
+        @JvmField
+        val NOT_A_SCOPE = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -54,6 +60,14 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.COMPONENT_KEY_MUST_BE_CONSTANT,
             "Component keys must be constant"
+        )
+        map.put(
+            InjektErrors.ONLY_ONE_SCOPE_ANNOTATION,
+            "Can only have 1 @Scope annotation"
+        )
+        map.put(
+            InjektErrors.NOT_A_SCOPE,
+            "Not a scope"
         )
     }
 }

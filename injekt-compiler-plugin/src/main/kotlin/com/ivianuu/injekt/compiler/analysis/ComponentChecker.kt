@@ -1,5 +1,6 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektErrors
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance

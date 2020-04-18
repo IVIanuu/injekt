@@ -1,5 +1,7 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.transform.ComponentTransformer
+import com.ivianuu.injekt.compiler.transform.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -44,7 +46,7 @@ class InjektDeclarationStore(
             } catch (e: DeclarationNotFound) {
                 try {
                     val componentPackage = pluginContext.moduleDescriptor
-                        .getPackage(InjektClassNames.InjektComponentsPackage)
+                        .getPackage(InjektFqNames.InjektModulesPackage)
 
                     return componentPackage.memberScope
                         .getContributedDescriptors()

@@ -1,5 +1,11 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.getConstant
+import com.ivianuu.injekt.compiler.getModuleName
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -70,10 +76,10 @@ class ModuleTransformer(
     private val moduleFragment: IrModuleFragment
 ) : AbstractInjektTransformer(pluginContext) {
 
-    private val moduleMetadata = getTopLevelClass(InjektClassNames.ModuleMetadata)
-    private val provider = getTopLevelClass(InjektClassNames.Provider)
-    private val providerDsl = getTopLevelClass(InjektClassNames.ProviderDsl)
-    private val providerMetadata = getTopLevelClass(InjektClassNames.ProviderMetadata)
+    private val moduleMetadata = getTopLevelClass(InjektFqNames.ModuleMetadata)
+    private val provider = getTopLevelClass(InjektFqNames.Provider)
+    private val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
+    private val providerMetadata = getTopLevelClass(InjektFqNames.ProviderMetadata)
 
     private val moduleFunctions = mutableListOf<IrFunction>()
     private val processedModules = mutableMapOf<IrFunction, IrClass>()
@@ -112,7 +118,8 @@ class ModuleTransformer(
         }
         processedModules[function]?.let { return it }
         return DeclarationIrBuilder(pluginContext, function.symbol).run {
-            val moduleFqName = getModuleName(function.descriptor)
+            val moduleFqName =
+                getModuleName(function.descriptor)
             check(moduleFqName !in processingModules) {
                 "Circular dependency for module $moduleFqName"
             }
@@ -131,7 +138,7 @@ class ModuleTransformer(
         computedModuleFunctions = true
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.annotations.hasAnnotation(InjektClassNames.Module)) {
+                if (declaration.annotations.hasAnnotation(InjektFqNames.Module)) {
                     moduleFunctions += declaration
                 }
 
@@ -145,8 +152,10 @@ class ModuleTransformer(
     ): IrClass {
         return buildClass {
             kind = ClassKind.CLASS
-            origin = InjektDeclarationOrigin
-            name = getModuleName(function.descriptor).shortName()
+            origin =
+                InjektDeclarationOrigin
+            name = getModuleName(function.descriptor)
+                .shortName()
             modality = Modality.FINAL
             visibility = function.visibility
         }.apply clazz@{
@@ -178,7 +187,7 @@ class ModuleTransformer(
                             definitionCalls += expression
                         }
                         expression.symbol.descriptor.annotations.hasAnnotation(
-                            InjektClassNames.Module
+                            InjektFqNames.Module
                         )
                         -> {
                             moduleCalls += expression
@@ -224,7 +233,8 @@ class ModuleTransformer(
             val moduleFqNames = mutableSetOf<FqName>()
 
             moduleCalls.forEach {
-                val moduleFqName = getModuleName(it.symbol.descriptor)
+                val moduleFqName =
+                    getModuleName(it.symbol.descriptor)
                 check(moduleFqName !in moduleFqNames) {
                     "Duplicated module $moduleFqName"
                 }
@@ -237,7 +247,7 @@ class ModuleTransformer(
             fun IrClass.isModuleFieldRequired(): Boolean {
                 if (fields.any {
                         (it.type as IrSimpleType).classOrNull!!.ensureBound(pluginContext.irProviders)
-                            .owner.annotations.hasAnnotation(InjektClassNames.ModuleMetadata)
+                            .owner.annotations.hasAnnotation(InjektFqNames.ModuleMetadata)
                     }) return true
 
                 return declarations
@@ -534,7 +544,8 @@ class ModuleTransformer(
             kind = if (dependencies.isNotEmpty() ||
                 capturedModuleValueParameters.isNotEmpty()
             ) ClassKind.CLASS else ClassKind.OBJECT
-            origin = InjektDeclarationOrigin
+            origin =
+                InjektDeclarationOrigin
             this.name = name
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC

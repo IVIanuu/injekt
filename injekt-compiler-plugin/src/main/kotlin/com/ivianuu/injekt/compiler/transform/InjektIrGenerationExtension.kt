@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -33,7 +34,11 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
                     "ComposeIrGenerationExtension"
         )
 
-        val declarationStore = InjektDeclarationStore(pluginContext, moduleFragment)
+        val declarationStore =
+            InjektDeclarationStore(
+                pluginContext,
+                moduleFragment
+            )
 
         fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
             generateSymbols(pluginContext)
@@ -47,19 +52,33 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             declarationStore
         ).visitModuleAndGenerateSymbols()
 
+        ModuleAggregateGenerator(
+            project,
+            pluginContext,
+            declarationStore
+        ).visitModuleAndGenerateSymbols()
+
         // transform the config blocks of Component { ... } to a module
-        ComponentBlockTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        ComponentBlockTransformer(
+            pluginContext
+        ).visitModuleAndGenerateSymbols()
 
         // transform all @Module fun module() { ... } to classes
-        val moduleTransformer = ModuleTransformer(pluginContext, declarationStore, moduleFragment)
+        val moduleTransformer =
+            ModuleTransformer(
+                pluginContext,
+                declarationStore,
+                moduleFragment
+            )
 
         // transform all Component { ... } calls to a Component implementation
-        val componentTransformer = ComponentTransformer(
-            pluginContext,
-            bindingTrace,
-            declarationStore,
-            moduleFragment
-        )
+        val componentTransformer =
+            ComponentTransformer(
+                pluginContext,
+                bindingTrace,
+                declarationStore,
+                moduleFragment
+            )
 
         declarationStore.componentTransformer = componentTransformer
         declarationStore.moduleTransformer = moduleTransformer
@@ -68,7 +87,9 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         componentTransformer.visitModuleAndGenerateSymbols()
 
         // transform component.get<String>() to component.get("java.lang.String")
-        ComponentGetTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        ComponentGetTransformer(
+            pluginContext
+        ).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>

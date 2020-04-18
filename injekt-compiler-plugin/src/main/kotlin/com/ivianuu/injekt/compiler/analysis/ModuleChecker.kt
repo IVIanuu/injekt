@@ -1,5 +1,11 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.hasModuleAnnotation
+import com.ivianuu.injekt.compiler.isModuleAnnotation
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.container.StorageComponentContainer
@@ -36,6 +42,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
@@ -78,6 +85,10 @@ class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
             if (isModule) {
                 if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
                     trace.report(InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE.on(psi))
+                }
+
+                if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope).size > 1) {
+                    trace.report(InjektErrors.ONLY_ONE_SCOPE_ANNOTATION.on(psi))
                 }
             }
         }
@@ -226,11 +237,34 @@ class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
         context: CallCheckerContext
     ) {
         val descriptor = resolvedCall.candidateDescriptor
-
         if (descriptor !is FunctionDescriptor) return
-        if (!analyze(context.trace, descriptor)) return
 
-        val enclosingModuleFunction = findEnclosingModuleFunctionContext(this, context)
+        if (analyze(context.trace, descriptor)) {
+            checkModuleInvocations(resolvedCall, reportOn, context)
+
+            if (descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.scope") {
+                val scopeType = resolvedCall.typeArguments
+                    .values
+                    .single()
+                    .constructor
+                    .declarationDescriptor!!
+                if (!scopeType.annotations.hasAnnotation(InjektFqNames.Scope)) {
+                    context.trace.report(InjektErrors.NOT_A_SCOPE.on(reportOn))
+                }
+            }
+        }
+    }
+
+    private fun checkModuleInvocations(
+        resolvedCall: ResolvedCall<*>,
+        reportOn: PsiElement,
+        context: CallCheckerContext
+    ) {
+        val enclosingModuleFunction =
+            findEnclosingModuleFunctionContext(
+                this,
+                context
+            )
 
         when {
             enclosingModuleFunction != null -> {
@@ -284,7 +318,6 @@ class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
             }
         }
     }
-
 }
 
 private val ALLOWED_SCOPE_KINDS = setOf(

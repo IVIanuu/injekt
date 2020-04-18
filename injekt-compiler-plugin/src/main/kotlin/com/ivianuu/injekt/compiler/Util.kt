@@ -23,6 +23,7 @@ import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -45,6 +46,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.Variance
@@ -52,21 +54,19 @@ import org.jetbrains.kotlin.types.isError
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 
-object InjektClassNames {
-    private fun FqName.child(name: String) = child(Name.identifier(name))
-    val InjektPackage = FqName("com.ivianuu.injekt")
-    val InjektInternalPackage = InjektPackage.child("internal")
-    val InjektComponentsPackage = InjektInternalPackage.child("components")
+fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
+    annotations.any { it.hasAnnotation(annotation, module) }
 
-    val Component = InjektPackage.child("Component")
-    val ComponentMetadata = InjektInternalPackage.child("ComponentMetadata")
-    val ComponentOwner = InjektPackage.child("ComponentOwner")
-    val Module = InjektPackage.child("Module")
-    val ModuleMetadata = InjektInternalPackage.child("ModuleMetadata")
-    val Provider = InjektPackage.child("Provider")
-    val ProviderDsl = InjektPackage.child("ProviderDsl")
-    val ProviderMetadata = InjektInternalPackage.child("ProviderMetadata")
-    val SingleProvider = InjektInternalPackage.child("SingleProvider")
+fun DeclarationDescriptor.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+    annotations.filter {
+        it.hasAnnotation(annotation, module)
+    }
+
+fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
+    val thisFqName = this.fqName ?: return false
+    val descriptor =
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
+    return descriptor.annotations.hasAnnotation(annotation)
 }
 
 fun ModuleDescriptor.getTopLevelClass(fqName: FqName) =
@@ -116,7 +116,7 @@ fun makeModuleAnnotation(module: ModuleDescriptor): AnnotationDescriptor =
     object : AnnotationDescriptor {
         override val type: KotlinType
             get() = module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(InjektClassNames.Module)
+                ClassId.topLevel(InjektFqNames.Module)
             )!!.defaultType
         override val allValueArguments: Map<Name, ConstantValue<*>> get() = emptyMap()
         override val source: SourceElement get() = SourceElement.NO_SOURCE
@@ -130,16 +130,16 @@ fun KotlinType.makeModule(module: ModuleDescriptor): KotlinType {
 }
 
 fun KotlinType.hasModuleAnnotation(): Boolean =
-    !isSpecialType && annotations.findAnnotation(InjektClassNames.Module) != null
+    !isSpecialType && annotations.findAnnotation(InjektFqNames.Module) != null
 
 fun Annotated.hasModuleAnnotation(): Boolean =
-    annotations.findAnnotation(InjektClassNames.Module) != null
+    annotations.findAnnotation(InjektFqNames.Module) != null
 
 internal val KotlinType.isSpecialType: Boolean
     get() =
         this === TypeUtils.NO_EXPECTED_TYPE || this === TypeUtils.UNIT_EXPECTED_TYPE
 
-val AnnotationDescriptor.isModuleAnnotation: Boolean get() = fqName == InjektClassNames.Module
+val AnnotationDescriptor.isModuleAnnotation: Boolean get() = fqName == InjektFqNames.Module
 
 fun KotlinType.asTypeName(): TypeName? {
     if (isError) return null
