@@ -330,7 +330,7 @@ class ModuleTransformer(
                 addChild(
                     provider(
                         name = Name.identifier("provider_$index"),
-                        definition = definitionCall.getValueArgument(1)!!.cast(),
+                        definition = definitionCall.getValueArgument(0)!!.cast(),
                         isSingle = definitionCall.symbol.descriptor.name.asString() == "single",
                         module = this,
                         moduleParametersMap = parameterMap,

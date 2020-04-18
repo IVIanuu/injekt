@@ -1,42 +1,58 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.platform.jvm.isJvm
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
-import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtForExpression
+import org.jetbrains.kotlin.psi.KtIfExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.KtTryExpression
+import org.jetbrains.kotlin.psi.KtWhenExpression
+import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.isCallableReference
 import org.jetbrains.kotlin.resolve.calls.checkers.AdditionalTypeChecker
+import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
+import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
+import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
+import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind.DEFAULT_VALUE
+import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind.FUNCTION_HEADER_FOR_DESTRUCTURING
+import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind.FUNCTION_INNER_SCOPE
+import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.lowerIfFlexible
 import org.jetbrains.kotlin.types.typeUtil.builtIns
 import org.jetbrains.kotlin.types.upperIfFlexible
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-open class ModuleAnnotationChecker : DeclarationChecker,
+class ModuleAnnotationChecker : CallChecker, DeclarationChecker,
     AdditionalTypeChecker, StorageComponentContainerContributor {
 
     companion object {
@@ -47,112 +63,34 @@ open class ModuleAnnotationChecker : DeclarationChecker,
         }
     }
 
-    enum class ModuleFunctionState { NO_MODULE, INFERRED, MARKED }
-
-    fun analyze(trace: BindingTrace, descriptor: FunctionDescriptor): ModuleFunctionState {
+    fun analyze(trace: BindingTrace, descriptor: FunctionDescriptor): Boolean {
         val psi = descriptor.findPsi() as? KtElement
+
         psi?.let {
-            trace.bindingContext.get(InjektWritableSlices.MODULE_STATE, it)?.let { return it }
+            trace.bindingContext.get(InjektWritableSlices.IS_MODULE, it)?.let { return it }
         }
 
-        var moduleState = ModuleFunctionState.NO_MODULE
-        if (trace.bindingContext.get(
-                InjektWritableSlices.INFERRED_MODULE_DESCRIPTOR,
-                descriptor
-            ) == true
-        ) {
-            moduleState = ModuleFunctionState.MARKED
-        } else {
-            when (descriptor) {
-                is AnonymousFunctionDescriptor -> {
-                    if (descriptor.hasModuleAnnotation()) moduleState =
-                        ModuleFunctionState.MARKED
+        var isModule = false
+        if (descriptor.hasModuleAnnotation()) isModule = true
+        if (trace.bindingContext.get(InjektWritableSlices.IS_MODULE, descriptor) == true) isModule =
+            true
+
+        psi?.let {
+            if (isModule) {
+                if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
+                    trace.report(InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE.on(psi))
                 }
-                else -> if (descriptor.hasModuleAnnotation()) moduleState =
-                    ModuleFunctionState.MARKED
             }
         }
-        (descriptor.findPsi() as? KtElement)?.let { element ->
-            moduleState = analyzeFunctionContents(trace, element, moduleState)
-        }
-        psi?.let { trace.record(InjektWritableSlices.MODULE_STATE, it, moduleState) }
-        return moduleState
+
+        psi?.let { trace.record(InjektWritableSlices.IS_MODULE, it, isModule) }
+        return isModule
     }
 
-    private fun analyzeFunctionContents(
-        trace: BindingTrace,
-        element: KtElement,
-        signatureModuleFunctionState: ModuleFunctionState
-    ): ModuleFunctionState {
-        var moduleState = signatureModuleFunctionState
-        var localFcs = false
-        var isInlineLambda = false
-        element.accept(object : KtTreeVisitorVoid() {
-            override fun visitNamedFunction(function: KtNamedFunction) {
-                if (function == element) {
-                    super.visitNamedFunction(function)
-                }
-            }
+    fun analyze(trace: BindingTrace, element: KtElement, type: KotlinType?): Boolean {
+        trace.bindingContext.get(InjektWritableSlices.IS_MODULE, element)?.let { return it }
 
-            override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
-                val isInlineable = InlineUtil.isInlinedArgument(
-                    lambdaExpression.functionLiteral,
-                    trace.bindingContext,
-                    true
-                )
-                if (isInlineable && lambdaExpression == element) isInlineLambda = true
-                if (isInlineable || lambdaExpression == element)
-                    super.visitLambdaExpression(lambdaExpression)
-            }
-
-            override fun visitCallExpression(expression: KtCallExpression) {
-                checkResolvedCall(expression.calleeExpression ?: expression)
-                super.visitCallExpression(expression)
-            }
-
-            private fun checkResolvedCall(reportElement: KtExpression) {
-                // Can be null in cases where the call isn't resolvable (eg. due to a bug/typo in the user's code)
-                localFcs = true
-                if (!isInlineLambda && moduleState != ModuleFunctionState.MARKED) {
-                    /*// Report error on composable element to make it obvious which invocation is offensive
-                    trace.report(
-                        InjektErrors.MODULE_INVOCATION_IN_NON_MODULE
-                            .on(reportElement)
-                    )*/
-                }
-            }
-        }, null)
-        if (
-            localFcs &&
-            !isInlineLambda && moduleState != ModuleFunctionState.MARKED
-        ) {
-            val reportElement = when (element) {
-                is KtNamedFunction -> element.nameIdentifier ?: element
-                else -> element
-            }
-            if (localFcs) {
-                /*trace.report(
-                    InjektErrors.MODULE_INVOCATION_IN_NON_MODULE.on(reportElement)
-                )*/
-            }
-        }
-        if (localFcs && moduleState == ModuleFunctionState.NO_MODULE)
-            moduleState =
-                ModuleFunctionState.INFERRED
-        return moduleState
-    }
-
-    /**
-     * Analyze a KtElement
-     *  - Determine if it is @Module (eg. the element or inferred type has an @Module annotation)
-     *  - Update the binding context to cache analysis results
-     *  - Report errors (eg. invocations of an @Module, etc)
-     *  - Return true if element is @Module, else false
-     */
-    fun analyze(trace: BindingTrace, element: KtElement, type: KotlinType?): ModuleFunctionState {
-        trace.bindingContext.get(InjektWritableSlices.MODULE_STATE, element)?.let { return it }
-
-        var moduleState = ModuleFunctionState.NO_MODULE
+        var isModule = false
 
         if (element is KtParameter) {
             val moduleAnnotation = element
@@ -162,7 +100,7 @@ open class ModuleAnnotationChecker : DeclarationChecker,
                 ?.singleOrNull { it.isModuleAnnotation }
 
             if (moduleAnnotation != null) {
-                moduleState += ModuleFunctionState.MARKED
+                isModule = true
             }
         }
 
@@ -171,7 +109,7 @@ open class ModuleAnnotationChecker : DeclarationChecker,
             type !== TypeUtils.NO_EXPECTED_TYPE &&
             type.hasModuleAnnotation()
         ) {
-            moduleState += ModuleFunctionState.MARKED
+            isModule = true
         }
         val parent = element.parent
         val annotations = when {
@@ -185,16 +123,12 @@ open class ModuleAnnotationChecker : DeclarationChecker,
         for (entry in annotations) {
             val descriptor = trace.bindingContext.get(BindingContext.ANNOTATION, entry) ?: continue
             if (descriptor.isModuleAnnotation) {
-                moduleState += ModuleFunctionState.MARKED
+                isModule = true
             }
         }
 
-        if (element is KtLambdaExpression || element is KtFunction) {
-            moduleState = analyzeFunctionContents(trace, element, moduleState)
-        }
-
-        trace.record(InjektWritableSlices.MODULE_STATE, element, moduleState)
-        return moduleState
+        trace.record(InjektWritableSlices.IS_MODULE, element, isModule)
+        return isModule
     }
 
     override fun registerModuleComponents(
@@ -225,11 +159,9 @@ open class ModuleAnnotationChecker : DeclarationChecker,
         if (expression is KtLambdaExpression) {
             val expectedType = c.expectedType
             if (expectedType === TypeUtils.NO_EXPECTED_TYPE) return
-            val expectedModule = expectedType.hasModuleAnnotation()
-            val moduleState = analyze(c.trace, expression, c.expectedType)
-            if ((expectedModule && moduleState == ModuleFunctionState.NO_MODULE) ||
-                (!expectedModule && moduleState == ModuleFunctionState.MARKED)
-            ) {
+            val expectedIsModule = expectedType.hasModuleAnnotation()
+            val isModule = analyze(c.trace, expression, c.expectedType)
+            if (expectedIsModule != isModule) {
                 val isInlineable =
                     InlineUtil.isInlinedArgument(
                         expression.functionLiteral,
@@ -270,10 +202,10 @@ open class ModuleAnnotationChecker : DeclarationChecker,
                 expressionTypeWithSmartCast == nullableNothingType
             ) return
 
-            val expectedModule = expectedType.hasModuleAnnotation()
+            val expectedIsModule = expectedType.hasModuleAnnotation()
             val isModule = expressionType.hasModuleAnnotation()
 
-            if (expectedModule != isModule) {
+            if (expectedIsModule != isModule) {
                 val reportOn =
                     if (expression.parent is KtAnnotatedExpression)
                         expression.parent as KtExpression
@@ -290,6 +222,86 @@ open class ModuleAnnotationChecker : DeclarationChecker,
         }
     }
 
-    operator fun ModuleFunctionState.plus(rhs: ModuleFunctionState): ModuleFunctionState =
-        if (this > rhs) this else rhs
+    override fun check(
+        resolvedCall: ResolvedCall<*>,
+        reportOn: PsiElement,
+        context: CallCheckerContext
+    ) {
+        val descriptor = resolvedCall.candidateDescriptor
+
+        if (descriptor !is FunctionDescriptor) return
+        if (!analyze(context.trace, descriptor)) return
+
+        val enclosingModuleFunction = findEnclosingModuleFunctionContext(this, context)
+
+        when {
+            enclosingModuleFunction != null -> {
+                var isConditional = false
+
+                var walker: PsiElement? = resolvedCall.call.callElement
+                while (walker != null) {
+                    val parent = walker.parent
+                    if (parent is KtIfExpression ||
+                        parent is KtForExpression ||
+                        parent is KtWhenExpression ||
+                        parent is KtTryExpression ||
+                        parent is KtCatchClause ||
+                        parent is KtWhileExpression
+                    ) {
+                        isConditional = true
+                    }
+                    walker = try {
+                        walker.parent
+                    } catch (e: Throwable) {
+                        null
+                    }
+                }
+
+                if (isConditional) {
+                    context.trace.report(
+                        InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE.on(reportOn)
+                    )
+                }
+
+                if (context.scope.parentsWithSelf.any {
+                        it.isScopeForDefaultParameterValuesOf(
+                            enclosingModuleFunction
+                        )
+                    }) {
+                    context.trace.report(
+                        Errors.UNSUPPORTED.on(
+                            reportOn,
+                            "@Module function calls in a context of default parameter value"
+                        )
+                    )
+                }
+            }
+            resolvedCall.call.isCallableReference() -> {
+                // do nothing: we can get callable reference to suspend function outside suspend context
+            }
+            else -> {
+                context.trace.report(
+                    InjektErrors.MODULE_INVOCATION_IN_NON_MODULE.on(reportOn)
+                )
+            }
+        }
+    }
+
 }
+
+private val ALLOWED_SCOPE_KINDS = setOf(
+    FUNCTION_INNER_SCOPE, FUNCTION_HEADER_FOR_DESTRUCTURING
+)
+
+private fun findEnclosingModuleFunctionContext(
+    checker: ModuleAnnotationChecker,
+    context: CallCheckerContext
+): FunctionDescriptor? = context.scope
+    .parentsWithSelf.firstOrNull {
+    it is LexicalScope && it.kind in ALLOWED_SCOPE_KINDS &&
+            it.ownerDescriptor.safeAs<FunctionDescriptor>()
+                ?.let { checker.analyze(context.trace, it) } == true
+}?.cast<LexicalScope>()?.ownerDescriptor?.cast()
+
+private fun HierarchicalScope.isScopeForDefaultParameterValuesOf(enclosingModuleFunction: FunctionDescriptor) =
+    this is LexicalScope && this.kind == DEFAULT_VALUE && this.ownerDescriptor == enclosingModuleFunction

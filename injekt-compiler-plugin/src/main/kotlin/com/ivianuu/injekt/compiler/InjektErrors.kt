@@ -13,6 +13,12 @@ interface InjektErrors {
         @JvmField
         val MODULE_INVOCATION_IN_NON_MODULE = error()
 
+        @JvmField
+        val CONDITIONAL_NOT_ALLOWED_IN_MODULE = error()
+
+        @JvmField
+        val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -33,6 +39,14 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             InjektErrors.MODULE_INVOCATION_IN_NON_MODULE,
             "Functions which invoke @Module functions must be marked with the @Module " +
                     "annotation"
+        )
+        map.put(
+            InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE,
+            "Conditional logic is not allowed around a @Module function call"
+        )
+        map.put(
+            InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE,
+            "@Module functions cannot return anything"
         )
     }
 }

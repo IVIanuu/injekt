@@ -23,7 +23,7 @@ open class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorE
         if (context.expectedType.hasModuleAnnotation()) {
             // If the expected type has an @Module annotation then the literal function
             // expression should infer a an @Module annotation
-            context.trace.record(InjektWritableSlices.INFERRED_MODULE_DESCRIPTOR, descriptor, true)
+            context.trace.record(InjektWritableSlices.IS_MODULE, descriptor, true)
         }
         return descriptor
     }
@@ -40,11 +40,11 @@ open class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorE
             StorageComponentContainerContributor.getInstances(element.project).single {
                 it is ModuleAnnotationChecker
             } as ModuleAnnotationChecker
-        if ((context.expectedType.hasModuleAnnotation() || checker.analyze(
+        if (context.expectedType.hasModuleAnnotation() || checker.analyze(
                 context.trace,
                 element,
                 resultType
-            ) != ModuleAnnotationChecker.ModuleFunctionState.NO_MODULE)
+            )
         ) {
             return resultType.makeModule(module)
         }

@@ -81,6 +81,13 @@ fun KotlinCompilation.Result.assertInternalError(
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
 }
 
+fun KotlinCompilation.Result.assertCompileError(
+    message: String? = null
+) {
+    assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, exitCode)
+    message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
+}
+
 class Foo
 
 class Bar(foo: Foo)
