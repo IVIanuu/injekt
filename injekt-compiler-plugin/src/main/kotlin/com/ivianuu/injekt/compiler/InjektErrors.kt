@@ -29,7 +29,10 @@ interface InjektErrors {
         val NOT_A_SCOPE = error()
 
         @JvmField
-        val IMPLICIT_MODULE_PARAMETERLESS = error()
+        val IMPLICIT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error()
+
+        @JvmField
+        val IMPLICIT_MODULE_CANNOT_HAVE_TYPE_PARAMETERS = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -73,8 +76,12 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Not a scope"
         )
         map.put(
-            InjektErrors.IMPLICIT_MODULE_PARAMETERLESS,
-            "Implicit modules cannot have parameters"
+            InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS,
+            "Implicit modules cannot have value parameters"
+        )
+        map.put(
+            InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_TYPE_PARAMETERS,
+            "Implicit modules cannot have type parameters"
         )
     }
 }
