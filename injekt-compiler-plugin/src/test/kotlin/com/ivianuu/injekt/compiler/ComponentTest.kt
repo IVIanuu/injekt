@@ -340,6 +340,36 @@ class ComponentTest {
         invokeSingleFile<Component>().get("kotlin.Long".hashCode())
     }
 
+    @Test
+    fun testTransformGet() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory { "" }
+        }
+        
+        fun invoke() = MyComponent.get<String>()
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testTransformOwnerGet() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory { "" }
+        }
+        
+        val owner = object : ComponentOwner {
+            override val component = MyComponent
+        }
+        
+        fun invoke() = owner.get<String>()
+    """
+    ) {
+        invokeSingleFile()
+    }
+
     /*@Test
     fun test() = codegenTest(
     """
