@@ -49,9 +49,6 @@ class Graph(
     }
 
     private fun collectModules(moduleWithAccessor: ModuleWithAccessor) {
-        check(moduleWithAccessor !in allModules) {
-            "Duplicated module ${moduleWithAccessor.module}"
-        }
         allModules += moduleWithAccessor
 
         val module = moduleWithAccessor.module
