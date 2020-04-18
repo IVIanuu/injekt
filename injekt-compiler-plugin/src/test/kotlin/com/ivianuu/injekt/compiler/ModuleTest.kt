@@ -288,14 +288,25 @@ class ModuleTest {
     }
 
     @Test
-    fun testImplicitModuleWithParameters() = codegenTest(
+    fun testImplicitModuleWithValueParameters() = codegenTest(
         """ 
             @TestScope 
             @Module 
             fun module(p1: String) {}
         """
     ) {
-        assertCompileError("parameter")
+        assertCompileError("value parameter")
+    }
+
+    @Test
+    fun testImplicitModuleWithTypeParameters() = codegenTest(
+        """ 
+            @TestScope 
+            @Module 
+            fun <T> module() {}
+        """
+    ) {
+        assertCompileError("type parameter")
     }
 
 
