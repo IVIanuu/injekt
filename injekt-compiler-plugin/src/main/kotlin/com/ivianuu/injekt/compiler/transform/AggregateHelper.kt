@@ -39,7 +39,6 @@ fun IrModuleFragment.addEmptyClass(
     name: Name,
     packageFqName: FqName
 ) {
-    println("add empty class ${packageFqName.child(name)}")
     addClass(
         pluginContext.psiSourceManager.cast(),
         project,
