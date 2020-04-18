@@ -38,7 +38,8 @@ class Graph(
     private val declarationStore: InjektDeclarationStore
 ) {
 
-    val allScopes = mutableListOf<FqName>()
+    val allScopes = mutableSetOf<FqName>()
+    private val parentScopes = mutableSetOf<FqName>()
 
     val allBindings = mutableMapOf<Key, Binding>()
 
@@ -47,8 +48,8 @@ class Graph(
 
     init {
         collectModules()
-        collectScopes()
         collectParents()
+        collectScopes()
         collectBindings()
         validate()
     }
@@ -87,6 +88,15 @@ class Graph(
     }
 
     private fun collectScopes() {
+        allParents.forEach { componentWithAccessor ->
+            val component = componentWithAccessor.component
+            val metadata = component.descriptor.annotations.single {
+                it.fqName == InjektFqNames.ComponentMetadata
+            }
+
+            val scopes = metadata.getStringList("scopes")
+            scopes.forEach { addScope(FqName(it)) }
+        }
         allModules.forEach { moduleWithAccessor ->
             val module = moduleWithAccessor.module
             val metadata = module.descriptor.annotations.single {

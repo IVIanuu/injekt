@@ -82,6 +82,39 @@ class ComponentTest {
     }
 
     @Test
+    fun testNestedDuplicatedBindingFails() = codegenTest(
+        """
+        val componentA = Component("a") { 
+            factory { "a" } 
+        } 
+        val componentB = Component("b") { 
+            parent("a", componentA) 
+            factory { "b" }
+        }
+    """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    @Test
+    fun testParentsWithDuplicatedBindingFails() = codegenTest(
+        """
+        val componentA = Component("a") { 
+            factory { "a" }
+        } 
+        val componentB = Component("b") { 
+            factory { "b" }
+        }
+        val componentC = Component("c") {
+            parent("a", componentA)
+            parent("b", componentB)
+        }
+    """
+    ) {
+        assertInternalError("duplicated")
+    }
+
+    @Test
     fun testMissingBindingFails() = codegenTest(
         """
         val MyComponent = Component("c") {
@@ -97,6 +130,21 @@ class ComponentTest {
         """
         val MyComponent = Component("c") {
             scope<TestScope>()
+            scope<TestScope>()
+        }
+    """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    @Test
+    fun testDuplicatedScopeInDifferentComponentsFails() = codegenTest(
+        """
+        val ComponentA = Component("a") {
+            scope<TestScope>()
+        }
+        val ComponentB = Component("b") {
+            parent("a", ComponentA)
             scope<TestScope>()
         }
     """

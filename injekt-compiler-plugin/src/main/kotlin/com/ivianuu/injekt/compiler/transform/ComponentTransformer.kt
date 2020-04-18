@@ -455,7 +455,7 @@ class ComponentTransformer(
     }
 
     private fun IrBuilderWithScope.componentMetadata(
-        scopes: List<FqName>,
+        scopes: Set<FqName>,
         bindings: Map<Key, Binding>,
         providers: Map<Binding, IrField>
     ): IrConstructorCall {
