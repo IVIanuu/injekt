@@ -389,19 +389,6 @@ class ComponentTest {
         assertOk()
     }
 
-    @Test
-    fun testComponentWithTypeParameters() = codegenTest(
-        """
-            inline fun <reified A, reified B> createComponent(a: A, b: B) = Component("") {
-                factory { a }
-                factory { b }
-            }
-            val component = createComponent("string", 0)
-        """
-    ) {
-        assertOk()
-    }
-
     /*@Test
     fun test() = codegenTest(
     """
