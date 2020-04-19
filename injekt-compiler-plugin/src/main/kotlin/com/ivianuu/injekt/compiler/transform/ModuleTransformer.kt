@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
+import org.jetbrains.kotlin.backend.common.ir.passTypeArgumentsFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -31,6 +32,7 @@ import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
@@ -50,19 +52,23 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.replace
@@ -621,16 +627,139 @@ class ModuleTransformer(
                 }
             }
 
+            val companion = providerCompanion(
+                module,
+                definition,
+                dependencies,
+                capturedModuleValueParameters,
+                moduleParametersMap,
+                moduleFieldsByParameter
+            ).also { addChild(it) }
+
             addFunction {
                 this.name = Name.identifier("invoke")
                 returnType = resultType
                 visibility = Visibilities.PUBLIC
-            }.apply {
+            }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
                     provider.unsubstitutedMemberScope.findSingleFunction(Name.identifier("invoke"))
                 )
+
+                body = irExprBody(
+                    irCall(companion.functions.single()).apply {
+                        dispatchReceiver = irGetObject(companion.symbol)
+
+                        passTypeArgumentsFrom(this@clazz)
+
+                        if (moduleField != null) {
+                            putValueArgument(
+                                0,
+                                irGetField(
+                                    irGet(dispatchReceiverParameter!!),
+                                    moduleField
+                                )
+                            )
+                        }
+
+                        fieldsByDependency.values.forEachIndexed { index, field ->
+                            putValueArgument(
+                                if (moduleField != null) index + 1 else index,
+                                irCall(
+                                    symbolTable.referenceFunction(
+                                        provider.unsubstitutedMemberScope.findSingleFunction(
+                                            Name.identifier(
+                                                "invoke"
+                                            )
+                                        )
+                                    ),
+                                    (field.type as IrSimpleType).arguments.single().typeOrNull!!
+                                ).apply {
+                                    dispatchReceiver = irGetField(
+                                        irGet(dispatchReceiverParameter!!),
+                                        field
+                                    )
+                                }
+                            )
+                        }
+                    }
+                )
+            }
+
+            annotations += bindingMetadata(qualifiers)
+            annotations += providerMetadata(isSingle)
+        }
+    }
+
+    private fun IrBuilderWithScope.providerCompanion(
+        module: IrClass,
+        definition: IrFunctionExpression,
+        dependencies: MutableList<IrCall>,
+        capturedModuleValueParameters: List<IrValueParameter>,
+        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
+        moduleFieldsByParameter: Map<IrValueParameter, IrField>
+    ): IrClass {
+        return buildClass {
+            kind = ClassKind.OBJECT
+            origin = InjektDeclarationOrigin
+            name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
+            modality = Modality.FINAL
+            visibility = Visibilities.PUBLIC
+        }.apply clazz@{
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            addConstructor {
+                returnType = defaultType
+                visibility = Visibilities.PUBLIC
+                isPrimary = true
+            }.apply {
+                body = irBlockBody {
+                    +IrDelegatingConstructorCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        context.irBuiltIns.unitType,
+                        symbolTable.referenceConstructor(
+                            context.builtIns.any
+                                .unsubstitutedPrimaryConstructor!!
+                        )
+                    )
+                    +IrInstanceInitializerCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        this@clazz.symbol,
+                        context.irBuiltIns.unitType
+                    )
+                }
+            }
+
+            val definitionFunction = definition.function
+            val resultType = definition.function.returnType
+
+            addFunction {
+                this.name = Name.identifier("create")
+                returnType = resultType
+                visibility = Visibilities.PUBLIC
+            }.apply {
+                copyTypeParametersFrom(module)
+                dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
+
+                val moduleParameter = if (capturedModuleValueParameters.isNotEmpty()) {
+                    addValueParameter(
+                        "module",
+                        module.defaultType
+                    )
+                } else null
+
+                var depIndex = 0
+                val valueParametersByDependency = dependencies
+                    .associateWith { expression ->
+                        addValueParameter {
+                            this.name = Name.identifier("p$depIndex")
+                            type = expression.type
+                            visibility = Visibilities.PRIVATE
+                        }.also { depIndex++ }
+                    }
 
                 body = definitionFunction.body
                 body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -656,18 +785,8 @@ class ModuleTransformer(
 
                     override fun visitCall(expression: IrCall): IrExpression {
                         super.visitCall(expression)
-                        return fieldsByDependency[expression]?.let { field ->
-                            irCall(
-                                symbolTable.referenceSimpleFunction(
-                                    provider.findFirstFunction("invoke") { true }
-                                ),
-                                expression.type
-                            ).apply {
-                                dispatchReceiver = irGetField(
-                                    irGet(dispatchReceiverParameter!!),
-                                    field
-                                )
-                            }
+                        return valueParametersByDependency[expression]?.let { valueParameter ->
+                            irGet(valueParameter)
                         } ?: expression
                     }
 
@@ -678,19 +797,13 @@ class ModuleTransformer(
                             val newParameter = moduleParametersMap[expression.symbol.owner]!!
                             val field = moduleFieldsByParameter[newParameter]!!
                             return irGetField(
-                                irGetField(
-                                    irGet(dispatchReceiverParameter!!),
-                                    moduleField!!
-                                ),
+                                irGet(moduleParameter!!),
                                 field
                             )
                         }
                     }
                 })
             }
-
-            annotations += bindingMetadata(qualifiers)
-            annotations += providerMetadata(isSingle)
         }
     }
 
