@@ -437,6 +437,41 @@ class ComponentTest {
         assertOk()
     }
 
+    @Test
+    fun testTypeDistinction() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory { "" }
+            factory { 0 }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    //@Test
+    fun testNullabilityDoesntMatter() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory<String> { "" }
+            factory<String?> { null }
+        }
+    """
+    ) {
+        assertInternalError("duplicate")
+    }
+
+    //@Test
+    fun testMissingNullableBindingIsOk() = codegenTest(
+        """
+        val MyComponent = Component("c") {
+            factory { get<String?>(); 0 }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
     /*@Test
     fun test() = codegenTest(
     """
