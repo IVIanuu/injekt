@@ -12,12 +12,15 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class ModuleAggregateGenerator(
     private val project: Project,
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
+
+    val aggregateModules = mutableMapOf<FqName, MutableSet<Name>>()
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val modules = mutableListOf<IrFunction>()
@@ -45,6 +48,9 @@ class ModuleAggregateGenerator(
             val aggregateName = Name.identifier(
                 "${moduleFqName.asString().replace(".", "_")}"
             )
+
+            aggregateModules.getOrPut(packageFqName) { mutableSetOf() }
+                .add(aggregateName)
 
             declaration.addEmptyClass(
                 pluginContext,

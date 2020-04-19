@@ -50,6 +50,7 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -236,16 +237,28 @@ class ModuleTransformer(
                 modulesByCalls[it] = declarationStore.getModule(moduleFqName)
             }
 
-            val moduleFields = mutableMapOf<IrCall, IrField>()
+            val moduleFieldsByCall = mutableMapOf<IrCall, IrField>()
 
-            modulesByCalls.toList().forEachIndexed { index, (call, module) ->
-                moduleFields[call] = addField(
-                    "module_$index",
+            var moduleIndex = 0
+            modulesByCalls.toList().forEach { (call, module) ->
+                moduleFieldsByCall[call] = addField(
+                    "module_$moduleIndex",
                     module.typeWith((0 until call.typeArgumentsCount)
                         .map { call.getTypeArgument(it)!! }
                     ),
                     Visibilities.PRIVATE
                 )
+                moduleIndex++
+            }
+
+            val implicitModules = scopes.flatMap { declarationStore.getModulesForScope(it) }
+
+            val implicitModuleFields = implicitModules.associateWith {
+                addField(
+                    "module_$moduleIndex",
+                    it.defaultType,
+                    Visibilities.PRIVATE
+                ).also { moduleIndex++ }
             }
 
             var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
@@ -304,20 +317,27 @@ class ModuleTransformer(
                     }
 
                     modulesByCalls.forEach { (call, module) ->
-                        moduleFields[call]?.let { field ->
-                            +irSetField(
-                                irGet(thisReceiver!!),
-                                field,
-                                irCall(module.constructors.single()).apply {
-                                    (0 until call.typeArgumentsCount)
-                                        .map { call.getTypeArgument(it)!! }
-                                        .forEachIndexed { index, type ->
-                                            putTypeArgument(index, type)
-                                        }
-                                    copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                                }
-                            )
-                        }
+                        val field = moduleFieldsByCall[call]!!
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            field,
+                            irCall(module.constructors.single()).apply {
+                                (0 until call.typeArgumentsCount)
+                                    .map { call.getTypeArgument(it)!! }
+                                    .forEachIndexed { index, type ->
+                                        putTypeArgument(index, type)
+                                    }
+                                copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                            }
+                        )
+                    }
+
+                    implicitModuleFields.forEach { (module, field) ->
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            field,
+                            irCall(module.constructors.single())
+                        )
                     }
                 }
             }
@@ -337,13 +357,21 @@ class ModuleTransformer(
                 )
             }
 
+            val includedModuleFields = mutableListOf<IrField>()
+
+            modulesByCalls.forEach { (call, module) ->
+                includedModuleFields += moduleFieldsByCall[call]!!
+            }
+
+            includedModuleFields += implicitModuleFields.values
+
             annotations += moduleMetadata(
                 scopes = scopes,
                 parentCalls = parentCalls,
                 parentFields = parentFields,
                 definitionCalls = definitionCalls,
                 providerByDefinitionCall = providerByDefinitionCall,
-                modulesByCalls = modulesByCalls
+                includedModules = includedModuleFields
             )
 
             transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -369,7 +397,7 @@ class ModuleTransformer(
         parentFields: Map<IrClass, IrField>,
         definitionCalls: List<IrCall>,
         providerByDefinitionCall: Map<IrCall, IrClass>,
-        modulesByCalls: Map<IrCall, IrClass>
+        includedModules: List<IrField>
     ): IrConstructorCall {
         return irCallConstructor(
             symbolTable.referenceConstructor(moduleMetadata.constructors.single())
@@ -460,9 +488,9 @@ class ModuleTransformer(
                     pluginContext.irBuiltIns.arrayClass
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
-                    modulesByCalls.values.toList()
+                    includedModules
                         .map {
-                            irString(it.fqNameForIrSerialization.asString())
+                            irString(it.type.classOrNull!!.owner.fqNameForIrSerialization.asString())
                         }
                 )
             )
@@ -476,9 +504,8 @@ class ModuleTransformer(
                     pluginContext.irBuiltIns.arrayClass
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
-                    modulesByCalls.values.toList()
-                        .indices
-                        .map { irString("module_$it") }
+                    includedModules
+                        .map { irString(it.name.asString()) }
                 )
             )
         }

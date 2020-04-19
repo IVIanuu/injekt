@@ -233,8 +233,6 @@ class ComponentTransformer(
 
             val graph = Graph(
                 context = pluginContext,
-                bindingTrace = bindingTrace,
-                thisComponent = this,
                 thisComponentModule = ModuleWithAccessor(module, module.typeParameters.map {
                     it.symbol to moduleCall.getTypeArgument(it.index)!!
                 }.toMap()) {

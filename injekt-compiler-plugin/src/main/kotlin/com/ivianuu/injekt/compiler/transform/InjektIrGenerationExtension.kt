@@ -51,10 +51,10 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             pluginContext
         ).visitModuleAndGenerateSymbols()
 
-        ModuleAggregateGenerator(
+        val moduleAggregateGenerator = ModuleAggregateGenerator(
             project,
             pluginContext
-        ).visitModuleAndGenerateSymbols()
+        ).also { it.visitModuleAndGenerateSymbols() }
 
         // transform the config blocks of Component { ... } to a module
         ComponentBlockTransformer(
@@ -78,6 +78,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
                 moduleFragment
             )
 
+        declarationStore.moduleAggregateGenerator = moduleAggregateGenerator
         declarationStore.componentTransformer = componentTransformer
         declarationStore.moduleTransformer = moduleTransformer
 

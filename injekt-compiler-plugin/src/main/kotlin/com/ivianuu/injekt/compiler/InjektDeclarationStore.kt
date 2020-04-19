@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.transform.ComponentTransformer
+import com.ivianuu.injekt.compiler.transform.ModuleAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -17,6 +18,7 @@ class InjektDeclarationStore(
 
     lateinit var componentTransformer: ComponentTransformer
     lateinit var moduleTransformer: ModuleTransformer
+    lateinit var moduleAggregateGenerator: ModuleAggregateGenerator
 
     fun getComponent(key: String): IrClass {
         return try {
@@ -97,11 +99,20 @@ class InjektDeclarationStore(
         val packageFqName = InjektFqNames.InjektModulesPackage.child(
             Name.identifier(scope.asString().replace(".", "_"))
         )
-        return pluginContext.moduleDescriptor.getPackage(packageFqName)
+
+        val modules = mutableListOf<IrClass>()
+
+        modules += moduleAggregateGenerator.aggregateModules[packageFqName]
+            ?.map { getModule(FqName(it.asString().replace("_", "."))) }
+            ?: emptyList()
+
+        modules += pluginContext.moduleDescriptor.getPackage(packageFqName)
             .memberScope
             .getContributedDescriptors()
             .map { FqName(it.name.asString().replace("_", ".")) }
             .map { getModule(it) }
+
+        return modules
     }
 
 }

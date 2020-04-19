@@ -17,16 +17,13 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class Graph(
     private val context: IrPluginContext,
-    private val bindingTrace: BindingTrace,
-    private val thisComponent: IrClass,
-    private val thisComponentModule: ModuleWithAccessor,
+    thisComponentModule: ModuleWithAccessor,
     private val declarationStore: InjektDeclarationStore
 ) {
 
@@ -50,7 +47,6 @@ class Graph(
 
         allScopes += scope
     }
-
 
     private fun addParentScope(scope: FqName) {
         check(scope !in allScopes && scope !in parentScopes) {

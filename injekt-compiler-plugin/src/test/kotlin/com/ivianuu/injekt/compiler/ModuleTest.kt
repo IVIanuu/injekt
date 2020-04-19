@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class ModuleTest {
@@ -267,10 +268,18 @@ class ModuleTest {
         """ 
             @TestScope 
             @Module 
-            fun module() {}
+            fun module() {
+                factory { "test" }
+            }
+            
+            val Component = Component("c") {
+                scope<TestScope>()
+            }
+            
+            fun invoke() = Component.get<String>()
         """
     ) {
-        assertOk()
+        assertEquals("test", invokeSingleFile())
     }
 
     @Test
