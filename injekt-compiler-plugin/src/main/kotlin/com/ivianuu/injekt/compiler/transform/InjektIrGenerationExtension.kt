@@ -24,16 +24,10 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val bindingTrace = DelegatingBindingTrace(
-            pluginContext.bindingContext, "trace in " +
-                    "ComposeIrGenerationExtension"
-        )
-
         val declarationStore =
             InjektDeclarationStore(
                 pluginContext,

@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.asTypeName
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.irTrace
@@ -395,7 +394,6 @@ class ComponentTransformer(
 
             annotations += componentMetadata(
                 graph.allScopes,
-                graph.allBindings,
                 providerFields
             )
 
@@ -452,7 +450,6 @@ class ComponentTransformer(
 
     private fun IrBuilderWithScope.componentMetadata(
         scopes: Set<FqName>,
-        bindings: Map<Key, Binding>,
         providers: Map<Binding, IrField>
     ): IrConstructorCall {
         return irCallConstructor(
@@ -473,23 +470,9 @@ class ComponentTransformer(
                 )
             )
 
-            // binding keys
+            // bindings
             putValueArgument(
                 1,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
-                    bindings.map {
-                        irString(it.key.type.asTypeName()!!.toString())
-                    }
-                )
-            )
-            // binding providers
-            putValueArgument(
-                2,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,

@@ -55,10 +55,9 @@ class InjektDeclarationStore(
                         .getContributedDescriptors()
                         .filterIsInstance<ClassDescriptor>()
                         .singleOrNull { it.name.asString().startsWith("$key\$") }
-                        ?.let {
-                            it.name.asString().removePrefix("$key\$")
-                                .replace("_", ".")
-                        }
+                        ?.name
+                        ?.asString()
+                        ?.removePrefix("$key\$")?.replace("_", ".")
                         ?.let {
                             pluginContext.symbolTable.referenceClass(
                                 pluginContext.moduleDescriptor.getTopLevelClass(FqName(it))

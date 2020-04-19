@@ -50,7 +50,6 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -425,13 +424,16 @@ class ModuleTransformer(
                     pluginContext.irBuiltIns.arrayClass
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
-                    parentCalls.map {
-                        irString(it.getValueArgument(0)!!.getConstant())
+                    parentCalls.zip(parentFields.values).map { (call, field) ->
+                        irString(
+                            "${call.getValueArgument(0)!!
+                                .getConstant<String>()}=:=${field.name.asString()}"
+                        )
                     }
                 )
             )
 
-            // parent names
+            // bindings
             putValueArgument(
                 2,
                 IrVarargImpl(
@@ -440,20 +442,12 @@ class ModuleTransformer(
                     pluginContext.irBuiltIns.arrayClass
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
-                    parentFields.map { irString(it.value.name.asString()) }
+                    definitionCalls
+                        .map { irString(providerByDefinitionCall[it]!!.name.asString()) }
                 )
             )
 
-            val bindings = definitionCalls
-                .map { call ->
-                    irString(
-                        call.getTypeArgument(0)!!.toKotlinType().asTypeName()!!
-                            .toString()
-                    ) to irString(
-                        providerByDefinitionCall[call]!!.name.asString()
-                    )
-                }
-            // binding keys
+            // included modules
             putValueArgument(
                 3,
                 IrVarargImpl(
@@ -462,49 +456,7 @@ class ModuleTransformer(
                     pluginContext.irBuiltIns.arrayClass
                         .typeWith(pluginContext.irBuiltIns.stringType),
                     pluginContext.irBuiltIns.stringType,
-                    bindings.map { it.first }
-                )
-            )
-            // binding providers
-            putValueArgument(
-                4,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
-                    bindings.map { it.second }
-                )
-            )
-
-            // included module types
-            putValueArgument(
-                5,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
-                    includedModules
-                        .map {
-                            irString(it.type.classOrNull!!.owner.fqNameForIrSerialization.asString())
-                        }
-                )
-            )
-
-            // included module names
-            putValueArgument(
-                6,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
-                    includedModules
-                        .map { irString(it.name.asString()) }
+                    includedModules.map { irString(it.name.asString()) }
                 )
             )
         }
@@ -720,11 +672,18 @@ class ModuleTransformer(
                 })
             }
 
-            annotations += providerMetadata(isSingle)
+            annotations += providerMetadata(
+                resultType.toKotlinType().asTypeName()!!
+                    .toString(),
+                isSingle
+            )
         }
     }
 
-    private fun IrBuilderWithScope.providerMetadata(isSingle: Boolean): IrConstructorCall {
+    private fun IrBuilderWithScope.providerMetadata(
+        key: String,
+        isSingle: Boolean
+    ): IrConstructorCall {
         return irCallConstructor(
             symbolTable.referenceConstructor(providerMetadata.constructors.single())
                 .ensureBound(pluginContext.irProviders),
@@ -732,6 +691,10 @@ class ModuleTransformer(
         ).apply {
             putValueArgument(
                 0,
+                irString(key)
+            )
+            putValueArgument(
+                1,
                 irBoolean(isSingle)
             )
         }
