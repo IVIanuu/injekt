@@ -29,13 +29,10 @@ class InjektDeclarationStore(
                 moduleFragment.files
                     .flatMap { it.declarations }
                     .filterIsInstance<IrClass>()
-                    .singleOrNull {
-                        it.name.asString().startsWith("$key\$")
-                    }
-                    ?.let {
-                        it.name.asString().removePrefix("$key\$")
-                            .replace("_", ".")
-                    }
+                    .singleOrNull { it.name.asString().endsWith("$key\$Impl") }
+                    ?.name
+                    ?.asString()
+                    ?.replace("_", ".")
                     ?.let { fqName ->
                         moduleFragment.files
                             .flatMap { it.declarations }
@@ -54,10 +51,10 @@ class InjektDeclarationStore(
                     return componentPackage.memberScope
                         .getContributedDescriptors()
                         .filterIsInstance<ClassDescriptor>()
-                        .singleOrNull { it.name.asString().startsWith("$key\$") }
+                        .singleOrNull { it.name.asString().endsWith("$key\$Impl") }
                         ?.name
                         ?.asString()
-                        ?.removePrefix("$key\$")?.replace("_", ".")
+                        ?.replace("_", ".")
                         ?.let {
                             pluginContext.symbolTable.referenceClass(
                                 pluginContext.moduleDescriptor.getTopLevelClass(FqName(it))

@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.getComponentFqName
-import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.irTrace
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.pop
@@ -48,14 +47,9 @@ class ComponentAggregateGenerator(
         })
 
         componentCalls.forEach { componentCall ->
-            val key = componentCall.getValueArgument(0)!!.getConstant<String>()
-
-            val componentFqName = getComponentFqName(
-                componentCall,
-                fileByCall[componentCall]!!
-            )
+            val componentFqName = getComponentFqName(componentCall, fileByCall[componentCall]!!)
             val aggregateName = Name.identifier(
-                "${key}\$${componentFqName.asString().replace(".", "_")}"
+                componentFqName.asString().replace(".", "_")
             )
 
             pluginContext.irTrace.record(

@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getConstant
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -51,9 +52,10 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
 
         componentCalls.forEach { componentCall ->
             DeclarationIrBuilder(pluginContext, componentCall.symbol).run {
+                val key = componentCall.getValueArgument(0)!!.getConstant<String>()
                 val expr = componentCall.getValueArgument(1) as IrFunctionExpression
 
-                val result = moduleFunction(expr)
+                val result = moduleFunction(key, expr)
                 declaration.addChild(result.function)
 
                 expr.function.body = irExprBody(
@@ -76,6 +78,7 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
     )
 
     private fun IrBuilderWithScope.moduleFunction(
+        key: String,
         componentDefinition: IrFunctionExpression
     ): ModuleFunctionResult {
         val definitionFunction = componentDefinition.function
@@ -95,7 +98,7 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
         val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
 
         val function = buildFun {
-            name = Name.identifier("ComponentModule${definitionFunction.startOffset}")
+            name = Name.identifier("$key\$ComponentModule")
             returnType = pluginContext.irBuiltIns.unitType
             visibility = Visibilities.PRIVATE
         }.apply {

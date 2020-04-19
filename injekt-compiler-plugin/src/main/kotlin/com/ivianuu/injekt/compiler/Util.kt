@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -102,17 +101,11 @@ fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
     any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
 
 fun getComponentFqName(
-    expression: IrExpression,
+    expression: IrCall,
     file: IrFile
 ): FqName {
-    return FqName(
-        "${file.fqName.takeIf { it != FqName.ROOT }?.asString()?.let { "$it." }
-            .orEmpty()}Component${
-        (file.name.removeSuffix(".kt") + expression.startOffset).hashCode()
-            .toString()
-            .removeIllegalChars()
-        }"
-    )
+    val key = expression.getValueArgument(0)!!.getConstant<String>()
+    return file.fqName.child(Name.identifier("$key\$Impl"))
 }
 
 fun getModuleName(
