@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Component
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -8,71 +8,75 @@ import org.junit.Test
 class ComponentTest {
 
     @Test
-    fun testSimple() = codegenTest(
+    fun testSimple() = codegen(
         """
-        val MyComponent = Component("c") {
-
+        val TestComponent = Component("c") {
+            factory { "test" }
         }
-    """
+        
+        fun invoke() = TestComponent.get<String>()
+    """,
     ) {
-        assertOk()
+        assertEquals("test", invokeSingleFile())
     }
 
     @Test
-    fun testWithDeps() = codegenTest(
+    fun testWithMultipleDeps() = codegen(
         """
-        val MyComponent = Component("c") {
-            factory { "" }
-            factory { 0 }
+        val TestComponent = Component("c") {
+            factory { "test" }
+            factory { 2 }
         }
+        fun invoke() = TestComponent.get<String>() to TestComponent.get<Int>()
     """
     ) {
-        assertOk()
+        assertEquals("test" to 2, invokeSingleFile())
     }
 
     @Test
-    fun testWithModule() = codegenTest(
+    fun testWithModule() = codegen(
         """
         @Module
         fun module() {
-            factory { "" }
-            factory { 0 }
+            factory { "test" }
         }
         
-        val MyComponent = Component("c") {
-            module()
-        }
+        val TestComponent = Component("c") { module() }
+        
+        fun invoke() = TestComponent.get<String>()
     """
     ) {
-        assertOk()
+        assertEquals("test", invokeSingleFile())
     }
 
     @Test
-    fun testWithNestedModule() = codegenTest(
+    fun testWithNestedModule() = codegen(
         """
         @Module
         fun a() {
-            factory { "" }
+            factory { "test" }
             b()
         }
         
         @Module
         fun b() { 
-            factory { 0 }
+            factory { 2 }
         }
         
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             a()
         }
+        
+        fun invoke() = TestComponent.get<String>() to TestComponent.get<Int>()
     """
     ) {
-        assertOk()
+        assertEquals("test" to 2, invokeSingleFile())
     }
 
     @Test
-    fun testDuplicatedBindingFails() = codegenTest(
+    fun testDuplicatedBindingFails() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             factory { "a" }
             factory { "b" }
         }
@@ -82,7 +86,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testNestedDuplicatedBindingFails() = codegenTest(
+    fun testNestedDuplicatedBindingFails() = codegen(
         """
         val componentA = Component("a") { 
             factory { "a" } 
@@ -97,7 +101,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testParentsWithDuplicatedBindingFails() = codegenTest(
+    fun testParentsWithDuplicatedBindingFails() = codegen(
         """
         val componentA = Component("a") { 
             factory { "a" }
@@ -115,9 +119,9 @@ class ComponentTest {
     }
 
     @Test
-    fun testMissingBindingFails() = codegenTest(
+    fun testMissingBindingFails() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             factory<String> { get<Int>(); "" }
         }
     """
@@ -126,9 +130,9 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedScopeFails() = codegenTest(
+    fun testDuplicatedScopeFails() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             scope<TestScope>()
             scope<TestScope>()
         }
@@ -138,7 +142,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testDuplicatedScopeInDifferentComponentsFails() = codegenTest(
+    fun testDuplicatedScopeInDifferentComponentsFails() = codegen(
         """
         val ComponentA = Component("a") {
             scope<TestScope>()
@@ -153,9 +157,9 @@ class ComponentTest {
     }
 
     @Test
-    fun testMultipleScopes() = codegenTest(
+    fun testMultipleScopes() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             scope<TestScope>()
             scope<TestScope2>()
         }
@@ -166,11 +170,11 @@ class ComponentTest {
 
 
     @Test
-    fun testDuplicatedParentFails() = codegenTest(
+    fun testDuplicatedParentFails() = codegen(
         """
             val ParentComponent = Component("p") {} 
             
-            val MyComponent = Component("c") {
+            val TestComponent = Component("c") {
                 moduleA()
                 moduleB()
             }
@@ -190,24 +194,30 @@ class ComponentTest {
     }
 
     @Test
-    fun testMultipleParents() = codegenTest(
+    fun testMultipleParents() = codegen(
         """
-            val ParentComponentA = Component("a") {} 
-            val ParentComponentB = Component("b") {} 
+            val ParentComponentA = Component("a") {
+                factory { "test" }
+            } 
+            val ParentComponentB = Component("b") {
+                factory { 2 }
+            } 
 
-            val MyComponent = Component("c") {
+            val TestComponent = Component("c") {
                 parent("a", ParentComponentA)
                 parent("b", ParentComponentB)
             }
+            
+            fun invoke() = TestComponent.get<String>() to TestComponent.get<Int>()
     """
     ) {
-        assertOk()
+        assertEquals("test" to 2, invokeSingleFile())
     }
 
     @Test
-    fun testWithCaptures() = codegenTest(
+    fun testWithCaptures() = codegen(
         """
-        fun MyComponent(capturedValue: String) = Component("c") {
+        fun TestComponent(capturedValue: String) = Component("c") {
             factory { capturedValue }
         }
     """
@@ -216,14 +226,14 @@ class ComponentTest {
     }
 
     @Test
-    fun testWithCaptureModule() = codegenTest(
+    fun testWithCaptureModule() = codegen(
         """
         @Module
         fun module(capturedValue: String) {
             factory { capturedValue }
         }
             
-        fun MyComponent(capturedValue: String) = Component("c") { 
+        fun TestComponent(capturedValue: String) = Component("c") { 
             module(capturedValue)
         }
     """
@@ -232,15 +242,15 @@ class ComponentTest {
     }
 
     @Test
-    fun testOrder() = codegenTest(
+    fun testOrder() = codegen(
         """
             class Foo
             class Bar(foo: Foo)
-            val MyComponent = Component("c") {
+            val TestComponent = Component("c") {
                 factory { Foo() }
                 factory { Bar(get()) }
                 }
-                fun invoke() = MyComponent
+                fun invoke() = TestComponent
 
                 """
     ) {
@@ -248,59 +258,57 @@ class ComponentTest {
     }
 
     @Test
-    fun testReverseOrder() = codegenTest(
+    fun testReverseOrder() = codegen(
         """
             class Foo
             class Bar(foo: Foo)
-            val MyComponent = Component("c") { 
+            val TestComponent = Component("c") { 
                 factory { Bar(get()) }
                 factory { Foo() } 
                 }
                 
-                fun invoke() = MyComponent
+                fun invoke() = TestComponent
                 """
     ) {
         expectNoErrorsWhileInvokingSingleFile()
     }
 
     @Test
-    fun testFactory() = codegenTest(
+    fun testFactory() = codegen(
         """
-            val MyComponent = Component("c") { 
+            val TestComponent = Component("c") { 
                 factory { Foo() } 
                 }
                 
-                fun invoke() = MyComponent
+                fun invoke() = TestComponent.get<Foo>()
                 """
     ) {
-        val component = invokeSingleFile() as Component
         assertNotSame(
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode()),
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode())
+            invokeSingleFile(),
+            invokeSingleFile()
         )
     }
 
     @Test
-    fun testSingle() = codegenTest(
+    fun testSingle() = codegen(
         """
-            val MyComponent = Component("c") { 
+            val TestComponent = Component("c") { 
                 single { Foo() } 
                 }
                 
-                fun invoke() = MyComponent
+                fun invoke() = TestComponent.get<Foo>()
                 """
     ) {
-        val component = invokeSingleFile() as Component
         assertSame(
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode()),
-            component.get<Foo>("com.ivianuu.injekt.compiler.Foo".hashCode())
+            invokeSingleFile(),
+            invokeSingleFile()
         )
     }
 
     @Test
-    fun testWithScope() = codegenTest(
+    fun testWithScope() = codegen(
         """
-            val MyComponent = Component("c") {
+            val TestComponent = Component("c") {
                 scope<TestScope>()
                 }
                 """
@@ -309,7 +317,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testIntermediateModuleRequiredAddsAllModules() = codegenTest(
+    fun testIntermediateModuleRequiredAddsAllModules() = codegen(
         """
             @Module
             fun rootModule() {
@@ -332,7 +340,7 @@ class ComponentTest {
                 intermediateModule("data")
             }
             
-            val MyComponent = Component("c") {
+            val TestComponent = Component("c") {
                 module()
                 }
                 """
@@ -341,7 +349,7 @@ class ComponentTest {
     }
 
     @Test
-    fun testAdvancedHierarchy() = codegenTest(
+    fun testAdvancedHierarchy() = codegen(
         """
             val GrandPa = Component("gp") {
                 factory { 1L }
@@ -359,44 +367,44 @@ class ComponentTest {
                 println()
             }
             
-            fun invoke() = Child
+            fun invoke() = Child.get<Long>()
         """
     ) {
-        invokeSingleFile<Component>().get("kotlin.Long".hashCode())
+        assertEquals(1L, invokeSingleFile())
     }
 
     @Test
-    fun testTransformGet() = codegenTest(
+    fun testTransformGet() = codegen(
         """
-        val MyComponent = Component("c") {
-            factory { "" }
+        val TestComponent = Component("c") {
+            factory { "test" }
         }
         
-        fun invoke() = MyComponent.get<String>()
+        fun invoke() = TestComponent.get<String>()
     """
     ) {
-        invokeSingleFile()
+        assertEquals("test", invokeSingleFile())
     }
 
     @Test
-    fun testTransformOwnerGet() = codegenTest(
+    fun testTransformOwnerGet() = codegen(
         """
-        val MyComponent = Component("c") {
-            factory { "" }
+        val TestComponent = Component("c") {
+            factory { "test" }
         }
         
         val owner = object : ComponentOwner {
-            override val component = MyComponent
+            override val component = TestComponent
         }
         
         fun invoke() = owner.get<String>()
     """
     ) {
-        invokeSingleFile()
+        assertEquals("test", invokeSingleFile())
     }
 
     @Test
-    fun testComponentKeyDuplicate() = codegenTest(
+    fun testComponentKeyDuplicate() = codegen(
         """
         val ComponentA = Component("key") { } 
         val ComponentB = Component("key") { }
@@ -406,23 +414,24 @@ class ComponentTest {
     }
 
     @Test
-    fun testSameModulesWithDifferentTypes() = codegenTest(
+    fun testSameModulesWithDifferentTypes() = codegen(
         """
             @Module
             inline fun <reified T> generic(value: T) {
                 factory { value }
             }
             val Component = Component("key") {
-                generic("")
-                generic(0)
+                generic("test")
+                generic(2)
             }
+            fun invoke() = Component.get<String>() to Component.get<Int>()
         """
     ) {
-        assertOk()
+        assertEquals("test" to 2, invokeSingleFile())
     }
 
     @Test
-    fun testGenericDependsOnOther() = codegenTest(
+    fun testGenericDependsOnOther() = codegen(
         """
             @Module
             inline fun <reified A, reified B> module(a: A, b: B) {
@@ -430,17 +439,18 @@ class ComponentTest {
                 factory { get<A>(); b }
             }
             val Component = Component("key") {
-                module("", 0)
+                module("test", 2)
             }
+            fun invoke() = Component.get<String>() to Component.get<Int>()
         """
     ) {
-        assertOk()
+        assertEquals("test" to 2, invokeSingleFile())
     }
 
     @Test
-    fun testTypeDistinction() = codegenTest(
+    fun testTypeDistinction() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             factory { "" }
             factory { 0 }
         }
@@ -450,9 +460,9 @@ class ComponentTest {
     }
 
     //@Test
-    fun testNullabilityDoesntMatter() = codegenTest(
+    fun testNullabilityDoesntMatter() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             factory<String> { "" }
             factory<String?> { null }
         }
@@ -462,9 +472,9 @@ class ComponentTest {
     }
 
     //@Test
-    fun testMissingNullableBindingIsOk() = codegenTest(
+    fun testMissingNullableBindingIsOk() = codegen(
         """
-        val MyComponent = Component("c") {
+        val TestComponent = Component("c") {
             factory { get<String?>(); 0 }
         }
     """
@@ -475,12 +485,12 @@ class ComponentTest {
     /*@Test
     fun test() = codegenTest(
     """
-            val MyComponent = Component("c") { 
+            val TestComponent = Component("c") {
                 factory { Foo() } 
                 factory { Bar(get()) }
             }
             
-            fun invoke() = MyComponent.get<Bar>()
+            fun invoke() = TestComponent.get<Bar>()
     """
     ) {
         assertOk()

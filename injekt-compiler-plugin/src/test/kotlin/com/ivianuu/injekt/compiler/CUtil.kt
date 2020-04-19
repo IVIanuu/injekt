@@ -25,12 +25,12 @@ fun source(
     }
 )
 
-fun codegenTest(
+fun codegen(
     @Language("kotlin") source: String,
     assertions: KotlinCompilation.Result.() -> Unit = {}
-) = codegenTest(source(source), assertions = assertions)
+) = codegen(source(source), assertions = assertions)
 
-fun codegenTest(
+fun codegen(
     vararg sources: SourceFile,
     assertions: KotlinCompilation.Result.() -> Unit = {}
 ) {
@@ -45,6 +45,20 @@ fun codegenTest(
     }.compile()
     println("Result: ${result.exitCode} m: ${result.messages}")
     assertions(result)
+}
+
+fun <T> componentTest(
+    @Language("kotlin") source: String,
+    @Language("kotlin") invokeExpression: String,
+    assertions: KotlinCompilation.Result.(T) -> Unit
+) {
+    codegen(
+        buildString {
+            append(source)
+            appendln()
+            append("fun invoke() = $invokeExpression")
+        }
+    )
 }
 
 fun KotlinCompilation.Result.assertOk() {

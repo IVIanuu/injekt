@@ -2,13 +2,13 @@ package com.facebook.buck.jvm.java.javax.com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.assertCompileError
 import com.ivianuu.injekt.compiler.assertOk
-import com.ivianuu.injekt.compiler.codegenTest
+import com.ivianuu.injekt.compiler.codegen
 import org.junit.Test
 
 class ModuleInvocationRulesTest {
 
     @Test
-    fun testModuleInvocationInModuleAllowed() = codegenTest(
+    fun testModuleInvocationInModuleAllowed() = codegen(
         """
             @Module fun a() {}
             @Module fun b() { a() }
@@ -18,7 +18,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testModuleInvocationInNonModuleNotAllowed() = codegenTest(
+    fun testModuleInvocationInNonModuleNotAllowed() = codegen(
         """
             @Module fun a() {}
             fun b() { a() }
@@ -28,7 +28,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testModuleInvocationInModuleLambdaIsAllowed() = codegenTest(
+    fun testModuleInvocationInModuleLambdaIsAllowed() = codegen(
         """
             val lambda: @Module () -> Unit = {
                 module()
@@ -40,7 +40,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testModuleInvocationInNonModuleLambdaIsNotAllowed() = codegenTest(
+    fun testModuleInvocationInNonModuleLambdaIsNotAllowed() = codegen(
         """
             val lambda: () -> Unit = {
                 module()
@@ -52,7 +52,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testModuleCannotReturnType() = codegenTest(
+    fun testModuleCannotReturnType() = codegen(
         """
             @Module fun module(): Boolean = true
         """
@@ -61,7 +61,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testIfNotAllowedAroundModuleInvocation() = codegenTest(
+    fun testIfNotAllowedAroundModuleInvocation() = codegen(
         """
             @Module fun a() {}
             @Module fun b() {
@@ -73,7 +73,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testElseNotAllowedAroundModuleInvocation() = codegenTest(
+    fun testElseNotAllowedAroundModuleInvocation() = codegen(
         """
             @Module fun a() {}
             @Module fun b() {
@@ -85,7 +85,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testWhileNotAllowedAroundModuleInvocation() = codegenTest(
+    fun testWhileNotAllowedAroundModuleInvocation() = codegen(
         """
             @Module fun a() {}
             @Module fun b() {
@@ -99,7 +99,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testForNotAllowedAroundModuleInvocation() = codegenTest(
+    fun testForNotAllowedAroundModuleInvocation() = codegen(
         """
             @Module fun a() {}
             @Module fun b() {
@@ -113,7 +113,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testWhenNotAllowedAroundModuleInvocation() = codegenTest(
+    fun testWhenNotAllowedAroundModuleInvocation() = codegen(
         """
             @Module fun a() {}
             @Module fun b() {
@@ -127,7 +127,7 @@ class ModuleInvocationRulesTest {
     }
 
     @Test
-    fun testTryCatchNotAllowedAroundModuleInvocation() = codegenTest(
+    fun testTryCatchNotAllowedAroundModuleInvocation() = codegen(
         """
             @Module fun a() {}
             @Module fun b() {

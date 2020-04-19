@@ -2,33 +2,33 @@ package com.facebook.buck.jvm.java.javax.com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.assertCompileError
 import com.ivianuu.injekt.compiler.assertOk
-import com.ivianuu.injekt.compiler.codegenTest
+import com.ivianuu.injekt.compiler.codegen
 import org.junit.Test
 
 class KeyRulesTest {
 
     @Test
-    fun testComponentConstantKey() = codegenTest(
+    fun testComponentConstantKey() = codegen(
         """
             const val key = "key"
-            val MyComponent = Component(key) { }
+            val TestComponent = Component(key) { }
                 """
     ) {
         assertOk()
     }
 
     @Test
-    fun testComponentNonConstantKeyFails() = codegenTest(
+    fun testComponentNonConstantKeyFails() = codegen(
         """
             fun key() = ""
-            val MyComponent = Component(key()) { }
+            val TestComponent = Component(key()) { }
                 """
     ) {
         assertCompileError("constant")
     }
 
     @Test
-    fun testModuleConstantParentKey() = codegenTest(
+    fun testModuleConstantParentKey() = codegen(
         """ 
         val parent = Component("parent") {}
         @Module
@@ -41,7 +41,7 @@ class KeyRulesTest {
     }
 
     @Test
-    fun testModuleNotConstantParentKey() = codegenTest(
+    fun testModuleNotConstantParentKey() = codegen(
         """ 
         val parent = Component("parent") {}
         fun key() = "parent"

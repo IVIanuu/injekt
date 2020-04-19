@@ -5,7 +5,7 @@ import org.junit.Test
 class ModuleTest {
 
     @Test
-    fun testSimple() = codegenTest(
+    fun testSimple() = codegen(
         """ 
         @Module
         fun myModule() {
@@ -16,7 +16,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testWithDeps() = codegenTest(
+    fun testWithDeps() = codegen(
         """ 
         @Module
         fun myModule() {
@@ -28,7 +28,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testWithCaptures() = codegenTest(
+    fun testWithCaptures() = codegen(
         """
         @Module
         fun module(capturedValue: String) {
@@ -38,7 +38,7 @@ class ModuleTest {
     )
 
     @Test
-    fun testWithNestedCaptures() = codegenTest(
+    fun testWithNestedCaptures() = codegen(
         """
         @Module
         fun a(capturedValue: String) {
@@ -53,7 +53,7 @@ class ModuleTest {
     )
 
     @Test
-    fun testModuleDependsOnOtherA() = codegenTest(
+    fun testModuleDependsOnOtherA() = codegen(
         source(
             """
             @Module 
@@ -73,7 +73,7 @@ class ModuleTest {
     )
 
     @Test
-    fun testModuleDependsOnOtherB() = codegenTest(
+    fun testModuleDependsOnOtherB() = codegen(
         source(
             """
                 @Module 
@@ -93,7 +93,7 @@ class ModuleTest {
     )
 
     @Test
-    fun testWithParent() = codegenTest(
+    fun testWithParent() = codegen(
         """
             val parent = Component("parent") {
             }
@@ -108,7 +108,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testMultipleParents() = codegenTest(
+    fun testMultipleParents() = codegen(
         """
             val parentA = Component("a") {
             }
@@ -126,7 +126,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testDuplicatedParentsFails() = codegenTest(
+    fun testDuplicatedParentsFails() = codegen(
         """
             val parent = Component("parent") { }
             @Module
@@ -140,7 +140,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testWithScope() = codegenTest(
+    fun testWithScope() = codegen(
         """
             @Module
             fun module() {
@@ -152,7 +152,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testInvalidScope() = codegenTest(
+    fun testInvalidScope() = codegen(
         """
             @Module
             fun module() {
@@ -164,7 +164,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testMultipleScopes() = codegenTest(
+    fun testMultipleScopes() = codegen(
         """
             @Module
             fun module() {
@@ -177,7 +177,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testDuplicatedScopesFails() = codegenTest(
+    fun testDuplicatedScopesFails() = codegen(
         """
             @Module
             fun module() {
@@ -190,7 +190,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testInclude() = codegenTest(
+    fun testInclude() = codegen(
         """
             @Module
             fun module() {
@@ -202,7 +202,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testMultipleIncludes() = codegenTest(
+    fun testMultipleIncludes() = codegen(
         """
             @Module fun includeA() {}
             @Module fun includeB() {}
@@ -217,7 +217,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testCircularModuleDependency() = codegenTest(
+    fun testCircularModuleDependency() = codegen(
         """
             @Module
             fun a() {
@@ -234,7 +234,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testCircularParentDependency() = codegenTest(
+    fun testCircularParentDependency() = codegen(
         """
             val parent = Component("c") {
                 module()
@@ -250,7 +250,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testParentDoesNotExist() = codegenTest(
+    fun testParentDoesNotExist() = codegen(
         """ 
         val parent = Component("parent") {}
         @Module
@@ -263,7 +263,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testImplicitModule() = codegenTest(
+    fun testImplicitModule() = codegen(
         """ 
             @TestScope 
             @Module 
@@ -274,7 +274,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testImplicitModuleWithValueParameters() = codegenTest(
+    fun testImplicitModuleWithValueParameters() = codegen(
         """ 
             @TestScope 
             @Module 
@@ -285,7 +285,7 @@ class ModuleTest {
     }
 
     @Test
-    fun testImplicitModuleWithTypeParameters() = codegenTest(
+    fun testImplicitModuleWithTypeParameters() = codegen(
         """ 
             @TestScope 
             @Module 
