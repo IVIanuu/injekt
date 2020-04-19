@@ -236,10 +236,10 @@ class ModuleTransformer(
                 modulesByCalls[it] = declarationStore.getModule(moduleFqName)
             }
 
-            val moduleFields = mutableMapOf<IrClass, IrField>()
+            val moduleFields = mutableMapOf<IrCall, IrField>()
 
             modulesByCalls.toList().forEachIndexed { index, (call, module) ->
-                moduleFields[module] = addField(
+                moduleFields[call] = addField(
                     "module_$index",
                     module.typeWith((0 until call.typeArgumentsCount)
                         .map { call.getTypeArgument(it)!! }
@@ -304,7 +304,7 @@ class ModuleTransformer(
                     }
 
                     modulesByCalls.forEach { (call, module) ->
-                        moduleFields[module]?.let { field ->
+                        moduleFields[call]?.let { field ->
                             +irSetField(
                                 irGet(thisReceiver!!),
                                 field,
