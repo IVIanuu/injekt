@@ -1,6 +1,5 @@
 package com.ivianuu.injekt
 
-// Implicit modules
 // Binding via annotation
 // Qualifiers
 // Multi binding

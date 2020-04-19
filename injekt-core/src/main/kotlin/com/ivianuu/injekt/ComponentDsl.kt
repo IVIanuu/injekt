@@ -9,12 +9,6 @@ inline fun <reified T> scope(): Unit = stub()
 inline fun parent(key: String, component: Component): Unit = stub()
 
 @Module
-inline fun <reified T> factory(noinline definition: ProviderDsl.() -> T): Unit = stub()
-
-@Module
-inline fun <reified T> single(noinline definition: ProviderDsl.() -> T): Unit = stub()
-
-@Module
 inline fun <reified T> instance(instance: T) {
     factory { instance }
 }
