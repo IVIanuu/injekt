@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.asTypeName
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.getModuleName
@@ -45,11 +44,13 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -67,6 +68,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ModuleTransformer(
     pluginContext: IrPluginContext,
@@ -178,11 +180,6 @@ class ModuleTransformer(
                             definitionCalls += expression
                         }
                         expression.symbol.descriptor.name.asString() == "single" -> {
-                            definitionCalls += expression
-                        }
-                        expression.symbol.descriptor.name.asString() == "bind" -> {
-                        }
-                        expression.symbol.descriptor.name.asString() == "instance" -> {
                             definitionCalls += expression
                         }
                         expression.symbol.descriptor.annotations.hasAnnotation(
@@ -346,7 +343,15 @@ class ModuleTransformer(
                 addChild(
                     provider(
                         name = Name.identifier("provider_$index"),
-                        definition = definitionCall.getValueArgument(0)!!.cast(),
+                        qualifiers = definitionCall.getValueArgument(0)
+                            ?.safeAs<IrVarargImpl>()
+                            ?.elements
+                            ?.filterIsInstance<IrGetObjectValue>()
+                            ?.map {
+                                it.type.classOrNull!!.descriptor.containingDeclaration
+                                    .fqNameSafe
+                            } ?: emptyList(),
+                        definition = definitionCall.getValueArgument(1)!!.cast(),
                         isSingle = definitionCall.symbol.descriptor.name.asString() == "single",
                         module = this,
                         moduleParametersMap = parameterMap,
@@ -464,6 +469,7 @@ class ModuleTransformer(
 
     private fun IrBuilderWithScope.provider(
         name: Name,
+        qualifiers: List<FqName>,
         definition: IrFunctionExpression,
         isSingle: Boolean,
         module: IrClass,
@@ -559,11 +565,22 @@ class ModuleTransformer(
                     )
                 }
 
-                fieldsByDependency.forEach { (_, field) ->
+                fieldsByDependency.forEach { (call, field) ->
                     addValueParameter(
                         field.name.asString(),
                         field.type
-                    )
+                    ).apply {
+                        annotations += bindingMetadata(
+                            call.getValueArgument(0)
+                                ?.safeAs<IrVarargImpl>()
+                                ?.elements
+                                ?.filterIsInstance<IrGetObjectValue>()
+                                ?.map {
+                                    it.type.classOrNull!!.descriptor.containingDeclaration
+                                        .fqNameSafe
+                                } ?: emptyList()
+                        )
+                    }
                 }
 
                 body = irBlockBody {
@@ -672,18 +689,12 @@ class ModuleTransformer(
                 })
             }
 
-            annotations += providerMetadata(
-                resultType.toKotlinType().asTypeName()!!
-                    .toString(),
-                isSingle
-            )
+            annotations += bindingMetadata(qualifiers)
+            annotations += providerMetadata(isSingle)
         }
     }
 
-    private fun IrBuilderWithScope.providerMetadata(
-        key: String,
-        isSingle: Boolean
-    ): IrConstructorCall {
+    private fun IrBuilderWithScope.providerMetadata(isSingle: Boolean): IrConstructorCall {
         return irCallConstructor(
             symbolTable.referenceConstructor(providerMetadata.constructors.single())
                 .ensureBound(pluginContext.irProviders),
@@ -691,10 +702,6 @@ class ModuleTransformer(
         ).apply {
             putValueArgument(
                 0,
-                irString(key)
-            )
-            putValueArgument(
-                1,
                 irBoolean(isSingle)
             )
         }

@@ -8,10 +8,13 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ComponentGetTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -38,8 +41,17 @@ class ComponentGetTransformer(pluginContext: IrPluginContext) :
                     putValueArgument(
                         0,
                         irInt(
-                            Key(expression.getTypeArgument(0)!!.toKotlinType())
-                                .keyConstant
+                            Key(
+                                expression.getTypeArgument(0)!!,
+                                expression.getValueArgument(0)
+                                    ?.safeAs<IrVarargImpl>()
+                                    ?.elements
+                                    ?.filterIsInstance<IrGetObjectValue>()
+                                    ?.map {
+                                        it.type.classOrNull!!.descriptor.containingDeclaration
+                                            .fqNameSafe
+                                    } ?: emptyList()
+                            ).hashCode()
                         )
                     )
                 }

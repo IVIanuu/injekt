@@ -7,13 +7,3 @@ inline fun <reified T> scope(): Unit = stub()
 
 @Module
 inline fun parent(key: String, component: Component): Unit = stub()
-
-@Module
-inline fun <reified T> instance(instance: T) {
-    factory { instance }
-}
-
-@Module
-inline fun <reified T : S, reified S> alias() {
-    factory<S> { get<T>() }
-}

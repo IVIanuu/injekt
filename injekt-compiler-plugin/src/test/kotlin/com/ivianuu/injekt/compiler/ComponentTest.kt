@@ -459,6 +459,71 @@ class ComponentTest {
         assertOk()
     }
 
+    @Test
+    fun testQualifierDistinction() = codegen(
+        """
+        val TestComponent = Component("c") {
+            factory { "a" }
+            factory(TestQualifier1) { "b" }
+            factory(TestQualifier2) { "c" }
+        }
+        
+        fun invoke() = listOf(
+            TestComponent.get<String>(), 
+            TestComponent.get<String>(TestQualifier1), 
+            TestComponent.get<String>(TestQualifier2)
+            )
+    """
+    ) {
+        assertEquals(
+            listOf("a", "b", "c"),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testQualifiedTransitiveDependency() = codegen(
+        """
+        val TestComponent = Component("c") {
+            factory(TestQualifier1) { Foo() }
+            factory { Bar(get(TestQualifier1)) }
+        }
+        
+        fun invoke() = TestComponent.get<Bar>()
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testQualifierDistinctionInNestedComponents() = codegen(
+        """
+            val ComponentA = Component("a") {
+                factory { "a" }
+            }
+            val ComponentB = Component("b") {
+                parent("a", ComponentA)
+                factory(TestQualifier1) { "b" }
+            }
+            val ComponentC = Component("c") { 
+                parent("b", ComponentB)
+                factory(TestQualifier2) { "c" }
+            }
+        
+        fun invoke() = listOf(
+            ComponentC.get<String>(), 
+            ComponentC.get<String>(TestQualifier1), 
+            ComponentC.get<String>(TestQualifier2)
+            )
+    """
+    ) {
+        assertEquals(
+            listOf("a", "b", "c"),
+            invokeSingleFile()
+        )
+    }
+
+
     //@Test
     fun testNullabilityDoesntMatter() = codegen(
         """

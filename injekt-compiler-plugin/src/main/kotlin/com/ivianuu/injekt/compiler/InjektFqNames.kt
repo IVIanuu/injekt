@@ -10,6 +10,7 @@ object InjektFqNames {
     val InjektComponentsPackage = InjektInternalPackage.child("components")
     val InjektModulesPackage = InjektInternalPackage.child("modules")
 
+    val BindingMetadata = InjektInternalPackage.child("BindingMetadata")
     val Component = InjektPackage.child("Component")
     val ComponentMetadata = InjektInternalPackage.child("ComponentMetadata")
     val ComponentOwner = InjektPackage.child("ComponentOwner")
@@ -18,6 +19,7 @@ object InjektFqNames {
     val Provider = InjektPackage.child("Provider")
     val ProviderDsl = InjektPackage.child("ProviderDsl")
     val ProviderMetadata = InjektInternalPackage.child("ProviderMetadata")
+    val Qualifier = InjektPackage.child("Qualifier")
     val Scope = InjektPackage.child("Scope")
     val SingleProvider = InjektInternalPackage.child("SingleProvider")
 }

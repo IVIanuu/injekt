@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
@@ -111,3 +112,11 @@ annotation class TestScope
 
 @Scope
 annotation class TestScope2
+
+annotation class TestQualifier1 {
+    companion object : Qualifier
+}
+
+annotation class TestQualifier2 {
+    companion object : Qualifier
+}

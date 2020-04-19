@@ -1,10 +1,7 @@
 package com.ivianuu.injekt.compiler.resolve
 
-import com.ivianuu.injekt.compiler.asTypeName
-import com.ivianuu.injekt.compiler.removeIllegalChars
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.types.KotlinType
 
 sealed class Binding(
     val key: Key,
@@ -18,7 +15,11 @@ class ParentComponentBinding(
     dependencies: List<Key>,
     val providerField: IrField,
     val componentWithAccessor: ComponentWithAccessor
-) : Binding(key, containingDeclaration, dependencies)
+) : Binding(
+    key = key,
+    containingDeclaration = containingDeclaration,
+    dependencies = dependencies
+)
 
 class ModuleBinding(
     key: Key,
@@ -27,14 +28,8 @@ class ModuleBinding(
     val provider: IrClass,
     val module: ModuleWithAccessor,
     val isSingle: Boolean
-) : Binding(key, containingDeclaration, dependencies)
-
-data class Key(val type: KotlinType) {
-    val fieldName get() = type.toString().removeIllegalChars()
-    val keyConstant: Int
-        get() {
-            return type.asTypeName()!!
-                .toString()
-                .hashCode()
-        }
-}
+) : Binding(
+    key = key,
+    containingDeclaration = containingDeclaration,
+    dependencies = dependencies
+)

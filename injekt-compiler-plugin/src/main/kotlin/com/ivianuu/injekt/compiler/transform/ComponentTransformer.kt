@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
@@ -243,15 +244,16 @@ class ComponentTransformer(
 
             val providerFields = mutableMapOf<Binding, IrField>()
 
-            graph.allBindings.forEach { (key, binding) ->
+            graph.allBindings.toList().forEachIndexed { index, (_, binding) ->
                 addField(
-                    fieldName = "${binding.containingDeclaration.name}_${key.fieldName}",
+                    fieldName = "${binding.containingDeclaration.name}$index",
                     fieldType = provider.defaultType.replace(
-                        newArguments = listOf(binding.key.type.asTypeProjection())
+                        newArguments = listOf(binding.key.type.toKotlinType().asTypeProjection())
                     ).toIrType(),
                     fieldVisibility = Visibilities.PRIVATE
                 ).apply {
                     providerFields[binding] = this
+                    annotations += bindingMetadata(qualifiers = binding.key.qualifiers)
                 }
             }
 
@@ -358,7 +360,7 @@ class ComponentTransformer(
                                 .map { (key, binding) ->
                                     irBranch(
                                         condition = irEquals(
-                                            irInt(key.keyConstant),
+                                            irInt(key.hashCode()),
                                             irGet(valueParameters.single())
                                         ),
                                         result = irCall(

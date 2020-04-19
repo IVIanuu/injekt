@@ -11,15 +11,14 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isTypeParameter
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class Graph(
@@ -78,8 +77,15 @@ class Graph(
                     .first { it.name.asString() == providerName }
             }
             .map { provider ->
+                val bindingMetadata = provider.descriptor.annotations.single {
+                    it.fqName == InjektFqNames.BindingMetadata
+                }
                 ParentComponentBinding(
-                    Key((provider.type as IrSimpleType).arguments.single().typeOrNull!!.toKotlinType()),
+                    Key(
+                        (provider.type as IrSimpleType).arguments.single().typeOrNull!!,
+                        bindingMetadata.getStringList("qualifiers")
+                            .map { FqName(it) }
+                    ),
                     parent.component,
                     emptyList(),
                     provider,
@@ -122,12 +128,15 @@ class Graph(
                     .first { it.name.asString() == providerName }
             }
             .map { provider ->
+                val bindingMetadata = provider.descriptor.annotations.single {
+                    it.fqName == InjektFqNames.BindingMetadata
+                }
                 val providerMetadata = provider.descriptor.annotations.single {
                     it.fqName == InjektFqNames.ProviderMetadata
                 }
 
-                val key =
-                    providerMetadata.argumentValue("key")!!.value as String
+                val qualifiers = bindingMetadata.getStringList("qualifiers")
+                    .map { FqName(it) }
 
                 val isSingle =
                     providerMetadata.argumentValue("isSingle")!!.value as? Boolean ?: false
@@ -138,7 +147,7 @@ class Graph(
                     .substituteByName(moduleWithAccessor.typeParametersMap)
 
                 ModuleBinding(
-                    key = Key(returnType.toKotlinType()),
+                    key = Key(returnType, qualifiers),
                     containingDeclaration = moduleWithAccessor.module,
                     dependencies = provider.constructors.single().valueParameters
                         .filter { it.name.asString() != "module" }
@@ -148,8 +157,11 @@ class Graph(
                                     .cast<IrSimpleType>()
                                     .arguments
                                     .single()
-                                    .typeOrNull!!
-                                    .toKotlinType()
+                                    .typeOrNull!!,
+                                it.descriptor.annotations.single {
+                                        it.fqName == InjektFqNames.BindingMetadata
+                                    }.getStringList("qualifiers")
+                                    .map { FqName(it) }
                             )
                         },
                     provider = provider,
