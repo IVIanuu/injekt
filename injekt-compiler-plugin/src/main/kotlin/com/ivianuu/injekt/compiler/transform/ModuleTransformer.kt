@@ -153,8 +153,7 @@ class ModuleTransformer(
             kind = ClassKind.CLASS
             origin =
                 InjektDeclarationOrigin
-            name = getModuleName(function.descriptor)
-                .shortName()
+            name = getModuleName(function.descriptor).shortName()
             modality = Modality.FINAL
             visibility = function.visibility
         }.apply clazz@{

@@ -73,7 +73,6 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         val componentTransformer =
             ComponentTransformer(
                 pluginContext,
-                bindingTrace,
                 declarationStore,
                 moduleFragment
             )

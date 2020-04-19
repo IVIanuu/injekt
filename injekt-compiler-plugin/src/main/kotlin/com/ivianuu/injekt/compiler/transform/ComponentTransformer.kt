@@ -70,7 +70,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
@@ -78,7 +77,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ComponentTransformer(
     pluginContext: IrPluginContext,
-    private val bindingTrace: BindingTrace,
     private val declarationStore: InjektDeclarationStore,
     private val moduleFragment: IrModuleFragment
 ) : AbstractInjektTransformer(pluginContext) {
