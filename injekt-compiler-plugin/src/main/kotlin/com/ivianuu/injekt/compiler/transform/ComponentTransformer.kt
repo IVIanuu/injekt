@@ -234,8 +234,8 @@ class ComponentTransformer(
             val graph = Graph(
                 context = pluginContext,
                 bindingTrace = bindingTrace,
-                component = this,
-                module = ModuleWithAccessor(module, module.typeParameters.map {
+                thisComponent = this,
+                thisComponentModule = ModuleWithAccessor(module, module.typeParameters.map {
                     it.symbol to moduleCall.getTypeArgument(it.index)!!
                 }.toMap()) {
                     irGetField(

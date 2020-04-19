@@ -40,10 +40,18 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeProjection
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.util.IrProvider
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
@@ -53,6 +61,7 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.isError
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -183,4 +192,39 @@ fun <T : Any> IrExpression.getConstant(): T {
             ?.backingField?.initializer?.expression as? IrConst<*>)?.value as T
         else -> error("Not a constant expression")
     }
+}
+
+fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+    if (this !is IrSimpleType) return this
+
+    (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
+        substitutionMap.toList()
+            .firstOrNull { it.first.owner.name == typeParam.owner.name }
+            ?.let { return it.second }
+    }
+
+    substitutionMap[classifier]?.let { return it }
+
+    val newArguments = arguments.map {
+        if (it is IrTypeProjection) {
+            makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
+        } else {
+            it
+        }
+    }
+
+    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+    return IrSimpleTypeImpl(
+        classifier,
+        hasQuestionMark,
+        newArguments,
+        newAnnotations
+    )
+}
+
+fun AnnotationDescriptor.getStringList(name: String): List<String> {
+    return allValueArguments[Name.identifier(name)]?.safeAs<ArrayValue>()?.value
+        ?.map { it.value }
+        ?.filterIsInstance<String>()
+        ?: emptyList()
 }

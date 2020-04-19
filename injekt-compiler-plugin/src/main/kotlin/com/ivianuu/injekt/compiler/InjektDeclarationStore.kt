@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 class InjektDeclarationStore(
     private val pluginContext: IrPluginContext,
@@ -90,6 +91,17 @@ class InjektDeclarationStore(
                 }
             }
         }
+    }
+
+    fun getModulesForScope(scope: FqName): List<IrClass> {
+        val packageFqName = InjektFqNames.InjektModulesPackage.child(
+            Name.identifier(scope.asString().replace(".", "_"))
+        )
+        return pluginContext.moduleDescriptor.getPackage(packageFqName)
+            .memberScope
+            .getContributedDescriptors()
+            .map { FqName(it.name.asString().replace("_", ".")) }
+            .map { getModule(it) }
     }
 
 }
