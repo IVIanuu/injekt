@@ -19,7 +19,6 @@ package com.ivianuu.injekt.comparison.base
 
 import com.ivianuu.injekt.comparison.dagger.DaggerTest
 import com.ivianuu.injekt.comparison.dagger2.Dagger2Test
-import com.ivianuu.injekt.comparison.dagger2.Dagger2TestModules
 import com.ivianuu.injekt.comparison.dagger2reflect.Dagger2ReflectTest
 import com.ivianuu.injekt.comparison.guice.GuiceTest
 import com.ivianuu.injekt.comparison.injekt.InjektTest
@@ -52,7 +51,6 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             DaggerTest,
             Dagger2Test,
             Dagger2ReflectTest,
-            Dagger2TestModules,
             GuiceTest,
             InjektTest,
             KatanaTest,

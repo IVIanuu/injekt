@@ -16,13 +16,18 @@
 
 package com.ivianuu.injekt.comparison.dagger
 
-fun main() {
-    println(module())
-}
+import com.ivianuu.injekt.comparison.fibonacci.FIB_COUNT
 
-private fun module() = "@Module(\n" +
-        "    injects = [\n" +
-        (1..100).joinToString(",\n") { "Fib$it::class" } +
-        "    ]\n" +
-        ")\n" +
-        "class DaggerModule"
+fun main() {
+    println(
+        buildString {
+            appendln("@Module(injects = [")
+            (1..FIB_COUNT).forEach {
+                append("Fib$it::class")
+                if (it != FIB_COUNT) appendln(",") else appendln()
+            }
+            appendln("])")
+            appendln("class DaggerModule")
+        }
+    )
+}
