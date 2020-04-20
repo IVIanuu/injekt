@@ -737,9 +737,10 @@ class ModuleTransformer(
             val resultType = definition.function.returnType
 
             addFunction {
-                this.name = Name.identifier("create")
+                name = Name.identifier("invoke")
                 returnType = resultType
                 visibility = Visibilities.PUBLIC
+                isInline = true
             }.apply {
                 copyTypeParametersFrom(module)
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
