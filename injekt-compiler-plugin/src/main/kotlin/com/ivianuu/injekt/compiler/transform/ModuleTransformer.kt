@@ -627,14 +627,24 @@ class ModuleTransformer(
                 }
             }
 
-            val companion = providerCompanion(
-                module,
-                definition,
-                dependencies,
-                capturedModuleValueParameters,
-                moduleParametersMap,
-                moduleFieldsByParameter
-            ).also { addChild(it) }
+            val companion = if (moduleField != null || dependencies.isNotEmpty()) {
+                providerCompanion(
+                    module,
+                    definition,
+                    dependencies,
+                    capturedModuleValueParameters,
+                    moduleParametersMap,
+                    moduleFieldsByParameter
+                ).also { addChild(it) }
+            } else null
+            val createFunction = if (moduleField == null && dependencies.isEmpty()) {
+                createFunction(
+                    this, module, definition, dependencies,
+                    capturedModuleValueParameters, moduleParametersMap, moduleFieldsByParameter
+                )
+            } else {
+                null
+            }
 
             addFunction {
                 this.name = Name.identifier("invoke")
@@ -648,8 +658,9 @@ class ModuleTransformer(
                 )
 
                 body = irExprBody(
-                    irCall(companion.functions.single()).apply {
-                        dispatchReceiver = irGetObject(companion.symbol)
+                    irCall(companion?.functions?.single() ?: createFunction!!).apply {
+                        dispatchReceiver =
+                            if (companion != null) irGetObject(companion.symbol) else this
 
                         passTypeArgumentsFrom(this@clazz)
 
@@ -733,78 +744,93 @@ class ModuleTransformer(
                 }
             }
 
-            val definitionFunction = definition.function
-            val resultType = definition.function.returnType
+            createFunction(
+                this, module, definition, dependencies,
+                capturedModuleValueParameters, moduleParametersMap, moduleFieldsByParameter
+            )
+        }
+    }
 
-            addFunction {
-                name = Name.identifier("invoke")
-                returnType = resultType
-                visibility = Visibilities.PUBLIC
-                isInline = true
-            }.apply {
-                copyTypeParametersFrom(module)
-                dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
+    private fun IrBuilderWithScope.createFunction(
+        owner: IrClass,
+        module: IrClass,
+        definition: IrFunctionExpression,
+        dependencies: MutableList<IrCall>,
+        capturedModuleValueParameters: List<IrValueParameter>,
+        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
+        moduleFieldsByParameter: Map<IrValueParameter, IrField>
+    ): IrFunction {
+        val definitionFunction = definition.function
+        val resultType = definition.function.returnType
 
-                val moduleParameter = if (capturedModuleValueParameters.isNotEmpty()) {
-                    addValueParameter(
-                        "module",
-                        module.defaultType
-                    )
-                } else null
+        return owner.addFunction {
+            name = Name.identifier("create")
+            returnType = resultType
+            visibility = Visibilities.PUBLIC
+            isInline = true
+        }.apply {
+            copyTypeParametersFrom(module)
+            dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
 
-                var depIndex = 0
-                val valueParametersByDependency = dependencies
-                    .associateWith { expression ->
-                        addValueParameter {
-                            this.name = Name.identifier("p$depIndex")
-                            type = expression.type
-                            visibility = Visibilities.PRIVATE
-                        }.also { depIndex++ }
-                    }
+            val moduleParameter = if (capturedModuleValueParameters.isNotEmpty()) {
+                addValueParameter(
+                    "module",
+                    module.defaultType
+                )
+            } else null
 
-                body = definitionFunction.body
-                body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
-                    override fun visitReturn(expression: IrReturn): IrExpression {
-                        return if (expression.returnTargetSymbol != definitionFunction.symbol) {
-                            super.visitReturn(expression)
-                        } else {
-                            at(expression.startOffset, expression.endOffset)
-                            DeclarationIrBuilder(
-                                pluginContext,
-                                symbol
-                            ).irReturn(expression.value.transform(this, null)).apply {
-                                this.returnTargetSymbol
-                            }
+            var depIndex = 0
+            val valueParametersByDependency = dependencies
+                .associateWith { expression ->
+                    addValueParameter {
+                        this.name = Name.identifier("p$depIndex")
+                        type = expression.type
+                        visibility = Visibilities.PRIVATE
+                    }.also { depIndex++ }
+                }
+
+            body = definitionFunction.body
+            body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitReturn(expression: IrReturn): IrExpression {
+                    return if (expression.returnTargetSymbol != definitionFunction.symbol) {
+                        super.visitReturn(expression)
+                    } else {
+                        at(expression.startOffset, expression.endOffset)
+                        DeclarationIrBuilder(
+                            pluginContext,
+                            symbol
+                        ).irReturn(expression.value.transform(this, null)).apply {
+                            this.returnTargetSymbol
                         }
                     }
+                }
 
-                    override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
-                        if (declaration.parent == definitionFunction)
-                            declaration.parent = this@apply
-                        return super.visitDeclaration(declaration)
-                    }
+                override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
+                    if (declaration.parent == definitionFunction)
+                        declaration.parent = this@apply
+                    return super.visitDeclaration(declaration)
+                }
 
-                    override fun visitCall(expression: IrCall): IrExpression {
-                        super.visitCall(expression)
-                        return valueParametersByDependency[expression]?.let { valueParameter ->
-                            irGet(valueParameter)
-                        } ?: expression
-                    }
+                override fun visitCall(expression: IrCall): IrExpression {
+                    super.visitCall(expression)
+                    return valueParametersByDependency[expression]?.let { valueParameter ->
+                        irGet(valueParameter)
+                    } ?: expression
+                }
 
-                    override fun visitGetValue(expression: IrGetValue): IrExpression {
-                        return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
-                            super.visitGetValue(expression)
-                        } else {
-                            val newParameter = moduleParametersMap[expression.symbol.owner]!!
-                            val field = moduleFieldsByParameter[newParameter]!!
-                            return irGetField(
-                                irGet(moduleParameter!!),
-                                field
-                            )
-                        }
+                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                    return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
+                        super.visitGetValue(expression)
+                    } else {
+                        val newParameter = moduleParametersMap[expression.symbol.owner]!!
+                        val field = moduleFieldsByParameter[newParameter]!!
+                        return irGetField(
+                            irGet(moduleParameter!!),
+                            field
+                        )
                     }
-                })
-            }
+                }
+            })
         }
     }
 
