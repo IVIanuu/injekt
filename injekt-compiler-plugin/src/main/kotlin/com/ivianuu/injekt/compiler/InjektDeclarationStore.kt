@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.transform.AnnotatedBindingAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.ModuleAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.ModuleTransformer
@@ -14,10 +15,12 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektDeclarationStore(
-    private val pluginContext: IrPluginContext,
-    private val moduleFragment: IrModuleFragment
+    private val context: IrPluginContext,
+    private val moduleFragment: IrModuleFragment,
+    private val symbols: InjektSymbols
 ) {
 
+    lateinit var annotatedBindingAggregateGenerator: AnnotatedBindingAggregateGenerator
     lateinit var componentTransformer: ComponentTransformer
     lateinit var moduleTransformer: ModuleTransformer
     lateinit var moduleAggregateGenerator: ModuleAggregateGenerator
@@ -47,7 +50,7 @@ class InjektDeclarationStore(
                         .map { it.descriptor.name }}")
             } catch (e: DeclarationNotFound) {
                 try {
-                    val componentPackage = pluginContext.moduleDescriptor
+                    val componentPackage = context.moduleDescriptor
                         .getPackage(InjektFqNames.InjektModulesPackage)
 
                     return componentPackage.memberScope
@@ -57,11 +60,7 @@ class InjektDeclarationStore(
                         ?.name
                         ?.asString()
                         ?.replace("_", ".")
-                        ?.let {
-                            pluginContext.symbolTable.referenceClass(
-                                pluginContext.moduleDescriptor.getTopLevelClass(FqName(it))
-                            ).owner
-                        }
+                        ?.let { symbols.getTopLevelClass(FqName(it)).owner }
                         ?: throw DeclarationNotFound("Found ${componentPackage.memberScope.getClassifierNames()}")
                 } catch (e: DeclarationNotFound) {
                     throw DeclarationNotFound("Couldn't find component for $key")
@@ -83,9 +82,7 @@ class InjektDeclarationStore(
                     ?: throw DeclarationNotFound()
             } catch (e: DeclarationNotFound) {
                 try {
-                    pluginContext.symbolTable.referenceClass(
-                        pluginContext.moduleDescriptor.getTopLevelClass(fqName)
-                    ).ensureBound(pluginContext.irProviders).owner
+                    symbols.getTopLevelClass(fqName).owner
                 } catch (e: DeclarationNotFound) {
                     throw DeclarationNotFound("Couldn't find module for $fqName")
                 }
@@ -104,7 +101,7 @@ class InjektDeclarationStore(
             ?.map { getModule(FqName(it.asString().replace("_", "."))) }
             ?: emptyList()
 
-        modules += pluginContext.moduleDescriptor.getPackage(packageFqName)
+        modules += context.moduleDescriptor.getPackage(packageFqName)
             .memberScope
             .getContributedDescriptors()
             .map { FqName(it.name.asString().replace("_", ".")) }
@@ -112,6 +109,10 @@ class InjektDeclarationStore(
 
         return modules
     }
+
+    fun getUnscopedProviders(): List<IrClass> = emptyList()
+
+    fun getProvidersForScope(scope: FqName): List<IrClass> = emptyList()
 
     fun getProvider(provider: FqName): IrClass {
         return getModule(provider.parent())

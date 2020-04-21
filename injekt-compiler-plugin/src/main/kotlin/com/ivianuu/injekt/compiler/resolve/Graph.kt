@@ -2,10 +2,9 @@ package com.ivianuu.injekt.compiler.resolve
 
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getStringList
-import com.ivianuu.injekt.compiler.getTopLevelClass
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.substituteByName
 import me.eugeniomarletti.kotlin.metadata.shadow.utils.addToStdlib.cast
@@ -47,6 +46,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
     private val context: IrPluginContext,
+    private val symbols: InjektSymbols,
     private val thisComponent: ComponentNode,
     thisComponentModule: ModuleNode,
     private val declarationStore: InjektDeclarationStore
@@ -62,13 +62,6 @@ class Graph(
 
     private val allParents = mutableListOf<ComponentNode>()
     val thisParents = mutableListOf<ComponentNode>()
-
-    private val provider =
-        context.moduleDescriptor.getTopLevelClass(InjektFqNames.Provider)
-    private val providerFieldMetadata =
-        context.moduleDescriptor.getTopLevelClass(InjektFqNames.ProviderFieldMetadata)
-    private val singleProvider =
-        context.moduleDescriptor.getTopLevelClass(InjektFqNames.SingleProvider)
 
     init {
         addModule(thisComponentModule)
@@ -179,12 +172,9 @@ class Graph(
                         },
                         getFunction = getFunction(resultType) { function ->
                             irCall(
-                                this@Graph.context.symbolTable.referenceClass(this@Graph.provider)
-                                    .ensureBound(this@Graph.context.irProviders)
-                                    .owner
+                                symbols.provider
                                     .functions
-                                    .single { it.name.asString() == "invoke" }
-                                    .symbol,
+                                    .single { it.owner.name.asString() == "invoke" },
                                 resultType
                             ).apply {
                                 dispatchReceiver = irGetField(
@@ -364,17 +354,11 @@ class Graph(
                             ?: 0
                     val field = moduleNode.componentNode.component.addField(
                         Name.identifier("provider_$currentProviderIndex"),
-                        context.symbolTable.referenceClass(this.provider)
-                            .ensureBound(this@Graph.context.irProviders)
-                            .owner
-                            .typeWith(resultType)
+                        symbols.provider.owner.typeWith(resultType)
                     ).apply {
                         annotations += DeclarationIrBuilder(context, symbol).run {
                             irCallConstructor(
-                                this@Graph.context.symbolTable.referenceConstructor(
-                                        providerFieldMetadata.constructors.single()
-                                    )
-                                    .ensureBound(this@Graph.context.irProviders),
+                                symbols.providerFieldMetadata.constructors.single(),
                                 emptyList()
                             ).apply {
                                 putValueArgument(
@@ -397,9 +381,7 @@ class Graph(
                         provider = provider,
                         providerInstance = {
                             irCall(
-                                this@Graph.context.symbolTable.referenceClass(singleProvider)
-                                    .ensureBound(this@Graph.context.irProviders)
-                                    .owner
+                                symbols.singleProvider
                                     .constructors
                                     .single()
                             ).apply {
@@ -438,12 +420,9 @@ class Graph(
                         },
                         getFunction = getFunction(resultType) { function ->
                             irCall(
-                                this@Graph.context.symbolTable.referenceClass(this@Graph.provider)
-                                    .ensureBound(this@Graph.context.irProviders)
-                                    .owner
+                                symbols.provider
                                     .functions
-                                    .single { it.name.asString() == "invoke" }
-                                    .symbol,
+                                    .single { it.owner.name.asString() == "invoke" },
                                 resultType
                             ).apply {
                                 dispatchReceiver = treeElement.accessor(

@@ -2,9 +2,8 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
-import com.ivianuu.injekt.compiler.getModuleName
+import com.ivianuu.injekt.compiler.getModuleFqName
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -26,7 +25,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -54,6 +52,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -71,21 +70,14 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ModuleTransformer(
-    pluginContext: IrPluginContext,
+    context: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
     private val moduleFragment: IrModuleFragment
-) : AbstractInjektTransformer(pluginContext) {
-
-    private val moduleMetadata = getTopLevelClass(InjektFqNames.ModuleMetadata)
-    private val provider = getTopLevelClass(InjektFqNames.Provider)
-    private val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
-    private val providerMetadata = getTopLevelClass(InjektFqNames.ProviderMetadata)
+) : AbstractInjektTransformer(context) {
 
     private val moduleFunctions = mutableListOf<IrFunction>()
     private val processedModules = mutableMapOf<IrFunction, IrClass>()
@@ -96,7 +88,7 @@ class ModuleTransformer(
         computeModuleFunctionsIfNeeded()
 
         moduleFunctions.forEach { function ->
-            DeclarationIrBuilder(pluginContext, function.symbol).run {
+            DeclarationIrBuilder(context, function.symbol).run {
                 getProcessedModule(function)
             }
         }
@@ -110,7 +102,7 @@ class ModuleTransformer(
         }?.let { return it }
 
         val function = moduleFunctions.firstOrNull {
-            getModuleName(it.descriptor) == fqName
+            getModuleFqName(it.descriptor) == fqName
         } ?: return null
 
         return getProcessedModule(function)
@@ -123,9 +115,9 @@ class ModuleTransformer(
             "Unknown function $function"
         }
         processedModules[function]?.let { return it }
-        return DeclarationIrBuilder(pluginContext, function.symbol).run {
+        return DeclarationIrBuilder(context, function.symbol).run {
             val moduleFqName =
-                getModuleName(function.descriptor)
+                getModuleFqName(function.descriptor)
             check(moduleFqName !in processingModules) {
                 "Circular dependency for module $moduleFqName"
             }
@@ -160,7 +152,7 @@ class ModuleTransformer(
             kind = ClassKind.CLASS
             origin =
                 InjektDeclarationOrigin
-            name = getModuleName(function.descriptor).shortName()
+            name = getModuleFqName(function.descriptor).shortName()
             modality = Modality.FINAL
             visibility = function.visibility
         }.apply clazz@{
@@ -234,7 +226,7 @@ class ModuleTransformer(
             val modulesByCalls = mutableMapOf<IrCall, IrClass>()
 
             moduleCalls.forEach {
-                val moduleFqName = getModuleName(it.symbol.descriptor)
+                val moduleFqName = getModuleFqName(it.symbol.descriptor)
                 modulesByCalls[it] = declarationStore.getModule(moduleFqName)
             }
 
@@ -409,8 +401,7 @@ class ModuleTransformer(
         includedModules: List<IrField>
     ): IrConstructorCall {
         return irCallConstructor(
-            symbolTable.referenceConstructor(moduleMetadata.constructors.single())
-                .ensureBound(pluginContext.irProviders),
+            symbols.moduleMetadata.constructors.single(),
             emptyList()
         ).apply {
             // scopes
@@ -419,9 +410,9 @@ class ModuleTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ModuleTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
+                    this@ModuleTransformer.context.irBuiltIns.stringType,
                     scopes.map { irString(it.asString()) }
                 )
             )
@@ -432,9 +423,9 @@ class ModuleTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ModuleTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
+                    this@ModuleTransformer.context.irBuiltIns.stringType,
                     parentCalls.zip(parentFields.values).map { (call, field) ->
                         irString(
                             "${call.getValueArgument(0)!!
@@ -450,9 +441,9 @@ class ModuleTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ModuleTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
+                    this@ModuleTransformer.context.irBuiltIns.stringType,
                     definitionCalls
                         .map { irString(providerByDefinitionCall[it]!!.name.asString()) }
                 )
@@ -464,9 +455,9 @@ class ModuleTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ModuleTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
+                    this@ModuleTransformer.context.irBuiltIns.stringType,
                     includedModules.map { irString(it.name.asString()) }
                 )
             )
@@ -496,8 +487,8 @@ class ModuleTransformer(
                 val callee = expression.symbol.owner
                 if (callee.name.asString() == "get" &&
                     (callee.extensionReceiverParameter
-                        ?: callee.dispatchReceiverParameter)?.descriptor?.type
-                        ?.constructor?.declarationDescriptor == providerDsl
+                        ?: callee.dispatchReceiverParameter)?.type
+                        ?.classifierOrNull == symbols.providerDsl
                 ) {
                     dependencies += expression
                 }
@@ -525,14 +516,7 @@ class ModuleTransformer(
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
-            superTypes += provider
-                .defaultType
-                .replace(
-                    newArguments = listOf(
-                        resultType.toKotlinType().asTypeProjection()
-                    )
-                )
-                .toIrType()
+            superTypes += symbols.provider.typeWith(resultType)
 
             copyTypeParametersFrom(module)
 
@@ -550,9 +534,7 @@ class ModuleTransformer(
                 .associateWith { expression ->
                     addField(
                         "p$depIndex",
-                        symbolTable.referenceClass(provider)
-                            .ensureBound(pluginContext.irProviders)
-                            .typeWith(expression.type),
+                        symbols.provider.typeWith(expression.type),
                         Visibilities.PRIVATE
                     ).also { depIndex++ }
                 }
@@ -654,7 +636,8 @@ class ModuleTransformer(
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
-                    provider.unsubstitutedMemberScope.findSingleFunction(Name.identifier("invoke"))
+                    symbols.provider.descriptor.unsubstitutedMemberScope
+                        .findSingleFunction(Name.identifier("invoke"))
                 )
 
                 body = irExprBody(
@@ -681,7 +664,7 @@ class ModuleTransformer(
                                 if (moduleField != null) index + 1 else index,
                                 irCall(
                                     symbolTable.referenceFunction(
-                                        provider.unsubstitutedMemberScope.findSingleFunction(
+                                        symbols.provider.descriptor.unsubstitutedMemberScope.findSingleFunction(
                                             Name.identifier(
                                                 "invoke"
                                             )
@@ -810,7 +793,7 @@ class ModuleTransformer(
                     } else {
                         at(expression.startOffset, expression.endOffset)
                         DeclarationIrBuilder(
-                            pluginContext,
+                            this@ModuleTransformer.context,
                             symbol
                         ).irReturn(expression.value.transform(this, null)).apply {
                             this.returnTargetSymbol
@@ -844,19 +827,6 @@ class ModuleTransformer(
                     }
                 }
             })
-        }
-    }
-
-    private fun IrBuilderWithScope.providerMetadata(isSingle: Boolean): IrConstructorCall {
-        return irCallConstructor(
-            symbolTable.referenceConstructor(providerMetadata.constructors.single())
-                .ensureBound(pluginContext.irProviders),
-            emptyList()
-        ).apply {
-            putValueArgument(
-                0,
-                irBoolean(isSingle)
-            )
         }
     }
 

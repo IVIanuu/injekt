@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.InjektSymbols
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -31,7 +32,8 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         val declarationStore =
             InjektDeclarationStore(
                 pluginContext,
-                moduleFragment
+                moduleFragment,
+                InjektSymbols(pluginContext)
             )
 
         fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
@@ -98,11 +100,11 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             return r
         }
 
-    fun generateSymbols(pluginContext: IrPluginContext) {
+    fun generateSymbols(context: IrPluginContext) {
         lateinit var unbound: List<IrSymbol>
         val visited = mutableSetOf<IrSymbol>()
         do {
-            unbound = pluginContext.symbolTable.allUnbound
+            unbound = context.symbolTable.allUnbound
 
             for (symbol in unbound) {
                 if (symbol in visited) {
@@ -110,7 +112,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
                 }
                 // Symbol could get bound as a side effect of deserializing other symbols.
                 if (!symbol.isBound) {
-                    pluginContext.irProviders.forEach { it.getDeclaration(symbol) }
+                    context.irProviders.forEach { it.getDeclaration(symbol) }
                 }
                 if (!symbol.isBound) {
                     visited.add(symbol)

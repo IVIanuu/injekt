@@ -19,8 +19,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentAggregateGenerator(
     private val project: Project,
-    pluginContext: IrPluginContext
-) : AbstractInjektTransformer(pluginContext) {
+    context: IrPluginContext
+) : AbstractInjektTransformer(context) {
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val componentCalls = mutableListOf<IrCall>()
@@ -52,13 +52,13 @@ class ComponentAggregateGenerator(
                 componentFqName.asString().replace(".", "_")
             )
 
-            pluginContext.irTrace.record(
+            context.irTrace.record(
                 InjektWritableSlices.COMPONENT_FQ_NAME,
                 componentCall, componentFqName
             )
 
             declaration.addEmptyClass(
-                pluginContext,
+                context,
                 project,
                 aggregateName,
                 InjektFqNames.InjektComponentsPackage

@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstant
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -25,17 +24,15 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentBlockTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
-
-    private val module = getTopLevelClass(InjektFqNames.Module)
-    private val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
+class ComponentBlockTransformer(context: IrPluginContext) :
+    AbstractInjektTransformer(context) {
 
     override fun visitFile(declaration: IrFile): IrFile {
         val componentCalls = mutableListOf<IrCall>()
@@ -51,7 +48,7 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
         })
 
         componentCalls.forEach { componentCall ->
-            DeclarationIrBuilder(pluginContext, componentCall.symbol).run {
+            DeclarationIrBuilder(context, componentCall.symbol).run {
                 val key = componentCall.getValueArgument(0)!!.getConstant<String>()
                 val expr = componentCall.getValueArgument(1) as IrFunctionExpression
 
@@ -87,7 +84,7 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
         componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol &&
-                    expression.type.toKotlinType().constructor.declarationDescriptor != providerDsl
+                    expression.type.classifierOrNull != symbols.providerDsl
                 ) {
                     capturedValueParameters += expression
                 }
@@ -99,15 +96,10 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
 
         val function = buildFun {
             name = Name.identifier("$key\$ComponentModule")
-            returnType = pluginContext.irBuiltIns.unitType
+            returnType = this@ComponentBlockTransformer.context.irBuiltIns.unitType
             visibility = Visibilities.PRIVATE
         }.apply {
-            annotations += irCall(
-                symbolTable.referenceConstructor(
-                    module.unsubstitutedPrimaryConstructor!!
-                ),
-                module.defaultType.toIrType()
-            )
+            annotations += irCall(symbols.module.constructors.single())
 
             capturedValueParameters.forEachIndexed { index, capture ->
                 valueParametersByCapture[capture] = addValueParameter(
@@ -129,7 +121,7 @@ class ComponentBlockTransformer(pluginContext: IrPluginContext) :
                     } else {
                         at(expression.startOffset, expression.endOffset)
                         DeclarationIrBuilder(
-                            pluginContext,
+                            this@ComponentBlockTransformer.context,
                             symbol
                         ).irReturn(expression.value.transform(this@ComponentBlockTransformer, null))
                             .apply {

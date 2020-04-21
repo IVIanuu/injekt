@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
@@ -57,6 +56,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
@@ -73,13 +73,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ComponentTransformer(
-    pluginContext: IrPluginContext,
+    context: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
     private val moduleFragment: IrModuleFragment
-) : AbstractInjektTransformer(pluginContext) {
-
-    private val component = getTopLevelClass(InjektFqNames.Component)
-    private val componentMetadata = getTopLevelClass(InjektFqNames.ComponentMetadata)
+) : AbstractInjektTransformer(context) {
 
     private val componentCalls = mutableListOf<IrCall>()
     private val fileByCall = mutableMapOf<IrCall, IrFile>()
@@ -103,7 +100,7 @@ class ComponentTransformer(
 
                 return processedComponentsByCall[expression]
                     ?.let {
-                        DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                        DeclarationIrBuilder(context, expression.symbol).run {
                             val constructor = it.constructors.single()
                             irCall(constructor).apply {
                                 valueParametersByCapturesByComponent[it]?.forEach { (capture, valueParameter) ->
@@ -133,7 +130,7 @@ class ComponentTransformer(
     fun getProcessedComponent(call: IrCall): IrClass? {
         computeComponentCallsIfNeeded()
 
-        return DeclarationIrBuilder(pluginContext, call.symbol).run {
+        return DeclarationIrBuilder(context, call.symbol).run {
             val key = call.getValueArgument(0)!!.getConstant<String>()
 
             check(key !in processingComponents) {
@@ -145,7 +142,7 @@ class ComponentTransformer(
             val file = fileByCall[call]!!
             val component = componentClass(
                 componentDefinition,
-                pluginContext.irTrace[InjektWritableSlices.COMPONENT_FQ_NAME, call]!!
+                this@ComponentTransformer.context.irTrace[InjektWritableSlices.COMPONENT_FQ_NAME, call]!!
                     .shortName(),
                 key
             )
@@ -194,7 +191,7 @@ class ComponentTransformer(
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
-            superTypes += component.defaultType.toIrType()
+            superTypes += symbols.component.defaultType
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -233,7 +230,8 @@ class ComponentTransformer(
             )
 
             val graph = Graph(
-                context = pluginContext,
+                context = this@ComponentTransformer.context,
+                symbols = symbols,
                 thisComponent = componentNode,
                 thisComponentModule = ModuleNode(
                     module = module,
@@ -337,20 +335,24 @@ class ComponentTransformer(
             addFunction {
                 this.name = Name.identifier("get")
                 visibility = Visibilities.PUBLIC
-                returnType = pluginContext.irBuiltIns.anyNType
+                returnType = this@ComponentTransformer.context.irBuiltIns.anyNType
             }.apply {
                 dispatchReceiverParameter = thisReceiver?.copyTo(this)
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
-                    component.unsubstitutedMemberScope.findSingleFunction(Name.identifier("get"))
+                    symbols.component.descriptor.unsubstitutedMemberScope.findSingleFunction(
+                        Name.identifier(
+                            "get"
+                        )
+                    )
                 )
 
                 addValueParameter(
                     "key",
-                    pluginContext.irBuiltIns.intType
+                    this@ComponentTransformer.context.irBuiltIns.intType
                 )
 
-                body = DeclarationIrBuilder(pluginContext, symbol).run {
+                body = DeclarationIrBuilder(this@ComponentTransformer.context, symbol).run {
                     irExprBody(
                         irReturn(
                             irWhen(
@@ -370,11 +372,12 @@ class ComponentTransformer(
                                     } + irElseBranch(
                                     irCall(
                                         symbolTable.referenceFunction(
-                                            component.unsubstitutedMemberScope
+                                            symbols.component.descriptor.unsubstitutedMemberScope
                                                 .findSingleFunction(Name.identifier("get"))
-                                        ).ensureBound(pluginContext.irProviders).owner,
+                                        )
+                                            .ensureBound(this@ComponentTransformer.context.irProviders).owner,
                                         InjektStatementOrigin,
-                                        symbolTable.referenceClass(component)
+                                        symbols.component
                                     ).apply {
                                         dispatchReceiver =
                                             irGet(dispatchReceiverParameter!!)
@@ -404,8 +407,7 @@ class ComponentTransformer(
         bindings: List<Binding>
     ): IrConstructorCall {
         return irCallConstructor(
-            symbolTable.referenceConstructor(componentMetadata.constructors.single())
-                .ensureBound(pluginContext.irProviders),
+            symbols.componentMetadata.constructors.single(),
             emptyList()
         ).apply {
             // scopes
@@ -414,9 +416,9 @@ class ComponentTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ComponentTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
+                    this@ComponentTransformer.context.irBuiltIns.stringType,
                     scopes.map { irString(it.asString()) }
                 )
             )
@@ -427,9 +429,9 @@ class ComponentTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ComponentTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
+                    this@ComponentTransformer.context.irBuiltIns.stringType,
                     parents.map {
                         if (it.treeElement != null) {
                             irString("${it.key}=:=/${it.treeElement.path}")
@@ -446,9 +448,9 @@ class ComponentTransformer(
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    pluginContext.irBuiltIns.arrayClass
-                        .typeWith(pluginContext.irBuiltIns.stringType),
-                    pluginContext.irBuiltIns.stringType,
+                    this@ComponentTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
+                    this@ComponentTransformer.context.irBuiltIns.stringType,
                     bindings.map {
                         if (it is StatefulBinding) {
                             irString("/${it.treeElement.path}")

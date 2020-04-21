@@ -23,6 +23,7 @@ import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -77,20 +78,6 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     return descriptor.annotations.hasAnnotation(annotation)
 }
 
-fun ModuleDescriptor.getTopLevelClass(fqName: FqName) =
-    findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
-        ?: error("No class found for $fqName")
-
-fun String.removeIllegalChars(): String {
-    return replace("<", "")
-        .replace(">", "")
-        .replace(" ", "")
-        .replace(",", "")
-        .replace("*", "")
-        .replace(".", "")
-        .replace("-", "")
-}
-
 fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
     if (!this.isBound) irProviders.forEach { it.getDeclaration(this) }
     check(this.isBound) { "$this is not bound" }
@@ -108,11 +95,14 @@ fun getComponentFqName(
     return file.fqName.child(Name.identifier("$key\$Impl"))
 }
 
-fun getModuleName(
+fun getModuleFqName(
     function: FunctionDescriptor
 ): FqName {
     return FqName(function.fqNameSafe.asString() + "\$Impl")
 }
+
+fun getProviderFqName(clazz: ClassDescriptor): FqName =
+    clazz.fqNameSafe.child(Name.identifier("Provider\$Impl"))
 
 fun makeModuleAnnotation(module: ModuleDescriptor): AnnotationDescriptor =
     object : AnnotationDescriptor {

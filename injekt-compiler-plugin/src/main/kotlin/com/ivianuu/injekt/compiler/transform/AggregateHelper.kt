@@ -34,13 +34,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 
 fun IrModuleFragment.addEmptyClass(
-    pluginContext: IrPluginContext,
+    context: IrPluginContext,
     project: Project,
     name: Name,
     packageFqName: FqName
 ) {
     addClass(
-        pluginContext.psiSourceManager.cast(),
+        context.psiSourceManager.cast(),
         project,
         buildClass {
             this.name = name
@@ -53,11 +53,11 @@ fun IrModuleFragment.addEmptyClass(
                 isPrimary = true
                 visibility = Visibilities.PUBLIC
             }.apply {
-                body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     +IrDelegatingConstructorCallImpl(
                         startOffset, endOffset,
                         context.irBuiltIns.unitType,
-                        pluginContext.symbolTable.referenceConstructor(
+                        context.symbolTable.referenceConstructor(
                             context.builtIns.any.unsubstitutedPrimaryConstructor!!
                         )
                     )

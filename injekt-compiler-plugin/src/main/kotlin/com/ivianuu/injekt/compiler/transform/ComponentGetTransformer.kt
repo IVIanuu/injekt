@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.resolve.Key
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -11,27 +10,25 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class ComponentGetTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
-
-    private val component = getTopLevelClass(InjektFqNames.Component)
-    private val componentOwner = getTopLevelClass(InjektFqNames.ComponentOwner)
+class ComponentGetTransformer(context: IrPluginContext) :
+    AbstractInjektTransformer(context) {
 
     override fun visitCall(expression: IrCall): IrExpression {
         return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get" &&
             expression.symbol.descriptor.typeParameters.single().isReified
         ) {
-            DeclarationIrBuilder(pluginContext, expression.symbol).run {
+            DeclarationIrBuilder(context, expression.symbol).run {
                 irCall(
                     callee = symbolTable.referenceSimpleFunction(
-                        (if (expression.symbol.descriptor.extensionReceiverParameter?.type == component.defaultType)
-                            component.unsubstitutedMemberScope
-                        else componentOwner.unsubstitutedMemberScope)
+                        (if (expression.symbol.owner.extensionReceiverParameter?.type == symbols.component.defaultType)
+                            symbols.component.descriptor.unsubstitutedMemberScope
+                        else symbols.componentOwner.descriptor.unsubstitutedMemberScope)
                             .findSingleFunction(Name.identifier("get")),
                     ),
                     type = expression.getTypeArgument(0)!!
