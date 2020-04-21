@@ -278,10 +278,10 @@ class ModuleTransformer(
                     .associateWith { it.copyTo(this) }
                 valueParameters = parameterMap.values.toList()
                 fieldsByParameters = valueParameters.associateWith {
-                    addField {
-                        this.name = it.name
-                        type = it.type
-                    }
+                    addField(
+                        it.name.asString(),
+                        it.type
+                    )
                 }
 
                 body = irBlockBody {
@@ -382,21 +382,6 @@ class ModuleTransformer(
                 providerByDefinitionCall = providerByDefinitionCall,
                 includedModules = includedModuleFields
             )
-
-            transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitGetValue(expression: IrGetValue): IrExpression {
-                    return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
-                        super.visitGetValue(expression)
-                    } else {
-                        val newParameter = parameterMap[expression.symbol.owner]!!
-                        val field = fieldsByParameters[newParameter]!!
-                        return irGetField(
-                            irGet(thisReceiver!!),
-                            field
-                        )
-                    }
-                }
-            })
         }
     }
 
@@ -548,13 +533,13 @@ class ModuleTransformer(
             var depIndex = 0
             val fieldsByDependency = dependencies
                 .associateWith { expression ->
-                    addField {
-                        this.name = Name.identifier("p$depIndex")
-                        type = symbolTable.referenceClass(provider)
+                    addField(
+                        "p$depIndex",
+                        symbolTable.referenceClass(provider)
                             .ensureBound(pluginContext.irProviders)
-                            .typeWith(expression.type)
-                        visibility = Visibilities.PRIVATE
-                    }.also { depIndex++ }
+                            .typeWith(expression.type),
+                        Visibilities.PRIVATE
+                    ).also { depIndex++ }
                 }
 
             addConstructor {
@@ -619,8 +604,7 @@ class ModuleTransformer(
                         .forEach { valueParameter ->
                             +irSetField(
                                 irGet(thisReceiver!!),
-                                fieldsByDependency.values.toList()
-                                        [valueParameter.index - if (moduleField != null) 1 else 0],
+                                fieldsByDependency.values.toList()[valueParameter.index - if (moduleField != null) 1 else 0],
                                 irGet(valueParameter)
                             )
                         }
@@ -637,6 +621,7 @@ class ModuleTransformer(
                     moduleFieldsByParameter
                 ).also { addChild(it) }
             } else null
+
             val createFunction = if (moduleField == null && dependencies.isEmpty()) {
                 createFunction(
                     this, module, definition, dependencies,
@@ -660,7 +645,9 @@ class ModuleTransformer(
                 body = irExprBody(
                     irCall(companion?.functions?.single() ?: createFunction!!).apply {
                         dispatchReceiver =
-                            if (companion != null) irGetObject(companion.symbol) else this
+                            if (companion != null) irGetObject(companion.symbol) else irGet(
+                                dispatchReceiverParameter!!
+                            )
 
                         passTypeArgumentsFrom(this@clazz)
 
@@ -717,6 +704,7 @@ class ModuleTransformer(
             name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
             modality = Modality.FINAL
             visibility = Visibilities.PUBLIC
+            isCompanion = true
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
 

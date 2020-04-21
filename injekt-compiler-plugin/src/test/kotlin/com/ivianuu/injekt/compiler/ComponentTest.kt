@@ -364,7 +364,6 @@ class ComponentTest {
             val Child = Component("c") {
                 parent("p", Parent)
                 factory { get<Int>().toString() }
-                println()
             }
             
             fun invoke() = Child.get<Long>()

@@ -8,8 +8,10 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektDeclarationStore(
     private val pluginContext: IrPluginContext,
@@ -109,6 +111,13 @@ class InjektDeclarationStore(
             .map { getModule(it) }
 
         return modules
+    }
+
+    fun getProvider(provider: FqName): IrClass {
+        return getModule(provider.parent())
+            .declarations
+            .single { it.nameForIrSerialization == provider.shortName() }
+            .cast()
     }
 
 }
