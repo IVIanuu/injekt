@@ -2,7 +2,6 @@ package com.ivianuu.injekt
 
 // Multi binding
 // Override?
-// Generic modules api
 // Generic Behavior api
 // Eager
 // Callbacks like onInit?

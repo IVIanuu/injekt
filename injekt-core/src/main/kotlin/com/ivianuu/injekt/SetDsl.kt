@@ -6,7 +6,7 @@ class SetDsl<E> {
     inline fun <reified T : E> add(): Unit = stub()
 }
 
-@Module
+//@Module
 inline fun <reified E> set(
     vararg qualifiers: Qualifier,
     block: SetDsl<E>.() -> Unit = {}
