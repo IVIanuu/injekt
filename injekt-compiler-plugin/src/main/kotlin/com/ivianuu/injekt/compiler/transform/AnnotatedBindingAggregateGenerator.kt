@@ -35,15 +35,21 @@ class AnnotatedBindingAggregateGenerator(
             }
         })
 
+        println("classes $classes")
+
         classes.forEach { clazz ->
             val bindingFqName = getProviderFqName(clazz.descriptor)
 
             val scope = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
-                .single()
+                .singleOrNull()
 
             val packageFqName = InjektFqNames
-                .InjektModulesPackage
-                .child(Name.identifier(scope.fqName!!.asString().replace(".", "_")))
+                .InjektBindingsPackage
+                .let {
+                    if (scope != null)
+                        it.child(Name.identifier(scope.fqName!!.asString().replace(".", "_")))
+                    else it
+                }
 
             val aggregateName = Name.identifier(
                 bindingFqName.asString().replace(".", "_")
@@ -59,6 +65,8 @@ class AnnotatedBindingAggregateGenerator(
                 packageFqName
             )
         }
+
+        println("aggregated bindings $aggregatedBindings")
 
         return super.visitModuleFragment(declaration)
     }

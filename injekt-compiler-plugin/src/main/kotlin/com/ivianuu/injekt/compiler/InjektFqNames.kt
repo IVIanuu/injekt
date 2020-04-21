@@ -8,6 +8,7 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InjektInternalPackage = InjektPackage.child("internal")
     val InjektComponentsPackage = InjektInternalPackage.child("components")
+    val InjektBindingsPackage = InjektInternalPackage.child("bindings")
     val InjektModulesPackage = InjektInternalPackage.child("modules")
 
     val BindingMetadata = InjektInternalPackage.child("BindingMetadata")

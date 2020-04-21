@@ -70,7 +70,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ComponentTransformer(
     context: IrPluginContext,
@@ -138,7 +138,7 @@ class ComponentTransformer(
             }
             processingComponents += key
 
-            val componentDefinition = call.getValueArgument(1) as IrFunctionExpression
+            val componentDefinition = call.getValueArgument(1) as? IrFunctionExpression
             val file = fileByCall[call]!!
             val component = componentClass(
                 componentDefinition,
@@ -179,7 +179,7 @@ class ComponentTransformer(
     }
 
     private fun IrBuilderWithScope.componentClass(
-        componentDefinition: IrFunctionExpression,
+        componentDefinition: IrFunctionExpression?,
         name: Name,
         key: String
     ): IrClass {
@@ -198,17 +198,18 @@ class ComponentTransformer(
             val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
             valueParametersByCapturesByComponent[this] = valueParametersByCapture
 
-            val moduleCall = componentDefinition.function.body!!
-                .cast<IrExpressionBody>().expression as IrCall
+            val moduleCall = componentDefinition?.function?.body
+                .safeAs<IrExpressionBody>()?.expression as? IrCall
 
-            val moduleFqName = moduleCall.symbol.owner.fqNameForIrSerialization
-                .parent()
-                .child(Name.identifier("${moduleCall.symbol.owner.name}\$Impl"))
+            val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
+                ?.parent()
+                ?.child(Name.identifier("${moduleCall.symbol.owner.name}\$Impl"))
 
-            val module = declarationStore.getModule(moduleFqName)
+            val module = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
+            else null
 
             val captures = mutableListOf<IrGetValue>()
-            componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
+            componentDefinition?.transformChildrenVoid(object : IrElementTransformerVoid() {
                 override fun visitGetValue(expression: IrGetValue): IrExpression {
                     if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol) {
                         captures += expression
@@ -217,11 +218,11 @@ class ComponentTransformer(
                 }
             })
 
-            val moduleField = addField(
+            val moduleField = if (module != null) addField(
                 "module",
                 module.defaultType,
                 Visibilities.PRIVATE
-            )
+            ) else null
 
             val componentNode = ComponentNode(
                 key = key,
@@ -233,16 +234,18 @@ class ComponentTransformer(
                 context = this@ComponentTransformer.context,
                 symbols = symbols,
                 thisComponent = componentNode,
-                thisComponentModule = ModuleNode(
-                    module = module,
-                    componentNode = componentNode,
-                    typeParametersMap = module.typeParameters.map {
-                        it.symbol to moduleCall.getTypeArgument(it.index)!!
-                    }.toMap(),
-                    treeElement = componentNode.treeElement!!.childField(
-                        moduleField.name.asString()
+                thisComponentModule = module?.let {
+                    ModuleNode(
+                        module = module,
+                        componentNode = componentNode,
+                        typeParametersMap = module.typeParameters.map {
+                            it.symbol to moduleCall!!.getTypeArgument(it.index)!!
+                        }.toMap(),
+                        treeElement = componentNode.treeElement!!.childField(
+                            moduleField!!.name.asString()
+                        )
                     )
-                ),
+                },
                 declarationStore = declarationStore
             )
 
@@ -277,20 +280,22 @@ class ComponentTransformer(
                         context.irBuiltIns.unitType
                     )
 
-                    +irSetField(
-                        irGet(thisReceiver!!),
-                        moduleField,
-                        irCall(
-                            module.constructors.single().symbol,
-                            module.defaultType
-                        ).apply {
-                            copyValueArgumentsFrom(
-                                moduleCall,
-                                moduleCall.symbol.owner,
-                                symbol.owner
-                            )
-                        }
-                    )
+                    if (moduleField != null) {
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            moduleField,
+                            irCall(
+                                module!!.constructors.single().symbol,
+                                module.defaultType
+                            ).apply {
+                                copyValueArgumentsFrom(
+                                    moduleCall!!,
+                                    moduleCall.symbol.owner,
+                                    symbol.owner
+                                )
+                            }
+                        )
+                    }
 
                     val fieldsToInitialize = graph.allBindings.values
                         .filterIsInstance<StatefulBinding>()

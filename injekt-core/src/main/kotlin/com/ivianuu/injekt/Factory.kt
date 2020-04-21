@@ -7,3 +7,5 @@ inline fun <reified T> factory(
     vararg qualifiers: Qualifier,
     noinline definition: ProviderDsl.() -> T
 ): Unit = stub()
+
+annotation class Factory

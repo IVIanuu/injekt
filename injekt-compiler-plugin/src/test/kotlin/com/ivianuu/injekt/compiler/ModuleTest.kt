@@ -253,7 +253,7 @@ class ModuleTest {
     @Test
     fun testParentDoesNotExist() = codegen(
         """ 
-        val parent = Component("parent") {}
+        val parent = Component("parent")
         @Module
         fun myModule() {
             parent("wrong key", parent)

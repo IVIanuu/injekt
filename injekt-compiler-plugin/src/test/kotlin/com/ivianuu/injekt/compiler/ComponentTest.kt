@@ -172,7 +172,7 @@ class ComponentTest {
     @Test
     fun testDuplicatedParentFails() = codegen(
         """
-            val ParentComponent = Component("p") {} 
+            val ParentComponent = Component("p")
             
             val TestComponent = Component("c") {
                 moduleA()
@@ -290,6 +290,32 @@ class ComponentTest {
     }
 
     @Test
+    fun testAnnotatedFactory() = codegen(
+        """
+            @Factory class SimpleDep
+            val TestComponent = Component("c")
+            fun invoke() = TestComponent.get<SimpleDep>()
+            """
+    ) {
+        assertNotSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testAnnotatedObject() = codegen(
+        """
+            @Factory object SimpleDep
+            val TestComponent = Component("c")
+            fun invoke() = TestComponent.get<SimpleDep>() to SimpleDep
+            """
+    ) {
+        val resultPair = invokeSingleFile<Pair<Any?, Any?>>()
+        assertSame(resultPair.first, resultPair.second)
+    }
+
+    @Test
     fun testSingle() = codegen(
         """
             val TestComponent = Component("c") {
@@ -301,6 +327,20 @@ class ComponentTest {
                 """
     ) {
         assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testAnnotatedSingle() = codegen(
+        """
+            @Single class SimpleDep
+            val TestComponent = Component("c")
+            fun invoke() = TestComponent.get<SimpleDep>()
+            """
+    ) {
+        assertNotSame(
             invokeSingleFile(),
             invokeSingleFile()
         )

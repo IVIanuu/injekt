@@ -42,6 +42,11 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             generateSymbols(pluginContext)
         }
 
+        val annotatedBindingAggregateGenerator = AnnotatedBindingAggregateGenerator(
+            project,
+            pluginContext
+        ).also { it.visitModuleAndGenerateSymbols() }
+
         ComponentAggregateGenerator(
             project,
             pluginContext
@@ -51,6 +56,9 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             project,
             pluginContext
         ).also { it.visitModuleAndGenerateSymbols() }
+
+        AnnotatedBindingTransformer(pluginContext)
+            .visitModuleAndGenerateSymbols()
 
         // transform the config blocks of Component { ... } to a module
         ComponentBlockTransformer(
@@ -73,6 +81,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
                 moduleFragment
             )
 
+        declarationStore.annotatedBindingAggregateGenerator = annotatedBindingAggregateGenerator
         declarationStore.moduleAggregateGenerator = moduleAggregateGenerator
         declarationStore.componentTransformer = componentTransformer
         declarationStore.moduleTransformer = moduleTransformer

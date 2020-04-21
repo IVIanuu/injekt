@@ -7,3 +7,5 @@ inline fun <reified T> single(
     vararg qualifiers: Qualifier,
     noinline definition: ProviderDsl.() -> T
 ): Unit = stub()
+
+annotation class Single

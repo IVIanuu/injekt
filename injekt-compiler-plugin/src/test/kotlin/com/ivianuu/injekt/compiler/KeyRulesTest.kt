@@ -30,7 +30,7 @@ class KeyRulesTest {
     @Test
     fun testModuleConstantParentKey() = codegen(
         """ 
-        val parent = Component("parent") {}
+        val parent = Component("parent")
         @Module
         fun myModule() {
             parent("parent", parent)
@@ -43,7 +43,7 @@ class KeyRulesTest {
     @Test
     fun testModuleNotConstantParentKey() = codegen(
         """ 
-        val parent = Component("parent") {}
+        val parent = Component("parent")
         fun key() = "parent"
         @Module
         fun myModule() {

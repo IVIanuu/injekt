@@ -50,12 +50,12 @@ class ComponentBlockTransformer(context: IrPluginContext) :
         componentCalls.forEach { componentCall ->
             DeclarationIrBuilder(context, componentCall.symbol).run {
                 val key = componentCall.getValueArgument(0)!!.getConstant<String>()
-                val expr = componentCall.getValueArgument(1) as IrFunctionExpression
+                val expr = componentCall.getValueArgument(1) as? IrFunctionExpression
 
                 val result = moduleFunction(key, expr)
                 declaration.addChild(result.function)
 
-                expr.function.body = irExprBody(
+                expr?.function?.body = irExprBody(
                     irCall(result.function).apply {
                         extensionReceiver = componentCall.extensionReceiver
                         result.valueParametersByCaptures.forEach { (capture, parameter) ->
@@ -76,12 +76,12 @@ class ComponentBlockTransformer(context: IrPluginContext) :
 
     private fun IrBuilderWithScope.moduleFunction(
         key: String,
-        componentDefinition: IrFunctionExpression
+        componentDefinition: IrFunctionExpression?
     ): ModuleFunctionResult {
-        val definitionFunction = componentDefinition.function
+        val definitionFunction = componentDefinition?.function
 
         val capturedValueParameters = mutableListOf<IrGetValue>()
-        componentDefinition.transformChildrenVoid(object : IrElementTransformerVoid() {
+        componentDefinition?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol &&
                     expression.type.classifierOrNull != symbols.providerDsl
@@ -108,7 +108,7 @@ class ComponentBlockTransformer(context: IrPluginContext) :
                 )
             }
 
-            definitionFunction.body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
+            definitionFunction?.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
                 override fun visitGetValue(expression: IrGetValue): IrExpression {
                     return valueParametersByCapture[expression]
                         ?.let { irGet(it) }
@@ -140,7 +140,7 @@ class ComponentBlockTransformer(context: IrPluginContext) :
                 }
             })
 
-            body = definitionFunction.body!!.deepCopyWithVariables()
+            body = definitionFunction?.body?.deepCopyWithVariables()
         }
 
         return ModuleFunctionResult(function, valueParametersByCapture)

@@ -423,7 +423,6 @@ import dagger.Provides
 @Component(modules = [Dagger2Module::class])
 interface Dagger2Component {
     val fib8: Fib8
-    val fib400: Fib400
 
     @Component.Factory
     interface Factory {

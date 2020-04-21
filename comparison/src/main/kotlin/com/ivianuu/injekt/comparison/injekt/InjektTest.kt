@@ -12,9 +12,7 @@ object InjektTest : InjectionTest {
     private var component: Component? = null
 
     override fun setup() {
-        component = Component("injekt_test") {
-            fibonacci()
-        }
+        component = Component("injekt_test")
     }
 
     override fun inject() {

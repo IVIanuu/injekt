@@ -9,19 +9,20 @@ fun main() {
                 if (index == 1 || index == 2) {
                     appendln(
                         """
-                    @Instance(type = Fib$index::class, scoping = Scoping.UNSCOPED)
-                    class Fib$index @Inject constructor()
-                """.trimIndent()
+                        @Factory
+                        @Instance(type = Fib$index::class, scoping = Scoping.UNSCOPED)
+                        class Fib$index @Inject constructor()
+                        """.trimIndent()
                     )
                 } else {
                     appendln(
                         """
-                    @Instance(type = Fib$index::class, scoping = Scoping.UNSCOPED)
-                    class Fib$index @Inject constructor(
-                        val fibM1: Fib${index - 1},
-                        val fibM2: Fib${index - 2}
-                    )
-                """.trimIndent()
+                        @Factory
+                        @Instance(type = Fib$index::class, scoping = Scoping.UNSCOPED)
+                        class Fib$index @Inject constructor(
+                            val fibM1: Fib${index - 1},
+                            val fibM2: Fib${index - 2}
+                            )""".trimIndent()
                     )
                 }
 

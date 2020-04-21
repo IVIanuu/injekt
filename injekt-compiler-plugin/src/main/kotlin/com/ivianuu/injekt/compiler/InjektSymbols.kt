@@ -12,7 +12,9 @@ class InjektSymbols(
 ) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
+    val injektBindingsPackage = getPackage(InjektFqNames.InjektBindingsPackage)
     val injektInternalPackage = getPackage(InjektFqNames.InjektInternalPackage)
+    val injektModulesPackage = getPackage(InjektFqNames.InjektModulesPackage)
 
     val bindingMetadata = getTopLevelClass(InjektFqNames.BindingMetadata)
 

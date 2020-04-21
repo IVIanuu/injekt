@@ -110,9 +110,47 @@ class InjektDeclarationStore(
         return modules
     }
 
-    fun getUnscopedProviders(): List<IrClass> = emptyList()
+    fun getUnscopedProviders(): List<IrClass> =
+        getProvidersInPackage(InjektFqNames.InjektBindingsPackage)
 
-    fun getProvidersForScope(scope: FqName): List<IrClass> = emptyList()
+    fun getProvidersForScope(scope: FqName): List<IrClass> =
+        getProvidersInPackage(
+            InjektFqNames.InjektBindingsPackage.child(
+                Name.identifier(scope.asString().replace(".", "_"))
+            )
+        )
+
+    private fun getProvidersInPackage(packageFqName: FqName): List<IrClass> {
+        val providers = mutableListOf<IrClass>()
+
+        providers += annotatedBindingAggregateGenerator.aggregatedBindings[packageFqName]
+            ?.map {
+                val providerFqName = FqName(it.asString().replace("_", "."))
+                symbols.getTopLevelClass(providerFqName.parent())
+                    .ensureBound(context.irProviders)
+                    .owner
+                    .declarations
+                    .filterIsInstance<IrClass>()
+                    .single { it.name == providerFqName.shortName() }
+            } ?: emptyList()
+
+        providers += symbols.getPackage(packageFqName)
+            .memberScope
+            .getContributedDescriptors()
+            .filterIsInstance<ClassDescriptor>()
+            .map { it.name }
+            .map {
+                val providerFqName = FqName(it.asString().replace("_", "."))
+                symbols.getTopLevelClass(providerFqName.parent())
+                    .ensureBound(context.irProviders)
+                    .owner
+                    .declarations
+                    .filterIsInstance<IrClass>()
+                    .single { it.name == providerFqName.shortName() }
+            }
+
+        return providers
+    }
 
     fun getProvider(provider: FqName): IrClass {
         return getModule(provider.parent())

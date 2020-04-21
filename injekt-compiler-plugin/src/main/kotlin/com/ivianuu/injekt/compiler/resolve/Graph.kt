@@ -48,7 +48,7 @@ class Graph(
     private val context: IrPluginContext,
     private val symbols: InjektSymbols,
     private val thisComponent: ComponentNode,
-    thisComponentModule: ModuleNode,
+    thisComponentModule: ModuleNode?,
     private val declarationStore: InjektDeclarationStore
 ) {
 
@@ -64,7 +64,8 @@ class Graph(
     val thisParents = mutableListOf<ComponentNode>()
 
     init {
-        addModule(thisComponentModule)
+        if (thisComponentModule != null) addModule(thisComponentModule)
+        addUnscopedBindings()
         validate()
     }
 
@@ -160,6 +161,7 @@ class Graph(
                     StatefulBinding(
                         key = Key(resultType, qualifiers),
                         dependencies = dependencies,
+                        duplicateStrategy = DuplicateStrategy.Fail,
                         provider = provider,
                         providerInstance = {
                             irGetField(
@@ -192,81 +194,10 @@ class Graph(
                     )
                 } else {
                     val provider = declarationStore.getProvider(FqName(providerPathOrClass))
-
-                    val bindingMetadata = provider.descriptor.annotations.single {
-                        it.fqName == InjektFqNames.BindingMetadata
-                    }
-
-                    val qualifiers = bindingMetadata.getStringList("qualifiers")
-                        .map { FqName(it) }
-
-                    val createFunction = (if (provider.kind == ClassKind.OBJECT)
-                        provider else provider.companionObject() as IrClass)
-                        .functions
-                        .single { it.name.asString() == "create" }
-
-                    val resultType = createFunction.returnType
-
-                    val dependencies = createFunction.valueParameters
-                        .map {
-                            Key(
-                                it.type,
-                                it.descriptor.annotations.single {
-                                        it.fqName == InjektFqNames.BindingMetadata
-                                    }.getStringList("qualifiers")
-                                    .map { FqName(it) }
-                            )
-                        }
-
-                    StatelessBinding(
-                        key = Key(resultType, qualifiers),
-                        dependencies = dependencies,
-                        provider = provider,
-                        providerInstance = {
-                            if (provider.kind == ClassKind.OBJECT) {
-                                irGetObject(provider.symbol)
-                            } else {
-                                val constructor = provider.constructors.single()
-                                irCall(constructor).apply {
-                                    dependencies.forEachIndexed { index, dependencyKey ->
-                                        val dependency = allBindings.getValue(dependencyKey)
-                                        putValueArgument(
-                                            index, dependency.providerInstance(
-                                                this@StatelessBinding,
-                                                it
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        getFunction = getFunction(resultType) { function ->
-                            if (provider.kind == ClassKind.OBJECT) {
-                                irCall(
-                                    provider
-                                        .functions
-                                        .single { it.name.asString() == "create" }
-                                ).apply {
-                                    dispatchReceiver = irGetObject(provider.symbol)
-                                }
-                            } else {
-                                irCall(createFunction).apply {
-                                    dispatchReceiver = irGetObject(
-                                        provider.companionObject()!!.cast<IrClass>().symbol
-                                    )
-                                    dependencies.forEachIndexed { index, dependencyKey ->
-                                        val dependency = allBindings.getValue(dependencyKey)
-                                        putValueArgument(
-                                            index,
-                                            irCall(dependency.getFunction(this@getFunction)).apply {
-                                                dispatchReceiver =
-                                                    irGet(function.dispatchReceiverParameter!!)
-                                            })
-                                    }
-                                }
-                            }
-                        },
-                        sourceComponent = parentNode
+                    statelessBinding(
+                        provider,
+                        DuplicateStrategy.Fail,
+                        parentNode
                     )
                 }
             }
@@ -378,6 +309,7 @@ class Graph(
                     StatefulBinding(
                         key = key,
                         dependencies = dependencies,
+                        duplicateStrategy = DuplicateStrategy.Fail,
                         provider = provider,
                         providerInstance = {
                             irCall(
@@ -436,90 +368,10 @@ class Graph(
                         field = field
                     )
                 } else {
-                    StatelessBinding(
-                        key = key,
-                        dependencies = dependencies,
-                        provider = provider,
-                        sourceComponent = thisComponent,
-                        providerInstance = {
-                            if (provider.kind == ClassKind.OBJECT) {
-                                irGetObject(provider.symbol)
-                            } else {
-                                val constructor = provider.constructors
-                                    .single()
-                                irCall(constructor).apply {
-                                    if (requiresModule) {
-                                        putValueArgument(
-                                            0,
-                                            moduleNode.treeElement!!.accessor(
-                                                this@StatelessBinding,
-                                                it
-                                            )
-                                        )
-                                    }
-
-                                    constructor.valueParameters
-                                        .drop(if (requiresModule) 1 else 0)
-                                        .forEach { valueParameter ->
-                                            val dependencyKey =
-                                                dependencies[valueParameter.index - if (requiresModule) 1 else 0]
-                                            val dependency = allBindings.getValue(dependencyKey)
-                                            putValueArgument(
-                                                valueParameter.index,
-                                                dependency.providerInstance(
-                                                    this@StatelessBinding,
-                                                    it
-                                                )
-                                            )
-                                        }
-                                }
-                            }
-                        },
-                        getFunction = getFunction(resultType) { function ->
-                            if (provider.kind == ClassKind.OBJECT) {
-                                irCall(
-                                    provider
-                                        .functions
-                                        .single { it.name.asString() == "create" }
-                                ).apply {
-                                    dispatchReceiver = irGetObject(provider.symbol)
-                                }
-                            } else {
-                                val companion = provider.companionObject()!! as IrClass
-                                val createFunction = companion
-                                    .functions
-                                    .single { it.name.asString() == "create" }
-                                irCall(createFunction).apply {
-                                    dispatchReceiver = irGetObject(companion.symbol)
-
-                                    if (requiresModule) {
-                                        putValueArgument(
-                                            0,
-                                            moduleNode.treeElement!!.accessor(
-                                                this@getFunction,
-                                                irGet(function.dispatchReceiverParameter!!)
-                                            )
-                                        )
-                                    }
-
-                                    createFunction.valueParameters
-                                        .drop(if (requiresModule) 1 else 0)
-                                        .forEach { valueParameter ->
-                                            val dependencyKey =
-                                                dependencies[valueParameter.index - if (requiresModule) 1 else 0]
-                                            val dependency = allBindings.getValue(dependencyKey)
-                                            putValueArgument(
-                                                valueParameter.index,
-                                                irCall(dependency.getFunction(this@getFunction)).apply {
-                                                    dispatchReceiver = irGet(
-                                                        function.dispatchReceiverParameter!!
-                                                    )
-                                                }
-                                            )
-                                        }
-                                }
-                            }
-                        }
+                    statelessBinding(
+                        provider,
+                        DuplicateStrategy.Fail,
+                        thisComponent
                     )
                 }
             }.forEach { addBinding(it) }
@@ -541,13 +393,27 @@ class Graph(
         }
     }
 
+    private fun addUnscopedBindings() {
+        declarationStore.getUnscopedProviders()
+            .forEach { addBinding(statelessBinding(it, DuplicateStrategy.Drop, null)) }
+    }
+
     private fun addBinding(binding: Binding) {
         check(!binding.key.type.isTypeParameter()) {
             "Binding type not refined ${binding.key}"
         }
 
-        check(binding.key !in allBindings) {
-            "Duplicated binding ${binding.key}"
+        when (binding.duplicateStrategy) {
+            DuplicateStrategy.Drop -> {
+                if (binding.key in allBindings) return
+            }
+            DuplicateStrategy.Fail -> {
+                check(binding.key !in allBindings) {
+                    "Duplicated binding ${binding.key}"
+                }
+            }
+            DuplicateStrategy.Override -> {
+            } // do nothing
         }
 
         allBindings[binding.key] = binding
@@ -565,6 +431,89 @@ class Graph(
                 }
             }
         }
+    }
+
+    private fun statelessBinding(
+        provider: IrClass,
+        duplicateStrategy: DuplicateStrategy,
+        sourceComponent: ComponentNode?
+    ): StatelessBinding {
+        val bindingMetadata = provider.descriptor.annotations.single {
+            it.fqName == InjektFqNames.BindingMetadata
+        }
+
+        val qualifiers = bindingMetadata.getStringList("qualifiers")
+            .map { FqName(it) }
+
+        val createFunction = (if (provider.kind == ClassKind.OBJECT)
+            provider else provider.companionObject() as IrClass)
+            .functions
+            .single { it.name.asString() == "create" }
+
+        val resultType = createFunction.returnType
+
+        val dependencies = createFunction.valueParameters
+            .map {
+                Key(
+                    it.type,
+                    it.descriptor.annotations.single {
+                            it.fqName == InjektFqNames.BindingMetadata
+                        }.getStringList("qualifiers")
+                        .map { FqName(it) }
+                )
+            }
+
+        return StatelessBinding(
+            key = Key(resultType, qualifiers),
+            dependencies = dependencies,
+            duplicateStrategy = duplicateStrategy,
+            provider = provider,
+            providerInstance = {
+                if (provider.kind == ClassKind.OBJECT) {
+                    irGetObject(provider.symbol)
+                } else {
+                    val constructor = provider.constructors.single()
+                    irCall(constructor).apply {
+                        dependencies.forEachIndexed { index, dependencyKey ->
+                            val dependency = allBindings.getValue(dependencyKey)
+                            putValueArgument(
+                                index, dependency.providerInstance(
+                                    this@StatelessBinding,
+                                    it
+                                )
+                            )
+                        }
+                    }
+                }
+            },
+            getFunction = getFunction(resultType) { function ->
+                if (provider.kind == ClassKind.OBJECT) {
+                    irCall(
+                        provider
+                            .functions
+                            .single { it.name.asString() == "create" }
+                    ).apply {
+                        dispatchReceiver = irGetObject(provider.symbol)
+                    }
+                } else {
+                    irCall(createFunction).apply {
+                        dispatchReceiver = irGetObject(
+                            provider.companionObject()!!.cast<IrClass>().symbol
+                        )
+                        dependencies.forEachIndexed { index, dependencyKey ->
+                            val dependency = allBindings.getValue(dependencyKey)
+                            putValueArgument(
+                                index,
+                                irCall(dependency.getFunction(this@getFunction)).apply {
+                                    dispatchReceiver =
+                                        irGet(function.dispatchReceiverParameter!!)
+                                })
+                        }
+                    }
+                }
+            },
+            sourceComponent = sourceComponent
+        )
     }
 
     private fun getFunction(

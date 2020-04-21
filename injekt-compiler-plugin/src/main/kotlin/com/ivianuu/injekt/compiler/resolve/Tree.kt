@@ -63,31 +63,50 @@ class ComponentNode(
 sealed class Binding(
     val key: Key,
     val dependencies: List<Key>,
+    val duplicateStrategy: DuplicateStrategy,
     val provider: IrClass,
     val providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     val getFunction: IrBuilderWithScope.() -> IrFunction,
-    val sourceComponent: ComponentNode
+    val sourceComponent: ComponentNode?
 )
 
 class StatefulBinding(
     key: Key,
     dependencies: List<Key>,
+    duplicateStrategy: DuplicateStrategy,
     provider: IrClass,
     providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     getFunction: IrBuilderWithScope.() -> IrFunction,
     sourceComponent: ComponentNode,
     val treeElement: TreeElement,
     val field: IrField
-) : Binding(key, dependencies, provider, providerInstance, getFunction, sourceComponent)
+) : Binding(
+    key,
+    dependencies,
+    duplicateStrategy,
+    provider,
+    providerInstance,
+    getFunction,
+    sourceComponent
+)
 
 class StatelessBinding(
     key: Key,
     dependencies: List<Key>,
+    duplicateStrategy: DuplicateStrategy,
     provider: IrClass,
     providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     getFunction: IrBuilderWithScope.() -> IrFunction,
-    sourceComponent: ComponentNode
-) : Binding(key, dependencies, provider, providerInstance, getFunction, sourceComponent)
+    sourceComponent: ComponentNode?
+) : Binding(
+    key,
+    dependencies,
+    duplicateStrategy,
+    provider,
+    providerInstance,
+    getFunction,
+    sourceComponent
+)
 
 data class Key(
     val type: IrType,
@@ -96,4 +115,8 @@ data class Key(
     override fun toString(): String {
         return "Key(type=${type.toKotlinType().asTypeName()!!}, qualifiers=$qualifiers)"
     }
+}
+
+enum class DuplicateStrategy {
+    Drop, Fail, Override
 }
