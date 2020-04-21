@@ -603,7 +603,6 @@ class Graph(
                 currentGetFunctionIndex + 1
             )
 
-            isInline = true
             returnType = resultType
             visibility = Visibilities.PUBLIC
         }.apply {
