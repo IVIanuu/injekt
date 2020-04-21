@@ -35,8 +35,6 @@ class AnnotatedBindingAggregateGenerator(
             }
         })
 
-        println("classes $classes")
-
         classes.forEach { clazz ->
             val bindingFqName = getProviderFqName(clazz.descriptor)
 

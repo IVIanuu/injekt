@@ -12,3 +12,6 @@ package com.ivianuu.injekt
 // Maybe generic api for wrapper types -> see provider and alzy
 // Nullable distinction
 // Android utility
+//Move module function Blocks to init of module classes and capture fields
+//Use string keys
+//keyof runtime calls
