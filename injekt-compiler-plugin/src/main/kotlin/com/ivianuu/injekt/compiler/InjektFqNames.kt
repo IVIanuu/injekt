@@ -18,6 +18,7 @@ object InjektFqNames {
     val ModuleMetadata = InjektInternalPackage.child("ModuleMetadata")
     val Provider = InjektPackage.child("Provider")
     val ProviderDsl = InjektPackage.child("ProviderDsl")
+    val ProviderFieldMetadata = InjektInternalPackage.child("ProviderFieldMetadata")
     val ProviderMetadata = InjektInternalPackage.child("ProviderMetadata")
     val Qualifier = InjektPackage.child("Qualifier")
     val Scope = InjektPackage.child("Scope")

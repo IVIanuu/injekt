@@ -292,12 +292,38 @@ class ComponentTest {
     @Test
     fun testSingle() = codegen(
         """
-            val TestComponent = Component("c") { 
-                single { Foo() } 
+            val TestComponent = Component("c") {
+                factory { Foo() }
+                single { Bar(get()) } 
                 }
                 
-                fun invoke() = TestComponent.get<Foo>()
+                fun invoke() = TestComponent.get<Bar>()
                 """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testNestedSingle() = codegen(
+        """
+            val Grandpa = Component("gp") {
+                factory { Foo() }
+            }
+            
+            val Parent = Component("p") {
+                parent("gp", Grandpa)
+                single { Bar(get()) }
+            }
+            
+            val Child = Component("c") {
+                parent("p", Parent)
+            }
+            
+            fun invoke() = Child.get<Bar>()
+            """
     ) {
         assertSame(
             invokeSingleFile(),

@@ -3,22 +3,27 @@ package com.ivianuu.injekt.compiler.resolve
 import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getStringList
 import com.ivianuu.injekt.compiler.getTopLevelClass
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.substituteByName
+import me.eugeniomarletti.kotlin.metadata.shadow.utils.addToStdlib.cast
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -27,10 +32,11 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isTypeParameter
@@ -38,7 +44,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class Graph(
     private val context: IrPluginContext,
@@ -58,6 +63,10 @@ class Graph(
     private val allParents = mutableListOf<ComponentNode>()
     val thisParents = mutableListOf<ComponentNode>()
 
+    private val provider =
+        context.moduleDescriptor.getTopLevelClass(InjektFqNames.Provider)
+    private val providerFieldMetadata =
+        context.moduleDescriptor.getTopLevelClass(InjektFqNames.ProviderFieldMetadata)
     private val singleProvider =
         context.moduleDescriptor.getTopLevelClass(InjektFqNames.SingleProvider)
 
@@ -124,24 +133,39 @@ class Graph(
                     val field = parentNode.component.declarations
                         .filterIsInstance<IrField>()
                         .single { it.name.asString() == providerPathOrClass.removePrefix("/") }
-                    val bindingMetadata = field.descriptor.annotations.single {
+
+                    val provider = field.descriptor.annotations.single {
+                            it.fqName == InjektFqNames.ProviderFieldMetadata
+                        }.argumentValue("implementation")!!.value
+                        .let { declarationStore.getProvider(FqName(it.toString())) }
+
+                    val bindingMetadata = provider.descriptor.annotations.single {
                         it.fqName == InjektFqNames.BindingMetadata
                     }
 
-                    val provider = field.type.classOrNull!!.owner
+                    val qualifiers = bindingMetadata.getStringList("qualifiers")
+                        .map { FqName(it) }
 
                     val createFunction = (if (provider.kind == ClassKind.OBJECT)
-                        provider else provider.companionObject().cast())
+                        provider else provider.companionObject() as IrClass)
                         .functions
                         .single { it.name.asString() == "create" }
 
                     val dependencies = createFunction.valueParameters
-                        .map { Key(it.type) }
+                        .map {
+                            Key(
+                                it.type,
+                                it.descriptor.annotations.single {
+                                        it.fqName == InjektFqNames.BindingMetadata
+                                    }.getStringList("qualifiers")
+                                    .map { FqName(it) }
+                            )
+                        }
 
                     val resultType = createFunction.returnType
 
                     StatefulBinding(
-                        key = Key(resultType),
+                        key = Key(resultType, qualifiers),
                         dependencies = dependencies,
                         provider = provider,
                         providerInstance = {
@@ -156,7 +180,10 @@ class Graph(
                         getFunction = getFunction(resultType) { function ->
                             irCall(provider.functions.single { it.name.asString() == "invoke" }).apply {
                                 dispatchReceiver = irGetField(
-                                    irGet(function.dispatchReceiverParameter!!),
+                                    parentNode.treeElement!!.accessor(
+                                        this@getFunction,
+                                        irGet(function.dispatchReceiverParameter!!)
+                                    ),
                                     field
                                 )
                             }
@@ -168,18 +195,33 @@ class Graph(
                 } else {
                     val provider = declarationStore.getProvider(FqName(providerPathOrClass))
 
+                    val bindingMetadata = provider.descriptor.annotations.single {
+                        it.fqName == InjektFqNames.BindingMetadata
+                    }
+
+                    val qualifiers = bindingMetadata.getStringList("qualifiers")
+                        .map { FqName(it) }
+
                     val createFunction = (if (provider.kind == ClassKind.OBJECT)
-                        provider else provider.companionObject().cast())
+                        provider else provider.companionObject() as IrClass)
                         .functions
                         .single { it.name.asString() == "create" }
 
                     val resultType = createFunction.returnType
 
                     val dependencies = createFunction.valueParameters
-                        .map { Key(it.type) }
+                        .map {
+                            Key(
+                                it.type,
+                                it.descriptor.annotations.single {
+                                        it.fqName == InjektFqNames.BindingMetadata
+                                    }.getStringList("qualifiers")
+                                    .map { FqName(it) }
+                            )
+                        }
 
                     StatelessBinding(
-                        key = Key(resultType),
+                        key = Key(resultType, qualifiers),
                         dependencies = dependencies,
                         provider = provider,
                         providerInstance = {
@@ -314,8 +356,26 @@ class Graph(
                             ?: 0
                     val field = moduleNode.componentNode.component.addField(
                         Name.identifier("provider_$currentProviderIndex"),
-                        provider.defaultType
-                    )
+                        context.symbolTable.referenceClass(this.provider)
+                            .ensureBound(this@Graph.context.irProviders)
+                            .owner
+                            .typeWith(resultType)
+                    ).apply {
+                        annotations += DeclarationIrBuilder(context, symbol).run {
+                            irCallConstructor(
+                                this@Graph.context.symbolTable.referenceConstructor(
+                                        providerFieldMetadata.constructors.single()
+                                    )
+                                    .ensureBound(this@Graph.context.irProviders),
+                                emptyList()
+                            ).apply {
+                                putValueArgument(
+                                    0,
+                                    irString(provider.fqNameForIrSerialization.asString())
+                                )
+                            }
+                        }
+                    }
                     context.irTrace.record(
                         InjektWritableSlices.PROVIDER_INDEX,
                         moduleNode.componentNode.component, currentProviderIndex + 1
@@ -329,7 +389,9 @@ class Graph(
                         provider = provider,
                         providerInstance = {
                             irCall(
-                                this@Graph.context.symbolTable.referenceClass(singleProvider).owner
+                                this@Graph.context.symbolTable.referenceClass(singleProvider)
+                                    .ensureBound(this@Graph.context.irProviders)
+                                    .owner
                                     .constructors
                                     .single()
                             ).apply {
@@ -367,7 +429,15 @@ class Graph(
                             }
                         },
                         getFunction = getFunction(resultType) { function ->
-                            irCall(provider.functions.single { it.name.asString() == "invoke" }).apply {
+                            irCall(
+                                this@Graph.context.symbolTable.referenceClass(this@Graph.provider)
+                                    .ensureBound(this@Graph.context.irProviders)
+                                    .owner
+                                    .functions
+                                    .single { it.name.asString() == "invoke" }
+                                    .symbol,
+                                resultType
+                            ).apply {
                                 dispatchReceiver = treeElement.accessor(
                                     this@getFunction,
                                     irGet(function.dispatchReceiverParameter!!)
@@ -428,7 +498,7 @@ class Graph(
                                     dispatchReceiver = irGetObject(provider.symbol)
                                 }
                             } else {
-                                val companion = provider.companionObject()!!.cast<IrClass>()
+                                val companion = provider.companionObject()!! as IrClass
                                 val createFunction = companion
                                     .functions
                                     .single { it.name.asString() == "create" }
@@ -492,8 +562,6 @@ class Graph(
         check(binding.key !in allBindings) {
             "Duplicated binding ${binding.key}"
         }
-
-        println("Add binding ${binding.key} with deps ${binding.dependencies}")
 
         allBindings[binding.key] = binding
         if (binding.sourceComponent == thisComponent) {

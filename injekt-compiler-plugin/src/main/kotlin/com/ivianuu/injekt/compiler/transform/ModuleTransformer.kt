@@ -313,7 +313,7 @@ class ModuleTransformer(
                         +irSetField(
                             irGet(thisReceiver!!),
                             parentFields.getValue(parent),
-                            irCall(parent.constructors.single())
+                            call.getValueArgument(1)!!
                         )
                     }
 
@@ -773,8 +773,19 @@ class ModuleTransformer(
                     addValueParameter {
                         this.name = Name.identifier("p$depIndex")
                         type = expression.type
-                        visibility = Visibilities.PRIVATE
-                    }.also { depIndex++ }
+                    }.apply {
+                            annotations += bindingMetadata(
+                                expression.getValueArgument(0)
+                                    ?.safeAs<IrVarargImpl>()
+                                    ?.elements
+                                    ?.filterIsInstance<IrGetObjectValue>()
+                                    ?.map {
+                                        it.type.classOrNull!!.descriptor.containingDeclaration
+                                            .fqNameSafe
+                                    } ?: emptyList()
+                            )
+                        }
+                        .also { depIndex++ }
                 }
 
             body = definitionFunction.body

@@ -23,7 +23,10 @@ class TreeElement(
     fun child(
         pathName: String,
         accessor: IrBuilderWithScope.(IrExpression) -> IrExpression
-    ) = TreeElement(path = "$path/$pathName") {
+    ) = TreeElement(
+        path = if (path.isNotEmpty()) "$path/$pathName"
+        else pathName
+    ) {
         accessor(this@TreeElement.accessor(this, it))
     }
 

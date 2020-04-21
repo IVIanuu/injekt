@@ -60,7 +60,7 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.isError
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -216,8 +216,8 @@ fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>)
 }
 
 fun AnnotationDescriptor.getStringList(name: String): List<String> {
-    return allValueArguments[Name.identifier(name)]?.safeAs<ArrayValue>()?.value
-        ?.map { it.value }
-        ?.filterIsInstance<String>()
-        ?: emptyList()
+    return allValueArguments[Name.identifier(name)]
+        .cast<ArrayValue>()
+        .value
+        .map { it.value as String }
 }

@@ -307,7 +307,12 @@ class ComponentTransformer(
                         if (fieldsToProcess.isEmpty()) break
 
                         fieldsToProcess
-                            .filter { it.dependencies.all { it in initializedKeys } }
+                            .filter {
+                                it.dependencies.all {
+                                    val binding = graph.allBindings.getValue(it)
+                                    binding !is StatefulBinding || it in initializedKeys
+                                }
+                            }
                             .forEach {
                                 initializedKeys += it.key
                                 processedFields += it.field
