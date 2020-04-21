@@ -334,7 +334,7 @@ class ComponentTransformer(
                 })
             }
 
-            val getFunction = addFunction {
+            addFunction {
                 this.name = Name.identifier("get")
                 visibility = Visibilities.PUBLIC
                 returnType = pluginContext.irBuiltIns.anyNType

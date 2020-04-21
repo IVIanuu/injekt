@@ -382,6 +382,21 @@ class ModuleTransformer(
                 providerByDefinitionCall = providerByDefinitionCall,
                 includedModules = includedModuleFields
             )
+
+            transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                    return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
+                        super.visitGetValue(expression)
+                    } else {
+                        val newParameter = parameterMap[expression.symbol.owner]!!
+                        val field = fieldsByParameters[newParameter]!!
+                        return irGetField(
+                            irGet(thisReceiver!!),
+                            field
+                        )
+                    }
+                }
+            })
         }
     }
 
