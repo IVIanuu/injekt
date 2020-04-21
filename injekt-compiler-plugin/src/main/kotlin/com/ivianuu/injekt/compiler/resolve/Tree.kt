@@ -1,11 +1,11 @@
 package com.ivianuu.injekt.compiler.resolve
 
 import com.ivianuu.injekt.compiler.asTypeName
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
@@ -16,46 +16,25 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.name.FqName
 
-sealed class TreeElement(
-    val pathName: String,
-    val type: IrClass,
-    val parent: TreeElement?,
-    val accessor: () -> IrExpression
+class TreeElement(
+    val path: String,
+    val accessor: IrBuilderWithScope.(IrExpression) -> IrExpression
 ) {
-    val path = buildList {
-        var node: TreeElement? = this@TreeElement
-        while (node != null) {
-            if (node.pathName.isNotEmpty()) add(node.pathName)
-            node = node.parent
-        }
-    }.reversed().joinToString("/")
-    init {
-        check(parent == null || pathName.isNotEmpty()) {
-            "Invalid path name for ${type.name} parent is ${parent?.type?.name}"
-        }
+    fun child(
+        pathName: String,
+        accessor: IrBuilderWithScope.(IrExpression) -> IrExpression
+    ) = TreeElement(path = "$path/$pathName") {
+        accessor(this@TreeElement.accessor(this, it))
+    }
+
+    fun childField(fieldName: String) = child(fieldName) {
+        val owner = it.type.classOrNull!!.owner
+        val field = owner
+            .fields.singleOrNull { it.name.asString() == fieldName }
+            ?: error("Couldn't find field $fieldName in ${owner.dump()}")
+        irGetField(it, field)
     }
 }
-
-class RootTreeElement(
-    context: IrPluginContext,
-    type: IrClass,
-    accessor: () -> IrExpression
-) : TreeElement("", type, null, accessor)
-
-class FieldTreeElement(
-    context: IrPluginContext,
-    pathName: String,
-    parent: TreeElement
-) : TreeElement(
-    pathName,
-    parent.type.fields.single { it.name.asString() == pathName }.type.classOrNull!!.owner,
-    parent,
-    {
-        val field = parent.type.fields.single { it.name.asString() == pathName }
-        DeclarationIrBuilder(context, field.symbol)
-            .irGetField(parent.accessor(), field)
-    }
-)
 
 class ModuleNode(
     val module: IrClass,
@@ -82,8 +61,8 @@ sealed class Binding(
     val key: Key,
     val dependencies: List<Key>,
     val provider: IrClass,
-    val providerInstance: () -> IrExpression,
-    val createInstance: () -> IrExpression,
+    val providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
+    val getFunction: IrBuilderWithScope.() -> IrFunction,
     val sourceComponent: ComponentNode
 )
 
@@ -91,21 +70,21 @@ class StatefulBinding(
     key: Key,
     dependencies: List<Key>,
     provider: IrClass,
-    providerInstance: () -> IrExpression,
-    createInstance: () -> IrExpression,
+    providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
+    getFunction: IrBuilderWithScope.() -> IrFunction,
     sourceComponent: ComponentNode,
     val treeElement: TreeElement,
     val field: IrField
-) : Binding(key, dependencies, provider, providerInstance, createInstance, sourceComponent)
+) : Binding(key, dependencies, provider, providerInstance, getFunction, sourceComponent)
 
 class StatelessBinding(
     key: Key,
     dependencies: List<Key>,
     provider: IrClass,
-    providerInstance: () -> IrExpression,
-    createInstance: () -> IrExpression,
+    providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
+    getFunction: IrBuilderWithScope.() -> IrFunction,
     sourceComponent: ComponentNode
-) : Binding(key, dependencies, provider, providerInstance, createInstance, sourceComponent)
+) : Binding(key, dependencies, provider, providerInstance, getFunction, sourceComponent)
 
 data class Key(
     val type: IrType,

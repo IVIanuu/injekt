@@ -546,6 +546,34 @@ class ComponentTest {
         assertOk()
     }
 
+    @Test
+    fun testFibonacci() = codegen(
+        """
+        class Fib1
+        class Fib2
+        class Fib3(val fibM1: Fib2, val fibM2: Fib1)
+        class Fib4(val fibM1: Fib3, val fibM2: Fib2)
+        class Fib5(val fibM1: Fib4, val fibM2: Fib3)
+        class Fib6(val fibM1: Fib5, val fibM2: Fib4)
+        
+        @Module
+        fun fibonacci() {
+            factory { Fib1() }
+            factory { Fib2() }
+            factory { Fib3(get(), get()) }
+            factory { Fib4(get(), get()) }
+            factory { Fib5(get(), get()) }
+            factory { Fib6(get(), get()) } 
+        }
+        
+        val component = Component("c") { fibonacci() }
+        
+        fun invoke() = component.get<Fib6>()
+    """
+    ) {
+        invokeSingleFile()
+    }
+
     /*@Test
     fun test() = codegenTest(
     """

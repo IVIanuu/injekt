@@ -14,4 +14,6 @@ object InjektWritableSlices {
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val PROVIDER_INDEX: WritableSlice<IrClass, Int> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
+    val GET_FUNCTION_INDEX: WritableSlice<IrClass, Int> =
+        BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }

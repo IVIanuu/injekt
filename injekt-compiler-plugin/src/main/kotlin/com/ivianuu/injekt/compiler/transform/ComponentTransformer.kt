@@ -8,12 +8,11 @@ import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.resolve.Binding
 import com.ivianuu.injekt.compiler.resolve.ComponentNode
-import com.ivianuu.injekt.compiler.resolve.FieldTreeElement
 import com.ivianuu.injekt.compiler.resolve.Graph
 import com.ivianuu.injekt.compiler.resolve.Key
 import com.ivianuu.injekt.compiler.resolve.ModuleNode
-import com.ivianuu.injekt.compiler.resolve.RootTreeElement
 import com.ivianuu.injekt.compiler.resolve.StatefulBinding
+import com.ivianuu.injekt.compiler.resolve.TreeElement
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -227,17 +226,10 @@ class ComponentTransformer(
                 Visibilities.PRIVATE
             )
 
-            class LateinitAccessor : () -> IrExpression {
-                lateinit var realAccessor: () -> IrExpression
-                override fun invoke(): IrExpression = realAccessor()
-            }
-
-            val accessor = LateinitAccessor()
-
             val componentNode = ComponentNode(
                 key = key,
                 component = this,
-                treeElement = RootTreeElement(pluginContext, this, accessor)
+                treeElement = TreeElement("") { it }
             )
 
             val graph = Graph(
@@ -249,10 +241,8 @@ class ComponentTransformer(
                     typeParametersMap = module.typeParameters.map {
                         it.symbol to moduleCall.getTypeArgument(it.index)!!
                     }.toMap(),
-                    treeElement = FieldTreeElement(
-                        pluginContext,
-                        moduleField.name.asString(),
-                        componentNode.treeElement!!
+                    treeElement = componentNode.treeElement!!.childField(
+                        moduleField.name.asString()
                     )
                 ),
                 declarationStore = declarationStore
@@ -324,7 +314,7 @@ class ComponentTransformer(
                                 +irSetField(
                                     irGet(thisReceiver!!),
                                     it.field,
-                                    it.providerInstance()
+                                    it.providerInstance(this, irGet(thisReceiver!!))
                                 )
                             }
                     }
@@ -339,13 +329,12 @@ class ComponentTransformer(
                 })
             }
 
-            addFunction {
+            val getFunction = addFunction {
                 this.name = Name.identifier("get")
                 visibility = Visibilities.PUBLIC
                 returnType = pluginContext.irBuiltIns.anyNType
-            }.apply getFunction@{
+            }.apply {
                 dispatchReceiverParameter = thisReceiver?.copyTo(this)
-                accessor.realAccessor = { irGet(dispatchReceiverParameter!!) }
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
                     component.unsubstitutedMemberScope.findSingleFunction(Name.identifier("get"))
@@ -368,7 +357,10 @@ class ComponentTransformer(
                                                 irInt(key.hashCode()),
                                                 irGet(valueParameters.single())
                                             ),
-                                            result = binding.createInstance()
+                                            result = irCall(binding.getFunction(this)).apply {
+                                                dispatchReceiver =
+                                                    irGet(dispatchReceiverParameter!!)
+                                            }
                                         )
                                     } + irElseBranch(
                                     irCall(
@@ -379,12 +371,11 @@ class ComponentTransformer(
                                         InjektStatementOrigin,
                                         symbolTable.referenceClass(component)
                                     ).apply {
-                                        val original = this@getFunction
                                         dispatchReceiver =
-                                            irGet(original.dispatchReceiverParameter!!)
+                                            irGet(dispatchReceiverParameter!!)
                                         putValueArgument(
                                             0,
-                                            irGet(original.valueParameters.single())
+                                            irGet(valueParameters.single())
                                         )
                                     }
                                 )
