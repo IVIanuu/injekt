@@ -62,7 +62,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -118,11 +117,6 @@ class ComponentTransformer(
         })
 
         return moduleFragment
-    }
-
-    override fun visitFile(declaration: IrFile): IrFile {
-        return super.visitFile(declaration)
-            .also { println(it.dump()) }
     }
 
     fun getProcessedComponent(key: String): IrClass? {
@@ -233,10 +227,17 @@ class ComponentTransformer(
                 Visibilities.PRIVATE
             )
 
+            class LateinitAccessor : () -> IrExpression {
+                lateinit var realAccessor: () -> IrExpression
+                override fun invoke(): IrExpression = realAccessor()
+            }
+
+            val accessor = LateinitAccessor()
+
             val componentNode = ComponentNode(
                 key = key,
                 component = this,
-                treeElement = RootTreeElement(pluginContext, this)
+                treeElement = RootTreeElement(pluginContext, this, accessor)
             )
 
             val graph = Graph(
@@ -344,6 +345,7 @@ class ComponentTransformer(
                 returnType = pluginContext.irBuiltIns.anyNType
             }.apply getFunction@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this)
+                accessor.realAccessor = { irGet(dispatchReceiverParameter!!) }
 
                 overriddenSymbols += symbolTable.referenceSimpleFunction(
                     component.unsubstitutedMemberScope.findSingleFunction(Name.identifier("get"))
@@ -397,8 +399,6 @@ class ComponentTransformer(
                 graph.thisParents,
                 graph.thisBindings.values.toList()
             )
-
-            check(descriptor.annotations.hasAnnotation(InjektFqNames.ComponentMetadata))
         }
     }
 

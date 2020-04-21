@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.getStringList
+import com.ivianuu.injekt.compiler.getTopLevelClass
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.substituteByName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -49,6 +50,9 @@ class Graph(
     private val allParents = mutableListOf<ComponentNode>()
     val thisParents = mutableListOf<ComponentNode>()
 
+    private val singleProvider =
+        context.moduleDescriptor.getTopLevelClass(InjektFqNames.SingleProvider)
+
     init {
         addModule(thisComponentModule)
         validate()
@@ -82,7 +86,6 @@ class Graph(
             .forEach { addScope(FqName(it), parentNode) }
 
         metadata.getStringList("parents")
-            .also { println("parents for ${parentNode.key} -> $it") }
             .forEach { parentKeyWithMaybePath ->
                 val args = parentKeyWithMaybePath.split("=:=")
                 val key = args[0]
@@ -147,7 +150,7 @@ class Graph(
                         },
                         createInstance = {
                             DeclarationIrBuilder(context, field.symbol).run {
-                                irCall(provider.functions.single()).apply {
+                                irCall(provider.functions.single { it.name.asString() == "invoke" }).apply {
                                     dispatchReceiver = irGetField(
                                         parentNode.treeElement!!.accessor(),
                                         field
@@ -327,29 +330,42 @@ class Graph(
                         provider = provider,
                         providerInstance = {
                             DeclarationIrBuilder(context, provider.symbol).run {
-                                val constructor = provider.constructors.single()
-                                irCall(constructor).apply {
-                                    if (requiresModule) {
-                                        putValueArgument(0, moduleNode.treeElement!!.accessor())
-                                    }
+                                irCall(
+                                    this@Graph.context.symbolTable.referenceClass(singleProvider).owner
+                                        .constructors
+                                        .single()
+                                ).apply {
+                                    val constructor = provider.constructors.single()
+                                    putValueArgument(
+                                        0,
+                                        irCall(constructor).apply {
+                                            if (requiresModule) {
+                                                putValueArgument(
+                                                    0,
+                                                    moduleNode.treeElement!!.accessor()
+                                                )
+                                            }
 
-                                    constructor.valueParameters
-                                        .drop(if (requiresModule) 1 else 0)
-                                        .forEach { valueParameter ->
-                                            val dependencyKey =
-                                                dependencies[valueParameter.index - if (requiresModule) 1 else 0]
-                                            val dependency = allBindings.getValue(dependencyKey)
-                                            putValueArgument(
-                                                valueParameter.index,
-                                                dependency.providerInstance()
-                                            )
+                                            constructor.valueParameters
+                                                .drop(if (requiresModule) 1 else 0)
+                                                .forEach { valueParameter ->
+                                                    val dependencyKey =
+                                                        dependencies[valueParameter.index - if (requiresModule) 1 else 0]
+                                                    val dependency =
+                                                        allBindings.getValue(dependencyKey)
+                                                    putValueArgument(
+                                                        valueParameter.index,
+                                                        dependency.providerInstance()
+                                                    )
+                                                }
                                         }
+                                    )
                                 }
                             }
                         },
                         createInstance = {
                             DeclarationIrBuilder(context, provider.symbol).run {
-                                irCall(provider.functions.single()).apply {
+                                irCall(provider.functions.single { it.name.asString() == "invoke" }).apply {
                                     dispatchReceiver = treeElement.accessor()
                                 }
                             }
@@ -405,7 +421,7 @@ class Graph(
                                     val companion = provider.companionObject()!!.cast<IrClass>()
                                     val createFunction = companion
                                         .functions
-                                        .single()
+                                        .single { it.name.asString() == "create" }
                                     irCall(createFunction).apply {
                                         dispatchReceiver = irGetObject(companion.symbol)
 
@@ -460,6 +476,8 @@ class Graph(
         check(binding.key !in allBindings) {
             "Duplicated binding ${binding.key}"
         }
+
+        println("Add binding ${binding.key} with deps ${binding.dependencies}")
 
         allBindings[binding.key] = binding
         if (binding.sourceComponent == thisComponent) {

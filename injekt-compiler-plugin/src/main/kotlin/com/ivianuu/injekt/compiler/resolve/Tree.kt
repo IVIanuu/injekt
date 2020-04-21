@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.resolve
 import com.ivianuu.injekt.compiler.asTypeName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
@@ -30,21 +29,18 @@ sealed class TreeElement(
             node = node.parent
         }
     }.reversed().joinToString("/")
-
     init {
         check(parent == null || pathName.isNotEmpty()) {
             "Invalid path name for ${type.name} parent is ${parent?.type?.name}"
         }
-        println("initialize tree element ${type.name} path name is '$pathName' path is '$path'")
     }
 }
 
 class RootTreeElement(
     context: IrPluginContext,
-    type: IrClass
-) : TreeElement("", type, null, {
-    DeclarationIrBuilder(context, type.symbol).irGet(type.thisReceiver!!)
-})
+    type: IrClass,
+    accessor: () -> IrExpression
+) : TreeElement("", type, null, accessor)
 
 class FieldTreeElement(
     context: IrPluginContext,
@@ -56,7 +52,6 @@ class FieldTreeElement(
     parent,
     {
         val field = parent.type.fields.single { it.name.asString() == pathName }
-        println("accessor for $pathName field ${field.name} ${field.dump()} parent ${parent.pathName}")
         DeclarationIrBuilder(context, field.symbol)
             .irGetField(parent.accessor(), field)
     }
