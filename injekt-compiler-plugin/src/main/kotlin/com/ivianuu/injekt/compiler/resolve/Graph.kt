@@ -178,7 +178,15 @@ class Graph(
                             )
                         },
                         getFunction = getFunction(resultType) { function ->
-                            irCall(provider.functions.single { it.name.asString() == "invoke" }).apply {
+                            irCall(
+                                this@Graph.context.symbolTable.referenceClass(this@Graph.provider)
+                                    .ensureBound(this@Graph.context.irProviders)
+                                    .owner
+                                    .functions
+                                    .single { it.name.asString() == "invoke" }
+                                    .symbol,
+                                resultType
+                            ).apply {
                                 dispatchReceiver = irGetField(
                                     parentNode.treeElement!!.accessor(
                                         this@getFunction,
