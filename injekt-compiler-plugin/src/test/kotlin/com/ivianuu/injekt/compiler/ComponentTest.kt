@@ -5,7 +5,6 @@ import com.ivianuu.injekt.Provider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ComponentTest {
@@ -750,7 +749,6 @@ class ComponentTest {
     """
     ) {
         val lazy = invokeSingleFile<Lazy<Foo>>()
-        assertTrue(lazy() is Foo)
         assertSame(lazy(), lazy())
     }
 
@@ -765,24 +763,7 @@ class ComponentTest {
     """
     ) {
         val provider = invokeSingleFile<Provider<Foo>>()
-        assertTrue(provider() is Foo)
         assertNotSame(provider(), provider())
     }
-
-
-    /*@Test
-    fun test() = codegenTest(
-    """
-            val TestComponent = Component("c") {
-                factory { Foo() } 
-                factory { Bar(get()) }
-            }
-            
-            fun invoke() = TestComponent.get<Bar>()
-    """
-    ) {
-        assertOk()
-        invokeSingleFile() is Bar
-    }*/
 
 }
