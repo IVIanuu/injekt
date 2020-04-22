@@ -64,49 +64,66 @@ sealed class Binding(
     val key: Key,
     val dependencies: List<Key>,
     val duplicateStrategy: DuplicateStrategy,
-    val provider: IrClass,
     val providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
-    val getFunction: IrBuilderWithScope.() -> IrFunction,
-    val sourceComponent: ComponentNode?
+    val getFunction: IrBuilderWithScope.() -> IrFunction
 )
+
+class SpecialBinding(
+    key: Key,
+    dependencies: List<Key>,
+    duplicateStrategy: DuplicateStrategy,
+    providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
+    getFunction: IrBuilderWithScope.() -> IrFunction
+) : Binding(key, dependencies, duplicateStrategy, providerInstance, getFunction)
+
+sealed class UserBinding(
+    key: Key,
+    dependencies: List<Key>,
+    duplicateStrategy: DuplicateStrategy,
+    providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
+    getFunction: IrBuilderWithScope.() -> IrFunction,
+    val sourceComponent: ComponentNode?,
+    val provider: IrClass
+) : Binding(key, dependencies, duplicateStrategy, providerInstance, getFunction)
 
 class StatefulBinding(
     key: Key,
     dependencies: List<Key>,
     duplicateStrategy: DuplicateStrategy,
-    provider: IrClass,
     providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     getFunction: IrBuilderWithScope.() -> IrFunction,
     sourceComponent: ComponentNode,
+    provider: IrClass,
     val treeElement: TreeElement,
     val field: IrField
-) : Binding(
+) : UserBinding(
     key,
     dependencies,
     duplicateStrategy,
-    provider,
     providerInstance,
     getFunction,
-    sourceComponent
+    sourceComponent,
+    provider
 )
 
 class StatelessBinding(
     key: Key,
     dependencies: List<Key>,
     duplicateStrategy: DuplicateStrategy,
-    provider: IrClass,
     providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     getFunction: IrBuilderWithScope.() -> IrFunction,
-    sourceComponent: ComponentNode?
-) : Binding(
+    sourceComponent: ComponentNode?,
+    provider: IrClass
+) : UserBinding(
     key,
     dependencies,
     duplicateStrategy,
-    provider,
     providerInstance,
     getFunction,
-    sourceComponent
+    sourceComponent,
+    provider
 )
+
 
 data class Key(
     val type: IrType,

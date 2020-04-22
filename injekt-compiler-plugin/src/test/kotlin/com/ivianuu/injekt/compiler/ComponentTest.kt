@@ -1,8 +1,11 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Lazy
+import com.ivianuu.injekt.Provider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ComponentTest {
@@ -717,6 +720,55 @@ class ComponentTest {
     ) {
         assertEquals(7, invokeSingleFile())
     }
+
+    @Test
+    fun testDependencyWithGenerics() = codegen(
+        """
+        val TestComponent = Component("c") {
+            factory {
+                mapOf("a" to 1, "b" to 2, "c" to 3)
+            }
+        }
+        
+        fun invoke() = TestComponent.get<Map<String, Int>>()
+    """
+    ) {
+        assertEquals(
+            mapOf("a" to 1, "b" to 2, "c" to 3),
+            invokeSingleFile<Map<String, Int>>()
+        )
+    }
+
+    @Test
+    fun testLazy() = codegen(
+        """
+        val TestComponent = Component("c") {
+            factory { Foo() }
+        }
+        
+        fun invoke() = TestComponent.get<Lazy<Foo>>()
+    """
+    ) {
+        val lazy = invokeSingleFile<Lazy<Foo>>()
+        assertTrue(lazy() is Foo)
+        assertSame(lazy(), lazy())
+    }
+
+    @Test
+    fun testProvider() = codegen(
+        """
+        val TestComponent = Component("c") {
+            factory { Foo() }
+        }
+        
+        fun invoke() = TestComponent.get<Provider<Foo>>()
+    """
+    ) {
+        val provider = invokeSingleFile<Provider<Foo>>()
+        assertTrue(provider() is Foo)
+        assertNotSame(provider(), provider())
+    }
+
 
     /*@Test
     fun test() = codegenTest(

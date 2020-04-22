@@ -22,6 +22,11 @@ class InjektSymbols(
     val componentMetadata = getTopLevelClass(InjektFqNames.ComponentMetadata)
     val componentOwner = getTopLevelClass(InjektFqNames.ComponentOwner)
 
+    val keyedLazy = getTopLevelClass(InjektFqNames.KeyedLazy)
+    val keyedProvider = getTopLevelClass(InjektFqNames.KeyedProvider)
+
+    val lazy = getTopLevelClass(InjektFqNames.Lazy)
+
     val module = getTopLevelClass(InjektFqNames.Module)
     val moduleMetadata = getTopLevelClass(InjektFqNames.ModuleMetadata)
 

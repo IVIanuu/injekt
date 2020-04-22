@@ -5,13 +5,13 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getConstant
 import com.ivianuu.injekt.compiler.irTrace
-import com.ivianuu.injekt.compiler.resolve.Binding
 import com.ivianuu.injekt.compiler.resolve.ComponentNode
 import com.ivianuu.injekt.compiler.resolve.Graph
 import com.ivianuu.injekt.compiler.resolve.Key
 import com.ivianuu.injekt.compiler.resolve.ModuleNode
 import com.ivianuu.injekt.compiler.resolve.StatefulBinding
 import com.ivianuu.injekt.compiler.resolve.TreeElement
+import com.ivianuu.injekt.compiler.resolve.UserBinding
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -401,7 +401,7 @@ class ComponentTransformer(
             graph.thisScopes,
             graph.thisParents,
             graph.thisModules,
-            graph.thisBindings.values.toList()
+            graph.thisBindings.values.map { it as UserBinding }
         )
     }
 
@@ -409,7 +409,7 @@ class ComponentTransformer(
         scopes: Set<FqName>,
         parents: List<ComponentNode>,
         modules: List<ModuleNode>,
-        bindings: List<Binding>
+        bindings: List<UserBinding>
     ): IrConstructorCall {
         return irCallConstructor(
             symbols.componentMetadata.constructors.single(),

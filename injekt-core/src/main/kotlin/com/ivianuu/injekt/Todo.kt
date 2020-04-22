@@ -6,8 +6,6 @@ package com.ivianuu.injekt
 // Eager
 // Callbacks like onInit?
 // cyclic dependency detection
-// Providers, Lazy injection
-// Maybe generic api for wrapper types -> see provider and alzy
 // Nullable distinction
 // Android utility
 // Move module function Blocks to init of module classes and capture fields

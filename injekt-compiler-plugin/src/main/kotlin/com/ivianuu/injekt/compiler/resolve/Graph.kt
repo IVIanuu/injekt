@@ -22,8 +22,10 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -71,6 +73,7 @@ class Graph(
         if (thisComponentModule != null) addModule(thisComponentModule)
         addUnscopedBindings()
         addScopedBindings()
+        addLazyAndProviderBindings()
         validate()
     }
 
@@ -360,6 +363,56 @@ class Graph(
             .forEach { addAnnotatedBinding(it) }
     }
 
+    private fun addLazyAndProviderBindings() {
+        allBindings.values.toList()
+            .forEach {
+                addBinding(
+                    lazyOrProviderBinding(
+                        it, symbols.lazy.owner, symbols.keyedLazy.constructors.single().owner
+                    )
+                )
+                addBinding(
+                    lazyOrProviderBinding(
+                        it,
+                        symbols.provider.owner,
+                        symbols.keyedProvider.constructors.single().owner
+                    )
+                )
+            }
+    }
+
+    private fun lazyOrProviderBinding(
+        binding: Binding,
+        wrapperType: IrClass,
+        constructor: IrConstructor
+    ): Binding {
+        val resultType = wrapperType
+            .typeWith(binding.key.type)
+        return SpecialBinding(
+            key = Key(
+                type = resultType,
+                qualifiers = binding.key.qualifiers
+            ),
+            dependencies = listOf(binding.key),
+            duplicateStrategy = DuplicateStrategy.Fail,
+            providerInstance = {
+                irCall(constructor).apply {
+                    putValueArgument(0, irInt(binding.key.hashCode()))
+                    putValueArgument(1, it)
+                }
+            },
+            getFunction = getFunction(resultType) { function ->
+                irCall(constructor).apply {
+                    putValueArgument(0, irInt(binding.key.hashCode()))
+                    putValueArgument(
+                        1,
+                        irGet(function.dispatchReceiverParameter!!)
+                    )
+                }
+            }
+        )
+    }
+
     private fun addBinding(binding: Binding) {
         check(!binding.key.type.isTypeParameter()) {
             "Binding type not refined ${binding.key}"
@@ -379,7 +432,7 @@ class Graph(
         }
 
         allBindings[binding.key] = binding
-        if (binding.sourceComponent == thisComponent) {
+        if (binding is UserBinding && binding.sourceComponent == thisComponent) {
             thisBindings[binding.key] = binding
         }
     }
