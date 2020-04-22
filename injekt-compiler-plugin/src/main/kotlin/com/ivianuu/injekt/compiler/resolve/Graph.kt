@@ -539,9 +539,6 @@ class Graph(
                     }
                 } else {
                     val companion = provider.companionObject()!! as IrClass
-                    val createFunction = companion
-                        .functions
-                        .single { it.name.asString() == "create" }
                     irCall(createFunction).apply {
                         dispatchReceiver = irGetObject(companion.symbol)
 
