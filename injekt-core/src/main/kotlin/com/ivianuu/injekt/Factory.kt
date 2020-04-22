@@ -8,4 +8,5 @@ inline fun <reified T> factory(
     noinline definition: ProviderDsl.() -> T
 ): Unit = stub()
 
+@KindMarker
 annotation class Factory
