@@ -9,9 +9,11 @@ import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 import kotlin.reflect.KClass
 
+var fileIndex = 0
+
 fun source(
     @Language("kotlin") source: String,
-    name: String = "File.kt",
+    name: String = "File${fileIndex++}.kt",
     injektImports: Boolean = true
 ) = SourceFile.kotlin(
     name = name,
@@ -26,10 +28,16 @@ fun source(
     }
 )
 
+fun singleSource(
+    @Language("kotlin") source: String,
+    name: String = "File.kt",
+    injektImports: Boolean = true
+) = source(source, name, injektImports)
+
 fun codegen(
     @Language("kotlin") source: String,
     assertions: KotlinCompilation.Result.() -> Unit = {}
-) = codegen(source(source), assertions = assertions)
+) = codegen(singleSource(source), assertions = assertions)
 
 fun codegen(
     vararg sources: SourceFile,

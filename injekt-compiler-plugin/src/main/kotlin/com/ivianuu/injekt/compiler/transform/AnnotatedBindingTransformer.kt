@@ -191,43 +191,41 @@ class AnnotatedBindingTransformer(
         }
     }
 
-    private fun IrBuilderWithScope.providerCompanion(clazz: IrClass): IrClass {
-        return buildClass {
-            kind = ClassKind.OBJECT
-            origin = InjektDeclarationOrigin
-            name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
-            modality = Modality.FINAL
+    private fun IrBuilderWithScope.providerCompanion(clazz: IrClass) = buildClass {
+        kind = ClassKind.OBJECT
+        origin = InjektDeclarationOrigin
+        name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
+        modality = Modality.FINAL
+        visibility = Visibilities.PUBLIC
+        isCompanion = true
+    }.apply clazz@{
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        addConstructor {
+            returnType = defaultType
             visibility = Visibilities.PUBLIC
-            isCompanion = true
-        }.apply clazz@{
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-
-            addConstructor {
-                returnType = defaultType
-                visibility = Visibilities.PUBLIC
-                isPrimary = true
-            }.apply {
-                body = irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any
-                                .unsubstitutedPrimaryConstructor!!
-                        )
+            isPrimary = true
+        }.apply {
+            body = irBlockBody {
+                +IrDelegatingConstructorCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    context.irBuiltIns.unitType,
+                    symbolTable.referenceConstructor(
+                        context.builtIns.any
+                            .unsubstitutedPrimaryConstructor!!
                     )
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-                }
+                )
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    this@clazz.symbol,
+                    context.irBuiltIns.unitType
+                )
             }
-
-            createFunction(this, clazz.constructors.single(), clazz)
         }
+
+        createFunction(this, clazz.constructors.single(), clazz)
     }
 
     private fun IrBuilderWithScope.createFunction(

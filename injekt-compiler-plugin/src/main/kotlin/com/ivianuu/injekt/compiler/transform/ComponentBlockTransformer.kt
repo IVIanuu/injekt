@@ -97,7 +97,7 @@ class ComponentBlockTransformer(context: IrPluginContext) :
         val function = buildFun {
             name = Name.identifier("$key\$ComponentModule")
             returnType = this@ComponentBlockTransformer.context.irBuiltIns.unitType
-            visibility = Visibilities.PRIVATE
+            visibility = Visibilities.PUBLIC
         }.apply {
             annotations += irCall(symbols.module.constructors.single())
 

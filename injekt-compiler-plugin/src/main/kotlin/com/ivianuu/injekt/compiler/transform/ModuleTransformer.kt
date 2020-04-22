@@ -147,249 +147,247 @@ class ModuleTransformer(
 
     private fun IrBuilderWithScope.moduleClass(
         function: IrFunction
-    ): IrClass {
-        return buildClass {
-            kind = ClassKind.CLASS
-            origin =
-                InjektDeclarationOrigin
-            name = getModuleFqName(function.descriptor).shortName()
-            modality = Modality.FINAL
-            visibility = function.visibility
-        }.apply clazz@{
-            createImplicitParameterDeclarationWithWrappedDescriptor()
+    ) = buildClass {
+        kind = ClassKind.CLASS
+        origin =
+            InjektDeclarationOrigin
+        name = getModuleFqName(function.descriptor).shortName()
+        modality = Modality.FINAL
+        visibility = function.visibility
+    }.apply clazz@{
+        createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val scopeCalls = mutableListOf<IrCall>()
-            val parentCalls = mutableListOf<IrCall>()
-            val definitionCalls = mutableListOf<IrCall>()
-            val moduleCalls = mutableListOf<IrCall>()
+        val scopeCalls = mutableListOf<IrCall>()
+        val parentCalls = mutableListOf<IrCall>()
+        val definitionCalls = mutableListOf<IrCall>()
+        val moduleCalls = mutableListOf<IrCall>()
 
-            function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitCall(expression: IrCall): IrExpression {
-                    super.visitCall(expression)
+        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                super.visitCall(expression)
 
-                    when {
-                        expression.symbol.descriptor.name.asString() == "scope" -> {
-                            scopeCalls += expression
-                        }
-                        expression.symbol.descriptor.name.asString() == "parent" -> {
-                            parentCalls += expression
-                        }
-                        expression.symbol.descriptor.name.asString() == "factory" -> {
-                            definitionCalls += expression
-                        }
-                        expression.symbol.descriptor.name.asString() == "single" -> {
-                            definitionCalls += expression
-                        }
-                        expression.symbol.descriptor.annotations.hasAnnotation(
-                            InjektFqNames.Module
-                        )
-                        -> {
-                            moduleCalls += expression
-                        }
+                when {
+                    expression.symbol.descriptor.name.asString() == "scope" -> {
+                        scopeCalls += expression
                     }
-
-                    return expression
+                    expression.symbol.descriptor.name.asString() == "parent" -> {
+                        parentCalls += expression
+                    }
+                    expression.symbol.descriptor.name.asString() == "factory" -> {
+                        definitionCalls += expression
+                    }
+                    expression.symbol.descriptor.name.asString() == "single" -> {
+                        definitionCalls += expression
+                    }
+                    expression.symbol.descriptor.annotations.hasAnnotation(
+                        InjektFqNames.Module
+                    )
+                    -> {
+                        moduleCalls += expression
+                    }
                 }
-            })
 
-            val scopes = mutableListOf<FqName>()
+                return expression
+            }
+        })
 
-            scopeCalls.forEach {
-                val fqName = it.getTypeArgument(0)!!
-                    .toKotlinType().constructor.declarationDescriptor!!.fqNameSafe
-                check(fqName !in scopes) {
-                    "Duplicated scope $fqName"
-                }
+        val scopes = mutableListOf<FqName>()
 
-                scopes += fqName
+        scopeCalls.forEach {
+            val fqName = it.getTypeArgument(0)!!
+                .toKotlinType().constructor.declarationDescriptor!!.fqNameSafe
+            check(fqName !in scopes) {
+                "Duplicated scope $fqName"
             }
 
-            val parentsByCalls = mutableMapOf<IrCall, IrClass>()
-            val parentKeys = mutableSetOf<String>()
+            scopes += fqName
+        }
 
-            parentCalls.forEach {
-                val key = it.getValueArgument(0)!!.getConstant<String>()
-                check(key !in parentKeys) {
-                    "Duplicated parent $key"
-                }
-                parentsByCalls[it] = declarationStore.getComponent(key)
+        val parentsByCalls = mutableMapOf<IrCall, IrClass>()
+        val parentKeys = mutableSetOf<String>()
+
+        parentCalls.forEach {
+            val key = it.getValueArgument(0)!!.getConstant<String>()
+            check(key !in parentKeys) {
+                "Duplicated parent $key"
             }
+            parentsByCalls[it] = declarationStore.getComponent(key)
+        }
 
-            val parentFields = parentsByCalls.values.toList().associateWith {
+        val parentFields = parentsByCalls.values.toList().associateWith {
+            addField(
+                it.name.asString(),
+                it.defaultType,
+                Visibilities.PUBLIC
+            )
+        }
+
+        val modulesByCalls = mutableMapOf<IrCall, IrClass>()
+
+        moduleCalls.forEach {
+            val moduleFqName = getModuleFqName(it.symbol.descriptor)
+            modulesByCalls[it] = declarationStore.getModule(moduleFqName)
+        }
+
+        val moduleFieldsByCall = mutableMapOf<IrCall, IrField>()
+
+        var moduleIndex = 0
+        modulesByCalls.toList().forEach { (call, module) ->
+            moduleFieldsByCall[call] = addField(
+                "module_$moduleIndex",
+                module.typeWith((0 until call.typeArgumentsCount)
+                    .map { call.getTypeArgument(it)!! }
+                ),
+                Visibilities.PUBLIC
+            )
+            moduleIndex++
+        }
+
+        val implicitModules = scopes.flatMap { declarationStore.getModulesForScope(it) }
+
+        val implicitModuleFields = implicitModules.associateWith {
+            addField(
+                "module_$moduleIndex",
+                it.defaultType,
+                Visibilities.PRIVATE
+            ).also { moduleIndex++ }
+        }
+
+        var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
+        var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
+
+        copyTypeParametersFrom(function)
+
+        addConstructor {
+            returnType = defaultType
+            visibility = Visibilities.PUBLIC
+            isPrimary = true
+        }.apply {
+            copyTypeParametersFrom(this@clazz)
+
+            parameterMap = function.valueParameters
+                .associateWith { it.copyTo(this) }
+            valueParameters = parameterMap.values.toList()
+            fieldsByParameters = valueParameters.associateWith {
                 addField(
                     it.name.asString(),
-                    it.defaultType,
-                    Visibilities.PUBLIC
+                    it.type
                 )
             }
 
-            val modulesByCalls = mutableMapOf<IrCall, IrClass>()
-
-            moduleCalls.forEach {
-                val moduleFqName = getModuleFqName(it.symbol.descriptor)
-                modulesByCalls[it] = declarationStore.getModule(moduleFqName)
-            }
-
-            val moduleFieldsByCall = mutableMapOf<IrCall, IrField>()
-
-            var moduleIndex = 0
-            modulesByCalls.toList().forEach { (call, module) ->
-                moduleFieldsByCall[call] = addField(
-                    "module_$moduleIndex",
-                    module.typeWith((0 until call.typeArgumentsCount)
-                        .map { call.getTypeArgument(it)!! }
-                    ),
-                    Visibilities.PRIVATE
+            body = irBlockBody {
+                +IrDelegatingConstructorCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    context.irBuiltIns.unitType,
+                    symbolTable.referenceConstructor(
+                        context.builtIns.any
+                            .unsubstitutedPrimaryConstructor!!
+                    )
                 )
-                moduleIndex++
-            }
-
-            val implicitModules = scopes.flatMap { declarationStore.getModulesForScope(it) }
-
-            val implicitModuleFields = implicitModules.associateWith {
-                addField(
-                    "module_$moduleIndex",
-                    it.defaultType,
-                    Visibilities.PRIVATE
-                ).also { moduleIndex++ }
-            }
-
-            var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
-            var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
-
-            copyTypeParametersFrom(function)
-
-            addConstructor {
-                returnType = defaultType
-                visibility = Visibilities.PUBLIC
-                isPrimary = true
-            }.apply {
-                copyTypeParametersFrom(this@clazz)
-
-                parameterMap = function.valueParameters
-                    .associateWith { it.copyTo(this) }
-                valueParameters = parameterMap.values.toList()
-                fieldsByParameters = valueParameters.associateWith {
-                    addField(
-                        it.name.asString(),
-                        it.type
-                    )
-                }
-
-                body = irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any
-                                .unsubstitutedPrimaryConstructor!!
-                        )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-
-                    fieldsByParameters.forEach { (parameter, field) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            field,
-                            irGet(parameter)
-                        )
-                    }
-
-                    parentsByCalls.forEach { (call, parent) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            parentFields.getValue(parent),
-                            call.getValueArgument(1)!!
-                        )
-                    }
-
-                    modulesByCalls.forEach { (call, module) ->
-                        val field = moduleFieldsByCall[call]!!
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            field,
-                            irCall(module.constructors.single()).apply {
-                                (0 until call.typeArgumentsCount)
-                                    .map { call.getTypeArgument(it)!! }
-                                    .forEachIndexed { index, type ->
-                                        putTypeArgument(index, type)
-                                    }
-                                copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
-                            }
-                        )
-                    }
-
-                    implicitModuleFields.forEach { (module, field) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            field,
-                            irCall(module.constructors.single())
-                        )
-                    }
-                }
-            }
-
-            val providerByDefinitionCall = mutableMapOf<IrCall, IrClass>()
-
-            definitionCalls.forEachIndexed { index, definitionCall ->
-                addChild(
-                    provider(
-                        name = Name.identifier("provider_$index"),
-                        qualifiers = definitionCall.getValueArgument(0)
-                            ?.safeAs<IrVarargImpl>()
-                            ?.elements
-                            ?.filterIsInstance<IrGetObjectValue>()
-                            ?.map {
-                                it.type.classOrNull!!.descriptor.containingDeclaration
-                                    .fqNameSafe
-                            } ?: emptyList(),
-                        definition = definitionCall.getValueArgument(1)!!.cast(),
-                        isSingle = definitionCall.symbol.descriptor.name.asString() == "single",
-                        module = this,
-                        moduleParametersMap = parameterMap,
-                        moduleFieldsByParameter = fieldsByParameters
-                    ).also { providerByDefinitionCall[definitionCall] = it }
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    this@clazz.symbol,
+                    context.irBuiltIns.unitType
                 )
-            }
 
-            val includedModuleFields = mutableListOf<IrField>()
-
-            modulesByCalls.forEach { (call, module) ->
-                includedModuleFields += moduleFieldsByCall[call]!!
-            }
-
-            includedModuleFields += implicitModuleFields.values
-
-            annotations += moduleMetadata(
-                scopes = scopes,
-                parentCalls = parentCalls,
-                parentFields = parentFields,
-                definitionCalls = definitionCalls,
-                providerByDefinitionCall = providerByDefinitionCall,
-                includedModules = includedModuleFields
-            )
-
-            transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitGetValue(expression: IrGetValue): IrExpression {
-                    return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
-                        super.visitGetValue(expression)
-                    } else {
-                        val newParameter = parameterMap[expression.symbol.owner]!!
-                        val field = fieldsByParameters[newParameter]!!
-                        return irGetField(
-                            irGet(thisReceiver!!),
-                            field
-                        )
-                    }
+                fieldsByParameters.forEach { (parameter, field) ->
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        irGet(parameter)
+                    )
                 }
-            })
+
+                parentsByCalls.forEach { (call, parent) ->
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        parentFields.getValue(parent),
+                        call.getValueArgument(1)!!
+                    )
+                }
+
+                modulesByCalls.forEach { (call, module) ->
+                    val field = moduleFieldsByCall[call]!!
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        irCall(module.constructors.single()).apply {
+                            (0 until call.typeArgumentsCount)
+                                .map { call.getTypeArgument(it)!! }
+                                .forEachIndexed { index, type ->
+                                    putTypeArgument(index, type)
+                                }
+                            copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                        }
+                    )
+                }
+
+                implicitModuleFields.forEach { (module, field) ->
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        irCall(module.constructors.single())
+                    )
+                }
+            }
         }
+
+        val providerByDefinitionCall = mutableMapOf<IrCall, IrClass>()
+
+        definitionCalls.forEachIndexed { index, definitionCall ->
+            addChild(
+                provider(
+                    name = Name.identifier("provider_$index"),
+                    qualifiers = definitionCall.getValueArgument(0)
+                        ?.safeAs<IrVarargImpl>()
+                        ?.elements
+                        ?.filterIsInstance<IrGetObjectValue>()
+                        ?.map {
+                            it.type.classOrNull!!.descriptor.containingDeclaration
+                                .fqNameSafe
+                        } ?: emptyList(),
+                    definition = definitionCall.getValueArgument(1)!!.cast(),
+                    isSingle = definitionCall.symbol.descriptor.name.asString() == "single",
+                    module = this,
+                    moduleParametersMap = parameterMap,
+                    moduleFieldsByParameter = fieldsByParameters
+                ).also { providerByDefinitionCall[definitionCall] = it }
+            )
+        }
+
+        val includedModuleFields = mutableListOf<IrField>()
+
+        modulesByCalls.forEach { (call, module) ->
+            includedModuleFields += moduleFieldsByCall[call]!!
+        }
+
+        includedModuleFields += implicitModuleFields.values
+
+        annotations += moduleMetadata(
+            scopes = scopes,
+            parentCalls = parentCalls,
+            parentFields = parentFields,
+            definitionCalls = definitionCalls,
+            providerByDefinitionCall = providerByDefinitionCall,
+            includedModules = includedModuleFields
+        )
+
+        transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
+                    super.visitGetValue(expression)
+                } else {
+                    val newParameter = parameterMap[expression.symbol.owner]!!
+                    val field = fieldsByParameters[newParameter]!!
+                    return irGetField(
+                        irGet(thisReceiver!!),
+                        field
+                    )
+                }
+            }
+        })
     }
 
     private fun IrBuilderWithScope.moduleMetadata(
@@ -535,7 +533,7 @@ class ModuleTransformer(
                     addField(
                         "p$depIndex",
                         symbols.provider.typeWith(expression.type),
-                        Visibilities.PRIVATE
+                        Visibilities.PUBLIC
                     ).also { depIndex++ }
                 }
 
@@ -695,46 +693,44 @@ class ModuleTransformer(
         capturedModuleValueParameters: List<IrValueParameter>,
         moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
         moduleFieldsByParameter: Map<IrValueParameter, IrField>
-    ): IrClass {
-        return buildClass {
-            kind = ClassKind.OBJECT
-            origin = InjektDeclarationOrigin
-            name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
-            modality = Modality.FINAL
+    ) = buildClass {
+        kind = ClassKind.OBJECT
+        origin = InjektDeclarationOrigin
+        name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
+        modality = Modality.FINAL
+        visibility = Visibilities.PUBLIC
+        isCompanion = true
+    }.apply clazz@{
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        addConstructor {
+            returnType = defaultType
             visibility = Visibilities.PUBLIC
-            isCompanion = true
-        }.apply clazz@{
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-
-            addConstructor {
-                returnType = defaultType
-                visibility = Visibilities.PUBLIC
-                isPrimary = true
-            }.apply {
-                body = irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any
-                                .unsubstitutedPrimaryConstructor!!
-                        )
+            isPrimary = true
+        }.apply {
+            body = irBlockBody {
+                +IrDelegatingConstructorCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    context.irBuiltIns.unitType,
+                    symbolTable.referenceConstructor(
+                        context.builtIns.any
+                            .unsubstitutedPrimaryConstructor!!
                     )
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-                }
+                )
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    this@clazz.symbol,
+                    context.irBuiltIns.unitType
+                )
             }
-
-            createFunction(
-                this, module, definition, dependencies,
-                capturedModuleValueParameters, moduleParametersMap, moduleFieldsByParameter
-            )
         }
+
+        createFunction(
+            this, module, definition, dependencies,
+            capturedModuleValueParameters, moduleParametersMap, moduleFieldsByParameter
+        )
     }
 
     private fun IrBuilderWithScope.createFunction(

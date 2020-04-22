@@ -64,8 +64,6 @@ class AnnotatedBindingAggregateGenerator(
             )
         }
 
-        println("aggregated bindings $aggregatedBindings")
-
         return super.visitModuleFragment(declaration)
     }
 

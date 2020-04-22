@@ -215,6 +215,62 @@ class ComponentTest {
     }
 
     @Test
+    fun testMultipleParentsInDifferentFiles() = codegen(
+        source(
+            """
+            val ParentComponentA = Component("a") {
+                factory { "test" }
+            }
+        """
+        ),
+        source(
+            """
+            val ParentComponentB = Component("b") {
+                factory { 2 }
+            } 
+        """
+        ),
+        source(
+            """
+            val TestComponent = Component("c") {
+                parent("a", ParentComponentA)
+                parent("b", ParentComponentB)
+            }
+        """
+        )
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testMultipleParentsInDifferentCompilations() = codegen(
+        source(
+            """
+            val ParentComponentA = Component("a") {
+                factory { "test" }
+            }
+        """
+        ),
+        source(
+            """
+            val ParentComponentB = Component("b") {
+                factory { 2 }
+            } 
+        """
+        ),
+        source(
+            """
+            val TestComponent = Component("c") {
+                parent("a", ParentComponentA)
+                parent("b", ParentComponentB)
+            }
+        """
+        )
+    ) {
+        assertOk()
+    }
+
+    @Test
     fun testWithCaptures() = codegen(
         """
         fun TestComponent(capturedValue: String) = Component("c") {
@@ -613,31 +669,21 @@ class ComponentTest {
     }
 
     @Test
-    fun testFibonacci() = codegen(
+    fun testCapturingParent() = codegen(
         """
-        class Fib1
-        class Fib2
-        class Fib3(val fibM1: Fib2, val fibM2: Fib1)
-        class Fib4(val fibM1: Fib3, val fibM2: Fib2)
-        class Fib5(val fibM1: Fib4, val fibM2: Fib3)
-        class Fib6(val fibM1: Fib5, val fibM2: Fib4)
-        
-        @Module
-        fun fibonacci() {
-            factory { Fib1() }
-            factory { Fib2() }
-            factory { Fib3(get(), get()) }
-            factory { Fib4(get(), get()) }
-            factory { Fib5(get(), get()) }
-            factory { Fib6(get(), get()) } 
+        fun createParent(capture: String) = Component("parent") {
+            factory { capture }
         }
         
-        val component = Component("c") { fibonacci() }
+        val ChildComponent = Component("child") {
+            parent("parent", createParent("capture"))
+            factory { get<String>().length }
+        }
         
-        fun invoke() = component.get<Fib6>()
+        fun invoke() = ChildComponent.get<Int>()
     """
     ) {
-        invokeSingleFile()
+        assertEquals(7, invokeSingleFile())
     }
 
     /*@Test

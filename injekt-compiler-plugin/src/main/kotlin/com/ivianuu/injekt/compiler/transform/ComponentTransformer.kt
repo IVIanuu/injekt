@@ -182,233 +182,233 @@ class ComponentTransformer(
         componentDefinition: IrFunctionExpression?,
         name: Name,
         key: String
-    ): IrClass {
-        return buildClass {
-            kind = ClassKind.CLASS
-            origin =
-                InjektDeclarationOrigin
-            this.name = name
-            modality = Modality.FINAL
+    ) = buildClass {
+        kind = ClassKind.CLASS
+        origin =
+            InjektDeclarationOrigin
+        this.name = name
+        modality = Modality.FINAL
+        visibility = Visibilities.PUBLIC
+    }.apply clazz@{
+        superTypes += symbols.component.defaultType
+
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
+        valueParametersByCapturesByComponent[this] = valueParametersByCapture
+
+        val moduleCall = componentDefinition?.function?.body
+            .safeAs<IrExpressionBody>()?.expression as? IrCall
+
+        val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
+            ?.parent()
+            ?.child(Name.identifier("${moduleCall.symbol.owner.name}\$Impl"))
+
+        val module = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
+        else null
+
+        val captures = mutableListOf<IrGetValue>()
+        componentDefinition?.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol) {
+                    captures += expression
+                }
+                return super.visitGetValue(expression)
+            }
+        })
+
+        val moduleField = if (module != null) addField(
+            "module",
+            module.defaultType,
+            Visibilities.PUBLIC
+        ) else null
+
+        val componentNode = ComponentNode(
+            key = key,
+            component = this,
+            treeElement = TreeElement("") { it }
+        )
+
+        val graph = Graph(
+            context = this@ComponentTransformer.context,
+            symbols = symbols,
+            thisComponent = componentNode,
+            thisComponentModule = module?.let {
+                ModuleNode(
+                    module = module,
+                    componentNode = componentNode,
+                    typeParametersMap = module.typeParameters.map {
+                        it.symbol to moduleCall!!.getTypeArgument(it.index)!!
+                    }.toMap(),
+                    treeElement = componentNode.treeElement!!.childField(
+                        moduleField!!.name.asString()
+                    )
+                )
+            },
+            declarationStore = declarationStore
+        )
+
+        val bindings = graph.allBindings
+
+        addConstructor {
+            returnType = defaultType
             visibility = Visibilities.PUBLIC
-        }.apply clazz@{
-            superTypes += symbols.component.defaultType
-
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-
-            val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
-            valueParametersByCapturesByComponent[this] = valueParametersByCapture
-
-            val moduleCall = componentDefinition?.function?.body
-                .safeAs<IrExpressionBody>()?.expression as? IrCall
-
-            val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
-                ?.parent()
-                ?.child(Name.identifier("${moduleCall.symbol.owner.name}\$Impl"))
-
-            val module = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
-            else null
-
-            val captures = mutableListOf<IrGetValue>()
-            componentDefinition?.transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitGetValue(expression: IrGetValue): IrExpression {
-                    if (expression.symbol != componentDefinition.function.extensionReceiverParameter?.symbol) {
-                        captures += expression
-                    }
-                    return super.visitGetValue(expression)
-                }
-            })
-
-            val moduleField = if (module != null) addField(
-                "module",
-                module.defaultType,
-                Visibilities.PRIVATE
-            ) else null
-
-            val componentNode = ComponentNode(
-                key = key,
-                component = this,
-                treeElement = TreeElement("") { it }
-            )
-
-            val graph = Graph(
-                context = this@ComponentTransformer.context,
-                symbols = symbols,
-                thisComponent = componentNode,
-                thisComponentModule = module?.let {
-                    ModuleNode(
-                        module = module,
-                        componentNode = componentNode,
-                        typeParametersMap = module.typeParameters.map {
-                            it.symbol to moduleCall!!.getTypeArgument(it.index)!!
-                        }.toMap(),
-                        treeElement = componentNode.treeElement!!.childField(
-                            moduleField!!.name.asString()
-                        )
-                    )
-                },
-                declarationStore = declarationStore
-            )
-
-            val bindings = graph.allBindings
-
-            addConstructor {
-                returnType = defaultType
-                visibility = Visibilities.PUBLIC
-                isPrimary = true
-            }.apply {
-                captures.forEachIndexed { index, capture ->
-                    valueParametersByCapture[capture] = addValueParameter(
-                        "p$index",
-                        capture.type
-                    )
-                }
-
-                body = irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any
-                                .unsubstitutedPrimaryConstructor!!
-                        )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-
-                    if (moduleField != null) {
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            moduleField,
-                            irCall(
-                                module!!.constructors.single().symbol,
-                                module.defaultType
-                            ).apply {
-                                copyValueArgumentsFrom(
-                                    moduleCall!!,
-                                    moduleCall.symbol.owner,
-                                    symbol.owner
-                                )
-                            }
-                        )
-                    }
-
-                    val fieldsToInitialize = graph.allBindings.values
-                        .filterIsInstance<StatefulBinding>()
-                        .filter { it.field in fields }
-
-                    val initializedKeys = mutableSetOf<Key>()
-                    val processedFields = mutableSetOf<IrField>()
-
-                    while (true) {
-                        val fieldsToProcess = fieldsToInitialize
-                            .filter { it.field !in processedFields }
-                        if (fieldsToProcess.isEmpty()) break
-
-                        fieldsToProcess
-                            .filter {
-                                it.dependencies.all {
-                                    val binding = graph.allBindings.getValue(it)
-                                    binding !is StatefulBinding || it in initializedKeys
-                                }
-                            }
-                            .forEach {
-                                initializedKeys += it.key
-                                processedFields += it.field
-                                +irSetField(
-                                    irGet(thisReceiver!!),
-                                    it.field,
-                                    it.providerInstance(this, irGet(thisReceiver!!))
-                                )
-                            }
-                    }
-                }
-            }.apply {
-                transformChildrenVoid(object : IrElementTransformerVoid() {
-                    override fun visitGetValue(expression: IrGetValue): IrExpression {
-                        return valueParametersByCapture[expression]
-                            ?.let { irGet(it) }
-                            ?: super.visitGetValue(expression)
-                    }
-                })
+            isPrimary = true
+        }.apply {
+            captures.forEachIndexed { index, capture ->
+                valueParametersByCapture[capture] = addValueParameter(
+                    "p$index",
+                    capture.type
+                )
             }
 
-            addFunction {
-                this.name = Name.identifier("get")
-                visibility = Visibilities.PUBLIC
-                returnType = this@ComponentTransformer.context.irBuiltIns.anyNType
-            }.apply {
-                dispatchReceiverParameter = thisReceiver?.copyTo(this)
-
-                overriddenSymbols += symbolTable.referenceSimpleFunction(
-                    symbols.component.descriptor.unsubstitutedMemberScope.findSingleFunction(
-                        Name.identifier(
-                            "get"
-                        )
+            body = irBlockBody {
+                +IrDelegatingConstructorCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    context.irBuiltIns.unitType,
+                    symbolTable.referenceConstructor(
+                        context.builtIns.any
+                            .unsubstitutedPrimaryConstructor!!
                     )
                 )
-
-                addValueParameter(
-                    "key",
-                    this@ComponentTransformer.context.irBuiltIns.intType
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    this@clazz.symbol,
+                    context.irBuiltIns.unitType
                 )
 
-                body = DeclarationIrBuilder(this@ComponentTransformer.context, symbol).run {
-                    irExprBody(
-                        irReturn(
-                            irWhen(
-                                type = returnType,
-                                branches = bindings
-                                    .map { (key, binding) ->
-                                        irBranch(
-                                            condition = irEquals(
-                                                irInt(key.hashCode()),
-                                                irGet(valueParameters.single())
-                                            ),
-                                            result = irCall(binding.getFunction(this)).apply {
-                                                dispatchReceiver =
-                                                    irGet(dispatchReceiverParameter!!)
-                                            }
-                                        )
-                                    } + irElseBranch(
-                                    irCall(
-                                        symbolTable.referenceFunction(
-                                            symbols.component.descriptor.unsubstitutedMemberScope
-                                                .findSingleFunction(Name.identifier("get"))
-                                        )
-                                            .ensureBound(this@ComponentTransformer.context.irProviders).owner,
-                                        InjektStatementOrigin,
-                                        symbols.component
-                                    ).apply {
-                                        dispatchReceiver =
-                                            irGet(dispatchReceiverParameter!!)
-                                        putValueArgument(
-                                            0,
+                if (moduleField != null) {
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        moduleField,
+                        irCall(
+                            module!!.constructors.single().symbol,
+                            module.defaultType
+                        ).apply {
+                            copyValueArgumentsFrom(
+                                moduleCall!!,
+                                moduleCall.symbol.owner,
+                                symbol.owner
+                            )
+                        }
+                    )
+                }
+
+                val fieldsToInitialize = graph.allBindings.values
+                    .filterIsInstance<StatefulBinding>()
+                    .filter { it.field in fields }
+
+                val initializedKeys = mutableSetOf<Key>()
+                val processedFields = mutableSetOf<IrField>()
+
+                while (true) {
+                    val fieldsToProcess = fieldsToInitialize
+                        .filter { it.field !in processedFields }
+                    if (fieldsToProcess.isEmpty()) break
+
+                    fieldsToProcess
+                        .filter {
+                            it.dependencies.all {
+                                val binding = graph.allBindings.getValue(it)
+                                binding !is StatefulBinding || it in initializedKeys
+                            }
+                        }
+                        .forEach {
+                            initializedKeys += it.key
+                            processedFields += it.field
+                            +irSetField(
+                                irGet(thisReceiver!!),
+                                it.field,
+                                it.providerInstance(this, irGet(thisReceiver!!))
+                            )
+                        }
+                }
+            }
+        }.apply {
+            transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                    return valueParametersByCapture[expression]
+                        ?.let { irGet(it) }
+                        ?: super.visitGetValue(expression)
+                }
+            })
+        }
+
+        addFunction {
+            this.name = Name.identifier("get")
+            visibility = Visibilities.PUBLIC
+            returnType = this@ComponentTransformer.context.irBuiltIns.anyNType
+        }.apply {
+            dispatchReceiverParameter = thisReceiver?.copyTo(this)
+
+            overriddenSymbols += symbolTable.referenceSimpleFunction(
+                symbols.component.descriptor.unsubstitutedMemberScope.findSingleFunction(
+                    Name.identifier(
+                        "get"
+                    )
+                )
+            )
+
+            addValueParameter(
+                "key",
+                this@ComponentTransformer.context.irBuiltIns.intType
+            )
+
+            body = DeclarationIrBuilder(this@ComponentTransformer.context, symbol).run {
+                irExprBody(
+                    irReturn(
+                        irWhen(
+                            type = returnType,
+                            branches = bindings
+                                .map { (key, binding) ->
+                                    irBranch(
+                                        condition = irEquals(
+                                            irInt(key.hashCode()),
                                             irGet(valueParameters.single())
-                                        )
-                                    }
-                                )
+                                        ),
+                                        result = irCall(binding.getFunction(this)).apply {
+                                            dispatchReceiver =
+                                                irGet(dispatchReceiverParameter!!)
+                                        }
+                                    )
+                                } + irElseBranch(
+                                irCall(
+                                    symbolTable.referenceFunction(
+                                        symbols.component.descriptor.unsubstitutedMemberScope
+                                            .findSingleFunction(Name.identifier("get"))
+                                    )
+                                        .ensureBound(this@ComponentTransformer.context.irProviders).owner,
+                                    InjektStatementOrigin,
+                                    symbols.component
+                                ).apply {
+                                    dispatchReceiver =
+                                        irGet(dispatchReceiverParameter!!)
+                                    putValueArgument(
+                                        0,
+                                        irGet(valueParameters.single())
+                                    )
+                                }
                             )
                         )
                     )
-                }
+                )
             }
-
-            annotations += componentMetadata(
-                graph.thisScopes,
-                graph.thisParents,
-                graph.thisBindings.values.toList()
-            )
         }
+
+        annotations += componentMetadata(
+            graph.thisScopes,
+            graph.thisParents,
+            graph.thisModules,
+            graph.thisBindings.values.toList()
+        )
     }
 
     private fun IrBuilderWithScope.componentMetadata(
         scopes: Set<FqName>,
         parents: List<ComponentNode>,
+        modules: List<ModuleNode>,
         bindings: List<Binding>
     ): IrConstructorCall {
         return irCallConstructor(
@@ -447,9 +447,22 @@ class ComponentTransformer(
                 )
             )
 
-            // bindings
+            // modules
             putValueArgument(
                 2,
+                IrVarargImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    this@ComponentTransformer.context.irBuiltIns.arrayClass
+                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
+                    this@ComponentTransformer.context.irBuiltIns.stringType,
+                    modules.map { irString("/${it.treeElement!!.path}") }
+                )
+            )
+
+            // bindings
+            putValueArgument(
+                3,
                 IrVarargImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,

@@ -35,6 +35,8 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
@@ -60,6 +62,7 @@ class Graph(
     val allBindings = mutableMapOf<Key, Binding>()
 
     private val allModules = mutableListOf<ModuleNode>()
+    val thisModules = mutableListOf<ModuleNode>()
 
     private val allParents = mutableListOf<ComponentNode>()
     val thisParents = mutableListOf<ComponentNode>()
@@ -120,6 +123,30 @@ class Graph(
                     ),
                     false
                 )
+            }
+
+        val modules = mutableMapOf<String, ModuleNode>()
+
+        metadata.getStringList("modules")
+            .map { modulePath ->
+                val pathNames = modulePath.split("/")
+                    .filter { it.isNotEmpty() }
+                var currentClass: IrClass = parentNode.component
+                pathNames.fold(null) { acc: ModuleNode?, pathName: String ->
+                    val newPath =
+                        if (acc == null) pathName else "${acc.treeElement!!.path}/$pathName"
+                    modules.getOrPut(newPath) {
+                        ModuleNode(
+                            module = currentClass.fields.single { it.name.asString() == pathName }
+                                .type.classOrNull!!.owner
+                                .also { currentClass = it },
+                            parentNode,
+                            emptyMap(),
+                            (if (acc == null) parentNode.treeElement else acc.treeElement)
+                            !!.childField(pathName)
+                        )
+                    }
+                }!!
             }
 
         metadata.getStringList("bindings")
@@ -195,10 +222,26 @@ class Graph(
                     )
                 } else {
                     val provider = declarationStore.getProvider(FqName(providerPathOrClass))
+
+                    val moduleRequired = provider.constructors.single()
+                        .valueParameters.firstOrNull()?.name?.asString() == "module"
+
+                    val moduleIfRequired = if (!moduleRequired) null else {
+                        val moduleParameter = provider.constructors.single()
+                            .valueParameters.first()
+
+                        modules.values.singleOrNull { module ->
+                            module.module.defaultType == moduleParameter.type
+                        }
+                            ?: error("Could not find required module for ${moduleParameter.dump()} in ${modules.values.map {
+                                it.module.dump()
+                            }}")
+                    }
+
                     statelessBinding(
                         provider,
                         DuplicateStrategy.Fail,
-                        null,
+                        moduleIfRequired,
                         parentNode,
                         emptyMap()
                     )
@@ -209,6 +252,9 @@ class Graph(
 
     private fun addModule(moduleNode: ModuleNode) {
         allModules += moduleNode
+        if (moduleNode.componentNode == thisComponent) {
+            thisModules += moduleNode
+        }
 
         val module = moduleNode.module
         val metadata = module.descriptor.annotations.single {
@@ -511,20 +557,24 @@ class Graph(
                             )
                         }
 
-                        constructor.valueParameters
-                            .drop(if (moduleIfRequired != null) 1 else 0)
-                            .forEach { valueParameter ->
-                                val dependencyKey =
-                                    dependencies[valueParameter.index - if (moduleIfRequired != null) 1 else 0]
-                                val dependency = allBindings.getValue(dependencyKey)
-                                putValueArgument(
-                                    valueParameter.index,
-                                    dependency.providerInstance(
-                                        this@StatelessBinding,
-                                        it
+                        try {
+                            constructor.valueParameters
+                                .drop(if (moduleIfRequired != null) 1 else 0)
+                                .forEach { valueParameter ->
+                                    val dependencyKey =
+                                        dependencies[valueParameter.index - if (moduleIfRequired != null) 1 else 0]
+                                    val dependency = allBindings.getValue(dependencyKey)
+                                    putValueArgument(
+                                        valueParameter.index,
+                                        dependency.providerInstance(
+                                            this@StatelessBinding,
+                                            it
+                                        )
                                     )
-                                )
-                            }
+                                }
+                        } catch (e: Exception) {
+                            error("${constructor.dump()} module $moduleIfRequired")
+                        }
                     }
                 }
             },
