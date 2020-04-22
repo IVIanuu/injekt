@@ -214,9 +214,10 @@ class ModuleTransformer(
             parentsByCalls[it] = declarationStore.getComponent(key)
         }
 
+        var parentIndex = 0
         val parentFields = parentsByCalls.values.toList().associateWith {
             addField(
-                it.name.asString(),
+                "parent_${parentIndex++}",
                 it.defaultType,
                 Visibilities.PUBLIC
             )
@@ -234,13 +235,12 @@ class ModuleTransformer(
         var moduleIndex = 0
         modulesByCalls.toList().forEach { (call, module) ->
             moduleFieldsByCall[call] = addField(
-                "module_$moduleIndex",
+                "module_${moduleIndex++}",
                 module.typeWith((0 until call.typeArgumentsCount)
                     .map { call.getTypeArgument(it)!! }
                 ),
                 Visibilities.PUBLIC
             )
-            moduleIndex++
         }
 
         val implicitModules = scopes.flatMap { declarationStore.getModulesForScope(it) }
@@ -531,10 +531,10 @@ class ModuleTransformer(
             val fieldsByDependency = dependencies
                 .associateWith { expression ->
                     addField(
-                        "p$depIndex",
+                        "p${depIndex++}",
                         symbols.provider.typeWith(expression.type),
                         Visibilities.PUBLIC
-                    ).also { depIndex++ }
+                    )
                 }
 
             addConstructor {
@@ -764,7 +764,7 @@ class ModuleTransformer(
             val valueParametersByDependency = dependencies
                 .associateWith { expression ->
                     addValueParameter {
-                        this.name = Name.identifier("p$depIndex")
+                        this.name = Name.identifier("p${depIndex++}")
                         type = expression.type
                     }.apply {
                             annotations += bindingMetadata(
@@ -778,7 +778,6 @@ class ModuleTransformer(
                                     } ?: emptyList()
                             )
                         }
-                        .also { depIndex++ }
                 }
 
             body = definitionFunction.body
