@@ -36,7 +36,9 @@ class ModuleTest {
             factory { capturedValue }
         }
         """
-    )
+    ) {
+        assertOk()
+    }
 
     @Test
     fun testWithNestedCaptures() = codegen(
@@ -51,7 +53,9 @@ class ModuleTest {
             factory { capturedValue }
         }
         """
-    )
+    ) {
+        assertOk()
+    }
 
     @Test
     fun testModuleDependsOnOtherA() = codegen(
@@ -71,7 +75,9 @@ class ModuleTest {
                 }
         """
         )
-    )
+    ) {
+        assertOk()
+    }
 
     @Test
     fun testModuleDependsOnOtherB() = codegen(
@@ -91,7 +97,9 @@ class ModuleTest {
             }
         """
         )
-    )
+    ) {
+        assertOk()
+    }
 
     @Test
     fun testWithParent() = codegen(
@@ -304,6 +312,45 @@ class ModuleTest {
         assertCompileError("type parameter")
     }
 
+    @Test
+    fun testLocalDeclarationCapturingModule() = codegen(
+        """ 
+            @Module 
+            fun module() {
+               val local = "local"
+               factory { local }
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testLocalDelegateCapturingModule() = codegen(
+        """ 
+            @Module 
+            fun module() {
+               val local by lazy { "local" }
+               factory { local }
+            }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testLocalFunctionInModule() = codegen(
+        """ 
+            @Module 
+            fun module() {
+               fun localFun() = "local"
+               val local = localFun()
+               factory { local }
+            }
+        """
+    ) {
+        assertOk()
+    }
 
     /**@Test
     fun testMetadata() = codegenTest(
