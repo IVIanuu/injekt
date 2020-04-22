@@ -405,6 +405,20 @@ class ComponentTest {
     }
 
     @Test
+    fun testAnnotatedSingle() = codegen(
+        """
+            @Single class SimpleDep
+            val TestComponent = Component("c")
+            fun invoke() = TestComponent.get<SimpleDep>()
+            """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
     fun testScopedAnnotatedSingle() = codegen(
         """
             @TestScope @Single class SimpleDep

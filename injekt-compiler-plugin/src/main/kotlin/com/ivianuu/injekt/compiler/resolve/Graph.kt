@@ -306,49 +306,58 @@ class Graph(
 
     private fun addUnscopedBindings() {
         declarationStore.getUnscopedProviders()
-            .forEach {
-                addBinding(
-                    statelessBinding(
-                        it,
-                        DuplicateStrategy.Drop,
-                        null,
-                        null,
-                        emptyMap()
-                    )
-                )
-            }
+            .forEach { addAnnotatedBinding(it) }
+    }
+
+    private fun addAnnotatedBinding(provider: IrClass) {
+        val providerMetadata = provider.descriptor.annotations.single {
+            it.fqName == InjektFqNames.ProviderMetadata
+        }
+
+        val isSingle =
+            providerMetadata.argumentValue("isSingle")!!.value as? Boolean ?: false
+
+        val binding = if (isSingle) {
+            val resultType = provider.functions
+                .single { it.name.asString() == "invoke" }
+                .returnType
+
+            val field = allocateProviderField(
+                provider,
+                resultType
+            )
+
+            val treeElement = thisComponent.treeElement!!
+                .childField(field.name.asString())
+
+            statefulBinding(
+                field = field,
+                provider = provider,
+                duplicateStrategy = DuplicateStrategy.Drop,
+                moduleNode = null,
+                providerInstance = newProviderInstance(
+                    provider,
+                    null
+                ),
+                treeElement = treeElement
+            )
+        } else {
+            statelessBinding(
+                provider = provider,
+                duplicateStrategy = DuplicateStrategy.Drop,
+                moduleIfRequired = null,
+                sourceComponent = null,
+                typeParametersMap = emptyMap()
+            )
+        }
+
+        addBinding(binding)
     }
 
     private fun addScopedBindings() {
         thisScopes
             .flatMap { declarationStore.getProvidersForScope(it) }
-            .forEach { provider ->
-                val resultType = provider.functions
-                    .single { it.name.asString() == "invoke" }
-                    .returnType
-
-                val field = allocateProviderField(
-                    provider,
-                    resultType
-                )
-
-                val treeElement = thisComponent.treeElement!!
-                    .childField(field.name.asString())
-
-                addBinding(
-                    statefulBinding(
-                        field = field,
-                        provider = provider,
-                        duplicateStrategy = DuplicateStrategy.Drop,
-                        moduleNode = null,
-                        providerInstance = newProviderInstance(
-                            provider,
-                            null
-                        ),
-                        treeElement = treeElement
-                    )
-                )
-            }
+            .forEach { addAnnotatedBinding(it) }
     }
 
     private fun addBinding(binding: Binding) {
