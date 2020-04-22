@@ -165,6 +165,7 @@ class Graph(
                     statefulBinding(
                         field = field,
                         provider = provider,
+                        duplicateStrategy = DuplicateStrategy.Fail,
                         moduleNode = null,
                         providerInstance = {
                             irGetField(
@@ -267,6 +268,7 @@ class Graph(
                     statefulBinding(
                         field = field,
                         provider = provider,
+                        duplicateStrategy = DuplicateStrategy.Fail,
                         moduleNode = moduleNode,
                         providerInstance = newProviderInstance(
                             provider = provider,
@@ -337,6 +339,7 @@ class Graph(
                     statefulBinding(
                         field = field,
                         provider = provider,
+                        duplicateStrategy = DuplicateStrategy.Drop,
                         moduleNode = null,
                         providerInstance = newProviderInstance(
                             provider,
@@ -386,6 +389,7 @@ class Graph(
     private fun statefulBinding(
         field: IrField,
         provider: IrClass,
+        duplicateStrategy: DuplicateStrategy,
         moduleNode: ModuleNode?,
         providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
         treeElement: TreeElement
@@ -424,7 +428,7 @@ class Graph(
         return StatefulBinding(
             key = key,
             dependencies = dependencies,
-            duplicateStrategy = DuplicateStrategy.Fail,
+            duplicateStrategy = duplicateStrategy,
             provider = provider,
             providerInstance = providerInstance,
             getFunction = getFunction(resultType) { function ->
