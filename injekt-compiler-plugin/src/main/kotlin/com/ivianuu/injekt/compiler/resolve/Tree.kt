@@ -32,9 +32,7 @@ class TreeElement(
 
     fun childField(fieldName: String) = child(fieldName) {
         val owner = it.type.classOrNull!!.owner
-        val field = owner
-            .fields.singleOrNull { it.name.asString() == fieldName }
-            ?: error("Couldn't find field $fieldName in ${owner.dump()}")
+        val field = owner.fields.single { it.name.asString() == fieldName }
         irGetField(it, field)
     }
 }
