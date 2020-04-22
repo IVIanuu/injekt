@@ -217,7 +217,7 @@ class ModuleTransformer(
         var parentIndex = 0
         val parentFields = parentsByCalls.values.toList().associateWith {
             addField(
-                "parent_${parentIndex++}",
+                "parent\$${parentIndex++}",
                 it.defaultType,
                 Visibilities.PUBLIC
             )
@@ -235,7 +235,7 @@ class ModuleTransformer(
         var moduleIndex = 0
         modulesByCalls.toList().forEach { (call, module) ->
             moduleFieldsByCall[call] = addField(
-                "module_${moduleIndex++}",
+                "module\$${moduleIndex++}",
                 module.typeWith((0 until call.typeArgumentsCount)
                     .map { call.getTypeArgument(it)!! }
                 ),
@@ -247,7 +247,7 @@ class ModuleTransformer(
 
         val implicitModuleFields = implicitModules.associateWith {
             addField(
-                "module_$moduleIndex",
+                "module\$$moduleIndex",
                 it.defaultType,
                 Visibilities.PRIVATE
             ).also { moduleIndex++ }
@@ -339,7 +339,7 @@ class ModuleTransformer(
         definitionCalls.forEachIndexed { index, definitionCall ->
             addChild(
                 provider(
-                    name = Name.identifier("provider_$index"),
+                    name = Name.identifier("provider\$$index"),
                     qualifiers = definitionCall.getValueArgument(0)
                         ?.safeAs<IrVarargImpl>()
                         ?.elements

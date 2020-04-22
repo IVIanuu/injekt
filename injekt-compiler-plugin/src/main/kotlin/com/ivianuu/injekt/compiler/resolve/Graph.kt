@@ -70,6 +70,7 @@ class Graph(
     init {
         if (thisComponentModule != null) addModule(thisComponentModule)
         addUnscopedBindings()
+        addScopedBindings()
         validate()
     }
 
@@ -161,36 +162,10 @@ class Graph(
                         }.argumentValue("implementation")!!.value
                         .let { declarationStore.getProvider(FqName(it.toString())) }
 
-                    val bindingMetadata = provider.descriptor.annotations.single {
-                        it.fqName == InjektFqNames.BindingMetadata
-                    }
-
-                    val qualifiers = bindingMetadata.getStringList("qualifiers")
-                        .map { FqName(it) }
-
-                    val createFunction = (if (provider.kind == ClassKind.OBJECT)
-                        provider else provider.companionObject() as IrClass)
-                        .functions
-                        .single { it.name.asString() == "create" }
-
-                    val dependencies = createFunction.valueParameters
-                        .map {
-                            Key(
-                                it.type,
-                                it.descriptor.annotations.single {
-                                        it.fqName == InjektFqNames.BindingMetadata
-                                    }.getStringList("qualifiers")
-                                    .map { FqName(it) }
-                            )
-                        }
-
-                    val resultType = createFunction.returnType
-
-                    StatefulBinding(
-                        key = Key(resultType, qualifiers),
-                        dependencies = dependencies,
-                        duplicateStrategy = DuplicateStrategy.Fail,
+                    statefulBinding(
+                        field = field,
                         provider = provider,
+                        moduleNode = null,
                         providerInstance = {
                             irGetField(
                                 parentNode.treeElement!!.accessor(
@@ -200,25 +175,7 @@ class Graph(
                                 field
                             )
                         },
-                        getFunction = getFunction(resultType) { function ->
-                            irCall(
-                                symbols.provider
-                                    .functions
-                                    .single { it.owner.name.asString() == "invoke" },
-                                resultType
-                            ).apply {
-                                dispatchReceiver = irGetField(
-                                    parentNode.treeElement!!.accessor(
-                                        this@getFunction,
-                                        irGet(function.dispatchReceiverParameter!!)
-                                    ),
-                                    field
-                                )
-                            }
-                        },
-                        sourceComponent = parentNode,
-                        treeElement = parentNode.treeElement!!.childField(field.name.asString()),
-                        field = field
+                        treeElement = parentNode.treeElement!!.childField(field.name.asString())
                     )
                 } else {
                     val provider = declarationStore.getProvider(FqName(providerPathOrClass))
@@ -229,21 +186,15 @@ class Graph(
                     val moduleIfRequired = if (!moduleRequired) null else {
                         val moduleParameter = provider.constructors.single()
                             .valueParameters.first()
-
-                        modules.values.singleOrNull { module ->
-                            module.module.defaultType == moduleParameter.type
-                        }
-                            ?: error("Could not find required module for ${moduleParameter.dump()} in ${modules.values.map {
-                                it.module.dump()
-                            }}")
+                        modules.values.single { it.module.defaultType == moduleParameter.type }
                     }
 
                     statelessBinding(
-                        provider,
-                        DuplicateStrategy.Fail,
-                        moduleIfRequired,
-                        parentNode,
-                        emptyMap()
+                        provider = provider,
+                        duplicateStrategy = DuplicateStrategy.Fail,
+                        moduleIfRequired = moduleIfRequired,
+                        sourceComponent = parentNode,
+                        typeParametersMap = emptyMap()
                     )
                 }
             }
@@ -287,15 +238,9 @@ class Graph(
                     .first { it.name.asString() == providerName }
             }
             .map { provider ->
-                val bindingMetadata = provider.descriptor.annotations.single {
-                    it.fqName == InjektFqNames.BindingMetadata
-                }
                 val providerMetadata = provider.descriptor.annotations.single {
                     it.fqName == InjektFqNames.ProviderMetadata
                 }
-
-                val qualifiers = bindingMetadata.getStringList("qualifiers")
-                    .map { FqName(it) }
 
                 val isSingle =
                     providerMetadata.argumentValue("isSingle")!!.value as? Boolean ?: false
@@ -305,124 +250,37 @@ class Graph(
                     .returnType
                     .substituteByName(moduleNode.typeParametersMap)
 
-                val key = Key(resultType, qualifiers)
-
-                val dependencies = provider.constructors.single().valueParameters
-                    .filter { it.name.asString() != "module" }
-                    .map {
-                        Key(
-                            it.type.substituteByName(moduleNode.typeParametersMap)
-                                .cast<IrSimpleType>()
-                                .arguments
-                                .single()
-                                .typeOrNull!!,
-                            it.descriptor.annotations.single {
-                                    it.fqName == InjektFqNames.BindingMetadata
-                                }.getStringList("qualifiers")
-                                .map { FqName(it) }
-                        )
-                    }
-
                 val requiresModule = provider.kind != ClassKind.OBJECT
                         && provider.companionObject()!!.cast<IrClass>()
                     .functions.single { it.name.asString() == "create" }
                     .valueParameters.first().name.asString() == "module"
 
                 if (isSingle) {
-                    val currentProviderIndex =
-                        context.irTrace[InjektWritableSlices.PROVIDER_INDEX, moduleNode.componentNode.component]
-                            ?: 0
-                    val field = moduleNode.componentNode.component.addField(
-                        Name.identifier("provider_$currentProviderIndex"),
-                        symbols.provider.owner.typeWith(resultType)
-                    ).apply {
-                        annotations += DeclarationIrBuilder(context, symbol).run {
-                            irCallConstructor(
-                                symbols.providerFieldMetadata.constructors.single(),
-                                emptyList()
-                            ).apply {
-                                putValueArgument(
-                                    0,
-                                    irString(provider.fqNameForIrSerialization.asString())
-                                )
-                            }
-                        }
-                    }
-                    context.irTrace.record(
-                        InjektWritableSlices.PROVIDER_INDEX,
-                        moduleNode.componentNode.component, currentProviderIndex + 1
+                    val field = allocateProviderField(
+                        provider,
+                        resultType
                     )
+
                     val treeElement = moduleNode.componentNode.treeElement!!
-                        .childField("provider_$currentProviderIndex")
+                        .childField(field.name.asString())
 
-                    StatefulBinding(
-                        key = key,
-                        dependencies = dependencies,
-                        duplicateStrategy = DuplicateStrategy.Fail,
+                    statefulBinding(
+                        field = field,
                         provider = provider,
-                        providerInstance = {
-                            irCall(
-                                symbols.singleProvider
-                                    .constructors
-                                    .single()
-                            ).apply {
-                                val constructor = provider.constructors.single()
-                                putValueArgument(
-                                    0,
-                                    irCall(constructor).apply {
-                                        if (requiresModule) {
-                                            putValueArgument(
-                                                0,
-                                                moduleNode.treeElement!!.accessor(
-                                                    this@StatefulBinding,
-                                                    it
-                                                )
-                                            )
-                                        }
-
-                                        constructor.valueParameters
-                                            .drop(if (requiresModule) 1 else 0)
-                                            .forEach { valueParameter ->
-                                                val dependencyKey =
-                                                    dependencies[valueParameter.index - if (requiresModule) 1 else 0]
-                                                val dependency =
-                                                    allBindings.getValue(dependencyKey)
-                                                putValueArgument(
-                                                    valueParameter.index,
-                                                    dependency.providerInstance(
-                                                        this@StatefulBinding,
-                                                        it
-                                                    )
-                                                )
-                                            }
-                                    }
-                                )
-                            }
-                        },
-                        getFunction = getFunction(resultType) { function ->
-                            irCall(
-                                symbols.provider
-                                    .functions
-                                    .single { it.owner.name.asString() == "invoke" },
-                                resultType
-                            ).apply {
-                                dispatchReceiver = treeElement.accessor(
-                                    this@getFunction,
-                                    irGet(function.dispatchReceiverParameter!!)
-                                )
-                            }
-                        },
-                        sourceComponent = thisComponent,
-                        treeElement = treeElement,
-                        field = field
+                        moduleNode = moduleNode,
+                        providerInstance = newProviderInstance(
+                            provider = provider,
+                            moduleIfRequired = if (requiresModule) moduleNode else null
+                        ),
+                        treeElement = treeElement
                     )
                 } else {
                     statelessBinding(
-                        provider,
-                        DuplicateStrategy.Fail,
-                        if (requiresModule) moduleNode else null,
-                        thisComponent,
-                        moduleNode.typeParametersMap
+                        provider = provider,
+                        duplicateStrategy = DuplicateStrategy.Fail,
+                        moduleIfRequired = if (requiresModule) moduleNode else null,
+                        sourceComponent = thisComponent,
+                        typeParametersMap = moduleNode.typeParametersMap
                     )
                 }
             }.forEach { addBinding(it) }
@@ -454,6 +312,37 @@ class Graph(
                         null,
                         null,
                         emptyMap()
+                    )
+                )
+            }
+    }
+
+    private fun addScopedBindings() {
+        thisScopes
+            .flatMap { declarationStore.getProvidersForScope(it) }
+            .forEach { provider ->
+                val resultType = provider.functions
+                    .single { it.name.asString() == "invoke" }
+                    .returnType
+
+                val field = allocateProviderField(
+                    provider,
+                    resultType
+                )
+
+                val treeElement = thisComponent.treeElement!!
+                    .childField(field.name.asString())
+
+                addBinding(
+                    statefulBinding(
+                        field = field,
+                        provider = provider,
+                        moduleNode = null,
+                        providerInstance = newProviderInstance(
+                            provider,
+                            null
+                        ),
+                        treeElement = treeElement
                     )
                 )
             }
@@ -492,6 +381,69 @@ class Graph(
                 }
             }
         }
+    }
+
+    private fun statefulBinding(
+        field: IrField,
+        provider: IrClass,
+        moduleNode: ModuleNode?,
+        providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
+        treeElement: TreeElement
+    ): StatefulBinding {
+        val bindingMetadata = provider.descriptor.annotations.single {
+            it.fqName == InjektFqNames.BindingMetadata
+        }
+
+        val qualifiers = bindingMetadata.getStringList("qualifiers")
+            .map { FqName(it) }
+
+        val resultType = provider.functions
+            .single { it.name.asString() == "invoke" && it.valueParameters.isEmpty() }
+            .returnType
+            .let { if (moduleNode != null) it.substituteByName(moduleNode.typeParametersMap) else it }
+
+        val key = Key(resultType, qualifiers)
+
+        val dependencies = provider.constructors.single().valueParameters
+            .filter { it.name.asString() != "module" }
+            .map {
+                Key(
+                    it.type
+                        .let { if (moduleNode != null) it.substituteByName(moduleNode.typeParametersMap) else it }
+                        .cast<IrSimpleType>()
+                        .arguments
+                        .single()
+                        .typeOrNull!!,
+                    it.descriptor.annotations.single {
+                            it.fqName == InjektFqNames.BindingMetadata
+                        }.getStringList("qualifiers")
+                        .map { FqName(it) }
+                )
+            }
+
+        return StatefulBinding(
+            key = key,
+            dependencies = dependencies,
+            duplicateStrategy = DuplicateStrategy.Fail,
+            provider = provider,
+            providerInstance = providerInstance,
+            getFunction = getFunction(resultType) { function ->
+                irCall(
+                    symbols.provider
+                        .functions
+                        .single { it.owner.name.asString() == "invoke" },
+                    resultType
+                ).apply {
+                    dispatchReceiver = treeElement.accessor(
+                        this@getFunction,
+                        irGet(function.dispatchReceiverParameter!!)
+                    )
+                }
+            },
+            sourceComponent = thisComponent,
+            treeElement = treeElement,
+            field = field
+        )
     }
 
     private fun statelessBinding(
@@ -632,7 +584,7 @@ class Graph(
             val currentGetFunctionIndex =
                 context.irTrace[InjektWritableSlices.GET_FUNCTION_INDEX, thisComponent.component]
                     ?: 0
-            this.name = Name.identifier("get_$currentGetFunctionIndex")
+            this.name = Name.identifier("get\$$currentGetFunctionIndex")
             context.irTrace.record(
                 InjektWritableSlices.GET_FUNCTION_INDEX,
                 thisComponent.component,
@@ -650,5 +602,109 @@ class Graph(
             }
             function
         }
+    }
+
+    private fun newProviderInstance(
+        provider: IrClass,
+        moduleIfRequired: ModuleNode?
+    ): IrBuilderWithScope.(IrExpression) -> IrExpression = func@{
+        val constructor = provider.constructors.single()
+        val newProvider = irCall(constructor).apply {
+            if (moduleIfRequired != null) {
+                putValueArgument(
+                    0,
+                    moduleIfRequired.treeElement!!.accessor(
+                        this@func,
+                        it
+                    )
+                )
+            }
+
+            val dependencies = provider.constructors.single().valueParameters
+                .filter { it.name.asString() != "module" }
+                .map {
+                    Key(
+                        it.type
+                            .let {
+                                if (moduleIfRequired != null)
+                                    it.substituteByName(moduleIfRequired.typeParametersMap)
+                                else it
+                            }
+                            .cast<IrSimpleType>()
+                            .arguments
+                            .single()
+                            .typeOrNull!!,
+                        it.descriptor.annotations.single {
+                                it.fqName == InjektFqNames.BindingMetadata
+                            }.getStringList("qualifiers")
+                            .map { FqName(it) }
+                    )
+                }
+
+            constructor.valueParameters
+                .drop(if (moduleIfRequired != null) 1 else 0)
+                .forEach { valueParameter ->
+                    val dependencyKey =
+                        dependencies[valueParameter.index - if (moduleIfRequired != null) 1 else 0]
+                    val dependency =
+                        allBindings.getValue(dependencyKey)
+                    putValueArgument(
+                        valueParameter.index,
+                        dependency.providerInstance(
+                            this@func,
+                            it
+                        )
+                    )
+                }
+        }
+
+        val providerMetadata = provider.descriptor.annotations.single {
+            it.fqName == InjektFqNames.ProviderMetadata
+        }
+
+        val isSingle =
+            providerMetadata.argumentValue("isSingle")!!.value as? Boolean ?: false
+
+        if (isSingle) {
+            irCall(
+                symbols.singleProvider
+                    .constructors
+                    .single()
+            ).apply { putValueArgument(0, newProvider) }
+        } else {
+            newProvider
+        }
+    }
+
+    private fun allocateProviderField(
+        provider: IrClass,
+        resultType: IrType
+    ): IrField {
+        val currentProviderIndex =
+            context.irTrace[InjektWritableSlices.PROVIDER_INDEX, thisComponent.component]
+                ?: 0
+        val field = thisComponent.component.addField(
+            Name.identifier("provider\$$currentProviderIndex"),
+            symbols.provider.owner.typeWith(resultType),
+            Visibilities.PUBLIC
+        ).apply {
+            annotations += DeclarationIrBuilder(context, symbol).run {
+                irCallConstructor(
+                    symbols.providerFieldMetadata.constructors.single(),
+                    emptyList()
+                ).apply {
+                    putValueArgument(
+                        0,
+                        irString(provider.fqNameForIrSerialization.asString())
+                    )
+                }
+            }
+        }
+        context.irTrace.record(
+            InjektWritableSlices.PROVIDER_INDEX,
+            thisComponent.component, currentProviderIndex + 1
+        )
+
+        return field
     }
 }

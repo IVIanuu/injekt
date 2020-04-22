@@ -312,7 +312,7 @@ class ModuleTest {
         assertCompileError("type parameter")
     }
 
-    @Test
+    // todo @Test
     fun testLocalDeclarationCapturingModule() = codegen(
         """ 
             @Module 
@@ -325,7 +325,7 @@ class ModuleTest {
         assertOk()
     }
 
-    @Test
+    // todo @Test
     fun testLocalDelegateCapturingModule() = codegen(
         """ 
             @Module 
@@ -338,7 +338,7 @@ class ModuleTest {
         assertOk()
     }
 
-    @Test
+    // todo @Test
     fun testLocalFunctionInModule() = codegen(
         """ 
             @Module 

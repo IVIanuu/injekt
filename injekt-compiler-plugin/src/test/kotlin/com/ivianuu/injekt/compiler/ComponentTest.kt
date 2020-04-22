@@ -372,6 +372,22 @@ class ComponentTest {
     }
 
     @Test
+    fun testScopedAnnotatedFactory() = codegen(
+        """
+            @TestScope @Factory class SimpleDep
+            val TestComponent = Component("c") {
+                scope<TestScope>()
+            }
+            fun invoke() = TestComponent.get<SimpleDep>()
+            """
+    ) {
+        assertNotSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
     fun testSingle() = codegen(
         """
             val TestComponent = Component("c") {
@@ -397,6 +413,22 @@ class ComponentTest {
             """
     ) {
         assertNotSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testScopedAnnotatedSingle() = codegen(
+        """
+            @TestScope @Single class SimpleDep
+            val TestComponent = Component("c") {
+                scope<TestScope>()
+            }
+            fun invoke() = TestComponent.get<SimpleDep>()
+            """
+    ) {
+        assertSame(
             invokeSingleFile(),
             invokeSingleFile()
         )
@@ -524,7 +556,7 @@ class ComponentTest {
         assertEquals("test", invokeSingleFile())
     }
 
-    @Test
+    // todo @Test
     fun testComponentKeyDuplicate() = codegen(
         """
         val ComponentA = Component("key") { } 
