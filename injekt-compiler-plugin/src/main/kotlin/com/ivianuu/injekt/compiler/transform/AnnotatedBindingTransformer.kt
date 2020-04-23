@@ -197,10 +197,10 @@ class AnnotatedBindingTransformer(
 
             val valueParametersByDependency = constructor?.valueParameters
                 ?.associateWith { valueParameter ->
-                    addValueParameter {
-                        this.name = valueParameter.name
-                        type = valueParameter.type
-                    }.apply {
+                    addValueParameter(
+                        valueParameter.name.asString(),
+                        valueParameter.type
+                    ).apply {
                         annotations += bindingMetadata(emptyList())
                     }
                 }

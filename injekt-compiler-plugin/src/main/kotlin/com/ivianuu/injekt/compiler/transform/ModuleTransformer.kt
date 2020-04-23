@@ -675,10 +675,10 @@ class ModuleTransformer(
             var depIndex = 0
             val valueParametersByDependency = dependencies
                 .associateWith { expression ->
-                    addValueParameter {
-                        this.name = Name.identifier("p${depIndex++}")
-                        type = expression.type
-                    }.apply {
+                    addValueParameter(
+                        "p${depIndex++}",
+                        expression.type
+                    ).apply {
                             annotations += bindingMetadata(
                                 expression.getValueArgument(0)
                                     ?.safeAs<IrVarargImpl>()
