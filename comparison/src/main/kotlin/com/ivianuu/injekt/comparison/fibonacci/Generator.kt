@@ -10,7 +10,6 @@ fun main() {
                     appendln(
                         """
                         @Factory
-                        @Instance(type = Fib$index::class, scoping = Scoping.UNSCOPED)
                         class Fib$index @Inject constructor()
                         """.trimIndent()
                     )
@@ -18,7 +17,6 @@ fun main() {
                     appendln(
                         """
                         @Factory
-                        @Instance(type = Fib$index::class, scoping = Scoping.UNSCOPED)
                         class Fib$index @Inject constructor(
                             val fibM1: Fib${index - 1},
                             val fibM2: Fib${index - 2}

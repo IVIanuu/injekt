@@ -29,7 +29,4 @@ class App : Application(), ComponentOwner {
         }
     }
 
-    override fun onCreate() {
-        super.onCreate()
-    }
 }
