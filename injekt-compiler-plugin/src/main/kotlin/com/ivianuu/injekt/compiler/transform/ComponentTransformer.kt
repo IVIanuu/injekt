@@ -348,9 +348,7 @@ class ComponentTransformer(
                                         symbols.component.descriptor.unsubstitutedMemberScope
                                             .findSingleFunction(Name.identifier("get"))
                                     )
-                                        .ensureBound(this@ComponentTransformer.context.irProviders).owner,
-                                    InjektStatementOrigin,
-                                    symbols.component
+                                        .ensureBound(this@ComponentTransformer.context.irProviders).owner
                                 ).apply {
                                     dispatchReceiver =
                                         irGet(dispatchReceiverParameter!!)
