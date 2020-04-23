@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -53,9 +52,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -402,25 +399,13 @@ class ComponentTransformer(
             // scopes
             putValueArgument(
                 0,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ComponentTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
-                    this@ComponentTransformer.context.irBuiltIns.stringType,
-                    scopes.map { irString(it.asString()) }
-                )
+                irStringArray(scopes.map { irString(it.asString()) })
             )
 
             // parents
             putValueArgument(
                 1,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ComponentTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
-                    this@ComponentTransformer.context.irBuiltIns.stringType,
+                irStringArray(
                     parents.map {
                         if (it.treeElement != null) {
                             irString("${it.key}=:=/${it.treeElement.path}")
@@ -434,25 +419,13 @@ class ComponentTransformer(
             // modules
             putValueArgument(
                 2,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ComponentTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
-                    this@ComponentTransformer.context.irBuiltIns.stringType,
-                    modules.map { irString("/${it.treeElement!!.path}") }
-                )
+                irStringArray(modules.map { irString("/${it.treeElement!!.path}") })
             )
 
             // bindings
             putValueArgument(
                 3,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ComponentTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ComponentTransformer.context.irBuiltIns.stringType),
-                    this@ComponentTransformer.context.irBuiltIns.stringType,
+                irStringArray(
                     bindings.map {
                         if (it is StatefulBinding) {
                             irString("/${it.treeElement.path}")

@@ -94,14 +94,7 @@ abstract class AbstractInjektTransformer(
         ).apply {
             putValueArgument(
                 0,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@AbstractInjektTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@AbstractInjektTransformer.context.irBuiltIns.stringType),
-                    this@AbstractInjektTransformer.context.irBuiltIns.stringType,
-                    qualifiers.map { irString(it.asString()) }
-                )
+                irStringArray(qualifiers.map { irString(it.asString()) })
             )
         }
     }
@@ -133,6 +126,17 @@ abstract class AbstractInjektTransformer(
             UNDEFINED_OFFSET,
             symbol,
             context.irBuiltIns.unitType
+        )
+    }
+
+    fun IrBuilderWithScope.irStringArray(elements: List<IrExpression>): IrVarargImpl {
+        return IrVarargImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            context.irBuiltIns.arrayClass
+                .typeWith(context.irBuiltIns.stringType),
+            context.irBuiltIns.stringType,
+            elements
         )
     }
 

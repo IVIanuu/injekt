@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -29,8 +28,6 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -192,21 +189,7 @@ class AnnotatedBindingTransformer(
             isPrimary = true
         }.apply {
             body = irBlockBody {
-                +IrDelegatingConstructorCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    context.irBuiltIns.unitType,
-                    symbolTable.referenceConstructor(
-                        context.builtIns.any
-                            .unsubstitutedPrimaryConstructor!!
-                    )
-                )
-                +IrInstanceInitializerCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
+                initializeClassWithAnySuperClass(this@clazz.symbol)
             }
         }
 

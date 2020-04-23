@@ -16,7 +16,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -389,25 +388,13 @@ class ModuleTransformer(
             // scopes
             putValueArgument(
                 0,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ModuleTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
-                    this@ModuleTransformer.context.irBuiltIns.stringType,
-                    scopes.map { irString(it.asString()) }
-                )
+                irStringArray(scopes.map { irString(it.asString()) })
             )
 
             // parent keys
             putValueArgument(
                 1,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ModuleTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
-                    this@ModuleTransformer.context.irBuiltIns.stringType,
+                irStringArray(
                     parentCalls.zip(parentFields.values).map { (call, field) ->
                         irString(
                             "${call.getValueArgument(0)!!
@@ -420,12 +407,7 @@ class ModuleTransformer(
             // bindings
             putValueArgument(
                 2,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ModuleTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
-                    this@ModuleTransformer.context.irBuiltIns.stringType,
+                irStringArray(
                     definitionCalls
                         .map { irString(providerByDefinitionCall[it]!!.name.asString()) }
                 )
@@ -434,14 +416,7 @@ class ModuleTransformer(
             // included modules
             putValueArgument(
                 3,
-                IrVarargImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@ModuleTransformer.context.irBuiltIns.arrayClass
-                        .typeWith(this@ModuleTransformer.context.irBuiltIns.stringType),
-                    this@ModuleTransformer.context.irBuiltIns.stringType,
-                    includedModules.map { irString(it.name.asString()) }
-                )
+                irStringArray(includedModules.map { irString(it.name.asString()) })
             )
         }
     }
