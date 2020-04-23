@@ -192,6 +192,7 @@ class AnnotatedBindingTransformer(
         return owner.addFunction {
             name = Name.identifier("create")
             returnType = clazz.defaultType
+            isInline = true
         }.apply {
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
 
