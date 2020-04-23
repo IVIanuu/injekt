@@ -2,9 +2,7 @@ package com.ivianuu.injekt
 
 // Multi binding
 // Override?
-// Generic Behavior api
 // Eager
-// Callbacks like onInit?
 // cyclic dependency detection
 // Nullable distinction
 // Android utility

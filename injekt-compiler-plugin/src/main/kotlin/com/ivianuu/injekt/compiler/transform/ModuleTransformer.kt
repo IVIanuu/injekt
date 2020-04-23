@@ -47,8 +47,6 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetObjectValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -276,21 +274,7 @@ class ModuleTransformer(
             }
 
             body = irBlockBody {
-                +IrDelegatingConstructorCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    context.irBuiltIns.unitType,
-                    symbolTable.referenceConstructor(
-                        context.builtIns.any
-                            .unsubstitutedPrimaryConstructor!!
-                    )
-                )
-                +IrInstanceInitializerCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
+                initializeClassWithAnySuperClass(this@clazz.symbol)
 
                 fieldsByParameters.forEach { (parameter, field) ->
                     +irSetField(
@@ -570,21 +554,7 @@ class ModuleTransformer(
                 }
 
                 body = irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any
-                                .unsubstitutedPrimaryConstructor!!
-                        )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
+                    initializeClassWithAnySuperClass(this@clazz.symbol)
 
                     if (moduleField != null) {
                         +irSetField(
@@ -709,21 +679,7 @@ class ModuleTransformer(
             isPrimary = true
         }.apply {
             body = irBlockBody {
-                +IrDelegatingConstructorCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    context.irBuiltIns.unitType,
-                    symbolTable.referenceConstructor(
-                        context.builtIns.any
-                            .unsubstitutedPrimaryConstructor!!
-                    )
-                )
-                +IrInstanceInitializerCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
+                initializeClassWithAnySuperClass(this@clazz.symbol)
             }
         }
 

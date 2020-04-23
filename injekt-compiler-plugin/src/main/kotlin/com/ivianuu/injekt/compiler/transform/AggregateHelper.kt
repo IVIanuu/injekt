@@ -21,8 +21,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
@@ -54,19 +52,11 @@ fun IrModuleFragment.addEmptyClass(
                 visibility = Visibilities.PUBLIC
             }.apply {
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        startOffset, endOffset,
-                        context.irBuiltIns.unitType,
-                        context.symbolTable.referenceConstructor(
-                            context.builtIns.any.unsubstitutedPrimaryConstructor!!
-                        )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        startOffset,
-                        endOffset,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
+                    object : AbstractInjektTransformer(context) {
+                        init {
+                            initializeClassWithAnySuperClass(this@clazz.symbol)
+                        }
+                    }
                 }
             }
         },

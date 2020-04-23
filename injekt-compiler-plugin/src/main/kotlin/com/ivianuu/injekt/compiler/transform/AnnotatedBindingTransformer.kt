@@ -105,22 +105,7 @@ class AnnotatedBindingTransformer(
                 }
 
                 body = irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        context.irBuiltIns.unitType,
-                        symbolTable.referenceConstructor(
-                            context.builtIns.any
-                                .unsubstitutedPrimaryConstructor!!
-                        )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-
+                    initializeClassWithAnySuperClass(this@clazz.symbol)
                     valueParameters
                         .forEach { valueParameter ->
                             +irSetField(
