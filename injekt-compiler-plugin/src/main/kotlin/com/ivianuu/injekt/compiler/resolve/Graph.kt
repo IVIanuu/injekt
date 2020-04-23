@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
@@ -575,24 +574,20 @@ class Graph(
                             )
                         }
 
-                        try {
-                            constructor.valueParameters
-                                .drop(if (moduleIfRequired != null) 1 else 0)
-                                .forEach { valueParameter ->
-                                    val dependencyKey =
-                                        dependencies[valueParameter.index - if (moduleIfRequired != null) 1 else 0]
-                                    val dependency = allBindings.getValue(dependencyKey)
-                                    putValueArgument(
-                                        valueParameter.index,
-                                        dependency.providerInstance(
-                                            this@StatelessBinding,
-                                            it
-                                        )
+                        constructor.valueParameters
+                            .drop(if (moduleIfRequired != null) 1 else 0)
+                            .forEach { valueParameter ->
+                                val dependencyKey =
+                                    dependencies[valueParameter.index - if (moduleIfRequired != null) 1 else 0]
+                                val dependency = allBindings.getValue(dependencyKey)
+                                putValueArgument(
+                                    valueParameter.index,
+                                    dependency.providerInstance(
+                                        this@StatelessBinding,
+                                        it
                                     )
-                                }
-                        } catch (e: Exception) {
-                            error("${constructor.dump()} module $moduleIfRequired")
-                        }
+                                )
+                            }
                     }
                 }
             },
@@ -658,7 +653,6 @@ class Graph(
             )
 
             returnType = resultType
-            visibility = Visibilities.PUBLIC
         }.apply {
             dispatchReceiverParameter = thisComponent.component.thisReceiver!!.copyTo(this)
         }

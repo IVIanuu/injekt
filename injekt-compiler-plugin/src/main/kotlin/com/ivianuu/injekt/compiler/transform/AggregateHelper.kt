@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -21,6 +20,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
@@ -46,10 +46,8 @@ fun IrModuleFragment.addEmptyClass(
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             addConstructor {
-                origin =
-                    InjektDeclarationOrigin
+                returnType = defaultType
                 isPrimary = true
-                visibility = Visibilities.PUBLIC
             }.apply {
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     object : AbstractInjektTransformer(context) {

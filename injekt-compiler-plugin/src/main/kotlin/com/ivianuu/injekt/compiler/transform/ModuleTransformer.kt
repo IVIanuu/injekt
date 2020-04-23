@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.ir.passTypeArgumentsFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -145,12 +144,7 @@ class ModuleTransformer(
     private fun IrBuilderWithScope.moduleClass(
         function: IrFunction
     ) = buildClass {
-        kind = ClassKind.CLASS
-        origin =
-            InjektDeclarationOrigin
         name = getModuleFqName(function.descriptor).shortName()
-        modality = Modality.FINAL
-        visibility = function.visibility
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -245,8 +239,7 @@ class ModuleTransformer(
         val implicitModuleFields = implicitModules.associateWith {
             addField(
                 "module\$$moduleIndex",
-                it.defaultType,
-                Visibilities.PRIVATE
+                it.defaultType
             ).also { moduleIndex++ }
         }
 
@@ -257,7 +250,6 @@ class ModuleTransformer(
 
         addConstructor {
             returnType = defaultType
-            visibility = Visibilities.PUBLIC
             isPrimary = true
         }.apply {
             copyTypeParametersFrom(this@clazz)
@@ -467,11 +459,7 @@ class ModuleTransformer(
             kind = if (dependencies.isNotEmpty() ||
                 capturedModuleValueParameters.isNotEmpty()
             ) ClassKind.CLASS else ClassKind.OBJECT
-            origin =
-                InjektDeclarationOrigin
             this.name = name
-            modality = Modality.FINAL
-            visibility = Visibilities.PUBLIC
         }.apply clazz@{
             superTypes += symbols.provider.typeWith(resultType)
 
@@ -498,7 +486,6 @@ class ModuleTransformer(
 
             addConstructor {
                 returnType = defaultType
-                visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
                 copyTypeParametersFrom(this@clazz)
@@ -574,7 +561,6 @@ class ModuleTransformer(
             addFunction {
                 this.name = Name.identifier("invoke")
                 returnType = resultType
-                visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
@@ -640,17 +626,13 @@ class ModuleTransformer(
         moduleFieldsByParameter: Map<IrValueParameter, IrField>
     ) = buildClass {
         kind = ClassKind.OBJECT
-        origin = InjektDeclarationOrigin
         name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
-        modality = Modality.FINAL
-        visibility = Visibilities.PUBLIC
         isCompanion = true
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
         addConstructor {
             returnType = defaultType
-            visibility = Visibilities.PUBLIC
             isPrimary = true
         }.apply {
             body = irBlockBody {
@@ -679,7 +661,6 @@ class ModuleTransformer(
         return owner.addFunction {
             name = Name.identifier("create")
             returnType = resultType
-            visibility = Visibilities.PUBLIC
         }.apply {
             copyTypeParametersFrom(module)
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)

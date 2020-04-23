@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
@@ -97,7 +96,6 @@ class ComponentBlockTransformer(context: IrPluginContext) :
         val function = buildFun {
             name = Name.identifier("$key\$ComponentModule")
             returnType = this@ComponentBlockTransformer.context.irBuiltIns.unitType
-            visibility = Visibilities.PUBLIC
         }.apply {
             annotations += irCall(symbols.module.constructors.single())
 

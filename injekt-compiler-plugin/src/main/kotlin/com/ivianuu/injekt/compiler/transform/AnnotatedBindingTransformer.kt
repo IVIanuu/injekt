@@ -9,8 +9,6 @@ import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -69,10 +67,7 @@ class AnnotatedBindingTransformer(
         return buildClass {
             kind =
                 if (constructor.valueParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
-            origin = InjektDeclarationOrigin
             this.name = getProviderFqName(clazz.descriptor).shortName()
-            modality = Modality.FINAL
-            visibility = Visibilities.PUBLIC
         }.apply clazz@{
             superTypes += symbols.provider.typeWith(clazz.defaultType)
 
@@ -82,14 +77,12 @@ class AnnotatedBindingTransformer(
                 .associateWith { valueParameter ->
                     addField(
                         valueParameter.name,
-                        symbols.provider.typeWith(valueParameter.type),
-                        Visibilities.PRIVATE
+                        symbols.provider.typeWith(valueParameter.type)
                     )
                 }
 
             addConstructor {
                 returnType = defaultType
-                visibility = Visibilities.PUBLIC
                 isPrimary = true
             }.apply {
                 fieldsByDependency.forEach { (_, field) ->
@@ -129,7 +122,6 @@ class AnnotatedBindingTransformer(
             addFunction {
                 this.name = Name.identifier("invoke")
                 returnType = clazz.defaultType
-                visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
@@ -175,17 +167,13 @@ class AnnotatedBindingTransformer(
 
     private fun IrBuilderWithScope.providerCompanion(clazz: IrClass) = buildClass {
         kind = ClassKind.OBJECT
-        origin = InjektDeclarationOrigin
         name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
-        modality = Modality.FINAL
-        visibility = Visibilities.PUBLIC
         isCompanion = true
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
         addConstructor {
             returnType = defaultType
-            visibility = Visibilities.PUBLIC
             isPrimary = true
         }.apply {
             body = irBlockBody {
@@ -204,7 +192,6 @@ class AnnotatedBindingTransformer(
         return owner.addFunction {
             name = Name.identifier("create")
             returnType = clazz.defaultType
-            visibility = Visibilities.PUBLIC
         }.apply {
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
 

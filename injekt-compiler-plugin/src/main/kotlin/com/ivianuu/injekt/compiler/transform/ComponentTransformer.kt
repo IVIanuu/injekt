@@ -19,8 +19,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -178,12 +176,7 @@ class ComponentTransformer(
         name: Name,
         key: String
     ) = buildClass {
-        kind = ClassKind.CLASS
-        origin =
-            InjektDeclarationOrigin
         this.name = name
-        modality = Modality.FINAL
-        visibility = Visibilities.PUBLIC
     }.apply clazz@{
         superTypes += symbols.component.defaultType
 
@@ -247,7 +240,6 @@ class ComponentTransformer(
 
         addConstructor {
             returnType = defaultType
-            visibility = Visibilities.PUBLIC
             isPrimary = true
         }.apply {
             captures.forEachIndexed { index, capture ->
@@ -319,7 +311,6 @@ class ComponentTransformer(
 
         addFunction {
             this.name = Name.identifier("get")
-            visibility = Visibilities.PUBLIC
             returnType = this@ComponentTransformer.context.irBuiltIns.anyNType
         }.apply {
             dispatchReceiverParameter = thisReceiver?.copyTo(this)
