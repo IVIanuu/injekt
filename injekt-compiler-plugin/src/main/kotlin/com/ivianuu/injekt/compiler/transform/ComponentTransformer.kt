@@ -256,10 +256,7 @@ class ComponentTransformer(
                     +irSetField(
                         irGet(thisReceiver!!),
                         moduleField,
-                        irCall(
-                            module!!.constructors.single().symbol,
-                            module.defaultType
-                        ).apply {
+                        irCall(module!!.constructors.single()).apply {
                             copyValueArgumentsFrom(
                                 moduleCall!!,
                                 moduleCall.symbol.owner,

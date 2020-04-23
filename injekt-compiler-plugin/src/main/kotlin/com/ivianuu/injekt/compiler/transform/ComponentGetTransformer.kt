@@ -25,13 +25,13 @@ class ComponentGetTransformer(context: IrPluginContext) :
         ) {
             DeclarationIrBuilder(context, expression.symbol).run {
                 irCall(
-                    callee = symbolTable.referenceSimpleFunction(
+                    symbolTable.referenceSimpleFunction(
                         (if (expression.symbol.owner.extensionReceiverParameter?.type == symbols.component.defaultType)
                             symbols.component.descriptor.unsubstitutedMemberScope
                         else symbols.componentOwner.descriptor.unsubstitutedMemberScope)
                             .findSingleFunction(Name.identifier("get")),
                     ),
-                    type = expression.getTypeArgument(0)!!
+                    expression.getTypeArgument(0)!!
                 ).apply {
                     dispatchReceiver = expression.extensionReceiver
 
