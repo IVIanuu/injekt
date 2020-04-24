@@ -87,52 +87,6 @@ fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
 fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
     any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
 
-fun getComponentFqName(
-    expression: IrCall,
-    file: IrFile
-): FqName {
-    val key = expression.getValueArgument(0)!!.getConstant<String>()
-    return file.fqName.child(Name.identifier("$key\$Impl"))
-}
-
-fun getModuleFqName(
-    function: FunctionDescriptor
-): FqName {
-    return FqName(function.fqNameSafe.asString() + "\$Impl")
-}
-
-fun getProviderFqName(clazz: ClassDescriptor): FqName =
-    clazz.fqNameSafe.child(Name.identifier("Provider\$Impl"))
-
-fun makeModuleAnnotation(module: ModuleDescriptor): AnnotationDescriptor =
-    object : AnnotationDescriptor {
-        override val type: KotlinType
-            get() = module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(InjektFqNames.Module)
-            )!!.defaultType
-        override val allValueArguments: Map<Name, ConstantValue<*>> get() = emptyMap()
-        override val source: SourceElement get() = SourceElement.NO_SOURCE
-        override fun toString() = "[@Module]"
-    }
-
-fun KotlinType.makeModule(module: ModuleDescriptor): KotlinType {
-    if (hasModuleAnnotation()) return this
-    val annotation = makeModuleAnnotation(module)
-    return replaceAnnotations(Annotations.create(annotations + annotation))
-}
-
-fun KotlinType.hasModuleAnnotation(): Boolean =
-    !isSpecialType && annotations.findAnnotation(InjektFqNames.Module) != null
-
-fun Annotated.hasModuleAnnotation(): Boolean =
-    annotations.findAnnotation(InjektFqNames.Module) != null
-
-internal val KotlinType.isSpecialType: Boolean
-    get() =
-        this === TypeUtils.NO_EXPECTED_TYPE || this === TypeUtils.UNIT_EXPECTED_TYPE
-
-val AnnotationDescriptor.isModuleAnnotation: Boolean get() = fqName == InjektFqNames.Module
-
 fun KotlinType.asTypeName(): TypeName? {
     if (isError) return null
     if (this.isTypeParameter()) {
@@ -166,48 +120,4 @@ fun KotlinType.asTypeName(): TypeName? {
     } else type).copy(
         nullable = isMarkedNullable
     )
-}
-
-fun <T : Any> IrExpression.getConstant(): T {
-    return when (this) {
-        is IrConst<*> -> value as T
-        is IrCall -> ((this.symbol.owner.propertyIfAccessor as? IrProperty)
-            ?.backingField?.initializer?.expression as? IrConst<*>)?.value as T
-        else -> error("Not a constant expression")
-    }
-}
-
-fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
-    if (this !is IrSimpleType) return this
-
-    (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
-        substitutionMap.toList()
-            .firstOrNull { it.first.owner.name == typeParam.owner.name }
-            ?.let { return it.second }
-    }
-
-    substitutionMap[classifier]?.let { return it }
-
-    val newArguments = arguments.map {
-        if (it is IrTypeProjection) {
-            makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
-        } else {
-            it
-        }
-    }
-
-    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
-    return IrSimpleTypeImpl(
-        classifier,
-        hasQuestionMark,
-        newArguments,
-        newAnnotations
-    )
-}
-
-fun AnnotationDescriptor.getStringList(name: String): List<String> {
-    return allValueArguments[Name.identifier(name)]
-        .cast<ArrayValue>()
-        .value
-        .map { it.value as String }
 }

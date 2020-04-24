@@ -18,15 +18,9 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.factory
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.componentFactory
 
-class App : Application(), ComponentOwner {
-
-    override val component by lazy {
-        Component("ApplicationComponent") {
-            factory { this@App }
-        }
-    }
-
-}
+class App : Application()

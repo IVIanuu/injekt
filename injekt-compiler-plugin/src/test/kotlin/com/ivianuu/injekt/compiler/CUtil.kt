@@ -36,12 +36,12 @@ fun singleSource(
 
 fun codegen(
     @Language("kotlin") source: String,
-    assertions: KotlinCompilation.Result.() -> Unit = {}
+    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
 ) = codegen(singleSource(source), assertions = assertions)
 
 fun codegen(
     vararg sources: SourceFile,
-    assertions: KotlinCompilation.Result.() -> Unit = {}
+    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
 ) {
     val result = KotlinCompilation().apply {
         this.sources = sources.toList()
@@ -54,20 +54,6 @@ fun codegen(
     }.compile()
     println("Result: ${result.exitCode} m: ${result.messages}")
     assertions(result)
-}
-
-fun <T> componentTest(
-    @Language("kotlin") source: String,
-    @Language("kotlin") invokeExpression: String,
-    assertions: KotlinCompilation.Result.(T) -> Unit
-) {
-    codegen(
-        buildString {
-            append(source)
-            appendln()
-            append("fun invoke() = $invokeExpression")
-        }
-    )
 }
 
 fun KotlinCompilation.Result.assertOk() {
@@ -121,10 +107,8 @@ annotation class TestScope
 @Scope
 annotation class TestScope2
 
-annotation class TestQualifier1 {
-    companion object : Qualifier
-}
+@Qualifier
+annotation class TestQualifier1
 
-annotation class TestQualifier2 {
-    companion object : Qualifier
-}
+@Qualifier
+annotation class TestQualifier2

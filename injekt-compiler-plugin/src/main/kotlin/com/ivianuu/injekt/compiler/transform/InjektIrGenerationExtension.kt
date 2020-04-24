@@ -16,83 +16,25 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.InjektSymbols
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
-class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
+class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val declarationStore =
-            InjektDeclarationStore(
-                pluginContext,
-                moduleFragment,
-                InjektSymbols(pluginContext)
-            )
-
         fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
             generateSymbols(pluginContext)
             visitModuleFragment(moduleFragment, null)
             generateSymbols(pluginContext)
         }
 
-        val annotatedBindingAggregateGenerator = AnnotatedBindingAggregateGenerator(
-            project,
-            pluginContext
-        ).also { it.visitModuleAndGenerateSymbols() }
-
-        ComponentAggregateGenerator(
-            project,
-            pluginContext
-        ).visitModuleAndGenerateSymbols()
-
-        val moduleAggregateGenerator = ModuleAggregateGenerator(
-            project,
-            pluginContext
-        ).also { it.visitModuleAndGenerateSymbols() }
-
-        AnnotatedBindingTransformer(pluginContext)
+        // create a provider class for each provide function
+        ProvideTransformer(pluginContext)
             .visitModuleAndGenerateSymbols()
-
-        // transform the config blocks of Component { ... } to a module
-        ComponentBlockTransformer(
-            pluginContext
-        ).visitModuleAndGenerateSymbols()
-
-        // transform all @Module fun module() { ... } to classes
-        val moduleTransformer =
-            ModuleTransformer(
-                pluginContext,
-                declarationStore,
-                moduleFragment
-            )
-
-        // transform all Component { ... } calls to a Component implementation
-        val componentTransformer =
-            ComponentTransformer(
-                pluginContext,
-                declarationStore,
-                moduleFragment
-            )
-
-        declarationStore.annotatedBindingAggregateGenerator = annotatedBindingAggregateGenerator
-        declarationStore.moduleAggregateGenerator = moduleAggregateGenerator
-        declarationStore.componentTransformer = componentTransformer
-        declarationStore.moduleTransformer = moduleTransformer
-
-        moduleTransformer.visitModuleAndGenerateSymbols()
-        componentTransformer.visitModuleAndGenerateSymbols()
-
-        // transform component.get<String>() to component.get("java.lang.String")
-        ComponentGetTransformer(
-            pluginContext
-        ).visitModuleAndGenerateSymbols()
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>

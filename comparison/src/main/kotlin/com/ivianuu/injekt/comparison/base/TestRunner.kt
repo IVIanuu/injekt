@@ -50,7 +50,7 @@ fun runAllInjectionTests(config: Config = defaultConfig) {
             Dagger2Test,
             Dagger2ReflectTest,
             GuiceTest,
-            InjektTest,
+            //InjektTest,
             KatanaTest,
             KodeinTest,
             KoinTest,

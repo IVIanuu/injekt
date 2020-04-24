@@ -3,40 +3,39 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektSymbols(
     private val context: IrPluginContext
 ) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
-    val injektBindingsPackage = getPackage(InjektFqNames.InjektBindingsPackage)
     val injektInternalPackage = getPackage(InjektFqNames.InjektInternalPackage)
-    val injektModulesPackage = getPackage(InjektFqNames.InjektModulesPackage)
-
-    val bindingMetadata = getTopLevelClass(InjektFqNames.BindingMetadata)
 
     val component = getTopLevelClass(InjektFqNames.Component)
-    val componentMetadata = getTopLevelClass(InjektFqNames.ComponentMetadata)
-    val componentOwner = getTopLevelClass(InjektFqNames.ComponentOwner)
-
-    val keyedLazy = getTopLevelClass(InjektFqNames.KeyedLazy)
-    val keyedProvider = getTopLevelClass(InjektFqNames.KeyedProvider)
+    val componentFactory = component.ensureBound(context.irProviders)
+        .owner
+        .declarations
+        .filterIsInstance<IrClass>()
+        .single()
+        .symbol
 
     val lazy = getTopLevelClass(InjektFqNames.Lazy)
 
     val module = getTopLevelClass(InjektFqNames.Module)
-    val moduleMetadata = getTopLevelClass(InjektFqNames.ModuleMetadata)
 
+    val qualifier = getTopLevelClass(InjektFqNames.Qualifier)
+
+    val provide = getTopLevelClass(InjektFqNames.Provide)
     val provider = getTopLevelClass(InjektFqNames.Provider)
 
-    val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
-    val providerFieldMetadata = getTopLevelClass(InjektFqNames.ProviderFieldMetadata)
-    val providerMetadata = getTopLevelClass(InjektFqNames.ProviderMetadata)
-
     val singleProvider = getTopLevelClass(InjektFqNames.SingleProvider)
+
+    val scope = getTopLevelClass(InjektFqNames.Scope)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

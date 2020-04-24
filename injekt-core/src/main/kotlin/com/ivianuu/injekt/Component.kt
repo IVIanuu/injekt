@@ -1,22 +1,14 @@
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.stub
+import kotlin.reflect.KClass
 
-interface Component {
-    fun <T> get(key: Int): T = error("Couldn't find binding for $key")
+@Target(AnnotationTarget.CLASS)
+annotation class Component(
+    val dependencies: Array<KClass<*>> = [],
+    val modules: Array<KClass<*>> = []
+) {
+    @Target(AnnotationTarget.CLASS)
+    annotation class Factory
 }
 
-inline fun <reified T> Component.get(
-    vararg qualifiers: Qualifier
-): T = stub()
-
-fun Component(key: String, block: @Module () -> Unit = {}): Component = stub()
-
-interface ComponentOwner {
-    val component: Component
-    fun <T> get(key: Int): T = component.get(key)
-}
-
-inline fun <reified T> ComponentOwner.get(
-    vararg qualifiers: Qualifier
-): T = component.get(*qualifiers)
+inline fun <reified T> componentFactory(): T = error("Implemented as an intrinsic")

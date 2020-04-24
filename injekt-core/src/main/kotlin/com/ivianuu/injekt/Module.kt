@@ -1,4 +1,14 @@
 package com.ivianuu.injekt
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
-annotation class Module
+import kotlin.reflect.KClass
+
+@Target(AnnotationTarget.CLASS)
+annotation class Module(val includes: Array<KClass<*>> = [])
+
+@Target(
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.VALUE_PARAMETER
+)
+annotation class Provide
