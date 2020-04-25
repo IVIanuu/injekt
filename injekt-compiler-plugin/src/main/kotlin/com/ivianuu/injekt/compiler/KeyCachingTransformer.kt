@@ -92,8 +92,6 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             override fun visitCall(expression: IrCall): IrExpression {
                 super.visitCall(expression)
 
-                println("is valid ${expression.isValidKeyOfCall()} ?? ${expression.dump()}")
-
                 if (expression.isValidKeyOfCall()) {
                     keyOfCalls.getOrPut(declarationContainers.last()) { mutableSetOf() } += expression
                 }

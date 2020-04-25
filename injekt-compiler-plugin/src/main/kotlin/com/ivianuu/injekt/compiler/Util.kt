@@ -12,23 +12,6 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
-object InjektClassNames {
-    val InjektPackage = FqName("com.ivianuu.injekt")
-    val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
-
-    val ApplicationScope = FqName("com.ivianuu.injekt.ApplicationScope")
-    val Behavior = FqName("com.ivianuu.injekt.Behavior")
-    val Component = FqName("com.ivianuu.injekt.Component")
-    val Injekt = FqName("com.ivianuu.injekt.Injekt")
-    val Key = FqName("com.ivianuu.injekt.Key")
-    val Module = FqName("com.ivianuu.injekt.Module")
-    val ModuleImpl = FqName("com.ivianuu.injekt.ModuleImpl")
-    val Param = FqName("com.ivianuu.injekt.Param")
-    val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val Scope = FqName("com.ivianuu.injekt.Scope")
-}
-
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
 

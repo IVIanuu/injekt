@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
 
-    private val key = getClass(InjektClassNames.Key)
+    private val key = getClass(InjektFqNames.Key)
 
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)

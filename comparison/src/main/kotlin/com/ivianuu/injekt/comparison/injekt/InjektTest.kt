@@ -62,7 +62,7 @@ private val FibonacciModule = Module {
             provider = object : AbstractProvider<Fib3>() {
                 private lateinit var fibM1: Provider<Fib2>
                 private lateinit var fibM2: Provider<Fib1>
-                override fun doLink(linker: Linker) {
+                override fun link(linker: Linker) {
                     fibM1 = linker.get()
                     fibM2 = linker.get()
                 }
@@ -77,7 +77,7 @@ private val FibonacciModule = Module {
             provider = object : AbstractProvider<Fib4>() {
                 private lateinit var fibM1: Provider<Fib3>
                 private lateinit var fibM2: Provider<Fib2>
-                override fun doLink(linker: Linker) {
+                override fun link(linker: Linker) {
                     fibM1 = linker.get()
                     fibM2 = linker.get()
                 }
@@ -92,7 +92,7 @@ private val FibonacciModule = Module {
             provider = object : AbstractProvider<Fib5>() {
                 private lateinit var fibM1: Provider<Fib4>
                 private lateinit var fibM2: Provider<Fib3>
-                override fun doLink(linker: Linker) {
+                override fun link(linker: Linker) {
                     fibM1 = linker.get()
                     fibM2 = linker.get()
                 }
@@ -107,7 +107,7 @@ private val FibonacciModule = Module {
             provider = object : AbstractProvider<Fib6>() {
                 private lateinit var fibM1: Provider<Fib5>
                 private lateinit var fibM2: Provider<Fib4>
-                override fun doLink(linker: Linker) {
+                override fun link(linker: Linker) {
                     fibM1 = linker.get()
                     fibM2 = linker.get()
                 }
@@ -122,7 +122,7 @@ private val FibonacciModule = Module {
             provider = object : AbstractProvider<Fib7>() {
                 private lateinit var fibM1: Provider<Fib6>
                 private lateinit var fibM2: Provider<Fib5>
-                override fun doLink(linker: Linker) {
+                override fun link(linker: Linker) {
                     fibM1 = linker.get()
                     fibM2 = linker.get()
                 }
@@ -137,7 +137,7 @@ private val FibonacciModule = Module {
             provider = object : AbstractProvider<Fib8>() {
                 private lateinit var fibM1: Provider<Fib7>
                 private lateinit var fibM2: Provider<Fib6>
-                override fun doLink(linker: Linker) {
+                override fun link(linker: Linker) {
                     fibM1 = linker.get()
                     fibM2 = linker.get()
                 }

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -42,9 +43,68 @@ import kotlin.reflect.KClass
 class Component internal constructor(
     val scope: KClass<*>,
     val parent: Component?,
-    val bindings: Map<Key<*>, Binding<*>>
+    bindings: ConcurrentHashMap<Key<*>, Binding<*>>
 ) {
-    val linker = Linker(this)
+
+    val bindings: Map<Key<*>, Binding<*>> get() = _bindings
+    private val _bindings = bindings
+
+    private val linker = Linker(this)
+    private val linkedKeys = mutableSetOf<Key<*>>()
+
+    /**
+     * Return a instance of type [T] for [key]
+     */
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
+        if (key is Key.ParameterizedKey && key.arguments.size == 1) {
+            fun instanceKey() = keyOf<T>(
+                classifier = key.arguments.single().classifier,
+                qualifier = key.qualifier
+            )
+            when (key.arguments.single().classifier) {
+                Lazy::class -> KeyedLazy(this, instanceKey())
+                Provider::class -> KeyedProvider(linker, instanceKey())
+            }
+        }
+
+        return linker.get(key)(parameters)
+    }
+
+    internal fun <T> getProvider(key: Key<T>): Provider<T> {
+        findExistingProvider(key)?.let { return it }
+
+        if (key.isNullable) return NullProvider as Provider<T>
+
+        error("Couldn't find binding for $key")
+    }
+
+    private fun <T> findExistingProvider(key: Key<T>): Provider<T>? {
+        _bindings[key]
+            ?.provider
+            ?.linkIfNeeded(key)
+            ?.let { return it as? Provider<T> }
+
+        return parent?.findExistingProvider(key)
+    }
+
+    private fun putJitBinding(key: Key<*>, binding: Binding<*>) {
+        _bindings[key] = binding
+    }
+
+    private fun findComponent(scope: KClass<*>): Component? {
+        if (this.scope == scope) return this
+        return parent?.findComponent(scope)
+    }
+
+    private fun <T> Provider<T>.linkIfNeeded(key: Key<*>): Provider<T> {
+        if (this is Linkable && linkedKeys.add(key)) link(linker)
+        return this
+    }
+
+    private object NullProvider : Provider<Nothing?> {
+        override fun invoke(parameters: Parameters) = null
+    }
+
 }
 
 inline fun <reified T> Component.get(
@@ -52,11 +112,14 @@ inline fun <reified T> Component.get(
     parameters: Parameters = emptyParameters()
 ): T = get(keyOf(qualifier), parameters)
 
-/**
- * Return a instance of type [T] for [key]
- */
-fun <T> Component.get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
-    linker.get(key)(parameters)
+inline fun <reified T> Component.plus() = plus(T::class)
+
+inline fun <reified T> Component.plus(vararg modules: Module) = plus(
+    scope = T::class,
+    modules = modules
+)
+
+fun Component.plus(scope: KClass<*>) = Component(scope = scope, parent = this)
 
 fun Component.plus(scope: KClass<*>, vararg modules: Module) = Component(
     scope = scope,
@@ -105,7 +168,7 @@ fun Component(
         }
     }
 
-    val finalBindings = if (parent != null) {
+    val finalBindings = ConcurrentHashMap(if (parent != null) {
         val parentBindings = parent.bindings
         val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
         bindings.forEach { (key, binding) ->
@@ -117,7 +180,7 @@ fun Component(
             }
         }
         finalBindings
-    } else bindings
+    } else bindings)
 
     return Component(
         scope = scope,

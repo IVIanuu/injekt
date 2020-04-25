@@ -1,7 +1,6 @@
-package com.facebook.buck.jvm.java.javax.com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.codegen
-import com.ivianuu.injekt.compiler.invokeSingleFile
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
@@ -25,5 +24,31 @@ class KeyTest {
         fun invoke() = keyOf<String>()
         """
     )
+
+    @Test
+    fun testKeyOverload() = codegen(
+        """ 
+            inline fun <reified T> keyOverload(qualifier: kotlin.reflect.KClass<*>? = null) = false
+            fun <T> keyOverload(key: Key<T>) = true
+            
+            fun invoke() = keyOverload<String>()
+        """
+    ) {
+        assertEquals(true, invokeSingleFile())
+    }
+
+    @Test
+    fun testExtensionKeyOverload() = codegen(
+        """ 
+            class MyClass {
+                fun <T> keyOverload(key: Key<T>) = true
+            }
+            inline fun <reified T> MyClass.keyOverload(qualifier: kotlin.reflect.KClass<*>? = null) = false
+
+            fun invoke() = MyClass().keyOverload<String>()
+        """
+    ) {
+        assertEquals(true, invokeSingleFile())
+    }
 
 }

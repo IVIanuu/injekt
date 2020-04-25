@@ -35,16 +35,4 @@ data class Binding<T>(
     val provider: Provider<T>
 )
 
-abstract class AbstractProvider<T> : Provider<T>, Linkable {
-
-    private var linked = false
-
-    override fun link(linker: Linker) {
-        if (!linked) {
-            linked = true
-            doLink(linker)
-        }
-    }
-
-    protected abstract fun doLink(linker: Linker)
-}
+abstract class AbstractProvider<T> : Provider<T>, Linkable

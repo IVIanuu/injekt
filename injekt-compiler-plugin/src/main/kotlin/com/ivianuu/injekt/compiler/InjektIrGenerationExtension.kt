@@ -17,6 +17,8 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             generateSymbols(pluginContext)
         }
 
+        // rewrite key overload stub calls to the real calls
+        KeyOverloadTransformer(pluginContext).visitModuleAndGenerateSymbols()
         // memoize static keyOf calls
         KeyCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
         // rewrite keyOf<String>() -> keyOf(String::class)

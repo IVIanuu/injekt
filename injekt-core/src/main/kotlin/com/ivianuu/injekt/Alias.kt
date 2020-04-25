@@ -63,7 +63,7 @@ fun <S : T, T> ModuleDsl.alias(
 
 private class AliasProvider<T>(private val originalKey: Key<T>) : AbstractProvider<T>() {
     private lateinit var originalProvider: Provider<T>
-    override fun doLink(linker: Linker) {
+    override fun link(linker: Linker) {
         originalProvider = linker.get(originalKey)
     }
 

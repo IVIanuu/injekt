@@ -41,7 +41,7 @@ abstract class AbstractInjektTransformer(
     protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     protected val injektPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektClassNames.InjektPackage)
+        pluginContext.moduleDescriptor.getPackage(InjektFqNames.InjektPackage)
 
     protected fun getClass(fqName: FqName) =
         pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
