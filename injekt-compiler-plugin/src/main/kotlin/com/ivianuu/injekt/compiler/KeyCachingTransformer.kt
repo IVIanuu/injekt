@@ -60,7 +60,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         return KeyId(
             type = call.getTypeArgument(0)!!,
             qualifier = call.getValueArgument(0)?.let {
-                (it as? IrCall)?.symbol?.ensureBound()?.owner?.propertyIfAccessor
+                (it as? IrCall)?.symbol?.ensureBound(context.irProviders)?.owner?.propertyIfAccessor
                     ?.safeAs<IrProperty>()?.fqNameWhenAvailable
             }
         )
@@ -111,7 +111,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
                         isStatic = true
                         //visibility = Visibilities.PRIVATE
                     }.apply {
-                        initializer = DeclarationIrBuilder(pluginContext, call.symbol)
+                        initializer = DeclarationIrBuilder(context, call.symbol)
                             .irExprBody(call.deepCopyWithVariables().also {
                                 ignoredCalls += it
                             })
@@ -148,7 +148,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
                 val parent = declarationContainers.last()
 
-                return DeclarationIrBuilder(pluginContext, expression.symbol).irGetField(
+                return DeclarationIrBuilder(context, expression.symbol).irGetField(
                     null,
                     keyFields.getValue(parent).getValue(KeyId(expression))
                 )
@@ -165,7 +165,7 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
             "Is empty for ${this.dump()}"
         }
 
-        val callee = symbol.ensureBound().owner
+        val callee = symbol.ensureBound(context.irProviders).owner
 
         if ((callee.fqNameForIrSerialization.asString() != "com.ivianuu.injekt.keyOf" &&
                     callee.fqNameForIrSerialization.asString() != "com.ivianuu.injekt.KeyKt.keyOf") ||

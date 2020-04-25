@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.ClassId
@@ -28,31 +27,42 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
-    protected val pluginContext: IrPluginContext
+    protected val context: IrPluginContext
 ) : IrElementTransformerVoid() {
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        return super.visitModuleFragment(declaration)
-            .also { it.patchDeclarationParents() }
-    }
+    val symbols = InjektSymbols(context)
 
-    protected val symbolTable = pluginContext.symbolTable
-    protected val typeTranslator = pluginContext.typeTranslator
+    protected val symbolTable = context.symbolTable
+    protected val typeTranslator = context.typeTranslator
     protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     protected val injektPackage =
-        pluginContext.moduleDescriptor.getPackage(InjektFqNames.InjektPackage)
+        context.moduleDescriptor.getPackage(InjektFqNames.InjektPackage)
 
     protected fun getClass(fqName: FqName) =
-        pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
+        context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
     protected fun getTypeAlias(fqName: FqName) =
-        pluginContext.moduleDescriptor.findTypeAliasAcrossModuleDependencies(ClassId.topLevel(fqName))!!
+        context.moduleDescriptor.findTypeAliasAcrossModuleDependencies(ClassId.topLevel(fqName))!!
 
-    protected fun <T : IrSymbol> T.ensureBound(): T {
-        if (!this.isBound) pluginContext.irProviders.forEach { it.getDeclaration(this) }
-        check(this.isBound) { "$this is not bound" }
-        return this
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+        return super.visitModuleFragment(declaration)
+            .also {
+                /*it.transformChildrenVoid(object : IrElementTransformerVoid() {
+                    override fun visitFile(declaration: IrFile): IrFile {
+                        return super.visitFile(declaration)
+                            .also {
+                                it as IrFileImpl
+                                it.metadata = MetadataSource.File(
+                                    declaration
+                                        .declarations
+                                        .map { it.descriptor }
+                                )
+                            }
+                    }
+                })*/
+                it.patchDeclarationParents()
+            }
     }
 
 }

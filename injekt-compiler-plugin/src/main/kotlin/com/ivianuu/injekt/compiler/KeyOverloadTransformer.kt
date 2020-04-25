@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -24,8 +23,6 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class KeyOverloadTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
-
-    private val key = getClass(InjektFqNames.Key)
 
     private lateinit var moduleFragment: IrModuleFragment
 
@@ -39,12 +36,10 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         val callee = expression.symbol.owner
 
-        println("call ${expression.dump()}")
-
         if (callee.typeParameters.isEmpty() ||
             callee.valueParameters.none {
                 it.type.toKotlinType().constructor.declarationDescriptor ==
-                        pluginContext.builtIns.kClass
+                        context.builtIns.kClass
             }
         ) return expression
 
@@ -60,9 +55,9 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
                     otherFunction.valueParameters.all { otherValueParameter ->
                         val calleeValueParameter = callee.valueParameters[otherValueParameter.index]
-                        if (otherValueParameter.type.toKotlinType().constructor.declarationDescriptor == key) {
+                        if (otherValueParameter.type.toKotlinType().constructor.declarationDescriptor == symbols.key.descriptor) {
                             calleeValueParameter.type.toKotlinType()
-                                .constructor.declarationDescriptor == pluginContext.builtIns.kClass
+                                .constructor.declarationDescriptor == context.builtIns.kClass
                         } else {
                             otherValueParameter.name == calleeValueParameter.name
                         }
@@ -85,9 +80,9 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                             otherFunction.valueParameters.all { otherValueParameter ->
                                 val calleeValueParameter =
                                     callee.valueParameters[otherValueParameter.index]
-                                if (otherValueParameter.type.constructor.declarationDescriptor == key) {
+                                if (otherValueParameter.type.constructor.declarationDescriptor == symbols.key.descriptor) {
                                     calleeValueParameter.type.toKotlinType()
-                                        .constructor.declarationDescriptor == pluginContext.builtIns.kClass
+                                        .constructor.declarationDescriptor == context.builtIns.kClass
                                 } else {
                                     otherValueParameter.name == calleeValueParameter.name
                                 }
@@ -99,12 +94,12 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
             keyOverloadFunction =
                 ((callee.descriptor.containingDeclaration as? PackageFragmentDescriptor)
-                    ?.let { pluginContext.moduleDescriptor.getPackage(it.fqName).memberScope }
+                    ?.let { context.moduleDescriptor.getPackage(it.fqName).memberScope }
                     ?.findKeyOverloadFunction()
                     ?: (callee.descriptor.extensionReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
                         ?.unsubstitutedMemberScope?.findKeyOverloadFunction())
                     ?.let { symbolTable.referenceFunction(it) }
-                    ?.ensureBound()
+                    ?.ensureBound(context.irProviders)
                     ?.owner
         }
 
@@ -113,7 +108,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
         val keyOf = injektPackage.memberScope
             .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
 
-        val builder = DeclarationIrBuilder(pluginContext, expression.symbol)
+        val builder = DeclarationIrBuilder(context, expression.symbol)
 
         return builder.irCall(keyOverloadFunction!!).apply {
             if (keyOverloadFunction!!.dispatchReceiverParameter != null) {
@@ -125,7 +120,7 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
             copyTypeArgumentsFrom(expression)
 
             keyOverloadFunction!!.valueParameters.forEach { valueParameter ->
-                if (valueParameter.type.toKotlinType().constructor.declarationDescriptor == key) {
+                if (valueParameter.type.toKotlinType().constructor.declarationDescriptor == symbols.key.descriptor) {
                     val keyType = valueParameter.type
                         .substitute(
                             keyOverloadFunction!!.typeParameters

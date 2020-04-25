@@ -11,24 +11,22 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
-import org.jetbrains.kotlin.types.KotlinTypeFactory
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
-
-    private val key = getClass(InjektFqNames.Key)
 
     override fun visitCall(expression: IrCall): IrExpression {
         super.visitCall(expression)
 
-        val callee = expression.symbol.ensureBound().owner
+        val callee = expression.symbol.owner
 
         if ((callee.fqNameForIrSerialization.asString() != "com.ivianuu.injekt.keyOf" &&
                     callee.fqNameForIrSerialization.asString() != "com.ivianuu.injekt.KeyKt.keyOf") ||
@@ -39,7 +37,7 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         val type = expression.getTypeArgument(0)!!
         if (!type.isFullyResolved()) return expression
 
-        return DeclarationIrBuilder(pluginContext, expression.symbol)
+        return DeclarationIrBuilder(context, expression.symbol)
             .irKeyOf(type, expression.getValueArgument(0))
     }
 
@@ -47,20 +45,11 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
         type: IrType,
         qualifier: IrExpression? = null
     ): IrExpression {
-        val kotlinType = type.toKotlinType()
-
-        return if (kotlinType.arguments.isNotEmpty()) {
-            val parameterizedKey = key.sealedSubclasses
-                .single { it.name.asString() == "ParameterizedKey" }
+        return if (type is IrSimpleType && type.arguments.isNotEmpty()) {
+            val parameterizedKey = symbols.parameterizedKey
 
             irCall(
-                symbolTable.referenceConstructor(parameterizedKey.constructors.first {
-                    it.valueParameters.size == 4
-                }),
-                KotlinTypeFactory.simpleType(
-                    baseType = parameterizedKey.defaultType,
-                    arguments = listOf(type.toKotlinType().asTypeProjection())
-                ).toIrType()
+                parameterizedKey.constructors.single { it.valueParameters.size == 4 }
             ).apply {
                 putTypeArgument(0, type)
 
@@ -69,7 +58,7 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                     IrClassReferenceImpl(
                         startOffset,
                         endOffset,
-                        pluginContext.irBuiltIns.kClassClass.typeWith(type),
+                        this@KeyOfTransformer.context.irBuiltIns.kClassClass.typeWith(type),
                         type.classifierOrFail,
                         type
                     )
@@ -79,15 +68,15 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
 
                 putValueArgument(2, irBoolean(type.isMarkedNullable()))
 
-                pluginContext.irBuiltIns.arrayClass
+                this@KeyOfTransformer.context.irBuiltIns.arrayClass
                     .typeWith(getTypeArgument(0)!!)
-                val argumentsType = pluginContext.irBuiltIns.arrayClass
-                    .typeWith(symbolTable.referenceClass(key).starProjectedType)
+                val argumentsType = this@KeyOfTransformer.context.irBuiltIns.arrayClass
+                    .typeWith(symbols.key.starProjectedType)
 
                 putValueArgument(
                     3,
                     irCall(
-                        pluginContext.symbols.arrayOf,
+                        this@KeyOfTransformer.context.symbols.arrayOf,
                         argumentsType
                     ).apply {
                         putValueArgument(
@@ -105,18 +94,9 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                 )
             }
         } else {
-            val simpleKey = key.sealedSubclasses
-                .single { it.name.asString() == "SimpleKey" }
-
-            irCall(
-                symbolTable.referenceConstructor(simpleKey.constructors.first {
-                    it.valueParameters.size == 3
-                }),
-                KotlinTypeFactory.simpleType(
-                    baseType = simpleKey.defaultType,
-                    arguments = listOf(type.toKotlinType().asTypeProjection())
-                ).toIrType()
-            ).apply {
+            irCall(symbols.simpleKey.constructors.single {
+                it.valueParameters.size == 3
+            }).apply {
                 putTypeArgument(0, type)
 
                 putValueArgument(
@@ -124,7 +104,7 @@ class KeyOfTransformer(pluginContext: IrPluginContext) : AbstractInjektTransform
                     IrClassReferenceImpl(
                         startOffset,
                         endOffset,
-                        pluginContext.irBuiltIns.kClassClass.typeWith(type),
+                        this@KeyOfTransformer.context.irBuiltIns.kClassClass.typeWith(type),
                         type.classifierOrFail,
                         type
                     )

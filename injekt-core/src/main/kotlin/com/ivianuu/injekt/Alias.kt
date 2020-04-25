@@ -61,7 +61,7 @@ fun <S : T, T> ModuleDsl.alias(
     add(Binding(aliasKey as Key<S>, duplicateStrategy, AliasProvider(originalKey)))
 }
 
-private class AliasProvider<T>(private val originalKey: Key<T>) : AbstractProvider<T>() {
+private class AliasProvider<T>(private val originalKey: Key<T>) : Provider<T>, Linkable {
     private lateinit var originalProvider: Provider<T>
     override fun link(linker: Linker) {
         originalProvider = linker.get(originalKey)

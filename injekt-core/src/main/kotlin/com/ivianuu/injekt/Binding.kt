@@ -34,5 +34,3 @@ data class Binding<T>(
      */
     val provider: Provider<T>
 )
-
-abstract class AbstractProvider<T> : Provider<T>, Linkable

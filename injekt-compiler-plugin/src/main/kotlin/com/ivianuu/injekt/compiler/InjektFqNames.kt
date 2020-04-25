@@ -1,20 +1,21 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val InjektInternalPackage = FqName("com.ivianuu.injekt.internal")
 
-    val ApplicationScope = FqName("com.ivianuu.injekt.ApplicationScope")
-    val Behavior = FqName("com.ivianuu.injekt.Behavior")
-    val Component = FqName("com.ivianuu.injekt.Component")
-    val Injekt = FqName("com.ivianuu.injekt.Injekt")
-    val Key = FqName("com.ivianuu.injekt.Key")
-    val Module = FqName("com.ivianuu.injekt.Module")
-    val ModuleImpl = FqName("com.ivianuu.injekt.ModuleImpl")
-    val Param = FqName("com.ivianuu.injekt.Param")
-    val Parameters = FqName("com.ivianuu.injekt.Parameters")
-    val Qualifier = FqName("com.ivianuu.injekt.Qualifier")
-    val Scope = FqName("com.ivianuu.injekt.Scope")
+    val Component = InjektPackage.child("Component")
+    val Key = InjektPackage.child("Key")
+    val Linkable = InjektPackage.child("Linkable")
+    val Linker = InjektPackage.child("Linker")
+    val ParameterizedKey = Key.child("ParameterizedKey")
+    val Provider = InjektPackage.child("Provider")
+    val Qualifier = InjektPackage.child("Qualifier")
+    val Scope = InjektPackage.child("Scope")
+    val SimpleKey = Key.child("SimpleKey")
+
+    private fun FqName.child(name: String) = child(Name.identifier(name))
+
 }
