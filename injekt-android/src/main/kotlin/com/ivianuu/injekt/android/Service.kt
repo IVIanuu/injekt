@@ -23,8 +23,6 @@ import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Service> ServiceComponent(
@@ -47,8 +45,8 @@ fun <T : Service> ComponentBuilder.serviceBindings(
     instance: T,
     key: Key<T>
 ) {
-    instance(instance, key = key)
-    alias(originalKey = key, aliasKey = keyOf<Service>())
+    com.ivianuu.injekt.instance(instance, key = key)
+    com.ivianuu.injekt.alias(originalKey = key, aliasKey = keyOf<Service>())
     contextBindings(ForService) { instance }
     componentAlias(ForService)
 }

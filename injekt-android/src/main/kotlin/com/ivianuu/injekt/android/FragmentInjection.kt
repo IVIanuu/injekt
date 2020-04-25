@@ -18,7 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
-import com.ivianuu.injekt.ApplicationScope
+import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Behavior
 import com.ivianuu.injekt.BindingProvider
 import com.ivianuu.injekt.ComponentBuilder
@@ -30,21 +30,18 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.SideEffectBehavior
-import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.keyOf
-import com.ivianuu.injekt.map
 
 annotation class BindFragment {
     companion object : Behavior by (SideEffectBehavior {
-        map<String, Fragment> {
+        com.ivianuu.injekt.map<String, Fragment> {
             put(it.key.classifier.java.name, it.key as Key<out Fragment>)
         }
     } + Factory)
 }
 
 inline fun <reified T> ComponentBuilder.fragment(
-    qualifier: Qualifier = Qualifier.None,
+    qualifier: KClass<*>? = null,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>
@@ -72,7 +69,7 @@ fun <T> ComponentBuilder.fragment(
 }
 
 inline fun <reified T> ComponentBuilder.bindFragment(
-    qualifier: Qualifier = Qualifier.None
+    qualifier: KClass<*>? = null
 ) {
     bindFragment(key = keyOf<T>(qualifier))
 }
@@ -97,7 +94,7 @@ private class InjektFragmentFactory(
 }
 
 @Module
-private val FragmentInjectionModule = Module(ApplicationScope) {
+private val FragmentInjectionModule = Module(ApplicationScoped) {
     map<String, Fragment>()
     alias<InjektFragmentFactory, FragmentFactory>()
 }

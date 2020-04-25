@@ -21,19 +21,16 @@ import android.view.View
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : View> ViewComponent(
     instance: T,
-    qualifier: Qualifier = Qualifier.None,
+    qualifier: KClass<*>? = null,
     scope: Scope = ViewScope,
-    bindingQualifier: Qualifier = ForView,
+    bindingQualifier: KClass<*>? = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = ViewComponent(instance, keyOf(qualifier), scope, bindingQualifier, block)
 
@@ -41,7 +38,7 @@ inline fun <T : View> ViewComponent(
     instance: T,
     key: Key<T>,
     scope: Scope = ViewScope,
-    bindingQualifier: Qualifier = ForView,
+    bindingQualifier: KClass<*>? = ForView,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(scope)
@@ -53,15 +50,15 @@ inline fun <T : View> ViewComponent(
 fun <T : View> ComponentBuilder.viewBindings(
     instance: T,
     key: Key<T>,
-    bindingQualifier: Qualifier = ForView
+    bindingQualifier: KClass<*>? = ForView
 ) {
-    instance(
+    com.ivianuu.injekt.instance(
         instance = instance,
         key = key,
         duplicateStrategy = DuplicateStrategy.Override
     )
-    alias(originalKey = key, aliasKey = keyOf<View>())
-    alias<View>(aliasQualifier = bindingQualifier)
+    com.ivianuu.injekt.alias(originalKey = key, aliasKey = keyOf<View>())
+    com.ivianuu.injekt.alias<View>(aliasQualifier = bindingQualifier)
 
     contextBindings(bindingQualifier) { instance.context!! }
     componentAlias(bindingQualifier)

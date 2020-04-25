@@ -27,77 +27,75 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.DuplicateStrategy
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.instance
 import kotlinx.coroutines.CoroutineScope
 
 @PublishedApi
 internal fun ComponentBuilder.maybeLifecycleBindings(
     instance: Any,
-    qualifier: Qualifier
+    qualifier: KClass<*>?
 ) {
     if (instance !is LifecycleOwner) return
-    instance(instance = instance, duplicateStrategy = DuplicateStrategy.Override)
-    alias<LifecycleOwner>(aliasQualifier = qualifier)
-    factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycleScope }
-    alias<CoroutineScope>(aliasQualifier = qualifier)
-    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycle }
-    alias<Lifecycle>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.instance(
+        instance = instance,
+        duplicateStrategy = DuplicateStrategy.Override
+    )
+    com.ivianuu.injekt.alias<LifecycleOwner>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.factory<CoroutineScope>(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycleScope }
+    com.ivianuu.injekt.alias<CoroutineScope>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { instance.lifecycle }
+    com.ivianuu.injekt.alias<Lifecycle>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.maybeViewModelStoreBindings(
     instance: Any,
-    qualifier: Qualifier
+    qualifier: KClass<*>?
 ) {
     if (instance !is ViewModelStoreOwner) return
-    instance(
+    com.ivianuu.injekt.instance(
         instance = instance,
         duplicateStrategy = DuplicateStrategy.Override
     )
-    alias<ViewModelStoreOwner>(aliasQualifier = qualifier)
-    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.viewModelStore }
-    alias<ViewModelStore>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.alias<ViewModelStoreOwner>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { instance.viewModelStore }
+    com.ivianuu.injekt.alias<ViewModelStore>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.maybeSavedStateBindings(
     instance: Any,
-    qualifier: Qualifier
+    qualifier: KClass<*>?
 ) {
     if (instance !is SavedStateRegistryOwner) return
-    instance(
+    com.ivianuu.injekt.instance(
         instance = instance,
         duplicateStrategy = DuplicateStrategy.Override
     )
-    alias<SavedStateRegistryOwner>(aliasQualifier = qualifier)
-    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.savedStateRegistry }
-    alias<SavedStateRegistry>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.alias<SavedStateRegistryOwner>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { instance.savedStateRegistry }
+    com.ivianuu.injekt.alias<SavedStateRegistry>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
-internal fun ComponentBuilder.componentAlias(qualifier: Qualifier) {
-    alias<Component>(aliasQualifier = qualifier)
+internal fun ComponentBuilder.componentAlias(qualifier: KClass<*>?) {
+    com.ivianuu.injekt.alias<Component>(aliasQualifier = qualifier)
 }
 
 @PublishedApi
 internal fun ComponentBuilder.contextBindings(
-    qualifier: Qualifier,
+    qualifier: KClass<*>?,
     definition: () -> Context
 ) {
-    factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
-    alias<Context>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
+    com.ivianuu.injekt.alias<Context>(aliasQualifier = qualifier)
     resourcesBindings(qualifier = qualifier) { definition().resources!! }
 }
 
 @PublishedApi
 internal fun ComponentBuilder.resourcesBindings(
-    qualifier: Qualifier,
+    qualifier: KClass<*>?,
     definition: () -> Resources
 ) {
-    factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
-    alias<Resources>(aliasQualifier = qualifier)
+    com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { definition() }
+    com.ivianuu.injekt.alias<Resources>(aliasQualifier = qualifier)
 }

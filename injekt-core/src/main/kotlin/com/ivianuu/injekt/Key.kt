@@ -21,20 +21,17 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 /**
- * A identifies [Binding]s
- *
- * @see Component.get
- * @see ComponentBuilder.bind
+ * Identifier for [Binding]s
  */
 sealed class Key<T>(
     val classifier: KClass<*>,
-    val qualifier: Qualifier,
+    val qualifier: KClass<*>? = null,
     val isNullable: Boolean
 ) {
 
     fun copy(
         classifier: KClass<*> = this.classifier,
-        qualifier: Qualifier = this.qualifier,
+        qualifier: KClass<*>? = this.qualifier,
         isNullable: Boolean = this.isNullable,
         arguments: Array<Key<*>>? = (this as? ParameterizedKey)?.arguments
     ): Key<T> {
@@ -48,7 +45,7 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: Qualifier,
+            qualifier: KClass<*>?,
             isNullable: Boolean
         ) : super(classifier, qualifier, isNullable) {
             this.hashCode = generateHashCode()
@@ -56,7 +53,7 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: Qualifier,
+            qualifier: KClass<*>?,
             isNullable: Boolean,
             hashCode: Int
         ) : super(classifier, qualifier, isNullable) {
@@ -76,7 +73,7 @@ sealed class Key<T>(
         }
 
         override fun toString(): String {
-            return "${qualifier.takeIf { it != Qualifier.None }?.toString().orEmpty()}" +
+            return qualifier.toString() +
                     "${classifier.java.name}${if (isNullable) "?" else ""})"
         }
 
@@ -90,7 +87,7 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: Qualifier,
+            qualifier: KClass<*>?,
             isNullable: Boolean,
             arguments: Array<Key<*>>
         ) : super(classifier, qualifier, isNullable) {
@@ -100,7 +97,7 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: Qualifier,
+            qualifier: KClass<*>?,
             isNullable: Boolean,
             hashCode: Int,
             arguments: Array<Key<*>>
@@ -132,8 +129,7 @@ sealed class Key<T>(
             } else {
                 ""
             }
-            return "${qualifier.takeIf { it != Qualifier.None }?.toString()?.let { "$it " }
-                .orEmpty()}" +
+            return qualifier.toString().let { "$it " } +
                     "${classifier.java.name}$params${if (isNullable) "?" else ""}"
         }
 
@@ -141,12 +137,12 @@ sealed class Key<T>(
 
 }
 
-inline fun <reified T> keyOf(qualifier: Qualifier = Qualifier.None): Key<T> =
+inline fun <reified T> keyOf(qualifier: KClass<*>? = null): Key<T> =
     typeOf<T>().asKey(qualifier = qualifier)
 
 fun <T> keyOf(
     classifier: KClass<*>,
-    qualifier: Qualifier = Qualifier.None,
+    qualifier: KClass<*>? = null,
     isNullable: Boolean = false
 ): Key.SimpleKey<T> {
     return Key.SimpleKey(
@@ -159,7 +155,7 @@ fun <T> keyOf(
 fun <T> keyOf(
     classifier: KClass<*>,
     arguments: Array<Key<*>>,
-    qualifier: Qualifier = Qualifier.None,
+    qualifier: KClass<*>? = null,
     isNullable: Boolean = false
 ): Key.ParameterizedKey<T> {
     return Key.ParameterizedKey(
@@ -171,19 +167,16 @@ fun <T> keyOf(
 }
 
 @PublishedApi
-internal fun <T> KType.asKey(qualifier: Qualifier = Qualifier.None): Key<T> {
+internal fun <T> KType.asKey(qualifier: KClass<*>? = null): Key<T> {
     val classifier = (classifier ?: Any::class) as KClass<*>
-    val key: Key<T> = if (arguments.isEmpty()) {
+    return if (arguments.isEmpty()) {
         keyOf(classifier, qualifier, isMarkedNullable)
     } else {
         val args = arrayOfNulls<Key<Any?>>(arguments.size)
         for (index in arguments.indices) {
-            args[index] = arguments[index].type?.asKey() ?: keyOf(Any::class, isNullable = true)
+            args[index] =
+                arguments[index].type?.asKey() ?: keyOf(classifier = Any::class, isNullable = true)
         }
         keyOf(classifier, args as Array<Key<*>>, qualifier, isMarkedNullable)
     }
-
-    Injekt.logger?.warn("keyOf intrinsic called for $key")
-
-    return key
 }

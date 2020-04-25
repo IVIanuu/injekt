@@ -16,12 +16,11 @@
 
 package com.ivianuu.injekt.sample.data
 
-import com.ivianuu.injekt.ApplicationScope
-import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.ApplicationScoped
 
-@ApplicationScope
-@Single
+@ApplicationScoped
 class Repository(private val database: Database) {
 
     fun getItems() = database.getItems()
+
 }

@@ -18,10 +18,8 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.android.AndroidLogger
 import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.injekt
 import com.ivianuu.injekt.sample.data.Repository
 
 class App : Application(), ComponentOwner {
@@ -32,10 +30,6 @@ class App : Application(), ComponentOwner {
 
     override fun onCreate() {
         super.onCreate()
-        injekt {
-            logger = AndroidLogger()
-            initializeEndpoint()
-        }
         get<Repository>()
     }
 }

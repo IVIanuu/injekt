@@ -21,19 +21,15 @@ import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Fragment> FragmentComponent(
     instance: T,
     scope: Scope = FragmentScope,
-    bindingQualifier: Qualifier = ForFragment,
+    bindingQualifier: KClass<*>? = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = FragmentComponent(instance, keyOf(), scope, bindingQualifier, block)
 
@@ -41,7 +37,7 @@ inline fun <T : Fragment> FragmentComponent(
     instance: T,
     key: Key<T>,
     scope: Scope = FragmentScope,
-    bindingQualifier: Qualifier = ForFragment,
+    bindingQualifier: KClass<*>? = ForFragment,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
     scopes(scope)
@@ -53,19 +49,23 @@ inline fun <T : Fragment> FragmentComponent(
 fun <T : Fragment> ComponentBuilder.fragmentBindings(
     instance: T,
     key: Key<T>,
-    bindingQualifier: Qualifier = ForFragment
+    bindingQualifier: KClass<*>? = ForFragment
 ) {
-    instance(instance = instance, key = key, duplicateStrategy = DuplicateStrategy.Override)
-    alias(originalKey = key, aliasKey = keyOf<Fragment>())
-    alias<Fragment>(aliasQualifier = bindingQualifier)
+    com.ivianuu.injekt.instance(
+        instance = instance,
+        key = key,
+        duplicateStrategy = DuplicateStrategy.Override
+    )
+    com.ivianuu.injekt.alias(originalKey = key, aliasKey = keyOf<Fragment>())
+    com.ivianuu.injekt.alias<Fragment>(aliasQualifier = bindingQualifier)
 
     maybeLifecycleBindings(instance, bindingQualifier)
     maybeViewModelStoreBindings(instance, bindingQualifier)
     maybeSavedStateBindings(instance, bindingQualifier)
 
     contextBindings(bindingQualifier) { instance.requireContext() }
-    factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
-    alias<FragmentManager>(aliasQualifier = bindingQualifier)
+    com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { instance.childFragmentManager }
+    com.ivianuu.injekt.alias<FragmentManager>(aliasQualifier = bindingQualifier)
 
     componentAlias(bindingQualifier)
 }

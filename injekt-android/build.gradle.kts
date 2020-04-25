@@ -15,7 +15,6 @@
  */
 plugins {
     id("com.android.library")
-    id("com.ivianuu.injekt")
     kotlin("android")
 }
 
@@ -28,7 +27,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 
 dependencies {
     api(project(":injekt-core"))
-    api(project(":injekt-common"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
     api(Deps.AndroidX.Lifecycle.runtime)

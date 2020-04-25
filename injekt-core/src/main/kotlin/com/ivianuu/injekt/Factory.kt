@@ -19,48 +19,44 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 /**
- * Scopes are used to name [Component]s
- * This allows annotation api [Binding]s to be associated with a specific [Component]
+ * Creates instances on each request
  *
- * A scope can be declared like this
- *
- * ´´´
- * @ScopeMarker
- * val ActivityScope = Scope()
- * ´´´
- *
- * The following code ensures that the view model will be only instantiated in the activity scoped [Component]
+ * We get different logger instances in the following example
  *
  * ´´´
- * @ActivityScope
- * @Factory
- * class MyViewModel
+ * val component = Component {
+ *     factory { Logger(get()) }
+ * }
+ *
+ * val logger1 = component.get<Logger>()
+ * val logger2 = component.get<Logger>()
+ * assertSame(logger1, logger2) // false
  * ´´´
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Scope
+@Scope
+annotation class Factory
 
-inline fun <reified T> ModuleDsl.scoped(
+inline fun <reified T> ModuleDsl.factory(
     qualifier: KClass<*>? = null,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     providerDefinition: ProviderDefinition<T>
 ): Unit = error("Implemented as an intrinsic")
 
-inline fun <reified T> ModuleDsl.scoped(
+inline fun <reified T> ModuleDsl.factory(
     qualifier: KClass<*>? = null,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     provider: Provider<T>
 ) {
-    scoped(keyOf(qualifier), duplicateStrategy, provider)
+    factory(keyOf(qualifier), duplicateStrategy, provider)
 }
 
-fun <T> ModuleDsl.scoped(
+fun <T> ModuleDsl.factory(
     key: Key<T>,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     providerDefinition: ProviderDefinition<T>
 ): Unit = error("Implemented as an intrinsic")
 
-fun <T> ModuleDsl.scoped(
+fun <T> ModuleDsl.factory(
     key: Key<T>,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     provider: Provider<T>
@@ -69,26 +65,7 @@ fun <T> ModuleDsl.scoped(
         Binding(
             key = key,
             duplicateStrategy = duplicateStrategy,
-            provider = ScopedProvider(provider)
+            provider = provider
         )
     )
-}
-
-internal class ScopedProvider<T>(private val wrapped: Provider<T>) : Provider<T> {
-    private var value: Any? = this
-
-    override fun invoke(parameters: Parameters): T {
-        var value = this.value
-        if (value === this) {
-            synchronized(this) {
-                value = this.value
-                if (value === this) {
-                    value = wrapped(parameters)
-                    this.value = value
-                }
-            }
-        }
-
-        return value as T
-    }
 }

@@ -16,7 +16,8 @@
 
 package com.ivianuu.injekt
 
-/**
- * Global configurations
- */
-object Injekt
+@Scope
+annotation class ApplicationScoped
+
+@Qualifier
+annotation class ForApplication

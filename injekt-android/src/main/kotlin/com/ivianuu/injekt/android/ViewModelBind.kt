@@ -26,10 +26,7 @@ import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.InterceptingBehavior
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Parameters
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.bind
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.keyOf
 import androidx.lifecycle.ViewModelProvider as AndroidViewModelProvider
 
 annotation class BindViewModel {
@@ -39,7 +36,7 @@ annotation class BindViewModel {
 }
 
 inline fun <reified T> ComponentBuilder.viewModel(
-    qualifier: Qualifier = Qualifier.None,
+    qualifier: KClass<*>? = null,
     behavior: Behavior = Behavior.None,
     duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     noinline provider: BindingProvider<T>

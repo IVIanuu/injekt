@@ -17,14 +17,10 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
-import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.ApplicationScope
+import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
-import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Application> ApplicationComponent(
@@ -37,7 +33,7 @@ inline fun <T : Application> ApplicationComponent(
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
-    scopes(ApplicationScope)
+    scopes(ApplicationScoped)
     applicationBindings(instance, key)
     block()
 }
@@ -46,7 +42,7 @@ fun <T : Application> ComponentBuilder.applicationBindings(
     instance: T,
     key: Key<T>
 ) {
-    instance(instance, key = key)
+    com.ivianuu.injekt.instance(instance, key = key)
     alias(key, keyOf<Application>())
     contextBindings(ForApplication) { instance }
     maybeLifecycleBindings(

@@ -1,66 +1,26 @@
 package com.ivianuu.injekt
 
-/**
- * Runs the [invoke] function on each [ComponentBuilder]
- *
- * Optionally annotate this function with a [Scope] annotation to ensure that this
- * function gets only invoked for [ComponentBuilder]s with a matching scope
- *
- * ```
- * @ModuleMarker
- * private val MyActivityModule = Module(ActivityScope) {
- *     factory { get<MyActivity>().resources }
- * }
- * ```
- *
- */
-interface ModuleImpl {
-    val scopes: List<Scope> get() = emptyList()
-    val invokeOnInit: Boolean get() = false
-    operator fun invoke(builder: ComponentBuilder)
-}
+class Module @PublishedApi internal constructor(internal val bindings: Map<Key<*>, Binding<*>>)
 
-/**
- * Invokes the [apply] function on any matching [Component]
- */
-@Target(AnnotationTarget.PROPERTY)
-annotation class Module
+class ModuleDsl {
 
-inline fun Module(
-    scope: Scope,
-    invokeOnInit: Boolean = false,
-    crossinline block: ComponentBuilder.() -> Unit
-): ModuleImpl = Module(listOf(scope), invokeOnInit, block)
+    private val bindings = mutableMapOf<Key<*>, Binding<*>>()
 
-inline fun Module(
-    scopes: List<Scope>,
-    invokeOnInit: Boolean = false,
-    crossinline block: ComponentBuilder.() -> Unit
-): ModuleImpl = object : ModuleImpl {
-    override val scopes: List<Scope> = scopes
-    override val invokeOnInit: Boolean = invokeOnInit
-    override fun invoke(builder: ComponentBuilder) {
-        block(builder)
-    }
-}
-
-internal object Modules {
-
-    internal val modulesByScope =
-        mutableMapOf<Scope, MutableList<ModuleImpl>>()
-
-    fun get(scope: Scope): List<ModuleImpl> =
-        synchronized(modulesByScope) { modulesByScope.getOrElse(scope) { emptyList() } }
-
-    fun register(module: ModuleImpl) {
-        synchronized(modulesByScope) {
-            module.scopes.forEach { scope ->
-                modulesByScope.getOrPut(scope) { mutableListOf() }.run {
-                    this += module
-                    sortByDescending { it.invokeOnInit }
-                }
-            }
+    /**
+     * Adds the [binding]
+     */
+    fun <T> add(binding: Binding<T>) {
+        if (binding.duplicateStrategy.check(
+                existsPredicate = { binding.key in bindings },
+                errorMessage = { "Already declared binding for ${binding.key}" })
+        ) {
+            bindings[binding.key] = binding
         }
     }
 
+    fun build(): Module = Module(bindings)
+
 }
+
+fun Module(block: ModuleDsl.() -> Unit = {}): Module =
+    ModuleDsl().apply(block).build()

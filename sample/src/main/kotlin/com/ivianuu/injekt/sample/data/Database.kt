@@ -16,12 +16,10 @@
 
 package com.ivianuu.injekt.sample.data
 
-import com.ivianuu.injekt.ApplicationScope
-import com.ivianuu.injekt.Single
+import com.ivianuu.injekt.ApplicationScoped
 import java.io.File
 
-@ApplicationScope
-@Single
+@ApplicationScoped
 class Database(@DatabaseFile private val file: File) {
 
     private var _cached: List<String>? = null

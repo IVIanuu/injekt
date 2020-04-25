@@ -26,20 +26,25 @@ data class Binding<T>(
      */
     val key: Key<T>,
     /**
-     * All behaviors of this binding
-     */
-    val behavior: Behavior = Behavior.None,
-    /**
      * How overrides should be handled
      */
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
     /**
      * Creates instances for this binding
      */
-    val provider: BindingProvider<T>
+    val provider: Provider<T>
 )
 
-/**
- * Provides instances of T
- */
-typealias BindingProvider<T> = Component.(Parameters) -> T
+abstract class AbstractProvider<T> : Provider<T>, Linkable {
+
+    private var linked = false
+
+    override fun link(linker: Linker) {
+        if (!linked) {
+            linked = true
+            doLink(linker)
+        }
+    }
+
+    protected abstract fun doLink(linker: Linker)
+}

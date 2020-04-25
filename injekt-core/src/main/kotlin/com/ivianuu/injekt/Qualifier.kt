@@ -24,8 +24,8 @@ package com.ivianuu.injekt
  *
  * ´´´
  * val component = Component {
- *     factory<CreditCardHandler>(qualifier = Paypal) { ... }
- *     factory<CreditCardHandler>(qualifier = Amazon) { ... }
+ *     factory<CreditCardHandler>(qualifier = Paypal::class) { ... }
+ *     factory<CreditCardHandler>(qualifier = Amazon::class) { ... }
  * }
  *
  * val creditCardHandler: CreditCardHandler = if (usePaypal) {
@@ -35,69 +35,6 @@ package com.ivianuu.injekt
  * }
  * ´´´
  *
- * A qualifier can be declared as follows
- *
- * ´´´
- * @QualifierMarker
- * annotation class UserId {
- *     companion object : Qualifier.Element
- * }
- *
- * Qualifier can be used like this with the annotation api
- *
- * ´´´
- * @Factory
- * class MyViewModel(@UserId private val userId: String)
- * ´´´
- *
- * It's also possible to combine multiple Qualifier
- *
- * ´´´
- * val combinedQualifier = PaypalQualifier + MockedQualifier
- * ´´´
  */
-interface Qualifier {
-
-    fun <R> foldInQualifier(initial: R, operation: (R, Element) -> R): R
-
-    fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R
-
-    operator fun plus(other: Qualifier): Qualifier =
-        if (other === None) this else foldOutQualifier(other, ::CombinedQualifier)
-
-    object None : Qualifier {
-        override fun <R> foldInQualifier(initial: R, operation: (R, Element) -> R): R = initial
-        override fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R = initial
-        override operator fun plus(other: Qualifier): Qualifier = other
-        override fun toString() = "Qualifier.None"
-        override fun hashCode(): Int = toString().hashCode()
-    }
-
-    interface Element : Qualifier {
-        override fun <R> foldInQualifier(initial: R, operation: (R, Element) -> R): R =
-            operation(initial, this)
-
-        override fun <R> foldOutQualifier(initial: R, operation: (Element, R) -> R): R =
-            operation(this, initial)
-    }
-}
-
-private class CombinedQualifier(
-    private val element: Qualifier.Element,
-    private val wrapped: Qualifier
-) : Qualifier {
-    override fun <R> foldInQualifier(initial: R, operation: (R, Qualifier.Element) -> R): R =
-        wrapped.foldInQualifier(operation(initial, element), operation)
-
-    override fun <R> foldOutQualifier(initial: R, operation: (Qualifier.Element, R) -> R): R =
-        operation(element, wrapped.foldOutQualifier(initial, operation))
-
-    override fun equals(other: Any?): Boolean =
-        other is CombinedQualifier && element == other.element && wrapped == other.wrapped
-
-    override fun hashCode(): Int = wrapped.hashCode() + 31 * element.hashCode()
-
-    override fun toString() = "[" + foldInQualifier("") { acc, element ->
-        if (acc.isEmpty()) element.toString() else "$acc, $element"
-    } + "]"
-}
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class Qualifier

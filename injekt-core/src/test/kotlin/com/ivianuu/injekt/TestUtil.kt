@@ -16,37 +16,23 @@
 
 package com.ivianuu.injekt
 
-annotation class ApplicationScope {
-    companion object : Scope
-}
+@Qualifier
+annotation class TestQualifier1
 
-annotation class TestBehavior {
-    companion object : Behavior.Element
-}
+@Qualifier
+annotation class TestQualifier2
 
-annotation class TestQualifier1 {
-    companion object : Qualifier.Element
-}
+@Qualifier
+annotation class TestQualifier3
 
-annotation class TestQualifier2 {
-    companion object : Qualifier.Element
-}
+@Scope
+annotation class TestScope1
 
-annotation class TestQualifier3 {
-    companion object : Qualifier.Element
-}
+@Scope
+annotation class TestScope2
 
-annotation class TestScope1 {
-    companion object : Scope
-}
-
-annotation class TestScope2 {
-    companion object : Scope
-}
-
-annotation class TestScope3 {
-    companion object : Scope
-}
+@Scope
+annotation class TestScope3
 
 class TestDep1
 
@@ -54,11 +40,11 @@ class TestDep2(val dep1: TestDep1)
 
 class TestDep3(val dep1: TestDep1, val dep2: TestDep2)
 
-@TestBehavior
+@Factory
 class CTestDep1
 
-@TestBehavior
+@Factory
 class CTestDep2(val dep1: CTestDep1)
 
-@TestBehavior
+@Factory
 class CTestDep3(val dep1: CTestDep1, val dep2: CTestDep2)

@@ -23,8 +23,6 @@ import com.ivianuu.injekt.ComponentOwner
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : ContentProvider> ContentProviderComponent(
@@ -47,8 +45,11 @@ fun <T : ContentProvider> ComponentBuilder.contentProviderBindings(
     instance: T,
     key: Key<T>
 ) {
-    instance(instance, key = key)
-    alias(originalKey = key, aliasKey = keyOf<ContentProvider>())
+    com.ivianuu.injekt.instance(instance, key = key)
+    com.ivianuu.injekt.alias(
+        originalKey = key,
+        aliasKey = keyOf<ContentProvider>()
+    )
     contextBindings(ForContentProvider) { instance.context!! }
     componentAlias(ForContentProvider)
 }

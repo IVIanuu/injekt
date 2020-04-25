@@ -24,13 +24,9 @@ import androidx.fragment.app.FragmentManager
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentBuilder
 import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.DuplicateStrategy
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.keyOf
 
 inline fun <reified T : Activity> ActivityComponent(
@@ -43,7 +39,7 @@ inline fun <T : Activity> ActivityComponent(
     key: Key<T>,
     block: ComponentBuilder.() -> Unit = {}
 ): Component = Component {
-    scopes(ActivityScope)
+    scopes(ActivityScoped)
     instance.getClosestComponentOrNull()?.let { parents(it) }
     activityBindings(instance, key)
     block()
@@ -53,14 +49,14 @@ fun <T : Activity> ComponentBuilder.activityBindings(
     instance: T,
     key: Key<T>
 ) {
-    instance(instance = instance, key = key)
+    com.ivianuu.injekt.instance(instance = instance, key = key)
     alias(key, keyOf<Activity>())
     if (instance is ComponentActivity) alias(key, keyOf<ComponentActivity>())
     if (instance is FragmentActivity) alias(key, keyOf<FragmentActivity>())
     if (instance is AppCompatActivity) alias(key, keyOf<AppCompatActivity>())
 
     (instance as? FragmentActivity)?.let {
-        factory(duplicateStrategy = DuplicateStrategy.Override) { instance.supportFragmentManager }
+        com.ivianuu.injekt.factory(duplicateStrategy = DuplicateStrategy.Override) { instance.supportFragmentManager }
         alias<FragmentManager>(aliasQualifier = ForActivity)
     }
 
@@ -71,13 +67,11 @@ fun <T : Activity> ComponentBuilder.activityBindings(
     componentAlias(ForActivity)
 }
 
-annotation class ActivityScope {
-    companion object : Scope
-}
+@Scope
+annotation class ActivityScoped
 
-annotation class ForActivity {
-    companion object : Qualifier.Element
-}
+@Qualifier
+annotation class ForActivity
 
 fun Activity.getClosestComponentOrNull(): Component? =
     getApplicationComponentOrNull()

@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 /**
  * The heart of the library which provides instances
  * Instances can be requested by calling [get]
@@ -38,68 +40,81 @@ package com.ivianuu.injekt
  * @see ComponentBuilder
  */
 class Component internal constructor(
-    val scopes: Set<Scope>,
-    val parents: List<Component>,
-    val jitFactories: List<(Component, Key<Any?>) -> BindingProvider<Any?>?>,
+    val scope: KClass<*>,
+    val parent: Component?,
     val bindings: Map<Key<*>, Binding<*>>
 ) {
 
-    /**
-     * Returns the binding for [key]
-     */
-    fun <T> getBindingProvider(key: Key<T>): BindingProvider<T> {
-        findBindingProvider(key)?.let { return it }
-        if (key.isNullable) return NullBindingProvider as BindingProvider<T>
-        error("Couldn't get instance for $key")
-    }
+    internal val linker = Linker(this)
+
+    inline fun <reified T> get(
+        qualifier: KClass<*>? = null,
+        parameters: Parameters = emptyParameters()
+    ): T = get(keyOf(qualifier), parameters)
 
     /**
-     * Returns the [Component] for [scope] or throws
+     * Return a instance of type [T] for [key]
      */
-    fun getComponent(scope: Scope): Component =
-        findComponent(scope) ?: error("Couldn't find component for scope $scope")
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+        linker.get(key)(parameters)
 
-    private fun findComponent(scope: Scope): Component? {
-        if (scope in scopes) return this
+    fun plus(scope: KClass<*>, vararg modules: Module) = Component(
+        scope = scope,
+        parent = this,
+        modules = modules
+    )
 
-        for (index in parents.indices) {
-            parents[index].findComponent(scope)?.let { return it }
-        }
-
-        return null
-    }
-
-    private fun <T> findBindingProvider(key: Key<T>): BindingProvider<T>? {
-        (bindings[key] as? Binding<T>)
-            ?.takeUnless { !key.isNullable && it.key.isNullable }
-            ?.provider
-            ?.let { return it }
-
-        for (index in parents.lastIndex downTo 0) {
-            parents[index].findBindingProvider(key)?.let { return it }
-        }
-
-        for (index in jitFactories.lastIndex downTo 0) {
-            (jitFactories[index](this, key as Key<Any?>) as? BindingProvider<T>)
-                ?.let { return it }
-        }
-
-        return null
-    }
-
-    private companion object {
-        private val NullBindingProvider: BindingProvider<Any?> = { null }
-    }
 }
 
-inline fun <reified T> Component.get(
-    qualifier: Qualifier = Qualifier.None,
-    parameters: Parameters = emptyParameters()
-): T =
-    get(keyOf(qualifier), parameters)
+fun Component(
+    scope: KClass<*>,
+    vararg modules: Module,
+    parent: Component? = null
+): Component {
+    val bindings = mutableMapOf<Key<*>, Binding<*>>()
 
-/**
- * Return a instance of type [T] for [key]
- */
-fun <T> Component.get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
-    getBindingProvider(key)(parameters)
+    modules.forEach { module ->
+        module.bindings.forEach { (key, binding) ->
+            if (binding.duplicateStrategy.check(
+                    existsPredicate = { key in bindings },
+                    errorMessage = { "Already declared binding for $key" })
+            ) {
+                bindings[key] = binding
+            }
+        }
+    }
+
+    if (parent != null) {
+        val parentScopes = mutableListOf<KClass<*>>()
+
+        var currentParent: Component? = parent
+        while (currentParent != null) {
+            parentScopes += currentParent.scope
+            currentParent = currentParent.parent
+        }
+
+        check(scope !in parentScopes) {
+            "Duplicated scope $scope"
+        }
+    }
+
+    val finalBindings = if (parent != null) {
+        val parentBindings = parent.bindings
+        val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
+        bindings.forEach { (key, binding) ->
+            if (binding.duplicateStrategy.check(
+                    existsPredicate = { key in parentBindings },
+                    errorMessage = { "Already declared binding for $key" })
+            ) {
+                finalBindings[key] = binding
+            }
+        }
+        finalBindings
+    } else bindings
+
+    return Component(
+        scope = scope,
+        parent = parent,
+        bindings = finalBindings
+    )
+}

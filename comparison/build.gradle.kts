@@ -16,7 +16,6 @@
 
 plugins {
     id("com.android.application")
-    id("com.ivianuu.injekt")
     kotlin("android")
     kotlin("kapt")
 }
@@ -55,7 +54,7 @@ dependencies {
     implementation(Deps.guice)
 
     implementation(project(":injekt-core"))
-    implementation(project(":injekt-common"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
     implementation(Deps.katana)
 
