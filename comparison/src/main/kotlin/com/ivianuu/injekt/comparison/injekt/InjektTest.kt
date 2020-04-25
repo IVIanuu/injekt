@@ -17,6 +17,7 @@ import com.ivianuu.injekt.comparison.fibonacci.Fib5
 import com.ivianuu.injekt.comparison.fibonacci.Fib6
 import com.ivianuu.injekt.comparison.fibonacci.Fib7
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.keyOf
 
 object InjektTest : InjectionTest {

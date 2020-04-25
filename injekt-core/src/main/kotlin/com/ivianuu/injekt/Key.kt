@@ -99,8 +99,8 @@ sealed class Key<T>(
             classifier: KClass<*>,
             qualifier: KClass<*>?,
             isNullable: Boolean,
-            hashCode: Int,
-            arguments: Array<Key<*>>
+            arguments: Array<Key<*>>,
+            hashCode: Int
         ) : super(classifier, qualifier, isNullable) {
             this.arguments = arguments
             this.hashCode = hashCode

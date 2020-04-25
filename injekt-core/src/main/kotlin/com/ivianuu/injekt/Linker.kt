@@ -46,4 +46,3 @@ class Linker(val component: Component) {
 interface Linkable {
     fun link(linker: Linker)
 }
-

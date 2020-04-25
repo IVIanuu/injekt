@@ -17,15 +17,16 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.ApplicationScoped
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentOwner
-import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.sample.data.Repository
 
 class App : Application(), ComponentOwner {
 
     override val component by lazy {
-        ApplicationComponent(this)
+        Component<ApplicationScoped>()
     }
 
     override fun onCreate() {

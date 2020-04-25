@@ -19,4 +19,6 @@ package com.ivianuu.injekt
 /**
  * Global configurations
  */
-object Injekt
+object Injekt {
+    var debug = false
+}

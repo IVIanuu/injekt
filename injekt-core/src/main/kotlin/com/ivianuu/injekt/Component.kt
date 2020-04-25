@@ -44,27 +44,34 @@ class Component internal constructor(
     val parent: Component?,
     val bindings: Map<Key<*>, Binding<*>>
 ) {
-
-    internal val linker = Linker(this)
-
-    inline fun <reified T> get(
-        qualifier: KClass<*>? = null,
-        parameters: Parameters = emptyParameters()
-    ): T = get(keyOf(qualifier), parameters)
-
-    /**
-     * Return a instance of type [T] for [key]
-     */
-    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
-        linker.get(key)(parameters)
-
-    fun plus(scope: KClass<*>, vararg modules: Module) = Component(
-        scope = scope,
-        parent = this,
-        modules = modules
-    )
-
+    val linker = Linker(this)
 }
+
+inline fun <reified T> Component.get(
+    qualifier: KClass<*>? = null,
+    parameters: Parameters = emptyParameters()
+): T = get(keyOf(qualifier), parameters)
+
+/**
+ * Return a instance of type [T] for [key]
+ */
+fun <T> Component.get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+    linker.get(key)(parameters)
+
+fun Component.plus(scope: KClass<*>, vararg modules: Module) = Component(
+    scope = scope,
+    parent = this,
+    modules = modules
+)
+
+inline fun <reified T> Component(
+    vararg modules: Module,
+    parent: Component? = null
+) = Component(
+    scope = T::class,
+    modules = modules,
+    parent = parent
+)
 
 fun Component(
     scope: KClass<*>,

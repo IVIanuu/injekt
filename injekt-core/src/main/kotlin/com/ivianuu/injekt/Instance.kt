@@ -26,7 +26,7 @@ fun <T> ModuleDsl.instance(
         Binding(
             key = key,
             duplicateStrategy = duplicateStrategy,
-            InstanceProvider(instance)
+            provider = InstanceProvider(instance)
         )
     )
 }
