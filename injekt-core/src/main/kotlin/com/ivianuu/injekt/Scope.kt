@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.asScoped
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 /**
@@ -44,19 +45,17 @@ annotation class Scope
 inline fun <reified T> ModuleDsl.scoped(
     qualifier: KClass<*>? = null,
     bindingDefinition: BindingDefinition<T>
-): Unit = error("Implemented as an intrinsic")
+): Unit = injektIntrinsic()
 
 inline fun <reified T> ModuleDsl.scoped(
     qualifier: KClass<*>? = null,
     binding: Binding<T>
-) {
-    scoped(keyOf(qualifier), binding)
-}
+): Unit = injektIntrinsic()
 
 fun <T> ModuleDsl.scoped(
     key: Key<T>,
     bindingDefinition: BindingDefinition<T>
-): Unit = error("Implemented as an intrinsic")
+): Unit = injektIntrinsic()
 
 fun <T> ModuleDsl.scoped(
     key: Key<T>,

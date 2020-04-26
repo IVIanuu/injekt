@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 inline fun <reified T> ModuleDsl.alias(
@@ -21,12 +22,7 @@ fun <T> ModuleDsl.alias(
 inline fun <reified S : T, reified T> ModuleDsl.alias(
     originalQualifier: KClass<*>? = null,
     aliasQualifier: KClass<*>? = null
-) {
-    alias(
-        originalKey = keyOf<S>(originalQualifier),
-        aliasKey = keyOf<T>(aliasQualifier)
-    )
-}
+): Unit = injektIntrinsic()
 
 /**
  * Makes the [Binding] for [originalKey] retrievable via [aliasKey]

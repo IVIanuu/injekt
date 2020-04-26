@@ -18,22 +18,27 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         }
 
         /*ClassProviderGenerator(pluginContext, project)
-            .visitModuleAndGenerateSymbols()
-
-        InjektInitTransformer(pluginContext)
             .visitModuleAndGenerateSymbols()*/
 
-        // rewrite key overload stub calls to the real calls
-        KeyOverloadTransformer(
+        // generate bindings from binding definitions
+        BindingIntrinsicTransformer(pluginContext)
+            .visitModuleAndGenerateSymbols()
+
+        /*InjektInitTransformer(pluginContext)
+            .visitModuleAndGenerateSymbols()*/
+
+        // rewrite calls like component.get<String>() -> component.get(keyOf<String>())
+        KeyIntrinsicTransformer(
             pluginContext
         ).visitModuleAndGenerateSymbols()
 
-        // memoize static keyOf calls
+        // cache static keyOf calls
         KeyCachingTransformer(pluginContext)
             .visitModuleAndGenerateSymbols()
 
         // rewrite keyOf<String>() -> keyOf(String::class)
         KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
+
     }
 
     val SymbolTable.allUnbound: List<IrSymbol>

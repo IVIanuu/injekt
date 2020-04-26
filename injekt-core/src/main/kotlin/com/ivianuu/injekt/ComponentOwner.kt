@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 /**
@@ -29,7 +30,7 @@ interface ComponentOwner {
 inline fun <reified T> ComponentOwner.get(
     qualifier: KClass<*>? = null,
     parameters: Parameters = emptyParameters()
-): T = get(keyOf(qualifier), parameters)
+): T = injektIntrinsic()
 
 /**
  * @see Component.get
@@ -42,7 +43,7 @@ fun <T> ComponentOwner.get(
 inline fun <reified T> ComponentOwner.getLazy(
     qualifier: KClass<*>? = null,
     crossinline parameters: () -> Parameters = { emptyParameters() }
-): kotlin.Lazy<T> = getLazy(keyOf(qualifier), parameters)
+): kotlin.Lazy<T> = injektIntrinsic()
 
 /**
  * Lazy version of [get]

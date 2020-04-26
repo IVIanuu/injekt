@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 /**
@@ -39,19 +40,17 @@ annotation class Factory
 inline fun <reified T> ModuleDsl.factory(
     qualifier: KClass<*>? = null,
     bindingDefinition: BindingDefinition<T>
-): Unit = error("Implemented as an intrinsic")
+): Unit = injektIntrinsic()
 
 inline fun <reified T> ModuleDsl.factory(
     qualifier: KClass<*>? = null,
     binding: Binding<T>
-) {
-    factory(keyOf(qualifier), binding)
-}
+): Unit = injektIntrinsic()
 
 fun <T> ModuleDsl.factory(
     key: Key<T>,
     bindingDefinition: BindingDefinition<T>
-): Unit = error("Implemented as an intrinsic")
+): Unit = injektIntrinsic()
 
 fun <T> ModuleDsl.factory(
     key: Key<T>,

@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
-class KeyOverloadTransformer(pluginContext: IrPluginContext) :
+class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private lateinit var moduleFragment: IrModuleFragment

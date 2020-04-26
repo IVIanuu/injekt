@@ -7,16 +7,18 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
-import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi2ir.findFirstFunction
 
 class InjektSymbols(private val context: IrPluginContext) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
     val internalPackage = getPackage(InjektFqNames.InternalPackage)
     val aggregatePackage = getPackage(InjektFqNames.AggregatePackage)
+
+    val binding = getTopLevelClass(InjektFqNames.Binding)
+    val bindingDefinition = getTypeAlias(InjektFqNames.BindingDefinition)
+    val bindingDsl = getTopLevelClass(InjektFqNames.BindingDsl)
 
     val factory = getTopLevelClass(InjektFqNames.Factory)
 
@@ -25,7 +27,9 @@ class InjektSymbols(private val context: IrPluginContext) {
     val jitBindingRegistry = getTopLevelClass(InjektFqNames.JitBindingRegistry)
 
     val key = getTopLevelClass(InjektFqNames.Key)
+    val linkedBinding = getTopLevelClass(InjektFqNames.LinkedBinding)
     val linker = getTopLevelClass(InjektFqNames.Linker)
+    val parameters = getTopLevelClass(InjektFqNames.Parameters)
     val parameterizedKey = key.owner.declarations
         .filterIsInstance<IrClass>()
         .single { it.name == InjektFqNames.ParameterizedKey.shortName() }
@@ -33,11 +37,7 @@ class InjektSymbols(private val context: IrPluginContext) {
     val simpleKey = key.owner.declarations
         .filterIsInstance<IrClass>()
         .single { it.name == InjektFqNames.SimpleKey.shortName() }
-
-    val keyOf = context.symbolTable.referenceFunction(
-        injektPackage.memberScope
-            .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
-    ).ensureBound(context.irProviders)
+    val unlinkedBinding = getTopLevelClass(InjektFqNames.UnlinkedBinding)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

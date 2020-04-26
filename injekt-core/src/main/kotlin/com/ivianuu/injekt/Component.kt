@@ -21,6 +21,7 @@ import com.ivianuu.injekt.internal.JitBindingRegistry
 import com.ivianuu.injekt.internal.KeyedLazy
 import com.ivianuu.injekt.internal.KeyedProvider
 import com.ivianuu.injekt.internal.NullBinding
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 /**
@@ -96,18 +97,13 @@ class Component internal constructor(
     }
 
     private fun <T> putJitBinding(key: Key<T>, binding: Binding<T>): LinkedBinding<T> {
-        return if (binding is LinkedBinding) {
-            synchronized(_bindings) { _bindings[key] = binding }
-            binding
-        } else {
-            val linked = binding.link(linker)
-            synchronized(_bindings) { _bindings[key] = linked }
-            linked
-        }
+        val linked = binding.link(linker)
+        synchronized(_bindings) { _bindings[key] = linked }
+        return linked
     }
 
     private fun findComponent(scope: KClass<*>): Component? {
-        if (this.scope == scope || FactoryClass == scope) return this
+        if (this.scope == scope || Factory::class == scope) return this
         return parent?.findComponent(scope)
     }
 
@@ -123,7 +119,7 @@ class Component internal constructor(
 inline fun <reified T> Component.get(
     qualifier: KClass<*>? = null,
     parameters: Parameters = emptyParameters()
-): T = get(keyOf(qualifier), parameters)
+): T = injektIntrinsic()
 
 inline fun <reified T> Component.plus() = plus(T::class)
 
@@ -180,7 +176,7 @@ fun Component(
             "Duplicated scope $scope"
         }
 
-        bindings.forEach { (key, binding) ->
+        bindings.forEach { (key, _) ->
             if (key in parentBindings) {
                 error("Already declared binding for $key")
             }
