@@ -105,10 +105,8 @@ class InjektInitTransformer(
                         val binding = jitBinding.binding.owner
                         putValueArgument(
                             1,
-                            when {
-                                binding.kind == ClassKind.OBJECT -> irGetObject(binding.symbol)
-                                else -> irCall(binding.constructors.single())
-                            }
+                            if (binding.kind == ClassKind.OBJECT) irGetObject(binding.symbol)
+                            else irCall(binding.constructors.single())
                         )
                     }
                 }

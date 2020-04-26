@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -26,7 +25,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
-import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -224,7 +222,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
             )
             +linked
             linked.parent = definitionFunction.parent
-            +irGetObject(linked.symbol)
+            +irCall(linked.constructors.single())
         }
     }
 
@@ -233,8 +231,8 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
         definitionFunction: IrFunction,
         linkedConstructor: IrConstructor
     ) = buildClass {
-        kind = ClassKind.CLASS
         name = Name.special("<binding for ${definitionFunction.fqNameWhenAvailable}>")
+        visibility = Visibilities.LOCAL
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -320,7 +318,6 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
         name: Name
     ) = buildClass {
         this.visibility = visibility
-        kind = if (dependencies.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
         this.name = name
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
