@@ -145,6 +145,16 @@ inline fun <reified T> Component(
     parent = parent
 )
 
+@JvmName("DefaultComponent")
+fun Component(
+    vararg modules: Module,
+    parent: Component? = null
+) = Component(
+    scope = ApplicationScoped::class,
+    modules = *modules,
+    parent = parent
+)
+
 fun Component(
     scope: KClass<*>,
     vararg modules: Module,

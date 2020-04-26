@@ -113,9 +113,6 @@ class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
 
         if (keyOverloadFunction == null) return expression
 
-        val keyOf = symbols.injektPackage.memberScope
-            .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
-
         return DeclarationIrBuilder(context, expression.symbol).run {
             irCall(keyOverloadFunction!!).apply {
                 if (callee.dispatchReceiverParameter != null) {
@@ -141,7 +138,7 @@ class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
                         putValueArgument(
                             valueParameter.index,
                             irCall(
-                                callee = symbolTable.referenceSimpleFunction(keyOf),
+                                callee = symbols.keyOf,
                                 type = keyType
                             ).apply {
                                 putTypeArgument(

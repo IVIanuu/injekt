@@ -73,7 +73,7 @@ sealed class Key<T>(
         }
 
         override fun toString(): String {
-            return qualifier.toString() +
+            return qualifier?.let { it.toString() }.orEmpty() +
                     "${classifier.java.name}${if (isNullable) "?" else ""})"
         }
 

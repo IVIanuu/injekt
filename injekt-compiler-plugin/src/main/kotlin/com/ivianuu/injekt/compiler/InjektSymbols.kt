@@ -7,8 +7,12 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.psi2ir.findSingleFunction
 
 class InjektSymbols(private val context: IrPluginContext) {
 
@@ -38,6 +42,16 @@ class InjektSymbols(private val context: IrPluginContext) {
         .filterIsInstance<IrClass>()
         .single { it.name == InjektFqNames.SimpleKey.shortName() }
     val unlinkedBinding = getTopLevelClass(InjektFqNames.UnlinkedBinding)
+
+    val asScoped = context.symbolTable.referenceFunction(
+        internalPackage.memberScope
+            .findSingleFunction(Name.identifier("asScoped"))
+    ).ensureBound(context.irProviders)
+
+    val keyOf = context.symbolTable.referenceFunction(
+        injektPackage.memberScope
+            .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
+    ).ensureBound(context.irProviders)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(
