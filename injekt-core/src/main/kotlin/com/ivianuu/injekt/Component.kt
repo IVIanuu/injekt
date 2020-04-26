@@ -109,7 +109,7 @@ class Component internal constructor(
     }
 
     private fun findComponent(scope: KClass<*>): Component? {
-        if (this.scope == scope || Factory::class == scope) return this
+        if (this.scope == scope) return this
         return parent?.findComponent(scope)
     }
 
