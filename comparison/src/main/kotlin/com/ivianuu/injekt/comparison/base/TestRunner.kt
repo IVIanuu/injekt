@@ -65,7 +65,7 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 }
 
 fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig) {
-    Thread.sleep(1000)
+    repeat(2000) { tests.forEach { measure(it) } }
 
     println("Running ${config.rounds} iterations. Please stand by...")
 

@@ -38,34 +38,24 @@ annotation class Factory
 
 inline fun <reified T> ModuleDsl.factory(
     qualifier: KClass<*>? = null,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    providerDefinition: ProviderDefinition<T>
+    bindingDefinition: BindingDefinition<T>
 ): Unit = error("Implemented as an intrinsic")
 
 inline fun <reified T> ModuleDsl.factory(
     qualifier: KClass<*>? = null,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: Provider<T>
+    binding: Binding<T>
 ) {
-    factory(keyOf(qualifier), duplicateStrategy, provider)
+    factory(keyOf(qualifier), binding)
 }
 
 fun <T> ModuleDsl.factory(
     key: Key<T>,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    providerDefinition: ProviderDefinition<T>
+    bindingDefinition: BindingDefinition<T>
 ): Unit = error("Implemented as an intrinsic")
 
 fun <T> ModuleDsl.factory(
     key: Key<T>,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: Provider<T>
+    binding: Binding<T>
 ) {
-    add(
-        Binding(
-            key = key,
-            duplicateStrategy = duplicateStrategy,
-            provider = provider
-        )
-    )
+    add(key, binding)
 }

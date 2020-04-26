@@ -3,36 +3,28 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 inline fun <reified T> ModuleDsl.alias(
-    aliasQualifier: KClass<*>?,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    aliasQualifier: KClass<*>?
 ) {
-    alias<T, T>(
-        aliasQualifier = aliasQualifier,
-        duplicateStrategy = duplicateStrategy
-    )
+    alias<T, T>(aliasQualifier = aliasQualifier)
 }
 
 fun <T> ModuleDsl.alias(
     originalKey: Key<T>,
-    aliasQualifier: KClass<*>?,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    aliasQualifier: KClass<*>?
 ) {
     alias(
         originalKey = originalKey,
-        aliasKey = originalKey.copy(qualifier = aliasQualifier),
-        duplicateStrategy = duplicateStrategy
+        aliasKey = originalKey.copy(qualifier = aliasQualifier)
     )
 }
 
 inline fun <reified S : T, reified T> ModuleDsl.alias(
     originalQualifier: KClass<*>? = null,
-    aliasQualifier: KClass<*>? = null,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    aliasQualifier: KClass<*>? = null
 ) {
     alias(
         originalKey = keyOf<S>(originalQualifier),
-        aliasKey = keyOf<T>(aliasQualifier),
-        duplicateStrategy = duplicateStrategy
+        aliasKey = keyOf<T>(aliasQualifier)
     )
 }
 
@@ -55,17 +47,11 @@ inline fun <reified S : T, reified T> ModuleDsl.alias(
  */
 fun <S : T, T> ModuleDsl.alias(
     originalKey: Key<S>,
-    aliasKey: Key<T>,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    aliasKey: Key<T>
 ) {
-    add(Binding(aliasKey as Key<S>, duplicateStrategy, AliasProvider(originalKey)))
+    add(aliasKey as Key<S>, AliasProvider(originalKey))
 }
 
-private class AliasProvider<T>(private val originalKey: Key<T>) : Provider<T>, Linkable {
-    private lateinit var originalProvider: Provider<T>
-    override fun link(linker: Linker) {
-        originalProvider = linker.get(originalKey)
-    }
-
-    override fun invoke(parameters: Parameters) = originalProvider(parameters)
+private class AliasProvider<T>(private val originalKey: Key<T>) : UnlinkedBinding<T>() {
+    override fun link(linker: Linker): LinkedBinding<T> = linker.get(originalKey)
 }

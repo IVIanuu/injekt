@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.asScoped
 import kotlin.reflect.KClass
 
 /**
@@ -42,53 +43,24 @@ annotation class Scope
 
 inline fun <reified T> ModuleDsl.scoped(
     qualifier: KClass<*>? = null,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    providerDefinition: ProviderDefinition<T>
+    bindingDefinition: BindingDefinition<T>
 ): Unit = error("Implemented as an intrinsic")
 
 inline fun <reified T> ModuleDsl.scoped(
     qualifier: KClass<*>? = null,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: Provider<T>
+    binding: Binding<T>
 ) {
-    scoped(keyOf(qualifier), duplicateStrategy, provider)
+    scoped(keyOf(qualifier), binding)
 }
 
 fun <T> ModuleDsl.scoped(
     key: Key<T>,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    providerDefinition: ProviderDefinition<T>
+    bindingDefinition: BindingDefinition<T>
 ): Unit = error("Implemented as an intrinsic")
 
 fun <T> ModuleDsl.scoped(
     key: Key<T>,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail,
-    provider: Provider<T>
+    binding: Binding<T>
 ) {
-    add(
-        Binding(
-            key = key,
-            duplicateStrategy = duplicateStrategy,
-            provider = ScopedProvider(provider)
-        )
-    )
-}
-
-internal class ScopedProvider<T>(private val wrapped: Provider<T>) : Provider<T> {
-    private var value: Any? = this
-
-    override fun invoke(parameters: Parameters): T {
-        var value = this.value
-        if (value === this) {
-            synchronized(this) {
-                value = this.value
-                if (value === this) {
-                    value = wrapped(parameters)
-                    this.value = value
-                }
-            }
-        }
-
-        return value as T
-    }
+    add(key, binding.asScoped())
 }

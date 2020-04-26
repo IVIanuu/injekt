@@ -2,7 +2,6 @@ package com.ivianuu.injekt.comparison.injekt
 
 import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.LinkableProvider
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.get

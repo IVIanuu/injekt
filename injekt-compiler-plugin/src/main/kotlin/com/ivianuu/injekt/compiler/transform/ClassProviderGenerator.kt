@@ -1,11 +1,14 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -35,6 +38,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -42,10 +46,13 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
-import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-class ClassProviderGenerator(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class ClassProviderGenerator(
+    pluginContext: IrPluginContext,
+    private val project: Project
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableMapOf<IrClass, IrConstructor>()
@@ -71,9 +78,88 @@ class ClassProviderGenerator(pluginContext: IrPluginContext) :
         })
 
         classes.forEach { (clazz, constructor) ->
-            clazz.addChild(
-                DeclarationIrBuilder(context, clazz.symbol)
-                    .provider(clazz, constructor)
+            val provider = DeclarationIrBuilder(context, clazz.symbol)
+                .provider(clazz, constructor)
+            clazz.addChild(provider)
+            println(provider.dump())
+            declaration.addClass(
+                context.psiSourceManager.cast(),
+                project,
+                buildClass {
+                    this.name = Name.identifier(
+                        declaration.descriptor.fqNameSafe
+                            .asString().replace(".", "_")
+                    )
+                }.apply clazz@{
+                    createImplicitParameterDeclarationWithWrappedDescriptor()
+
+                    annotations += DeclarationIrBuilder(context, clazz.symbol)
+                        .irCall(symbols.jitBindingMetadata.constructors.single()).apply {
+                            putValueArgument(
+                                0,
+                                IrClassReferenceImpl(
+                                    startOffset,
+                                    endOffset,
+                                    this@ClassProviderGenerator.context.irBuiltIns.kClassClass.typeWith(
+                                        clazz.defaultType
+                                    ),
+                                    clazz.defaultType.classifierOrFail,
+                                    clazz.defaultType
+                                )
+                            )
+                            val scope =
+                                clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+                                    .single()
+                                    .fqName!!
+                                    .let { symbols.getTopLevelClass(it) }
+                            putValueArgument(
+                                1,
+                                IrClassReferenceImpl(
+                                    startOffset,
+                                    endOffset,
+                                    this@ClassProviderGenerator.context.irBuiltIns.kClassClass.typeWith(
+                                        scope.defaultType
+                                    ),
+                                    scope.defaultType.classifierOrFail,
+                                    scope.defaultType
+                                )
+                            )
+                            putValueArgument(
+                                2,
+                                IrClassReferenceImpl(
+                                    startOffset,
+                                    endOffset,
+                                    this@ClassProviderGenerator.context.irBuiltIns.kClassClass.typeWith(
+                                        provider.defaultType
+                                    ),
+                                    provider.defaultType.classifierOrFail,
+                                    provider.defaultType
+                                )
+                            )
+                        }
+
+                    addConstructor {
+                        returnType = defaultType
+                        isPrimary = true
+                    }.apply {
+                        body = DeclarationIrBuilder(context, symbol).irBlockBody {
+                            +IrDelegatingConstructorCallImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                context.irBuiltIns.unitType,
+                                context.irBuiltIns.anyClass
+                                    .constructors.single()
+                            )
+                            +IrInstanceInitializerCallImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                this@clazz.symbol,
+                                context.irBuiltIns.unitType
+                            )
+                        }
+                    }
+                },
+                symbols.aggregatePackage.fqName
             )
         }
 
@@ -88,9 +174,6 @@ class ClassProviderGenerator(pluginContext: IrPluginContext) :
             ClassKind.OBJECT else ClassKind.CLASS
         this.name = Name.identifier("${clazz.name}\$Provider")
     }.apply clazz@{
-        superTypes += symbols.provider.typeWith(clazz.defaultType)
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-
         val providerFieldsByConstructorParam = constructor.valueParameters
             .associateWith { valueParameter ->
                 addField(
@@ -99,12 +182,15 @@ class ClassProviderGenerator(pluginContext: IrPluginContext) :
                 )
             }
 
+        superTypes += symbols.provider.typeWith(clazz.defaultType)
+        //if (providerFieldsByConstructorParam.isNotEmpty()) superTypes += symbols.linkable.defaultType
+
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
         addConstructor {
             returnType = defaultType
             isPrimary = true
         }.apply {
-            copyTypeParametersFrom(this@clazz)
-
             body = irBlockBody {
                 +IrDelegatingConstructorCallImpl(
                     UNDEFINED_OFFSET,
@@ -129,13 +215,13 @@ class ClassProviderGenerator(pluginContext: IrPluginContext) :
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
-                overriddenSymbols += symbols.linkable
+                /*overriddenSymbols += symbols.linkable
                     .functions
-                    .single { it.owner.name.asString() == "link" }
+                    .single { it.owner.name.asString() == "link" }*/
 
                 val linkerParameter = addValueParameter(
                     "linker",
-                    symbols.linkable.defaultType
+                    symbols.linker.defaultType
                 )
 
                 body = irBlockBody {
@@ -150,8 +236,7 @@ class ClassProviderGenerator(pluginContext: IrPluginContext) :
                                             it.extensionReceiverParameter?.type?.constructor?.declarationDescriptor ==
                                                     symbols.linker.descriptor
                                         }
-                                ),
-                                providerField.type
+                                ).ensureBound(this@ClassProviderGenerator.context.irProviders)
                             ).apply {
                                 dispatchReceiver = irGet(linkerParameter)
                                 putTypeArgument(0, constructorParam.type)
@@ -202,11 +287,11 @@ class ClassProviderGenerator(pluginContext: IrPluginContext) :
                             index,
                             irCall(
                                 symbolTable.referenceFunction(
-                                    symbols.provider.descriptor.unsubstitutedMemberScope.findSingleFunction(
-                                        Name.identifier(
-                                            "invoke"
-                                        )
-                                    )
+                                    symbols.provider.descriptor.unsubstitutedMemberScope.findFirstFunction(
+                                        "invoke"
+                                    ) {
+                                        it.valueParameters.size == 1
+                                    }
                                 ),
                                 (field.type as IrSimpleType).arguments.single().typeOrNull!!
                             ).apply {

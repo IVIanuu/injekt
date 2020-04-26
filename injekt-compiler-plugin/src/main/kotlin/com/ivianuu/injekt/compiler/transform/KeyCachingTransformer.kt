@@ -1,5 +1,8 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.isFullyResolved
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -72,21 +75,15 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFile(declaration: IrFile): IrFile {
-                return try {
-                    declarationContainers.push(declaration)
-                    super.visitFile(declaration)
-                } finally {
-                    declarationContainers.pop()
-                }
+                declarationContainers.push(declaration)
+                return super.visitFile(declaration)
+                    .also { declarationContainers.pop() }
             }
 
             override fun visitClass(declaration: IrClass): IrStatement {
-                return try {
-                    declarationContainers.push(declaration)
-                    super.visitClass(declaration)
-                } finally {
-                    declarationContainers.pop()
-                }
+                declarationContainers.push(declaration)
+                return super.visitClass(declaration)
+                    .also { declarationContainers.pop() }
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
@@ -124,21 +121,15 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFile(declaration: IrFile): IrFile {
-                return try {
-                    declarationContainers.push(declaration)
-                    super.visitFile(declaration)
-                } finally {
-                    declarationContainers.pop()
-                }
+                declarationContainers.push(declaration)
+                return super.visitFile(declaration)
+                    .also { declarationContainers.pop() }
             }
 
             override fun visitClass(declaration: IrClass): IrStatement {
-                return try {
-                    declarationContainers.push(declaration)
-                    super.visitClass(declaration)
-                } finally {
-                    declarationContainers.pop()
-                }
+                declarationContainers.push(declaration)
+                return super.visitClass(declaration)
+                    .also { declarationContainers.pop() }
             }
 
             override fun visitCall(expression: IrCall): IrExpression {

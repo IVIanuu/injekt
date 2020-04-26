@@ -1,13 +1,14 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
-class InjektIrGenerationExtension : IrGenerationExtension {
+class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
@@ -16,12 +17,21 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             generateSymbols(pluginContext)
         }
 
-        ClassProviderGenerator(pluginContext).visitModuleAndGenerateSymbols()
+        /*ClassProviderGenerator(pluginContext, project)
+            .visitModuleAndGenerateSymbols()
+
+        InjektInitTransformer(pluginContext)
+            .visitModuleAndGenerateSymbols()*/
 
         // rewrite key overload stub calls to the real calls
-        KeyOverloadTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        KeyOverloadTransformer(
+            pluginContext
+        ).visitModuleAndGenerateSymbols()
+
         // memoize static keyOf calls
-        KeyCachingTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        KeyCachingTransformer(pluginContext)
+            .visitModuleAndGenerateSymbols()
+
         // rewrite keyOf<String>() -> keyOf(String::class)
         KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }

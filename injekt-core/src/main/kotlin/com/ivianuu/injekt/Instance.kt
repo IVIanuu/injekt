@@ -1,17 +1,13 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.InstanceBinding
 import kotlin.reflect.KClass
 
 inline fun <reified T> ModuleDsl.instance(
     instance: T,
-    qualifier: KClass<*>? = null,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    qualifier: KClass<*>? = null
 ) {
-    instance(
-        instance = instance,
-        key = keyOf(qualifier),
-        duplicateStrategy = duplicateStrategy
-    )
+    instance(instance, keyOf(qualifier))
 }
 
 /**
@@ -19,18 +15,7 @@ inline fun <reified T> ModuleDsl.instance(
  */
 fun <T> ModuleDsl.instance(
     instance: T,
-    key: Key<T>,
-    duplicateStrategy: DuplicateStrategy = DuplicateStrategy.Fail
+    key: Key<T>
 ) {
-    add(
-        Binding(
-            key = key,
-            duplicateStrategy = duplicateStrategy,
-            provider = InstanceProvider(instance)
-        )
-    )
-}
-
-internal class InstanceProvider<T>(private val instance: T) : Provider<T> {
-    override fun invoke(parameters: Parameters) = instance
+    add(key, InstanceBinding(instance))
 }

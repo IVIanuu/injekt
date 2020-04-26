@@ -7,17 +7,24 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi2ir.findFirstFunction
 
-class InjektSymbols(
-    private val context: IrPluginContext
-) {
+class InjektSymbols(private val context: IrPluginContext) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
+    val internalPackage = getPackage(InjektFqNames.InternalPackage)
+    val aggregatePackage = getPackage(InjektFqNames.AggregatePackage)
+
+    val factory = getTopLevelClass(InjektFqNames.Factory)
+
+    val jitBindingLookup = getTopLevelClass(InjektFqNames.JitBindingLookup)
+    val jitBindingMetadata = getTopLevelClass(InjektFqNames.JitBindingMetadata)
+    val jitBindingRegistry = getTopLevelClass(InjektFqNames.JitBindingRegistry)
 
     val key = getTopLevelClass(InjektFqNames.Key)
-    val linkable = getTopLevelClass(InjektFqNames.Linkable)
     val linker = getTopLevelClass(InjektFqNames.Linker)
     val parameterizedKey = key.owner.declarations
         .filterIsInstance<IrClass>()
@@ -26,6 +33,11 @@ class InjektSymbols(
     val simpleKey = key.owner.declarations
         .filterIsInstance<IrClass>()
         .single { it.name == InjektFqNames.SimpleKey.shortName() }
+
+    val keyOf = context.symbolTable.referenceFunction(
+        injektPackage.memberScope
+            .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
+    ).ensureBound(context.irProviders)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

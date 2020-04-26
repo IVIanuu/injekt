@@ -9,8 +9,10 @@ class ClassProviderTest {
     @Test
     fun test() = codegen(
         """
-        @Factory
-        class MyClass
+        @Factory 
+        class MyClass(foo: Foo)
+        
+        fun init() = Injekt.initializeEndpoint()
     """
     ) {
         assertOk()

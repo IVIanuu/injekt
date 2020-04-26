@@ -16,7 +16,11 @@
 
 package com.ivianuu.injekt
 
-import java.util.concurrent.ConcurrentHashMap
+import com.ivianuu.injekt.internal.InstanceBinding
+import com.ivianuu.injekt.internal.JitBindingRegistry
+import com.ivianuu.injekt.internal.KeyedLazy
+import com.ivianuu.injekt.internal.KeyedProvider
+import com.ivianuu.injekt.internal.NullBinding
 import kotlin.reflect.KClass
 
 /**
@@ -43,66 +47,75 @@ import kotlin.reflect.KClass
 class Component internal constructor(
     val scope: KClass<*>,
     val parent: Component?,
-    bindings: ConcurrentHashMap<Key<*>, Binding<*>>
+    bindings: MutableMap<Key<*>, Binding<*>>
 ) {
 
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
     private val _bindings = bindings
 
     private val linker = Linker(this)
-    private val linkedKeys = mutableSetOf<Key<*>>()
 
     /**
      * Return a instance of type [T] for [key]
      */
-    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T {
+    fun <T> get(key: Key<T>, parameters: Parameters = emptyParameters()): T =
+        linker.get(key)(parameters)
+
+    internal fun <T> getBinding(key: Key<T>): LinkedBinding<T> {
         if (key is Key.ParameterizedKey && key.arguments.size == 1) {
             fun instanceKey() = keyOf<T>(
                 classifier = key.arguments.single().classifier,
                 qualifier = key.qualifier
             )
             when (key.arguments.single().classifier) {
-                Lazy::class -> KeyedLazy(this, instanceKey())
-                Provider::class -> KeyedProvider(linker, instanceKey())
+                Lazy::class -> InstanceBinding(KeyedLazy(this, instanceKey()))
+                Provider::class -> InstanceBinding(KeyedProvider(linker, instanceKey()))
             }
         }
 
-        return linker.get(key)(parameters)
-    }
+        findExistingBinding(key)?.let { return it }
 
-    internal fun <T> getProvider(key: Key<T>): Provider<T> {
-        findExistingProvider(key)?.let { return it }
+        val jitLookup = JitBindingRegistry.find(key)
+        if (jitLookup != null) {
+            val componentForBinding = findComponent(jitLookup.scope)
+                ?: error("Incompatible binding with scope ${jitLookup.scope}")
+            return componentForBinding.putJitBinding(key, jitLookup.binding)
+        }
 
-        if (key.isNullable) return NullProvider as Provider<T>
+        if (key.isNullable) return NullBinding as LinkedBinding<T>
 
         error("Couldn't find binding for $key")
     }
 
-    private fun <T> findExistingProvider(key: Key<T>): Provider<T>? {
-        _bindings[key]
-            ?.provider
+    private fun <T> findExistingBinding(key: Key<T>): LinkedBinding<T>? {
+        synchronized(_bindings) { _bindings[key] }
             ?.linkIfNeeded(key)
-            ?.let { return it as? Provider<T> }
+            ?.let { return it as? LinkedBinding<T> }
 
-        return parent?.findExistingProvider(key)
+        return parent?.findExistingBinding(key)
     }
 
-    private fun putJitBinding(key: Key<*>, binding: Binding<*>) {
-        _bindings[key] = binding
+    private fun <T> putJitBinding(key: Key<T>, binding: Binding<T>): LinkedBinding<T> {
+        return if (binding is LinkedBinding) {
+            synchronized(_bindings) { _bindings[key] = binding }
+            binding
+        } else {
+            val linked = binding.link(linker)
+            synchronized(_bindings) { _bindings[key] = linked }
+            linked
+        }
     }
 
     private fun findComponent(scope: KClass<*>): Component? {
-        if (this.scope == scope) return this
+        if (this.scope == scope || FactoryClass == scope) return this
         return parent?.findComponent(scope)
     }
 
-    private fun <T> Provider<T>.linkIfNeeded(key: Key<*>): Provider<T> {
-        if (this is Linkable && linkedKeys.add(key)) link(linker)
-        return this
-    }
-
-    private object NullProvider : Provider<Nothing?> {
-        override fun invoke(parameters: Parameters) = null
+    private fun <T> Binding<T>.linkIfNeeded(key: Key<*>): LinkedBinding<T> {
+        if (this is LinkedBinding) return this
+        val linked = link(linker)
+        synchronized(_bindings) { _bindings[key] = linked }
+        return linked
     }
 
 }
@@ -132,7 +145,7 @@ inline fun <reified T> Component(
     parent: Component? = null
 ) = Component(
     scope = T::class,
-    modules = modules,
+    modules = *modules,
     parent = parent
 )
 
@@ -145,46 +158,38 @@ fun Component(
 
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
-            if (binding.duplicateStrategy.check(
-                    existsPredicate = { key in bindings },
-                    errorMessage = { "Already declared binding for $key" })
-            ) {
-                bindings[key] = binding
+            if (key in bindings) {
+                error("Already declared binding for $key")
             }
+            bindings[key] = binding
         }
     }
 
     if (parent != null) {
         val parentScopes = mutableListOf<KClass<*>>()
+        val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
 
         var currentParent: Component? = parent
         while (currentParent != null) {
             parentScopes += currentParent.scope
+            parentBindings += currentParent.bindings
             currentParent = currentParent.parent
         }
 
         check(scope !in parentScopes) {
             "Duplicated scope $scope"
         }
-    }
 
-    val finalBindings = ConcurrentHashMap(if (parent != null) {
-        val parentBindings = parent.bindings
-        val finalBindings = mutableMapOf<Key<*>, Binding<*>>()
         bindings.forEach { (key, binding) ->
-            if (binding.duplicateStrategy.check(
-                    existsPredicate = { key in parentBindings },
-                    errorMessage = { "Already declared binding for $key" })
-            ) {
-                finalBindings[key] = binding
+            if (key in parentBindings) {
+                error("Already declared binding for $key")
             }
         }
-        finalBindings
-    } else bindings)
+    }
 
     return Component(
         scope = scope,
         parent = parent,
-        bindings = finalBindings
+        bindings = bindings
     )
 }

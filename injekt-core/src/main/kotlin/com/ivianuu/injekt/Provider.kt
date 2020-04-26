@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 /**
  * Provides instances of type [T]
  * For any type [T] that can be injected, you can also inject Provider<T>.
@@ -32,23 +30,3 @@ fun interface Provider<T> {
     operator fun invoke(): T = invoke(emptyParameters())
 }
 
-class ProviderDsl {
-    fun <T> get(key: Key<T>): T = error("Implemented as an intrinsic")
-    inline fun <reified T> get(qualifier: KClass<*>? = null): T = get(keyOf(qualifier))
-}
-
-typealias ProviderDefinition<T> = ProviderDsl.(Parameters) -> T
-
-internal class KeyedProvider<T>(
-    private val linker: Linker,
-    private val key: Key<T>
-) : Provider<T> {
-    private var provider: Provider<T>? = null
-
-    override fun invoke(parameters: Parameters): T {
-        if (provider == null) {
-            provider = linker.get(key)
-        }
-        return provider!!(parameters)
-    }
-}

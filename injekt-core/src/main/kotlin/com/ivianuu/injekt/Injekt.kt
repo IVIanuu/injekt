@@ -21,4 +21,6 @@ package com.ivianuu.injekt
  */
 object Injekt {
     var debug = false
+
+    fun initializeEndpoint(): Unit = error("Implemented as an intrinsic")
 }

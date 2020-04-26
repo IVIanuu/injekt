@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -30,7 +31,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
     ) {
         IrGenerationExtension.registerExtension(
             project,
-            InjektIrGenerationExtension()
+            InjektIrGenerationExtension(project)
         )
     }
 }

@@ -1,5 +1,6 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.ensureBound
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -105,45 +106,48 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         if (keyOverloadFunction == null) return expression
 
-        val keyOf = injektPackage.memberScope
+        val keyOf = symbols.injektPackage.memberScope
             .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
 
-        val builder = DeclarationIrBuilder(context, expression.symbol)
-
-        return builder.irCall(keyOverloadFunction!!).apply {
-            if (keyOverloadFunction!!.dispatchReceiverParameter != null) {
-                dispatchReceiver = expression.extensionReceiver
-            } else {
-                extensionReceiver = expression.extensionReceiver
-            }
-
-            copyTypeArgumentsFrom(expression)
-
-            keyOverloadFunction!!.valueParameters.forEach { valueParameter ->
-                if (valueParameter.type.toKotlinType().constructor.declarationDescriptor == symbols.key.descriptor) {
-                    val keyType = valueParameter.type
-                        .substitute(
-                            keyOverloadFunction!!.typeParameters
-                                .associate { it.symbol to expression.getTypeArgument(it.index)!! }
-                        )
-                    putValueArgument(
-                        valueParameter.index,
-                        builder.irCall(
-                            callee = symbolTable.referenceSimpleFunction(keyOf),
-                            type = keyType
-                        ).apply {
-                            putTypeArgument(
-                                0,
-                                (keyType as IrSimpleType).arguments.single().typeOrNull!!
-                            )
-                            putValueArgument(0, expression.getValueArgument(valueParameter.index))
-                        }
-                    )
+        return DeclarationIrBuilder(context, expression.symbol).run {
+            irCall(keyOverloadFunction!!).apply {
+                if (keyOverloadFunction!!.dispatchReceiverParameter != null) {
+                    dispatchReceiver = expression.extensionReceiver
                 } else {
-                    putValueArgument(
-                        valueParameter.index,
-                        expression.getValueArgument(valueParameter.index)
-                    )
+                    extensionReceiver = expression.extensionReceiver
+                }
+
+                copyTypeArgumentsFrom(expression)
+
+                keyOverloadFunction!!.valueParameters.forEach { valueParameter ->
+                    if (valueParameter.type.toKotlinType().constructor.declarationDescriptor == symbols.key.descriptor) {
+                        val keyType = valueParameter.type
+                            .substitute(
+                                keyOverloadFunction!!.typeParameters
+                                    .associate { it.symbol to expression.getTypeArgument(it.index)!! }
+                            )
+                        putValueArgument(
+                            valueParameter.index,
+                            irCall(
+                                callee = symbolTable.referenceSimpleFunction(keyOf),
+                                type = keyType
+                            ).apply {
+                                putTypeArgument(
+                                    0,
+                                    (keyType as IrSimpleType).arguments.single().typeOrNull!!
+                                )
+                                putValueArgument(
+                                    0,
+                                    expression.getValueArgument(valueParameter.index)
+                                )
+                            }
+                        )
+                    } else {
+                        putValueArgument(
+                            valueParameter.index,
+                            expression.getValueArgument(valueParameter.index)
+                        )
+                    }
                 }
             }
         }
