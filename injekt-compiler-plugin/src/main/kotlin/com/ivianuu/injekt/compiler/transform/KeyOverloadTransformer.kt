@@ -74,8 +74,13 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
         if (keyOverloadFunction == null) {
             fun MemberScope.findKeyOverloadFunction() = try {
                 findFirstFunction(callee.name.asString()) { otherFunction ->
-                    (otherFunction.extensionReceiverParameter
-                        ?: otherFunction.dispatchReceiverParameter)?.type == callee.extensionReceiverParameter?.type?.toKotlinType() &&
+                    val otherReceiver = (otherFunction.extensionReceiverParameter
+                        ?: otherFunction.dispatchReceiverParameter)?.type
+                    val calleeReceiver = (callee.descriptor.extensionReceiverParameter
+                        ?: callee.descriptor.dispatchReceiverParameter)?.type
+
+                    otherFunction != callee.descriptor &&
+                            otherReceiver == calleeReceiver &&
                             otherFunction.typeParameters.size == callee.typeParameters.size &&
                             otherFunction.valueParameters.size == callee.valueParameters.size &&
                             otherFunction.valueParameters.all { otherValueParameter ->
@@ -97,6 +102,8 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
                 ((callee.descriptor.containingDeclaration as? PackageFragmentDescriptor)
                     ?.let { context.moduleDescriptor.getPackage(it.fqName).memberScope }
                     ?.findKeyOverloadFunction()
+                    ?: ((callee.descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
+                        ?.unsubstitutedMemberScope?.findKeyOverloadFunction())
                     ?: (callee.descriptor.extensionReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)
                         ?.unsubstitutedMemberScope?.findKeyOverloadFunction())
                     ?.let { symbolTable.referenceFunction(it) }
@@ -111,10 +118,15 @@ class KeyOverloadTransformer(pluginContext: IrPluginContext) :
 
         return DeclarationIrBuilder(context, expression.symbol).run {
             irCall(keyOverloadFunction!!).apply {
-                if (keyOverloadFunction!!.dispatchReceiverParameter != null) {
-                    dispatchReceiver = expression.extensionReceiver
-                } else {
+                if (callee.dispatchReceiverParameter != null) {
+                    dispatchReceiver = expression.dispatchReceiver
                     extensionReceiver = expression.extensionReceiver
+                } else if (callee.extensionReceiverParameter != null) {
+                    if (keyOverloadFunction!!.dispatchReceiverParameter != null) {
+                        dispatchReceiver = expression.extensionReceiver
+                    } else {
+                        extensionReceiver = expression.extensionReceiver
+                    }
                 }
 
                 copyTypeArgumentsFrom(expression)

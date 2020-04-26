@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Key
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertSame
 import org.junit.Test
@@ -79,4 +80,20 @@ class KeyTest {
         assertEquals(true, invokeSingleFile())
     }
 
+    @Test
+    fun testKeyOverloadFromDifferentCompilation() {
+        codegen(
+            """
+                fun invoke() = KeyOverloadTestClass().keyOverload<String>()
+            """
+        ) {
+            assertEquals(true, invokeSingleFile())
+        }
+    }
+
+}
+
+class KeyOverloadTestClass {
+    fun <T> keyOverload(key: Key<T>) = true
+    inline fun <reified T> keyOverload(qualifier: kotlin.reflect.KClass<*>? = null) = false
 }
