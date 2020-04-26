@@ -45,6 +45,11 @@ object Deps {
             const val extensions = "androidx.lifecycle:lifecycle-extensions:$version"
             const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
         }
+
+        object Test {
+            const val core = "androidx.test:core-ktx:1.2.0"
+            const val junit = "androidx.test.ext:junit:1.0.0"
+        }
     }
 
     const val bintrayGradlePlugin =
@@ -94,6 +99,8 @@ object Deps {
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
 
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
+
+    const val roboelectric = "org.robolectric:robolectric:4.3.1"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 
