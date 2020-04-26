@@ -13,7 +13,7 @@ object InjektFqNames {
     val BindingDsl = InjektPackage.child("BindingDsl")
     val Component = InjektPackage.child("Component")
     val Factory = InjektPackage.child("Factory")
-    val JitBindingLookup = InternalPackage.child("JitBindingLookup")
+    val HasScope = InternalPackage.child("HasScope")
     val JitBindingMetadata = InternalPackage.child("JitBindingMetadata")
     val JitBindingRegistry = InternalPackage.child("JitBindingRegistry")
     val Key = InjektPackage.child("Key")

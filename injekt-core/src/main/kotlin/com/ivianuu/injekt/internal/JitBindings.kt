@@ -2,22 +2,15 @@ package com.ivianuu.injekt.internal
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Key
-import kotlin.reflect.KClass
-
-class JitBindingLookup<T>(
-    val scope: KClass<*>,
-    val binding: Binding<T>
-)
 
 object JitBindingRegistry {
 
-    private val bindings = mutableMapOf<Key<*>, () -> JitBindingLookup<*>>()
+    private val bindings = mutableMapOf<Key<*>, Binding<*>>()
 
-    fun <T> register(key: Key<T>, factory: () -> JitBindingLookup<T>) {
-        bindings[key] = factory
+    fun <T> register(key: Key<T>, binding: Binding<T>) {
+        bindings[key] = binding
     }
 
-    fun <T> find(key: Key<T>): JitBindingLookup<T>? =
-        bindings[key]?.invoke() as? JitBindingLookup<T>
+    fun <T> find(key: Key<T>): Binding<T>? = bindings[key] as? Binding<T>
 
 }

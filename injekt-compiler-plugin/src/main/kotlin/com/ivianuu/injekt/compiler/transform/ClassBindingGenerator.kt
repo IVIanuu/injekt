@@ -17,8 +17,10 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
+import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -35,6 +37,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -90,10 +93,12 @@ class ClassBindingGenerator(
                     )
                     val unlinked =
                         unlinkedBinding(constructor, linked.constructors.single(), bindingClassName)
+                            .also { it.addScope(clazz) }
                     unlinked.addChild(linked)
                     unlinked
                 } else {
-                    linkedBinding(constructor, bindingClassName, Visibilities.PUBLIC,)
+                    linkedBinding(constructor, bindingClassName, Visibilities.PUBLIC)
+                        .also { it.addScope(clazz) }
                 }
 
                 clazz.addChild(bindingClass)
@@ -134,25 +139,8 @@ class ClassBindingGenerator(
                         clazz.defaultType
                     )
                 )
-                val scope =
-                    clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
-                        .single()
-                        .fqName!!
-                        .let { symbols.getTopLevelClass(it) }
                 putValueArgument(
                     1,
-                    IrClassReferenceImpl(
-                        startOffset,
-                        endOffset,
-                        this@ClassBindingGenerator.context.irBuiltIns.kClassClass.typeWith(
-                            scope.defaultType
-                        ),
-                        scope.defaultType.classifierOrFail,
-                        scope.defaultType
-                    )
-                )
-                putValueArgument(
-                    2,
                     IrClassReferenceImpl(
                         startOffset,
                         endOffset,
@@ -192,10 +180,7 @@ class ClassBindingGenerator(
         linkedConstructor: IrConstructor,
         name: Name
     ) = buildClass {
-        kind = if (constructor.valueParameters
-                .filterNot { it.hasAnnotation(InjektFqNames.Param) }
-                .isNotEmpty()
-        ) ClassKind.CLASS else ClassKind.OBJECT
+        kind = ClassKind.OBJECT
         this.name = name
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -406,6 +391,37 @@ class ClassBindingGenerator(
                     }
                 }
             )
+        }
+    }
+
+    private fun IrClass.addScope(clazz: IrClass) {
+        val scope = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+            .single()
+            .fqName!!
+            .let { symbols.getTopLevelClass(it) }
+
+        if (scope == symbols.factory) return
+
+        superTypes += symbols.hasScope.defaultType
+
+        addProperty {
+            this.name = Name.identifier("scope")
+        }.apply {
+            backingField = buildField {
+                type = context.irBuiltIns.kClassClass.starProjectedType
+            }.apply {
+                initializer = DeclarationIrBuilder(context, symbol).irExprBody(
+                    IrClassReferenceImpl(
+                        startOffset,
+                        endOffset,
+                        this@ClassBindingGenerator.context.irBuiltIns.kClassClass.typeWith(
+                            scope.defaultType
+                        ),
+                        scope.defaultType.classifierOrFail,
+                        scope.defaultType
+                    )
+                )
+            }
         }
     }
 

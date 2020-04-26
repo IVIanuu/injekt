@@ -233,7 +233,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
         definitionFunction: IrFunction,
         linkedConstructor: IrConstructor
     ) = buildClass {
-        kind = if (dependencies.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
+        kind = ClassKind.CLASS
         name = Name.special("<binding for ${definitionFunction.fqNameWhenAvailable}>")
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()

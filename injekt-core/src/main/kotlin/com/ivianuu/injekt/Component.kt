@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.HasScope
 import com.ivianuu.injekt.internal.InstanceBinding
 import com.ivianuu.injekt.internal.JitBindingRegistry
 import com.ivianuu.injekt.internal.KeyedLazy
 import com.ivianuu.injekt.internal.KeyedProvider
 import com.ivianuu.injekt.internal.NullBinding
+import com.ivianuu.injekt.internal.asScoped
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
@@ -76,11 +78,15 @@ class Component internal constructor(
 
         findExistingBinding(key)?.let { return it }
 
-        val jitLookup = JitBindingRegistry.find(key)
-        if (jitLookup != null) {
-            val componentForBinding = findComponent(jitLookup.scope)
-                ?: error("Incompatible binding with scope ${jitLookup.scope}")
-            return componentForBinding.putJitBinding(key, jitLookup.binding)
+        val jitBinding = JitBindingRegistry.find(key)
+        if (jitBinding != null) {
+            return if (jitBinding is HasScope) {
+                val componentForBinding = findComponent(jitBinding.scope)
+                    ?: error("Incompatible binding with scope ${jitBinding.scope}")
+                componentForBinding.putJitBinding(key, jitBinding.asScoped())
+            } else {
+                putJitBinding(key, jitBinding)
+            }
         }
 
         if (key.isNullable) return NullBinding as LinkedBinding<T>
