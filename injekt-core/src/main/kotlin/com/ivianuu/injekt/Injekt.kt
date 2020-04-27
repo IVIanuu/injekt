@@ -22,7 +22,5 @@ import com.ivianuu.injekt.internal.injektIntrinsic
  * Global configurations
  */
 object Injekt {
-    var debug = true
-
     fun initializeEndpoint(): Unit = injektIntrinsic()
 }

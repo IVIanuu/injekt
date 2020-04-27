@@ -3,11 +3,11 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
+@JvmName("aliasQualifier")
 inline fun <reified T> ModuleDsl.alias(
-    aliasQualifier: KClass<*>?
-) {
-    alias<T, T>(aliasQualifier = aliasQualifier)
-}
+    originalQualifier: KClass<*>? = null,
+    aliasQualifier: KClass<*>
+): Unit = injektIntrinsic()
 
 fun <T> ModuleDsl.alias(
     originalKey: Key<T>,
