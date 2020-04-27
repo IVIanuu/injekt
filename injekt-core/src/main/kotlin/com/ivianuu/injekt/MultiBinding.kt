@@ -47,8 +47,8 @@ class MapBuilder<K, V> internal constructor() {
     private val entries = mutableMapOf<K, Key<*>>()
 
     fun put(entryKey: K, entryValueKey: Key<out V>) {
-        if (entryKey in entries) {
-            error("Already declared $entryKey")
+        check(entryKey !in entries) {
+            "Already declared $entryKey"
         }
         entries[entryKey] = entryValueKey
     }
@@ -107,8 +107,8 @@ class SetBuilder<E> internal constructor() {
     inline fun <reified T : E> add(elementQualifier: KClass<*>? = null): Unit = injektIntrinsic()
 
     fun <T : E> add(elementKey: Key<T>) {
-        if (elementKey in elements) {
-            error("Already declared element $elementKey")
+        check(elementKey !in elements) {
+            "Already declared element $elementKey"
         }
         elements += elementKey
     }

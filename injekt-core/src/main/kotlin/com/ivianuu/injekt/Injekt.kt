@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
+
 /**
  * Global configurations
  */
 object Injekt {
-    var debug = false
+    var debug = true
 
-    fun initializeEndpoint(): Unit = error("Implemented as an intrinsic")
+    fun initializeEndpoint(): Unit = injektIntrinsic()
 }

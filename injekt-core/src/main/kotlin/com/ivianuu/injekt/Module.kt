@@ -19,10 +19,9 @@ class ModuleDsl {
         key: Key<T>,
         binding: Binding<T>
     ) {
-        if (key in bindings) {
-            error("Already declared binding for $key")
+        check(key !in bindings) {
+            "Already declared binding for $key"
         }
-
         bindings[key] = binding
     }
 

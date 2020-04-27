@@ -181,8 +181,8 @@ fun Component(
 
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
-            if (key in bindings) {
-                error("Already declared binding for $key")
+            check(key !in bindings) {
+                "Already declared binding for $key"
             }
             bindings[key] = binding
         }
@@ -191,8 +191,8 @@ fun Component(
             val thisMap =
                 maps!!.getOrPut(mapKey) { mutableMapOf<Any?, Key<*>>() } as MutableMap<Any?, Key<*>>
             moduleMap.forEach { (key, valueKey) ->
-                if (key in thisMap) {
-                    error("Already declared $key")
+                check(key !in thisMap) {
+                    "Already declared $key"
                 }
                 thisMap[key] = valueKey
             }
@@ -201,8 +201,8 @@ fun Component(
             if (sets == null) sets = mutableMapOf()
             val thisSet = sets!!.getOrPut(setKey) { mutableSetOf() }
             moduleSet.forEach { elementKey ->
-                if (elementKey in thisSet) {
-                    error("Already declared $elementKey")
+                check(elementKey !in thisSet) {
+                    "Already declared $elementKey"
                 }
                 thisSet += elementKey
             }
@@ -225,8 +225,8 @@ fun Component(
         }
 
         bindings.forEach { (key, _) ->
-            if (key in parentBindings) {
-                error("Already declared binding for $key")
+            check(key !in parentBindings) {
+                "Already declared binding for $key"
             }
         }
     }

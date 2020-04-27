@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 sealed class Binding<T> {
@@ -16,12 +17,12 @@ class BindingDsl {
     fun <T> get(
         key: Key<T>,
         parameters: Parameters = emptyParameters()
-    ): T = error("Implemented as an intrinsic")
+    ): T = injektIntrinsic()
 
     inline fun <reified T> get(
         qualifier: KClass<*>? = null,
         parameters: Parameters = emptyParameters()
-    ): T = get(keyOf(qualifier), parameters)
+    ): T = injektIntrinsic()
 }
 
 typealias BindingDefinition<T> = BindingDsl.(Parameters) -> T
