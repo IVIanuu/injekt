@@ -1,16 +1,18 @@
 package com.ivianuu.injekt
 
 class Module @PublishedApi internal constructor(
-    internal val bindings: Map<Key<*>, Binding<*>>,
+    internal val bindings: Map<Key<*>, Binding<*>>?,
     internal val maps: Map<Key<*>, Map<*, Binding<*>>>?,
-    internal val sets: Map<Key<*>, Map<Key<*>, Binding<*>>>?
+    internal val sets: Map<Key<*>, Map<Key<*>, Binding<*>>>?,
+    internal val includes: Set<Module>?
 )
 
 class ModuleDsl {
 
-    private val bindings = mutableMapOf<Key<*>, Binding<*>>()
+    private var bindings: MutableMap<Key<*>, Binding<*>>? = null
     private var maps: MutableMap<Key<*>, MapDsl<*, *>>? = null
     private var sets: MutableMap<Key<*>, SetDsl<*>>? = null
+    private var includes: MutableSet<Module>? = null
 
     /**
      * Registers the [binding] for [key]
@@ -19,10 +21,12 @@ class ModuleDsl {
         key: Key<T>,
         binding: Binding<T>
     ) {
-        check(key !in bindings) {
-            "Already declared binding for $key"
-        }
-        bindings[key] = binding
+        if (bindings != null) {
+            check(key !in bindings!!) {
+                "Already declared binding for $key"
+            }
+        } else bindings = mutableMapOf()
+        bindings!![key] = binding
     }
 
     /**
@@ -43,6 +47,15 @@ class ModuleDsl {
         block: SetDsl<E>.() -> Unit = {}
     ) {
         getSetBuilder(setKey).block()
+    }
+
+    fun include(module: Module) {
+        if (includes != null) {
+            check(module !in includes!!) {
+                "Already included module $module"
+            }
+        } else includes = mutableSetOf()
+        includes!! += module
     }
 
     @PublishedApi
@@ -70,7 +83,8 @@ class ModuleDsl {
     fun build(): Module = Module(
         bindings,
         maps?.mapValues { it.value.build() },
-        sets?.mapValues { it.value.build() as Map<Key<*>, Binding<*>> }
+        sets?.mapValues { it.value.build() as Map<Key<*>, Binding<*>> },
+        includes
     )
 
 }

@@ -181,7 +181,7 @@ fun Component(
         ?.toMutableMap()
 
     fun addModule(module: Module) {
-        module.bindings.forEach { (key, binding) ->
+        module.bindings?.forEach { (key, binding) ->
             check(key !in bindings) {
                 "Already declared binding for $key"
             }
@@ -208,6 +208,7 @@ fun Component(
                 thisSet[elementKey] = elementBinding
             }
         }
+        module.includes?.forEach { addModule(it) }
     }
 
     modules.forEach { addModule(it) }
