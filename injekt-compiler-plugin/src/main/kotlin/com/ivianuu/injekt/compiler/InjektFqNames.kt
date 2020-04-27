@@ -19,6 +19,8 @@ object InjektFqNames {
     val Key = InjektPackage.child("Key")
     val LinkedBinding = InjektPackage.child("LinkedBinding")
     val Linker = InjektPackage.child("Linker")
+    val Module = InjektPackage.child("Module")
+    val ModuleRegistry = InternalPackage.child("ModuleRegistry")
     val Param = InjektPackage.child("Param")
     val Parameters = InjektPackage.child("Parameters")
     val ParameterizedKey = Key.child("ParameterizedKey")

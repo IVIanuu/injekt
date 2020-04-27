@@ -32,6 +32,8 @@ class InjektSymbols(private val context: IrPluginContext) {
     val key = getTopLevelClass(InjektFqNames.Key)
     val linkedBinding = getTopLevelClass(InjektFqNames.LinkedBinding)
     val linker = getTopLevelClass(InjektFqNames.Linker)
+    val module = getTopLevelClass(InjektFqNames.Module)
+    val moduleRegistry = getTopLevelClass(InjektFqNames.ModuleRegistry)
     val parameters = getTopLevelClass(InjektFqNames.Parameters)
     val parameterizedKey = key.owner.declarations
         .filterIsInstance<IrClass>()

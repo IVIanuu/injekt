@@ -23,6 +23,7 @@ import com.ivianuu.injekt.internal.LazyBinding
 import com.ivianuu.injekt.internal.MapOfLazyBinding
 import com.ivianuu.injekt.internal.MapOfProviderBinding
 import com.ivianuu.injekt.internal.MapOfValueBinding
+import com.ivianuu.injekt.internal.ModuleRegistry
 import com.ivianuu.injekt.internal.NullBinding
 import com.ivianuu.injekt.internal.ProviderBinding
 import com.ivianuu.injekt.internal.SetOfLazyBinding
@@ -179,7 +180,7 @@ fun Component(
         ?.mapValues { it.value.toMutableSet() }
         ?.toMutableMap()
 
-    modules.forEach { module ->
+    fun addModule(module: Module) {
         module.bindings.forEach { (key, binding) ->
             check(key !in bindings) {
                 "Already declared binding for $key"
@@ -208,6 +209,10 @@ fun Component(
             }
         }
     }
+
+    modules.forEach { addModule(it) }
+
+    ModuleRegistry.getForScope(scope).forEach { addModule(it) }
 
     if (parent != null) {
         val parentScopes = mutableListOf<KClass<*>>()
