@@ -10,10 +10,10 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.UnlinkedBinding
 
 internal class SetOfProviderBinding<E>(
-    private val setOfKey: Set<Binding<E>>
+    private val setOfBinding: Set<Binding<E>>
 ) : UnlinkedBinding<Set<Provider<E>>>() {
     override fun link(linker: Linker): LinkedBinding<Set<Provider<E>>> =
-        InstanceBinding(setOfKey.mapTo(LinkedHashSet(setOfKey.size)) { it.link(linker) })
+        InstanceBinding(setOfBinding.mapTo(LinkedHashSet(setOfBinding.size)) { it.link(linker) })
 }
 
 internal class SetOfValueBinding<E>(

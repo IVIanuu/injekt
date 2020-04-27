@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.internal
 
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.LinkedBinding
@@ -9,10 +10,10 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.UnlinkedBinding
 
 internal class MapOfProviderBinding<K, V>(
-    private val mapOfKey: Map<K, Key<V>>
+    private val mapOfBinding: Map<K, Binding<V>>
 ) : UnlinkedBinding<Map<K, Provider<V>>>() {
     override fun link(linker: Linker): LinkedBinding<Map<K, Provider<V>>> =
-        InstanceBinding(mapOfKey.mapValues { linker.get(it.value) })
+        InstanceBinding(mapOfBinding.mapValues { it.value.link(linker) })
 }
 
 internal class MapOfValueBinding<K, V>(

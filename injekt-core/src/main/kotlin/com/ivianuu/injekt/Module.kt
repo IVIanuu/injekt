@@ -2,7 +2,7 @@ package com.ivianuu.injekt
 
 class Module @PublishedApi internal constructor(
     internal val bindings: Map<Key<*>, Binding<*>>,
-    internal val maps: Map<Key<*>, Map<*, Key<*>>>?,
+    internal val maps: Map<Key<*>, Map<*, Binding<*>>>?,
     internal val sets: Map<Key<*>, Map<Key<*>, Binding<*>>>?
 )
 
@@ -61,7 +61,7 @@ class ModuleDsl {
         var builder = sets?.get(setKey) as? SetDsl<E>
         if (builder == null) {
             if (sets == null) sets = mutableMapOf()
-            builder = SetDsl(this)
+            builder = SetDsl()
             sets!![setKey] = builder
         }
         return builder

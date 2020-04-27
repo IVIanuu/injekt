@@ -58,7 +58,7 @@ class Component internal constructor(
     val scope: KClass<*>,
     val parent: Component?,
     bindings: MutableMap<Key<*>, Binding<*>>,
-    val maps: Map<Key<*>, Map<*, Key<*>>>?,
+    val maps: Map<Key<*>, Map<*, Binding<*>>>?,
     val sets: Map<Key<*>, Map<Key<*>, Binding<*>>>?,
 ) {
 
@@ -173,7 +173,7 @@ fun Component(
     parent: Component? = null
 ): Component {
     val bindings = mutableMapOf<Key<*>, Binding<*>>()
-    var maps: MutableMap<Key<*>, MutableMap<*, Key<*>>>? = parent?.maps
+    var maps: MutableMap<Key<*>, MutableMap<*, Binding<*>>>? = parent?.maps
         ?.mapValues { it.value.toMutableMap() }
         ?.toMutableMap()
     var sets: MutableMap<Key<*>, MutableMap<Key<*>, Binding<*>>>? = parent?.sets
@@ -190,7 +190,7 @@ fun Component(
         module.maps?.forEach { (mapKey, moduleMap) ->
             if (maps == null) maps = mutableMapOf()
             val thisMap =
-                maps!!.getOrPut(mapKey) { mutableMapOf<Any?, Key<*>>() } as MutableMap<Any?, Key<*>>
+                maps!!.getOrPut(mapKey) { mutableMapOf<Any?, Binding<*>>() } as MutableMap<Any?, Binding<*>>
             moduleMap.forEach { (key, valueKey) ->
                 check(key !in thisMap) {
                     "Already declared $key"
@@ -253,7 +253,7 @@ fun Component(
             qualifier = mapKey.qualifier
         )
 
-        bindings[mapOfProviderKey] = MapOfProviderBinding(map as Map<Any?, Key<Any?>>)
+        bindings[mapOfProviderKey] = MapOfProviderBinding(map as Map<Any?, Binding<Any?>>)
         bindings[mapKey] = MapOfValueBinding(mapOfProviderKey as Key<Map<Any?, Provider<Any?>>>)
         bindings[Key.ParameterizedKey<Map<*, Lazy<*>>>(
             classifier = Map::class,

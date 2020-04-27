@@ -44,16 +44,23 @@ import kotlin.reflect.KClass
  * @see MapDsl
  */
 class MapDsl<K, V> internal constructor() {
-    private val entries = mutableMapOf<K, Key<*>>()
+    private val entries = mutableMapOf<K, Binding<out V>>()
 
     fun put(entryKey: K, entryValueKey: Key<out V>) {
+        put(entryKey) { get(entryValueKey) }
+    }
+
+    inline fun put(entryKey: K, entryBindingDefinition: BindingDefinition<out V>): Unit =
+        injektIntrinsic()
+
+    fun put(entryKey: K, entryBinding: Binding<out V>) {
         check(entryKey !in entries) {
             "Already declared $entryKey"
         }
-        entries[entryKey] = entryValueKey
+        entries[entryKey] = entryBinding
     }
 
-    internal fun build(): Map<K, Key<*>> = entries
+    internal fun build(): Map<K, Binding<V>> = entries as Map<K, Binding<V>>
 }
 
 inline fun <reified K, reified V> ModuleDsl.map(
@@ -100,7 +107,7 @@ inline fun <reified K, reified V> ModuleDsl.map(
  *
  * @see ComponentBuilder.set
  */
-class SetDsl<E> internal constructor(private val moduleDsl: ModuleDsl) {
+class SetDsl<E> internal constructor() {
 
     private val elements = mutableMapOf<Key<out E>, Binding<out E>>()
 
@@ -132,7 +139,6 @@ class SetDsl<E> internal constructor(private val moduleDsl: ModuleDsl) {
         check(elementBinding !in elements) {
             "Already declared element $elementBinding"
         }
-        moduleDsl.add(elementKey, elementBinding)
         elements[elementKey] = elementBinding
     }
 
