@@ -16,120 +16,116 @@
 
 package com.ivianuu.injekt
 
-/**
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class SetTest {
 
-@Test
-fun testSetBinding() {
-val component = Component {
-set<Command>(TestQualifier1) {
-add { Command1 }
-add { Command2 }
-add { Command3 }
-}
-}
+    @Test
+    fun testSetBinding() {
+        val component = Component(Module {
+            set<Command>(TestQualifier1::class) {
+                add { Command1 }
+                add { Command2 }
+                add { Command3 }
+            }
+        })
 
-val set = component.get<Set<Command>>(qualifier = TestQualifier1)
-assertEquals(3, set.size)
-assertEquals(Command1, set.toList()[0])
-assertEquals(Command2, set.toList()[1])
-assertEquals(Command3, set.toList()[2])
+        val set = component.get<Set<Command>>(qualifier = TestQualifier1::class)
+        assertEquals(3, set.size)
+        assertEquals(Command1, set.toList()[0])
+        assertEquals(Command2, set.toList()[1])
+        assertEquals(Command3, set.toList()[2])
 
-val providerSet = component.get<Set<Provider<Command>>>(qualifier = TestQualifier1)
-assertEquals(3, providerSet.size)
-assertEquals(Command1, providerSet.toList()[0]())
-assertEquals(Command2, providerSet.toList()[1]())
-assertEquals(Command3, providerSet.toList()[2]())
+        val providerSet = component.get<Set<Provider<Command>>>(qualifier = TestQualifier1::class)
+        assertEquals(3, providerSet.size)
+        assertEquals(Command1, providerSet.toList()[0]())
+        assertEquals(Command2, providerSet.toList()[1]())
+        assertEquals(Command3, providerSet.toList()[2]())
 
-val lazySet = component.get<Set<Lazy<Command>>>(qualifier = TestQualifier1)
-assertEquals(3, providerSet.size)
-assertEquals(Command1, lazySet.toList()[0]())
-assertEquals(Command2, lazySet.toList()[1]())
-assertEquals(Command3, lazySet.toList()[2]())
-}
+        val lazySet = component.get<Set<Lazy<Command>>>(qualifier = TestQualifier1::class)
+        assertEquals(3, providerSet.size)
+        assertEquals(Command1, lazySet.toList()[0]())
+        assertEquals(Command2, lazySet.toList()[1]())
+        assertEquals(Command3, lazySet.toList()[2]())
+    }
 
-@Test(expected = IllegalStateException::class)
-fun testThrowsOnNonDeclaredSetBinding() {
-val component = Component()
-component.get<Set<Command>>()
-}
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsOnNonDeclaredSetBinding() {
+        val component = Component()
+        component.get<Set<Command>>()
+    }
 
-@Test
-fun testReturnsEmptyOnADeclaredSetBindingWithoutElements() {
-val component = Component {
-com.ivianuu.injekt.set<Command>()
-}
+    @Test
+    fun testReturnsEmptyOnADeclaredSetBindingWithoutElements() {
+        val component = Component(Module {
+            set<Command>()
+        })
 
-assertEquals(0, component.get<Set<Command>>().size)
-}
+        assertEquals(0, component.get<Set<Command>>().size)
+    }
 
-@Test
-fun testNestedSetBindings() {
-val componentA = Component {
-com.ivianuu.injekt.set<Command> { add { Command1 } }
-}
+    @Test
+    fun testNestedSetBindings() {
+        val componentA = Component(Module {
+            set<Command> { add { Command1 } }
+        })
 
-val setA = componentA.get<Set<Command>>()
-assertEquals(1, setA.size)
-assertEquals(Command1, setA.toList()[0])
+        val setA = componentA.get<Set<Command>>()
+        assertEquals(1, setA.size)
+        assertEquals(Command1, setA.toList()[0])
 
-val componentB = Component {
-parents(componentA)
-com.ivianuu.injekt.set<Command> { add { Command2 } }
-}
+        val componentB = componentA.plus<TestScope1>(Module {
+            set<Command> { add { Command2 } }
+        })
 
-val setB = componentB.get<Set<Command>>()
-assertEquals(2, setB.size)
-assertEquals(Command1, setA.toList()[0])
-assertEquals(Command2, setB.toList()[1])
+        val setB = componentB.get<Set<Command>>()
+        assertEquals(2, setB.size)
+        assertEquals(Command1, setA.toList()[0])
+        assertEquals(Command2, setB.toList()[1])
 
-val componentC = Component {
-parents(componentB)
-com.ivianuu.injekt.set<Command> { add { Command3 } }
-}
+        val componentC = componentB.plus<TestScope2>(Module {
+            set<Command> { add { Command3 } }
+        })
 
-val setC = componentC.get<Set<Command>>()
-assertEquals(3, setC.size)
-assertEquals(Command1, setA.toList()[0])
-assertEquals(Command2, setB.toList()[1])
-assertEquals(Command3, setC.toList()[2])
-}
+        val setC = componentC.get<Set<Command>>()
+        assertEquals(3, setC.size)
+        assertEquals(Command1, setA.toList()[0])
+        assertEquals(Command2, setB.toList()[1])
+        assertEquals(Command3, setC.toList()[2])
+    }
 
-@Test(expected = IllegalStateException::class)
-fun testOverride() {
-val originalValueComponent = Component {
-com.ivianuu.injekt.set<Command> { add<Command> { Command1 } }
-}
-val overriddenValueComponent = Component {
-parents(originalValueComponent)
-com.ivianuu.injekt.set<Command> {
-add<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 }
-}
-}
-}
+    @Test(expected = IllegalStateException::class)
+    fun testOverride() {
+        val originalValueComponent = Component(Module {
+            set<Command> { add<Command> { Command1 } }
+        })
+        val overriddenValueComponent = originalValueComponent.plus<TestScope1>(Module {
+            set<Command> {
+                add<Command> { Command2 }
+            }
+        })
+    }
 
-@Test(expected = IllegalStateException::class)
-fun testNestedOverride() {
-val componentA = Component {
-com.ivianuu.injekt.set<Command> { add<Command> { Command1 } }
-}
-val componentB = Component {
-parents(componentA)
-com.ivianuu.injekt.set<Command> { add<Command>(duplicateStrategy = DuplicateStrategy.Fail) { Command2 } }
-}
-}
+    @Test(expected = IllegalStateException::class)
+    fun testNestedOverride() {
+        val componentA = Component(Module {
+            set<Command> {
+                add<Command> { Command1 }
+            }
+        })
+        val componentB = componentA.plus<TestScope1>(Module {
+            set<Command> { add<Command> { Command2 } }
+        })
+    }
 
-@Test
-fun testReusesSetBuildersInsideAModule() {
-val component = Component {
-com.ivianuu.injekt.set<Any> { add { Command1 } }
-com.ivianuu.injekt.set<Any> { add { Command2 } }
-}
+    @Test
+    fun testReusesSetBuildersInsideAModule() {
+        val component = Component(Module {
+            set<Any> { add { Command1 } }
+            set<Any> { add { Command2 } }
+        })
 
-assertEquals(2, component.get<Set<Any>>().size)
+        assertEquals(2, component.get<Set<Any>>().size)
+    }
 }
-}
- */

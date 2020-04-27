@@ -3,14 +3,14 @@ package com.ivianuu.injekt
 class Module @PublishedApi internal constructor(
     internal val bindings: Map<Key<*>, Binding<*>>,
     internal val maps: Map<Key<*>, Map<*, Key<*>>>?,
-    internal val sets: Map<Key<*>, Set<Key<*>>>?
+    internal val sets: Map<Key<*>, Map<Key<*>, Binding<*>>>?
 )
 
 class ModuleDsl {
 
     private val bindings = mutableMapOf<Key<*>, Binding<*>>()
-    private var mapBuilders: MutableMap<Key<*>, MapBuilder<*, *>>? = null
-    private var setBuilders: MutableMap<Key<*>, SetBuilder<*>>? = null
+    private var maps: MutableMap<Key<*>, MapDsl<*, *>>? = null
+    private var sets: MutableMap<Key<*>, SetDsl<*>>? = null
 
     /**
      * Registers the [binding] for [key]
@@ -26,51 +26,51 @@ class ModuleDsl {
     }
 
     /**
-     * Adds a map binding and runs the [block] in the scope of the [MapBuilder] for [mapKey]
+     * Adds a map binding and runs the [block] in the scope of the [MapDsl] for [mapKey]
      */
     inline fun <K, V> map(
         mapKey: Key<Map<K, V>>,
-        block: MapBuilder<K, V>.() -> Unit = {}
+        block: MapDsl<K, V>.() -> Unit = {}
     ) {
         getMapBuilder(mapKey).block()
     }
 
     /**
-     * Adds a set binding and runs the [block] in the scope of the [SetBuilder] for [setKey]
+     * Adds a set binding and runs the [block] in the scope of the [SetDsl] for [setKey]
      */
     inline fun <E> set(
         setKey: Key<Set<E>>,
-        block: SetBuilder<E>.() -> Unit = {}
+        block: SetDsl<E>.() -> Unit = {}
     ) {
         getSetBuilder(setKey).block()
     }
 
     @PublishedApi
-    internal fun <K, V> getMapBuilder(mapKey: Key<Map<K, V>>): MapBuilder<K, V> {
-        var builder = mapBuilders?.get(mapKey) as? MapBuilder<K, V>
+    internal fun <K, V> getMapBuilder(mapKey: Key<Map<K, V>>): MapDsl<K, V> {
+        var builder = maps?.get(mapKey) as? MapDsl<K, V>
         if (builder == null) {
-            if (mapBuilders == null) mapBuilders = mutableMapOf()
-            builder = MapBuilder()
-            mapBuilders!![mapKey] = builder
+            if (maps == null) maps = mutableMapOf()
+            builder = MapDsl()
+            maps!![mapKey] = builder
         }
         return builder
     }
 
     @PublishedApi
-    internal fun <E> getSetBuilder(setKey: Key<Set<E>>): SetBuilder<E> {
-        var builder = setBuilders?.get(setKey) as? SetBuilder<E>
+    internal fun <E> getSetBuilder(setKey: Key<Set<E>>): SetDsl<E> {
+        var builder = sets?.get(setKey) as? SetDsl<E>
         if (builder == null) {
-            if (setBuilders == null) setBuilders = mutableMapOf()
-            builder = SetBuilder()
-            setBuilders!![setKey] = builder
+            if (sets == null) sets = mutableMapOf()
+            builder = SetDsl(this)
+            sets!![setKey] = builder
         }
         return builder
     }
 
     fun build(): Module = Module(
         bindings,
-        mapBuilders?.mapValues { it.value.build() },
-        setBuilders?.mapValues { it.value.build() }
+        maps?.mapValues { it.value.build() },
+        sets?.mapValues { it.value.build() as Map<Key<*>, Binding<*>> }
     )
 
 }

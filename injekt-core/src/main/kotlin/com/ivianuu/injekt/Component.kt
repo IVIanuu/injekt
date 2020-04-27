@@ -59,7 +59,7 @@ class Component internal constructor(
     val parent: Component?,
     bindings: MutableMap<Key<*>, Binding<*>>,
     val maps: Map<Key<*>, Map<*, Key<*>>>?,
-    val sets: Map<Key<*>, Set<Key<*>>>?,
+    val sets: Map<Key<*>, Map<Key<*>, Binding<*>>>?,
 ) {
 
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
@@ -176,8 +176,8 @@ fun Component(
     var maps: MutableMap<Key<*>, MutableMap<*, Key<*>>>? = parent?.maps
         ?.mapValues { it.value.toMutableMap() }
         ?.toMutableMap()
-    var sets: MutableMap<Key<*>, MutableSet<Key<*>>>? = parent?.sets
-        ?.mapValues { it.value.toMutableSet() }
+    var sets: MutableMap<Key<*>, MutableMap<Key<*>, Binding<*>>>? = parent?.sets
+        ?.mapValues { it.value.toMutableMap() }
         ?.toMutableMap()
 
     fun addModule(module: Module) {
@@ -200,12 +200,12 @@ fun Component(
         }
         module.sets?.forEach { (setKey, moduleSet) ->
             if (sets == null) sets = mutableMapOf()
-            val thisSet = sets!!.getOrPut(setKey) { mutableSetOf() }
-            moduleSet.forEach { elementKey ->
+            val thisSet = sets!!.getOrPut(setKey) { mutableMapOf() }
+            moduleSet.forEach { (elementKey, elementBinding) ->
                 check(elementKey !in thisSet) {
                     "Already declared $elementKey"
                 }
-                thisSet += elementKey
+                thisSet[elementKey] = elementBinding
             }
         }
     }
@@ -274,24 +274,22 @@ fun Component(
         val setOfProviderKey = Key.ParameterizedKey<Set<Provider<*>>>(
             classifier = Set::class,
             arguments = arrayOf(
-                setKey.arguments[0],
                 Key.ParameterizedKey<Provider<*>>(
                     classifier = Provider::class,
-                    arguments = arrayOf(setKey.arguments[1])
+                    arguments = arrayOf(setKey.arguments[0])
                 )
             ),
             qualifier = setKey.qualifier
         )
 
-        bindings[setOfProviderKey] = SetOfProviderBinding(set as Set<Key<Any?>>)
+        bindings[setOfProviderKey] = SetOfProviderBinding(set.values.toSet() as Set<Binding<Any?>>)
         bindings[setKey] = SetOfValueBinding(setOfProviderKey as Key<Set<Provider<Any?>>>)
         bindings[Key.ParameterizedKey<Set<Lazy<*>>>(
-            classifier = Map::class,
+            classifier = Set::class,
             arguments = arrayOf(
-                setKey.arguments[0],
                 Key.ParameterizedKey<Lazy<*>>(
                     classifier = Lazy::class,
-                    arguments = arrayOf(setKey.arguments[1])
+                    arguments = arrayOf(setKey.arguments[0])
                 )
             ),
             qualifier = setKey.qualifier

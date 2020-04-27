@@ -41,9 +41,9 @@ import kotlin.reflect.KClass
  *
  *
  * @see ModuleDsl.map
- * @see MapBuilder
+ * @see MapDsl
  */
-class MapBuilder<K, V> internal constructor() {
+class MapDsl<K, V> internal constructor() {
     private val entries = mutableMapOf<K, Key<*>>()
 
     fun put(entryKey: K, entryValueKey: Key<out V>) {
@@ -58,7 +58,7 @@ class MapBuilder<K, V> internal constructor() {
 
 inline fun <reified K, reified V> ModuleDsl.map(
     mapQualifier: KClass<*>? = null,
-    block: MapBuilder<K, V>.() -> Unit = {}
+    block: MapDsl<K, V>.() -> Unit = {}
 ): Unit = injektIntrinsic()
 
 /**
@@ -100,24 +100,47 @@ inline fun <reified K, reified V> ModuleDsl.map(
  *
  * @see ComponentBuilder.set
  */
-class SetBuilder<E> internal constructor() {
+class SetDsl<E> internal constructor(private val moduleDsl: ModuleDsl) {
 
-    private val elements = mutableSetOf<Key<out E>>()
+    private val elements = mutableMapOf<Key<out E>, Binding<out E>>()
 
     inline fun <reified T : E> add(elementQualifier: KClass<*>? = null): Unit = injektIntrinsic()
 
-    fun <T : E> add(elementKey: Key<T>) {
-        check(elementKey !in elements) {
-            "Already declared element $elementKey"
-        }
-        elements += elementKey
+    inline fun <reified T : E> add(elementKey: Key<T>) {
+        add(elementKey) { get(elementKey) }
     }
 
-    internal fun build(): Set<Key<out E>> = elements.toSet()
+    inline fun <reified T : E> add(
+        elementQualifier: KClass<*>? = null,
+        elementBindingDefinition: BindingDefinition<T>
+    ): Unit = injektIntrinsic()
+
+    inline fun <reified T : E> add(
+        elementKey: Key<T>,
+        elementBindingDefinition: BindingDefinition<T>
+    ): Unit = injektIntrinsic()
+
+    inline fun <reified T : E> add(
+        elementQualifier: KClass<*>? = null,
+        elementBinding: Binding<T>
+    ): Unit = injektIntrinsic()
+
+    fun <T : E> add(
+        elementKey: Key<T>,
+        elementBinding: Binding<T>
+    ) {
+        check(elementBinding !in elements) {
+            "Already declared element $elementBinding"
+        }
+        moduleDsl.add(elementKey, elementBinding)
+        elements[elementKey] = elementBinding
+    }
+
+    internal fun build(): Map<Key<out E>, Binding<out E>> = elements
 
 }
 
 inline fun <reified E> ModuleDsl.set(
     setQualifier: KClass<*>? = null,
-    noinline block: SetBuilder<E>.() -> Unit = {}
+    noinline block: SetDsl<E>.() -> Unit = {}
 ): Unit = injektIntrinsic()

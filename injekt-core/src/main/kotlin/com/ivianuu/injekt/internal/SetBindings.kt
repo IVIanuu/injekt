@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.internal
 
+import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.LinkedBinding
@@ -9,10 +10,10 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.UnlinkedBinding
 
 internal class SetOfProviderBinding<E>(
-    private val setOfKey: Set<Key<E>>
+    private val setOfKey: Set<Binding<E>>
 ) : UnlinkedBinding<Set<Provider<E>>>() {
     override fun link(linker: Linker): LinkedBinding<Set<Provider<E>>> =
-        InstanceBinding(setOfKey.mapTo(LinkedHashSet(setOfKey.size)) { linker.get(it) })
+        InstanceBinding(setOfKey.mapTo(LinkedHashSet(setOfKey.size)) { it.link(linker) })
 }
 
 internal class SetOfValueBinding<E>(
