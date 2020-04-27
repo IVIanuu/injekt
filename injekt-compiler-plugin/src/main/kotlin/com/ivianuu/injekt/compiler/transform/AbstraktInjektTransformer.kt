@@ -40,8 +40,11 @@ import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
@@ -55,6 +58,7 @@ import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.types.KotlinType
@@ -72,7 +76,7 @@ abstract class AbstractInjektTransformer(
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         return super.visitModuleFragment(declaration)
             .also {
-                /*it.transformChildrenVoid(object : IrElementTransformerVoid() {
+                it.transformChildrenVoid(object : IrElementTransformerVoid() {
                     override fun visitFile(declaration: IrFile): IrFile {
                         return super.visitFile(declaration)
                             .also {
@@ -84,7 +88,7 @@ abstract class AbstractInjektTransformer(
                                 )
                             }
                     }
-                })*/
+                })
                 it.patchDeclarationParents()
             }
     }

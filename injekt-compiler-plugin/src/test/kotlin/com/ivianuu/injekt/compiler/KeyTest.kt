@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.keyOf
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
@@ -37,13 +36,13 @@ class KeyTest {
         fun invoke() = keyOf<String>()
         """
     ) {
-        assertEquals(keyOf<String>(String::class), invokeSingleFile())
+        assertEquals(Key.SimpleKey<String>(String::class), invokeSingleFile())
     }
 
     @Test
     fun testKeyOfWithQualifierTransform() = codegen(
         """
-        fun invoke() = keyOf<String>(TestQualifier1::class)
+        fun invoke() = keyOf<String>(com.ivianuu.injekt.compiler.TestQualifier1::class)
         """
     ) {
         assertEquals(
@@ -62,7 +61,7 @@ class KeyTest {
             Key.ParameterizedKey<List<String>>(
                 classifier = List::class,
                 arguments = arrayOf(
-                    keyOf<String>(String::class)
+                    Key.SimpleKey<String>(String::class)
                 )
             ), invokeSingleFile()
         )
