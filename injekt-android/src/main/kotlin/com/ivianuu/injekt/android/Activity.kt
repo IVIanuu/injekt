@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.android
 
-import androidx.fragment.app.Fragment
+import android.app.Activity
+import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
@@ -15,33 +16,33 @@ import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.plus
 import kotlin.reflect.KClass
 
-val Fragment.fragmentComponent: Component
+val ComponentActivity.activityComponent: Component
     get() = lifecycle.getComponent {
-        requireActivity().activityComponent
-            .plus<FragmentScoped>(FragmentModule(this))
+        retainedActivityComponent
+            .plus<ActivityScoped>(ActivityModule(this))
     }
 
-fun FragmentModule(instance: Fragment) = Module {
+fun ActivityModule(instance: ComponentActivity) = Module {
     instance(instance, Key.SimpleKey(instance::class))
-    alias(Key.SimpleKey(instance::class), keyOf<Fragment>())
-    include(ContextModule(instance.requireContext(), ForFragment::class))
-    include(LifecycleOwnerModule(instance, ForFragment::class))
-    include(SavedStateRegistryOwnerModule(instance, ForFragment::class))
-    include(ViewModelOwnerModule(instance, ForFragment::class))
+    alias(Key.SimpleKey(instance::class), keyOf<Activity>())
+    include(ContextModule(instance, ForActivity::class))
+    include(LifecycleOwnerModule(instance, ForActivity::class))
+    include(SavedStateRegistryOwnerModule(instance, ForActivity::class))
+    include(ViewModelOwnerModule(instance, ForActivity::class))
 }
 
-inline fun <reified T> Fragment.getLazy(
+inline fun <reified T> ComponentActivity.getLazy(
     qualifier: KClass<*>? = null,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): Lazy<T> = injektIntrinsic()
 
-inline fun <T> Fragment.getLazy(
+inline fun <T> ComponentActivity.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }
-): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { fragmentComponent.get(key, parameters()) }
+): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { activityComponent.get(key, parameters()) }
 
 @Scope
-annotation class FragmentScoped
+annotation class ActivityScoped
 
 @Qualifier
-annotation class ForFragment
+annotation class ForActivity

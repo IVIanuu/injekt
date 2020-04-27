@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irInt
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -405,9 +407,10 @@ class ClassBindingGenerator(
         superTypes += symbols.hasScope.defaultType
 
         addProperty {
-            this.name = Name.identifier("scope")
+            name = Name.identifier("scope")
         }.apply {
             backingField = buildField {
+                name = Name.identifier("scope")
                 type = context.irBuiltIns.kClassClass.starProjectedType
             }.apply {
                 initializer = DeclarationIrBuilder(context, symbol).irExprBody(
@@ -421,6 +424,21 @@ class ClassBindingGenerator(
                         scope.defaultType
                     )
                 )
+            }
+            addGetter {
+                returnType = descriptor.type.toIrType()
+            }.apply {
+                dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
+                body = DeclarationIrBuilder(context, symbol).run {
+                    irExprBody(
+                        irReturn(
+                            irGetField(
+                                irGet(dispatchReceiverParameter!!),
+                                backingField!!
+                            )
+                        )
+                    )
+                }
             }
         }
     }

@@ -90,7 +90,7 @@ fun KotlinCompilation.Result.invokeSingleFile(): Any? = invokeSingleFile<Any?>()
 fun <T> KotlinCompilation.Result.invokeSingleFile(): T {
     val generatedClass = getSingleClass().java
     return generatedClass.declaredMethods
-        .single { it.name == "invoke" }
+        .single { it.name == "invoke" && it.parameterCount == 0 }
         .invoke(null) as T
 }
 

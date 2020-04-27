@@ -89,5 +89,5 @@ class ModuleDsl {
 
 }
 
-fun Module(block: ModuleDsl.() -> Unit = {}): Module =
+inline fun Module(block: ModuleDsl.() -> Unit = {}): Module =
     ModuleDsl().apply(block).build()

@@ -1,6 +1,5 @@
 package com.facebook.buck.jvm.java.javax.com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.assertOk
 import com.ivianuu.injekt.compiler.codegen
 import com.ivianuu.injekt.compiler.invokeSingleFile
 import org.junit.Test
@@ -27,10 +26,32 @@ class BindingTest {
         @Factory 
         class MyClass(foo: Foo)
         
-        fun init() = Injekt.initializeEndpoint()
+        fun invoke(): MyClass {
+            Injekt.initializeEndpoint()
+            return Component(Module {
+                factory { Foo() }
+            }).get<MyClass>()
+        }
     """
     ) {
-        assertOk()
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testClassBindingWithScope() = codegen(
+        """
+        @ApplicationScoped 
+        class MyClass(foo: Foo)
+        
+        fun invoke(): MyClass {
+            Injekt.initializeEndpoint()
+            return Component(Module {
+                factory { Foo() }
+            }).get<MyClass>()
+        }
+    """
+    ) {
+        invokeSingleFile()
     }
 
 }
