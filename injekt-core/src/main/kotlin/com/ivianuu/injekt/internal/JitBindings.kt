@@ -2,6 +2,13 @@ package com.ivianuu.injekt.internal
 
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.Key
+import kotlin.reflect.KClass
+
+@Target(AnnotationTarget.CLASS)
+annotation class JitBindingMetadata(
+    val type: KClass<*>,
+    val binding: KClass<*>
+)
 
 object JitBindingRegistry {
 
