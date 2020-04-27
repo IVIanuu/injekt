@@ -26,7 +26,6 @@ class InjektSymbols(private val context: IrPluginContext) {
 
     val hasScope = getTopLevelClass(InjektFqNames.HasScope)
 
-    val jitBindingMetadata = getTopLevelClass(InjektFqNames.JitBindingMetadata)
     val jitBindingRegistry = getTopLevelClass(InjektFqNames.JitBindingRegistry)
 
     val key = getTopLevelClass(InjektFqNames.Key)

@@ -10,27 +10,33 @@ import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi2ir.PsiSourceManager
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
+import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.utils.Printer
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
@@ -41,29 +47,50 @@ fun IrModuleFragment.addEmptyClass(
     name: Name,
     packageFqName: FqName
 ) {
+    val classDescriptor = ClassDescriptorImpl(
+        context.moduleDescriptor.getPackage(packageFqName),
+        name,
+        Modality.FINAL,
+        ClassKind.CLASS,
+        emptyList(),
+        SourceElement.NO_SOURCE,
+        false,
+        LockBasedStorageManager.NO_LOCKS
+    ).apply {
+        initialize(
+            MemberScope.Empty,
+            emptySet(),
+            null
+        )
+    }
+
     addClass(
         context.psiSourceManager.cast(),
         project,
-        buildClass {
-            this.name = name
-        }.apply clazz@{
+        IrClassImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            IrDeclarationOrigin.DEFINED,
+            IrClassSymbolImpl(classDescriptor)
+        ).apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
+            metadata = MetadataSource.Class(classDescriptor)
+
             addConstructor {
-                returnType = defaultType
                 isPrimary = true
             }.apply {
                 body = DeclarationIrBuilder(context, symbol).irBlockBody {
                     +IrDelegatingConstructorCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
+                        startOffset, endOffset,
                         context.irBuiltIns.unitType,
-                        context.irBuiltIns.anyClass
-                            .constructors.single()
+                        context.symbolTable.referenceConstructor(
+                            context.builtIns.any.unsubstitutedPrimaryConstructor!!
+                        )
                     )
                     +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
+                        startOffset,
+                        endOffset,
                         this@clazz.symbol,
                         context.irBuiltIns.unitType
                     )
@@ -122,6 +149,7 @@ private fun IrModuleFragment.fileForClass(
     memberScope.classDescriptors += irClass.descriptor
 
     file.addChild(irClass)
+    irClass.parent = file
 
     return file
 }

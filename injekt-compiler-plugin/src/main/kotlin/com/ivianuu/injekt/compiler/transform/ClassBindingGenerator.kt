@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
@@ -53,7 +54,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ClassBindingGenerator(
     pluginContext: IrPluginContext,
@@ -103,77 +103,19 @@ class ClassBindingGenerator(
                 }
 
                 clazz.addChild(bindingClass)
-                declaration.addClass(
-                    this@ClassBindingGenerator.context.psiSourceManager.cast(),
+                declaration.addEmptyClass(
+                    this@ClassBindingGenerator.context,
                     project,
-                    aggregateClass(clazz, bindingClass),
+                    Name.identifier(
+                        clazz.descriptor.fqNameSafe
+                            .asString().replace(".", "_")
+                    ),
                     symbols.aggregatePackage.fqName
                 )
             }
         }
 
         return super.visitModuleFragment(declaration)
-    }
-
-    private fun IrBuilderWithScope.aggregateClass(
-        clazz: IrClass,
-        provider: IrClass
-    ) = buildClass {
-        this.name = Name.identifier(
-            clazz.descriptor.fqNameSafe
-                .asString().replace(".", "_")
-        )
-    }.apply clazz@{
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-
-        annotations += DeclarationIrBuilder(context, clazz.symbol)
-            .irCall(symbols.jitBindingMetadata.constructors.single()).apply {
-                putValueArgument(
-                    0,
-                    IrClassReferenceImpl(
-                        startOffset,
-                        endOffset,
-                        this@ClassBindingGenerator.context.irBuiltIns.kClassClass.typeWith(
-                            clazz.defaultType
-                        ),
-                        clazz.defaultType.classifierOrFail,
-                        clazz.defaultType
-                    )
-                )
-                putValueArgument(
-                    1,
-                    IrClassReferenceImpl(
-                        startOffset,
-                        endOffset,
-                        this@ClassBindingGenerator.context.irBuiltIns.kClassClass.typeWith(
-                            provider.defaultType
-                        ),
-                        provider.defaultType.classifierOrFail,
-                        provider.defaultType
-                    )
-                )
-            }
-
-        addConstructor {
-            returnType = defaultType
-            isPrimary = true
-        }.apply {
-            body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                +IrDelegatingConstructorCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    context.irBuiltIns.unitType,
-                    context.irBuiltIns.anyClass
-                        .constructors.single()
-                )
-                +IrInstanceInitializerCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
-            }
-        }
     }
 
     private fun IrBuilderWithScope.unlinkedBinding(
