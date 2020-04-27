@@ -48,3 +48,12 @@ class CTestDep2(val dep1: CTestDep1)
 
 @Factory
 class CTestDep3(val dep1: CTestDep1, val dep2: CTestDep2)
+
+
+interface Command
+
+object Command1 : Command
+
+object Command2 : Command
+
+object Command3 : Command

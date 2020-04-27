@@ -29,9 +29,9 @@ package com.ivianuu.injekt
  * }
  *
  * val creditCardHandler: CreditCardHandler = if (usePaypal) {
- *     component.get(qualifier = Paypal)
+ *     component.get(qualifier = Paypal::class)
  * } else {
- *     component.get(qualifier = Amazon)
+ *     component.get(qualifier = Amazon::class)
  * }
  * ´´´
  *

@@ -27,8 +27,8 @@ import kotlin.reflect.KClass
  * A scope can be declared like this
  *
  * ´´´
- * @ScopeMarker
- * val ActivityScope = Scope()
+ * @Scope
+ * annotation class ActivityScope
  * ´´´
  *
  * The following code ensures that the view model will be only instantiated in the activity scoped [Component]

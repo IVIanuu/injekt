@@ -24,9 +24,9 @@ class LazyTest {
 
     @Test
     fun testLazyInstantiatesOnce() {
-        val component = Component {
-            com.ivianuu.injekt.factory { TestDep1() }
-        }
+        val component = Component(Module {
+            factory { TestDep1() }
+        })
         val lazy = component.get<Lazy<TestDep1>>()
         val value1 = lazy()
         val value2 = lazy()
@@ -37,12 +37,12 @@ class LazyTest {
     fun testLazyPassesParams() {
         var usedParams: Parameters? = null
 
-        val component = Component {
-            com.ivianuu.injekt.factory {
+        val component = Component(Module {
+            factory {
                 usedParams = it
                 TestDep1()
             }
-        }
+        })
 
         val parameters = parametersOf("one", "two")
 

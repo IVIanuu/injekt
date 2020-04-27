@@ -37,7 +37,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         KeyCachingTransformer(pluginContext)
             .visitModuleAndGenerateSymbols()
 
-        // rewrite keyOf<String>() -> keyOf(String::class)
+        // rewrite keyOf<String>() -> SimpleKey(String::class)
         KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
     }
 

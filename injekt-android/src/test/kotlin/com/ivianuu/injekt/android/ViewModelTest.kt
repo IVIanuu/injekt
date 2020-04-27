@@ -40,8 +40,6 @@ class ViewModelTest {
             viewModelB = component.get<TestViewModel>()
         }
 
-        println("vma $viewModelA vmb $viewModelB")
-
         assertSame(viewModelA, viewModelB)
     }
 

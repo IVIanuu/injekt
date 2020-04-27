@@ -24,9 +24,9 @@ class ProviderTest {
 
     @Test
     fun testProviderNotReturnsSameValue() {
-        val component = Component {
-            com.ivianuu.injekt.factory { TestDep1() }
-        }
+        val component = Component(Module {
+            factory { TestDep1() }
+        })
         val provider = component.get<Provider<TestDep1>>()
         val value1 = provider()
         val value2 = provider()
@@ -37,12 +37,12 @@ class ProviderTest {
     fun testProviderPassesParams() {
         var usedParams: Parameters? = null
 
-        val component = Component {
-            com.ivianuu.injekt.factory {
+        val component = Component(Module {
+            factory {
                 usedParams = it
                 TestDep1()
             }
-        }
+        })
 
         val parameters = parametersOf("one", "two")
 

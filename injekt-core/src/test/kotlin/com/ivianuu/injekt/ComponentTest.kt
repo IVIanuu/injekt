@@ -26,50 +26,36 @@ class ComponentTest {
     @Test
     fun testGet() {
         val instance = TestDep1()
-
-        val component = Component {
-            bind { instance }
-        }
-
+        val component = Component(Module {
+            factory { instance }
+        })
         assertEquals(instance, component.get<TestDep1>())
     }
 
     @Test
     fun testGetQualified() {
         val instance = TestDep1()
-
-        val component = Component {
-            bind(qualifier = TestQualifier1) { instance }
-        }
-
-        assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1))
-    }
-
-    @Test
-    fun testGetMultiQualified() {
-        val instance = TestDep1()
-
-        val component = Component {
-            bind(qualifier = TestQualifier1 + TestQualifier2) { instance }
-        }
-
-        assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1 + TestQualifier2))
+        val component = Component(Module {
+            factory { TestDep1() }
+            factory(TestQualifier1::class) { instance }
+        })
+        assertEquals(instance, component.get<TestDep1>(qualifier = TestQualifier1::class))
     }
 
     @Test
     fun testGetNested() {
-        val componentA = Component {
-            bind { TestDep1() }
-        }
-        val componentB = Component {
-            parents(componentA)
-            bind { TestDep2(get()) }
-        }
+        val componentA = Component(
+            Module {
+                factory { TestDep1() }
+            }
+        )
+        val componentB = componentA.plus<TestScope1>(Module {
+            factory { TestDep2(get()) }
+        })
 
-        val componentC = Component {
-            parents(componentB)
-            bind { TestDep3(get(), get()) }
-        }
+        val componentC = componentB.plus<TestScope2>(Module {
+            factory { TestDep3(get(), get()) }
+        })
 
         componentC.get<TestDep3>()
     }
@@ -82,18 +68,17 @@ class ComponentTest {
 
     @Test
     fun testGetNullableInstanceReturnsNonNullable() {
-        val component = Component {
-            bind { "string" }
-        }
+        val component = Component(Module {
+            factory { "string" }
+        })
         assertEquals("string", component.get<String?>())
     }
 
     @Test(expected = IllegalStateException::class)
     fun testGetNonNullableNotReturnsNullable() {
-        val component = Component {
-            bind<String?> { null }
-        }
-
+        val component = Component(Module {
+            factory<String?> { null }
+        })
         component.get<String>()
     }
 
@@ -105,10 +90,10 @@ class ComponentTest {
 
     @Test
     fun testTypeDistinction() {
-        val component = Component {
-            bind { listOf(1, 2, 3) }
-            bind { listOf("one", "two", "three") }
-        }
+        val component = Component(Module {
+            factory { listOf(1, 2, 3) }
+            factory { listOf("one", "two", "three") }
+        })
 
         val ints = component.get<List<Int>>()
         val strings = component.get<List<String>>()
@@ -118,9 +103,9 @@ class ComponentTest {
         assertNotSame(ints, strings)
     }
 
-    @Test
+    /*@Test
     fun testInstantiatesBindingWithRequestingComponent() {
-        val componentA = Component { bind { this } }
+        val componentA = Component { factory { this } }
         val componentB = Component { parents(componentA) }
         val componentC = Component { parents(componentB) }
 
@@ -131,21 +116,72 @@ class ComponentTest {
         assertEquals(componentAResult, componentAResult)
         assertEquals(componentB, componentBResult)
         assertEquals(componentC, componentCResult)
+    }*/
+
+    @Test(expected = IllegalStateException::class)
+    fun testThrowsWhenOverridingScope() {
+        val parent = Component<TestScope1>()
+        parent.plus<TestScope1>()
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testOverride() {
+        Component(Module {
+            factory { "my_value" }
+            factory { "my_overridden_value" }
+        })
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun testNestedOverride() {
+        val parentComponent = Component(Module {
+            factory { "my_value" }
+        })
+
+        parentComponent.plus<TestScope1>(Module {
+            factory { "my_overridden_value" }
+        })
     }
 
     @Test
-    fun testJitFactory() {
-        val component = Component {
-            jitFactory { _, key ->
-                if (key.classifier == String::class) {
-                    { "hello" }
-                } else {
-                    null
-                }
-            }
-        }
+    fun testImplicitComponentBindings() {
+        val componentA = Component<TestScope1>()
+        val componentB = componentA.plus<TestScope2>()
 
-        assertEquals(component.get<String>(), "hello")
+        assertEquals(componentA, componentA.get<Component>())
+        assertEquals(
+            componentA,
+            componentA.get<Component>(qualifier = TestScope1::class)
+        )
+
+        assertEquals(componentB, componentB.get<Component>())
+        assertEquals(
+            componentB,
+            componentB.get<Component>(qualifier = TestScope2::class)
+        )
+        assertEquals(
+            componentA,
+            componentB.get<Component>(qualifier = TestScope1::class)
+        )
+    }
+
+    @Test
+    fun testScoped() {
+        val componentA = Component(Module {
+            scoped { TestDep1() }
+        })
+
+        val componentB = componentA.plus<TestScope1>()
+        val componentC = componentB.plus<TestScope2>()
+
+        val depA = componentA.get<TestDep1>()
+        val depA2 = componentA.get<TestDep1>()
+        val depB = componentB.get<TestDep1>()
+        val depC = componentC.get<TestDep1>()
+
+        assertEquals(depA, depA2)
+        assertEquals(depA, depB)
+        assertEquals(depA, depC)
     }
 
 }

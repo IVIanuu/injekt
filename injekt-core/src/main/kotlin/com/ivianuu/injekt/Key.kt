@@ -16,9 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
-import kotlin.reflect.KType
-import kotlin.reflect.typeOf
 
 /**
  * Identifier for [Binding]s
@@ -45,16 +44,16 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: KClass<*>?,
-            isNullable: Boolean
+            qualifier: KClass<*>? = null,
+            isNullable: Boolean = false
         ) : super(classifier, qualifier, isNullable) {
             this.hashCode = generateHashCode()
         }
 
         constructor(
             classifier: KClass<*>,
-            qualifier: KClass<*>?,
-            isNullable: Boolean,
+            qualifier: KClass<*>? = null,
+            isNullable: Boolean = false,
             hashCode: Int
         ) : super(classifier, qualifier, isNullable) {
             this.hashCode = hashCode
@@ -73,8 +72,8 @@ sealed class Key<T>(
         }
 
         override fun toString(): String {
-            return qualifier?.let { it.toString() }.orEmpty() +
-                    "${classifier.java.name}${if (isNullable) "?" else ""})"
+            return qualifier?.let { "[${it.java.simpleName}] " }.orEmpty() +
+                    "${classifier.java.name}${if (isNullable) "?" else ""}"
         }
 
     }
@@ -87,8 +86,8 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: KClass<*>?,
-            isNullable: Boolean,
+            qualifier: KClass<*>? = null,
+            isNullable: Boolean = false,
             arguments: Array<Key<*>>
         ) : super(classifier, qualifier, isNullable) {
             this.arguments = arguments
@@ -97,8 +96,8 @@ sealed class Key<T>(
 
         constructor(
             classifier: KClass<*>,
-            qualifier: KClass<*>?,
-            isNullable: Boolean,
+            qualifier: KClass<*>? = null,
+            isNullable: Boolean = false,
             arguments: Array<Key<*>>,
             hashCode: Int
         ) : super(classifier, qualifier, isNullable) {
@@ -129,7 +128,7 @@ sealed class Key<T>(
             } else {
                 ""
             }
-            return qualifier.toString().let { "$it " } +
+            return qualifier?.let { "[${it.java.simpleName}] " }.orEmpty() +
                     "${classifier.java.name}$params${if (isNullable) "?" else ""}"
         }
 
@@ -137,46 +136,4 @@ sealed class Key<T>(
 
 }
 
-inline fun <reified T> keyOf(qualifier: KClass<*>? = null): Key<T> =
-    typeOf<T>().asKey(qualifier = qualifier)
-
-fun <T> keyOf(
-    classifier: KClass<*>,
-    qualifier: KClass<*>? = null,
-    isNullable: Boolean = false
-): Key.SimpleKey<T> {
-    return Key.SimpleKey(
-        classifier = classifier,
-        isNullable = isNullable,
-        qualifier = qualifier
-    )
-}
-
-fun <T> keyOf(
-    classifier: KClass<*>,
-    arguments: Array<Key<*>>,
-    qualifier: KClass<*>? = null,
-    isNullable: Boolean = false
-): Key.ParameterizedKey<T> {
-    return Key.ParameterizedKey(
-        classifier = classifier,
-        isNullable = isNullable,
-        arguments = arguments,
-        qualifier = qualifier
-    )
-}
-
-@PublishedApi
-internal fun <T> KType.asKey(qualifier: KClass<*>? = null): Key<T> {
-    val classifier = (classifier ?: Any::class) as KClass<*>
-    return if (arguments.isEmpty()) {
-        keyOf(classifier, qualifier, isMarkedNullable)
-    } else {
-        val args = arrayOfNulls<Key<Any?>>(arguments.size)
-        for (index in arguments.indices) {
-            args[index] =
-                arguments[index].type?.asKey() ?: keyOf(classifier = Any::class, isNullable = true)
-        }
-        keyOf(classifier, args as Array<Key<*>>, qualifier, isMarkedNullable)
-    }
-}
+inline fun <reified T> keyOf(qualifier: KClass<*>? = null): Key<T> = injektIntrinsic()

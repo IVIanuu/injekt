@@ -23,10 +23,10 @@ class AliasTest {
 
     @Test
     fun testAlias() {
-        val component = Component {
-            com.ivianuu.injekt.single { TestDep1() }
-            com.ivianuu.injekt.alias<TestDep1, Any>()
-        }
+        val component = Component(Module {
+            scoped { TestDep1() }
+            alias<TestDep1, Any>()
+        })
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>()
@@ -35,13 +35,13 @@ class AliasTest {
 
     @Test
     fun testAliasQualifier() {
-        val component = Component {
-            com.ivianuu.injekt.single { TestDep1() }
-            alias<TestDep1>(aliasQualifier = TestQualifier1)
-        }
+        val component = Component(Module {
+            scoped { TestDep1() }
+            alias<TestDep1>(aliasQualifier = TestQualifier1::class)
+        })
 
         val declared = component.get<TestDep1>()
-        val aliased = component.get<TestDep1>(qualifier = TestQualifier1)
+        val aliased = component.get<TestDep1>(qualifier = TestQualifier1::class)
         assertSame(declared, aliased)
     }
 }

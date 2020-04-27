@@ -16,12 +16,18 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.ComponentBinding
 import com.ivianuu.injekt.internal.HasScope
-import com.ivianuu.injekt.internal.InstanceBinding
 import com.ivianuu.injekt.internal.JitBindingRegistry
-import com.ivianuu.injekt.internal.KeyedLazy
-import com.ivianuu.injekt.internal.KeyedProvider
+import com.ivianuu.injekt.internal.LazyBinding
+import com.ivianuu.injekt.internal.MapOfLazyBinding
+import com.ivianuu.injekt.internal.MapOfProviderBinding
+import com.ivianuu.injekt.internal.MapOfValueBinding
 import com.ivianuu.injekt.internal.NullBinding
+import com.ivianuu.injekt.internal.ProviderBinding
+import com.ivianuu.injekt.internal.SetOfLazyBinding
+import com.ivianuu.injekt.internal.SetOfProviderBinding
+import com.ivianuu.injekt.internal.SetOfValueBinding
 import com.ivianuu.injekt.internal.asScoped
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
@@ -50,7 +56,9 @@ import kotlin.reflect.KClass
 class Component internal constructor(
     val scope: KClass<*>,
     val parent: Component?,
-    bindings: MutableMap<Key<*>, Binding<*>>
+    bindings: MutableMap<Key<*>, Binding<*>>,
+    val maps: Map<Key<*>, Map<*, Key<*>>>?,
+    val sets: Map<Key<*>, Set<Key<*>>>?,
 ) {
 
     val bindings: Map<Key<*>, Binding<*>> get() = _bindings
@@ -66,13 +74,10 @@ class Component internal constructor(
 
     internal fun <T> getBinding(key: Key<T>): LinkedBinding<T> {
         if (key is Key.ParameterizedKey && key.arguments.size == 1) {
-            fun instanceKey() = keyOf<T>(
-                classifier = key.arguments.single().classifier,
-                qualifier = key.qualifier
-            )
-            when (key.arguments.single().classifier) {
-                Lazy::class -> InstanceBinding(KeyedLazy(this, instanceKey()))
-                Provider::class -> InstanceBinding(KeyedProvider(linker, instanceKey()))
+            fun instanceKey() = key.arguments.single().copy(qualifier = key.qualifier)
+            when (key.classifier) {
+                Lazy::class -> return LazyBinding(this, instanceKey()) as LinkedBinding<T>
+                Provider::class -> return ProviderBinding(linker, instanceKey()) as LinkedBinding<T>
             }
         }
 
@@ -131,7 +136,7 @@ inline fun <reified T> Component.plus() = plus(T::class)
 
 inline fun <reified T> Component.plus(vararg modules: Module) = plus(
     scope = T::class,
-    modules = modules
+    modules = *modules
 )
 
 fun Component.plus(scope: KClass<*>) = Component(scope = scope, parent = this)
@@ -139,7 +144,7 @@ fun Component.plus(scope: KClass<*>) = Component(scope = scope, parent = this)
 fun Component.plus(scope: KClass<*>, vararg modules: Module) = Component(
     scope = scope,
     parent = this,
-    modules = modules
+    modules = *modules
 )
 
 inline fun <reified T> Component(
@@ -167,6 +172,12 @@ fun Component(
     parent: Component? = null
 ): Component {
     val bindings = mutableMapOf<Key<*>, Binding<*>>()
+    var maps: MutableMap<Key<*>, MutableMap<*, Key<*>>>? = parent?.maps
+        ?.mapValues { it.value.toMutableMap() }
+        ?.toMutableMap()
+    var sets: MutableMap<Key<*>, MutableSet<Key<*>>>? = parent?.sets
+        ?.mapValues { it.value.toMutableSet() }
+        ?.toMutableMap()
 
     modules.forEach { module ->
         module.bindings.forEach { (key, binding) ->
@@ -174,6 +185,27 @@ fun Component(
                 error("Already declared binding for $key")
             }
             bindings[key] = binding
+        }
+        module.maps?.forEach { (mapKey, moduleMap) ->
+            if (maps == null) maps = mutableMapOf()
+            val thisMap =
+                maps!!.getOrPut(mapKey) { mutableMapOf<Any?, Key<*>>() } as MutableMap<Any?, Key<*>>
+            moduleMap.forEach { (key, valueKey) ->
+                if (key in thisMap) {
+                    error("Already declared $key")
+                }
+                thisMap[key] = valueKey
+            }
+        }
+        module.sets?.forEach { (setKey, moduleSet) ->
+            if (sets == null) sets = mutableMapOf()
+            val thisSet = sets!!.getOrPut(setKey) { mutableSetOf() }
+            moduleSet.forEach { elementKey ->
+                if (elementKey in thisSet) {
+                    error("Already declared $elementKey")
+                }
+                thisSet += elementKey
+            }
         }
     }
 
@@ -199,9 +231,74 @@ fun Component(
         }
     }
 
+    bindings[keyOf<Component>()] = ComponentBinding
+    bindings[keyOf<Component>(scope)] = ComponentBinding
+
+    maps?.forEach { (mapKey, map) ->
+        mapKey as Key.ParameterizedKey
+        val mapOfProviderKey = Key.ParameterizedKey<Map<*, Provider<*>>>(
+            classifier = Map::class,
+            arguments = arrayOf(
+                mapKey.arguments[0],
+                Key.ParameterizedKey<Provider<*>>(
+                    classifier = Provider::class,
+                    arguments = arrayOf(mapKey.arguments[1])
+                )
+            ),
+            qualifier = mapKey.qualifier
+        )
+
+        bindings[mapOfProviderKey] = MapOfProviderBinding(map as Map<Any?, Key<Any?>>)
+        bindings[mapKey] = MapOfValueBinding(mapOfProviderKey as Key<Map<Any?, Provider<Any?>>>)
+        bindings[Key.ParameterizedKey<Map<*, Lazy<*>>>(
+            classifier = Map::class,
+            arguments = arrayOf(
+                mapKey.arguments[0],
+                Key.ParameterizedKey<Lazy<*>>(
+                    classifier = Lazy::class,
+                    arguments = arrayOf(mapKey.arguments[1])
+                )
+            ),
+            qualifier = mapKey.qualifier
+        )
+        ] = MapOfLazyBinding(mapOfProviderKey as Key<Map<Any?, Provider<Any?>>>)
+    }
+
+    sets?.forEach { (setKey, set) ->
+        setKey as Key.ParameterizedKey
+        val setOfProviderKey = Key.ParameterizedKey<Set<Provider<*>>>(
+            classifier = Set::class,
+            arguments = arrayOf(
+                setKey.arguments[0],
+                Key.ParameterizedKey<Provider<*>>(
+                    classifier = Provider::class,
+                    arguments = arrayOf(setKey.arguments[1])
+                )
+            ),
+            qualifier = setKey.qualifier
+        )
+
+        bindings[setOfProviderKey] = SetOfProviderBinding(set as Set<Key<Any?>>)
+        bindings[setKey] = SetOfValueBinding(setOfProviderKey as Key<Set<Provider<Any?>>>)
+        bindings[Key.ParameterizedKey<Set<Lazy<*>>>(
+            classifier = Map::class,
+            arguments = arrayOf(
+                setKey.arguments[0],
+                Key.ParameterizedKey<Lazy<*>>(
+                    classifier = Lazy::class,
+                    arguments = arrayOf(setKey.arguments[1])
+                )
+            ),
+            qualifier = setKey.qualifier
+        )
+        ] = SetOfLazyBinding(setOfProviderKey as Key<Set<Provider<Any?>>>)
+    }
+
     return Component(
         scope = scope,
         parent = parent,
-        bindings = bindings
+        bindings = bindings,
+        maps = maps,
+        sets = sets
     )
 }
