@@ -65,7 +65,7 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 }
 
 fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig) {
-    repeat(2000) { tests.forEach { measure(it) } }
+    repeat(5000) { tests.forEach { measure(it) } }
 
     println("Running ${config.rounds} iterations. Please stand by...")
 
@@ -122,7 +122,16 @@ data class Results(
     val setup: Result,
     val firstInjection: Result,
     val secondInjection: Result
-)
+) {
+    val overall = Result(
+        "Overall",
+        setup.timings.indices.map {
+            setup.timings[it] +
+                    firstInjection.timings[it] +
+                    secondInjection.timings[it]
+        }
+    )
+}
 
 fun List<Timings>.results(): Results {
     return Results(
@@ -184,6 +193,16 @@ fun Map<String, Results>.print(config: Config) {
         .sortedBy { it.second.secondInjection.average }
         .forEach { (name, results) ->
             results.secondInjection.print(name, config)
+        }
+
+    println()
+
+    println("Overall")
+    println("Library | Average | Median | Min | Max")
+    toList()
+        .sortedBy { it.second.overall.average }
+        .forEach { (name, results) ->
+            results.overall.print(name, config)
         }
 
     println()

@@ -48,7 +48,6 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         val type: IrType,
         val qualifier: FqName?
     ) {
-
         val keyName = Name.identifier(
             "key${
             type.toKotlinType().toString()
