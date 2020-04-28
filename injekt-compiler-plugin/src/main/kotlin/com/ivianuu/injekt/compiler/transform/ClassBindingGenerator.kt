@@ -103,7 +103,7 @@ class ClassBindingGenerator(
                 }
 
                 clazz.addChild(bindingClass)
-                declaration.addEmptyClass(
+                declaration.addClass(
                     this@ClassBindingGenerator.context,
                     project,
                     Name.identifier(

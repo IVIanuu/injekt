@@ -32,7 +32,7 @@ class ModuleAggregateGenerator(
         })
 
         modules.forEach {
-            declaration.addEmptyClass(
+            declaration.addClass(
                 context,
                 project,
                 Name.identifier("${it.fqNameWhenAvailable!!.asString().replace(".", "_")}"),

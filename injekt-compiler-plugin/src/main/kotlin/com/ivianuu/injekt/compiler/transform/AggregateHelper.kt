@@ -20,9 +20,7 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
@@ -38,85 +36,15 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.utils.Printer
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 
-fun IrModuleFragment.addEmptyClass(
+fun IrModuleFragment.addClass(
     context: IrPluginContext,
     project: Project,
     name: Name,
     packageFqName: FqName
 ) {
-    val classDescriptor = ClassDescriptorImpl(
-        context.moduleDescriptor.getPackage(packageFqName),
-        name,
-        Modality.FINAL,
-        ClassKind.CLASS,
-        emptyList(),
-        SourceElement.NO_SOURCE,
-        false,
-        LockBasedStorageManager.NO_LOCKS
-    ).apply {
-        initialize(
-            MemberScope.Empty,
-            emptySet(),
-            null
-        )
-    }
-
-    addClass(
-        context.psiSourceManager.cast(),
-        project,
-        IrClassImpl(
-            UNDEFINED_OFFSET,
-            UNDEFINED_OFFSET,
-            IrDeclarationOrigin.DEFINED,
-            IrClassSymbolImpl(classDescriptor)
-        ).apply clazz@{
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-
-            metadata = MetadataSource.Class(classDescriptor)
-
-            addConstructor {
-                isPrimary = true
-            }.apply {
-                body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                    +IrDelegatingConstructorCallImpl(
-                        startOffset, endOffset,
-                        context.irBuiltIns.unitType,
-                        context.symbolTable.referenceConstructor(
-                            context.builtIns.any.unsubstitutedPrimaryConstructor!!
-                        )
-                    )
-                    +IrInstanceInitializerCallImpl(
-                        startOffset,
-                        endOffset,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
-                    )
-                }
-            }
-        },
-        packageFqName
-    )
-}
-
-fun IrModuleFragment.addClass(
-    psiSourceManager: PsiSourceManager,
-    project: Project,
-    irClass: IrClass,
-    packageFqName: FqName
-) {
-    files += fileForClass(psiSourceManager, project, irClass, packageFqName)
-}
-
-private fun IrModuleFragment.fileForClass(
-    psiSourceManager: PsiSourceManager,
-    project: Project,
-    irClass: IrClass,
-    packageFqName: FqName
-): IrFile {
-    val sourceFile = File("${irClass.name}.kt")
+    val sourceFile = File("${name}.kt")
 
     val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), sourceFile)
 
@@ -139,6 +67,8 @@ private fun IrModuleFragment.fileForClass(
             override fun getMemberScope(): MemberScope = memberScope
         }
 
+    val psiSourceManager = context.psiSourceManager as PsiSourceManager
+
     val fileEntry = psiSourceManager.getOrCreateFileEntry(ktFile)
     val file = IrFileImpl(
         fileEntry,
@@ -146,12 +76,59 @@ private fun IrModuleFragment.fileForClass(
     )
     psiSourceManager.putFileEntry(file, fileEntry)
 
+    val classDescriptor = ClassDescriptorImpl(
+        packageFragmentDescriptor,
+        name,
+        Modality.FINAL,
+        ClassKind.CLASS,
+        emptyList(),
+        SourceElement.NO_SOURCE,
+        false,
+        LockBasedStorageManager.NO_LOCKS
+    ).apply {
+        initialize(
+            MemberScope.Empty,
+            emptySet(),
+            null
+        )
+    }
+
+    val irClass = IrClassImpl(
+        UNDEFINED_OFFSET,
+        UNDEFINED_OFFSET,
+        IrDeclarationOrigin.DEFINED,
+        IrClassSymbolImpl(classDescriptor)
+    ).apply clazz@{
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        metadata = MetadataSource.Class(classDescriptor)
+
+        addConstructor {
+            isPrimary = true
+        }.apply {
+            body = DeclarationIrBuilder(context, symbol).irBlockBody {
+                +IrDelegatingConstructorCallImpl(
+                    startOffset, endOffset,
+                    context.irBuiltIns.unitType,
+                    context.symbolTable.referenceConstructor(
+                        context.builtIns.any.unsubstitutedPrimaryConstructor!!
+                    )
+                )
+                +IrInstanceInitializerCallImpl(
+                    startOffset,
+                    endOffset,
+                    this@clazz.symbol,
+                    context.irBuiltIns.unitType
+                )
+            }
+        }
+    }
+
     memberScope.classDescriptors += irClass.descriptor
 
     file.addChild(irClass)
     irClass.parent = file
-
-    return file
+    files += file
 }
 
 private class MutableClassMemberScope : MemberScopeImpl() {

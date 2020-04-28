@@ -20,7 +20,9 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -108,6 +110,12 @@ class InjektInitTransformer(
                         .let { context.symbolTable.referenceClass(it.cast()) }
                         .ensureBound(context.irProviders)
                         .owner
+                        .let { clazz ->
+                            clazz.declarations
+                                .single {
+                                    it.descriptor.name.asString() == "${clazz.name}\$Binding"
+                                } as IrClass
+                        }
                 }
             }
 
@@ -121,9 +129,12 @@ class InjektInitTransformer(
                     +irCall(registerJitBinding).apply {
                         dispatchReceiver = irGetObject(symbols.jitBindingRegistry)
 
-                        val bindingType = jitBinding.functions
+                        val bindingType = jitBinding.superTypes
+                            .first()
+                            .let { it as IrSimpleType }
+                            .arguments
                             .single()
-                            .returnType
+                            .typeOrNull!!
 
                         putTypeArgument(0, bindingType)
 
@@ -134,8 +145,8 @@ class InjektInitTransformer(
                         val binding = bindingType.classOrNull!!.owner
                         putValueArgument(
                             1,
-                            if (binding.kind == ClassKind.OBJECT) irGetObject(binding.symbol)
-                            else irCall(binding.constructors.single())
+                            if (binding.kind == ClassKind.OBJECT) irGetObject(jitBinding.symbol)
+                            else irCall(jitBinding.constructors.single())
                         )
                     }
                 }
