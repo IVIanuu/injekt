@@ -35,7 +35,9 @@ class ModuleAggregateGenerator(
             declaration.addClass(
                 context,
                 project,
-                Name.identifier("${it.fqNameWhenAvailable!!.asString().replace(".", "_")}"),
+                Name.identifier(
+                    "${it.fqNameWhenAvailable!!.asString().replace(".", "_")}\$ModuleAccessor"
+                ),
                 symbols.aggregatePackage.fqName
             )
         }

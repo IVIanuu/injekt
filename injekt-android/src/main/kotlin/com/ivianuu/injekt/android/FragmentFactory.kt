@@ -59,7 +59,7 @@ private annotation class Fragments
 
 @Factory
 private class InjektFragmentFactory(
-    private val fragments: Map<String, Provider<Fragment>>
+    @Fragments private val fragments: Map<String, Provider<Fragment>>
 ) : FragmentFactory() {
     override fun instantiate(classLoader: ClassLoader, className: String): Fragment =
         fragments[className]?.invoke() ?: super.instantiate(classLoader, className)

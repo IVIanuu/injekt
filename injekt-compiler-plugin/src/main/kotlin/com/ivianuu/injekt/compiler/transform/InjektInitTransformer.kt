@@ -6,8 +6,7 @@ import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -21,10 +20,8 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -33,7 +30,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjektInitTransformer(
     pluginContext: IrPluginContext
@@ -51,17 +47,10 @@ class InjektInitTransformer(
 
         if (expression.symbol.ensureBound(context.irProviders).owner.name.asString() != "initializeEndpoint") return expression
 
-        val jitBindings = mutableListOf<IrClass>()
+        val jitBindings = mutableListOf<IrFunction>()
         val modules = mutableMapOf<IrClass, MutableList<IrFunction>>()
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.name.asString().endsWith("\$Binding")) {
-                    jitBindings += declaration
-                }
-                return super.visitClass(declaration)
-            }
-
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val origin = declaration.origin
                 if (origin is ModuleAccessorOrigin) {
@@ -71,10 +60,12 @@ class InjektInitTransformer(
                             .type
                             .constructor
                             .declarationDescriptor!!
-                            .let { symbolTable.referenceClass(it.cast()) }
+                            .let { symbolTable.referenceClass(it as ClassDescriptor) }
                             .ensureBound(context.irProviders)
                             .owner
                     modules.getOrPut(scope) { mutableListOf() } += declaration
+                } else if (origin is BindingAccessorOrigin) {
+                    jitBindings += declaration
                 }
                 return super.visitFunction(declaration)
             }
@@ -87,13 +78,13 @@ class InjektInitTransformer(
             .forEach {
                 val fqName = FqName(it.name.asString().replace("_", "."))
                 try {
-                    val name = Name.identifier(fqName.shortName().asString() + "\$ModuleAccessor")
+                    val name = Name.identifier(fqName.shortName().asString())
                     val scope = it.getAnnotatedAnnotations(InjektFqNames.Scope)
                         .single()
                         .type
                         .constructor
                         .declarationDescriptor!!
-                        .let { symbolTable.referenceClass(it.cast()) }
+                        .let { symbolTable.referenceClass(it as ClassDescriptor) }
                         .ensureBound(context.irProviders)
                         .owner
                     modules.getOrPut(scope) { mutableListOf() } += symbols.getPackage(fqName.parent())
@@ -103,19 +94,18 @@ class InjektInitTransformer(
                         .ensureBound(context.irProviders)
                         .owner
                 } catch (e: Exception) {
-                    jitBindings += symbols.getTopLevelClass(fqName.parent())
-                        .descriptor
-                        .unsubstitutedMemberScope
-                        .getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-                        .let { context.symbolTable.referenceClass(it.cast()) }
-                        .ensureBound(context.irProviders)
-                        .owner
-                        .let { clazz ->
-                            clazz.declarations
-                                .single {
-                                    it.descriptor.name.asString() == "${clazz.name}\$Binding"
-                                } as IrClass
-                        }
+                    try {
+                        val name = Name.identifier(fqName.shortName().asString())
+                        jitBindings += symbols.getPackage(fqName.parent())
+                            .memberScope
+                            .getContributedDescriptors()
+                            .single { it.name == name }
+                            .let { it as FunctionDescriptor }
+                            .let { context.symbolTable.referenceFunction(it) }
+                            .ensureBound(context.irProviders)
+                            .owner
+                    } catch (e: Exception) {
+                    }
                 }
             }
 
@@ -129,12 +119,8 @@ class InjektInitTransformer(
                     +irCall(registerJitBinding).apply {
                         dispatchReceiver = irGetObject(symbols.jitBindingRegistry)
 
-                        val bindingType = jitBinding.superTypes
-                            .first()
-                            .let { it as IrSimpleType }
-                            .arguments
-                            .single()
-                            .typeOrNull!!
+                        val bindingType =
+                            (jitBinding.returnType as IrSimpleType).arguments.single().typeOrNull!!
 
                         putTypeArgument(0, bindingType)
 
@@ -142,11 +128,9 @@ class InjektInitTransformer(
                             putTypeArgument(0, bindingType)
                         })
 
-                        val binding = bindingType.classOrNull!!.owner
                         putValueArgument(
                             1,
-                            if (binding.kind == ClassKind.OBJECT) irGetObject(jitBinding.symbol)
-                            else irCall(jitBinding.constructors.single())
+                            irCall(jitBinding)
                         )
                     }
                 }

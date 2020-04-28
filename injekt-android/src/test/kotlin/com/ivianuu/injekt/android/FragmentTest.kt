@@ -7,6 +7,7 @@ import androidx.test.core.app.launchActivity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Injekt
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
@@ -25,6 +26,8 @@ class FragmentTest {
 
     @Test
     fun testFragmentFactory() {
+        Injekt.initializeEndpoint()
+
         launchActivity<TestActivity>().onActivity { activity ->
             val component = Component(FragmentInjectionModule, Module {
                 instance(activity)
@@ -43,7 +46,7 @@ class FragmentTest {
                 factory.instantiate(
                     FragmentTest::class.java.classLoader!!,
                     FragmentB::class.java.name
-                ) is FragmentA
+                ) is FragmentB
             )
         }
     }

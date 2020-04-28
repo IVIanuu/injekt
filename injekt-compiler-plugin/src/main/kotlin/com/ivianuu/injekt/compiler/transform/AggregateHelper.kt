@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
@@ -20,6 +21,7 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -43,6 +45,64 @@ fun IrModuleFragment.addClass(
     project: Project,
     name: Name,
     packageFqName: FqName
+) {
+    addClass(context, project, name, packageFqName) {
+        val classDescriptor = ClassDescriptorImpl(
+            it,
+            name,
+            Modality.FINAL,
+            ClassKind.CLASS,
+            emptyList(),
+            SourceElement.NO_SOURCE,
+            false,
+            LockBasedStorageManager.NO_LOCKS
+        ).apply {
+            initialize(
+                MemberScope.Empty,
+                emptySet(),
+                null
+            )
+        }
+
+        IrClassImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            IrDeclarationOrigin.DEFINED,
+            IrClassSymbolImpl(classDescriptor)
+        ).apply clazz@{
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            metadata = MetadataSource.Class(classDescriptor)
+
+            addConstructor {
+                isPrimary = true
+            }.apply {
+                body = DeclarationIrBuilder(context, symbol).irBlockBody {
+                    +IrDelegatingConstructorCallImpl(
+                        startOffset, endOffset,
+                        context.irBuiltIns.unitType,
+                        context.symbolTable.referenceConstructor(
+                            context.builtIns.any.unsubstitutedPrimaryConstructor!!
+                        )
+                    )
+                    +IrInstanceInitializerCallImpl(
+                        startOffset,
+                        endOffset,
+                        this@clazz.symbol,
+                        context.irBuiltIns.unitType
+                    )
+                }
+            }
+        }
+    }
+}
+
+fun IrModuleFragment.addClass(
+    context: IrPluginContext,
+    project: Project,
+    name: Name,
+    packageFqName: FqName,
+    clazzBuilder: (PackageFragmentDescriptor) -> IrClass
 ) {
     val sourceFile = File("${name}.kt")
 
@@ -76,53 +136,7 @@ fun IrModuleFragment.addClass(
     )
     psiSourceManager.putFileEntry(file, fileEntry)
 
-    val classDescriptor = ClassDescriptorImpl(
-        packageFragmentDescriptor,
-        name,
-        Modality.FINAL,
-        ClassKind.CLASS,
-        emptyList(),
-        SourceElement.NO_SOURCE,
-        false,
-        LockBasedStorageManager.NO_LOCKS
-    ).apply {
-        initialize(
-            MemberScope.Empty,
-            emptySet(),
-            null
-        )
-    }
-
-    val irClass = IrClassImpl(
-        UNDEFINED_OFFSET,
-        UNDEFINED_OFFSET,
-        IrDeclarationOrigin.DEFINED,
-        IrClassSymbolImpl(classDescriptor)
-    ).apply clazz@{
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-
-        metadata = MetadataSource.Class(classDescriptor)
-
-        addConstructor {
-            isPrimary = true
-        }.apply {
-            body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                +IrDelegatingConstructorCallImpl(
-                    startOffset, endOffset,
-                    context.irBuiltIns.unitType,
-                    context.symbolTable.referenceConstructor(
-                        context.builtIns.any.unsubstitutedPrimaryConstructor!!
-                    )
-                )
-                +IrInstanceInitializerCallImpl(
-                    startOffset,
-                    endOffset,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
-            }
-        }
-    }
+    val irClass = clazzBuilder(packageFragmentDescriptor)
 
     memberScope.classDescriptors += irClass.descriptor
 

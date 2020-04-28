@@ -54,7 +54,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -166,8 +165,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
                         putValueArgument(
                             valueParameter.index,
                             bindingExpressionFromDefinition(
-                                expression.getValueArgument(valueParameter.index)
-                                    .cast()
+                                expression.getValueArgument(valueParameter.index) as IrFunctionExpression
                             )
                         )
                     } else {

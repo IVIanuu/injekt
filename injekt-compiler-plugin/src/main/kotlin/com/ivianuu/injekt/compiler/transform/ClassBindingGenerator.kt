@@ -22,17 +22,23 @@ import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -45,6 +51,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.primaryConstructor
@@ -102,12 +109,21 @@ class ClassBindingGenerator(
                         .also { it.addScope(clazz) }
                 }
 
-                clazz.addChild(bindingClass)
+                val accessor = bindingAccessor(bindingClass)
+
+                (clazz.file as IrFileImpl).let {
+                    it.addChild(bindingClass)
+                    it.addChild(accessor)
+                    it.metadata = MetadataSource.File(
+                        it.declarations.map { it.descriptor }
+                    )
+                }
+
                 declaration.addClass(
                     this@ClassBindingGenerator.context,
                     project,
                     Name.identifier(
-                        clazz.descriptor.fqNameSafe
+                        accessor.descriptor.fqNameSafe
                             .asString().replace(".", "_")
                     ),
                     symbols.aggregatePackage.fqName
@@ -385,4 +401,22 @@ class ClassBindingGenerator(
         }
     }
 
+    private fun IrBuilderWithScope.bindingAccessor(binding: IrClass): IrFunction {
+        return buildFun {
+            name = Name.identifier(binding.name.asString() + "\$BindingAccessor")
+            returnType = symbols.binding
+                .typeWith((binding.superTypes.first() as IrSimpleType).arguments.single().typeOrNull!!)
+            origin = BindingAccessorOrigin
+        }.apply {
+            body = DeclarationIrBuilder(context, symbol).irBlockBody {
+                +irReturn(
+                    if (binding.kind == ClassKind.OBJECT) irGetObject(binding.symbol)
+                    else irCall(binding.constructors.single())
+                )
+            }
+        }
+    }
+
 }
+
+object BindingAccessorOrigin : IrDeclarationOrigin
