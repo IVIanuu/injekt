@@ -30,7 +30,7 @@ class ComponentDsl(
         key: Key<T>,
         binding: Binding<T>
     ) {
-        check(key !in bindings!!) {
+        check(key !in bindings) {
             "Already declared binding for $key"
         }
         bindings[key] = binding
