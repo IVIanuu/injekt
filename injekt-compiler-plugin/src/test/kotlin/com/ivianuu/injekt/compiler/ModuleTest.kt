@@ -9,7 +9,7 @@ class ModuleTest {
     fun testImplicitModule() = codegen(
         """
         @ApplicationScoped
-        val MyModule = Module {
+        fun ComponentDsl.module() {
             factory { "hello world" }
         }
         

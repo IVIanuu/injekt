@@ -23,13 +23,13 @@ class SetTest {
 
     @Test
     fun testSetBinding() {
-        val component = Component(Module {
+        val component = Component {
             set<Command>(TestQualifier1::class) {
                 add { Command1 }
                 add { Command2 }
                 add { Command3 }
             }
-        })
+        }
 
         val set = component.get<Set<Command>>(qualifier = TestQualifier1::class)
         assertEquals(3, set.size)
@@ -58,35 +58,41 @@ class SetTest {
 
     @Test
     fun testReturnsEmptyOnADeclaredSetBindingWithoutElements() {
-        val component = Component(Module {
+        val component = Component {
             set<Command>()
-        })
+        }
 
         assertEquals(0, component.get<Set<Command>>().size)
     }
 
     @Test
     fun testNestedSetBindings() {
-        val componentA = Component(Module {
-            set<Command> { add { Command1 } }
-        })
+        val componentA = Component {
+            set<Command> {
+                add { Command1 }
+            }
+        }
 
         val setA = componentA.get<Set<Command>>()
         assertEquals(1, setA.size)
         assertEquals(Command1, setA.toList()[0])
 
-        val componentB = componentA.plus<TestScope1>(Module {
-            set<Command> { add { Command2 } }
-        })
+        val componentB = componentA.plus<TestScope1> {
+            set<Command> {
+                add { Command2 }
+            }
+        }
 
         val setB = componentB.get<Set<Command>>()
         assertEquals(2, setB.size)
         assertEquals(Command1, setA.toList()[0])
         assertEquals(Command2, setB.toList()[1])
 
-        val componentC = componentB.plus<TestScope2>(Module {
-            set<Command> { add { Command3 } }
-        })
+        val componentC = componentB.plus<TestScope2> {
+            set<Command> {
+                add { Command3 }
+            }
+        }
 
         val setC = componentC.get<Set<Command>>()
         assertEquals(3, setC.size)
@@ -97,34 +103,38 @@ class SetTest {
 
     @Test(expected = IllegalStateException::class)
     fun testOverride() {
-        val originalValueComponent = Component(Module {
-            set<Command> { add<Command> { Command1 } }
-        })
-        val overriddenValueComponent = originalValueComponent.plus<TestScope1>(Module {
+        val originalValueComponent = Component {
+            set<Command> {
+                add<Command> { Command1 }
+            }
+        }
+        val overriddenValueComponent = originalValueComponent.plus<TestScope1> {
             set<Command> {
                 add<Command> { Command2 }
             }
-        })
+        }
     }
 
     @Test(expected = IllegalStateException::class)
     fun testNestedOverride() {
-        val componentA = Component(Module {
+        val componentA = Component {
             set<Command> {
                 add<Command> { Command1 }
             }
-        })
-        val componentB = componentA.plus<TestScope1>(Module {
-            set<Command> { add<Command> { Command2 } }
-        })
+        }
+        val componentB = componentA.plus<TestScope1> {
+            set<Command> {
+                add<Command> { Command2 }
+            }
+        }
     }
 
     @Test
     fun testReusesSetBuildersInsideAModule() {
-        val component = Component(Module {
+        val component = Component {
             set<Any> { add { Command1 } }
             set<Any> { add { Command2 } }
-        })
+        }
 
         assertEquals(2, component.get<Set<Any>>().size)
     }

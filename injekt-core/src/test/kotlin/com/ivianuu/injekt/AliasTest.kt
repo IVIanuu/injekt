@@ -23,10 +23,10 @@ class AliasTest {
 
     @Test
     fun testAlias() {
-        val component = Component(Module {
+        val component = Component {
             scoped { TestDep1() }
             alias<TestDep1, Any>()
-        })
+        }
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<Any>()
@@ -35,10 +35,10 @@ class AliasTest {
 
     @Test
     fun testAliasQualifier() {
-        val component = Component(Module {
+        val component = Component {
             scoped { TestDep1() }
             alias<TestDep1>(aliasQualifier = TestQualifier1::class)
-        })
+        }
 
         val declared = component.get<TestDep1>()
         val aliased = component.get<TestDep1>(qualifier = TestQualifier1::class)

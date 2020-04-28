@@ -2,8 +2,8 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
@@ -16,18 +16,19 @@ import com.ivianuu.injekt.plus
 import kotlin.reflect.KClass
 
 val Fragment.fragmentComponent: Component
-    get() = lifecycle.getComponent {
-        requireActivity().activityComponent
-            .plus<FragmentScoped>(FragmentModule(this))
+    get() = lifecycle.component {
+        requireActivity().activityComponent.plus<FragmentScoped> {
+            fragment(this@fragmentComponent)
+        }
     }
 
-fun FragmentModule(instance: Fragment) = Module {
+fun ComponentDsl.fragment(instance: Fragment) {
     instance(instance, Key.SimpleKey(instance::class))
     alias(Key.SimpleKey(instance::class), keyOf<Fragment>())
-    include(ContextModule(instance.requireContext(), ForFragment::class))
-    include(LifecycleOwnerModule(instance, ForFragment::class))
-    include(SavedStateRegistryOwnerModule(instance, ForFragment::class))
-    include(ViewModelOwnerModule(instance, ForFragment::class))
+    context(instance.requireContext(), ForFragment::class)
+    lifecycleOwner(instance, ForFragment::class)
+    savedStateRegistryOwner(instance, ForFragment::class)
+    viewModelStoreOwner(instance, ForFragment::class)
 }
 
 inline fun <reified T> Fragment.getLazy(

@@ -37,22 +37,22 @@ import kotlin.reflect.KClass
 @Scope
 annotation class Factory
 
-inline fun <reified T> ModuleDsl.factory(
+inline fun <reified T> ComponentDsl.factory(
     qualifier: KClass<*>? = null,
     bindingDefinition: BindingDefinition<T>
 ): Unit = injektIntrinsic()
 
-inline fun <reified T> ModuleDsl.factory(
+inline fun <reified T> ComponentDsl.factory(
     qualifier: KClass<*>? = null,
     binding: Binding<T>
 ): Unit = injektIntrinsic()
 
-fun <T> ModuleDsl.factory(
+fun <T> ComponentDsl.factory(
     key: Key<T>,
     bindingDefinition: BindingDefinition<T>
 ): Unit = injektIntrinsic()
 
-fun <T> ModuleDsl.factory(
+fun <T> ComponentDsl.factory(
     key: Key<T>,
     binding: Binding<T>
 ) {

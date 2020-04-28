@@ -8,7 +8,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Injekt
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import junit.framework.Assert.assertTrue
@@ -29,11 +28,12 @@ class FragmentTest {
         Injekt.initializeEndpoint()
 
         launchActivity<TestActivity>().onActivity { activity ->
-            val component = Component(FragmentInjectionModule, Module {
+            val component = Component {
+                fragmentInjection()
                 instance(activity)
                 bindFragment<FragmentA>()
                 fragment { FragmentB(get()) }
-            })
+            }
 
             val factory = component.get<FragmentFactory>()
             assertTrue(

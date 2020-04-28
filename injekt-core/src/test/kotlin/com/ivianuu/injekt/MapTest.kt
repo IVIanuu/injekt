@@ -23,13 +23,13 @@ class MapTest {
 
     @Test
     fun testMapBinding() {
-        val component = Component(Module {
+        val component = Component {
             map<String, Command>(mapQualifier = TestQualifier1::class) {
                 put("one") { Command1 }
                 put("two") { Command2 }
                 put("three") { Command3 }
             }
-        })
+        }
 
         val map = component.get<Map<String, Command>>(qualifier = TestQualifier1::class)
         assertEquals(3, map.size)
@@ -62,35 +62,41 @@ class MapTest {
 
     @Test
     fun testReturnsEmptyOnADeclaredMapBindingWithoutElements() {
-        val component = Component(Module {
+        val component = Component {
             map<String, Int>()
-        })
+        }
 
         assertEquals(0, component.get<Map<String, Int>>().size)
     }
 
     @Test
     fun testNestedMapBindings() {
-        val componentA = Component(Module {
-            map<String, Command> { put("one") { Command1 } }
-        })
+        val componentA = Component {
+            map<String, Command> {
+                put("one") { Command1 }
+            }
+        }
 
         val mapA = componentA.get<Map<String, Command>>()
         assertEquals(1, mapA.size)
         assertEquals(Command1, mapA["one"])
 
-        val componentB = componentA.plus<TestScope1>(Module {
-            map<String, Command> { put("two") { Command2 } }
-        })
+        val componentB = componentA.plus<TestScope1> {
+            map<String, Command> {
+                put("two") { Command2 }
+            }
+        }
 
         val mapB = componentB.get<Map<String, Command>>()
         assertEquals(2, mapB.size)
         assertEquals(Command1, mapA["one"])
         assertEquals(Command2, mapB["two"])
 
-        val componentC = componentB.plus<TestScope2>(Module {
-            map<String, Command> { put("three") { Command3 } }
-        })
+        val componentC = componentB.plus<TestScope2> {
+            map<String, Command> {
+                put("three") { Command3 }
+            }
+        }
 
         val mapC = componentC.get<Map<String, Command>>()
         assertEquals(3, mapC.size)
@@ -101,17 +107,17 @@ class MapTest {
 
     @Test(expected = IllegalStateException::class)
     fun testOverride() {
-        Component(Module {
+        Component {
             map<String, Command> {
                 put("key") { Command1 }
                 put("key") { Command2 }
             }
-        })
+        }
     }
 
     @Test(expected = IllegalStateException::class)
     fun testNestedOverride() {
-        val componentA = Component(Module {
+        val componentA = Component {
             factory { Command1 }
             map<String, Command> {
                 put(
@@ -119,18 +125,18 @@ class MapTest {
                     keyOf<Command1>()
                 )
             }
-        })
-        val componentB = componentA.plus<TestScope1>(Module {
+        }
+        val componentB = componentA.plus<TestScope1> {
             factory { Command2 }
             map<String, Command> {
                 put("key", keyOf<Command2>())
             }
-        })
+        }
     }
 
     @Test
     fun testReusesMapBuildersInsideAModule() {
-        val component = Component(Module {
+        val component = Component {
             instance(Command1)
             instance(Command2)
             map<String, Any> {
@@ -145,7 +151,7 @@ class MapTest {
                     keyOf<Command2>()
                 )
             }
-        })
+        }
 
         assertEquals(2, component.get<Map<String, Any>>().size)
     }

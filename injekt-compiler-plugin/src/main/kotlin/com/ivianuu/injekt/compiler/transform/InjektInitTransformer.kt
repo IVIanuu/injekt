@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
@@ -19,7 +20,9 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -154,7 +157,20 @@ class InjektInitTransformer(
                         +irCall(registerModule).apply {
                             dispatchReceiver = irGetObject(symbols.moduleRegistry)
                             putValueArgument(0, irGet(scopeVar))
-                            putValueArgument(1, irCall(module))
+                            putValueArgument(
+                                1, IrFunctionReferenceImpl(
+                                    UNDEFINED_OFFSET,
+                                    UNDEFINED_OFFSET,
+                                    symbolTable.referenceClass(context.builtIns.getFunction(1))
+                                        .typeWith(
+                                            symbols.componentDsl.defaultType,
+                                            context.irBuiltIns.unitType
+                                        ),
+                                    module.symbol,
+                                    0,
+                                    null
+                                )
+                            )
                         }
                     }
                 }

@@ -4,16 +4,17 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -25,20 +26,19 @@ class ModuleAccessorGenerator(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     override fun visitFile(declaration: IrFile): IrFile {
-        val moduleProperties = mutableListOf<IrProperty>()
-
+        val modules = mutableListOf<IrFunction>()
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.getter?.returnType == symbols.module.defaultType &&
-                    declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope) &&
+                    declaration.extensionReceiverParameter?.type == symbols.componentDsl.defaultType
                 ) {
-                    moduleProperties += declaration
+                    modules += declaration
                 }
-                return super.visitProperty(declaration)
+                return super.visitFunction(declaration)
             }
         })
 
-        moduleProperties.forEach { declaration.addChild(moduleAccessor(it)) }
+        modules.forEach { declaration.addChild(moduleAccessor(it)) }
 
         (declaration as IrFileImpl).metadata = MetadataSource.File(
             declaration.declarations
@@ -48,18 +48,21 @@ class ModuleAccessorGenerator(pluginContext: IrPluginContext) :
         return super.visitFile(declaration)
     }
 
-    private fun moduleAccessor(moduleProperty: IrProperty): IrFunction {
+    private fun moduleAccessor(module: IrFunction): IrFunction {
         return buildFun {
-            name = Name.identifier(moduleProperty.name.asString() + "\$ModuleAccessor")
-            returnType = moduleProperty.descriptor.type.toIrType()
-            origin = ModuleAccessorOrigin(moduleProperty)
+            name = Name.identifier(module.name.asString() + "\$ModuleAccessor")
+            returnType = module.returnType
+            origin = ModuleAccessorOrigin(module)
         }.apply {
+            extensionReceiverParameter = module.extensionReceiverParameter?.copyTo(this)
             body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                +irReturn(irCall(moduleProperty.getter!!))
+                +irReturn(irCall(module).apply {
+                    extensionReceiver = irGet(extensionReceiverParameter!!)
+                })
             }
         }
     }
 
 }
 
-class ModuleAccessorOrigin(val module: IrProperty) : IrDeclarationOrigin
+class ModuleAccessorOrigin(val module: IrFunction) : IrDeclarationOrigin

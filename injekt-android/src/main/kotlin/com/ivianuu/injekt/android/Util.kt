@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
 import kotlinx.coroutines.CoroutineScope
@@ -19,7 +19,7 @@ import kotlin.reflect.KClass
 @PublishedApi
 internal val componentsByLifecycle = ConcurrentHashMap<Lifecycle, Component>()
 
-internal inline fun Lifecycle.getComponent(initializer: () -> Component): Component {
+internal inline fun Lifecycle.component(initializer: () -> Component): Component {
     check(currentState != Lifecycle.State.DESTROYED) {
         "Cannot get component on destroyed lifecycles"
     }
@@ -28,49 +28,49 @@ internal inline fun Lifecycle.getComponent(initializer: () -> Component): Compon
             addObserver(object : LifecycleEventObserver {
                 override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                     if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                        componentsByLifecycle -= this@getComponent
+                        componentsByLifecycle -= this@component
                     }
                 }
             })
         }
 }
 
-internal fun LifecycleOwnerModule(
+internal fun ComponentDsl.lifecycleOwner(
     instance: LifecycleOwner,
-    qualifier: KClass<*>
-) = Module {
+    qualifier: KClass<*>? = null
+) {
     instance(qualifier = qualifier, instance = instance)
     factory(qualifier = qualifier) { instance.lifecycle }
     factory<CoroutineScope>(qualifier = qualifier) { instance.lifecycleScope }
 }
 
-internal fun ViewModelOwnerModule(
+internal fun ComponentDsl.viewModelStoreOwner(
     instance: ViewModelStoreOwner,
-    qualifier: KClass<*>
-) = Module {
+    qualifier: KClass<*>? = null
+) {
     instance(qualifier = qualifier, instance = instance)
     factory(qualifier = qualifier) { instance.viewModelStore }
 }
 
-internal fun SavedStateRegistryOwnerModule(
+internal fun ComponentDsl.savedStateRegistryOwner(
     instance: SavedStateRegistryOwner,
-    qualifier: KClass<*>
-) = Module {
+    qualifier: KClass<*>? = null
+) {
     instance(qualifier = qualifier, instance = instance)
     factory(qualifier = qualifier) { instance.savedStateRegistry }
 }
 
-internal fun ContextModule(
+internal fun ComponentDsl.context(
     instance: Context,
-    qualifier: KClass<*>
-) = Module {
+    qualifier: KClass<*>? = null
+) {
     instance(qualifier = qualifier, instance = instance)
-    include(ResourcesModule(instance.resources, qualifier))
+    resources(instance.resources, qualifier)
 }
 
-internal fun ResourcesModule(
+internal fun ComponentDsl.resources(
     instance: Resources,
-    qualifier: KClass<*>
-) = Module {
+    qualifier: KClass<*>? = null
+) {
     instance(qualifier = qualifier, instance = instance)
 }

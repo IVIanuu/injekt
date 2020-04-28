@@ -42,22 +42,22 @@ import kotlin.reflect.KClass
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
 
-inline fun <reified T> ModuleDsl.scoped(
+inline fun <reified T> ComponentDsl.scoped(
     qualifier: KClass<*>? = null,
     bindingDefinition: BindingDefinition<T>
 ): Unit = injektIntrinsic()
 
-inline fun <reified T> ModuleDsl.scoped(
+inline fun <reified T> ComponentDsl.scoped(
     qualifier: KClass<*>? = null,
     binding: Binding<T>
 ): Unit = injektIntrinsic()
 
-fun <T> ModuleDsl.scoped(
+fun <T> ComponentDsl.scoped(
     key: Key<T>,
     bindingDefinition: BindingDefinition<T>
 ): Unit = injektIntrinsic()
 
-fun <T> ModuleDsl.scoped(
+fun <T> ComponentDsl.scoped(
     key: Key<T>,
     binding: Binding<T>
 ) {

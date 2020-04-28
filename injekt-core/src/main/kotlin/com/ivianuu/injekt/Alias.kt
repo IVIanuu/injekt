@@ -4,12 +4,12 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 @JvmName("aliasQualifier")
-inline fun <reified T> ModuleDsl.alias(
+inline fun <reified T> ComponentDsl.alias(
     originalQualifier: KClass<*>? = null,
     aliasQualifier: KClass<*>
 ): Unit = injektIntrinsic()
 
-fun <T> ModuleDsl.alias(
+fun <T> ComponentDsl.alias(
     originalKey: Key<T>,
     aliasQualifier: KClass<*>?
 ) {
@@ -19,7 +19,7 @@ fun <T> ModuleDsl.alias(
     )
 }
 
-inline fun <reified S : T, reified T> ModuleDsl.alias(
+inline fun <reified S : T, reified T> ComponentDsl.alias(
     originalQualifier: KClass<*>? = null,
     aliasQualifier: KClass<*>? = null
 ): Unit = injektIntrinsic()
@@ -41,7 +41,7 @@ inline fun <reified S : T, reified T> ModuleDsl.alias(
  * ´´´
  *
  */
-fun <S : T, T> ModuleDsl.alias(
+fun <S : T, T> ComponentDsl.alias(
     originalKey: Key<S>,
     aliasKey: Key<T>
 ) {

@@ -5,8 +5,8 @@ import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -19,15 +19,15 @@ class ModuleAggregateGenerator(
 ) : AbstractInjektTransformer(context) {
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val modules = mutableListOf<IrProperty>()
+        val modules = mutableListOf<IrFunction>()
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.getter?.returnType == symbols.module.defaultType &&
-                    declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope) &&
+                    declaration.extensionReceiverParameter?.type == symbols.componentDsl.defaultType
                 ) {
                     modules += declaration
                 }
-                return super.visitProperty(declaration)
+                return super.visitFunction(declaration)
             }
         })
 

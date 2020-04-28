@@ -7,7 +7,7 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.plus
 
-val <T : ComponentActivity> T.retainedActivityComponent: Component
+val ComponentActivity.retainedActivityComponent: Component
     get() {
         val holder = ViewModelProvider(this, RetainedActivityComponentHolder.Factory)
             .get(RetainedActivityComponentHolder::class.java)

@@ -16,19 +16,11 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.ComponentBinding
 import com.ivianuu.injekt.internal.HasScope
 import com.ivianuu.injekt.internal.JitBindingRegistry
 import com.ivianuu.injekt.internal.LazyBinding
-import com.ivianuu.injekt.internal.MapOfLazyBinding
-import com.ivianuu.injekt.internal.MapOfProviderBinding
-import com.ivianuu.injekt.internal.MapOfValueBinding
-import com.ivianuu.injekt.internal.ModuleRegistry
 import com.ivianuu.injekt.internal.NullBinding
 import com.ivianuu.injekt.internal.ProviderBinding
-import com.ivianuu.injekt.internal.SetOfLazyBinding
-import com.ivianuu.injekt.internal.SetOfProviderBinding
-import com.ivianuu.injekt.internal.SetOfValueBinding
 import com.ivianuu.injekt.internal.asScoped
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
@@ -133,176 +125,32 @@ inline fun <reified T> Component.get(
     parameters: Parameters = emptyParameters()
 ): T = injektIntrinsic()
 
-inline fun <reified T> Component.plus() = plus(T::class)
+inline fun <reified T> Component.plus(block: ComponentDsl.() -> Unit = {}) = plus(T::class, block)
 
-inline fun <reified T> Component.plus(vararg modules: Module) = plus(
-    scope = T::class,
-    modules = *modules
-)
-
-fun Component.plus(scope: KClass<*>) = Component(scope = scope, parent = this)
-
-fun Component.plus(scope: KClass<*>, vararg modules: Module) = Component(
+inline fun Component.plus(scope: KClass<*>, block: ComponentDsl.() -> Unit = {}) = Component(
     scope = scope,
     parent = this,
-    modules = *modules
+    block = block
 )
 
 inline fun <reified T> Component(
-    vararg modules: Module,
-    parent: Component? = null
+    parent: Component? = null,
+    block: ComponentDsl.() -> Unit = {}
 ) = Component(
     scope = T::class,
-    modules = *modules,
-    parent = parent
+    parent = parent,
+    block = block
 )
 
 @JvmName("DefaultComponent")
-fun Component(
-    vararg modules: Module,
-    parent: Component? = null
-) = Component(
+inline fun Component(block: ComponentDsl.() -> Unit = {}): Component = Component(
     scope = ApplicationScoped::class,
-    modules = *modules,
-    parent = parent
+    block = block
 )
 
-fun Component(
+
+inline fun Component(
     scope: KClass<*>,
-    vararg modules: Module,
-    parent: Component? = null
-): Component {
-    val bindings = mutableMapOf<Key<*>, Binding<*>>()
-    var maps: MutableMap<Key<*>, MutableMap<*, Binding<*>>>? = parent?.maps
-        ?.mapValues { it.value.toMutableMap() }
-        ?.toMutableMap()
-    var sets: MutableMap<Key<*>, MutableMap<Key<*>, Binding<*>>>? = parent?.sets
-        ?.mapValues { it.value.toMutableMap() }
-        ?.toMutableMap()
-
-    fun addModule(module: Module) {
-        module.bindings?.forEach { (key, binding) ->
-            check(key !in bindings) {
-                "Already declared binding for $key"
-            }
-            bindings[key] = binding
-        }
-        module.maps?.forEach { (mapKey, moduleMap) ->
-            if (maps == null) maps = mutableMapOf()
-            val thisMap =
-                maps!!.getOrPut(mapKey) { mutableMapOf<Any?, Binding<*>>() } as MutableMap<Any?, Binding<*>>
-            moduleMap.forEach { (key, valueKey) ->
-                check(key !in thisMap) {
-                    "Already declared $key"
-                }
-                thisMap[key] = valueKey
-            }
-        }
-        module.sets?.forEach { (setKey, moduleSet) ->
-            if (sets == null) sets = mutableMapOf()
-            val thisSet = sets!!.getOrPut(setKey) { mutableMapOf() }
-            moduleSet.forEach { (elementKey, elementBinding) ->
-                check(elementKey !in thisSet) {
-                    "Already declared $elementKey"
-                }
-                thisSet[elementKey] = elementBinding
-            }
-        }
-        module.includes?.forEach { addModule(it) }
-    }
-
-    modules.forEach { addModule(it) }
-
-    ModuleRegistry.getForScope(scope).forEach { addModule(it) }
-
-    if (parent != null) {
-        val parentScopes = mutableListOf<KClass<*>>()
-        val parentBindings = mutableMapOf<Key<*>, Binding<*>>()
-
-        var currentParent: Component? = parent
-        while (currentParent != null) {
-            parentScopes += currentParent.scope
-            parentBindings += currentParent.bindings
-            currentParent = currentParent.parent
-        }
-
-        check(scope !in parentScopes) {
-            "Duplicated scope $scope"
-        }
-
-        bindings.forEach { (key, _) ->
-            check(key !in parentBindings) {
-                "Already declared binding for $key"
-            }
-        }
-    }
-
-    bindings[keyOf<Component>()] = ComponentBinding
-    bindings[keyOf<Component>(scope)] = ComponentBinding
-
-    maps?.forEach { (mapKey, map) ->
-        mapKey as Key.ParameterizedKey
-        val mapOfProviderKey = Key.ParameterizedKey<Map<*, Provider<*>>>(
-            classifier = Map::class,
-            arguments = arrayOf(
-                mapKey.arguments[0],
-                Key.ParameterizedKey<Provider<*>>(
-                    classifier = Provider::class,
-                    arguments = arrayOf(mapKey.arguments[1])
-                )
-            ),
-            qualifier = mapKey.qualifier
-        )
-
-        bindings[mapOfProviderKey] = MapOfProviderBinding(map as Map<Any?, Binding<Any?>>)
-        bindings[mapKey] = MapOfValueBinding(mapOfProviderKey as Key<Map<Any?, Provider<Any?>>>)
-        bindings[Key.ParameterizedKey<Map<*, Lazy<*>>>(
-            classifier = Map::class,
-            arguments = arrayOf(
-                mapKey.arguments[0],
-                Key.ParameterizedKey<Lazy<*>>(
-                    classifier = Lazy::class,
-                    arguments = arrayOf(mapKey.arguments[1])
-                )
-            ),
-            qualifier = mapKey.qualifier
-        )
-        ] = MapOfLazyBinding(mapOfProviderKey as Key<Map<Any?, Provider<Any?>>>)
-    }
-
-    sets?.forEach { (setKey, set) ->
-        setKey as Key.ParameterizedKey
-        val setOfProviderKey = Key.ParameterizedKey<Set<Provider<*>>>(
-            classifier = Set::class,
-            arguments = arrayOf(
-                Key.ParameterizedKey<Provider<*>>(
-                    classifier = Provider::class,
-                    arguments = arrayOf(setKey.arguments[0])
-                )
-            ),
-            qualifier = setKey.qualifier
-        )
-
-        bindings[setOfProviderKey] = SetOfProviderBinding(set.values.toSet() as Set<Binding<Any?>>)
-        bindings[setKey] = SetOfValueBinding(setOfProviderKey as Key<Set<Provider<Any?>>>)
-        bindings[Key.ParameterizedKey<Set<Lazy<*>>>(
-            classifier = Set::class,
-            arguments = arrayOf(
-                Key.ParameterizedKey<Lazy<*>>(
-                    classifier = Lazy::class,
-                    arguments = arrayOf(setKey.arguments[0])
-                )
-            ),
-            qualifier = setKey.qualifier
-        )
-        ] = SetOfLazyBinding(setOfProviderKey as Key<Set<Provider<Any?>>>)
-    }
-
-    return Component(
-        scope = scope,
-        parent = parent,
-        bindings = bindings,
-        maps = maps,
-        sets = sets
-    )
-}
+    parent: Component? = null,
+    block: ComponentDsl.() -> Unit = {}
+): Component = ComponentDsl(scope, parent).apply(block).build()

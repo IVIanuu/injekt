@@ -40,11 +40,11 @@ import kotlin.reflect.KClass
  * or a 'Map<K, Lazy<V>>'
  *
  *
- * @see ModuleDsl.map
+ * @see ComponentDsl.map
  * @see MapDsl
  */
-class MapDsl<K, V> internal constructor() {
-    private val entries = mutableMapOf<K, Binding<out V>>()
+class MapDsl<K, V>(entries: Map<K, Binding<out V>>? = null) {
+    private val entries = entries?.toMutableMap() ?: mutableMapOf()
 
     fun put(entryKey: K, entryValueKey: Key<out V>) {
         put(entryKey) { get(entryValueKey) }
@@ -60,10 +60,10 @@ class MapDsl<K, V> internal constructor() {
         entries[entryKey] = entryBinding
     }
 
-    internal fun build(): Map<K, Binding<V>> = entries as Map<K, Binding<V>>
+    fun build(): Map<K, Binding<V>> = entries as Map<K, Binding<V>>
 }
 
-inline fun <reified K, reified V> ModuleDsl.map(
+inline fun <reified K, reified V> ComponentDsl.map(
     mapQualifier: KClass<*>? = null,
     block: MapDsl<K, V>.() -> Unit = {}
 ): Unit = injektIntrinsic()
@@ -107,9 +107,9 @@ inline fun <reified K, reified V> ModuleDsl.map(
  *
  * @see ComponentBuilder.set
  */
-class SetDsl<E> internal constructor() {
+class SetDsl<E>(elements: Map<Key<out E>, Binding<out E>>? = null) {
 
-    private val elements = mutableMapOf<Key<out E>, Binding<out E>>()
+    private val elements = elements?.toMutableMap() ?: mutableMapOf()
 
     inline fun <reified T : E> add(elementQualifier: KClass<*>? = null): Unit = injektIntrinsic()
 
@@ -136,17 +136,17 @@ class SetDsl<E> internal constructor() {
         elementKey: Key<T>,
         elementBinding: Binding<T>
     ) {
-        check(elementBinding !in elements) {
+        check(elementKey !in elements) {
             "Already declared element $elementBinding"
         }
         elements[elementKey] = elementBinding
     }
 
-    internal fun build(): Map<Key<out E>, Binding<out E>> = elements
+    fun build(): Map<Key<out E>, Binding<out E>> = elements
 
 }
 
-inline fun <reified E> ModuleDsl.set(
+inline fun <reified E> ComponentDsl.set(
     setQualifier: KClass<*>? = null,
     noinline block: SetDsl<E>.() -> Unit = {}
 ): Unit = injektIntrinsic()
