@@ -11,6 +11,7 @@ import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.emptyParameters
 import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.instanceKeyOf
 import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.plus
@@ -24,12 +25,13 @@ val ComponentActivity.activityComponent: Component
     }
 
 fun ComponentDsl.activity(instance: ComponentActivity) {
-    instance(instance, Key.SimpleKey(instance::class))
-    alias(Key.SimpleKey(instance::class), keyOf<Activity>())
-    context(instance, ForActivity::class)
-    lifecycleOwner(instance, ForActivity::class)
-    savedStateRegistryOwner(instance, ForActivity::class)
-    viewModelStoreOwner(instance, ForActivity::class)
+    val instanceKey = instanceKeyOf(instance)
+    instance(instance, instanceKey)
+    alias(instanceKey, keyOf<Activity>())
+    context(instanceKey, ForActivity::class)
+    lifecycleOwner(instanceKey, ForActivity::class)
+    savedStateRegistryOwner(instanceKey, ForActivity::class)
+    viewModelStoreOwner(instanceKey, ForActivity::class)
 }
 
 inline fun <reified T> ComponentActivity.getLazy(

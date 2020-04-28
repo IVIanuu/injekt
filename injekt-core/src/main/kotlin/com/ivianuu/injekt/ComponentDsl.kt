@@ -102,7 +102,7 @@ class ComponentDsl(
         }
 
         bindings[keyOf<Component>()] = ComponentBinding
-        bindings[keyOf<Component>(scope)] = ComponentBinding
+        bindings[keyOf<Component>(qualifier = scope)] = ComponentBinding
 
         val mergedMaps = maps?.let { thisMaps ->
             thisMaps.mapValues { (mapKey, thisMap) ->
@@ -121,11 +121,11 @@ class ComponentDsl(
 
         mergedMaps?.forEach { (mapKey, map) ->
             mapKey as Key.ParameterizedKey
-            val mapOfProviderKey = Key.ParameterizedKey<Map<*, Provider<*>>>(
+            val mapOfProviderKey = parameterizedKeyOf<Map<*, Provider<*>>>(
                 classifier = Map::class,
                 arguments = arrayOf(
                     mapKey.arguments[0],
-                    Key.ParameterizedKey<Provider<*>>(
+                    parameterizedKeyOf<Provider<*>>(
                         classifier = Provider::class,
                         arguments = arrayOf(mapKey.arguments[1])
                     )
@@ -135,11 +135,11 @@ class ComponentDsl(
 
             bindings[mapOfProviderKey] = MapOfProviderBinding(map as Map<Any?, Binding<Any?>>)
             bindings[mapKey] = MapOfValueBinding(mapOfProviderKey as Key<Map<Any?, Provider<Any?>>>)
-            bindings[Key.ParameterizedKey<Map<*, Lazy<*>>>(
+            bindings[parameterizedKeyOf<Map<*, Lazy<*>>>(
                 classifier = Map::class,
                 arguments = arrayOf(
                     mapKey.arguments[0],
-                    Key.ParameterizedKey<Lazy<*>>(
+                    parameterizedKeyOf<Lazy<*>>(
                         classifier = Lazy::class,
                         arguments = arrayOf(mapKey.arguments[1])
                     )
@@ -166,10 +166,10 @@ class ComponentDsl(
 
         mergedSets?.forEach { (setKey, set) ->
             setKey as Key.ParameterizedKey
-            val setOfProviderKey = Key.ParameterizedKey<Set<Provider<*>>>(
+            val setOfProviderKey = parameterizedKeyOf<Set<Provider<*>>>(
                 classifier = Set::class,
                 arguments = arrayOf(
-                    Key.ParameterizedKey<Provider<*>>(
+                    parameterizedKeyOf<Provider<*>>(
                         classifier = Provider::class,
                         arguments = arrayOf(setKey.arguments[0])
                     )
@@ -180,10 +180,10 @@ class ComponentDsl(
             bindings[setOfProviderKey] =
                 SetOfProviderBinding(set.values.toSet() as Set<Binding<Any?>>)
             bindings[setKey] = SetOfValueBinding(setOfProviderKey as Key<Set<Provider<Any?>>>)
-            bindings[Key.ParameterizedKey<Set<Lazy<*>>>(
+            bindings[parameterizedKeyOf<Set<Lazy<*>>>(
                 classifier = Set::class,
                 arguments = arrayOf(
-                    Key.ParameterizedKey<Lazy<*>>(
+                    parameterizedKeyOf<Lazy<*>>(
                         classifier = Lazy::class,
                         arguments = arrayOf(setKey.arguments[0])
                     )

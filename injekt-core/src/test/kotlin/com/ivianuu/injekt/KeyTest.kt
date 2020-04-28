@@ -58,24 +58,24 @@ class KeyTest {
             val nonNullReified = type.nonNullReified
             val nullableReified = type.nullableReified
 
-            val nonNullPrimitive = Key.SimpleKey<Any?>(type.primitiveClassifier)
-            val nullablePrimitive = Key.SimpleKey<Any?>(type.primitiveClassifier, isNullable = true)
+            val nonNullPrimitive = simpleKeyOf<Any?>(type.primitiveClassifier)
+            val nullablePrimitive = simpleKeyOf<Any?>(type.primitiveClassifier, isNullable = true)
 
-            val nonNullObject = Key.SimpleKey<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
+            val nonNullObject = simpleKeyOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
             val nullableObject =
-                Key.SimpleKey<Any?>(
+                simpleKeyOf<Any?>(
                     type.primitiveClassifier.javaObjectType.kotlin,
                     isNullable = true
                 )
 
-            val nonNullPrimitiveJava = Key.SimpleKey<Any?>(type.primitiveClassifier)
+            val nonNullPrimitiveJava = simpleKeyOf<Any?>(type.primitiveClassifier)
             val nullablePrimitiveJava =
-                Key.SimpleKey<Any?>(type.primitiveClassifier, isNullable = true)
+                simpleKeyOf<Any?>(type.primitiveClassifier, isNullable = true)
 
             val nonNullObjectJava =
-                Key.SimpleKey<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
+                simpleKeyOf<Any?>(type.primitiveClassifier.javaObjectType.kotlin)
             val nullableObjectJava =
-                Key.SimpleKey<Any?>(
+                simpleKeyOf<Any?>(
                     type.primitiveClassifier.javaObjectType.kotlin,
                     isNullable = true
                 )

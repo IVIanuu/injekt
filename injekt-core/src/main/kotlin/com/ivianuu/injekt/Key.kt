@@ -137,3 +137,26 @@ sealed class Key<T>(
 }
 
 inline fun <reified T> keyOf(qualifier: KClass<*>? = null): Key<T> = injektIntrinsic()
+
+fun <T> simpleKeyOf(
+    classifier: KClass<*>,
+    qualifier: KClass<*>? = null,
+    isNullable: Boolean = false
+): Key.SimpleKey<T> = Key.SimpleKey(classifier, qualifier, isNullable)
+
+fun <T> parameterizedKeyOf(
+    classifier: KClass<*>,
+    qualifier: KClass<*>? = null,
+    isNullable: Boolean = false,
+    arguments: Array<Key<*>>
+): Key.ParameterizedKey<T> = Key.ParameterizedKey(classifier, qualifier, isNullable, arguments)
+
+fun <T : Any> instanceKeyOf(
+    instance: T,
+    qualifier: KClass<*>? = null,
+    isNullable: Boolean = false
+): Key.SimpleKey<T> = Key.SimpleKey(
+    instance::class,
+    qualifier,
+    isNullable
+)

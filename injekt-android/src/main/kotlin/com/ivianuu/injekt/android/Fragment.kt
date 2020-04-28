@@ -9,7 +9,9 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.emptyParameters
+import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.instanceKeyOf
 import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.plus
@@ -23,12 +25,14 @@ val Fragment.fragmentComponent: Component
     }
 
 fun ComponentDsl.fragment(instance: Fragment) {
-    instance(instance, Key.SimpleKey(instance::class))
-    alias(Key.SimpleKey(instance::class), keyOf<Fragment>())
-    context(instance.requireContext(), ForFragment::class)
-    lifecycleOwner(instance, ForFragment::class)
-    savedStateRegistryOwner(instance, ForFragment::class)
-    viewModelStoreOwner(instance, ForFragment::class)
+    val instanceKey = instanceKeyOf(instance)
+    instance(instance, instanceKey)
+    alias(instanceKey, keyOf())
+    factory(ForFragment::class) { instance.requireContext() }
+    lifecycleOwner(instanceKey, ForFragment::class)
+    factory(ForFragment::class) { instance.resources }
+    savedStateRegistryOwner(instanceKey, ForFragment::class)
+    viewModelStoreOwner(instanceKey, ForFragment::class)
 }
 
 inline fun <reified T> Fragment.getLazy(

@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.android
 
 import android.content.Context
-import android.content.res.Resources
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -10,8 +9,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.ComponentDsl
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
-import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.keyOf
 import kotlinx.coroutines.CoroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -36,41 +37,34 @@ internal inline fun Lifecycle.component(initializer: () -> Component): Component
 }
 
 internal fun ComponentDsl.lifecycleOwner(
-    instance: LifecycleOwner,
+    instanceKey: Key<out LifecycleOwner>,
     qualifier: KClass<*>? = null
 ) {
-    instance(qualifier = qualifier, instance = instance)
-    factory(qualifier = qualifier) { instance.lifecycle }
-    factory<CoroutineScope>(qualifier = qualifier) { instance.lifecycleScope }
+    alias(originalKey = instanceKey, keyOf(qualifier))
+    factory(qualifier = qualifier) { get(instanceKey).lifecycle }
+    factory<CoroutineScope>(qualifier = qualifier) { get(instanceKey).lifecycleScope }
 }
 
 internal fun ComponentDsl.viewModelStoreOwner(
-    instance: ViewModelStoreOwner,
+    instanceKey: Key<out ViewModelStoreOwner>,
     qualifier: KClass<*>? = null
 ) {
-    instance(qualifier = qualifier, instance = instance)
-    factory(qualifier = qualifier) { instance.viewModelStore }
+    alias(originalKey = instanceKey, keyOf(qualifier))
+    factory(qualifier = qualifier) { get(instanceKey).viewModelStore }
 }
 
 internal fun ComponentDsl.savedStateRegistryOwner(
-    instance: SavedStateRegistryOwner,
+    instanceKey: Key<out SavedStateRegistryOwner>,
     qualifier: KClass<*>? = null
 ) {
-    instance(qualifier = qualifier, instance = instance)
-    factory(qualifier = qualifier) { instance.savedStateRegistry }
+    alias(originalKey = instanceKey, keyOf(qualifier))
+    factory(qualifier = qualifier) { get(instanceKey).savedStateRegistry }
 }
 
 internal fun ComponentDsl.context(
-    instance: Context,
+    instanceKey: Key<out Context>,
     qualifier: KClass<*>? = null
 ) {
-    instance(qualifier = qualifier, instance = instance)
-    resources(instance.resources, qualifier)
-}
-
-internal fun ComponentDsl.resources(
-    instance: Resources,
-    qualifier: KClass<*>? = null
-) {
-    instance(qualifier = qualifier, instance = instance)
+    alias(originalKey = instanceKey, keyOf(qualifier))
+    factory(qualifier) { get(instanceKey).resources!! }
 }
