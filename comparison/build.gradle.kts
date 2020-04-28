@@ -66,11 +66,6 @@ dependencies {
 
     implementation(Deps.kotlinStatistics)
 
-    implementation(Deps.Magnet.magnet)
-    kapt(Deps.Magnet.processor)
-
     implementation(Deps.Toothpick.toothpick)
     kapt(Deps.Toothpick.compiler)
-
-    implementation(Deps.winter)
 }
