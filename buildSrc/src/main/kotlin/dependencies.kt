@@ -89,12 +89,6 @@ object Deps {
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.2.7"
     const val kotlinStatistics = "org.nield:kotlin-statistics:1.2.1"
 
-    object Magnet {
-        private const val version = "2.3"
-        const val magnet = "de.halfbit:magnet-kotlin:$version"
-        const val processor = "de.halfbit:magnet-processor:$version"
-    }
-
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
 
@@ -111,6 +105,4 @@ object Deps {
         const val compiler =
             "com.github.stephanenicolas.toothpick:toothpick-compiler:$version"
     }
-
-    const val winter = "io.jentz.winter:winter:0.7.0"
 }
