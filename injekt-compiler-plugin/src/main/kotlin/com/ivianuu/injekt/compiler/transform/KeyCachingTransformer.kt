@@ -6,15 +6,20 @@ import com.ivianuu.injekt.compiler.removeIllegalChars
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
-import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irEqualsNull
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irSetVar
+import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
@@ -22,6 +27,7 @@ import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -35,9 +41,8 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val declarationContainers = mutableListOf<IrDeclarationContainer>()
-    private val keyFields =
-        mutableMapOf<IrDeclarationContainer, MutableMap<KeyId, IrField>>()
-    private val ignoredCalls = mutableSetOf<IrCall>()
+    private val keyAccessors =
+        mutableMapOf<IrDeclarationContainer, MutableMap<KeyId, IrExpression>>()
 
     private data class KeyId(
         val type: IrType,
@@ -95,22 +100,28 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
         })
 
         keyOfCalls.forEach { (parent, calls) ->
-            val fields = keyFields.getOrPut(parent) { mutableMapOf() }
+            val fields = keyAccessors.getOrPut(parent) { mutableMapOf() }
             calls.forEach { call ->
                 val keyId = KeyId(call)
                 fields.getOrPut(keyId) {
-                    parent.addField {
+                    val field = parent.addField {
                         name = keyId.keyName
-                        type = call.type
+                        type = call.type.makeNullable()
                         isStatic = true
-                        //visibility = Visibilities.PRIVATE
-                    }.apply {
-                        initializer = DeclarationIrBuilder(context, call.symbol)
-                            .irExprBody(call.deepCopyWithVariables().also {
-                                ignoredCalls += it
-                            })
-                        parent.declarations -= this
-                        parent.declarations.add(0, this)
+                    }
+
+                    DeclarationIrBuilder(context, call.symbol).run {
+                        irBlock {
+                            val tmpKey = irTemporaryVar(irGetField(null, field))
+                            +irIfThen(
+                                irEqualsNull(irGet(tmpKey)),
+                                irBlock {
+                                    +irSetVar(tmpKey.symbol, call.deepCopyWithVariables())
+                                    +irSetField(null, field, irGet(tmpKey))
+                                }
+                            )
+                            +irGet(tmpKey)
+                        }
                     }
                 }
             }
@@ -136,10 +147,8 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
 
                 val parent = declarationContainers.last()
 
-                return DeclarationIrBuilder(context, expression.symbol).irGetField(
-                    null,
-                    keyFields.getValue(parent).getValue(KeyId(expression))
-                )
+                return keyAccessors.getValue(parent).getValue(KeyId(expression))
+                    .deepCopyWithVariables()
             }
         })
 
@@ -147,8 +156,6 @@ class KeyCachingTransformer(pluginContext: IrPluginContext) :
     }
 
     private fun IrCall.isValidKeyOfCall(): Boolean {
-        if (this in ignoredCalls) return false
-
         check(declarationContainers.isNotEmpty()) {
             "Is empty for ${this.dump()}"
         }
