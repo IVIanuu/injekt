@@ -109,7 +109,7 @@ class ClassBindingGenerator(
                         .also { it.addScope(clazz) }
                 }
 
-                val accessor = bindingAccessor(bindingClass)
+                val accessor = registerBindingFunction(clazz, bindingClass)
 
                 (clazz.file as IrFileImpl).let {
                     it.addChild(bindingClass)
@@ -401,22 +401,37 @@ class ClassBindingGenerator(
         }
     }
 
-    private fun IrBuilderWithScope.bindingAccessor(binding: IrClass): IrFunction {
+    private fun IrBuilderWithScope.registerBindingFunction(
+        clazz: IrClass,
+        binding: IrClass
+    ): IrFunction {
         return buildFun {
-            name = Name.identifier(binding.name.asString() + "\$BindingAccessor")
-            returnType = symbols.binding
-                .typeWith((binding.superTypes.first() as IrSimpleType).arguments.single().typeOrNull!!)
-            origin = BindingAccessorOrigin
+            name = Name.identifier("register\$${binding.name.asString()}")
+            returnType = context.irBuiltIns.unitType
+            origin = RegisterBindingOrigin
         }.apply {
-            body = DeclarationIrBuilder(context, symbol).irBlockBody {
-                +irReturn(
-                    if (binding.kind == ClassKind.OBJECT) irGetObject(binding.symbol)
-                    else irCall(binding.constructors.single())
-                )
-            }
+            val registerJitBinding = symbols.jitBindingRegistry
+                .functions
+                .single { it.descriptor.name.asString() == "register" }
+
+            body = irExprBody(
+                irCall(registerJitBinding).apply {
+                    dispatchReceiver = irGetObject(symbols.jitBindingRegistry)
+
+                    putValueArgument(0, irCall(symbols.keyOf).apply {
+                        putTypeArgument(0, clazz.defaultType)
+                    })
+
+                    putValueArgument(
+                        1,
+                        if (binding.kind == ClassKind.OBJECT) irGetObject(binding.symbol)
+                        else irCall(binding.constructors.single())
+                    )
+                }
+            )
         }
     }
 
 }
 
-object BindingAccessorOrigin : IrDeclarationOrigin
+object RegisterBindingOrigin : IrDeclarationOrigin

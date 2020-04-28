@@ -7,7 +7,7 @@ object JitBindingRegistry {
 
     private val bindings = mutableMapOf<Key<*>, Binding<*>>()
 
-    fun <T> register(key: Key<T>, binding: Binding<T>) {
+    fun register(key: Key<*>, binding: Binding<*>) {
         bindings[key] = binding
     }
 

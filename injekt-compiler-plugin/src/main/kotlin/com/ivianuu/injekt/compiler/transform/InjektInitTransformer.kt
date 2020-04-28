@@ -1,32 +1,17 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -51,23 +36,14 @@ class InjektInitTransformer(
         if (expression.symbol.ensureBound(context.irProviders).owner.name.asString() != "initializeEndpoint") return expression
 
         val jitBindings = mutableListOf<IrFunction>()
-        val modules = mutableMapOf<IrClass, MutableList<IrFunction>>()
+        val modules = mutableListOf<IrFunction>()
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val origin = declaration.origin
-                if (origin is ModuleAccessorOrigin) {
-                    val scope =
-                        origin.module.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
-                            .single()
-                            .type
-                            .constructor
-                            .declarationDescriptor!!
-                            .let { symbolTable.referenceClass(it as ClassDescriptor) }
-                            .ensureBound(context.irProviders)
-                            .owner
-                    modules.getOrPut(scope) { mutableListOf() } += declaration
-                } else if (origin is BindingAccessorOrigin) {
+                if (origin is RegisterModuleOrigin) {
+                    modules += declaration
+                } else if (origin is RegisterBindingOrigin) {
                     jitBindings += declaration
                 }
                 return super.visitFunction(declaration)
@@ -80,17 +56,10 @@ class InjektInitTransformer(
             .filterIsInstance<ClassDescriptor>()
             .forEach {
                 val fqName = FqName(it.name.asString().replace("_", "."))
+                val name = Name.identifier(fqName.shortName().asString())
+
                 try {
-                    val name = Name.identifier(fqName.shortName().asString())
-                    val scope = it.getAnnotatedAnnotations(InjektFqNames.Scope)
-                        .single()
-                        .type
-                        .constructor
-                        .declarationDescriptor!!
-                        .let { symbolTable.referenceClass(it as ClassDescriptor) }
-                        .ensureBound(context.irProviders)
-                        .owner
-                    modules.getOrPut(scope) { mutableListOf() } += symbols.getPackage(fqName.parent())
+                    modules += symbols.getPackage(fqName.parent())
                         .memberScope
                         .findSingleFunction(name)
                         .let { context.symbolTable.referenceFunction(it) }
@@ -98,7 +67,6 @@ class InjektInitTransformer(
                         .owner
                 } catch (e: Exception) {
                     try {
-                        val name = Name.identifier(fqName.shortName().asString())
                         jitBindings += symbols.getPackage(fqName.parent())
                             .memberScope
                             .getContributedDescriptors()
@@ -114,66 +82,8 @@ class InjektInitTransformer(
 
         return DeclarationIrBuilder(context, expression.symbol).run {
             irBlock {
-                val registerJitBinding = symbols.jitBindingRegistry
-                    .functions
-                    .single { it.descriptor.name.asString() == "register" }
-
-                jitBindings.forEach { jitBinding ->
-                    +irCall(registerJitBinding).apply {
-                        dispatchReceiver = irGetObject(symbols.jitBindingRegistry)
-
-                        val bindingType =
-                            (jitBinding.returnType as IrSimpleType).arguments.single().typeOrNull!!
-
-                        putTypeArgument(0, bindingType)
-
-                        putValueArgument(0, irCall(symbols.keyOf).apply {
-                            putTypeArgument(0, bindingType)
-                        })
-
-                        putValueArgument(
-                            1,
-                            irCall(jitBinding)
-                        )
-                    }
-                }
-
-                val registerModule = symbols.moduleRegistry
-                    .functions
-                    .single { it.descriptor.name.asString() == "register" }
-
-                modules.forEach { (scope, modulesForScope) ->
-                    val scopeVar = irTemporary(
-                        IrClassReferenceImpl(
-                            startOffset,
-                            endOffset,
-                            this@InjektInitTransformer.context.irBuiltIns.kClassClass.typeWith(scope.defaultType),
-                            scope.symbol,
-                            scope.defaultType
-                        )
-                    )
-
-                    modulesForScope.forEach { module ->
-                        +irCall(registerModule).apply {
-                            dispatchReceiver = irGetObject(symbols.moduleRegistry)
-                            putValueArgument(0, irGet(scopeVar))
-                            putValueArgument(
-                                1, IrFunctionReferenceImpl(
-                                    UNDEFINED_OFFSET,
-                                    UNDEFINED_OFFSET,
-                                    symbolTable.referenceClass(context.builtIns.getFunction(1))
-                                        .typeWith(
-                                            symbols.componentDsl.defaultType,
-                                            context.irBuiltIns.unitType
-                                        ),
-                                    module.symbol,
-                                    0,
-                                    null
-                                )
-                            )
-                        }
-                    }
-                }
+                jitBindings.forEach { jitBinding -> +irCall(jitBinding) }
+                modules.forEach { module -> +irCall(module) }
             }
         }
     }

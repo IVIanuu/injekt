@@ -25,7 +25,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         BindingIntrinsicTransformer(pluginContext)
             .visitModuleAndGenerateSymbols()
 
-        ModuleAccessorGenerator(pluginContext)
+        RegisterModuleFunctionGenerator(pluginContext)
             .visitModuleAndGenerateSymbols()
 
         ModuleAggregateGenerator(pluginContext, project)
