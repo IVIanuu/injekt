@@ -8,4 +8,3 @@ class Linker(val component: Component) {
     inline fun <reified T> get(qualifier: KClass<*>? = null): LinkedBinding<T> =
         injektIntrinsic()
 }
-
