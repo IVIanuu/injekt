@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
@@ -39,6 +38,3 @@ inline fun <T> Application.getLazy(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { applicationComponent.get(key, parameters()) }
-
-@Factory
-class Hall

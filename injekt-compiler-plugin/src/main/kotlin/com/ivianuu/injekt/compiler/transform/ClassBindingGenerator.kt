@@ -306,6 +306,7 @@ class ClassBindingGenerator(
                             putValueArgument(
                                 constructorIndex++,
                                 irCall(parametersGet).apply {
+                                    dispatchReceiver = irGet(parametersParameter)
                                     putTypeArgument(0, constructorParameter.type)
                                     putValueArgument(0, irInt(paramIndex++))
                                 }
