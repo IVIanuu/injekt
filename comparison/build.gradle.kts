@@ -64,8 +64,6 @@ dependencies {
 
     implementation(Deps.Kotlin.stdlib)
 
-    implementation(Deps.kotlinStatistics)
-
     implementation(Deps.Toothpick.toothpick)
     kapt(Deps.Toothpick.compiler)
 }

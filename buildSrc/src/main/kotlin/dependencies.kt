@@ -87,7 +87,6 @@ object Deps {
     }
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.2.7"
-    const val kotlinStatistics = "org.nield:kotlin-statistics:1.2.1"
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
