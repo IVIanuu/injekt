@@ -16,16 +16,16 @@
 
 package com.ivianuu.injekt
 
-/**
- * Provides instances of type [T]
- * For any type [T] that can be injected, you can also inject Provider<T>.
- * This enables providing multiple instances, lazy instances or optional retrieval of instances
- */
-fun interface Provider<T> {
-    /**
-     * Returns an instance of type [T]
-     */
-    operator fun invoke(parameters: Parameters): T
+import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.reflect.KClass
 
-    operator fun invoke(): T = invoke(emptyParameters())
+fun interface Provider<T> {
+    operator fun invoke(): T
 }
+
+@InjektDslMarker
+interface ProviderDsl {
+    fun <T> get(qualifier: KClass<*>? = null): T = injektIntrinsic()
+}
+
+typealias ProviderDefinition<T> = ProviderDsl.() -> T

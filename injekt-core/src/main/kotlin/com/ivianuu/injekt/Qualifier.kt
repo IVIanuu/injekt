@@ -16,25 +16,5 @@
 
 package com.ivianuu.injekt
 
-/**
- *
- * A qualifier can help to distinct between bindings of the same type
- *
- * For example:
- *
- * ´´´
- * val component = Component {
- *     factory<CreditCardHandler>(qualifier = Paypal::class) { ... }
- *     factory<CreditCardHandler>(qualifier = Amazon::class) { ... }
- * }
- *
- * val creditCardHandler: CreditCardHandler = if (usePaypal) {
- *     component.get(qualifier = Paypal::class)
- * } else {
- *     component.get(qualifier = Amazon::class)
- * }
- * ´´´
- *
- */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier

@@ -1,25 +1,19 @@
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.Lazy
-import com.ivianuu.injekt.Parameters
+import com.ivianuu.injekt.Provider
 
-internal class KeyedLazy<T>(
-    private val component: Component,
-    private val key: Key<T>
-) : Lazy<T> {
-
+class ScopedProvider<T>(private var wrapped: Provider<T>?) : Provider<T> {
     private var value: Any? = this
 
-    override fun invoke(parameters: Parameters): T {
+    override fun invoke(): T {
         var value = this.value
         if (value === this) {
             synchronized(this) {
                 value = this.value
                 if (value === this) {
-                    value = component.get(key, parameters)
+                    value = wrapped!!()
                     this.value = value
+                    wrapped = null
                 }
             }
         }

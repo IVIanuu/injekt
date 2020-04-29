@@ -16,54 +16,5 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.asScoped
-import com.ivianuu.injekt.internal.injektIntrinsic
-import kotlin.reflect.KClass
-
-/**
- * Scopes are used to name [Component]s
- * This allows annotation api [Binding]s to be associated with a specific [Component]
- *
- * A scope can be declared like this
- *
- * ´´´
- * @Scope
- * annotation class ActivityScope
- * ´´´
- *
- * The following code ensures that the view model will be only instantiated in the activity scoped [Component]
- *
- * ´´´
- * @ActivityScope
- * @Factory
- * class MyViewModel
- * ´´´
- */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Scope
-
-@Module
-inline fun <reified T> scoped(
-    qualifier: KClass<*>? = null,
-    bindingDefinition: BindingDefinition<T>
-): Unit = injektIntrinsic()
-
-@Module
-inline fun <reified T> scoped(
-    qualifier: KClass<*>? = null,
-    binding: Binding<T>
-): Unit = injektIntrinsic()
-
-@Module
-fun <T> scoped(
-    key: Key<T>,
-    bindingDefinition: BindingDefinition<T>
-): Unit = injektIntrinsic()
-
-@Module
-fun <T> scoped(
-    key: Key<T>,
-    binding: Binding<T>
-) {
-    addBinding(key, binding.asScoped())
-}
