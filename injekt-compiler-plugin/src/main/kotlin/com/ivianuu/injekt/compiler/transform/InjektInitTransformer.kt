@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.transform.module.RegisterModuleOrigin
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -12,22 +13,26 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.BindingTrace
 
 class InjektInitTransformer(
-    pluginContext: IrPluginContext
-) : AbstractInjektTransformer(pluginContext) {
+    context: IrPluginContext,
+    symbolRemapper: DeepCopySymbolRemapper,
+    bindingTrace: BindingTrace
+) : AbstractInjektTransformer(context, symbolRemapper, bindingTrace) {
 
     private lateinit var moduleFragment: IrModuleFragment
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        moduleFragment = declaration
-        return super.visitModuleFragment(declaration)
+    override fun lower(module: IrModuleFragment) {
+        moduleFragment = module
+        super.lower(module)
     }
 
     override fun visitCall(expression: IrCall): IrExpression {

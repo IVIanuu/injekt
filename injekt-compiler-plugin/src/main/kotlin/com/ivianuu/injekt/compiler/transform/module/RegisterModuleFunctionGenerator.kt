@@ -1,9 +1,10 @@
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -22,23 +23,29 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 
-class RegisterModuleFunctionGenerator(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class RegisterModuleFunctionGenerator(
+    context: IrPluginContext,
+    symbolRemapper: DeepCopySymbolRemapper,
+    bindingTrace: BindingTrace
+) : AbstractInjektTransformer(context, symbolRemapper, bindingTrace) {
 
     override fun visitFile(declaration: IrFile): IrFile {
         val modules = mutableListOf<IrFunction>()
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope) &&
-                    declaration.extensionReceiverParameter?.type == symbols.componentDsl.defaultType
+                if (declaration.isModule() &&
+                    declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)
                 ) {
                     modules += declaration
                 }
@@ -62,6 +69,7 @@ class RegisterModuleFunctionGenerator(pluginContext: IrPluginContext) :
     }
 
     private fun IrBuilderWithScope.registerModuleFunction(module: IrFunction): IrFunction {
+        println("register module function $module")
         return buildFun {
             name = Name.identifier("register\$${module.name.asString()}")
             returnType = context.irBuiltIns.unitType
@@ -106,7 +114,11 @@ class RegisterModuleFunctionGenerator(pluginContext: IrPluginContext) :
                             module.symbol,
                             0,
                             null
-                        )
+                        ).apply {
+                            dispatchReceiver = if (module.dispatchReceiverParameter != null) {
+                                irGetObject(module.dispatchReceiverParameter!!.type.classOrNull!!)
+                            } else null
+                        }
                     )
                 }
             )

@@ -2,8 +2,8 @@ package com.ivianuu.injekt.android
 
 import androidx.fragment.app.Fragment
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Parameters
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
@@ -24,7 +24,8 @@ val Fragment.fragmentComponent: Component
         }
     }
 
-fun ComponentDsl.fragment(instance: Fragment) {
+@Module
+fun fragment(instance: Fragment) {
     val instanceKey = instanceKeyOf(instance)
     instance(instance, instanceKey)
     alias(instanceKey, keyOf())
@@ -35,12 +36,12 @@ fun ComponentDsl.fragment(instance: Fragment) {
     viewModelStoreOwner(instanceKey, ForFragment::class)
 }
 
-inline fun <reified T> Fragment.getLazy(
+inline fun <reified T> Fragment.inject(
     qualifier: KClass<*>? = null,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): Lazy<T> = injektIntrinsic()
 
-inline fun <T> Fragment.getLazy(
+inline fun <T> Fragment.inject(
     key: Key<T>,
     crossinline parameters: () -> Parameters = { emptyParameters() }
 ): Lazy<T> = lazy(LazyThreadSafetyMode.NONE) { fragmentComponent.get(key, parameters()) }

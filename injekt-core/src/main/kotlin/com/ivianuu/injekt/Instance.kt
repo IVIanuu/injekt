@@ -4,7 +4,8 @@ import com.ivianuu.injekt.internal.InstanceBinding
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
-inline fun <reified T> ComponentDsl.instance(
+@Module
+inline fun <reified T> instance(
     instance: T,
     qualifier: KClass<*>? = null
 ): Unit = injektIntrinsic()
@@ -12,9 +13,10 @@ inline fun <reified T> ComponentDsl.instance(
 /**
  * Adds the [instance] as a binding for [key]
  */
-fun <T> ComponentDsl.instance(
+@Module
+fun <T> instance(
     instance: T,
     key: Key<T>
 ) {
-    add(key, InstanceBinding(instance))
+    addBinding(key, InstanceBinding(instance))
 }

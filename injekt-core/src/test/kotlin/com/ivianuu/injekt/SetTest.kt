@@ -132,8 +132,14 @@ class SetTest {
     @Test
     fun testReusesSetBuildersInsideAModule() {
         val component = Component {
-            set<Any> { add { Command1 } }
-            set<Any> { add { Command2 } }
+            instance(Command1)
+            instance(Command2)
+            set<Any> {
+                add<Command1>()
+            }
+            set<Any> {
+                add<Command2>()
+            }
         }
 
         assertEquals(2, component.get<Set<Any>>().size)

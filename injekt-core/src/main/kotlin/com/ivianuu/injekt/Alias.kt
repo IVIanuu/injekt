@@ -1,15 +1,18 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.AliasBinding
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 @JvmName("aliasQualifier")
-inline fun <reified T> ComponentDsl.alias(
+@Module
+inline fun <reified T> alias(
     originalQualifier: KClass<*>? = null,
     aliasQualifier: KClass<*>
 ): Unit = injektIntrinsic()
 
-fun <T> ComponentDsl.alias(
+@Module
+fun <T> alias(
     originalKey: Key<T>,
     aliasQualifier: KClass<*>?
 ) {
@@ -19,7 +22,8 @@ fun <T> ComponentDsl.alias(
     )
 }
 
-inline fun <reified S : T, reified T> ComponentDsl.alias(
+@Module
+inline fun <reified S : T, reified T> alias(
     originalQualifier: KClass<*>? = null,
     aliasQualifier: KClass<*>? = null
 ): Unit = injektIntrinsic()
@@ -41,13 +45,11 @@ inline fun <reified S : T, reified T> ComponentDsl.alias(
  * ´´´
  *
  */
-fun <S : T, T> ComponentDsl.alias(
+@Module
+fun <S : T, T> alias(
     originalKey: Key<S>,
     aliasKey: Key<T>
 ) {
-    add(aliasKey as Key<S>, AliasProvider(originalKey))
+    addBinding(aliasKey as Key<S>, AliasBinding(originalKey))
 }
 
-private class AliasProvider<T>(private val originalKey: Key<T>) : UnlinkedBinding<T>() {
-    override fun link(linker: Linker): LinkedBinding<T> = linker.get(originalKey)
-}

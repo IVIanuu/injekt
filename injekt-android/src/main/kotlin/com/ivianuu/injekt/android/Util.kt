@@ -8,8 +8,8 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.factory
 import com.ivianuu.injekt.keyOf
@@ -17,10 +17,9 @@ import kotlinx.coroutines.CoroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-@PublishedApi
-internal val componentsByLifecycle = ConcurrentHashMap<Lifecycle, Component>()
+private val componentsByLifecycle = ConcurrentHashMap<Lifecycle, Component>()
 
-internal inline fun Lifecycle.component(initializer: () -> Component): Component {
+fun Lifecycle.component(initializer: () -> Component): Component {
     check(currentState != Lifecycle.State.DESTROYED) {
         "Cannot get component on destroyed lifecycles"
     }
@@ -36,35 +35,39 @@ internal inline fun Lifecycle.component(initializer: () -> Component): Component
         }
 }
 
-internal fun ComponentDsl.lifecycleOwner(
+@Module
+internal fun lifecycleOwner(
     instanceKey: Key<out LifecycleOwner>,
     qualifier: KClass<*>? = null
 ) {
-    alias(originalKey = instanceKey, keyOf(qualifier))
+    alias(originalKey = instanceKey, aliasKey = keyOf(qualifier))
     factory(qualifier = qualifier) { get(instanceKey).lifecycle }
     factory<CoroutineScope>(qualifier = qualifier) { get(instanceKey).lifecycleScope }
 }
 
-internal fun ComponentDsl.viewModelStoreOwner(
+@Module
+internal fun viewModelStoreOwner(
     instanceKey: Key<out ViewModelStoreOwner>,
     qualifier: KClass<*>? = null
 ) {
-    alias(originalKey = instanceKey, keyOf(qualifier))
+    alias(originalKey = instanceKey, aliasKey = keyOf(qualifier))
     factory(qualifier = qualifier) { get(instanceKey).viewModelStore }
 }
 
-internal fun ComponentDsl.savedStateRegistryOwner(
+@Module
+internal fun savedStateRegistryOwner(
     instanceKey: Key<out SavedStateRegistryOwner>,
     qualifier: KClass<*>? = null
 ) {
-    alias(originalKey = instanceKey, keyOf(qualifier))
+    alias(originalKey = instanceKey, aliasKey = keyOf(qualifier))
     factory(qualifier = qualifier) { get(instanceKey).savedStateRegistry }
 }
 
-internal fun ComponentDsl.context(
+@Module
+internal fun context(
     instanceKey: Key<out Context>,
     qualifier: KClass<*>? = null
 ) {
-    alias(originalKey = instanceKey, keyOf(qualifier))
+    alias(originalKey = instanceKey, aliasKey = keyOf(qualifier))
     factory(qualifier) { get(instanceKey).resources!! }
 }

@@ -17,7 +17,7 @@ import org.robolectric.annotation.Config
 class ViewModelTest {
 
     @Test
-    fun testViewModel() {
+    fun testViewModel() = withInitializedEndpoint {
         val activityScenario = launchActivity<TestActivity>()
         var viewModelA: TestViewModel? = null
         activityScenario.onActivity { activity ->

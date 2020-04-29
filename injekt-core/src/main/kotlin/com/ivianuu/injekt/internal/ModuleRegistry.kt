@@ -1,17 +1,23 @@
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.ComponentDsl
+import com.ivianuu.injekt.Module
+import org.jetbrains.annotations.TestOnly
 import kotlin.reflect.KClass
 
 object ModuleRegistry {
 
-    private val modules = mutableMapOf<KClass<*>, MutableList<ComponentDsl.() -> Unit>>()
+    private val modules = mutableMapOf<KClass<*>, MutableList<@Module () -> Unit>>()
 
-    fun register(scope: KClass<*>, module: ComponentDsl.() -> Unit) {
+    fun register(scope: KClass<*>, module: @Module () -> Unit) {
         modules.getOrPut(scope) { mutableListOf() } += module
     }
 
-    fun getForScope(scope: KClass<*>): List<ComponentDsl.() -> Unit> =
+    fun getForScope(scope: KClass<*>): List<@Module () -> Unit> =
         modules.getOrElse(scope) { emptyList() }
+
+    @TestOnly
+    fun clear() {
+        modules.clear()
+    }
 
 }

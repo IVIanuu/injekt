@@ -44,8 +44,10 @@ import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -53,16 +55,21 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.util.OperatorNameConventions
 
-class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class BindingIntrinsicTransformer(
+    context: IrPluginContext,
+    symbolRemapper: DeepCopySymbolRemapper,
+    bindingTrace: BindingTrace
+) : AbstractInjektTransformer(context, symbolRemapper, bindingTrace) {
 
     private lateinit var moduleFragment: IrModuleFragment
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        moduleFragment = declaration
-        return super.visitModuleFragment(declaration)
+    override fun lower(module: IrModuleFragment) {
+        moduleFragment = module
+        super.lower(module)
     }
 
     override fun visitCall(expression: IrCall): IrExpression {
@@ -82,7 +89,8 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (bindingOverloadFunction != null || declaration == callee) return declaration
                 val otherFunction = declaration.symbol.owner
-                if ((otherFunction.extensionReceiverParameter
+                if (otherFunction.name == callee.name &&
+                    (otherFunction.extensionReceiverParameter
                         ?: otherFunction.dispatchReceiverParameter)?.type == callee.extensionReceiverParameter?.type &&
                     otherFunction.typeParameters.size == callee.typeParameters.size &&
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
@@ -112,6 +120,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
                         ?: callee.descriptor.dispatchReceiverParameter)?.type
 
                     otherFunction != callee.descriptor &&
+                            otherFunction.name == callee.name
                             otherReceiver == calleeReceiver &&
                             otherFunction.typeParameters.size == callee.typeParameters.size &&
                             otherFunction.valueParameters.size == callee.valueParameters.size &&
@@ -143,7 +152,12 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
                     ?.owner
         }
 
-        if (bindingOverloadFunction == null) return expression
+        if (bindingOverloadFunction == null) {
+            if (callee.name.asString() == "factory") {
+                error("wtf ${callee.dump()}")
+            }
+            return expression
+        }
 
         return DeclarationIrBuilder(context, expression.symbol).run {
             irCall(bindingOverloadFunction!!).apply {
@@ -368,7 +382,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
         }
 
         addFunction {
-            this.name = Name.identifier("invoke")
+            this.name = OperatorNameConventions.INVOKE
             returnType = definitionFunction.returnType
         }.apply {
             dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
@@ -377,7 +391,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
                 .functions
                 .single {
                     it.descriptor.valueParameters.size == 1 &&
-                            it.owner.name.asString() == "invoke"
+                            it.owner.name == OperatorNameConventions.INVOKE
                 }
 
             val parametersParameter = addValueParameter(
@@ -411,7 +425,7 @@ class BindingIntrinsicTransformer(pluginContext: IrPluginContext) :
                     super.visitCall(expression)
                     return providerFieldsByDependencies[expression]?.let { field ->
                         val invokeFunction = symbols.provider.functions.single {
-                            it.owner.name.asString() == "invoke" &&
+                            it.owner.name == OperatorNameConventions.INVOKE &&
                                     it.owner.valueParameters.size == if (expression.getValueArgument(
                                     1
                                 ) != null

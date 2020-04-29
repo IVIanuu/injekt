@@ -1,84 +1,76 @@
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.generateSymbols
+import com.ivianuu.injekt.compiler.transform.key.KeyCachingTransformer
+import com.ivianuu.injekt.compiler.transform.key.KeyIntrinsicTransformer
+import com.ivianuu.injekt.compiler.transform.key.KeyOfTransformer
+import com.ivianuu.injekt.compiler.transform.module.ComponentDslIntrinsicTransformer
+import com.ivianuu.injekt.compiler.transform.module.ComponentDslParamTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleAggregateGenerator
+import com.ivianuu.injekt.compiler.transform.module.RegisterModuleFunctionGenerator
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        fun IrElementTransformerVoid.visitModuleAndGenerateSymbols() {
+        fun ModuleLoweringPass.visitModuleAndGenerateSymbols() {
             generateSymbols(pluginContext)
-            visitModuleFragment(moduleFragment, null)
+            lower(moduleFragment)
             generateSymbols(pluginContext)
         }
 
+        val bindingTrace = DelegatingBindingTrace(
+            pluginContext.bindingContext, "trace in " +
+                    "InjektIrGenerationExtension"
+        )
+        val symbolRemapper = DeepCopySymbolRemapper()
+
         // generate bindings for annotated classes
-        ClassBindingGenerator(pluginContext, project)
+        ClassBindingGenerator(pluginContext, symbolRemapper, bindingTrace, project)
             .visitModuleAndGenerateSymbols()
 
         // generate bindings from binding definitions
-        BindingIntrinsicTransformer(pluginContext)
-            .visitModuleAndGenerateSymbols()
-
-        RegisterModuleFunctionGenerator(pluginContext)
-            .visitModuleAndGenerateSymbols()
-
-        ModuleAggregateGenerator(pluginContext, project)
-            .visitModuleAndGenerateSymbols()
-
-        InjektInitTransformer(pluginContext)
+        BindingIntrinsicTransformer(pluginContext, symbolRemapper, bindingTrace)
             .visitModuleAndGenerateSymbols()
 
         // rewrite calls like component.get<String>() -> component.get(keyOf<String>())
         KeyIntrinsicTransformer(
-            pluginContext
+            pluginContext, symbolRemapper, bindingTrace
         ).visitModuleAndGenerateSymbols()
 
+        RegisterModuleFunctionGenerator(pluginContext, symbolRemapper, bindingTrace)
+            .visitModuleAndGenerateSymbols()
+
+        ModuleAggregateGenerator(
+            pluginContext,
+            symbolRemapper,
+            bindingTrace,
+            project
+        ).visitModuleAndGenerateSymbols()
+
+        InjektInitTransformer(pluginContext, symbolRemapper, bindingTrace)
+            .visitModuleAndGenerateSymbols()
+
         // cache static keyOf calls
-        KeyCachingTransformer(pluginContext)
+        KeyCachingTransformer(
+            pluginContext, symbolRemapper, bindingTrace
+        )
             .visitModuleAndGenerateSymbols()
 
         // rewrite keyOf<String>() -> SimpleKey(String::class)
-        KeyOfTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        KeyOfTransformer(pluginContext, symbolRemapper, bindingTrace)
+            .visitModuleAndGenerateSymbols()
+
+        ComponentDslParamTransformer(pluginContext, symbolRemapper, bindingTrace)
+            .visitModuleAndGenerateSymbols()
+
+        ComponentDslIntrinsicTransformer(pluginContext, symbolRemapper, bindingTrace)
+            .visitModuleAndGenerateSymbols()
     }
 
-    val SymbolTable.allUnbound: List<IrSymbol>
-        get() {
-            val r = mutableListOf<IrSymbol>()
-            r.addAll(unboundClasses)
-            r.addAll(unboundConstructors)
-            r.addAll(unboundEnumEntries)
-            r.addAll(unboundFields)
-            r.addAll(unboundSimpleFunctions)
-            r.addAll(unboundProperties)
-            r.addAll(unboundTypeParameters)
-            r.addAll(unboundTypeAliases)
-            return r
-        }
-
-    fun generateSymbols(pluginContext: IrPluginContext) {
-        lateinit var unbound: List<IrSymbol>
-        val visited = mutableSetOf<IrSymbol>()
-        do {
-            unbound = pluginContext.symbolTable.allUnbound
-
-            for (symbol in unbound) {
-                if (visited.contains(symbol)) {
-                    continue
-                }
-                // Symbol could get bound as a side effect of deserializing other symbols.
-                if (!symbol.isBound) {
-                    pluginContext.irProviders.forEach { it.getDeclaration(symbol) }
-                }
-                if (!symbol.isBound) {
-                    visited.add(symbol)
-                }
-            }
-        } while ((unbound - visited).isNotEmpty())
-    }
 }

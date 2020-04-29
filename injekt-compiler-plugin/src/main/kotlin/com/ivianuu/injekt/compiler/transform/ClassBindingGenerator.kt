@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -60,12 +61,16 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.util.OperatorNameConventions
 
 class ClassBindingGenerator(
-    pluginContext: IrPluginContext,
+    context: IrPluginContext,
+    symbolRemapper: DeepCopySymbolRemapper,
+    bindingTrace: BindingTrace,
     private val project: Project
-) : AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(context, symbolRemapper, bindingTrace) {
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableMapOf<IrClass, IrConstructor>()
@@ -293,7 +298,7 @@ class ClassBindingGenerator(
         }
 
         addFunction {
-            this.name = Name.identifier("invoke")
+            this.name = OperatorNameConventions.INVOKE
             returnType = constructor.returnType
         }.apply {
             dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
@@ -302,7 +307,7 @@ class ClassBindingGenerator(
                 .functions
                 .single {
                     it.descriptor.valueParameters.size == 1 &&
-                            it.owner.name.asString() == "invoke"
+                            it.owner.name == OperatorNameConventions.INVOKE
                 }
 
             val parametersParameter = addValueParameter(
@@ -334,7 +339,7 @@ class ClassBindingGenerator(
                                 irCall(
                                     symbolTable.referenceFunction(
                                         symbols.provider.descriptor.unsubstitutedMemberScope.findFirstFunction(
-                                            "invoke"
+                                            OperatorNameConventions.INVOKE.asString()
                                         ) {
                                             it.valueParameters.size == 0
                                         }

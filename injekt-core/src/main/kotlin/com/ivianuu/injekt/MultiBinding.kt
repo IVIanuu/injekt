@@ -1,5 +1,6 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.AliasBinding
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
@@ -47,7 +48,7 @@ class MapDsl<K, V>(entries: Map<K, Binding<out V>>? = null) {
     private val entries = entries?.toMutableMap() ?: mutableMapOf()
 
     fun put(entryKey: K, entryValueKey: Key<out V>) {
-        put(entryKey) { get(entryValueKey) }
+        put(entryKey, AliasBinding(entryValueKey))
     }
 
     inline fun put(entryKey: K, entryBindingDefinition: BindingDefinition<out V>): Unit =
@@ -63,10 +64,34 @@ class MapDsl<K, V>(entries: Map<K, Binding<out V>>? = null) {
     fun build(): Map<K, Binding<V>> = entries as Map<K, Binding<V>>
 }
 
-inline fun <reified K, reified V> ComponentDsl.map(
+@Module
+inline fun <reified K, reified V> map(
     mapQualifier: KClass<*>? = null,
     block: MapDsl<K, V>.() -> Unit = {}
 ): Unit = injektIntrinsic()
+
+/**
+ * Adds a map binding and runs the [block] in the scope of the [MapDsl] for [mapKey]
+ */
+@Module
+inline fun <K, V> map(
+    mapKey: Key<Map<K, V>>,
+    block: MapDsl<K, V>.() -> Unit = {}
+) {
+    getMapBuilder(mapKey).block()
+}
+
+@PublishedApi
+@Module
+internal fun <K, V> getMapBuilder(mapKey: Key<Map<K, V>>): MapDsl<K, V> = with(componentDsl) {
+    var builder = maps?.get(mapKey) as? MapDsl<K, V>
+    if (builder == null) {
+        if (maps == null) maps = mutableMapOf()
+        builder = MapDsl()
+        maps!![mapKey] = builder
+    }
+    return builder
+}
 
 /**
  * A multi binding set is a set of bindings
@@ -113,8 +138,8 @@ class SetDsl<E>(elements: Map<Key<out E>, Binding<out E>>? = null) {
 
     inline fun <reified T : E> add(elementQualifier: KClass<*>? = null): Unit = injektIntrinsic()
 
-    inline fun <reified T : E> add(elementKey: Key<T>) {
-        add(elementKey) { get(elementKey) }
+    fun <T : E> add(elementKey: Key<T>) {
+        add(elementKey, AliasBinding(elementKey))
     }
 
     inline fun <reified T : E> add(
@@ -146,7 +171,31 @@ class SetDsl<E>(elements: Map<Key<out E>, Binding<out E>>? = null) {
 
 }
 
-inline fun <reified E> ComponentDsl.set(
+@Module
+inline fun <reified E> set(
     setQualifier: KClass<*>? = null,
     noinline block: SetDsl<E>.() -> Unit = {}
 ): Unit = injektIntrinsic()
+
+/**
+ * Adds a set binding and runs the [block] in the scope of the [SetDsl] for [setKey]
+ */
+@Module
+inline fun <E> set(
+    setKey: Key<Set<E>>,
+    block: SetDsl<E>.() -> Unit = {}
+) {
+    getSetBuilder(setKey).block()
+}
+
+@PublishedApi
+@Module
+internal fun <E> getSetBuilder(setKey: Key<Set<E>>): SetDsl<E> = with(componentDsl) {
+    var builder = sets?.get(setKey) as? SetDsl<E>
+    if (builder == null) {
+        if (sets == null) sets = mutableMapOf()
+        builder = SetDsl()
+        sets!![setKey] = builder
+    }
+    return builder
+}

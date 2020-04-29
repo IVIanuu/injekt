@@ -8,6 +8,7 @@ import com.ivianuu.injekt.internal.ModuleRegistry
 import com.ivianuu.injekt.internal.SetOfLazyBinding
 import com.ivianuu.injekt.internal.SetOfProviderBinding
 import com.ivianuu.injekt.internal.SetOfValueBinding
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 class ComponentDsl(
@@ -15,67 +16,14 @@ class ComponentDsl(
     val parent: Component?
 ) {
 
-    private val bindings = mutableMapOf<Key<*>, Binding<*>>()
-    private var maps: MutableMap<Key<*>, MapDsl<*, *>>? = null
-    private var sets: MutableMap<Key<*>, SetDsl<*>>? = null
+    internal val bindings = mutableMapOf<Key<*>, Binding<*>>()
+    internal var maps: MutableMap<Key<*>, MapDsl<*, *>>? = null
+    internal var sets: MutableMap<Key<*>, SetDsl<*>>? = null
 
     init {
-        ModuleRegistry.getForScope(scope).forEach { it() }
-    }
-
-    /**
-     * Registers the [binding] for [key]
-     */
-    fun <T> add(
-        key: Key<T>,
-        binding: Binding<T>
-    ) {
-        check(key !in bindings) {
-            "Already declared binding for $key"
+        ModuleRegistry.getForScope(scope).forEach {
+            (it as (ComponentDsl) -> Unit)(this)
         }
-        bindings[key] = binding
-    }
-
-    /**
-     * Adds a map binding and runs the [block] in the scope of the [MapDsl] for [mapKey]
-     */
-    inline fun <K, V> map(
-        mapKey: Key<Map<K, V>>,
-        block: MapDsl<K, V>.() -> Unit = {}
-    ) {
-        getMapBuilder(mapKey).block()
-    }
-
-    /**
-     * Adds a set binding and runs the [block] in the scope of the [SetDsl] for [setKey]
-     */
-    inline fun <E> set(
-        setKey: Key<Set<E>>,
-        block: SetDsl<E>.() -> Unit = {}
-    ) {
-        getSetBuilder(setKey).block()
-    }
-
-    @PublishedApi
-    internal fun <K, V> getMapBuilder(mapKey: Key<Map<K, V>>): MapDsl<K, V> {
-        var builder = maps?.get(mapKey) as? MapDsl<K, V>
-        if (builder == null) {
-            if (maps == null) maps = mutableMapOf()
-            builder = MapDsl()
-            maps!![mapKey] = builder
-        }
-        return builder
-    }
-
-    @PublishedApi
-    internal fun <E> getSetBuilder(setKey: Key<Set<E>>): SetDsl<E> {
-        var builder = sets?.get(setKey) as? SetDsl<E>
-        if (builder == null) {
-            if (sets == null) sets = mutableMapOf()
-            builder = SetDsl()
-            sets!![setKey] = builder
-        }
-        return builder
     }
 
     fun build(): Component {
@@ -203,3 +151,7 @@ class ComponentDsl(
     }
 
 }
+
+@Module
+val componentDsl: ComponentDsl
+    get() = injektIntrinsic()

@@ -9,12 +9,15 @@ class BindingTest {
     @Test
     fun testBindingDefinition() = codegen(
         """
-        val MyModule = Module { 
+        @Module 
+        fun module() { 
             factory { Foo() }
-            factory { Bar(get()) }
-        }
+            factory { Bar(get()) } 
+            }
          
-        fun invoke() = Component<ApplicationScoped>(MyModule).get<Bar>()
+        fun invoke() = Component {
+            module()
+        }.get<Bar>()
     """
     ) {
         invokeSingleFile()
@@ -28,9 +31,9 @@ class BindingTest {
         
         fun invoke(): MyClass {
             Injekt.initializeEndpoint()
-            return Component(Module {
+            return Component {
                 factory { Foo() }
-            }).get<MyClass>()
+            }.get<MyClass>()
         }
     """
     ) {
@@ -45,9 +48,9 @@ class BindingTest {
         
         fun invoke(): MyClass {
             Injekt.initializeEndpoint()
-            return Component(Module {
+            return Component {
                 factory { Foo() }
-            }).get<MyClass>()
+            }.get<MyClass>()
         }
     """
     ) {

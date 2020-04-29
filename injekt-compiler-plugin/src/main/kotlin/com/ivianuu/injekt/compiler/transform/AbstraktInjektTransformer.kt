@@ -16,7 +16,9 @@ package com.ivianuu.injekt.compiler.transform
  * limitations under the License.
  */
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.analysis.ModuleChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.builtins.extractParameterNameFromFunctionTypeArgument
@@ -39,29 +41,38 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorFactory
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
-    protected val context: IrPluginContext
-) : IrElementTransformerVoid() {
+    protected val context: IrPluginContext,
+    protected val symbolRemapper: DeepCopySymbolRemapper,
+    protected val bindingTrace: BindingTrace
+) : IrElementTransformerVoid(), ModuleLoweringPass {
 
     val symbols = InjektSymbols(context)
 
@@ -69,10 +80,27 @@ abstract class AbstractInjektTransformer(
     protected val typeTranslator = context.typeTranslator
     protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        return super.visitModuleFragment(declaration)
-            .also { it.patchDeclarationParents() }
+    override fun lower(module: IrModuleFragment) {
+        visitModuleFragment(module, null)
+        module.patchDeclarationParents()
     }
+
+    private val moduleChecker = ModuleChecker()
+
+    fun FunctionDescriptor.isModule(): Boolean {
+        return moduleChecker.analyze(bindingTrace, this)
+    }
+
+    fun IrFunction.isModule(): Boolean = descriptor.isModule()
+    fun IrFunctionExpression.isModule(): Boolean = function.isModule()
+
+    fun IrAnnotationContainer.hasModuleAnnotation(): Boolean {
+        return annotations.hasAnnotation(InjektFqNames.Module)
+    }
+
+    fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
+        any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
+
 
     protected fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
         fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(
@@ -197,4 +225,3 @@ abstract class AbstractInjektTransformer(
     }
 
 }
-

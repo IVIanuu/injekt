@@ -1,6 +1,7 @@
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.key
 
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -15,21 +16,27 @@ import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
-class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class KeyIntrinsicTransformer(
+    context: IrPluginContext,
+    symbolRemapper: DeepCopySymbolRemapper,
+    bindingTrace: BindingTrace
+) : AbstractInjektTransformer(context, symbolRemapper, bindingTrace) {
 
     private lateinit var moduleFragment: IrModuleFragment
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        moduleFragment = declaration
-        return super.visitModuleFragment(declaration)
+    override fun lower(module: IrModuleFragment) {
+        moduleFragment = module
+        super.lower(module)
     }
 
     override fun visitCall(expression: IrCall): IrExpression {
@@ -50,7 +57,8 @@ class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (keyOverloadFunction != null || declaration == callee) return declaration
                 val otherFunction = declaration.symbol.owner
-                if ((otherFunction.extensionReceiverParameter
+                if (otherFunction.name == callee.name &&
+                    (otherFunction.extensionReceiverParameter
                         ?: otherFunction.dispatchReceiverParameter)?.type == callee.extensionReceiverParameter?.type &&
                     otherFunction.typeParameters.size == callee.typeParameters.size &&
                     otherFunction.valueParameters.size == callee.valueParameters.size &&
@@ -80,6 +88,7 @@ class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
                         ?: callee.descriptor.dispatchReceiverParameter)?.type
 
                     otherFunction != callee.descriptor &&
+                            otherFunction.name == callee.name &&
                             otherReceiver == calleeReceiver &&
                             otherFunction.typeParameters.size == callee.typeParameters.size &&
                             otherFunction.valueParameters.size == callee.valueParameters.size &&
@@ -111,7 +120,12 @@ class KeyIntrinsicTransformer(pluginContext: IrPluginContext) :
                     ?.owner
         }
 
-        if (keyOverloadFunction == null) return expression
+        if (keyOverloadFunction == null) {
+            if (callee.name.asString() == "factory") {
+                error("wtf ${callee.dump()}")
+            }
+            return expression
+        }
 
         return DeclarationIrBuilder(context, expression.symbol).run {
             irCall(keyOverloadFunction!!).apply {

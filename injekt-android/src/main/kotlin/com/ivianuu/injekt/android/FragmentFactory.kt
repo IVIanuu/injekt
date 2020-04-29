@@ -4,9 +4,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
 import com.ivianuu.injekt.Binding
 import com.ivianuu.injekt.BindingDefinition
-import com.ivianuu.injekt.ComponentDsl
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.alias
@@ -15,22 +15,26 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.map
 import kotlin.reflect.KClass
 
-inline fun <reified T : Fragment> ComponentDsl.fragment(
+@Module
+inline fun <reified T : Fragment> fragment(
     qualifier: KClass<*>? = null,
     bindingDefinition: BindingDefinition<T>
 ): Unit = injektIntrinsic()
 
-inline fun <reified T : Fragment> ComponentDsl.fragment(
+@Module
+inline fun <reified T : Fragment> fragment(
     qualifier: KClass<*>? = null,
     binding: Binding<T>
 ): Unit = injektIntrinsic()
 
-inline fun <reified T : Fragment> ComponentDsl.fragment(
+@Module
+inline fun <reified T : Fragment> fragment(
     key: Key<T>,
     bindingDefinition: BindingDefinition<T>
 ): Unit = injektIntrinsic()
 
-fun <T : Fragment> ComponentDsl.fragment(
+@Module
+fun <T : Fragment> fragment(
     key: Key<T>,
     binding: Binding<T>
 ) {
@@ -38,17 +42,20 @@ fun <T : Fragment> ComponentDsl.fragment(
     bindFragment(key)
 }
 
-inline fun <reified T : Fragment> ComponentDsl.bindFragment(
+@Module
+inline fun <reified T : Fragment> bindFragment(
     qualifier: KClass<*>? = null
 ): Unit = injektIntrinsic()
 
-fun <T : Fragment> ComponentDsl.bindFragment(key: Key<T>) {
+@Module
+fun <T : Fragment> bindFragment(key: Key<T>) {
     map<String, Fragment>(Fragments::class) {
         put(key.classifier.java.name, key)
     }
 }
 
-fun ComponentDsl.fragmentInjection() {
+@Module
+fun fragmentInjection() {
     map<String, Fragment>(Fragments::class)
     alias<InjektFragmentFactory, FragmentFactory>()
 }

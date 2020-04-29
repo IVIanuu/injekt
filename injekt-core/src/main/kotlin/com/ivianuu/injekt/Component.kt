@@ -125,9 +125,10 @@ inline fun <reified T> Component.get(
     parameters: Parameters = emptyParameters()
 ): T = injektIntrinsic()
 
-inline fun <reified T> Component.plus(block: ComponentDsl.() -> Unit = {}) = plus(T::class, block)
+inline fun <reified T> Component.plus(noinline block: @Module () -> Unit = {}) =
+    plus(T::class, block)
 
-inline fun Component.plus(scope: KClass<*>, block: ComponentDsl.() -> Unit = {}) = Component(
+fun Component.plus(scope: KClass<*>, block: @Module () -> Unit = {}) = Component(
     scope = scope,
     parent = this,
     block = block
@@ -135,7 +136,7 @@ inline fun Component.plus(scope: KClass<*>, block: ComponentDsl.() -> Unit = {})
 
 inline fun <reified T> Component(
     parent: Component? = null,
-    block: ComponentDsl.() -> Unit = {}
+    noinline block: @Module () -> Unit = {}
 ) = Component(
     scope = T::class,
     parent = parent,
@@ -143,14 +144,14 @@ inline fun <reified T> Component(
 )
 
 @JvmName("DefaultComponent")
-inline fun Component(block: ComponentDsl.() -> Unit = {}): Component = Component(
+fun Component(block: @Module () -> Unit = {}): Component = Component(
     scope = ApplicationScoped::class,
     block = block
 )
 
 
-inline fun Component(
+fun Component(
     scope: KClass<*>,
     parent: Component? = null,
-    block: ComponentDsl.() -> Unit = {}
-): Component = ComponentDsl(scope, parent).apply(block).build()
+    block: @Module () -> Unit = {}
+): Component = ComponentDsl(scope, parent).apply(block as (ComponentDsl) -> Unit).build()

@@ -20,6 +20,7 @@ fun source(
     contents = buildString {
         if (injektImports) {
             appendln("import com.ivianuu.injekt.*")
+            appendln("import com.ivianuu.injekt.internal.*")
             appendln("import com.ivianuu.injekt.compiler.*")
             appendln()
         }

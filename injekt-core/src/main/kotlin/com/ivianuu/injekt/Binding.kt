@@ -26,3 +26,17 @@ class BindingDsl {
 }
 
 typealias BindingDefinition<T> = BindingDsl.(Parameters) -> T
+
+/**
+ * Registers the [binding] for [key]
+ */
+@Module
+fun <T> addBinding(
+    key: Key<T>,
+    binding: Binding<T>
+) {
+    check(key !in componentDsl.bindings) {
+        "Already declared binding for $key"
+    }
+    componentDsl.bindings[key] = binding
+}
