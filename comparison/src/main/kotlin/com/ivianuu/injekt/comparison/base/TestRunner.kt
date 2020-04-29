@@ -66,7 +66,7 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig) {
     repeat(5000) { tests.forEach { measure(it) } }
 
-    println("Running ${config.rounds} iterations. Please stand by...")
+    println("Running ${config.rounds} iterations...")
 
     val timingsPerTest = mutableMapOf<String, MutableList<Timings>>()
 
@@ -172,7 +172,7 @@ fun Map<String, Results>.print(config: Config) {
         toList()
             .sortedBy { it.second.pick().average }
             .forEach { (name, results) ->
-                results.setup.print(name, config)
+                results.pick().print(name, config)
             }
 
         println()
