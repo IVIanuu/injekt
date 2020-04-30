@@ -7,5 +7,5 @@ interface SetDsl<E> {
     fun <T : E> add(): Unit = injektIntrinsic()
 }
 
-@Module
+@Declaration
 fun <E> set(block: SetDsl<E>.() -> Unit = {}): Unit = injektIntrinsic()

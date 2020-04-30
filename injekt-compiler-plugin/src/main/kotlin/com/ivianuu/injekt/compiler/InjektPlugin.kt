@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.analysis.InjektTypeResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.ModuleChecker
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -33,13 +34,14 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
+        val moduleChecker = ModuleChecker()
         StorageComponentContainerContributor.registerExtension(
             project,
-            ModuleChecker()
+            InjektStorageContainerContributor(moduleChecker)
         )
         TypeResolutionInterceptor.registerExtension(
             project,
-            InjektTypeResolutionInterceptorExtension()
+            InjektTypeResolutionInterceptorExtension(moduleChecker)
         )
         IrGenerationExtension.registerExtension(
             project,

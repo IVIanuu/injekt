@@ -6,30 +6,29 @@ import org.jetbrains.kotlin.name.Name
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InternalPackage = InjektPackage.child("internal")
-    val AggregatePackage = InternalPackage.child("aggregate")
 
-    val Binding = InjektPackage.child("Binding")
-    val BindingDefinition = InjektPackage.child("BindingDefinition")
-    val BindingDsl = InjektPackage.child("BindingDsl")
-    val Component = InjektPackage.child("Component")
-    val ComponentDsl = InjektPackage.child("ComponentDsl")
-    val ComponentDslIntrinsic = InjektPackage.child("<get-componentDsl>")
+    val InjektAst = InternalPackage.child("InjektAst")
+    val AstChildFactory = InjektAst.child("ChildFactory")
+    val AstDependency = InjektAst.child("Dependency")
+    val AstModule = InjektAst.child("Module")
+    val AstScope = InjektAst.child("Scope")
+
+    val ChildFactory = InjektPackage.child("ChildFactory")
+
     val Factory = InjektPackage.child("Factory")
-    val HasScope = InternalPackage.child("HasScope")
-    val JitBindingRegistry = InternalPackage.child("JitBindingRegistry")
-    val Key = InjektPackage.child("Key")
-    val LinkedBinding = InjektPackage.child("LinkedBinding")
-    val Linker = InjektPackage.child("Linker")
+
     val Module = InjektPackage.child("Module")
-    val ModuleRegistry = InternalPackage.child("ModuleRegistry")
-    val Param = InjektPackage.child("Param")
-    val Parameters = InjektPackage.child("Parameters")
-    val ParameterizedKey = Key.child("ParameterizedKey")
+
+    val Lazy = InjektPackage.child("Lazy")
+    val MembersInjector = InjektPackage.child("MembersInjector")
     val Provider = InjektPackage.child("Provider")
+    val ProviderDefinition = InjektPackage.child("ProviderDefinition")
+    val ProviderDsl = InjektPackage.child("ProviderDsl")
+
     val Qualifier = InjektPackage.child("Qualifier")
     val Scope = InjektPackage.child("Scope")
-    val SimpleKey = Key.child("SimpleKey")
-    val UnlinkedBinding = InjektPackage.child("UnlinkedBinding")
+
+    val SetDsl = InjektPackage.child("SetDsl")
 
     private fun FqName.child(name: String) = child(Name.identifier(name))
 

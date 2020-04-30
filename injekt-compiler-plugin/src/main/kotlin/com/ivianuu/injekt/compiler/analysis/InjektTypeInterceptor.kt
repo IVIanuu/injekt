@@ -4,7 +4,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasModuleAnnotation
 import com.ivianuu.injekt.compiler.makeModule
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptorExtension
 import org.jetbrains.kotlin.psi.KtElement
@@ -16,7 +15,9 @@ import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
 
 @OptIn(InternalNonStableExtensionPoints::class)
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
-open class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorExtension {
+open class InjektTypeResolutionInterceptorExtension(
+    private val moduleChecker: ModuleChecker
+) : TypeResolutionInterceptorExtension {
 
     override fun interceptFunctionLiteralDescriptor(
         expression: KtLambdaExpression,
@@ -39,11 +40,7 @@ open class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorE
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
         if (element !is KtLambdaExpression) return resultType
         val module = context.scope.ownerDescriptor.module
-        val checker =
-            StorageComponentContainerContributor.getInstances(element.project).single {
-                it is ModuleChecker
-            } as ModuleChecker
-        if (context.expectedType.hasModuleAnnotation() || checker.analyze(
+        if (context.expectedType.hasModuleAnnotation() || moduleChecker.analyze(
                 context.trace,
                 element,
                 resultType

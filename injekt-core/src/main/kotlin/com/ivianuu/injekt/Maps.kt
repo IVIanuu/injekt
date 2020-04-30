@@ -8,7 +8,7 @@ interface MapDsl<K, V> {
     fun <T : V> put(entryKey: K): Unit = injektIntrinsic()
 }
 
-@Module
+@Declaration
 fun <K, V> map(
     mapQualifier: KClass<*>? = null,
     block: MapDsl<K, V>.() -> Unit = {}

@@ -3,15 +3,11 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasModuleAnnotation
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -21,13 +17,19 @@ import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
+import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtForExpression
+import org.jetbrains.kotlin.psi.KtIfExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtTryExpression
+import org.jetbrains.kotlin.psi.KtWhenExpression
+import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.isCallableReference
@@ -38,20 +40,14 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
-import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
-import org.jetbrains.kotlin.resolve.scopes.LexicalScope
-import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind.DEFAULT_VALUE
-import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind.FUNCTION_HEADER_FOR_DESTRUCTURING
-import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind.FUNCTION_INNER_SCOPE
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.lowerIfFlexible
 import org.jetbrains.kotlin.types.typeUtil.builtIns
 import org.jetbrains.kotlin.types.upperIfFlexible
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ModuleChecker : CallChecker, DeclarationChecker,
     AdditionalTypeChecker, StorageComponentContainerContributor {
@@ -80,29 +76,8 @@ class ModuleChecker : CallChecker, DeclarationChecker,
 
         psi?.let {
             if (isModule) {
-                if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)) {
-                    if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope).size > 1) {
-                        trace.report(InjektErrors.ONLY_ONE_SCOPE_ANNOTATION.on(psi))
-                    }
-
-                    val dispatchReceiver = descriptor.dispatchReceiverParameter?.type
-                        ?.constructor?.declarationDescriptor as? ClassDescriptor
-
-                    if (dispatchReceiver != null && dispatchReceiver.kind != ClassKind.OBJECT) {
-                        trace.report(InjektErrors.IMPLICIT_MODULE_MUST_BE_STATIC.on(psi))
-                    }
-
-                    if (descriptor.valueParameters.isNotEmpty()) {
-                        trace.report(
-                            InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS.on(
-                                psi
-                            )
-                        )
-                    }
-
-                    if (descriptor.typeParameters.isNotEmpty()) {
-                        trace.report(InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_TYPE_PARAMETERS.on(psi))
-                    }
+                if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
+                    trace.report(InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE.on(psi))
                 }
             }
         }
@@ -263,14 +238,40 @@ class ModuleChecker : CallChecker, DeclarationChecker,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingModuleFunction =
-            findEnclosingModuleFunctionContext(
-                this,
-                context
-            )
+        val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
+            analyze(context.trace, it)
+        }
 
         when {
             enclosingModuleFunction != null -> {
+                var isConditional = false
+
+                var walker: PsiElement? = resolvedCall.call.callElement
+                while (walker != null) {
+                    val parent = walker.parent
+                    if (parent is KtIfExpression ||
+                        parent is KtForExpression ||
+                        parent is KtWhenExpression ||
+                        parent is KtTryExpression ||
+                        parent is KtCatchClause ||
+                        parent is KtWhileExpression
+                    ) {
+                        isConditional = true
+                    }
+                    walker = try {
+                        walker.parent
+                    } catch (e: Throwable) {
+                        null
+                    }
+                }
+
+                if (isConditional) {
+                    context.trace.report(
+                        InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE.on(reportOn)
+                    )
+                }
+
+
                 if (context.scope.parentsWithSelf.any {
                         it.isScopeForDefaultParameterValuesOf(
                             enclosingModuleFunction
@@ -295,20 +296,3 @@ class ModuleChecker : CallChecker, DeclarationChecker,
         }
     }
 }
-
-private val ALLOWED_SCOPE_KINDS = setOf(
-    FUNCTION_INNER_SCOPE, FUNCTION_HEADER_FOR_DESTRUCTURING
-)
-
-private fun findEnclosingModuleFunctionContext(
-    checker: ModuleChecker,
-    context: CallCheckerContext
-): FunctionDescriptor? = context.scope
-    .parentsWithSelf.firstOrNull {
-    it is LexicalScope && it.kind in ALLOWED_SCOPE_KINDS &&
-            it.ownerDescriptor.safeAs<FunctionDescriptor>()
-                ?.let { checker.analyze(context.trace, it) } == true
-}?.cast<LexicalScope>()?.ownerDescriptor?.cast()
-
-private fun HierarchicalScope.isScopeForDefaultParameterValuesOf(enclosingModuleFunction: FunctionDescriptor) =
-    this is LexicalScope && this.kind == DEFAULT_VALUE && this.ownerDescriptor == enclosingModuleFunction

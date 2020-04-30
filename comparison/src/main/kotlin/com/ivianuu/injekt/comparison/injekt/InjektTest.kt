@@ -1,19 +1,18 @@
 package com.ivianuu.injekt.comparison.injekt
 
 import com.ivianuu.injekt.comparison.base.InjectionTest
-import com.ivianuu.injekt.comparison.fibonacci.Fib8
 
 object InjektTest : InjectionTest {
     override val name = "Injekt"
 
-    private var component: Component? = null
+    private var component: InjektTestComponent? = null
 
     override fun setup() {
-        component = Component()
+        component = createComponent()
     }
 
     override fun inject() {
-        component!!.get<Fib8>()
+        component!!.fib8
     }
 
     override fun shutdown() {

@@ -14,16 +14,28 @@ interface InjektErrors {
         val MODULE_INVOCATION_IN_NON_MODULE = error()
 
         @JvmField
-        val ONLY_ONE_SCOPE_ANNOTATION = error()
+        val CONDITIONAL_NOT_ALLOWED_IN_MODULE = error()
 
         @JvmField
-        val IMPLICIT_MODULE_MUST_BE_STATIC = error()
+        val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
 
         @JvmField
-        val IMPLICIT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error()
+        val CREATE_IMPLEMENTATION_INVOCATION_WITHOUT_FACTORY = error()
 
         @JvmField
-        val IMPLICIT_MODULE_CANNOT_HAVE_TYPE_PARAMETERS = error()
+        val UNSUPPORTED_MAP_KEY_TYPE = error()
+
+        @JvmField
+        val MAP_KEY_MUST_BE_CONSTANT = error()
+
+        @JvmField
+        val NOT_A_SCOPE = error()
+
+        @JvmField
+        val NOT_A_CHILD_FACTORY = error()
+
+        @JvmField
+        val ONLY_CREATE_ALLOWED = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -47,20 +59,38 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
                     "annotation"
         )
         map.put(
-            InjektErrors.ONLY_ONE_SCOPE_ANNOTATION,
-            "Can only have 1 @Scope annotation"
+            InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE,
+            "Conditional logic is not allowed around a @Module function call"
         )
         map.put(
-            InjektErrors.IMPLICIT_MODULE_MUST_BE_STATIC,
-            "Implicit modules must be static"
+            InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE,
+            "@Module functions cannot return anything"
         )
         map.put(
-            InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS,
-            "Implicit modules cannot have value parameters"
+            InjektErrors.CREATE_IMPLEMENTATION_INVOCATION_WITHOUT_FACTORY,
+            "createImplementation can only be called from within a @Factory or @ChildFactory function"
+        )
+
+        map.put(
+            InjektErrors.UNSUPPORTED_MAP_KEY_TYPE,
+            "Unsupported map key type"
+        )
+
+        map.put(
+            InjektErrors.MAP_KEY_MUST_BE_CONSTANT,
+            "Map key must be a compile time constant"
         )
         map.put(
-            InjektErrors.IMPLICIT_MODULE_CANNOT_HAVE_TYPE_PARAMETERS,
-            "Implicit modules cannot have type parameters"
+            InjektErrors.NOT_A_SCOPE,
+            "Scopes must be itself annotated with @Scope"
+        )
+        map.put(
+            InjektErrors.NOT_A_CHILD_FACTORY,
+            "Not a @ChildFactory"
+        )
+        map.put(
+            InjektErrors.ONLY_CREATE_ALLOWED,
+            "Factories must have exact 1 statement: either createImplementation or createInstance"
         )
     }
 }

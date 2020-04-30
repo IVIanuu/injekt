@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -52,17 +53,22 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -70,17 +76,21 @@ import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
     protected val context: IrPluginContext,
-    protected val symbolRemapper: DeepCopySymbolRemapper,
     protected val bindingTrace: BindingTrace
 ) : IrElementTransformerVoid(), ModuleLoweringPass {
 
     val symbols = InjektSymbols(context)
 
     protected val symbolTable = context.symbolTable
+    protected val irBuiltIns = context.irBuiltIns
+    protected val builtIns = context.builtIns
     protected val typeTranslator = context.typeTranslator
     protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
+    lateinit var moduleFragment: IrModuleFragment
+
     override fun lower(module: IrModuleFragment) {
+        moduleFragment = module
         visitModuleFragment(module, null)
         module.patchDeclarationParents()
     }
@@ -101,8 +111,20 @@ abstract class AbstractInjektTransformer(
     fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
         any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
 
+    fun IrBuilderWithScope.irInjektIntrinsicUnit(): IrExpression {
+        return irCall(
+            symbolTable.referenceFunction(
+                symbols.internalPackage.memberScope
+                    .findSingleFunction(Name.identifier("injektIntrinsic"))
+            ),
+            this@AbstractInjektTransformer.context.irBuiltIns.unitType
+        )
+    }
 
-    protected fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
+    fun IrBuilderWithScope.noArgSingleConstructorCall(clazz: IrClassSymbol): IrConstructorCall =
+        irCall(clazz.constructors.single())
+
+    fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
         fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(
             this.startOffset ?: UNDEFINED_OFFSET,
             this.endOffset ?: UNDEFINED_OFFSET,
@@ -133,13 +155,13 @@ abstract class AbstractInjektTransformer(
         typeParameters + descriptor.typeParameters.map { it.irTypeParameter() }
     }
 
-    protected fun IrBuilderWithScope.irLambdaExpression(
+    fun IrBuilderWithScope.irLambdaExpression(
         descriptor: FunctionDescriptor,
         type: IrType,
         body: IrBlockBodyBuilder.(IrFunction) -> Unit
     ) = irLambdaExpression(this.startOffset, this.endOffset, descriptor, type, body)
 
-    protected fun IrBuilderWithScope.irLambdaExpression(
+    fun IrBuilderWithScope.irLambdaExpression(
         startOffset: Int,
         endOffset: Int,
         descriptor: FunctionDescriptor,
@@ -171,7 +193,7 @@ abstract class AbstractInjektTransformer(
         )
     }
 
-    protected fun IrBuilderWithScope.createFunctionDescriptor(
+    fun IrBuilderWithScope.createFunctionDescriptor(
         type: KotlinType,
         owner: DeclarationDescriptor = scope.scopeOwner
     ): FunctionDescriptor {
@@ -222,6 +244,24 @@ abstract class AbstractInjektTransformer(
             isExpect = false
             isActual = false
         }
+    }
+
+    fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {
+        +IrDelegatingConstructorCallImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            irBuiltIns.unitType,
+            symbolTable.referenceConstructor(
+                builtIns.any
+                    .unsubstitutedPrimaryConstructor!!
+            )
+        )
+        +IrInstanceInitializerCallImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            symbol,
+            irBuiltIns.unitType
+        )
     }
 
 }

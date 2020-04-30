@@ -7,48 +7,35 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
-import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.name.Name
 
 class InjektSymbols(private val context: IrPluginContext) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
     val internalPackage = getPackage(InjektFqNames.InternalPackage)
-    val aggregatePackage = getPackage(InjektFqNames.AggregatePackage)
 
-    val binding = getTopLevelClass(InjektFqNames.Binding)
-    val bindingDefinition = getTypeAlias(InjektFqNames.BindingDefinition)
-    val bindingDsl = getTopLevelClass(InjektFqNames.BindingDsl)
+    val injektAst = getTopLevelClass(InjektFqNames.InjektAst)
 
-    val component = getTopLevelClass(InjektFqNames.Component)
-    val componentDsl = getTopLevelClass(InjektFqNames.ComponentDsl)
+    private fun IrClassSymbol.childClass(name: Name) = owner.declarations
+        .filterIsInstance<IrClass>()
+        .single { it.name == name }
+        .symbol
 
+    val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
+    val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
+    val astModule = injektAst.childClass(InjektFqNames.AstModule.shortName())
+    val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
+
+    val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
     val factory = getTopLevelClass(InjektFqNames.Factory)
 
-    val hasScope = getTopLevelClass(InjektFqNames.HasScope)
+    val module = getTopLevelClass(InjektFqNames.Module)
 
-    val jitBindingRegistry = getTopLevelClass(InjektFqNames.JitBindingRegistry)
-
-    val key = getTopLevelClass(InjektFqNames.Key)
-    val linkedBinding = getTopLevelClass(InjektFqNames.LinkedBinding)
-    val linker = getTopLevelClass(InjektFqNames.Linker)
-    val moduleRegistry = getTopLevelClass(InjektFqNames.ModuleRegistry)
-    val parameters = getTopLevelClass(InjektFqNames.Parameters)
-    val parameterizedKey = key.owner.declarations
-        .filterIsInstance<IrClass>()
-        .single { it.name == InjektFqNames.ParameterizedKey.shortName() }
     val provider = getTopLevelClass(InjektFqNames.Provider)
-    val simpleKey = key.owner.declarations
-        .filterIsInstance<IrClass>()
-        .single { it.name == InjektFqNames.SimpleKey.shortName() }
-    val unlinkedBinding = getTopLevelClass(InjektFqNames.UnlinkedBinding)
-
-    val keyOf = context.symbolTable.referenceFunction(
-        injektPackage.memberScope
-            .findFirstFunction("keyOf") { it.valueParameters.size == 1 }
-    ).ensureBound(context.irProviders)
+    val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
+    val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(
