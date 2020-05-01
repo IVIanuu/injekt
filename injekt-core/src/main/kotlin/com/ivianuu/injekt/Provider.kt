@@ -17,7 +17,6 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
-import kotlin.reflect.KClass
 
 fun interface Provider<T> {
     operator fun invoke(): T
@@ -25,7 +24,7 @@ fun interface Provider<T> {
 
 @InjektDslMarker
 interface ProviderDsl {
-    fun <T> get(qualifier: KClass<*>? = null): T = injektIntrinsic()
+    fun <T> get(): T = injektIntrinsic()
 }
 
 typealias ProviderDefinition<T> = ProviderDsl.(AssistedParameters) -> T

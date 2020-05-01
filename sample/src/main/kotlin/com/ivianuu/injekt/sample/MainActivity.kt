@@ -9,7 +9,6 @@ import com.ivianuu.injekt.Transient
 import com.ivianuu.injekt.createImplementation
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.internal.InjektAst
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,29 +52,6 @@ interface ActivityComponent {
 @ChildFactory
 fun activityComponentFactory(mainActivity: MainActivity): ActivityComponent = createImplementation {
     instance(mainActivity)
-}
-
-@InjektAst.ChildFactory
-interface activityComponentFactoryDescriptor {
-    @InjektAst.ChildFactory.Type
-    fun type(): (MainActivity) -> ActivityComponent
-
-    @InjektAst.Module
-    fun module(): activityComponentFactoryModule
-}
-
-class activityComponentFactoryModule(mainActivity: MainActivity) {
-    val instance_0: MainActivity
-
-    init {
-        instance_0 = mainActivity
-    }
-
-    @InjektAst.Module
-    interface Descriptor {
-        @InjektAst.Binding
-        fun provide_0(): MainActivity
-    }
 }
 
 @Transient

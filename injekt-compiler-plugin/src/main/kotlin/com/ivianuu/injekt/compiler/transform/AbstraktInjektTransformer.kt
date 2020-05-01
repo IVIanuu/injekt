@@ -43,8 +43,11 @@ import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
@@ -65,6 +68,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
@@ -129,6 +133,16 @@ abstract class AbstractInjektTransformer(
 
     fun IrBuilderWithScope.noArgSingleConstructorCall(clazz: IrClassSymbol): IrConstructorCall =
         irCall(clazz.constructors.single())
+
+    fun IrBuilderWithScope.fieldPathAnnotation(field: IrField): IrConstructorCall =
+        irCall(symbols.astFieldPath.constructors.single()).apply {
+            putValueArgument(0, irString(field.name.asString()))
+        }
+
+    fun IrBuilderWithScope.providerPathAnnotation(provider: IrClass): IrConstructorCall =
+        irCall(symbols.astProviderPath.constructors.single()).apply {
+            putTypeArgument(0, provider.defaultType)
+        }
 
     fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
         fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(

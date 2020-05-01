@@ -41,8 +41,35 @@ class ModuleTest {
     fun testModuleDescriptor() = codegen(
         """
         @Module
-        fun module() {
+        fun <T> other(instance: T) {
+        }
+        
+        interface Dependency
+        
+        @Module
+        fun module(dependency: Dependency) {
+            other("")
+            
             instance("")
+            
+            dependency(dependency)
+            
+            @TestQualifier1
+            transient { (p0: String, p1: String) ->
+                get<Int>().toString()
+            }
+            
+            alias<@TestQualifier1 String, @TestQualifier2 Any>()
+            
+            @TestQualifier1
+            map<kotlin.reflect.KClass<*>, String> {
+                put<@TestQualifier1 String>(String::class)
+            }
+            
+            @TestQualifier1
+            set<String> {
+                add<@TestQualifier1 String>()
+            }
         }
     """
     ) {
@@ -55,74 +82,6 @@ class ModuleTest {
             assertEquals(0, it.parameterCount)
         }
 
-    }
-
-    @Test
-    fun testQualifiedExpression() = codegen(
-        """
-        @Module
-        fun module() {
-            @TestQualifier1
-            set<String>()
-        }
-    """
-    ) {
-    }
-
-    @Test
-    fun testAlias() = codegen(
-        """
-        @Module
-        fun module() {
-            alias<@TestQualifier1 String, @TestQualifier2 Any>()
-        }
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testBinding() = codegen(
-        """
-        @Module
-        fun module() {
-            @TestQualifier1
-            transient { (p0: String, p1: String) ->
-                get<Int>().toString()
-            }
-        }
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testMap() = codegen(
-        """
-        @Module
-        fun module() {
-            map<String, String> {
-                put<@TestQualifier1 String>("hello")
-            }
-        }
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testSet() = codegen(
-        """
-        @Module
-        fun module() {
-            set<String> {
-                add<@TestQualifier1 String>()
-            }
-        }
-    """
-    ) {
-
-        assertOk()
     }
 
 }

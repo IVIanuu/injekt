@@ -1,12 +1,6 @@
 package com.ivianuu.injekt.comparison.dagger2
 
-import dagger.Component
-import dagger.MembersInjector
-import dagger.Module
-import dagger.Subcomponent
-import javax.inject.Inject
-import javax.inject.Singleton
-
+/**
 @Singleton
 @Component(modules = [ParentModule::class])
 interface ParentComponent {
@@ -40,3 +34,4 @@ class MyClass {
     @Inject
     lateinit var bar: Bar
 }
+ */

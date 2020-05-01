@@ -7,27 +7,35 @@ import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.irTrace
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -35,6 +43,7 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -45,7 +54,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ModuleTransformer(
     context: IrPluginContext,
     bindingTrace: BindingTrace,
-    val declarationStore: InjektDeclarationStore
+    private val declarationStore: InjektDeclarationStore
 ) : AbstractInjektTransformer(context, bindingTrace) {
 
     private val moduleFunctions = mutableListOf<IrFunction>()
@@ -126,6 +135,9 @@ class ModuleTransformer(
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
+        var parameterMap = emptyMap<IrValueParameter, IrValueParameter>()
+        var fieldsByParameters = emptyMap<IrValueParameter, IrField>()
+
         copyTypeParametersFrom(function)
 
         val scopeCalls = mutableListOf<IrCall>()
@@ -184,13 +196,77 @@ class ModuleTransformer(
             }
         })
 
+        var dependencyIndex = 0
+        val dependencyFieldsByCall = dependencyCalls.associateWith { call ->
+            addField(
+                fieldName = "dependency_${dependencyIndex++}",
+                fieldType = call.getTypeArgument(0)!!,
+                fieldVisibility = Visibilities.PUBLIC
+            )
+        }
+
+        var includeIndex = 0
+        val moduleFieldsByCall = moduleCalls.associateWith { call ->
+            val moduleClass = declarationStore.getModule(
+                InjektNameConventions.getModuleNameForFunction(call.symbol.descriptor.fqNameSafe)
+            )
+            addField(
+                fieldName = "module_${includeIndex++}",
+                fieldType = moduleClass.typeWith((0 until call.typeArgumentsCount)
+                    .map { call.getTypeArgument(it)!! }
+                ),
+                fieldVisibility = Visibilities.PUBLIC
+            )
+        }
+
+        var instanceIndex = 0
+        val instanceFieldsByCall = instanceCalls.associateWith { call ->
+            val instanceQualifiers =
+                context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
+            val rawType = call.getTypeArgument(0)!!
+            val instanceType = (rawType as? IrSimpleType)?.buildSimpleType {
+                instanceQualifiers.forEach { qualifier ->
+                    annotations += noArgSingleConstructorCall(
+                        symbols.getTopLevelClass(qualifier)
+                    )
+                }
+            } ?: rawType
+            addField(
+                fieldName = "instance_${instanceIndex++}",
+                fieldType = instanceType,
+                fieldVisibility = Visibilities.PUBLIC
+            )
+        }
+
         addConstructor {
             returnType = defaultType
             isPrimary = true
         }.apply {
+            parameterMap = function.valueParameters
+                .associateWith { it.copyTo(this) }
+            valueParameters = parameterMap.values.toList()
+            fieldsByParameters = valueParameters.associateWith {
+                addField(
+                    "p_${it.name.asString()}",
+                    it.type
+                )
+            }
+
             copyTypeParametersFrom(this@clazz)
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)
+
+                fieldsByParameters.forEach { (parameter, field) ->
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        irGet(parameter)
+                    )
+                }
+
+                function.body?.statements?.forEach { moduleStatement ->
+
+                }
             }
         }
 
@@ -199,11 +275,14 @@ class ModuleTransformer(
                 module = this,
                 scopeCalls = scopeCalls,
                 dependencyCalls = dependencyCalls,
+                dependencyFieldsByCall = dependencyFieldsByCall,
                 childFactoryCalls = childFactoryCalls,
                 moduleCalls = moduleCalls,
+                moduleFieldsByCall = moduleFieldsByCall,
                 aliasCalls = aliasCalls,
                 transientCalls = transientCalls,
                 instanceCalls = instanceCalls,
+                instanceFieldsByCall = instanceFieldsByCall,
                 scopedCalls = scopedCalls,
                 setCalls = setCalls,
                 mapCalls = mapCalls
@@ -215,11 +294,14 @@ class ModuleTransformer(
         module: IrClass,
         scopeCalls: List<IrCall>,
         dependencyCalls: List<IrCall>,
+        dependencyFieldsByCall: Map<IrCall, IrField>,
         childFactoryCalls: List<IrCall>,
         moduleCalls: List<IrCall>,
+        moduleFieldsByCall: Map<IrCall, IrField>,
         aliasCalls: List<IrCall>,
         transientCalls: List<IrCall>,
         instanceCalls: List<IrCall>,
+        instanceFieldsByCall: Map<IrCall, IrField>,
         scopedCalls: List<IrCall>,
         setCalls: List<IrCall>,
         mapCalls: List<IrCall>,
@@ -253,6 +335,7 @@ class ModuleTransformer(
                 returnType = dependencyType,
                 modality = Modality.ABSTRACT
             ).apply {
+                annotations += fieldPathAnnotation(dependencyFieldsByCall.getValue(dependencyCall))
                 annotations += noArgSingleConstructorCall(symbols.astScope)
             }
         }
@@ -285,6 +368,7 @@ class ModuleTransformer(
                     }),
                 modality = Modality.ABSTRACT
             ).apply {
+                annotations += fieldPathAnnotation(moduleFieldsByCall.getValue(moduleCall))
                 annotations += noArgSingleConstructorCall(symbols.astModule)
             }
         }
@@ -304,9 +388,20 @@ class ModuleTransformer(
         }
 
         (transientCalls + instanceCalls + scopedCalls).forEachIndexed { index, bindingCall ->
+            val bindingQualifiers =
+                context.irTrace[InjektWritableSlices.QUALIFIERS, bindingCall] ?: emptyList()
+            val rawType = bindingCall.getTypeArgument(0)!!
+            val bindingType = (rawType as? IrSimpleType)?.buildSimpleType {
+                bindingQualifiers.forEach { qualifier ->
+                    annotations += noArgSingleConstructorCall(
+                        symbols.getTopLevelClass(qualifier)
+                    )
+                }
+            } ?: rawType
+
             addFunction(
                 name = "binding_$index",
-                returnType = bindingCall.getTypeArgument(0)!!,
+                returnType = bindingType,
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astBinding)
@@ -342,6 +437,10 @@ class ModuleTransformer(
                             }
                         }
                     }
+
+                    // todo annotations += providerPathAnnotation(dependencyFieldsByCall.getValue(dependencyCall))
+                } else {
+                    annotations += fieldPathAnnotation(instanceFieldsByCall.getValue(bindingCall))
                 }
             }
         }

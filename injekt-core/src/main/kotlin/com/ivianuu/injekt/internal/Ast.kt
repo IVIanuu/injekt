@@ -4,6 +4,11 @@ import kotlin.reflect.KClass
 
 object InjektAst {
 
+    annotation class Path {
+        annotation class Field(val name: String)
+        annotation class Provider<T : com.ivianuu.injekt.Provider<*>>
+    }
+
     annotation class ChildFactory {
         annotation class Type
     }
