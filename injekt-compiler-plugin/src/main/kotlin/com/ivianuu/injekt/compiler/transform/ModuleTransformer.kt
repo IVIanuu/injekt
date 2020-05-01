@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -34,7 +35,6 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -289,15 +289,62 @@ class ModuleTransformer(
             }
         }
 
-        transientCalls.forEach {
+        aliasCalls.forEachIndexed { index, aliasCall ->
+            addFunction(
+                name = "alias_$index",
+                returnType = aliasCall.getTypeArgument(1)!!,
+                modality = Modality.ABSTRACT
+            ).apply {
+                annotations += noArgSingleConstructorCall(symbols.astAlias)
+                addValueParameter(
+                    name = "original",
+                    type = aliasCall.getTypeArgument(0)!!
+                )
+            }
         }
 
-        /*aliasCalls: List<IrCall>,
-        transientCalls: List<IrCall>,
-        instanceCalls: List<IrCall>,
-        scopedCalls: List<IrCall>,
-        setCalls: List<IrCall>,
-        mapCalls: List<IrCall>,*/
+        (transientCalls + instanceCalls + scopedCalls).forEachIndexed { index, bindingCall ->
+            addFunction(
+                name = "binding_$index",
+                returnType = bindingCall.getTypeArgument(0)!!,
+                modality = Modality.ABSTRACT
+            ).apply {
+                annotations += noArgSingleConstructorCall(symbols.astBinding)
+
+                if (bindingCall !in instanceCalls) {
+                    val definition = bindingCall.getValueArgument(0)!! as IrFunctionExpression
+
+                    val assistedParameterCalls = mutableListOf<IrCall>()
+                    val bindingDependencyCalls = mutableListOf<IrCall>()
+
+                    definition.function.body?.transformChildrenVoid(object :
+                        IrElementTransformerVoid() {
+                        override fun visitCall(expression: IrCall): IrExpression {
+                            when ((expression.dispatchReceiver as? IrGetValue)?.symbol) {
+                                definition.function.extensionReceiverParameter!!.symbol -> {
+                                    bindingDependencyCalls += expression
+                                }
+                                definition.function.valueParameters.single().symbol -> {
+                                    assistedParameterCalls += expression
+                                }
+                            }
+                            return super.visitCall(expression)
+                        }
+                    })
+
+                    (assistedParameterCalls + bindingDependencyCalls).forEachIndexed { index, call ->
+                        addValueParameter(
+                            name = "p$index",
+                            type = call.type
+                        ).apply {
+                            if (call in assistedParameterCalls) {
+                                annotations += noArgSingleConstructorCall(symbols.astAssisted)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         mapCalls.forEachIndexed { mapIndex, mapCall ->
             val mapQualifiers =
@@ -326,32 +373,33 @@ class ModuleTransformer(
 
             val mapBlock = mapCall.getValueArgument(0) as? IrFunctionExpression
             var entryIndex = 0
-
-            mapBlock?.function?.body?.statements?.forEach { statement ->
-                if (statement is IrCall &&
-                    statement.symbol == symbols.mapDsl.functions.single { it.descriptor.name.asString() == "put" }
-                ) {
-                    addFunction(
-                        name = "map_${mapIndex}_entry_${entryIndex++}",
-                        returnType = irBuiltIns.unitType,
-                        modality = Modality.ABSTRACT
-                    ).apply {
-                        annotations += noArgSingleConstructorCall(symbols.astMapEntry)
-                        addValueParameter(
-                            name = "map",
-                            type = mapType
-                        )
-                        addValueParameter(
-                            name = "entry",
-                            type = statement.getTypeArgument(0)!!
+            mapBlock?.function?.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitCall(expression: IrCall): IrExpression {
+                    if (expression.symbol == symbols.mapDsl.functions.single { it.descriptor.name.asString() == "put" }) {
+                        addFunction(
+                            name = "map_${mapIndex}_entry_${entryIndex++}",
+                            returnType = irBuiltIns.unitType,
+                            modality = Modality.ABSTRACT
                         ).apply {
-                            annotations += irMapKeyConstructorForKey(
-                                statement.getValueArgument(0)!!
+                            annotations += noArgSingleConstructorCall(symbols.astMapEntry)
+                            addValueParameter(
+                                name = "map",
+                                type = mapType
                             )
+                            addValueParameter(
+                                name = "entry",
+                                type = expression.getTypeArgument(0)!!
+                            ).apply {
+                                annotations += irMapKeyConstructorForKey(
+                                    expression.getValueArgument(0)!!
+                                )
+                            }
                         }
                     }
+
+                    return super.visitCall(expression)
                 }
-            }
+            })
         }
 
         setCalls.forEachIndexed { setIndex, setCall ->
@@ -381,27 +429,28 @@ class ModuleTransformer(
             val setBlock = setCall.getValueArgument(0) as? IrFunctionExpression
             var elementIndex = 0
 
-            setBlock?.function?.body?.statements?.forEach { statement ->
-                if (statement is IrCall &&
-                    statement.symbol == symbols.setDsl.functions.single { it.descriptor.name.asString() == "add" }
-                ) {
-                    addFunction(
-                        name = "set_${setIndex}_element_${elementIndex++}",
-                        returnType = irBuiltIns.unitType,
-                        modality = Modality.ABSTRACT
-                    ).apply {
-                        annotations += noArgSingleConstructorCall(symbols.astSetElement)
-                        addValueParameter(
-                            name = "set",
-                            type = setType
-                        )
-                        addValueParameter(
-                            name = "element",
-                            type = statement.getTypeArgument(0)!!
-                        )
+            setBlock?.function?.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitCall(expression: IrCall): IrExpression {
+                    if (expression.symbol == symbols.setDsl.functions.single { it.descriptor.name.asString() == "add" }) {
+                        addFunction(
+                            name = "set_${setIndex}_element_${elementIndex++}",
+                            returnType = irBuiltIns.unitType,
+                            modality = Modality.ABSTRACT
+                        ).apply {
+                            annotations += noArgSingleConstructorCall(symbols.astSetElement)
+                            addValueParameter(
+                                name = "set",
+                                type = setType
+                            )
+                            addValueParameter(
+                                name = "element",
+                                type = expression.getTypeArgument(0)!!
+                            )
+                        }
                     }
+                    return super.visitCall(expression)
                 }
-            }
+            })
         }
     }
 }

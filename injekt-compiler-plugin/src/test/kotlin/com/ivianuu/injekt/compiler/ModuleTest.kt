@@ -73,6 +73,33 @@ class ModuleTest {
     }
 
     @Test
+    fun testAlias() = codegen(
+        """
+        @Module
+        fun module() {
+            alias<@TestQualifier1 String, @TestQualifier2 Any>()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testBinding() = codegen(
+        """
+        @Module
+        fun module() {
+            @TestQualifier1
+            transient { (p0: String, p1: String) ->
+                get<Int>().toString()
+            }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
     fun testMap() = codegen(
         """
         @Module

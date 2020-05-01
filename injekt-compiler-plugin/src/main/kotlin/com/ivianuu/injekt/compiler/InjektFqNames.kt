@@ -8,7 +8,9 @@ object InjektFqNames {
     val InternalPackage = InjektPackage.child("internal")
 
     val InjektAst = InternalPackage.child("InjektAst")
+    val AstAlias = InjektAst.child("Alias")
     val AstAssisted = InjektPackage.child("Assisted")
+    val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
     val AstMap = InjektAst.child("Map")
