@@ -16,8 +16,9 @@ class Testt {
         
         @Factory 
         fun create(): MyComponent = createImplementation {
-            transient { get<Int>(); "hello world" }
-            instance(0) 
+            instance(0)
+            transient { 0L }
+            scoped { get<Int>(); get<Long>(); "hello world" }
         }
         
         fun invoke() = create().helloWorld
