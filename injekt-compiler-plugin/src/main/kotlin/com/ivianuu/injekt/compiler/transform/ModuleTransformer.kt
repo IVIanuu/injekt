@@ -70,8 +70,8 @@ class ModuleTransformer(
 ) : AbstractInjektTransformer(context, bindingTrace) {
 
     private val moduleFunctions = mutableListOf<IrFunction>()
-    private val processedModules = mutableMapOf<IrFunction, IrClass>()
-    private val processingModules = mutableSetOf<FqName>()
+    private val transformedModules = mutableMapOf<IrFunction, IrClass>()
+    private val transformingModules = mutableSetOf<FqName>()
     private var computedModuleFunctions = false
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
@@ -79,15 +79,15 @@ class ModuleTransformer(
 
         moduleFunctions.forEach { function ->
             DeclarationIrBuilder(context, function.symbol).run {
-                getProcessedModule(function)
+                getGeneratedModuleClass(function)
             }
         }
 
         return super.visitModuleFragment(declaration)
     }
 
-    fun getProcessedModule(fqName: FqName): IrClass? {
-        processedModules.values.firstOrNull {
+    fun getGeneratedModuleClass(fqName: FqName): IrClass? {
+        transformedModules.values.firstOrNull {
             it.fqNameForIrSerialization == fqName
         }?.let { return it }
 
@@ -98,31 +98,31 @@ class ModuleTransformer(
             ) == fqName
         } ?: return null
 
-        return getProcessedModule(function)
+        return getGeneratedModuleClass(function)
     }
 
-    fun getProcessedModule(function: IrFunction): IrClass? {
+    fun getGeneratedModuleClass(function: IrFunction): IrClass? {
         computeModuleFunctionsIfNeeded()
 
         check(function in moduleFunctions) {
             "Unknown function $function"
         }
-        processedModules[function]?.let { return it }
+        transformedModules[function]?.let { return it }
         return DeclarationIrBuilder(context, function.symbol).run {
             val packageName = function.fqNameForIrSerialization.parent()
             val moduleName =
                 InjektNameConventions.getModuleNameForModuleFunction(function.name)
             val moduleFqName = packageName.child(moduleName)
-            check(moduleFqName !in processingModules) {
+            check(moduleFqName !in transformingModules) {
                 "Circular dependency for module $moduleFqName"
             }
-            processingModules += moduleFqName
+            transformingModules += moduleFqName
             val moduleClass = moduleClass(function)
             println(moduleClass.dump())
             function.file.addChild(moduleClass)
             function.body = irExprBody(irInjektIntrinsicUnit())
-            processedModules[function] = moduleClass
-            processingModules -= moduleFqName
+            transformedModules[function] = moduleClass
+            transformingModules -= moduleFqName
             moduleClass
         }
     }
@@ -320,6 +320,21 @@ class ModuleTransformer(
                 mapCalls = mapCalls
             )
         )
+
+        transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
+                    super.visitGetValue(expression)
+                } else {
+                    val newParameter = parameterMap[expression.symbol.owner]!!
+                    val field = fieldsByParameters[newParameter]!!
+                    return irGetField(
+                        irGet(thisReceiver!!),
+                        field
+                    )
+                }
+            }
+        })
     }
 
     private fun IrBuilderWithScope.moduleDescriptor(

@@ -13,6 +13,7 @@ class InjektDeclarationStore(
     private val symbols: InjektSymbols
 ) {
 
+    lateinit var factoryTransformer: FactoryTransformer
     lateinit var moduleTransformer: ModuleTransformer
 
     /*fun getComponent(key: String): IrClass {
@@ -61,7 +62,7 @@ class InjektDeclarationStore(
 
     fun getModule(fqName: FqName): IrClass {
         return try {
-            moduleTransformer.getProcessedModule(fqName)
+            moduleTransformer.getGeneratedModuleClass(fqName)
                 ?: throw DeclarationNotFound()
         } catch (e: DeclarationNotFound) {
             try {

@@ -3,8 +3,10 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -21,7 +23,6 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class FactoryChecker : CallChecker, DeclarationChecker {
 
@@ -32,12 +33,17 @@ class FactoryChecker : CallChecker, DeclarationChecker {
     ) {
         if (descriptor is FunctionDescriptor && (descriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory))
-        )
+        ) {
+            if (descriptor.typeParameters.isNotEmpty()) {
+                context.trace.report(InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY.on(declaration))
+            }
+
             checkFactoryFunctionHasOnlyCreateImplementationStatement(
-                declaration.cast(),
+                declaration as KtFunction,
                 descriptor,
                 context
             )
+        }
     }
 
     override fun check(
@@ -108,6 +114,17 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
+        val type =
+            resolvedCall.typeArguments.values.singleOrNull()?.constructor?.declarationDescriptor as? ClassDescriptor
+
+        if (type?.modality != Modality.ABSTRACT) {
+            context.trace.report(
+                InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT
+                    .on(reportOn)
+            )
+            return
+        }
+
         val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
             it.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     it.annotations.hasAnnotation(InjektFqNames.ChildFactory)

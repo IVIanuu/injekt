@@ -7,7 +7,7 @@ class FactoryInvocationRulesTest {
     @Test
     fun testCreateImplementationInAFactory() = codegen(
         """
-        @Factory fun factory() = createImplementation<Unit>()
+        @Factory fun factory() = createImplementation<TestComponent>()
     """
     ) {
         assertOk()
@@ -16,7 +16,7 @@ class FactoryInvocationRulesTest {
     @Test
     fun testCreateImplementationInAChildFactory() = codegen(
         """
-        @ChildFactory fun factory() = createImplementation<Unit>()
+        @ChildFactory fun factory() = createImplementation<TestComponent>()
     """
     ) {
         assertOk()
@@ -25,7 +25,7 @@ class FactoryInvocationRulesTest {
     @Test
     fun testCreateImplementationCannotBeCalledOutsideOfAFactory() = codegen(
         """
-        fun nonFactory() = createImplementation<Unit>()
+        fun nonFactory() = createImplementation<TestComponent>()
     """
     ) {
         assertCompileError("factory")
@@ -75,6 +75,50 @@ class FactoryInvocationRulesTest {
     """
     ) {
         assertCompileError("statement")
+    }
+
+    @Test
+    fun testFactoryWithAbstractClass() = codegen(
+        """
+        abstract class Impl
+        @Factory
+        fun factory(): Impl = createImplementation()
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testFactoryWithInterface() = codegen(
+        """
+        interface Impl
+        @Factory
+        fun factory(): Impl = createImplementation()
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testFactoryWithNormalClass() = codegen(
+        """
+        class Impl
+        @Factory
+        fun factory(): Impl = createImplementation()
+    """
+    ) {
+        assertCompileError("abstract")
+    }
+
+    @Test
+    fun testFactoryWithTypeParameters() = codegen(
+        """
+        class Impl
+        @Factory
+        fun <T> factory(): Impl = createImplementation()
+    """
+    ) {
+        assertCompileError("type parameter")
     }
 
 }

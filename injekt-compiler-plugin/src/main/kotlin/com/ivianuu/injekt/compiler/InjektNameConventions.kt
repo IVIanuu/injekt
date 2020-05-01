@@ -11,6 +11,10 @@ object InjektNameConventions {
         return Name.identifier("${moduleFunction}_Impl")
     }
 
+    fun getImplementationNameForFactoryFunction(factoryFunction: Name): Name {
+        return Name.identifier("${factoryFunction}_Impl")
+    }
+
     fun getModuleNameForFactoryBlock(factoryFunction: Name): Name {
         return Name.identifier("${factoryFunction}_Module")
     }

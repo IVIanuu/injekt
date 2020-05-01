@@ -39,6 +39,10 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         ModuleTransformer(pluginContext, bindingTrace, declarationStore)
             .also { declarationStore.moduleTransformer = it }
             .visitModuleAndGenerateSymbols()
+
+        FactoryTransformer(pluginContext, bindingTrace, declarationStore)
+            .also { declarationStore.factoryTransformer = it }
+            .visitModuleAndGenerateSymbols()
     }
 
 }

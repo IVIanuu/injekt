@@ -37,6 +37,15 @@ interface InjektErrors {
         @JvmField
         val ONLY_CREATE_ALLOWED = error()
 
+        @JvmField
+        val FACTORY_MUST_BE_STATIC = error()
+
+        @JvmField
+        val NO_TYPE_PARAMETERS_ON_FACTORY = error()
+
+        @JvmField
+        val FACTORY_IMPL_MUST_BE_ABSTRACT = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -91,6 +100,18 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.ONLY_CREATE_ALLOWED,
             "Factories must have exact 1 statement: either createImplementation or createInstance"
+        )
+        map.put(
+            InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT,
+            "createImplementation result types must be a interface or a abstract class"
+        )
+        map.put(
+            InjektErrors.FACTORY_MUST_BE_STATIC,
+            "@Factory and @ChildFactory functions must be static"
+        )
+        map.put(
+            InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY,
+            "@Factory and @ChildFactory functions cannot have type parameters"
         )
     }
 }
