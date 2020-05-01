@@ -73,7 +73,8 @@ fun applicationModule() {
     transient { (context: Context, workerParameters: WorkerParameters) ->
         MyWorker(context, workerParameters, get())
     }
-    @Workers map<KClass<out Worker>, SingleWorkerFactory> {
+    @Workers
+    map<KClass<out Worker>, SingleWorkerFactory> {
         put<(Context, WorkerParameters) -> MyWorker>(MyWorker::class)
     }
 }
@@ -91,7 +92,7 @@ class applicationModuleImpl {
         @InjektAst.Binding
         fun binding_0(): String
 
-        @InjektAst.Path.Provider<provider_0>
+        @InjektAst.Path.Class<provider_0>
         @InjektAst.Binding
         fun binding_1(
             @Assisted p0: Context,

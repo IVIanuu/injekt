@@ -6,12 +6,10 @@ object InjektAst {
 
     annotation class Path {
         annotation class Field(val name: String)
-        annotation class Provider<T : com.ivianuu.injekt.Provider<*>>
+        annotation class Class<T>
     }
 
-    annotation class ChildFactory {
-        annotation class Type
-    }
+    annotation class ChildFactory
 
     annotation class Dependency
 
@@ -22,6 +20,8 @@ object InjektAst {
     annotation class Module
 
     annotation class Scope
+
+    annotation class Scoped
 
     annotation class Map {
         annotation class Entry

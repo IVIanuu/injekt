@@ -37,7 +37,7 @@ class InjektSymbols(private val context: IrPluginContext) {
     val astModule = injektAst.childClass(InjektFqNames.AstModule.shortName())
     val astPath = injektAst.childClass(InjektFqNames.AstPath.shortName())
     val astFieldPath = astPath.childClass(InjektFqNames.AstFieldPath.shortName())
-    val astProviderPath = astPath.childClass(InjektFqNames.AstProviderPath.shortName())
+    val astClassPath = astPath.childClass(InjektFqNames.AstClassPath.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())

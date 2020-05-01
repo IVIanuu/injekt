@@ -139,9 +139,9 @@ abstract class AbstractInjektTransformer(
             putValueArgument(0, irString(field.name.asString()))
         }
 
-    fun IrBuilderWithScope.providerPathAnnotation(provider: IrClass): IrConstructorCall =
-        irCall(symbols.astProviderPath.constructors.single()).apply {
-            putTypeArgument(0, provider.defaultType)
+    fun IrBuilderWithScope.classPathAnnotation(clazz: IrClass): IrConstructorCall =
+        irCall(symbols.astClassPath.constructors.single()).apply {
+            putTypeArgument(0, clazz.defaultType)
         }
 
     fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {

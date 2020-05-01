@@ -134,7 +134,6 @@ annotation class TestScope2
 @Qualifier
 annotation class TestQualifier1
 
-
 @Retention(AnnotationRetention.SOURCE)
 @Target(
     AnnotationTarget.EXPRESSION,

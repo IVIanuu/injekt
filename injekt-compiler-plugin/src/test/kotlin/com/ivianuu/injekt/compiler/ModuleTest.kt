@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class ModuleTest {
@@ -39,12 +38,15 @@ class ModuleTest {
 
     @Test
     fun testModuleDescriptor() = codegen(
-        """
+        """ 
         @Module
         fun <T> other(instance: T) {
         }
         
         interface Dependency
+        
+        @ChildFactory
+        fun myChildFactory(): TestComponent = createImplementation()
         
         @Module
         fun module(dependency: Dependency) {
@@ -53,6 +55,8 @@ class ModuleTest {
             instance("")
             
             dependency(dependency)
+            
+            childFactory(::myChildFactory)
             
             @TestQualifier1
             transient { (p0: String, p1: String) ->
@@ -77,10 +81,10 @@ class ModuleTest {
         val descriptorClass = classLoader.loadClass("module_Impl").declaredClasses
             .single { it.name == "module_Impl\$Descriptor" }
         println(descriptorClass)
-        val methods = descriptorClass.declaredMethods
+        /*val methods = descriptorClass.declaredMethods
         methods[0].let {
             assertEquals(0, it.parameterCount)
-        }
+        }*/
 
     }
 

@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektNameConventions
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -29,7 +30,6 @@ import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 
 class FactoryBlockTransformer(
@@ -100,7 +100,7 @@ class FactoryBlockTransformer(
         val valueParametersByCapture = mutableMapOf<IrGetValue, IrValueParameter>()
 
         val function = buildFun {
-            name = Name.identifier("${factoryFunction.name}_Module")
+            name = InjektNameConventions.getModuleNameForFactoryBlock(factoryFunction.name)
             returnType = irBuiltIns.unitType
         }.apply {
             annotations += noArgSingleConstructorCall(symbols.module)

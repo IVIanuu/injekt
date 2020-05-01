@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.Name
@@ -59,9 +58,7 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
         return buildClass {
             kind =
                 if (constructor.valueParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
-            this.name =
-                InjektNameConventions.getProviderNameForClass(clazz.fqNameForIrSerialization)
-                    .shortName()
+            this.name = InjektNameConventions.getProviderNameForClass(clazz.name)
         }.apply clazz@{
             superTypes += symbols.provider.typeWith(clazz.defaultType)
 

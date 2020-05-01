@@ -22,7 +22,7 @@ object InjektFqNames {
     val AstModule = InjektAst.child("Module")
     val AstPath = InjektAst.child("Path")
     val AstFieldPath = AstPath.child("Field")
-    val AstProviderPath = AstPath.child("Provider")
+    val AstClassPath = AstPath.child("Class")
     val AstScope = InjektAst.child("Scope")
     val AstSet = InjektAst.child("Set")
     val AstSetElement = AstSet.child("Element")
