@@ -1,31 +1,9 @@
 package com.ivianuu.injekt.compiler
 
+import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class ModuleTest {
-
-    @Test
-    fun test() = codegen(
-        """
-        @ChildFactory 
-        fun testChildFactory(): TestComponent = createImplementation()
-        
-        @Module
-        fun <T> other() {
-
-        }
-
-        @Module
-        fun test() { 
-            scope<TestScope>()
-            dependency<Foo>(Foo())
-            childFactory(::testChildFactory)
-            other<String>()
-        }
-    """
-    ) {
-        assertOk()
-    }
 
     @Test
     fun testSupportedChildFactory() = codegen(
@@ -60,6 +38,26 @@ class ModuleTest {
     }
 
     @Test
+    fun testModuleDescriptor() = codegen(
+        """
+        @Module
+        fun module() {
+            instance("")
+        }
+    """
+    ) {
+        assertOk()
+        val descriptorClass = classLoader.loadClass("module_Impl").declaredClasses
+            .single { it.name == "module_Impl\$Descriptor" }
+        println(descriptorClass)
+        val methods = descriptorClass.declaredMethods
+        methods[0].let {
+            assertEquals(0, it.parameterCount)
+        }
+
+    }
+
+    @Test
     fun testQualifiedExpression() = codegen(
         """
         @Module
@@ -69,7 +67,6 @@ class ModuleTest {
         }
     """
     ) {
-        assertOk()
     }
 
     @Test
@@ -124,6 +121,7 @@ class ModuleTest {
         }
     """
     ) {
+
         assertOk()
     }
 
