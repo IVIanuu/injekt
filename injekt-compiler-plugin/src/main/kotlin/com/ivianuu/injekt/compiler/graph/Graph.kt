@@ -36,119 +36,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-typealias BindingResolver = (Key) -> Binding?
-
-class ModuleBindingResolver(
-    private val graph: Graph,
-    private val moduleNode: ModuleNode,
-    private val module: IrClass,
-    private val descriptor: IrClass
-) : BindingResolver {
-    private val bindings = descriptor
-        .declarations
-        .filterIsInstance<IrFunction>()
-        .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
-
-    override fun invoke(requestedKey: Key): Binding? {
-        val binding = bindings
-            .singleOrNull { Key(it.returnType) == requestedKey }
-            ?: return null
-
-        val fieldName = binding.getAnnotation(InjektFqNames.AstFieldPath)
-            ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
-        val provider = binding.getAnnotation(InjektFqNames.AstClassPath)
-            ?.getTypeArgument(0)?.classOrNull?.owner
-
-        if (binding.valueParameters.any {
-                it.hasAnnotation(InjektFqNames.Assisted)
-            }) return null
-
-        val isScoped = binding.hasAnnotation(InjektFqNames.AstScope)
-
-        val dependencies = binding.valueParameters
-            .map { Key(it.type) }
-
-        return when {
-            fieldName != null -> {
-                TODO()
-            }
-            isScoped -> {
-                provider!!
-                val field = graph.allocateProviderField(requestedKey.type)
-
-                graph.statefulBinding(
-                    key = requestedKey,
-                    dependencies = dependencies,
-                    providerInstance = graph.newProviderInstance(provider, isScoped, moduleNode),
-                    treeElement = moduleNode.treeElement.child(field)
-                )
-            }
-            else -> {
-                provider!!
-                graph.statelessBinding(
-                    key = requestedKey,
-                    dependencies = dependencies,
-                    provider = provider,
-                    moduleIfRequired = moduleNode
-                )
-            }
-        }
-    }
-}
-
-class AnnotatedClassBindingResolver(
-    private val graph: Graph,
-    private val context: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore
-) : BindingResolver {
-    override fun invoke(requestedKey: Key): Binding? {
-        val clazz = requestedKey.type.classOrNull ?: return null
-        val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
-            .singleOrNull() ?: return null
-        if (scopeAnnotation.fqName != InjektFqNames.Transient &&
-            scopeAnnotation.fqName !in graph.scopes
-        ) return null
-        val provider = clazz.owner.declarations
-            .single {
-                it.nameForIrSerialization ==
-                        InjektNameConventions.getProviderNameForClass(clazz.owner.name)
-            } as IrClass
-
-        val constructor = clazz.constructors
-            .single().owner
-
-        if (constructor.valueParameters.any {
-                it.hasAnnotation(InjektFqNames.Assisted)
-            }) return null
-
-        val dependencies = constructor.valueParameters
-            .map { Key(it.type) }
-
-        val isScoped = scopeAnnotation.fqName != InjektFqNames.Transient
-
-        return if (isScoped) {
-            val field = graph.allocateProviderField(requestedKey.type)
-
-            graph.statefulBinding(
-                key = requestedKey,
-                dependencies = dependencies,
-                providerInstance = graph.newProviderInstance(provider, isScoped, null),
-                treeElement = graph.thisComponent.treeElement.child(field)
-            )
-        } else {
-            graph.statelessBinding(
-                key = requestedKey,
-                dependencies = dependencies,
-                provider = provider,
-                moduleIfRequired = null
-            )
-        }
-    }
-}
-
 class Graph(
     private val context: IrPluginContext,
-    private val symbols: InjektSymbols,
+    val symbols: InjektSymbols,
     val thisComponent: ComponentNode,
     thisComponentModule: ModuleNode?,
     declarationStore: InjektDeclarationStore
@@ -222,25 +112,15 @@ class Graph(
         key: Key,
         dependencies: List<Key>,
         providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
-        treeElement: TreeElement
+        getFunction: IrBuilderWithScope.() -> IrFunction,
+        providerField: () -> IrField?
     ): Binding {
         return Binding(
             key = key,
             dependencies = dependencies,
             providerInstance = providerInstance,
-            getFunction = getFunction(key) { function ->
-                irCall(
-                    symbols.provider
-                        .functions
-                        .single { it.owner.name.asString() == "invoke" }
-                ).apply {
-                    dispatchReceiver = treeElement(
-                        this@getFunction,
-                        irGet(function.dispatchReceiverParameter!!)
-                    )
-                }
-            },
-            null
+            getFunction = getFunction,
+            providerField = providerField
         )
     }
 
@@ -267,7 +147,7 @@ class Graph(
                         if (moduleIfRequired != null) {
                             putValueArgument(
                                 0,
-                                moduleIfRequired.treeElement!!(
+                                moduleIfRequired.treeElement(
                                     this@Binding,
                                     it
                                 )
@@ -333,7 +213,7 @@ class Graph(
                     }
                 }
             },
-            null
+            { null }
         )
     }
 
@@ -362,6 +242,26 @@ class Graph(
             }
             function
         }
+    }
+
+    fun providerInvokeGetFunction(
+        key: Key,
+        treeElement: TreeElement
+    ): IrBuilderWithScope.() -> IrFunction = getFunction(key) { function ->
+        irCall(
+            symbols.provider
+                .functions
+                .single { it.owner.name.asString() == "invoke" }
+        ).apply {
+            dispatchReceiver = treeElement(irGet(function.dispatchReceiverParameter!!))
+        }
+    }
+
+    fun treeElementGetFunction(
+        key: Key,
+        treeElement: TreeElement
+    ): IrBuilderWithScope.() -> IrFunction = getFunction(key) { function ->
+        treeElement(irGet(function.dispatchReceiverParameter!!))
     }
 
     fun newProviderInstance(
@@ -425,5 +325,145 @@ class Graph(
         )
 
         return field
+    }
+}
+
+typealias BindingResolver = (Key) -> Binding?
+
+class ModuleBindingResolver(
+    private val graph: Graph,
+    private val moduleNode: ModuleNode,
+    private val module: IrClass,
+    private val descriptor: IrClass
+) : BindingResolver {
+    private val bindings = descriptor
+        .declarations
+        .filterIsInstance<IrFunction>()
+        .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
+
+    override fun invoke(requestedKey: Key): Binding? {
+        val binding = bindings
+            .singleOrNull { Key(it.returnType) == requestedKey }
+            ?: return null
+
+        val fieldName = binding.getAnnotation(InjektFqNames.AstFieldPath)
+            ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
+        val provider = binding.getAnnotation(InjektFqNames.AstClassPath)
+            ?.getTypeArgument(0)?.classOrNull?.owner
+
+        if (binding.valueParameters.any {
+                it.hasAnnotation(InjektFqNames.Assisted)
+            }) return null
+
+        val isScoped = binding.hasAnnotation(InjektFqNames.AstScope)
+
+        val dependencies = binding.valueParameters
+            .map { Key(it.type) }
+
+        return when {
+            fieldName != null -> {
+                val instanceTreeElement = moduleNode.treeElement.child(
+                    module.fields.single { it.name.asString() == fieldName }
+                )
+                val providerField = lazy {
+                    graph.allocateProviderField(requestedKey.type)
+                }
+
+                graph.statefulBinding(
+                    key = requestedKey,
+                    dependencies = emptyList(),
+                    providerInstance = {
+                        irCall(graph.symbols.instanceProvider.constructors.single()).apply {
+                            putValueArgument(
+                                0,
+                                instanceTreeElement(it)
+                            )
+                        }
+                    },
+                    getFunction = graph.treeElementGetFunction(requestedKey, instanceTreeElement),
+                    providerField = { providerField.takeIf { it.isInitialized() }?.value }
+                )
+            }
+            isScoped -> {
+                provider!!
+                val providerField = graph.allocateProviderField(requestedKey.type)
+
+                graph.statefulBinding(
+                    key = requestedKey,
+                    dependencies = dependencies,
+                    providerInstance = graph.newProviderInstance(provider, isScoped, moduleNode),
+                    getFunction = graph.providerInvokeGetFunction(
+                        key = requestedKey,
+                        treeElement = graph.thisComponent.treeElement.child(providerField)
+                    ),
+                    { providerField }
+                )
+            }
+            else -> {
+                provider!!
+                graph.statelessBinding(
+                    key = requestedKey,
+                    dependencies = dependencies,
+                    provider = provider,
+                    moduleIfRequired = if (provider.constructors.single().valueParameters.firstOrNull()
+                            ?.name?.asString() == "module"
+                    ) moduleNode else null
+                )
+            }
+        }
+    }
+}
+
+class AnnotatedClassBindingResolver(
+    private val graph: Graph,
+    private val context: IrPluginContext,
+    private val declarationStore: InjektDeclarationStore
+) : BindingResolver {
+    override fun invoke(requestedKey: Key): Binding? {
+        val clazz = requestedKey.type.classOrNull ?: return null
+        val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+            .singleOrNull() ?: return null
+        if (scopeAnnotation.fqName != InjektFqNames.Transient &&
+            scopeAnnotation.fqName !in graph.scopes
+        ) return null
+        val provider = clazz.owner.declarations
+            .single {
+                it.nameForIrSerialization ==
+                        InjektNameConventions.getProviderNameForClass(clazz.owner.name)
+            } as IrClass
+
+        val constructor = clazz.constructors
+            .single().owner
+
+        if (constructor.valueParameters.any {
+                it.hasAnnotation(InjektFqNames.Assisted)
+            }) return null
+
+        val dependencies = constructor.valueParameters
+            .map { Key(it.type) }
+
+        val isScoped = scopeAnnotation.fqName != InjektFqNames.Transient
+
+        return if (isScoped) {
+            val field = graph.allocateProviderField(requestedKey.type)
+
+            graph.statefulBinding(
+                key = requestedKey,
+                dependencies = dependencies,
+                providerInstance = graph.newProviderInstance(provider, isScoped, null),
+                getFunction = graph.providerInvokeGetFunction(
+                    key = requestedKey,
+                    treeElement = graph.thisComponent.treeElement.child(field)
+                ),
+                providerField = { field }
+            )
+        } else {
+            graph.statelessBinding(
+                key = requestedKey,
+                dependencies = dependencies,
+                provider = provider,
+                moduleIfRequired = null
+            )
+        }
     }
 }

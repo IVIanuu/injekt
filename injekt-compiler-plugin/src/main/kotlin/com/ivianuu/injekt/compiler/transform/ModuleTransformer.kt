@@ -399,14 +399,20 @@ class ModuleTransformer(
                 moduleFunctionName
             )
             val moduleClassFqName = packageName.child(moduleClassName)
-            val childFactoryModule = declarationStore.getModule(moduleClassFqName)
+            val childFactoryModule = declarationStore.getModuleOrNull(moduleClassFqName)
 
             addFunction(
                 name = "child_factory_$index",
-                returnType = childFactoryModule.defaultType,
+                returnType = functionRef.symbol.owner.returnType,
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astChildFactory)
+                if (childFactoryModule != null) {
+                    addValueParameter(
+                        "module",
+                        childFactoryModule.defaultType
+                    )
+                }
             }
         }
 

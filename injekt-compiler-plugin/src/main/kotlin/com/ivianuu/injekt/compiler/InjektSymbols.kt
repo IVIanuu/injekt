@@ -48,6 +48,8 @@ class InjektSymbols(private val context: IrPluginContext) {
     val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
     val factory = getTopLevelClass(InjektFqNames.Factory)
 
+    val instanceProvider = getTopLevelClass(InjektFqNames.InstanceProvider)
+
     val mapDsl = getTopLevelClass(InjektFqNames.MapDsl)
 
     val module = getTopLevelClass(InjektFqNames.Module)
@@ -57,7 +59,7 @@ class InjektSymbols(private val context: IrPluginContext) {
     val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
 
     val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
-    val scopedProvider = getTopLevelClass(InjektFqNames.Scope)
+    val scopedProvider = getTopLevelClass(InjektFqNames.ScopedProvider)
 
     val transient = getTopLevelClass(InjektFqNames.Transient)
 

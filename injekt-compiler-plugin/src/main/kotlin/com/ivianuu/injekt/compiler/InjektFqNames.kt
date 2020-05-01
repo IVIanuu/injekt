@@ -34,6 +34,8 @@ object InjektFqNames {
 
     val Factory = InjektPackage.child("Factory")
 
+    val InstanceProvider = InternalPackage.child("InstanceProvider")
+
     val MapDsl = InjektPackage.child("MapDsl")
 
     val Module = InjektPackage.child("Module")

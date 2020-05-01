@@ -61,6 +61,11 @@ class InjektDeclarationStore(
     }*/
 
     fun getModule(fqName: FqName): IrClass {
+        return getModuleOrNull(fqName)
+            ?: throw DeclarationNotFound("Couldn't find module for $fqName")
+    }
+
+    fun getModuleOrNull(fqName: FqName): IrClass? {
         return try {
             moduleTransformer.getGeneratedModuleClass(fqName)
                 ?: throw DeclarationNotFound()
@@ -74,8 +79,8 @@ class InjektDeclarationStore(
             } catch (e: DeclarationNotFound) {
                 try {
                     symbols.getTopLevelClass(fqName).owner
-                } catch (e: DeclarationNotFound) {
-                    throw DeclarationNotFound("Couldn't find module for $fqName")
+                } catch (e: Exception) {
+                    null
                 }
             }
         }

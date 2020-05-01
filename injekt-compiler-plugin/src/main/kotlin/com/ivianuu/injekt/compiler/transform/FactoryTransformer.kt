@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -42,6 +41,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -107,6 +107,7 @@ class FactoryTransformer(
             }
             transformingFactories += implementationFqName
             val implementationClass = implementationClass(function)
+            println(implementationClass.dump())
             function.file.addChild(implementationClass)
             function.body = irExprBody(irCall(implementationClass.constructors.single()))
             transformedFactories[function] = implementationClass
@@ -120,9 +121,7 @@ class FactoryTransformer(
         computedFactoryFunctions = true
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    declaration.annotations.hasAnnotation(InjektFqNames.ChildFactory)
-                ) {
+                if (declaration.annotations.hasAnnotation(InjektFqNames.Factory)) {
                     factoryFunctions += declaration
                 }
 
@@ -172,9 +171,7 @@ class FactoryTransformer(
             thisComponentModule = module?.let {
                 ModuleNode(
                     module = module,
-                    treeElement = componentNode.treeElement.child {
-                        irGetField(it, moduleField!!.value)
-                    }
+                    treeElement = componentNode.treeElement.child(moduleField!!.value)
                 )
             },
             declarationStore = declarationStore
@@ -267,15 +264,15 @@ class FactoryTransformer(
                 }
 
                 val fieldsToInitialize = graph.resolvedBindings.values
-                    .filter { it.field != null }
-                    .filter { it.field in fields }
+                    .filter { it.providerField() != null }
+                    .filter { it.providerField() in fields }
 
                 val initializedKeys = mutableSetOf<Key>()
                 val processedFields = mutableSetOf<IrField>()
 
                 while (true) {
                     val fieldsToProcess = fieldsToInitialize
-                        .filter { it.field !in processedFields }
+                        .filter { it.providerField() !in processedFields }
                     if (fieldsToProcess.isEmpty()) break
 
                     fieldsToProcess
@@ -286,10 +283,10 @@ class FactoryTransformer(
                         }
                         .forEach {
                             initializedKeys += it.key
-                            processedFields += it.field!!
+                            processedFields += it.providerField()!!
                             +irSetField(
                                 irGet(thisReceiver!!),
-                                it.field!!,
+                                it.providerField()!!,
                                 it.providerInstance(this, irGet(thisReceiver!!))
                             )
                         }

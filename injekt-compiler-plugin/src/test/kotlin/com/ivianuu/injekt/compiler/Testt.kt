@@ -16,8 +16,8 @@ class Testt {
         
         @Factory 
         fun create(): MyComponent = createImplementation {
-            transient { "hello world" }
-            //instance("hello world") 
+            transient { get<Int>(); "hello world" }
+            instance(0) 
         }
         
         fun invoke() = create().helloWorld

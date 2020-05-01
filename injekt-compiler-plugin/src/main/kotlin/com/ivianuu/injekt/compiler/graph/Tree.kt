@@ -17,7 +17,7 @@ fun TreeElement.child(
 
 fun TreeElement.child(
     field: IrField
-): TreeElement = { irGetField(invoke(this, it), field) }
+): TreeElement = child { irGetField(it, field) }
 
 class ModuleNode(
     val module: IrClass,
@@ -34,7 +34,7 @@ class Binding(
     val dependencies: List<Key>,
     val providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     val getFunction: IrBuilderWithScope.() -> IrFunction,
-    val field: IrField?
+    val providerField: () -> IrField?
 )
 
 data class Key(val type: IrType) {
