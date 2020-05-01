@@ -127,9 +127,7 @@ annotation class TestScope2
 @Retention(AnnotationRetention.SOURCE)
 @Target(
     AnnotationTarget.EXPRESSION,
-    AnnotationTarget.TYPE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.FUNCTION
+    AnnotationTarget.TYPE
 )
 @Qualifier
 annotation class TestQualifier1
@@ -137,9 +135,7 @@ annotation class TestQualifier1
 @Retention(AnnotationRetention.SOURCE)
 @Target(
     AnnotationTarget.EXPRESSION,
-    AnnotationTarget.TYPE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.FUNCTION
+    AnnotationTarget.TYPE
 )
 @Qualifier
 annotation class TestQualifier2

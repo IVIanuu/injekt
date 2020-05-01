@@ -24,6 +24,7 @@ object InjektFqNames {
     val AstFieldPath = AstPath.child("Field")
     val AstClassPath = AstPath.child("Class")
     val AstScope = InjektAst.child("Scope")
+    val AstScoped = InjektAst.child("Scoped")
     val AstSet = InjektAst.child("Set")
     val AstSetElement = AstSet.child("Element")
 
@@ -45,8 +46,11 @@ object InjektFqNames {
 
     val Qualifier = InjektPackage.child("Qualifier")
     val Scope = InjektPackage.child("Scope")
+    val ScopedProvider = InternalPackage.child("ScopedProvider")
 
     val SetDsl = InjektPackage.child("SetDsl")
+
+    val Transient = InjektPackage.child("Transient")
 
     private fun FqName.child(name: String) = child(Name.identifier(name))
 

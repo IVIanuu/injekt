@@ -3,10 +3,13 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -21,8 +24,10 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 class FactoryChecker : CallChecker, DeclarationChecker {
 
@@ -37,6 +42,11 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             if (descriptor.typeParameters.isNotEmpty()) {
                 context.trace.report(InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY.on(declaration))
             }
+
+            descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
+                ?.let { it as? ClassDescriptor }
+                ?.takeIf { it.kind != ClassKind.OBJECT }
+                ?.let { context.trace.report(InjektErrors.FACTORY_MUST_BE_STATIC.on(declaration)) }
 
             checkFactoryFunctionHasOnlyCreateImplementationStatement(
                 declaration as KtFunction,
@@ -122,7 +132,33 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT
                     .on(reportOn)
             )
-            return
+        }
+
+        type?.forEachDeclarationInThisAndSuperTypes { declaration ->
+            when (declaration) {
+                is FunctionDescriptor -> {
+                    if (declaration.typeParameters.isNotEmpty()) {
+                        context.trace.report(
+                            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS
+                                .on(reportOn)
+                        )
+                    }
+                    if (declaration.valueParameters.isNotEmpty()) {
+                        context.trace.report(
+                            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS
+                                .on(reportOn)
+                        )
+                    }
+                }
+                is PropertyDescriptor -> {
+                    if (declaration.isVar) {
+                        context.trace.report(
+                            InjektErrors.IMPL_CANNOT_CONTAIN_VARS
+                                .on(reportOn)
+                        )
+                    }
+                }
+            }
         }
 
         val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
@@ -154,5 +190,18 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 )
             }
         }
+    }
+
+    fun ClassDescriptor.forEachDeclarationInThisAndSuperTypes(block: (DeclarationDescriptor) -> Unit) {
+        unsubstitutedMemberScope
+            .getContributedDescriptors()
+            .filter {
+                it !is CallableMemberDescriptor ||
+                        it.dispatchReceiverParameter?.type != builtIns.anyType
+            }
+            .forEach(block)
+        defaultType.supertypes()
+            .mapNotNull { it.constructor.declarationDescriptor as? ClassDescriptor }
+            .forEach { it.forEachDeclarationInThisAndSuperTypes(block) }
     }
 }

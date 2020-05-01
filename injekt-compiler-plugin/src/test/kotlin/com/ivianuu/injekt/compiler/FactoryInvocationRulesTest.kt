@@ -121,4 +121,64 @@ class FactoryInvocationRulesTest {
         assertCompileError("type parameter")
     }
 
+    @Test
+    fun testMutablePropertiesNotAllowedInFactoryImpls() = codegen(
+        """
+        interface Impl {
+            var state: String
+        }
+        @Factory
+        fun <T> factory(): Impl = createImplementation()
+    """
+    ) {
+        assertCompileError("mutable")
+    }
+
+    @Test
+    fun testParametersNotAllowedInProvisionFunctions() = codegen(
+        """
+        interface Impl {
+            fun provisionFunction(p0: String): String
+        }
+        @Factory
+        fun <T> factory(): Impl = createImplementation()
+    """
+    ) {
+        assertCompileError("parameters")
+    }
+
+    @Test
+    fun testStaticFactoryOk() = codegen(
+        """
+        @Factory
+        fun factory(): TestComponent = createImplementation()
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testStaticFactoryInObjectOk() = codegen(
+        """
+        object Object {
+            @Factory
+            fun factory(): TestComponent = createImplementation()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testNonStaticFactoryFails() = codegen(
+        """
+        class Class {
+            @Factory
+            fun factory(): TestComponent = createImplementation()
+        }
+    """
+    ) {
+        assertCompileError("static")
+    }
+
 }

@@ -27,6 +27,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             pluginContext.bindingContext, "trace in InjektIrGenerationExtension"
         )
 
+        // write qualifiers of expression to the irTrace
         QualifiedMetadataTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
 
         // generate a provider for each annotated class
@@ -35,14 +36,16 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // move the module block of @Factory createImplementation { ... } to a function
         FactoryBlockTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
 
-        // transform @Module functions to their ast representation
-        ModuleTransformer(pluginContext, bindingTrace, declarationStore)
+        val moduleTransformer = ModuleTransformer(pluginContext, bindingTrace, declarationStore)
             .also { declarationStore.moduleTransformer = it }
-            .visitModuleAndGenerateSymbols()
-
-        FactoryTransformer(pluginContext, bindingTrace, declarationStore)
+        val factoryTransformer = FactoryTransformer(pluginContext, bindingTrace, declarationStore)
             .also { declarationStore.factoryTransformer = it }
-            .visitModuleAndGenerateSymbols()
+
+        // transform @Module functions to their ast representation
+        moduleTransformer.visitModuleAndGenerateSymbols()
+
+        // create implementations for factories
+        factoryTransformer.visitModuleAndGenerateSymbols()
     }
 
 }

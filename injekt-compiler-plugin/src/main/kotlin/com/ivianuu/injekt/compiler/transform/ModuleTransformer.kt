@@ -49,10 +49,10 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -118,7 +118,6 @@ class ModuleTransformer(
             }
             transformingModules += moduleFqName
             val moduleClass = moduleClass(function)
-            println(moduleClass.dump())
             function.file.addChild(moduleClass)
             function.body = irExprBody(irInjektIntrinsicUnit())
             transformedModules[function] = moduleClass
@@ -132,7 +131,7 @@ class ModuleTransformer(
         computedModuleFunctions = true
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.isModule()
+                if (declaration.hasAnnotation(InjektFqNames.Module)
                     && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createImplementation"
                     && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createInstance"
                 ) {
@@ -487,6 +486,9 @@ class ModuleTransformer(
                         }
 
                     annotations += classPathAnnotation(providerByCall.getValue(bindingCall))
+                    if (bindingCall in scopedCalls) {
+                        annotations += noArgSingleConstructorCall(symbols.astScoped)
+                    }
                 } else {
                     annotations += fieldPathAnnotation(instanceFieldByCall.getValue(bindingCall))
                 }

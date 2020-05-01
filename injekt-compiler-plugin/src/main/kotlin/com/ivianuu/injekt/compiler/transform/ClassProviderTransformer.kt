@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -41,7 +42,7 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
     AbstractInjektTransformer(context, bindingTrace) {
 
     override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.annotations.hasAnnotation(InjektFqNames.Scope)) {
+        if (declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)) {
             declaration.addChild(
                 DeclarationIrBuilder(context, declaration.symbol)
                     .provider(declaration)

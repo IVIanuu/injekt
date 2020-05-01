@@ -9,42 +9,39 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 
 interface InjektErrors {
     companion object {
-
         @JvmField
         val MODULE_INVOCATION_IN_NON_MODULE = error()
-
         @JvmField
         val CONDITIONAL_NOT_ALLOWED_IN_MODULE = error()
-
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
-
         @JvmField
         val CREATE_IMPLEMENTATION_INVOCATION_WITHOUT_FACTORY = error()
-
         @JvmField
         val UNSUPPORTED_MAP_KEY_TYPE = error()
-
         @JvmField
         val MAP_KEY_MUST_BE_CONSTANT = error()
-
         @JvmField
         val NOT_A_SCOPE = error()
-
         @JvmField
         val NOT_A_CHILD_FACTORY = error()
-
         @JvmField
         val ONLY_CREATE_ALLOWED = error()
-
         @JvmField
         val FACTORY_MUST_BE_STATIC = error()
-
         @JvmField
         val NO_TYPE_PARAMETERS_ON_FACTORY = error()
-
         @JvmField
         val FACTORY_IMPL_MUST_BE_ABSTRACT = error()
+
+        @JvmField
+        val IMPL_CANNOT_CONTAIN_VARS = error()
+
+        @JvmField
+        val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error()
+
+        @JvmField
+        val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -112,6 +109,18 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY,
             "@Factory and @ChildFactory functions cannot have type parameters"
+        )
+        map.put(
+            InjektErrors.IMPL_CANNOT_CONTAIN_VARS,
+            "createImplementation result types cannot contain mutable properties"
+        )
+        map.put(
+            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS,
+            "Provision functions cannot have value parameters"
+        )
+        map.put(
+            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS,
+            "Provision functions cannot have type parameters"
         )
     }
 }

@@ -39,6 +39,7 @@ class InjektSymbols(private val context: IrPluginContext) {
     val astFieldPath = astPath.childClass(InjektFqNames.AstFieldPath.shortName())
     val astClassPath = astPath.childClass(InjektFqNames.AstClassPath.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
+    val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
 
@@ -56,6 +57,9 @@ class InjektSymbols(private val context: IrPluginContext) {
     val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
 
     val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
+    val scopedProvider = getTopLevelClass(InjektFqNames.Scope)
+
+    val transient = getTopLevelClass(InjektFqNames.Transient)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

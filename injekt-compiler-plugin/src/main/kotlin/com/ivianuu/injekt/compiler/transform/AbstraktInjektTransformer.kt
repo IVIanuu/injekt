@@ -16,9 +16,7 @@ package com.ivianuu.injekt.compiler.transform
  * limitations under the License.
  */
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.analysis.ModuleChecker
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -44,7 +42,6 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
@@ -58,7 +55,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
@@ -103,19 +99,6 @@ abstract class AbstractInjektTransformer(
         moduleFragment = module
         visitModuleFragment(module, null)
         module.patchDeclarationParents()
-    }
-
-    private val moduleChecker = ModuleChecker()
-
-    fun FunctionDescriptor.isModule(): Boolean {
-        return moduleChecker.analyze(bindingTrace, this)
-    }
-
-    fun IrFunction.isModule(): Boolean = descriptor.isModule()
-    fun IrFunctionExpression.isModule(): Boolean = function.isModule()
-
-    fun IrAnnotationContainer.hasModuleAnnotation(): Boolean {
-        return annotations.hasAnnotation(InjektFqNames.Module)
     }
 
     fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
