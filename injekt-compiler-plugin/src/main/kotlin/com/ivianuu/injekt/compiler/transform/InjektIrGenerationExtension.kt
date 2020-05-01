@@ -27,6 +27,8 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             pluginContext.bindingContext, "trace in InjektIrGenerationExtension"
         )
 
+        QualifiedMetadataTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
+
         // generate a provider for each annotated class
         ClassProviderTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
 

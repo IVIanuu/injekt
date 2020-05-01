@@ -207,5 +207,4 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
         }
     }
 
-
 }

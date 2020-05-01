@@ -1,7 +1,6 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
-import kotlin.reflect.KClass
 
 @InjektDslMarker
 interface MapDsl<K, V> {
@@ -9,7 +8,4 @@ interface MapDsl<K, V> {
 }
 
 @Declaration
-fun <K, V> map(
-    mapQualifier: KClass<*>? = null,
-    block: MapDsl<K, V>.() -> Unit = {}
-): Unit = injektIntrinsic()
+fun <K, V> map(block: MapDsl<K, V>.() -> Unit = {}): Unit = injektIntrinsic()

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.analysis.ModuleChecker
+import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.builtins.extractParameterNameFromFunctionTypeArgument
@@ -49,6 +50,9 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
+import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -61,6 +65,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.referenceFunction
@@ -81,6 +86,7 @@ abstract class AbstractInjektTransformer(
 
     val symbols = InjektSymbols(context)
 
+    protected val irProviders = context.irProviders
     protected val symbolTable = context.symbolTable
     protected val irBuiltIns = context.irBuiltIns
     protected val builtIns = context.builtIns
@@ -262,6 +268,37 @@ abstract class AbstractInjektTransformer(
             symbol,
             irBuiltIns.unitType
         )
+    }
+
+    fun IrBuilderWithScope.irMapKeyConstructorForKey(
+        expression: IrExpression
+    ): IrConstructorCall {
+        return when (expression) {
+            is IrClassReference -> {
+                irCall(symbols.astMapClassKey.constructors.single())
+                    .apply {
+                        putValueArgument(0, expression.deepCopyWithVariables())
+                    }
+            }
+            is IrConst<*> -> {
+                when (expression.kind) {
+                    is IrConstKind.Int -> irCall(symbols.astMapIntKey.constructors.single())
+                        .apply {
+                            putValueArgument(0, expression.deepCopyWithVariables())
+                        }
+                    is IrConstKind.Long -> irCall(symbols.astMapLongKey.constructors.single())
+                        .apply {
+                            putValueArgument(0, expression.deepCopyWithVariables())
+                        }
+                    is IrConstKind.String -> irCall(symbols.astMapStringKey.constructors.single())
+                        .apply {
+                            putValueArgument(0, expression.deepCopyWithVariables())
+                        }
+                    else -> error("Unexpected expression ${expression.dump()}")
+                }
+            }
+            else -> error("Unexpected expression ${expression.dump()}")
+        }
     }
 
 }

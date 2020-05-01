@@ -28,4 +28,33 @@ class MapTest {
         assertCompileError("map key")
     }
 
+    @Test
+    fun testConstantMapKey() = codegen(
+        """
+        @Module
+        fun test() { 
+            map<kotlin.reflect.KClass<*>, Any> {
+                put<String>(String::class)
+            }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testDynamicMapKey() = codegen(
+        """
+        fun key() = String::class
+        @Module
+        fun test() { 
+            map<kotlin.reflect.KClass<*>, Any> {
+                put<String>(key())
+            }
+        }
+    """
+    ) {
+        assertCompileError("constant")
+    }
+
 }

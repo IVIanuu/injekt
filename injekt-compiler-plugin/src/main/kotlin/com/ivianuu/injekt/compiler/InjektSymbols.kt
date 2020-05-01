@@ -23,19 +23,34 @@ class InjektSymbols(private val context: IrPluginContext) {
         .single { it.name == name }
         .symbol
 
+    val astAssisted = getTopLevelClass(InjektFqNames.AstAssisted)
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
+    val astMap = injektAst.childClass(InjektFqNames.AstMap.shortName())
+    val astMapEntry = astMap.childClass(InjektFqNames.AstMapEntry.shortName())
+    val astMapClassKey = astMap.childClass(InjektFqNames.AstMapClassKey.shortName())
+    val astMapIntKey = astMap.childClass(InjektFqNames.AstMapIntKey.shortName())
+    val astMapLongKey = astMap.childClass(InjektFqNames.AstMapLongKey.shortName())
+    val astMapStringKey = astMap.childClass(InjektFqNames.AstMapStringKey.shortName())
     val astModule = injektAst.childClass(InjektFqNames.AstModule.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
+    val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
+    val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
+
+    val assisted = getTopLevelClass(InjektFqNames.Assisted)
 
     val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
     val factory = getTopLevelClass(InjektFqNames.Factory)
+
+    val mapDsl = getTopLevelClass(InjektFqNames.MapDsl)
 
     val module = getTopLevelClass(InjektFqNames.Module)
 
     val provider = getTopLevelClass(InjektFqNames.Provider)
     val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
     val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
+
+    val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

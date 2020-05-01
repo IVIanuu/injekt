@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
+import org.jetbrains.kotlin.ir.builders.IrGeneratorContext
 import org.jetbrains.kotlin.ir.declarations.IrAttributeContainer
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
@@ -33,4 +33,4 @@ class WeakBindingTrace {
 
 private val InjektTemporaryGlobalBindingTrace = WeakBindingTrace()
 
-val IrPluginContext.irTrace: WeakBindingTrace get() = InjektTemporaryGlobalBindingTrace
+val IrGeneratorContext.irTrace: WeakBindingTrace get() = InjektTemporaryGlobalBindingTrace

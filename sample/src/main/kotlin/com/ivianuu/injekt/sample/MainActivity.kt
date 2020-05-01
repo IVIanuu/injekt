@@ -55,11 +55,12 @@ fun activityComponentFactory(mainActivity: MainActivity): ActivityComponent = cr
     instance(mainActivity)
 }
 
-@InjektAst.ChildFactoryDescriptor
+@InjektAst.ChildFactory
 interface activityComponentFactoryDescriptor {
-    @InjektAst.ChildFactoryType
+    @InjektAst.ChildFactory.Type
     fun type(): (MainActivity) -> ActivityComponent
-    @InjektAst.ChildFactoryModule
+
+    @InjektAst.Module
     fun module(): activityComponentFactoryModule
 }
 

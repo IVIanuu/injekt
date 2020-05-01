@@ -73,7 +73,6 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         fun report() {
-            error("lol")
             context.trace.report(InjektErrors.ONLY_CREATE_ALLOWED.on(element))
         }
 

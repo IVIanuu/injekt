@@ -28,4 +28,4 @@ interface ProviderDsl {
     fun <T> get(qualifier: KClass<*>? = null): T = injektIntrinsic()
 }
 
-typealias ProviderDefinition<T> = ProviderDsl.() -> T
+typealias ProviderDefinition<T> = ProviderDsl.(AssistedParameters) -> T

@@ -14,6 +14,7 @@ class InjektStorageContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
+        container.useInstance(QualifiedExpressionCollector())
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())
         container.useInstance(moduleChecker)

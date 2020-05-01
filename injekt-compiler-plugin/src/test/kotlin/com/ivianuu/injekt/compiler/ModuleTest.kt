@@ -59,5 +59,45 @@ class ModuleTest {
         assertCompileError("@ChildFactory")
     }
 
+    @Test
+    fun testQualifiedExpression() = codegen(
+        """
+        @Module
+        fun module() {
+            @TestQualifier1
+            set<String>()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testMap() = codegen(
+        """
+        @Module
+        fun module() {
+            map<String, String> {
+                put<@TestQualifier1 String>("hello")
+            }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testSet() = codegen(
+        """
+        @Module
+        fun module() {
+            set<String> {
+                add<@TestQualifier1 String>()
+            }
+        }
+    """
+    ) {
+        assertOk()
+    }
 
 }
