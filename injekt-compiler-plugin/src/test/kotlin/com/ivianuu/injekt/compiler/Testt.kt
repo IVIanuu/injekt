@@ -26,5 +26,24 @@ class Testt {
         assertEquals("hello world", invokeSingleFile())
     }
 
+    @Test
+    fun lolo() = codegen(
+        """
+        interface MyComponent {
+            val helloWorld: TestDep
+        }
+        
+        @Transient
+        class TestDep
+        
+        @Factory 
+        fun create(): MyComponent = createImplementation()
+        
+        fun invoke() = create().helloWorld
+    """
+    ) {
+        println("${this.generatedFiles}")
+        invokeSingleFile()
+    }
 
 }

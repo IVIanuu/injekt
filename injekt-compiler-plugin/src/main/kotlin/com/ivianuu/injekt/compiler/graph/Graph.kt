@@ -44,16 +44,12 @@ class ModuleBindingResolver(
     private val module: IrClass,
     private val descriptor: IrClass
 ) : BindingResolver {
-    private val bindings = module
-        .declarations
-        .filterIsInstance<IrClass>()
-        .single { it.nameForIrSerialization.asString() == "Descriptor" }
+    private val bindings = descriptor
         .declarations
         .filterIsInstance<IrFunction>()
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
 
     override fun invoke(requestedKey: Key): Binding? {
-        println("request $requestedKey")
         val binding = bindings
             .singleOrNull { Key(it.returnType) == requestedKey }
             ?: return null

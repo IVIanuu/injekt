@@ -55,7 +55,8 @@ class FactoryBlockTransformer(
             DeclarationIrBuilder(context, factoryFunction.symbol).run {
                 val createImplementation = factoryFunction.body!!.statements.single()
                     .let { it as IrReturn }.value as IrCall
-                val moduleBlock = createImplementation.getValueArgument(0) as? IrFunctionExpression
+                val moduleBlock =
+                    createImplementation.getValueArgument(0) as? IrFunctionExpression ?: return@run
 
                 val result = moduleFunction(factoryFunction, moduleBlock)
                 (factoryFunction.parent as IrDeclarationContainer).addChild(result.function)

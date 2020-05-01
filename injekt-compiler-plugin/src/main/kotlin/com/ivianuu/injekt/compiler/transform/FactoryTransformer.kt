@@ -42,7 +42,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -108,7 +107,6 @@ class FactoryTransformer(
             }
             transformingFactories += implementationFqName
             val implementationClass = implementationClass(function)
-            println(implementationClass.dump())
             function.file.addChild(implementationClass)
             function.body = irExprBody(irCall(implementationClass.constructors.single()))
             transformedFactories[function] = implementationClass
@@ -136,6 +134,7 @@ class FactoryTransformer(
     private fun IrBuilderWithScope.implementationClass(
         function: IrFunction
     ) = buildClass {
+        // todo make kind = OBJECT if this component has no state
         name = InjektNameConventions.getImplementationNameForFactoryFunction(function.name)
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()

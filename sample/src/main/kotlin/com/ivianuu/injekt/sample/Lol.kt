@@ -118,15 +118,6 @@ class applicationModuleImpl {
     }
 }
 
-@InjektAst.ChildFactory
-interface activityComponentFactoryDescriptor {
-    @InjektAst.ChildFactory.Type
-    fun type(): (MainActivity) -> ActivityComponent
-
-    @InjektAst.Module
-    fun module(): activityComponentFactoryModule
-}
-
 class activityComponentFactoryModule(mainActivity: MainActivity) {
     val instance_0: MainActivity
 
