@@ -7,21 +7,6 @@ import org.junit.Test
 class ImplementationTest {
 
     @Test
-    fun testEmpty() = codegen(
-        """
-        interface TestComponent {
-        }
-        
-        @Factory
-        fun create(): TestComponent = createImplementation()
-        
-        fun invoke() = create()
-    """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
     fun testTransient() = codegen(
         """
         interface TestComponent {
@@ -106,6 +91,43 @@ class ImplementationTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
+    @Test
+    fun testEmpty() = codegen(
+        """
+        interface TestComponent {
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation()
+        
+        fun invoke() = create()
+    """
+    ) {
+        invokeSingleFile()
+    }
 
+    @Test
+    fun testQualified() = codegen(
+        """
+        interface TestComponent {
+            val foo1: @TestQualifier1 Foo
+            val foo2: @TestQualifier2 Foo
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            @TestQualifier1 scoped { Foo() }
+            @TestQualifier2 scoped { Foo() }
+        }
+        
+        fun invoke(): Pair<Foo, Foo> { 
+            val component = create()
+            return component.foo1 to component.foo2
+        }
+    """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
 
 }

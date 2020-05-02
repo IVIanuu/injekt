@@ -192,7 +192,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         }
     }
 
-    fun ClassDescriptor.forEachDeclarationInThisAndSuperTypes(block: (DeclarationDescriptor) -> Unit) {
+    private fun ClassDescriptor.forEachDeclarationInThisAndSuperTypes(block: (DeclarationDescriptor) -> Unit) {
         unsubstitutedMemberScope
             .getContributedDescriptors()
             .filter {

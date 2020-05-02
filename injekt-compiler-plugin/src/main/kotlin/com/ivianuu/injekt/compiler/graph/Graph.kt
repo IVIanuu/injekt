@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
-    private val context: IrPluginContext,
+    val context: IrPluginContext,
     val symbols: InjektSymbols,
     val thisComponent: ComponentNode,
     thisComponentModule: ModuleNode?,
@@ -380,6 +380,10 @@ class ModuleBindingResolver(
                 val dependencies = bindingFunction.valueParameters
                     .map { Key(it.type) }
 
+                val moduleRequired =
+                    provider?.constructors?.single()?.valueParameters?.firstOrNull()
+                        ?.name?.asString() == "module"
+
                 when {
                     fieldName != null -> {
                         val instanceTreeElement = moduleNode.treeElement.child(
@@ -419,7 +423,7 @@ class ModuleBindingResolver(
                             providerInstance = graph.newProviderInstance(
                                 provider,
                                 isScoped,
-                                moduleNode
+                                if (moduleRequired) moduleNode else null
                             ),
                             getFunction = graph.providerInvokeGetFunction(
                                 key = requestedKey,
@@ -434,9 +438,7 @@ class ModuleBindingResolver(
                             key = requestedKey,
                             dependencies = dependencies,
                             provider = provider,
-                            moduleIfRequired = if (provider.constructors.single().valueParameters.firstOrNull()
-                                    ?.name?.asString() == "module"
-                            ) moduleNode else null
+                            moduleIfRequired = if (moduleRequired) moduleNode else null
                         )
                     }
                 }
