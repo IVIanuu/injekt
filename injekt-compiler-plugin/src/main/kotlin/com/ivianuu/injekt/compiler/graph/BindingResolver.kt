@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -69,7 +70,16 @@ class ModuleBindingResolver(
                             dependencies = emptyList(),
                             providerInstance = {
                                 providerField.value
-                                irCall(graph.symbols.instanceProvider.constructors.single()).apply {
+
+                                irCall(
+                                    graph.symbols.instanceProvider
+                                        .owner
+                                        .companionObject()!!
+                                        .let { it as IrClass }
+                                        .declarations
+                                        .filterIsInstance<IrFunction>()
+                                        .single { it.name.asString() == "create" }
+                                ).apply {
                                     putValueArgument(
                                         0,
                                         instanceTreeElement(it)

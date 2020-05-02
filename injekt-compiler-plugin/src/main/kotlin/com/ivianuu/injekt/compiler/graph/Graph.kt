@@ -48,6 +48,7 @@ class Graph(
     private val annotatedClassBindingResolver =
         AnnotatedClassBindingResolver(this, context, declarationStore)
     val resolvedBindings = mutableMapOf<Key, Binding>()
+    private val bindingRequestChain = mutableSetOf<Key>()
 
     init {
         if (thisComponentModule != null) addModule(thisComponentModule)
@@ -55,7 +56,11 @@ class Graph(
     }
 
     fun requestBinding(key: Key): Binding {
-        return resolvedBindings.getOrPut(key) {
+        check(key !in bindingRequestChain) {
+            "Circular dependency $key"
+        }
+        bindingRequestChain += key
+        val binding = resolvedBindings.getOrPut(key) {
             val explicitBindings = bindingResolvers.flatMap { it(key) }
             if (explicitBindings.size > 1) {
                 error("Multiple bindings found for $key")
@@ -74,6 +79,9 @@ class Graph(
 
             binding
         }
+
+        bindingRequestChain -= key
+        return binding
     }
 
     private fun addScope(scope: FqName) {

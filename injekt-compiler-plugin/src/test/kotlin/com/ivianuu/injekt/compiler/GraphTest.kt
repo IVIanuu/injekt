@@ -38,6 +38,22 @@ class GraphTest {
     }
 
     @Test
+    fun testCircularDependency() = codegen(
+        """
+        interface TestComponent {
+            val a: A
+        }
+        
+        @Transient class A(b: B)
+        @Transient class B(a: A)
+
+        @Factory fun create(): TestComponent = createImplementation()
+    """
+    ) {
+        assertInternalError("circular")
+    }
+
+    @Test
     fun testScopeMismatch() = codegen(
         """
         interface TestComponent {
