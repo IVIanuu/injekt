@@ -1,12 +1,10 @@
-package com.ivianuu.injekt.compiler.graph
+package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -14,7 +12,6 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -43,83 +40,36 @@ class ModuleBindingResolver(
                 val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
                     ?.getTypeArgument(0)?.classOrNull?.owner
 
+                // todo handle assisted
                 if (bindingFunction.valueParameters.any {
                         it.hasAnnotation(InjektFqNames.Assisted)
                     }) return@mapNotNull null
 
-                val isScoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
+                val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
                 val dependencies = bindingFunction.valueParameters
                     .map { Key(it.type) }
 
-                val moduleRequired =
-                    provider?.constructors?.single()?.valueParameters?.firstOrNull()
-                        ?.name?.asString() == "module"
-
                 when {
                     fieldName != null -> {
-                        val instanceTreeElement = moduleNode.treeElement.child(
-                            module.fields.single { it.name.asString() == fieldName }
-                        )
-                        val providerField = lazy {
-                            graph.allocateProviderField(requestedKey.type)
-                        }
-
-                        graph.statefulBinding(
+                        InstanceBinding(
                             key = requestedKey,
-                            dependencies = emptyList(),
-                            providerInstance = {
-                                providerField.value
-
-                                irCall(
-                                    graph.symbols.instanceProvider
-                                        .owner
-                                        .companionObject()!!
-                                        .let { it as IrClass }
-                                        .declarations
-                                        .filterIsInstance<IrFunction>()
-                                        .single { it.name.asString() == "create" }
-                                ).apply {
-                                    putValueArgument(
-                                        0,
-                                        instanceTreeElement(it)
-                                    )
-                                }
-                            },
-                            getFunction = graph.treeElementGetFunction(
-                                requestedKey,
-                                instanceTreeElement
-                            ),
-                            providerField = { providerField.takeIf { it.isInitialized() }?.value }
-                        )
-                    }
-                    isScoped -> {
-                        provider!!
-                        val providerField = graph.allocateProviderField(requestedKey.type)
-
-                        graph.statefulBinding(
-                            key = requestedKey,
-                            dependencies = dependencies,
                             targetScope = null,
-                            providerInstance = graph.newProviderInstance(
-                                provider,
-                                isScoped,
-                                if (moduleRequired) moduleNode else null
-                            ),
-                            getFunction = graph.providerInvokeGetFunction(
-                                key = requestedKey,
-                                treeElement = graph.thisComponent.treeElement.child(providerField)
-                            ),
-                            { providerField }
+                            scoped = false,
+                            module = moduleNode,
+                            treeElement = moduleNode.treeElement.child(
+                                module.fields.single { it.name.asString() == fieldName }
+                            )
                         )
                     }
                     else -> {
-                        provider!!
-                        graph.statelessBinding(
+                        ProvisionBinding(
                             key = requestedKey,
                             dependencies = dependencies,
-                            provider = provider,
-                            moduleIfRequired = if (moduleRequired) moduleNode else null
+                            targetScope = null,
+                            scoped = scoped,
+                            module = moduleNode,
+                            provider = provider!!
                         )
                     }
                 }
@@ -150,38 +100,20 @@ class AnnotatedClassBindingResolver(
         val dependencies = constructor.valueParameters
             .map { Key(it.type) }
 
-        val isScoped = scopeAnnotation.fqName != InjektFqNames.Transient
+        val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
-        val binding = if (isScoped) {
-            val providerField = graph.allocateProviderField(requestedKey.type)
+        val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-            graph.statefulBinding(
+        return listOf(
+            ProvisionBinding(
                 key = requestedKey,
                 dependencies = dependencies,
-                targetScope = scopeAnnotation.fqName!!,
-                providerInstance = graph.newProviderInstance(provider, isScoped, null),
-                getFunction = graph.providerInvokeGetFunction(
-                    key = requestedKey,
-                    treeElement = graph.thisComponent.treeElement.child(providerField)
-                ),
-                providerField = {
-                    dependencies
-                        .map { graph.requestBinding(it) }
-                        .forEach { providerField }// todo
-
-                    providerField
-                }
+                targetScope = targetScope,
+                scoped = scoped,
+                module = null,
+                provider = provider
             )
-        } else {
-            graph.statelessBinding(
-                key = requestedKey,
-                dependencies = dependencies,
-                provider = provider,
-                moduleIfRequired = null
-            )
-        }
-
-        return listOf(binding)
+        )
     }
 }
 
@@ -204,24 +136,25 @@ class LazyOrProviderBindingResolver(
                 .buildSimpleType { annotations += requestedKey.type.annotations }
         )
 
-        return when (requestedType.classifier) {
+        /*return when (requestedType.classifier) {
             symbols.provider -> {
                 Binding(
                     key = requestedKey,
                     dependencies = listOf(dependency),
                     targetScope = null,
-                    providerInstance = {
-                        graph.requestBinding(dependency)
-                            .providerInstance(this, it)
+                    providerExpression = {
+                        graph.getBinding(dependency)
+                            .providerExpression(this, it)
                     },
                     getFunction = graph.getFunction(requestedKey) { function ->
-                        graph.requestBinding(dependency)
-                            .providerInstance(this, irGet(function.dispatchReceiverParameter!!))
+                        graph.getBinding(dependency)
+                            .providerExpression(this, irGet(function.dispatchReceiverParameter!!))
                     },
                     providerField = { null }
                 ).let { listOf(it) }
             }
             else -> emptyList()
-        }
+        }*/
+        return emptyList()
     }
 }

@@ -3,11 +3,12 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.graph.ComponentNode
-import com.ivianuu.injekt.compiler.graph.Graph
-import com.ivianuu.injekt.compiler.graph.Key
-import com.ivianuu.injekt.compiler.graph.ModuleNode
-import com.ivianuu.injekt.compiler.graph.child
+import com.ivianuu.injekt.compiler.transform.graph.ComponentNode
+import com.ivianuu.injekt.compiler.transform.graph.Graph
+import com.ivianuu.injekt.compiler.transform.graph.Key
+import com.ivianuu.injekt.compiler.transform.graph.ModuleNode
+import com.ivianuu.injekt.compiler.transform.graph.RequestType
+import com.ivianuu.injekt.compiler.transform.graph.child
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -47,7 +48,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.isFakeOverride
@@ -188,16 +188,19 @@ class FactoryTransformer(
             addField("module", moduleClass.defaultType)
         } else null
 
-        val componentNode = ComponentNode(
-            component = this,
-            treeElement = { it }
-        )
+        val componentNode =
+            ComponentNode(
+                context = this@FactoryTransformer.context,
+                component = this,
+                treeElement = { it },
+                symbols = symbols
+            )
 
         val graph = Graph(
             context = this@FactoryTransformer.context,
             symbols = symbols,
-            thisComponent = componentNode,
-            thisComponentModule = moduleClass?.let {
+            componentNode = componentNode,
+            componentModule = moduleClass?.let {
                 ModuleNode(
                     module = moduleClass,
                     treeElement = componentNode.treeElement.child(moduleField!!.value)
@@ -216,11 +219,17 @@ class FactoryTransformer(
                             declaration.dispatchReceiverParameter?.type != irBuiltIns.anyType &&
                             !declaration.isFakeOverride
                         )
-                            dependencyRequests[declaration] = Key(declaration.returnType)
+                            dependencyRequests[declaration] =
+                                Key(
+                                    declaration.returnType
+                                )
                     }
                     is IrProperty -> {
                         if (!declaration.isFakeOverride)
-                            dependencyRequests[declaration] = Key(declaration.getter!!.returnType)
+                            dependencyRequests[declaration] =
+                                Key(
+                                    declaration.getter!!.returnType
+                                )
                     }
                 }
             }
@@ -232,8 +241,8 @@ class FactoryTransformer(
 
         superTypes.single().classOrNull?.owner?.collectDependencyRequests()
 
-        dependencyRequests.forEach { declaration, key ->
-            val binding = graph.requestBinding(key)
+        dependencyRequests.forEach { (declaration, key) ->
+            val binding = graph.getBinding(key)
             when (declaration) {
                 is IrFunction -> {
                     addFunction {
@@ -244,9 +253,14 @@ class FactoryTransformer(
                         overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                         body = irExprBody(
-                            irCall(binding.getFunction(this@implementationClass)).apply {
-                                dispatchReceiver = irGet(dispatchReceiverParameter!!)
-                            }
+                            graph.factoryExpressions.getBindingExpression(
+                                    binding,
+                                    RequestType.Instance
+                                )
+                                .invoke(
+                                    this@implementationClass,
+                                    irGet(dispatchReceiverParameter!!)
+                                )
                         )
                     }
                 }
@@ -257,12 +271,17 @@ class FactoryTransformer(
                         addGetter {
                             returnType = declaration.getter!!.returnType
                         }.apply {
-                            overriddenSymbols += declaration.getter!!.symbol as IrSimpleFunctionSymbol
+                            overriddenSymbols += declaration.getter!!.symbol
                             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                             body = irExprBody(
-                                irCall(binding.getFunction(this@implementationClass)).apply {
-                                    dispatchReceiver = irGet(dispatchReceiverParameter!!)
-                                }
+                                graph.factoryExpressions.getBindingExpression(
+                                        binding,
+                                        RequestType.Instance
+                                    )
+                                    .invoke(
+                                        this@implementationClass,
+                                        irGet(dispatchReceiverParameter!!)
+                                    )
                             )
                         }
                     }
@@ -295,33 +314,27 @@ class FactoryTransformer(
                     )
                 }
 
-                val fieldsToInitialize = graph.resolvedBindings.values
-                    .filter { it.providerField() != null }
-                    .filter { it.providerField() in fields }
-
-                val initializedKeys = mutableSetOf<Key>()
-                val processedFields = mutableSetOf<IrField>()
-
+                var lastRoundFields: Map<Key, ComponentNode.ComponentField>? = null
                 while (true) {
-                    val fieldsToProcess = fieldsToInitialize
-                        .filter { it.providerField() !in processedFields }
-                    if (fieldsToProcess.isEmpty()) break
+                    val fieldsToInitialize = componentNode.componentFields
+                        .filterKeys { it !in componentNode.initializedFields }
+                    if (fieldsToInitialize.isEmpty()) {
+                        break
+                    } else if (lastRoundFields == fieldsToInitialize) {
+                        error("Initializing error ${lastRoundFields.keys}")
+                    }
+                    lastRoundFields = fieldsToInitialize
 
-                    fieldsToProcess
-                        .filter {
-                            it.dependencies.all {
-                                it in initializedKeys
-                            }
-                        }
-                        .forEach {
-                            initializedKeys += it.key
-                            processedFields += it.providerField()!!
+                    fieldsToInitialize.forEach { (key, field) ->
+                        field.initializer(this, irGet(thisReceiver!!))?.let { initExpr ->
                             +irSetField(
                                 irGet(thisReceiver!!),
-                                it.providerField()!!,
-                                it.providerInstance(this, irGet(thisReceiver!!))
+                                field.field,
+                                initExpr
                             )
+                            componentNode.initializedFields += key
                         }
+                    }
                 }
             }
         }

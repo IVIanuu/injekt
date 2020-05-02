@@ -15,8 +15,8 @@ class Testt {
         @Factory 
         fun create(): MyComponent = createImplementation {
             instance(0)
-            transient { 0L }
             scoped { get<Int>(); get<Long>(); "hello world" }
+            transient { 0L }
         }
         
         fun invoke() = create().helloWorld
@@ -42,6 +42,25 @@ class Testt {
     """
     ) {
         invokeSingleFile()
+    }
+
+    @Test
+    fun fib() = codegen(
+        """
+        interface MyComponent {
+            val fib4: Fib4
+        }
+        
+        @Transient class Fib1
+        @Transient class Fib2
+        @Transient class Fib3(val m1: Fib2, val m2: Fib1)
+        @Transient class Fib4(val m1: Fib3, val m2: Fib2)
+
+        @Factory 
+        fun create(): MyComponent = createImplementation()
+         """
+    ) {
+        assertOk()
     }
 
 }
