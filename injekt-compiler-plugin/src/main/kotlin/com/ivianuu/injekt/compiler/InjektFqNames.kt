@@ -32,6 +32,8 @@ object InjektFqNames {
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
+    val DoubleCheck = InternalPackage.child("DoubleCheck")
+
     val Factory = InjektPackage.child("Factory")
 
     val InstanceProvider = InternalPackage.child("InstanceProvider")
@@ -48,7 +50,6 @@ object InjektFqNames {
 
     val Qualifier = InjektPackage.child("Qualifier")
     val Scope = InjektPackage.child("Scope")
-    val ScopedProvider = InternalPackage.child("ScopedProvider")
 
     val SetDsl = InjektPackage.child("SetDsl")
 

@@ -1,8 +1,11 @@
 package com.ivianuu.injekt.internal
 
+import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 
-class ScopedProvider<T>(private var wrapped: Provider<T>?) : Provider<T> {
+class DoubleCheck<T>(
+    private var wrapped: Provider<T>?
+) : Lazy<T> {
     private var value: Any? = this
 
     override fun invoke(): T {

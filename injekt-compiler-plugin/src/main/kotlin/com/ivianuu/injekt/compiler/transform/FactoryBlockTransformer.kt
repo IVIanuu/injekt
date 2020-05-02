@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.types.classifierOrNull
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -62,8 +61,6 @@ class FactoryBlockTransformer(
                 val result = moduleFunction(factoryFunction, moduleBlock)
                 (factoryFunction.parent as IrDeclarationContainer).addChild(result.function)
                 result.function.parent = factoryFunction.parent
-
-                println("${moduleBlock.dump()}\n\n\n${result.function.dump()}\n\n${result.valueParametersByCaptures}")
 
                 moduleBlock.function.body = irExprBody(
                     irCall(result.function).apply {

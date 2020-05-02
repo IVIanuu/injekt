@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Provider
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import org.junit.Test
@@ -39,7 +40,8 @@ class ImplementationTest {
             scoped { Foo() }
         }
         
-        fun invoke() = create().foo
+        val component = create()
+        fun invoke() = component.foo
     """
     ) {
         assertSame(
@@ -128,6 +130,62 @@ class ImplementationTest {
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)
+    }
+
+    @Test
+    fun testProviderOfTransient() = codegen(
+        """
+        interface TestComponent {
+            val provider: Provider<Foo>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            transient { Foo() }
+        }
+        
+        fun invoke() = create().provider
+    """
+    ) {
+        val provider = invokeSingleFile<Provider<Foo>>()
+        assertNotSame(provider(), provider())
+    }
+
+    @Test
+    fun testProviderOfScoped() = codegen(
+        """
+        interface TestComponent {
+            val provider: Provider<Foo>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            scoped { Foo() }
+        }
+        
+        fun invoke() = create().provider
+    """
+    ) {
+        val provider = invokeSingleFile<Provider<Foo>>()
+        assertSame(provider(), provider())
+    }
+
+    @Test
+    fun testQualifiedProvider() = codegen(
+        """
+        interface TestComponent {
+            val provider: @TestQualifier1 Provider<Foo>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            @TestQualifier1 transient { Foo() }
+        }
+        
+        fun invoke() = create().provider
+    """
+    ) {
+        assertOk()
     }
 
 }

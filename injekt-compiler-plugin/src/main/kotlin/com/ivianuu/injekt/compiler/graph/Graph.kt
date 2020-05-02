@@ -3,8 +3,6 @@ package com.ivianuu.injekt.compiler.graph
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -53,6 +51,7 @@ class Graph(
 
     init {
         if (thisComponentModule != null) addModule(thisComponentModule)
+        bindingResolvers += LazyOrProviderBindingResolver(context, this)
     }
 
     fun requestBinding(key: Key): Binding {
@@ -237,7 +236,7 @@ class Graph(
         )
     }
 
-    private fun getFunction(
+    fun getFunction(
         key: Key,
         body: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrBuilderWithScope.() -> IrFunction {
@@ -323,7 +322,7 @@ class Graph(
 
         if (isScoped) {
             irCall(
-                symbols.scopedProvider
+                symbols.doubleCheck
                     .constructors
                     .single()
             ).apply { putValueArgument(0, newProvider) }
@@ -345,161 +344,5 @@ class Graph(
         )
 
         return field
-    }
-}
-
-typealias BindingResolver = (Key) -> List<Binding>
-
-class ModuleBindingResolver(
-    private val graph: Graph,
-    private val moduleNode: ModuleNode,
-    private val module: IrClass,
-    private val descriptor: IrClass
-) : BindingResolver {
-
-    private val allBindings = descriptor
-        .declarations
-        .filterIsInstance<IrFunction>()
-        .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
-
-    override fun invoke(requestedKey: Key): List<Binding> {
-        return allBindings
-            .filter { Key(it.returnType) == requestedKey }
-            .mapNotNull { bindingFunction ->
-                val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
-                    ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
-                val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
-                    ?.getTypeArgument(0)?.classOrNull?.owner
-
-                if (bindingFunction.valueParameters.any {
-                        it.hasAnnotation(InjektFqNames.Assisted)
-                    }) return@mapNotNull null
-
-                val isScoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
-
-                val dependencies = bindingFunction.valueParameters
-                    .map { Key(it.type) }
-
-                val moduleRequired =
-                    provider?.constructors?.single()?.valueParameters?.firstOrNull()
-                        ?.name?.asString() == "module"
-
-                when {
-                    fieldName != null -> {
-                        val instanceTreeElement = moduleNode.treeElement.child(
-                            module.fields.single { it.name.asString() == fieldName }
-                        )
-                        val providerField = lazy {
-                            graph.allocateProviderField(requestedKey.type)
-                        }
-
-                        graph.statefulBinding(
-                            key = requestedKey,
-                            dependencies = emptyList(),
-                            providerInstance = {
-                                providerField.value
-                                irCall(graph.symbols.instanceProvider.constructors.single()).apply {
-                                    putValueArgument(
-                                        0,
-                                        instanceTreeElement(it)
-                                    )
-                                }
-                            },
-                            getFunction = graph.treeElementGetFunction(
-                                requestedKey,
-                                instanceTreeElement
-                            ),
-                            providerField = { providerField.takeIf { it.isInitialized() }?.value }
-                        )
-                    }
-                    isScoped -> {
-                        provider!!
-                        val providerField = graph.allocateProviderField(requestedKey.type)
-
-                        graph.statefulBinding(
-                            key = requestedKey,
-                            dependencies = dependencies,
-                            targetScope = null,
-                            providerInstance = graph.newProviderInstance(
-                                provider,
-                                isScoped,
-                                if (moduleRequired) moduleNode else null
-                            ),
-                            getFunction = graph.providerInvokeGetFunction(
-                                key = requestedKey,
-                                treeElement = graph.thisComponent.treeElement.child(providerField)
-                            ),
-                            { providerField }
-                        )
-                    }
-                    else -> {
-                        provider!!
-                        graph.statelessBinding(
-                            key = requestedKey,
-                            dependencies = dependencies,
-                            provider = provider,
-                            moduleIfRequired = if (moduleRequired) moduleNode else null
-                        )
-                    }
-                }
-            }
-
-    }
-}
-
-class AnnotatedClassBindingResolver(
-    private val graph: Graph,
-    private val context: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore
-) : BindingResolver {
-    override fun invoke(requestedKey: Key): List<Binding> {
-        val clazz = requestedKey.type.classOrNull
-            ?.ensureBound(context.irProviders)?.owner ?: return emptyList()
-        val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
-            .singleOrNull() ?: return emptyList()
-        val provider = declarationStore.getProvider(clazz)
-
-        val constructor = clazz.constructors
-            .single()
-
-        if (constructor.valueParameters.any {
-                it.hasAnnotation(InjektFqNames.Assisted)
-            }) return emptyList()
-
-        val dependencies = constructor.valueParameters
-            .map { Key(it.type) }
-
-        val isScoped = scopeAnnotation.fqName != InjektFqNames.Transient
-
-        val binding = if (isScoped) {
-            val providerField = graph.allocateProviderField(requestedKey.type)
-
-            graph.statefulBinding(
-                key = requestedKey,
-                dependencies = dependencies,
-                targetScope = scopeAnnotation.fqName!!,
-                providerInstance = graph.newProviderInstance(provider, isScoped, null),
-                getFunction = graph.providerInvokeGetFunction(
-                    key = requestedKey,
-                    treeElement = graph.thisComponent.treeElement.child(providerField)
-                ),
-                providerField = {
-                    dependencies
-                        .map { graph.requestBinding(it) }
-                        .forEach { providerField }// todo
-
-                    providerField
-                }
-            )
-        } else {
-            graph.statelessBinding(
-                key = requestedKey,
-                dependencies = dependencies,
-                provider = provider,
-                moduleIfRequired = null
-            )
-        }
-
-        return listOf(binding)
     }
 }

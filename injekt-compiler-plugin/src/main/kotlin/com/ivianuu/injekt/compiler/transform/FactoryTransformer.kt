@@ -151,8 +151,6 @@ class FactoryTransformer(
                 }
             )
 
-            println("create ${function.dump()}")
-
             transformedFactories[function] = implementationClass
             transformingFactories -= implementationFqName
             implementationClass
