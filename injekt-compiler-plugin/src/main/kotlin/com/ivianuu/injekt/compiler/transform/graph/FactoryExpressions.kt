@@ -17,11 +17,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 
-enum class RequestType {
-    Instance,
-    Provider
-}
-
 typealias BindingExpression = IrBuilderWithScope.(IrExpression) -> IrExpression
 
 class FactoryExpressions(
@@ -31,22 +26,20 @@ class FactoryExpressions(
     private val componentNode: ComponentNode
 ) {
 
-    private val bindingExpressions = mutableMapOf<Binding, BindingExpression>()
-    private val chain = mutableSetOf<Binding>()
+    private val bindingExpressions = mutableMapOf<BindingRequest, BindingExpression>()
+    private val chain = mutableSetOf<BindingRequest>()
 
-    fun getBindingExpression(
-        binding: Binding,
-        requestType: RequestType
-    ): BindingExpression {
-        bindingExpressions[binding]?.let { return it }
+    fun getBindingExpression(request: BindingRequest): BindingExpression {
+        bindingExpressions[request]?.let { return it }
 
-        check(binding !in chain) {
-            "Circular dep $binding"
+        check(request !in chain) {
+            "Circular dep $request"
         }
 
-        chain += binding
+        chain += request
 
-        val expression = when (requestType) {
+        val binding = graph.getBinding(request)
+        val expression = when (request.requestType) {
             RequestType.Instance -> {
                 when (binding) {
                     is InstanceBinding -> instanceExpressionForInstance(binding)
@@ -61,14 +54,11 @@ class FactoryExpressions(
             }
         }
 
-        chain -= binding
+        chain -= request
 
-        bindingExpressions[binding] = expression
+        bindingExpressions[request] = expression
         return expression
     }
-
-    fun getDependencyExpression(key: Key, requestType: RequestType): BindingExpression =
-        getBindingExpression(graph.getBinding(key), requestType)
 
     private fun instanceExpressionForInstance(binding: InstanceBinding): BindingExpression {
         return { binding.treeElement(this, it) }
@@ -90,7 +80,7 @@ class FactoryExpressions(
             expression
         } else {
             val dependencies = binding.dependencies
-                .map { getDependencyExpression(it, RequestType.Instance) }
+                .map { getBindingExpression(BindingRequest(it, RequestType.Instance)) }
             val expression: BindingExpression = bindingExpression@{ parent ->
                 val provider = binding.provider
                 val createFunction = (if (provider.kind == ClassKind.OBJECT)
@@ -178,7 +168,7 @@ class FactoryExpressions(
 
     private fun providerExpressionForProvision(binding: ProvisionBinding): BindingExpression {
         val dependencies = binding.dependencies
-            .map { getDependencyExpression(it, RequestType.Provider) }
+            .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
 
         val field = componentNode.getOrCreateComponentField(binding.key) fieldInit@{ parent ->
             val provider = binding.provider

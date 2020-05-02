@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.transform.graph.BindingRequest
 import com.ivianuu.injekt.compiler.transform.graph.ComponentNode
 import com.ivianuu.injekt.compiler.transform.graph.Graph
 import com.ivianuu.injekt.compiler.transform.graph.Key
@@ -242,7 +243,7 @@ class FactoryTransformer(
         superTypes.single().classOrNull?.owner?.collectDependencyRequests()
 
         dependencyRequests.forEach { (declaration, key) ->
-            val binding = graph.getBinding(key)
+            val binding = graph.getBinding(BindingRequest(key, RequestType.Instance))
             when (declaration) {
                 is IrFunction -> {
                     addFunction {
@@ -254,8 +255,10 @@ class FactoryTransformer(
                         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                         body = irExprBody(
                             graph.factoryExpressions.getBindingExpression(
-                                    binding,
-                                    RequestType.Instance
+                                    BindingRequest(
+                                        binding.key,
+                                        RequestType.Instance
+                                    )
                                 )
                                 .invoke(
                                     this@implementationClass,
@@ -275,8 +278,10 @@ class FactoryTransformer(
                             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                             body = irExprBody(
                                 graph.factoryExpressions.getBindingExpression(
-                                        binding,
-                                        RequestType.Instance
+                                        BindingRequest(
+                                            binding.key,
+                                            RequestType.Instance
+                                        )
                                     )
                                     .invoke(
                                         this@implementationClass,

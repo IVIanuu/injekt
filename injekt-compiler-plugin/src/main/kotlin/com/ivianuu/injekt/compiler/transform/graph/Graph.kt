@@ -50,16 +50,16 @@ class Graph(
         )
     }
 
-    fun getBinding(key: Key): Binding {
-        return resolvedBindings.getOrPut(key) {
-            val explicitBindings = explicitBindingResolvers.flatMap { it(key) }
+    fun getBinding(request: BindingRequest): Binding {
+        return resolvedBindings.getOrPut(request.key) {
+            val explicitBindings = explicitBindingResolvers.flatMap { it(request.key) }
             if (explicitBindings.size > 1) {
-                error("Multiple bindings found for $key")
+                error("Multiple bindings found for ${request.key}")
             }
 
             val binding = explicitBindings.singleOrNull()
-                ?: annotatedClassBindingResolver(key).singleOrNull()
-                ?: error("No binding found for $key")
+                ?: annotatedClassBindingResolver(request.key).singleOrNull()
+                ?: error("No binding found for ${request.key}")
 
             if (binding.targetScope != null && binding.targetScope !in scopes) {
                 error(

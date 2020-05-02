@@ -90,6 +90,16 @@ class ComponentNode(
 
 }
 
+data class BindingRequest(
+    val key: Key,
+    val requestType: RequestType
+)
+
+enum class RequestType {
+    Instance,
+    Provider
+}
+
 sealed class Binding(
     val key: Key,
     val dependencies: List<Key>,
