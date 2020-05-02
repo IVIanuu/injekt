@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
@@ -227,6 +228,15 @@ class ModuleTransformer(
             )
         }
 
+        val modulesByCalls = moduleCalls.associateWith { call ->
+            val packageName = call.symbol.owner.fqNameForIrSerialization
+                .parent()
+            declarationStore.getModule(
+                packageName
+                    .child(InjektNameConventions.getModuleNameForModuleFunction(call.symbol.owner.name))
+            )
+        }
+
         var includeIndex = 0
         val moduleFieldsByCall = moduleCalls.associateWith { call ->
             val packageName = call.symbol.owner.fqNameForIrSerialization
@@ -317,6 +327,22 @@ class ModuleTransformer(
                         call.getValueArgument(0)!!
                     )
                 }
+
+                moduleFieldsByCall.forEach { (call, field) ->
+                    val module = modulesByCalls.getValue(call)
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        irCall(module.constructors.single()).apply {
+                            (0 until call.typeArgumentsCount)
+                                .map { call.getTypeArgument(it)!! }
+                                .forEachIndexed { index, type ->
+                                    putTypeArgument(index, type)
+                                }
+                            copyValueArgumentsFrom(call, call.symbol.owner, symbol.owner)
+                        }
+                    )
+                }
             }
         }
 
@@ -328,6 +354,7 @@ class ModuleTransformer(
                 dependencyFieldByCall = dependencyFieldsByCall,
                 childFactoryCalls = childFactoryCalls,
                 moduleCalls = moduleCalls,
+                modulesByCalls = modulesByCalls,
                 moduleFieldByCall = moduleFieldsByCall,
                 aliasCalls = aliasCalls,
                 instanceCalls = instanceCalls,
@@ -363,6 +390,7 @@ class ModuleTransformer(
         dependencyFieldByCall: Map<IrCall, IrField>,
         childFactoryCalls: List<IrCall>,
         moduleCalls: List<IrCall>,
+        modulesByCalls: Map<IrCall, IrClass>,
         moduleFieldByCall: Map<IrCall, IrField>,
         aliasCalls: List<IrCall>,
         instanceCalls: List<IrCall>,
@@ -438,13 +466,7 @@ class ModuleTransformer(
 
         // module calls
         moduleCalls.forEachIndexed { index, moduleCall ->
-            val packageName = moduleCall.symbol.owner.fqNameForIrSerialization
-                .parent()
-            val moduleClass = declarationStore.getModule(
-                packageName.child(
-                    InjektNameConventions.getModuleNameForModuleFunction(moduleCall.symbol.owner.name)
-                )
-            )
+            val moduleClass = modulesByCalls.getValue(moduleCall)
 
             addFunction(
                 name = "module_$index",
