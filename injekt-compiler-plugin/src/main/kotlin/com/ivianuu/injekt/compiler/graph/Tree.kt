@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.name.FqName
 
 typealias TreeElement = IrBuilderWithScope.(IrExpression) -> IrExpression
 
@@ -32,6 +33,7 @@ class ComponentNode(
 class Binding(
     val key: Key,
     val dependencies: List<Key>,
+    val targetScope: FqName?,
     val providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
     val getFunction: IrBuilderWithScope.() -> IrFunction,
     val providerField: () -> IrField?

@@ -37,4 +37,23 @@ class GraphTest {
         assertInternalError("multiple")
     }
 
+    @Test
+    fun testScopeMismatch() = codegen(
+        """
+        interface TestComponent {
+            val dep: Dep
+        }
+        
+        @TestScope2
+        class Dep
+
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            scope<TestScope>()
+        }
+        """
+    ) {
+        assertInternalError("scope mismatch")
+    }
+
 }

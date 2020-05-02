@@ -62,9 +62,18 @@ class Graph(
                 error("Multiple bindings found for $key")
             }
 
-            explicitBindings.singleOrNull()
+            val binding = explicitBindings.singleOrNull()
                 ?: annotatedClassBindingResolver(key).singleOrNull()
                 ?: error("No binding found for $key")
+
+            if (binding.targetScope != null && binding.targetScope !in scopes) {
+                error(
+                    "Scope mismatch binding ${binding.key} " +
+                            "with scope ${binding.targetScope} is not compatible with this component $scopes"
+                )
+            }
+
+            binding
         }
     }
 
@@ -117,6 +126,7 @@ class Graph(
     fun statefulBinding(
         key: Key,
         dependencies: List<Key>,
+        targetScope: FqName? = null,
         providerInstance: IrBuilderWithScope.(IrExpression) -> IrExpression,
         getFunction: IrBuilderWithScope.() -> IrFunction,
         providerField: () -> IrField?
@@ -124,6 +134,7 @@ class Graph(
         return Binding(
             key = key,
             dependencies = dependencies,
+            targetScope = targetScope,
             providerInstance = providerInstance,
             getFunction = getFunction,
             providerField = providerField
@@ -133,6 +144,7 @@ class Graph(
     fun statelessBinding(
         key: Key,
         dependencies: List<Key>,
+        targetScope: FqName? = null,
         provider: IrClass,
         moduleIfRequired: ModuleNode? = null
     ): Binding {
@@ -145,6 +157,7 @@ class Graph(
         return Binding(
             key = key,
             dependencies = dependencies,
+            targetScope = targetScope,
             providerInstance = {
                 if (provider.kind == ClassKind.OBJECT) {
                     irGetObject(provider.symbol)
@@ -402,6 +415,7 @@ class ModuleBindingResolver(
                         graph.statefulBinding(
                             key = requestedKey,
                             dependencies = dependencies,
+                            targetScope = null,
                             providerInstance = graph.newProviderInstance(
                                 provider,
                                 isScoped,
@@ -441,9 +455,6 @@ class AnnotatedClassBindingResolver(
             ?.ensureBound(context.irProviders)?.owner ?: return emptyList()
         val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
             .singleOrNull() ?: return emptyList()
-        if (scopeAnnotation.fqName != InjektFqNames.Transient &&
-            scopeAnnotation.fqName !in graph.scopes
-        ) return emptyList()
         val provider = declarationStore.getProvider(clazz)
 
         val constructor = clazz.constructors
@@ -464,6 +475,7 @@ class AnnotatedClassBindingResolver(
             graph.statefulBinding(
                 key = requestedKey,
                 dependencies = dependencies,
+                targetScope = scopeAnnotation.fqName!!,
                 providerInstance = graph.newProviderInstance(provider, isScoped, null),
                 getFunction = graph.providerInvokeGetFunction(
                     key = requestedKey,
@@ -472,7 +484,7 @@ class AnnotatedClassBindingResolver(
                 providerField = {
                     dependencies
                         .map { graph.requestBinding(it) }
-                        .forEach { providerField }
+                        .forEach { providerField }// todo
 
                     providerField
                 }
