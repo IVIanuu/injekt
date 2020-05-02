@@ -86,13 +86,14 @@ fun KotlinCompilation.Result.expectNoErrorsWhileInvokingSingleFile() {
 }
 
 @JvmName("invokeSingleFileTypeless")
-fun KotlinCompilation.Result.invokeSingleFile(): Any? = invokeSingleFile<Any?>()
+fun KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): Any? =
+    invokeSingleFile<Any?>(*args)
 
-fun <T> KotlinCompilation.Result.invokeSingleFile(): T {
+fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
     val generatedClass = getSingleClass().java
     return generatedClass.declaredMethods
-        .single { it.name == "invoke" && it.parameterCount == 0 }
-        .invoke(null) as T
+        .single { it.name == "invoke" && it.parameterCount == args.size }
+        .invoke(null, *args) as T
 }
 
 private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =

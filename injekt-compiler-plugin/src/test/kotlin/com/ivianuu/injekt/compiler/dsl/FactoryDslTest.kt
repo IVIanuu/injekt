@@ -1,35 +1,41 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.dsl
 
+import com.ivianuu.injekt.compiler.assertCompileError
+import com.ivianuu.injekt.compiler.assertOk
+import com.ivianuu.injekt.compiler.codegen
 import org.junit.Test
 
-class FactoryInvocationRulesTest {
+class FactoryDslTest {
 
     @Test
-    fun testCreateImplementationInAFactory() = codegen(
-        """
+    fun testCreateImplementationInAFactory() =
+        codegen(
+            """
         @Factory fun factory() = createImplementation<TestComponent>()
     """
-    ) {
-        assertOk()
-    }
+        ) {
+            assertOk()
+        }
 
     @Test
-    fun testCreateImplementationInAChildFactory() = codegen(
-        """
+    fun testCreateImplementationInAChildFactory() =
+        codegen(
+            """
         @ChildFactory fun factory() = createImplementation<TestComponent>()
     """
-    ) {
-        assertOk()
-    }
+        ) {
+            assertOk()
+        }
 
     @Test
-    fun testCreateImplementationCannotBeCalledOutsideOfAFactory() = codegen(
-        """
+    fun testCreateImplementationCannotBeCalledOutsideOfAFactory() =
+        codegen(
+            """
         fun nonFactory() = createImplementation<TestComponent>()
     """
-    ) {
-        assertCompileError("factory")
-    }
+        ) {
+            assertCompileError("factory")
+        }
 
     @Test
     fun testFactoryWithCreateExpression() = codegen(
@@ -42,29 +48,31 @@ class FactoryInvocationRulesTest {
     }
 
     @Test
-    fun testFactoryWithReturnCreateExpression() = codegen(
-        """
+    fun testFactoryWithReturnCreateExpression() =
+        codegen(
+            """
         @Factory
         fun exampleFactory(): TestComponent {
             return createImplementation()
         }
     """
-    ) {
-        assertOk()
-    }
+        ) {
+            assertOk()
+        }
 
     @Test
-    fun testFactoryWithMultipleStatements() = codegen(
-        """
+    fun testFactoryWithMultipleStatements() =
+        codegen(
+            """
         @Factory
         fun exampleFactory(): TestComponent {
             println()
             return createImplementation()
         }
     """
-    ) {
-        assertCompileError("statement")
-    }
+        ) {
+            assertCompileError("statement")
+        }
 
     @Test
     fun testFactoryWithoutCreate() = codegen(
@@ -122,30 +130,32 @@ class FactoryInvocationRulesTest {
     }
 
     @Test
-    fun testMutablePropertiesNotAllowedInFactoryImpls() = codegen(
-        """
+    fun testMutablePropertiesNotAllowedInFactoryImpls() =
+        codegen(
+            """
         interface Impl {
             var state: String
         }
         @Factory
         fun <T> factory(): Impl = createImplementation()
     """
-    ) {
-        assertCompileError("mutable")
-    }
+        ) {
+            assertCompileError("mutable")
+        }
 
     @Test
-    fun testParametersNotAllowedInProvisionFunctions() = codegen(
-        """
+    fun testParametersNotAllowedInProvisionFunctions() =
+        codegen(
+            """
         interface Impl {
             fun provisionFunction(p0: String): String
         }
         @Factory
         fun <T> factory(): Impl = createImplementation()
     """
-    ) {
-        assertCompileError("parameters")
-    }
+        ) {
+            assertCompileError("parameters")
+        }
 
     @Test
     fun testStaticFactoryOk() = codegen(

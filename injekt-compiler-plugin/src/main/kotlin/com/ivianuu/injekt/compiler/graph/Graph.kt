@@ -88,11 +88,11 @@ class Graph(
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
-            .map { it.returnType.classOrNull?.owner as IrClass }
-            .forEach { includedModule ->
+            .map { it to it.returnType.classOrNull?.owner as IrClass }
+            .forEach { (function, includedModule) ->
                 val field = module.fields
                     .single { field ->
-                        field.name.asString() == includedModule.getAnnotation(InjektFqNames.AstFieldPath)!!
+                        field.name.asString() == function.getAnnotation(InjektFqNames.AstFieldPath)!!
                             .getValueArgument(0)!!
                             .let { it as IrConst<String> }
                             .value

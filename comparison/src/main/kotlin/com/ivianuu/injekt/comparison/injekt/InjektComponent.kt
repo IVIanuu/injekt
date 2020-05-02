@@ -11,6 +11,8 @@ interface InjektTestComponent {
 
     companion object {
         @Factory
-        fun create(): InjektTestComponent = createImplementation()
+        fun create(): InjektTestComponent = createImplementation {
+            dummyModule()
+        }
     }
 }

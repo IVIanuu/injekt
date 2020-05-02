@@ -1,7 +1,5 @@
-package com.facebook.buck.jvm.java.javax.com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.codegen
-import com.ivianuu.injekt.compiler.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 

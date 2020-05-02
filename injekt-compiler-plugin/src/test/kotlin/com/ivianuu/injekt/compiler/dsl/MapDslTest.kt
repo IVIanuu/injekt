@@ -1,8 +1,11 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.dsl
 
+import com.ivianuu.injekt.compiler.assertCompileError
+import com.ivianuu.injekt.compiler.assertOk
+import com.ivianuu.injekt.compiler.codegen
 import org.junit.Test
 
-class MapTest {
+class MapDslTest {
 
     @Test
     fun testSupportedMapKeyType() = codegen(

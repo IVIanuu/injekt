@@ -8,11 +8,7 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.name.ClassId
@@ -22,8 +18,6 @@ import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
-
-fun DeclarationDescriptor.isModule() = annotations.hasAnnotation(InjektFqNames.Module)
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -44,22 +38,6 @@ fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
     if (!this.isBound) irProviders.forEach { it.getDeclaration(this) }
     check(this.isBound) { "$this is not bound" }
     return this
-}
-
-fun IrType.isFullyResolved(): Boolean =
-    this is IrSimpleType && this.classifier is IrClassSymbol && arguments.all {
-        it.typeOrNull?.isFullyResolved() == true
-    }
-
-fun String.removeIllegalChars(): String {
-    return replace("<", "")
-        .replace(">", "")
-        .replace(" ", "")
-        .replace(",", "")
-        .replace("*", "")
-        .replace(".", "")
-        .replace("-", "")
-
 }
 
 val SymbolTable.allUnbound: List<IrSymbol>

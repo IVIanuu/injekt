@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -40,11 +41,12 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrReturn
+import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -109,11 +111,48 @@ class FactoryTransformer(
                 "Circular dependency for factory $implementationFqName"
             }
             transformingFactories += implementationFqName
-            val implementationClass = implementationClass(function)
+
+            val moduleCall = function.body?.statements?.single()
+                ?.let { (it as? IrReturn)?.value }
+                ?.let { (it as? IrCall)?.getValueArgument(0) as? IrFunctionExpression }
+                ?.function
+                ?.body
+                ?.statements
+                ?.single() as? IrCall
+
+            val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
+                ?.parent()
+                ?.child(InjektNameConventions.getModuleNameForModuleFunction(moduleCall.symbol.owner.name))
+
+            val moduleClass = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
+            else null
+
+
+            val implementationClass = implementationClass(function, moduleClass)
+            println(implementationClass.dump())
+
             function.file.addChild(implementationClass)
             (function.file as IrFileImpl).metadata =
                 MetadataSource.File(function.file.declarations.map { it.descriptor })
-            function.body = irExprBody(irCall(implementationClass.constructors.single()))
+
+            function.body = irExprBody(
+                irCall(implementationClass.constructors.single()).apply {
+                    if (moduleCall != null) {
+                        putValueArgument(
+                            0,
+                            irCall(moduleClass!!.constructors.single()).apply {
+                                copyTypeArgumentsFrom(moduleCall)
+                                (0 until moduleCall.valueArgumentsCount).forEach {
+                                    putValueArgument(it, moduleCall.getValueArgument(it))
+                                }
+                            }
+                        )
+                    }
+                }
+            )
+
+            println("create ${function.dump()}")
+
             transformedFactories[function] = implementationClass
             transformingFactories -= implementationFqName
             implementationClass
@@ -135,7 +174,8 @@ class FactoryTransformer(
     }
 
     private fun IrBuilderWithScope.implementationClass(
-        function: IrFunction
+        function: IrFunction,
+        moduleClass: IrClass?
     ) = buildClass {
         // todo make kind = OBJECT if this component has no state
         name = InjektNameConventions.getImplementationNameForFactoryFunction(function.name)
@@ -146,23 +186,8 @@ class FactoryTransformer(
 
         superTypes += function.returnType
 
-        val moduleCall = function.body?.statements?.single()
-            ?.let { (it as? IrReturn)?.value }
-            ?.let { (it as? IrCall)?.getValueArgument(0) as? IrFunctionExpression }
-            ?.function
-            ?.body
-            ?.statements
-            ?.single() as? IrCall
-
-        val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
-            ?.parent()
-            ?.child(InjektNameConventions.getModuleNameForModuleFunction(moduleCall.symbol.owner.name))
-
-        val module = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
-        else null
-
-        val moduleField: Lazy<IrField>? = if (module != null) lazy {
-            addField("module", module.defaultType)
+        val moduleField: Lazy<IrField>? = if (moduleClass != null) lazy {
+            addField("module", moduleClass.defaultType)
         } else null
 
         val componentNode = ComponentNode(
@@ -174,9 +199,9 @@ class FactoryTransformer(
             context = this@FactoryTransformer.context,
             symbols = symbols,
             thisComponent = componentNode,
-            thisComponentModule = module?.let {
+            thisComponentModule = moduleClass?.let {
                 ModuleNode(
-                    module = module,
+                    module = moduleClass,
                     treeElement = componentNode.treeElement.child(moduleField!!.value)
                 )
             },
@@ -254,6 +279,13 @@ class FactoryTransformer(
         }.apply {
             copyTypeParametersFrom(this@clazz)
 
+            if (moduleField?.isInitialized() == true) {
+                addValueParameter(
+                    "module",
+                    moduleField.value.type
+                )
+            }
+
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)
 
@@ -261,13 +293,7 @@ class FactoryTransformer(
                     +irSetField(
                         irGet(thisReceiver!!),
                         moduleField.value,
-                        irCall(module!!.constructors.single()).apply {
-                            copyValueArgumentsFrom(
-                                moduleCall!!,
-                                moduleCall.symbol.owner,
-                                symbol.owner
-                            )
-                        }
+                        irGet(valueParameters.single())
                     )
                 }
 

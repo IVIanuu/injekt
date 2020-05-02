@@ -52,6 +52,7 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
@@ -121,6 +122,7 @@ class ModuleTransformer(
             }
             transformingModules += moduleFqName
             val moduleClass = moduleClass(function)
+            println(moduleClass.dump())
             function.file.addChild(moduleClass)
             (function.file as IrFileImpl).metadata =
                 MetadataSource.File(function.file.declarations.map { it.descriptor })
@@ -283,15 +285,19 @@ class ModuleTransformer(
         }.apply {
             copyTypeParametersFrom(this@clazz)
 
-            /*parameterMap = function.valueParameters
-                .associateWith { it.copyTo(this) }
-            valueParameters = parameterMap.values.toList()
-            fieldsByParameters = valueParameters.associateWith {
+            function.valueParameters.forEach { p ->
+                addValueParameter(
+                    name = p.name.asString(),
+                    type = p.type
+                ).also { parameterMap[p] = it }
+            }
+
+            valueParameters.forEach { p ->
                 addField(
-                    "p_${it.name.asString()}",
-                    it.type
-                )
-            }*/
+                    "p_${p.name.asString()}",
+                    p.type
+                ).also { fieldsByParameters[p] = it }
+            }
 
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)
@@ -301,6 +307,14 @@ class ModuleTransformer(
                         irGet(thisReceiver!!),
                         field,
                         irGet(parameter)
+                    )
+                }
+
+                instanceFieldsByCall.forEach { (call, field) ->
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        call.getValueArgument(0)!!
                     )
                 }
             }
