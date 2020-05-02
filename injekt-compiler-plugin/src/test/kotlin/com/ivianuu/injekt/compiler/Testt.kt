@@ -43,7 +43,6 @@ class Testt {
         fun invoke() = create().helloWorld
     """
     ) {
-        println("${this.generatedFiles}")
         invokeSingleFile()
     }
 

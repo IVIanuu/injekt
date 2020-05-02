@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.graph.ComponentNode
 import com.ivianuu.injekt.compiler.graph.Graph
 import com.ivianuu.injekt.compiler.graph.Key
@@ -13,6 +14,7 @@ import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -20,7 +22,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
-import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -33,6 +34,9 @@ import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrReturn
@@ -41,7 +45,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -107,8 +110,9 @@ class FactoryTransformer(
             }
             transformingFactories += implementationFqName
             val implementationClass = implementationClass(function)
-            println(implementationClass.dump())
             function.file.addChild(implementationClass)
+            (function.file as IrFileImpl).metadata =
+                MetadataSource.File(function.file.declarations.map { it.descriptor })
             function.body = irExprBody(irCall(implementationClass.constructors.single()))
             transformedFactories[function] = implementationClass
             transformingFactories -= implementationFqName
@@ -137,6 +141,8 @@ class FactoryTransformer(
         name = InjektNameConventions.getImplementationNameForFactoryFunction(function.name)
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
 
         superTypes += function.returnType
 
@@ -210,6 +216,7 @@ class FactoryTransformer(
                     addFunction {
                         name = declaration.name
                         returnType = declaration.returnType
+                        visibility = declaration.visibility
                     }.apply {
                         overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -243,6 +250,7 @@ class FactoryTransformer(
         addConstructor {
             returnType = defaultType
             isPrimary = true
+            visibility = Visibilities.PUBLIC
         }.apply {
             copyTypeParametersFrom(this@clazz)
 

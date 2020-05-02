@@ -1,9 +1,14 @@
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.ensureBound
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
 
@@ -13,6 +18,7 @@ class InjektDeclarationStore(
     private val symbols: InjektSymbols
 ) {
 
+    lateinit var classProviderTransformer: ClassProviderTransformer
     lateinit var factoryTransformer: FactoryTransformer
     lateinit var moduleTransformer: ModuleTransformer
 
@@ -59,6 +65,20 @@ class InjektDeclarationStore(
             }
         }
     }*/
+
+    fun getProvider(clazz: IrClass): IrClass {
+        classProviderTransformer.providersByClass[clazz]?.let { return it }
+        val memberScope =
+            (clazz.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                ?: (clazz.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
+        return memberScope.getContributedDescriptors()
+            .filterIsInstance<ClassDescriptor>()
+            .single { it.name == InjektNameConventions.getProviderNameForClass(clazz.name) }
+            .let { context.symbolTable.referenceClass(it) }
+            .ensureBound(context.irProviders)
+            .owner
+    }
 
     fun getModule(fqName: FqName): IrClass {
         return getModuleOrNull(fqName)

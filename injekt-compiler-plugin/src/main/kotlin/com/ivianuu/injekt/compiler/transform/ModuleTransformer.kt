@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.irTrace
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -22,7 +23,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -37,6 +37,9 @@ import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -119,6 +122,8 @@ class ModuleTransformer(
             transformingModules += moduleFqName
             val moduleClass = moduleClass(function)
             function.file.addChild(moduleClass)
+            (function.file as IrFileImpl).metadata =
+                MetadataSource.File(function.file.declarations.map { it.descriptor })
             function.body = irExprBody(irInjektIntrinsicUnit())
             transformedModules[function] = moduleClass
             transformingModules -= moduleFqName
@@ -274,6 +279,7 @@ class ModuleTransformer(
         addConstructor {
             returnType = defaultType
             isPrimary = true
+            visibility = Visibilities.PUBLIC
         }.apply {
             copyTypeParametersFrom(this@clazz)
 
@@ -681,6 +687,7 @@ class ModuleTransformer(
             addConstructor {
                 returnType = defaultType
                 isPrimary = true
+                visibility = Visibilities.PUBLIC
             }.apply {
                 copyTypeParametersFrom(this@clazz)
 
@@ -749,6 +756,7 @@ class ModuleTransformer(
             addFunction {
                 this.name = Name.identifier("invoke")
                 returnType = resultType
+                visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
@@ -817,9 +825,12 @@ class ModuleTransformer(
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
         addConstructor {
             returnType = defaultType
             isPrimary = true
+            visibility = Visibilities.PUBLIC
         }.apply {
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)
@@ -848,6 +859,7 @@ class ModuleTransformer(
         return owner.addFunction {
             name = Name.identifier("create")
             returnType = resultType
+            visibility = Visibilities.PUBLIC
         }.apply {
             copyTypeParametersFrom(module)
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)

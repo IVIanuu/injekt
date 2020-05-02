@@ -1,9 +1,9 @@
 package com.ivianuu.injekt.compiler.graph
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -131,7 +131,8 @@ class Graph(
         moduleIfRequired: ModuleNode? = null
     ): Binding {
         val createFunction = (if (provider.kind == ClassKind.OBJECT)
-            provider else provider.companionObject() as IrClass)
+            provider else provider.declarations
+            .single { it.nameForIrSerialization.asString() == "Companion" } as IrClass)
             .functions
             .single { it.name.asString() == "create" }
 
@@ -355,7 +356,7 @@ class ModuleBindingResolver(
                 it.hasAnnotation(InjektFqNames.Assisted)
             }) return null
 
-        val isScoped = binding.hasAnnotation(InjektFqNames.AstScope)
+        val isScoped = binding.hasAnnotation(InjektFqNames.AstScoped)
 
         val dependencies = binding.valueParameters
             .map { Key(it.type) }
@@ -373,6 +374,7 @@ class ModuleBindingResolver(
                     key = requestedKey,
                     dependencies = emptyList(),
                     providerInstance = {
+                        providerField.value
                         irCall(graph.symbols.instanceProvider.constructors.single()).apply {
                             putValueArgument(
                                 0,
@@ -420,20 +422,17 @@ class AnnotatedClassBindingResolver(
     private val declarationStore: InjektDeclarationStore
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): Binding? {
-        val clazz = requestedKey.type.classOrNull ?: return null
+        val clazz = requestedKey.type.classOrNull
+            ?.ensureBound(context.irProviders)?.owner ?: return null
         val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
             .singleOrNull() ?: return null
         if (scopeAnnotation.fqName != InjektFqNames.Transient &&
             scopeAnnotation.fqName !in graph.scopes
         ) return null
-        val provider = clazz.owner.declarations
-            .single {
-                it.nameForIrSerialization ==
-                        InjektNameConventions.getProviderNameForClass(clazz.owner.name)
-            } as IrClass
+        val provider = declarationStore.getProvider(clazz)
 
         val constructor = clazz.constructors
-            .single().owner
+            .single()
 
         if (constructor.valueParameters.any {
                 it.hasAnnotation(InjektFqNames.Assisted)
@@ -445,7 +444,7 @@ class AnnotatedClassBindingResolver(
         val isScoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
         return if (isScoped) {
-            val field = graph.allocateProviderField(requestedKey.type)
+            val providerField = graph.allocateProviderField(requestedKey.type)
 
             graph.statefulBinding(
                 key = requestedKey,
@@ -453,9 +452,15 @@ class AnnotatedClassBindingResolver(
                 providerInstance = graph.newProviderInstance(provider, isScoped, null),
                 getFunction = graph.providerInvokeGetFunction(
                     key = requestedKey,
-                    treeElement = graph.thisComponent.treeElement.child(field)
+                    treeElement = graph.thisComponent.treeElement.child(providerField)
                 ),
-                providerField = { field }
+                providerField = {
+                    dependencies
+                        .map { graph.requestBinding(it) }
+                        .forEach { providerField }
+
+                    providerField
+                }
             )
         } else {
             graph.statelessBinding(

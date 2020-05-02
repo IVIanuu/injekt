@@ -2,20 +2,23 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.addClass
+import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -26,29 +29,58 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceFunction
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTrace) :
-    AbstractInjektTransformer(context, bindingTrace) {
+class ClassProviderTransformer(
+    context: IrPluginContext,
+    bindingTrace: BindingTrace,
+    private val project: Project
+) : AbstractInjektTransformer(context, bindingTrace) {
 
-    override fun visitClass(declaration: IrClass): IrStatement {
-        if (declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)) {
-            declaration.addChild(
-                DeclarationIrBuilder(context, declaration.symbol)
-                    .provider(declaration)
-            )
+    val providersByClass = mutableMapOf<IrClass, IrClass>()
+
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+        val classes = mutableListOf<IrClass>()
+
+        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitClass(declaration: IrClass): IrStatement {
+                if (declaration.descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope)) {
+                    classes += declaration
+                }
+                return super.visitClass(declaration)
+            }
+        })
+
+        classes.forEach { clazz ->
+            moduleFragment.addClass(
+                context,
+                project,
+                clazz.name,
+                clazz.file.fqName
+            ) {
+                DeclarationIrBuilder(context, clazz.symbol)
+                    .provider(clazz)
+                    .also { providersByClass[clazz] = it }
+            }
         }
-        return super.visitClass(declaration)
+
+        return super.visitModuleFragment(declaration)
     }
 
     private fun IrBuilderWithScope.provider(clazz: IrClass): IrClass {
@@ -63,6 +95,8 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
         }.apply clazz@{
             superTypes += symbols.provider.typeWith(clazz.defaultType)
 
+            (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             val fieldsByDependency = dependencies
@@ -76,6 +110,7 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
             addConstructor {
                 returnType = defaultType
                 isPrimary = true
+                visibility = Visibilities.PUBLIC
             }.apply {
                 fieldsByDependency.forEach { (_, field) ->
                     addValueParameter(
@@ -112,6 +147,7 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
             addFunction {
                 this.name = Name.identifier("invoke")
                 returnType = clazz.defaultType
+                visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
@@ -159,9 +195,12 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
         addConstructor {
             returnType = defaultType
             isPrimary = true
+            visibility = Visibilities.PUBLIC
         }.apply {
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)
@@ -179,7 +218,8 @@ class ClassProviderTransformer(context: IrPluginContext, bindingTrace: BindingTr
         return owner.addFunction {
             name = Name.identifier("create")
             returnType = clazz.defaultType
-            isInline = true
+            visibility = Visibilities.PUBLIC
+            // todo isInline = true
         }.apply {
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
 

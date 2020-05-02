@@ -31,7 +31,9 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         QualifiedMetadataTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
 
         // generate a provider for each annotated class
-        ClassProviderTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
+        ClassProviderTransformer(pluginContext, bindingTrace, project)
+            .also { declarationStore.classProviderTransformer = it }
+            .visitModuleAndGenerateSymbols()
 
         // move the module block of @Factory createImplementation { ... } to a function
         FactoryBlockTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
