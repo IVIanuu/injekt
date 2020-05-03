@@ -35,11 +35,13 @@ class Graph(
             context,
             declarationStore
         )
+    private val setBindingResolver = SetBindingResolver()
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
         if (componentModule != null) addModule(componentModule)
         explicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
+        explicitBindingResolvers += setBindingResolver
     }
 
     fun getBinding(key: Key): BindingNode {
@@ -62,14 +64,6 @@ class Graph(
 
             binding
         }
-    }
-
-    private fun addScope(scope: FqName) {
-        scopes += scope
-    }
-
-    private fun addExplicitBindingResolver(bindingResolver: BindingResolver) {
-        explicitBindingResolvers += bindingResolver
     }
 
     private fun addModule(moduleNode: ModuleNode) {
@@ -110,6 +104,21 @@ class Graph(
             }
 
         functions
+            .filter { it.hasAnnotation(InjektFqNames.AstSet) }
+            .forEach { function ->
+                addSet(Key(function.returnType))
+            }
+
+        functions
+            .filter { it.hasAnnotation(InjektFqNames.AstSetElement) }
+            .forEach { function ->
+                addSetElement(
+                    Key(function.valueParameters[0].type),
+                    Key(function.valueParameters[1].type)
+                )
+            }
+
+        functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
             .map { it to it.returnType.classOrNull?.owner as IrClass }
             .forEach { (function, includedModule) ->
@@ -137,4 +146,19 @@ class Graph(
         )
     }
 
+    private fun addScope(scope: FqName) {
+        scopes += scope
+    }
+
+    private fun addExplicitBindingResolver(bindingResolver: BindingResolver) {
+        explicitBindingResolvers += bindingResolver
+    }
+
+    private fun addSet(key: Key) {
+        setBindingResolver.addSet(key)
+    }
+
+    private fun addSetElement(setKey: Key, elementKey: Key) {
+        setBindingResolver.addSetElement(setKey, elementKey)
+    }
 }

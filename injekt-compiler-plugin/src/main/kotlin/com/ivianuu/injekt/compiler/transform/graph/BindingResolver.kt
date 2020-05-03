@@ -194,6 +194,32 @@ class AnnotatedClassBindingResolver(
     }
 }
 
+class SetBindingResolver : BindingResolver {
+
+    private val sets = mutableMapOf<Key, MutableSet<Key>>()
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return sets
+            .flatMap { (setKey, elementKeys) ->
+                listOf(SetBindingNode(setKey, elementKeys.toList()))
+            }
+            .filter { it.key == requestedKey }
+    }
+
+    fun addSet(setKey: Key) {
+        sets.getOrPut(setKey) { mutableSetOf() }
+    }
+
+    fun addSetElement(setKey: Key, elementKey: Key) {
+        val set = sets[setKey]!!
+        if (elementKey in set) {
+            error("Already bound $elementKey into set $setKey")
+        }
+
+        set += elementKey
+    }
+}
+
 class LazyOrProviderBindingResolver(
     private val symbols: InjektSymbols
 ) : BindingResolver {

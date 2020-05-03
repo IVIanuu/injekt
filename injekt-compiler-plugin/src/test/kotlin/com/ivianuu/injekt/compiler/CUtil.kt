@@ -140,3 +140,11 @@ annotation class TestQualifier1
 )
 @Qualifier
 annotation class TestQualifier2
+
+interface Command
+
+class CommandA : Command
+
+class CommandB : Command
+
+class CommandC : Command

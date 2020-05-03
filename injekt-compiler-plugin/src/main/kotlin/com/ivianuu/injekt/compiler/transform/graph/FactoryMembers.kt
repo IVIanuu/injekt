@@ -31,7 +31,7 @@ class FactoryMembers(
     fun getOrCreateField(
         key: Key,
         prefix: String,
-        initializer: IrBuilderWithScope.(IrExpression) -> IrExpression?
+        initializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
     ): FactoryField {
         return fields.getOrPut(key) {
             val index = fields
@@ -69,5 +69,5 @@ class FactoryMembers(
 
 class FactoryField(
     val field: IrField,
-    val initializer: IrBuilderWithScope.(IrExpression) -> IrExpression?
+    val initializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
 )

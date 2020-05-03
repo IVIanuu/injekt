@@ -206,12 +206,13 @@ class FactoryTransformer(
         val componentNode = FactoryImplementationNode(
             key = Key(defaultType),
             factoryImplementation = this,
-            initializerAccessor = { it }
+            initializerAccessor = { it() }
         )
 
         val factoryMembers = FactoryMembers(componentNode, this@FactoryTransformer.context)
 
         val factoryExpressions = FactoryExpressions(
+            this@FactoryTransformer.context,
             symbols,
             factoryMembers
         )
@@ -287,10 +288,9 @@ class FactoryTransformer(
                                         RequestType.Instance
                                     )
                                 )
-                                .invoke(
-                                    this@implementationClass,
+                                .invoke(this@implementationClass) {
                                     irGet(dispatchReceiverParameter!!)
-                                )
+                                }
                         )
                     }
                 }
@@ -310,10 +310,9 @@ class FactoryTransformer(
                                             RequestType.Instance
                                         )
                                     )
-                                    .invoke(
-                                        this@implementationClass,
+                                    .invoke(this@implementationClass) {
                                         irGet(dispatchReceiverParameter!!)
-                                    )
+                                    }
                             )
                         }
                     }
@@ -353,7 +352,7 @@ class FactoryTransformer(
                     lastRoundFields = fieldsToInitialize
 
                     fieldsToInitialize.forEach { (key, field) ->
-                        field.initializer(this, irGet(thisReceiver!!))?.let { initExpr ->
+                        field.initializer(this) { irGet(thisReceiver!!) }?.let { initExpr ->
                             +irSetField(
                                 irGet(thisReceiver!!),
                                 field.field,

@@ -4,7 +4,8 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 
 @InjektDslMarker
 interface MapDsl<K, V> {
-    fun <T : V> put(entryKey: K): Unit = injektIntrinsic()
+    fun <T : V> put(entryKey: K)
+    // todo fun <T : V> put(entryKey: K, definition: ProviderDefinition<T>)
 }
 
 @Declaration

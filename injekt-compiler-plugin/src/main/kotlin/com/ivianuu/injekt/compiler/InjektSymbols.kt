@@ -64,6 +64,8 @@ class InjektSymbols(private val context: IrPluginContext) {
 
     val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
 
+    val setProvider = getTopLevelClass(InjektFqNames.SetProvider)
+
     val transient = getTopLevelClass(InjektFqNames.Transient)
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =

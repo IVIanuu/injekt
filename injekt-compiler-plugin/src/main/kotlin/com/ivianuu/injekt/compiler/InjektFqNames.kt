@@ -53,6 +53,8 @@ object InjektFqNames {
 
     val SetDsl = InjektPackage.child("SetDsl")
 
+    val SetProvider = InternalPackage.child("SetProvider")
+
     val Transient = InjektPackage.child("Transient")
 
     private fun FqName.child(name: String) = child(Name.identifier(name))

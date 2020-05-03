@@ -16,15 +16,13 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
-
 fun interface Provider<T> {
     operator fun invoke(): T
 }
 
 @InjektDslMarker
 interface ProviderDsl {
-    fun <T> get(): T = injektIntrinsic()
+    fun <T> get(): T
 }
 
 typealias ProviderDefinition<T> = ProviderDsl.(AssistedParameters) -> T

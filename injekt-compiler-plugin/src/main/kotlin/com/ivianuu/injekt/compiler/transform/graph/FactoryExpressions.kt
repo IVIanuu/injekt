@@ -1,8 +1,9 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektSymbols
-import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
@@ -11,16 +12,25 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
+import org.jetbrains.kotlin.ir.util.referenceFunction
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi2ir.findFirstFunction
+import org.jetbrains.kotlin.psi2ir.findSingleFunction
+import org.jetbrains.kotlin.resolve.calls.components.isVararg
 
-typealias FactoryExpression = IrBuilderWithScope.(IrExpression) -> IrExpression
+typealias FactoryExpression = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
 
 class FactoryExpressions(
+    private val context: IrPluginContext,
     private val symbols: InjektSymbols,
     private val members: FactoryMembers
 ) {
@@ -38,7 +48,7 @@ class FactoryExpressions(
         val field = members.getOrCreateField(node.key, node.prefix) fieldInit@{ parent ->
             node.initializerAccessor(this, parent)
         }
-        val expression: FactoryExpression = { irGetField(it, field.field) }
+        val expression: FactoryExpression = { irGetField(it(), field.field) }
         requirementExpressions[node] = expression
         return expression
     }
@@ -60,6 +70,7 @@ class FactoryExpressions(
                     is DependencyBindingNode -> instanceExpressionForDependency(binding)
                     is InstanceBindingNode -> instanceExpressionForInstance(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
+                    is SetBindingNode -> instanceExpressionForSet(binding)
                 }
             }
             RequestType.Provider -> {
@@ -68,6 +79,7 @@ class FactoryExpressions(
                     is DependencyBindingNode -> providerExpressionForDependency(binding)
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
+                    is SetBindingNode -> providerExpressionForSet(binding)
                 }
             }
         }
@@ -86,13 +98,13 @@ class FactoryExpressions(
         val expression: FactoryExpression = bindingExpression@{ parent ->
             val provider = binding.provider
 
-            val companion = provider.companionObject()!! as IrClass
+            val providerCompanion = provider.companionObject()!! as IrClass
 
-            val createFunction = companion.functions
+            val createFunction = providerCompanion.functions
                 .single { it.name.asString() == "create" }
 
             irCall(createFunction).apply {
-                dispatchReceiver = irGetObject(companion.symbol)
+                dispatchReceiver = irGetObject(providerCompanion.symbol)
                 putValueArgument(
                     0,
                     dependencyExpression(this@bindingExpression, parent)
@@ -100,14 +112,7 @@ class FactoryExpressions(
             }
         }
 
-        val function = members.getGetFunction(binding.key) {
-            expression(this, irGet(it.dispatchReceiverParameter!!))
-        }
-        return bindingExpression@{
-            irCall(function).apply {
-                dispatchReceiver = it
-            }
-        }
+        return expression.wrapInFunction(binding.key)
     }
 
     private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
@@ -157,10 +162,10 @@ class FactoryExpressions(
                         dispatchReceiver = irGetObject(provider.symbol)
                     }
                 } else {
-                    val companion = provider.companionObject()!! as IrClass
+                    val providerCompanion = provider.companionObject()!! as IrClass
 
                     irCall(createFunction).apply {
-                        dispatchReceiver = irGetObject(companion.symbol)
+                        dispatchReceiver = irGetObject(providerCompanion.symbol)
 
                         if (moduleRequired) {
                             putValueArgument(
@@ -181,7 +186,7 @@ class FactoryExpressions(
                                     valueParameter.index,
                                     dependencyExpression(
                                         this@bindingExpression,
-                                        parent.deepCopyWithVariables()
+                                        parent
                                     )
                                 )
                             }
@@ -191,14 +196,72 @@ class FactoryExpressions(
             expression
         }
 
-        val function = members.getGetFunction(binding.key) {
-            expression(this, irGet(it.dispatchReceiverParameter!!))
-        }
-        return bindingExpression@{
-            irCall(function).apply {
-                dispatchReceiver = it
+        return expression.wrapInFunction(binding.key)
+    }
+
+    private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
+        val elementExpressions = binding.dependencies
+            .map { getBindingExpression(BindingRequest(it, RequestType.Instance)) }
+
+        val expression: FactoryExpression = bindingExpression@{ parent ->
+            val collectionsScope = symbols.getPackage(FqName("kotlin.collections"))
+
+            when (elementExpressions.size) {
+                0 -> {
+                    irCall(
+                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                            collectionsScope.memberScope.findSingleFunction(Name.identifier("emptySet"))
+                        ),
+                        binding.key.type
+                    ).apply {
+                        putTypeArgument(0, binding.elementKey.type)
+                    }
+                }
+                1 -> {
+                    irCall(
+                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                            collectionsScope.memberScope.findFirstFunction("setOf") {
+                                it.valueParameters.singleOrNull()?.isVararg == false
+                            }
+                        ),
+                        binding.key.type
+                    ).apply {
+                        putTypeArgument(0, binding.elementKey.type)
+                        putValueArgument(
+                            0,
+                            elementExpressions.single()(this@bindingExpression, parent)
+                        )
+                    }
+                }
+                else -> {
+                    irCall(
+                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                            collectionsScope.memberScope.findFirstFunction("setOf") {
+                                it.valueParameters.singleOrNull()?.isVararg == true
+                            }
+                        ),
+                        binding.key.type
+                    ).apply {
+                        putTypeArgument(0, binding.elementKey.type)
+                        putValueArgument(
+                            0,
+                            IrVarargImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                context.irBuiltIns.arrayClass
+                                    .typeWith(binding.elementKey.type),
+                                binding.elementKey.type,
+                                elementExpressions.map {
+                                    it(this@bindingExpression, parent)
+                                }
+                            )
+                        )
+                    }
+                }
             }
         }
+
+        return expression.wrapInFunction(binding.key)
     }
 
     private fun providerExpressionForDelegate(binding: DelegateBindingNode): FactoryExpression =
@@ -221,7 +284,7 @@ class FactoryExpressions(
                 )
             }
         }
-        return { irGetField(it, field.field) }
+        return { irGetField(it(), field.field) }
     }
 
     private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
@@ -233,15 +296,15 @@ class FactoryExpressions(
             ),
             "provider"
         ) { parent ->
-            val companion = symbols.instanceProvider.owner
+            val instanceProviderCompanion = symbols.instanceProvider.owner
                 .companionObject() as IrClass
             irCall(
-                companion
+                instanceProviderCompanion
                     .declarations
                     .filterIsInstance<IrFunction>()
                     .single { it.name.asString() == "create" }
             ).apply {
-                dispatchReceiver = irGetObject(companion.symbol)
+                dispatchReceiver = irGetObject(instanceProviderCompanion.symbol)
                 putValueArgument(
                     0,
                     binding.requirementNode
@@ -249,7 +312,7 @@ class FactoryExpressions(
                 )
             }
         }
-        return { irGetField(it, field.field) }
+        return { irGetField(it(), field.field) }
     }
 
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
@@ -291,7 +354,7 @@ class FactoryExpressions(
                     val realIndex = index + if (moduleRequired) 1 else 0
                     putValueArgument(
                         realIndex,
-                        dependency(this@fieldInit, parent.deepCopyWithVariables())
+                        dependency(this@fieldInit, parent)
                     )
                 }
             }
@@ -307,7 +370,94 @@ class FactoryExpressions(
             }
         }
 
-        return bindingExpression@{ irGetField(it, field.field) }
+        return bindingExpression@{ irGetField(it(), field.field) }
     }
 
+    private fun providerExpressionForSet(binding: SetBindingNode): FactoryExpression {
+        val elementExpressions = binding.dependencies
+            .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
+
+        val field = members.getOrCreateField(
+            Key(
+                symbols.provider.typeWith(binding.key.type).buildSimpleType {
+                    annotations += binding.key.type.annotations
+                }
+            ),
+            "provider"
+        ) { parent ->
+            val setProviderCompanion = symbols.setProvider.owner
+                .companionObject() as IrClass
+
+            if (elementExpressions.isEmpty()) {
+                irCall(
+                    setProviderCompanion.functions
+                        .single { it.name.asString() == "empty" }
+                ).apply {
+                    putTypeArgument(0, binding.elementKey.type)
+                }
+            } else {
+                when (elementExpressions.size) {
+                    1 -> {
+                        val create = setProviderCompanion.functions
+                            .single {
+                                it.name.asString() == "create" &&
+                                        !it.valueParameters.single().isVararg
+                            }
+
+                        irCall(create).apply {
+                            putTypeArgument(0, binding.elementKey.type)
+                            putValueArgument(
+                                0,
+                                elementExpressions.single()(this@getOrCreateField, parent)
+                            )
+                        }
+                    }
+                    else -> {
+                        val create = setProviderCompanion.functions
+                            .single {
+                                it.name.asString() == "create" &&
+                                        it.valueParameters.single().isVararg
+                            }
+
+                        irCall(create).apply {
+                            putTypeArgument(0, binding.elementKey.type)
+                            putValueArgument(
+                                0,
+                                IrVarargImpl(
+                                    UNDEFINED_OFFSET,
+                                    UNDEFINED_OFFSET,
+                                    context.irBuiltIns.arrayClass
+                                        .typeWith(
+                                            symbols.provider.typeWith(
+                                                binding.key.type
+                                            )
+                                        ),
+                                    binding.elementKey.type,
+                                    elementExpressions.map {
+                                        it(this@getOrCreateField, parent)
+                                    }
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        return { irGetField(it(), field.field) }
+    }
+
+    private fun FactoryExpression.wrapInFunction(key: Key): FactoryExpression {
+        val factoryExpression = this
+        val function = members.getGetFunction(key) function@{ function ->
+            factoryExpression(this) {
+                irGet(function.dispatchReceiverParameter!!)
+            }
+        }
+        return bindingExpression@{
+            irCall(function).apply {
+                dispatchReceiver = it()
+            }
+        }
+    }
 }
+

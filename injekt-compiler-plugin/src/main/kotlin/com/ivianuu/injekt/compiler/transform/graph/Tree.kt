@@ -6,22 +6,28 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-typealias InitializerAccessor = IrBuilderWithScope.(IrExpression) -> IrExpression
+typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
 
 fun InitializerAccessor.child(
-    initializerAccessor: InitializerAccessor
-): InitializerAccessor = { initializerAccessor(invoke(this, it)) }
+    child: InitializerAccessor
+): InitializerAccessor = {
+    child {
+        invoke(this, it)
+    }
+}
 
 fun InitializerAccessor.child(
     field: IrField
-): InitializerAccessor = child { irGetField(it, field) }
+): InitializerAccessor = child { irGetField(it(), field) }
 
 interface Node
 
@@ -108,6 +114,18 @@ class ProvisionBindingNode(
     module: ModuleNode?,
     val provider: IrClass
 ) : BindingNode(key, dependencies, targetScope, scoped, module)
+
+class SetBindingNode(
+    key: Key,
+    dependencies: List<Key>
+) : BindingNode(key, dependencies, null, false, null) {
+    val elementKey = Key(
+        (key.type as IrSimpleType)
+            .arguments
+            .single()
+            .typeOrNull!!
+    )
+}
 
 class Key(val type: IrType) {
     val qualifiers = type.annotations
