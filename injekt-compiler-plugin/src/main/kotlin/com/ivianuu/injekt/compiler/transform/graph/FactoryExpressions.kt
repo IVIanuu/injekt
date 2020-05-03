@@ -56,6 +56,7 @@ class FactoryExpressions(
         val expression = when (request.requestType) {
             RequestType.Instance -> {
                 when (binding) {
+                    is DelegateBindingNode -> instanceExpressionForDelegate(binding)
                     is DependencyBindingNode -> instanceExpressionForDependency(binding)
                     is InstanceBindingNode -> instanceExpressionForInstance(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
@@ -63,6 +64,7 @@ class FactoryExpressions(
             }
             RequestType.Provider -> {
                 when (binding) {
+                    is DelegateBindingNode -> providerExpressionForDelegate(binding)
                     is DependencyBindingNode -> providerExpressionForDependency(binding)
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
@@ -75,6 +77,9 @@ class FactoryExpressions(
         bindingExpressions[request] = expression
         return expression
     }
+
+    private fun instanceExpressionForDelegate(binding: DelegateBindingNode): FactoryExpression =
+        getBindingExpression(BindingRequest(binding.originalKey, RequestType.Instance))
 
     private fun instanceExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         val dependencyExpression = getRequirementExpression(binding.requirementNode)
@@ -195,6 +200,9 @@ class FactoryExpressions(
             }
         }
     }
+
+    private fun providerExpressionForDelegate(binding: DelegateBindingNode): FactoryExpression =
+        getBindingExpression(BindingRequest(binding.originalKey, RequestType.Provider))
 
     private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         val field = members.getOrCreateField(

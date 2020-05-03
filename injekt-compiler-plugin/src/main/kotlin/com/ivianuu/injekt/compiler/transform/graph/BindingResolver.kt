@@ -93,54 +93,66 @@ class ModuleBindingResolver(
     private val descriptor: IrClass
 ) : BindingResolver {
 
-    private val allBindingFunctions = descriptor
+    private val bindingFunctions = descriptor
         .declarations
         .filterIsInstance<IrFunction>()
+
+    private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
+        .mapNotNull { bindingFunction ->
+            val key = Key(bindingFunction.returnType)
+            val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
+                ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
+            val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
+                ?.getTypeArgument(0)?.classOrNull?.owner
 
-    override fun invoke(requestedKey: Key): List<BindingNode> {
-        return allBindingFunctions
-            .filter { Key(it.returnType) == requestedKey }
-            .mapNotNull { bindingFunction ->
-                val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
-                    ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
-                val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
-                    ?.getTypeArgument(0)?.classOrNull?.owner
+            // todo handle assisted
+            if (bindingFunction.valueParameters.any {
+                    it.hasAnnotation(InjektFqNames.Assisted)
+                }) return@mapNotNull null
 
-                // todo handle assisted
-                if (bindingFunction.valueParameters.any {
-                        it.hasAnnotation(InjektFqNames.Assisted)
-                    }) return@mapNotNull null
+            val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
-                val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
+            val dependencies = bindingFunction.valueParameters
+                .map { Key(it.type) }
 
-                val dependencies = bindingFunction.valueParameters
-                    .map { Key(it.type) }
-
-                when {
-                    fieldName != null -> {
-                        val field =
-                            moduleNode.module.fields.single { it.name.asString() == fieldName }
-                        InstanceBindingNode(
-                            key = requestedKey,
-                            requirementNode = InstanceNode(
-                                key = Key(field.type),
-                                initializerAccessor = moduleNode.initializerAccessor.child(field)
-                            )
+            when {
+                fieldName != null -> {
+                    val field =
+                        moduleNode.module.fields.single { it.name.asString() == fieldName }
+                    InstanceBindingNode(
+                        key = key,
+                        requirementNode = InstanceNode(
+                            key = Key(field.type),
+                            initializerAccessor = moduleNode.initializerAccessor.child(field)
                         )
-                    }
-                    else -> {
-                        ProvisionBindingNode(
-                            key = requestedKey,
-                            dependencies = dependencies,
-                            targetScope = null,
-                            scoped = scoped,
-                            module = moduleNode,
-                            provider = provider!!
-                        )
-                    }
+                    )
+                }
+                else -> {
+                    ProvisionBindingNode(
+                        key = key,
+                        dependencies = dependencies,
+                        targetScope = null,
+                        scoped = scoped,
+                        module = moduleNode,
+                        provider = provider!!
+                    )
                 }
             }
+        }
+
+    private val delegateBindings = bindingFunctions
+        .filter { it.hasAnnotation(InjektFqNames.AstAlias) }
+        .map { delegateFunction ->
+            DelegateBindingNode(
+                key = Key(delegateFunction.returnType),
+                originalKey = Key(delegateFunction.valueParameters.single().type)
+            )
+        }
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return (allBindings + delegateBindings)
+            .filter { it.key == requestedKey }
     }
 }
 

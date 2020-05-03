@@ -123,6 +123,28 @@ class ImplementationTest {
     }
 
     @Test
+    fun testAlias() = codegen(
+        """
+        interface TestComponent {
+            val any: Any
+            val foo: Foo
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            scoped { Foo() }
+            alias<Foo, Any>()
+        }
+        
+        val component = create()
+        fun invoke() = component.foo to component.any
+    """
+    ) {
+        val (foo, any) = (invokeSingleFile() as Pair<Foo, Any>)
+        assertSame(foo, any)
+    }
+
+    @Test
     fun testEmpty() = codegen(
         """
         interface TestComponent {

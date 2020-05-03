@@ -84,6 +84,11 @@ sealed class BindingNode(
     val module: ModuleNode?
 ) : Node
 
+class DelegateBindingNode(
+    key: Key,
+    val originalKey: Key,
+) : BindingNode(key, listOf(originalKey), null, false, null)
+
 class InstanceBindingNode(
     key: Key,
     val requirementNode: InstanceNode
