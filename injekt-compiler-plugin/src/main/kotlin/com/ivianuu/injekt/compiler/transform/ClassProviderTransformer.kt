@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -74,6 +75,14 @@ class ClassProviderTransformer(
                     .also { providersByClass[clazz] = it }
             )
         }
+
+        classes
+            .map { it.file }
+            .distinct()
+            .forEach {
+                (it as IrFileImpl).metadata =
+                    MetadataSource.File(it.declarations.map { it.descriptor })
+            }
 
         return super.visitModuleFragment(declaration)
     }

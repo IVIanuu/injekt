@@ -99,8 +99,8 @@ class FactoryExpressions(
                 .map { getBindingExpression(BindingRequest(it, RequestType.Instance)) }
 
             val moduleRequired =
-                provider.constructors.single().valueParameters.firstOrNull()
-                    ?.name?.asString() == "module"
+                provider.kind != ClassKind.OBJECT && provider.constructors
+                    .single().valueParameters.firstOrNull()?.name?.asString() == "module"
 
             val moduleExpression = if (moduleRequired) getRequirementExpression(binding.module!!)
             else null
