@@ -26,5 +26,3 @@ fun <T> instance(instance: T): Unit = injektIntrinsic()
 
 @Declaration
 fun <T> scoped(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
-
-annotation class Scoped
