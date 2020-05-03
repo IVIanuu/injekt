@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -16,50 +17,37 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
-    val context: IrPluginContext,
-    val symbols: InjektSymbols,
-    val componentNode: ComponentNode,
+    context: IrPluginContext,
     componentModule: ModuleNode?,
-    declarationStore: InjektDeclarationStore
+    declarationStore: InjektDeclarationStore,
+    symbols: InjektSymbols
 ) {
-
-    val factoryExpressions =
-        FactoryExpressions(
-            context,
-            symbols,
-            this,
-            componentNode
-        )
 
     val scopes = mutableSetOf<FqName>()
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val annotatedClassBindingResolver =
         AnnotatedClassBindingResolver(
-            this,
             context,
             declarationStore
         )
-    private val resolvedBindings = mutableMapOf<Key, Binding>()
+    private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
         if (componentModule != null) addModule(componentModule)
-        explicitBindingResolvers += LazyOrProviderBindingResolver(
-            context,
-            this
-        )
+        explicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
     }
 
-    fun getBinding(request: BindingRequest): Binding {
-        return resolvedBindings.getOrPut(request.key) {
-            val explicitBindings = explicitBindingResolvers.flatMap { it(request.key) }
+    fun getBinding(key: Key): BindingNode {
+        return resolvedBindings.getOrPut(key) {
+            val explicitBindings = explicitBindingResolvers.flatMap { it(key) }
             if (explicitBindings.size > 1) {
-                error("Multiple bindings found for ${request.key}")
+                error("Multiple bindings found for $key")
             }
 
             val binding = explicitBindings.singleOrNull()
-                ?: annotatedClassBindingResolver(request.key).singleOrNull()
-                ?: error("No binding found for ${request.key}")
+                ?: annotatedClassBindingResolver(key).singleOrNull()
+                ?: error("No binding found for $key")
 
             if (binding.targetScope != null && binding.targetScope !in scopes) {
                 error(
@@ -114,14 +102,14 @@ class Graph(
                 addModule(
                     ModuleNode(
                         includedModule,
-                        moduleNode.treeElement.child(field)
+                        Key(includedModule.defaultType),
+                        moduleNode.initializerAccessor.child(field)
                     )
                 )
             }
 
         addExplicitBindingResolver(
             ModuleBindingResolver(
-                this,
                 moduleNode,
                 module,
                 descriptor

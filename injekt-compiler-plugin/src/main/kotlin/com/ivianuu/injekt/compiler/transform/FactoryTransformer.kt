@@ -5,11 +5,13 @@ import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.graph.BindingRequest
 import com.ivianuu.injekt.compiler.transform.graph.ComponentNode
+import com.ivianuu.injekt.compiler.transform.graph.FactoryExpressions
+import com.ivianuu.injekt.compiler.transform.graph.FactoryField
+import com.ivianuu.injekt.compiler.transform.graph.FactoryMembers
 import com.ivianuu.injekt.compiler.transform.graph.Graph
 import com.ivianuu.injekt.compiler.transform.graph.Key
 import com.ivianuu.injekt.compiler.transform.graph.ModuleNode
 import com.ivianuu.injekt.compiler.transform.graph.RequestType
-import com.ivianuu.injekt.compiler.transform.graph.child
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -20,7 +22,6 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
@@ -33,7 +34,6 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -136,13 +136,14 @@ class FactoryTransformer(
             (function.file as IrFileImpl).metadata =
                 MetadataSource.File(function.file.declarations.map { it.descriptor })
 
+            val implementationConstructor = implementationClass.constructors.single()
             function.body = irExprBody(
-                irCall(implementationClass.constructors.single()).apply {
-                    if (moduleCall != null) {
+                irCall(implementationConstructor).apply {
+                    if (implementationConstructor.valueParameters.isNotEmpty()) {
                         putValueArgument(
                             0,
                             irCall(moduleClass!!.constructors.single()).apply {
-                                copyTypeArgumentsFrom(moduleCall)
+                                copyTypeArgumentsFrom(moduleCall!!)
                                 (0 until moduleCall.valueArgumentsCount).forEach {
                                     putValueArgument(it, moduleCall.getValueArgument(it))
                                 }
@@ -185,30 +186,50 @@ class FactoryTransformer(
 
         superTypes += function.returnType
 
-        val moduleField: Lazy<IrField>? = if (moduleClass != null) lazy {
-            addField("module", moduleClass.defaultType)
-        } else null
+        val constructor = addConstructor {
+            returnType = defaultType
+            isPrimary = true
+            visibility = Visibilities.PUBLIC
+        }.apply {
+            copyTypeParametersFrom(this@clazz)
+        }
 
-        val componentNode =
-            ComponentNode(
-                context = this@FactoryTransformer.context,
-                component = this,
-                treeElement = { it },
-                symbols = symbols
+        val moduleConstructorValueParameter by lazy {
+            constructor.addValueParameter(
+                "module",
+                moduleClass!!.defaultType
             )
+        }
+
+        val componentNode = ComponentNode(
+            key = Key(defaultType),
+            component = this,
+            initializerAccessor = { it }
+        )
+
+        val factoryMembers = FactoryMembers(componentNode, this@FactoryTransformer.context)
+
+        val factoryExpressions = FactoryExpressions(
+            symbols,
+            factoryMembers
+        )
 
         val graph = Graph(
             context = this@FactoryTransformer.context,
-            symbols = symbols,
-            componentNode = componentNode,
             componentModule = moduleClass?.let {
                 ModuleNode(
+                    key = Key(moduleClass.defaultType),
                     module = moduleClass,
-                    treeElement = componentNode.treeElement.child(moduleField!!.value)
+                    initializerAccessor = {
+                        irGet(moduleConstructorValueParameter)
+                    }
                 )
             },
-            declarationStore = declarationStore
+            declarationStore = declarationStore,
+            symbols = symbols
         )
+
+        factoryExpressions.graph = graph
 
         val dependencyRequests = mutableMapOf<IrDeclaration, Key>()
 
@@ -243,7 +264,7 @@ class FactoryTransformer(
         superTypes.single().classOrNull?.owner?.collectDependencyRequests()
 
         dependencyRequests.forEach { (declaration, key) ->
-            val binding = graph.getBinding(BindingRequest(key, RequestType.Instance))
+            val binding = graph.getBinding(key)
             when (declaration) {
                 is IrFunction -> {
                     addFunction {
@@ -254,7 +275,7 @@ class FactoryTransformer(
                         overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                         body = irExprBody(
-                            graph.factoryExpressions.getBindingExpression(
+                            factoryExpressions.getBindingExpression(
                                     BindingRequest(
                                         binding.key,
                                         RequestType.Instance
@@ -277,7 +298,7 @@ class FactoryTransformer(
                             overriddenSymbols += declaration.getter!!.symbol
                             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                             body = irExprBody(
-                                graph.factoryExpressions.getBindingExpression(
+                                factoryExpressions.getBindingExpression(
                                         BindingRequest(
                                             binding.key,
                                             RequestType.Instance
@@ -294,35 +315,14 @@ class FactoryTransformer(
             }
         }
 
-        addConstructor {
-            returnType = defaultType
-            isPrimary = true
-            visibility = Visibilities.PUBLIC
-        }.apply {
-            copyTypeParametersFrom(this@clazz)
-
-            if (moduleField?.isInitialized() == true) {
-                addValueParameter(
-                    "module",
-                    moduleField.value.type
-                )
-            }
-
+        constructor.apply {
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)
 
-                if (moduleField?.isInitialized() == true) {
-                    +irSetField(
-                        irGet(thisReceiver!!),
-                        moduleField.value,
-                        irGet(valueParameters.single())
-                    )
-                }
-
-                var lastRoundFields: Map<Key, ComponentNode.ComponentField>? = null
+                var lastRoundFields: Map<Key, FactoryField>? = null
                 while (true) {
-                    val fieldsToInitialize = componentNode.componentFields
-                        .filterKeys { it !in componentNode.initializedFields }
+                    val fieldsToInitialize = factoryMembers.componentFields
+                        .filterKeys { it !in factoryMembers.initializedFields }
                     if (fieldsToInitialize.isEmpty()) {
                         break
                     } else if (lastRoundFields == fieldsToInitialize) {
@@ -337,7 +337,7 @@ class FactoryTransformer(
                                 field.field,
                                 initExpr
                             )
-                            componentNode.initializedFields += key
+                            factoryMembers.initializedFields += key
                         }
                     }
                 }

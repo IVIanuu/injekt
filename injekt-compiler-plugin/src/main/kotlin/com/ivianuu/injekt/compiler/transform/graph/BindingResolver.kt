@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -17,10 +18,9 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 
-typealias BindingResolver = (Key) -> List<Binding>
+typealias BindingResolver = (Key) -> List<BindingNode>
 
 class ModuleBindingResolver(
-    private val graph: Graph,
     private val moduleNode: ModuleNode,
     private val module: IrClass,
     private val descriptor: IrClass
@@ -31,7 +31,7 @@ class ModuleBindingResolver(
         .filterIsInstance<IrFunction>()
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
 
-    override fun invoke(requestedKey: Key): List<Binding> {
+    override fun invoke(requestedKey: Key): List<BindingNode> {
         return allBindings
             .filter { Key(it.returnType) == requestedKey }
             .mapNotNull { bindingFunction ->
@@ -52,18 +52,20 @@ class ModuleBindingResolver(
 
                 when {
                     fieldName != null -> {
-                        InstanceBinding(
+                        val field = module.fields.single { it.name.asString() == fieldName }
+                        InstanceBindingNode(
                             key = requestedKey,
                             targetScope = null,
                             scoped = false,
                             module = moduleNode,
-                            treeElement = moduleNode.treeElement.child(
-                                module.fields.single { it.name.asString() == fieldName }
+                            requirementNode = InstanceRequirementNode(
+                                key = Key(field.type),
+                                initializerAccessor = moduleNode.initializerAccessor.child(field)
                             )
                         )
                     }
                     else -> {
-                        ProvisionBinding(
+                        ProvisionBindingNode(
                             key = requestedKey,
                             dependencies = dependencies,
                             targetScope = null,
@@ -79,11 +81,10 @@ class ModuleBindingResolver(
 }
 
 class AnnotatedClassBindingResolver(
-    private val graph: Graph,
     private val context: IrPluginContext,
     private val declarationStore: InjektDeclarationStore
 ) : BindingResolver {
-    override fun invoke(requestedKey: Key): List<Binding> {
+    override fun invoke(requestedKey: Key): List<BindingNode> {
         val clazz = requestedKey.type.classOrNull
             ?.ensureBound(context.irProviders)?.owner ?: return emptyList()
         val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
@@ -105,7 +106,7 @@ class AnnotatedClassBindingResolver(
         val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
         return listOf(
-            ProvisionBinding(
+            ProvisionBindingNode(
                 key = requestedKey,
                 dependencies = dependencies,
                 targetScope = targetScope,
@@ -118,11 +119,9 @@ class AnnotatedClassBindingResolver(
 }
 
 class LazyOrProviderBindingResolver(
-    private val context: IrPluginContext,
-    private val graph: Graph,
+    private val symbols: InjektSymbols
 ) : BindingResolver {
-    private val symbols = graph.symbols
-    override fun invoke(requestedKey: Key): List<Binding> {
+    override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
         if (requestedType !is IrSimpleType) return emptyList()
         if (requestedType.arguments.size != 1) return emptyList()

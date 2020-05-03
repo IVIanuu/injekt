@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -12,24 +11,39 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 
-typealias BindingExpression = IrBuilderWithScope.(IrExpression) -> IrExpression
+typealias FactoryExpression = IrBuilderWithScope.(IrExpression) -> IrExpression
 
 class FactoryExpressions(
-    private val context: IrPluginContext,
     private val symbols: InjektSymbols,
-    private val graph: Graph,
-    private val componentNode: ComponentNode
+    private val members: FactoryMembers
 ) {
 
-    private val bindingExpressions = mutableMapOf<BindingRequest, BindingExpression>()
+    // todo remove this circular dep
+    lateinit var graph: Graph
+
+    private val bindingExpressions = mutableMapOf<BindingRequest, FactoryExpression>()
     private val chain = mutableSetOf<BindingRequest>()
 
-    fun getBindingExpression(request: BindingRequest): BindingExpression {
+    private val requirementExpressions = mutableMapOf<RequirementNode, FactoryExpression>()
+
+    fun getRequirementExpression(node: RequirementNode): FactoryExpression {
+        requirementExpressions[node]?.let { return it }
+        val field = members.getOrCreateComponentField(node.key, node.prefix) fieldInit@{ parent ->
+            node.initializerAccessor(this, parent)
+        }
+        val expression: FactoryExpression = { irGetField(it, field.field) }
+        requirementExpressions[node] = expression
+        return expression
+    }
+
+    fun getBindingExpression(request: BindingRequest): FactoryExpression {
         bindingExpressions[request]?.let { return it }
 
         check(request !in chain) {
@@ -38,18 +52,18 @@ class FactoryExpressions(
 
         chain += request
 
-        val binding = graph.getBinding(request)
+        val binding = graph.getBinding(request.key)
         val expression = when (request.requestType) {
             RequestType.Instance -> {
                 when (binding) {
-                    is InstanceBinding -> instanceExpressionForInstance(binding)
-                    is ProvisionBinding -> instanceExpressionForProvision(binding)
+                    is InstanceBindingNode -> instanceExpressionForInstance(binding)
+                    is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                 }
             }
             RequestType.Provider -> {
                 when (binding) {
-                    is InstanceBinding -> providerExpressionForInstance(binding)
-                    is ProvisionBinding -> providerExpressionForProvision(binding)
+                    is InstanceBindingNode -> providerExpressionForInstance(binding)
+                    is ProvisionBindingNode -> providerExpressionForProvision(binding)
                 }
             }
         }
@@ -60,14 +74,14 @@ class FactoryExpressions(
         return expression
     }
 
-    private fun instanceExpressionForInstance(binding: InstanceBinding): BindingExpression {
-        return { binding.treeElement(this, it) }
+    private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
+        return getRequirementExpression(binding.requirementNode)
     }
 
-    private fun instanceExpressionForProvision(binding: ProvisionBinding): BindingExpression {
+    private fun instanceExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
         val expression = if (binding.scoped) {
             val providerExpression = providerExpressionForProvision(binding)
-            val expression: BindingExpression = bindingExpression@{ parent ->
+            val expression: FactoryExpression = bindingExpression@{ parent ->
                 irCall(
                     symbols.provider
                         .owner
@@ -79,10 +93,19 @@ class FactoryExpressions(
             }
             expression
         } else {
+            val provider = binding.provider
+
             val dependencies = binding.dependencies
                 .map { getBindingExpression(BindingRequest(it, RequestType.Instance)) }
-            val expression: BindingExpression = bindingExpression@{ parent ->
-                val provider = binding.provider
+
+            val moduleRequired =
+                provider.constructors.single().valueParameters.firstOrNull()
+                    ?.name?.asString() == "module"
+
+            val moduleExpression = if (moduleRequired) getRequirementExpression(binding.module!!)
+            else null
+
+            val expression: FactoryExpression = bindingExpression@{ parent ->
                 val createFunction = (if (provider.kind == ClassKind.OBJECT)
                     provider else provider.declarations
                     .single { it.nameForIrSerialization.asString() == "Companion" } as IrClass)
@@ -100,17 +123,13 @@ class FactoryExpressions(
                 } else {
                     val companion = provider.companionObject()!! as IrClass
 
-                    val moduleRequired =
-                        provider.constructors.single().valueParameters.firstOrNull()
-                            ?.name?.asString() == "module"
-
                     irCall(createFunction).apply {
                         dispatchReceiver = irGetObject(companion.symbol)
 
                         if (moduleRequired) {
                             putValueArgument(
                                 0,
-                                binding.module!!.treeElement(
+                                moduleExpression!!(
                                     this@bindingExpression,
                                     parent
                                 )
@@ -136,7 +155,7 @@ class FactoryExpressions(
             expression
         }
 
-        val function = componentNode.getFunction(binding.key) {
+        val function = members.getGetFunction(binding.key) {
             expression(this, irGet(it.dispatchReceiverParameter!!))
         }
         return bindingExpression@{
@@ -146,8 +165,15 @@ class FactoryExpressions(
         }
     }
 
-    private fun providerExpressionForInstance(binding: InstanceBinding): BindingExpression {
-        val field = componentNode.getOrCreateComponentField(binding.key) {
+    private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
+        val field = members.getOrCreateComponentField(
+            Key(
+                symbols.provider.typeWith(binding.key.type).buildSimpleType {
+                    annotations += binding.key.type.annotations
+                }
+            ),
+            "provider"
+        ) { parent ->
             val companion = symbols.instanceProvider.owner
                 .companionObject() as IrClass
             irCall(
@@ -159,29 +185,47 @@ class FactoryExpressions(
                 dispatchReceiver = irGetObject(companion.symbol)
                 putValueArgument(
                     0,
-                    binding.treeElement(this@getOrCreateComponentField, it)
+                    binding.requirementNode
+                        .initializerAccessor(this@getOrCreateComponentField, parent)
                 )
             }
         }
         return { irGetField(it, field.field) }
     }
 
-    private fun providerExpressionForProvision(binding: ProvisionBinding): BindingExpression {
+    private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
+        val dependencyKeys = binding.dependencies
+            .map {
+                Key(symbols.provider.typeWith(it.type).buildSimpleType {
+                    annotations += it.type.annotations
+                })
+            }
+
         val dependencies = binding.dependencies
             .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
 
-        val field = componentNode.getOrCreateComponentField(binding.key) fieldInit@{ parent ->
+        val field = members.getOrCreateComponentField(
+            Key(
+                symbols.provider.typeWith(binding.key.type).buildSimpleType {
+                    annotations += binding.key.type.annotations
+                }
+            ),
+            "provider"
+        ) fieldInit@{ parent ->
             val provider = binding.provider
 
             val moduleRequired =
                 provider.constructors.single().valueParameters.firstOrNull()
                     ?.name?.asString() == "module"
 
-            if (binding.dependencies.any { it !in componentNode.initializedFields }) return@fieldInit null
+            if (dependencyKeys.any { it !in members.initializedFields }) return@fieldInit null
 
             val newProvider = irCall(provider.constructors.single()).apply {
                 if (moduleRequired) {
-                    putValueArgument(0, binding.module!!.treeElement(this@fieldInit, parent))
+                    putValueArgument(
+                        0,
+                        binding.module!!.initializerAccessor(this@fieldInit, parent)
+                    )
                 }
 
                 dependencies.forEachIndexed { index, dependency ->
