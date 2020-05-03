@@ -8,10 +8,8 @@ import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.irTrace
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.ir.passTypeArgumentsFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -28,7 +26,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
-import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -38,7 +35,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -47,6 +43,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -57,13 +54,10 @@ import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.name.SpecialNames
-import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -275,10 +269,11 @@ class ModuleTransformer(
         val providerByCall = mutableMapOf<IrCall, IrClass>()
 
         (transientCalls + scopedCalls).forEachIndexed { index, bindingCall ->
+            val definition = bindingCall.getValueArgument(0)!! as IrFunctionExpression
             addChild(
                 provider(
-                    name = Name.identifier("provider\$$index"),
-                    definition = bindingCall.getValueArgument(0)!! as IrFunctionExpression,
+                    providerIndex = index,
+                    definition = definition,
                     module = this,
                     moduleParametersMap = parameterMap,
                     moduleFieldsByParameter = fieldsByParameters
@@ -650,26 +645,28 @@ class ModuleTransformer(
     }
 
     private fun IrBuilderWithScope.provider(
-        name: Name,
+        providerIndex: Int,
         definition: IrFunctionExpression,
         module: IrClass,
         moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
         moduleFieldsByParameter: Map<IrValueParameter, IrField>
     ): IrClass {
-        val resultType = definition.function.returnType
+        val definitionFunction = definition.function
+
+        val type = definition.function.returnType
 
         val assistedParameterCalls = mutableListOf<IrCall>()
         val dependencyCalls = mutableListOf<IrCall>()
         val capturedModuleValueParameters = mutableListOf<IrValueParameter>()
 
-        definition.function.body?.transformChildrenVoid(object :
+        definitionFunction.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 when ((expression.dispatchReceiver as? IrGetValue)?.symbol) {
-                    definition.function.extensionReceiverParameter!!.symbol -> {
+                    definitionFunction.extensionReceiverParameter!!.symbol -> {
                         dependencyCalls += expression
                     }
-                    definition.function.valueParameters.single().symbol -> {
+                    definitionFunction.valueParameters.single().symbol -> {
                         assistedParameterCalls += expression
                     }
                 }
@@ -687,280 +684,65 @@ class ModuleTransformer(
             }
         })
 
-        return buildClass {
-            kind = if (assistedParameterCalls.isNotEmpty() || dependencyCalls.isNotEmpty()
-                || capturedModuleValueParameters.isNotEmpty()
-            ) ClassKind.CLASS else ClassKind.OBJECT
-            this.name = name
-        }.apply clazz@{
-            superTypes += symbols.provider.typeWith(resultType)
+        val dependencies = mutableMapOf<String, IrType>()
 
-            copyTypeParametersFrom(module)
-
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-
-            val moduleField = if (capturedModuleValueParameters.isNotEmpty()) {
-                addField(
-                    "module",
-                    module.defaultType
-                )
-            } else null
-
-            val dependencies = assistedParameterCalls + dependencyCalls
-
-            var depIndex = 0
-            val fieldsByDependency = dependencies
-                .associateWith { expression ->
-                    addField(
-                        "p${depIndex++}",
-                        symbols.provider.typeWith(expression.type),
-                        Visibilities.PRIVATE
-                    )
-                }
-
-            addConstructor {
-                returnType = defaultType
-                isPrimary = true
-                visibility = Visibilities.PUBLIC
-            }.apply {
-                copyTypeParametersFrom(this@clazz)
-
-                if (moduleField != null) {
-                    addValueParameter(
-                        "module",
-                        module.defaultType
-                    )
-                }
-
-                fieldsByDependency.toList().forEachIndexed { index, (call, field) ->
-                    addValueParameter(
-                        name = "p$index",
-                        type = field.type
-                    ).apply {
-                        if (call in assistedParameterCalls) {
-                            annotations += noArgSingleConstructorCall(symbols.astAssisted)
-                        }
-                    }
-                }
-
-                body = irBlockBody {
-                    initializeClassWithAnySuperClass(this@clazz.symbol)
-
-                    if (moduleField != null) {
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            moduleField,
-                            irGet(valueParameters.first())
-                        )
-                    }
-
-                    valueParameters
-                        .drop(if (moduleField != null) 1 else 0)
-                        .forEach { valueParameter ->
-                            +irSetField(
-                                irGet(thisReceiver!!),
-                                fieldsByDependency.values.toList()[valueParameter.index - if (moduleField != null) 1 else 0],
-                                irGet(valueParameter)
-                            )
-                        }
-                }
-            }
-
-            val companion = if (moduleField != null || dependencies.isNotEmpty()) {
-                providerCompanion(
-                    module,
-                    definition,
-                    assistedParameterCalls,
-                    dependencyCalls,
-                    capturedModuleValueParameters,
-                    moduleParametersMap,
-                    moduleFieldsByParameter
-                ).also { addChild(it) }
-            } else null
-
-            val createFunction = if (moduleField == null && dependencies.isEmpty()) {
-                createFunction(
-                    this, module, definition, assistedParameterCalls, dependencyCalls,
-                    capturedModuleValueParameters, moduleParametersMap, moduleFieldsByParameter
-                )
-            } else {
-                null
-            }
-
-            addFunction {
-                this.name = Name.identifier("invoke")
-                returnType = resultType
-                visibility = Visibilities.PUBLIC
-            }.apply func@{
-                dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
-
-                overriddenSymbols += symbolTable.referenceSimpleFunction(
-                    symbols.provider.descriptor
-                        .unsubstitutedMemberScope.findSingleFunction(Name.identifier("invoke"))
-                )
-
-                body = irExprBody(
-                    irCall(companion?.functions?.single() ?: createFunction!!).apply {
-                        dispatchReceiver =
-                            if (companion != null) irGetObject(companion.symbol) else irGet(
-                                dispatchReceiverParameter!!
-                            )
-
-                        passTypeArgumentsFrom(this@clazz)
-
-                        if (moduleField != null) {
-                            putValueArgument(
-                                0,
-                                irGetField(
-                                    irGet(dispatchReceiverParameter!!),
-                                    moduleField
-                                )
-                            )
-                        }
-
-                        fieldsByDependency.values.forEachIndexed { index, field ->
-                            putValueArgument(
-                                if (moduleField != null) index + 1 else index,
-                                irCall(
-                                    symbolTable.referenceFunction(
-                                        symbols.provider.descriptor.unsubstitutedMemberScope.findSingleFunction(
-                                            Name.identifier(
-                                                "invoke"
-                                            )
-                                        )
-                                    ),
-                                    (field.type as IrSimpleType).arguments.single().typeOrNull!!
-                                ).apply {
-                                    dispatchReceiver = irGetField(
-                                        irGet(dispatchReceiverParameter!!),
-                                        field
-                                    )
-                                }
-                            )
-                        }
-                    }
-                )
-            }
-        }
-    }
-
-    private fun IrBuilderWithScope.providerCompanion(
-        module: IrClass,
-        definition: IrFunctionExpression,
-        assistedParameterCalls: List<IrCall>,
-        dependencyCalls: List<IrCall>,
-        capturedModuleValueParameters: List<IrValueParameter>,
-        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
-        moduleFieldsByParameter: Map<IrValueParameter, IrField>
-    ) = buildClass {
-        kind = ClassKind.OBJECT
-        name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
-        isCompanion = true
-    }.apply clazz@{
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-
-        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
-
-        addConstructor {
-            returnType = defaultType
-            isPrimary = true
-            visibility = Visibilities.PUBLIC
-        }.apply {
-            body = irBlockBody {
-                initializeClassWithAnySuperClass(this@clazz.symbol)
-            }
+        if (capturedModuleValueParameters.isNotEmpty()) {
+            dependencies["module"] = module.defaultType
         }
 
-        createFunction(
-            this, module, definition, assistedParameterCalls, dependencyCalls,
-            capturedModuleValueParameters, moduleParametersMap, moduleFieldsByParameter
+        dependencyCalls.forEachIndexed { i, call -> dependencies["p$i"] = call.type }
+
+        return provider(
+            name = Name.identifier("provider\$$providerIndex"),
+            dependencies = dependencies,
+            type = type,
+            createBody = { createFunction ->
+                val body = definitionFunction.body!!
+                body.transformChildrenVoid(object : IrElementTransformerVoid() {
+                    override fun visitReturn(expression: IrReturn): IrExpression {
+                        return if (expression.returnTargetSymbol != definitionFunction.symbol) {
+                            super.visitReturn(expression)
+                        } else {
+                            at(expression.startOffset, expression.endOffset)
+                            DeclarationIrBuilder(
+                                this@ModuleTransformer.context,
+                                createFunction.symbol
+                            ).irReturn(expression.value.transform(this, null))
+                        }
+                    }
+
+                    override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
+                        if (declaration.parent == definitionFunction)
+                            declaration.parent = createFunction
+                        return super.visitDeclaration(declaration)
+                    }
+
+                    override fun visitCall(expression: IrCall): IrExpression {
+                        super.visitCall(expression)
+                        val dependencyIndex = dependencyCalls.indexOf(expression)
+                        if (dependencyIndex == -1) return super.visitCall(expression)
+                        val valueParameter = createFunction.valueParameters
+                            .single { it.name.asString() == "p$dependencyIndex" }
+                        return irGet(valueParameter)
+                    }
+
+                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                        return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
+                            super.visitGetValue(expression)
+                        } else {
+                            val newParameter = moduleParametersMap[expression.symbol.owner]!!
+                            val field = moduleFieldsByParameter[newParameter]!!
+                            return irGetField(
+                                irGet(createFunction.valueParameters.first()),
+                                field
+                            )
+                        }
+                    }
+                })
+
+                body
+            }
         )
     }
 
-    private fun IrBuilderWithScope.createFunction(
-        owner: IrClass,
-        module: IrClass,
-        definition: IrFunctionExpression,
-        assistedParameterCalls: List<IrCall>,
-        dependencyCalls: List<IrCall>,
-        capturedModuleValueParameters: List<IrValueParameter>,
-        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
-        moduleFieldsByParameter: Map<IrValueParameter, IrField>
-    ): IrFunction {
-        val definitionFunction = definition.function
-        val resultType = definition.function.returnType
-
-        return owner.addFunction {
-            name = Name.identifier("create")
-            returnType = resultType
-            visibility = Visibilities.PUBLIC
-            isInline = true
-        }.apply {
-            copyTypeParametersFrom(module)
-            dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
-
-            val moduleParameter = if (capturedModuleValueParameters.isNotEmpty()) {
-                addValueParameter(
-                    "module",
-                    module.defaultType
-                )
-            } else null
-
-            val dependencies = assistedParameterCalls + dependencyCalls
-
-            var depIndex = 0
-            val valueParametersByDependency = dependencies
-                .associateWith { call ->
-                    addValueParameter(
-                        "p${depIndex++}",
-                        call.type
-                    ).apply {
-                        if (call in assistedParameterCalls) {
-                            annotations += noArgSingleConstructorCall(symbols.astAssisted)
-                        }
-                    }
-                }
-
-            body = definitionFunction.body
-            body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitReturn(expression: IrReturn): IrExpression {
-                    return if (expression.returnTargetSymbol != definitionFunction.symbol) {
-                        super.visitReturn(expression)
-                    } else {
-                        at(expression.startOffset, expression.endOffset)
-                        DeclarationIrBuilder(
-                            this@ModuleTransformer.context,
-                            symbol
-                        ).irReturn(expression.value.transform(this, null))
-                    }
-                }
-
-                override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
-                    if (declaration.parent == definitionFunction)
-                        declaration.parent = this@apply
-                    return super.visitDeclaration(declaration)
-                }
-
-                override fun visitCall(expression: IrCall): IrExpression {
-                    super.visitCall(expression)
-                    return valueParametersByDependency[expression]?.let { valueParameter ->
-                        irGet(valueParameter)
-                    } ?: expression
-                }
-
-                override fun visitGetValue(expression: IrGetValue): IrExpression {
-                    return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
-                        super.visitGetValue(expression)
-                    } else {
-                        val newParameter = moduleParametersMap[expression.symbol.owner]!!
-                        val field = moduleFieldsByParameter[newParameter]!!
-                        return irGetField(
-                            irGet(moduleParameter!!),
-                            field
-                        )
-                    }
-                }
-            })
-        }
-    }
 }

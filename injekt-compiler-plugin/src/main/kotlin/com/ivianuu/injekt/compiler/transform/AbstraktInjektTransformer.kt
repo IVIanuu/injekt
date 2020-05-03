@@ -17,14 +17,19 @@ package com.ivianuu.injekt.compiler.transform
  */
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.buildClass
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.builtins.extractParameterNameFromFunctionTypeArgument
 import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getReturnTypeFromFunctionType
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
@@ -39,17 +44,29 @@ import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -62,17 +79,22 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.endOffset
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorFactory
@@ -298,4 +320,159 @@ abstract class AbstractInjektTransformer(
         }
     }
 
+    protected fun IrBuilderWithScope.provider(
+        name: Name,
+        dependencies: Map<String, IrType>,
+        type: IrType,
+        createBody: IrBuilderWithScope.(IrFunction) -> IrBody
+    ): IrClass {
+        return buildClass {
+            kind = if (dependencies.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
+            this.name = name
+        }.apply clazz@{
+            superTypes += symbols.provider.typeWith(type)
+
+            (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            val fieldsByDependency = dependencies
+                .toList()
+                .associateWith { (name, type) ->
+                    addField(
+                        name,
+                        symbols.provider.typeWith(type)
+                    )
+                }
+
+            addConstructor {
+                returnType = defaultType
+                isPrimary = true
+                visibility = Visibilities.PUBLIC
+            }.apply {
+                fieldsByDependency.forEach { (_, field) ->
+                    addValueParameter(
+                        field.name.asString(),
+                        field.type
+                    )
+                }
+
+                body = irBlockBody {
+                    initializeClassWithAnySuperClass(this@clazz.symbol)
+                    valueParameters
+                        .forEach { valueParameter ->
+                            +irSetField(
+                                irGet(thisReceiver!!),
+                                fieldsByDependency.values.toList()[valueParameter.index],
+                                irGet(valueParameter)
+                            )
+                        }
+                }
+            }
+
+            val companion = if (dependencies.isNotEmpty()) {
+                providerCompanion(dependencies, type, createBody).also { addChild(it) }
+            } else null
+
+            val createFunction = if (dependencies.isEmpty()) {
+                providerCreateFunction(dependencies, type, this, createBody)
+            } else {
+                null
+            }
+
+            addFunction {
+                this.name = Name.identifier("invoke")
+                returnType = type
+                visibility = Visibilities.PUBLIC
+            }.apply func@{
+                dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
+
+                overriddenSymbols += symbolTable.referenceSimpleFunction(
+                    symbols.provider.descriptor
+                        .unsubstitutedMemberScope.findSingleFunction(Name.identifier("invoke"))
+                )
+
+                body = irExprBody(
+                    irCall(companion?.functions?.single() ?: createFunction!!).apply {
+                        dispatchReceiver =
+                            if (companion != null) irGetObject(companion.symbol) else irGet(
+                                dispatchReceiverParameter!!
+                            )
+
+                        fieldsByDependency.values.forEachIndexed { index, field ->
+                            putValueArgument(
+                                index,
+                                irCall(
+                                    symbolTable.referenceFunction(
+                                        symbols.provider.descriptor
+                                            .unsubstitutedMemberScope.findSingleFunction(
+                                            Name.identifier("invoke")
+                                        )
+                                    ),
+                                    (field.type as IrSimpleType).arguments.single().typeOrNull!!
+                                ).apply {
+                                    dispatchReceiver = irGetField(
+                                        irGet(dispatchReceiverParameter!!),
+                                        field
+                                    )
+                                }
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun IrBuilderWithScope.providerCompanion(
+        dependencies: Map<String, IrType>,
+        type: IrType,
+        createBody: IrBuilderWithScope.(IrFunction) -> IrBody
+    ) = buildClass {
+        kind = ClassKind.OBJECT
+        name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
+        isCompanion = true
+    }.apply clazz@{
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
+        addConstructor {
+            returnType = defaultType
+            isPrimary = true
+            visibility = Visibilities.PUBLIC
+        }.apply {
+            body = irBlockBody {
+                initializeClassWithAnySuperClass(this@clazz.symbol)
+            }
+        }
+
+        providerCreateFunction(dependencies, type, this, createBody)
+    }
+
+    private fun IrBuilderWithScope.providerCreateFunction(
+        dependencies: Map<String, IrType>,
+        type: IrType,
+        owner: IrClass,
+        createBody: IrBuilderWithScope.(IrFunction) -> IrBody
+    ): IrFunction {
+        return owner.addFunction {
+            name = Name.identifier("create")
+            returnType = type
+            visibility = Visibilities.PUBLIC
+            isInline = true
+        }.apply {
+            dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
+
+            dependencies
+                .forEach { (name, type) ->
+                    addValueParameter(
+                        name,
+                        type
+                    )
+                }
+
+            body = createBody(this@providerCreateFunction, this)
+        }
+    }
 }
