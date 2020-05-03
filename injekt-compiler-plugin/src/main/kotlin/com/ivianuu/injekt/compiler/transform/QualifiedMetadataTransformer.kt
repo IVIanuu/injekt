@@ -10,10 +10,9 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.resolve.BindingTrace
 
-class QualifiedMetadataTransformer(context: IrPluginContext, bindingTrace: BindingTrace) :
-    AbstractInjektTransformer(context, bindingTrace) {
+class QualifiedMetadataTransformer(context: IrPluginContext) :
+    AbstractInjektTransformer(context) {
     private val fileStack = mutableListOf<IrFile>()
     override fun visitFile(declaration: IrFile): IrFile {
         fileStack.push(declaration)

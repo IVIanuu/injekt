@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -22,13 +21,10 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.BindingTrace
 
 class ClassProviderTransformer(
-    context: IrPluginContext,
-    bindingTrace: BindingTrace,
-    private val project: Project
-) : AbstractInjektTransformer(context, bindingTrace) {
+    context: IrPluginContext
+) : AbstractInjektTransformer(context) {
 
     val providersByClass = mutableMapOf<IrClass, IrClass>()
 

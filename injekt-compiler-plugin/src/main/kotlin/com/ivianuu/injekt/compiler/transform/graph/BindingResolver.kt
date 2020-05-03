@@ -4,35 +4,102 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.name.Name
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
+class DependencyBindingResolver(
+    private val injektTransformer: AbstractInjektTransformer,
+    private val dependencyNode: DependencyNode,
+    private val expressions: FactoryExpressions,
+    private val members: FactoryMembers
+) : BindingResolver {
+
+    private val allDependencyFunctions = dependencyNode.dependency
+        .declarations
+        .mapNotNull { declaration ->
+            when (declaration) {
+                is IrFunction -> declaration
+                is IrProperty -> declaration.getter
+                else -> null
+            }
+        }
+        .filter {
+            it.valueParameters.isEmpty()
+                    && !it.isFakeOverride &&
+                    it.dispatchReceiverParameter!!.type != injektTransformer.irBuiltIns.anyType
+        }
+
+    private val providersByDependency = mutableMapOf<IrFunction, IrClass>()
+
+    private fun provider(dependencyFunction: IrFunction): IrClass =
+        providersByDependency.getOrPut(dependencyFunction) {
+            with(injektTransformer) {
+                with(DeclarationIrBuilder(injektTransformer.context, dependencyFunction.symbol)) {
+                    provider(
+                        name = Name.identifier("dep_provider_${providersByDependency.size}"),
+                        dependencies = mapOf("dependency" to dependencyNode.dependency.defaultType),
+                        type = dependencyFunction.returnType,
+                        createBody = { createFunction ->
+                            irExprBody(
+                                irCall(dependencyFunction).apply {
+                                    dispatchReceiver =
+                                        irGet(createFunction.valueParameters.single())
+                                }
+                            )
+                        }
+                    ).also { members.addClass(it) }
+                }
+            }
+        }
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return allDependencyFunctions
+            .filter { Key(it.returnType) == requestedKey }
+            .map { dependencyFunction ->
+                val provider = provider(dependencyFunction)
+                DependencyBindingNode(
+                    key = requestedKey,
+                    provider = provider,
+                    requirementNode = dependencyNode
+                )
+            }
+    }
+}
+
 class ModuleBindingResolver(
     private val moduleNode: ModuleNode,
-    private val module: IrClass,
     private val descriptor: IrClass
 ) : BindingResolver {
 
-    private val allBindings = descriptor
+    private val allBindingFunctions = descriptor
         .declarations
         .filterIsInstance<IrFunction>()
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
-        return allBindings
+        return allBindingFunctions
             .filter { Key(it.returnType) == requestedKey }
             .mapNotNull { bindingFunction ->
                 val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
@@ -52,13 +119,11 @@ class ModuleBindingResolver(
 
                 when {
                     fieldName != null -> {
-                        val field = module.fields.single { it.name.asString() == fieldName }
+                        val field =
+                            moduleNode.module.fields.single { it.name.asString() == fieldName }
                         InstanceBindingNode(
                             key = requestedKey,
-                            targetScope = null,
-                            scoped = false,
-                            module = moduleNode,
-                            requirementNode = InstanceRequirementNode(
+                            requirementNode = InstanceNode(
                                 key = Key(field.type),
                                 initializerAccessor = moduleNode.initializerAccessor.child(field)
                             )
@@ -76,7 +141,6 @@ class ModuleBindingResolver(
                     }
                 }
             }
-
     }
 }
 

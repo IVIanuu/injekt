@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 class InjektIrGenerationExtension(private val project: Project) : IrGenerationExtension {
 
@@ -23,24 +22,20 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
             InjektSymbols(pluginContext)
         )
 
-        val bindingTrace = DelegatingBindingTrace(
-            pluginContext.bindingContext, "trace in InjektIrGenerationExtension"
-        )
-
         // write qualifiers of expression to the irTrace
-        QualifiedMetadataTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
+        QualifiedMetadataTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // generate a provider for each annotated class
-        ClassProviderTransformer(pluginContext, bindingTrace, project)
+        ClassProviderTransformer(pluginContext)
             .also { declarationStore.classProviderTransformer = it }
             .visitModuleAndGenerateSymbols()
 
         // move the module block of @Factory createImplementation { ... } to a function
-        FactoryBlockTransformer(pluginContext, bindingTrace).visitModuleAndGenerateSymbols()
+        FactoryBlockTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
-        val moduleTransformer = ModuleTransformer(pluginContext, bindingTrace, declarationStore)
+        val moduleTransformer = ModuleTransformer(pluginContext, declarationStore)
             .also { declarationStore.moduleTransformer = it }
-        val factoryTransformer = FactoryTransformer(pluginContext, bindingTrace, declarationStore)
+        val factoryTransformer = FactoryTransformer(pluginContext, declarationStore)
             .also { declarationStore.factoryTransformer = it }
 
         // transform @Module functions to their ast representation

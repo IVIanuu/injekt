@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.transform.FactoryTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -17,6 +18,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
+    val factoryTransformer: FactoryTransformer,
+    val factoryExpressions: FactoryExpressions,
+    val factoryMembers: FactoryMembers,
     context: IrPluginContext,
     componentModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
@@ -81,11 +85,28 @@ class Graph(
             .filter { it.hasAnnotation(InjektFqNames.AstScope) }
             .forEach { addScope(it.returnType.classOrNull!!.descriptor.fqNameSafe) }
 
-        // todo dependencies
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstDependency) }
-            .forEach { dependency ->
-
+            .forEach { function ->
+                val field = module.fields
+                    .single { field ->
+                        field.name.asString() == function.getAnnotation(InjektFqNames.AstFieldPath)!!
+                            .getValueArgument(0)!!
+                            .let { it as IrConst<String> }
+                            .value
+                    }
+                addExplicitBindingResolver(
+                    DependencyBindingResolver(
+                        injektTransformer = factoryTransformer,
+                        dependencyNode = DependencyNode(
+                            dependency = function.returnType.classOrNull!!.owner,
+                            key = Key(function.returnType),
+                            initializerAccessor = moduleNode.initializerAccessor.child(field)
+                        ),
+                        expressions = factoryExpressions,
+                        members = factoryMembers
+                    )
+                )
             }
 
         functions
@@ -111,7 +132,6 @@ class Graph(
         addExplicitBindingResolver(
             ModuleBindingResolver(
                 moduleNode,
-                module,
                 descriptor
             )
         )

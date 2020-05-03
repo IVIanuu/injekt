@@ -35,7 +35,7 @@ class FactoryExpressions(
 
     fun getRequirementExpression(node: RequirementNode): FactoryExpression {
         requirementExpressions[node]?.let { return it }
-        val field = members.getOrCreateComponentField(node.key, node.prefix) fieldInit@{ parent ->
+        val field = members.getOrCreateField(node.key, node.prefix) fieldInit@{ parent ->
             node.initializerAccessor(this, parent)
         }
         val expression: FactoryExpression = { irGetField(it, field.field) }
@@ -56,12 +56,14 @@ class FactoryExpressions(
         val expression = when (request.requestType) {
             RequestType.Instance -> {
                 when (binding) {
+                    is DependencyBindingNode -> instanceExpressionForDependency(binding)
                     is InstanceBindingNode -> instanceExpressionForInstance(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                 }
             }
             RequestType.Provider -> {
                 when (binding) {
+                    is DependencyBindingNode -> providerExpressionForDependency(binding)
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
                 }
@@ -72,6 +74,35 @@ class FactoryExpressions(
 
         bindingExpressions[request] = expression
         return expression
+    }
+
+    private fun instanceExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
+        val dependencyExpression = getRequirementExpression(binding.requirementNode)
+        val expression: FactoryExpression = bindingExpression@{ parent ->
+            val provider = binding.provider
+
+            val companion = provider.companionObject()!! as IrClass
+
+            val createFunction = companion.functions
+                .single { it.name.asString() == "create" }
+
+            irCall(createFunction).apply {
+                dispatchReceiver = irGetObject(companion.symbol)
+                putValueArgument(
+                    0,
+                    dependencyExpression(this@bindingExpression, parent)
+                )
+            }
+        }
+
+        val function = members.getGetFunction(binding.key) {
+            expression(this, irGet(it.dispatchReceiverParameter!!))
+        }
+        return bindingExpression@{
+            irCall(function).apply {
+                dispatchReceiver = it
+            }
+        }
     }
 
     private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
@@ -165,8 +196,28 @@ class FactoryExpressions(
         }
     }
 
+    private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
+        val field = members.getOrCreateField(
+            Key(
+                symbols.provider.typeWith(binding.key.type).buildSimpleType {
+                    annotations += binding.key.type.annotations
+                }
+            ),
+            "provider"
+        ) { parent ->
+            val provider = binding.provider
+            irCall(provider.constructors.single()).apply {
+                putValueArgument(
+                    0, binding.requirementNode
+                        .initializerAccessor(this@getOrCreateField, parent)
+                )
+            }
+        }
+        return { irGetField(it, field.field) }
+    }
+
     private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
-        val field = members.getOrCreateComponentField(
+        val field = members.getOrCreateField(
             Key(
                 symbols.provider.typeWith(binding.key.type).buildSimpleType {
                     annotations += binding.key.type.annotations
@@ -186,7 +237,7 @@ class FactoryExpressions(
                 putValueArgument(
                     0,
                     binding.requirementNode
-                        .initializerAccessor(this@getOrCreateComponentField, parent)
+                        .initializerAccessor(this@getOrCreateField, parent)
                 )
             }
         }
@@ -204,7 +255,7 @@ class FactoryExpressions(
         val dependencies = binding.dependencies
             .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
 
-        val field = members.getOrCreateComponentField(
+        val field = members.getOrCreateField(
             Key(
                 symbols.provider.typeWith(binding.key.type).buildSimpleType {
                     annotations += binding.key.type.annotations

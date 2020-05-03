@@ -58,14 +58,12 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleTransformer(
     context: IrPluginContext,
-    bindingTrace: BindingTrace,
     private val declarationStore: InjektDeclarationStore
-) : AbstractInjektTransformer(context, bindingTrace) {
+) : AbstractInjektTransformer(context) {
 
     private val moduleFunctions = mutableListOf<IrFunction>()
     private val transformedModules = mutableMapOf<IrFunction, IrClass>()
@@ -336,6 +334,14 @@ class ModuleTransformer(
                         }
                     )
                 }
+
+                dependencyFieldsByCall.forEach { (call, field) ->
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        field,
+                        call.getValueArgument(0)!!
+                    )
+                }
             }
         }
 
@@ -424,7 +430,7 @@ class ModuleTransformer(
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += fieldPathAnnotation(dependencyFieldByCall.getValue(dependencyCall))
-                annotations += noArgSingleConstructorCall(symbols.astScope)
+                annotations += noArgSingleConstructorCall(symbols.astDependency)
             }
         }
 

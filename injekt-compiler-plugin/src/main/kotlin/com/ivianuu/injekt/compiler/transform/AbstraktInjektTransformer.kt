@@ -96,21 +96,19 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
-    protected val context: IrPluginContext,
-    protected val bindingTrace: BindingTrace
+    val context: IrPluginContext
 ) : IrElementTransformerVoid(), ModuleLoweringPass {
 
     val symbols = InjektSymbols(context)
 
     protected val irProviders = context.irProviders
     protected val symbolTable = context.symbolTable
-    protected val irBuiltIns = context.irBuiltIns
+    val irBuiltIns = context.irBuiltIns
     protected val builtIns = context.builtIns
     protected val typeTranslator = context.typeTranslator
     protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
@@ -320,7 +318,7 @@ abstract class AbstractInjektTransformer(
         }
     }
 
-    protected fun IrBuilderWithScope.provider(
+    fun IrBuilderWithScope.provider(
         name: Name,
         dependencies: Map<String, IrType>,
         type: IrType,

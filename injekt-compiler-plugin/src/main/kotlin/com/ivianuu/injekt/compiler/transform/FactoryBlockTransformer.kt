@@ -30,12 +30,10 @@ import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.BindingTrace
 
 class FactoryBlockTransformer(
-    context: IrPluginContext,
-    bindingTrace: BindingTrace
-) : AbstractInjektTransformer(context, bindingTrace) {
+    context: IrPluginContext
+) : AbstractInjektTransformer(context) {
 
     override fun visitFile(declaration: IrFile): IrFile {
         val factoryFunctions = mutableListOf<IrFunction>()

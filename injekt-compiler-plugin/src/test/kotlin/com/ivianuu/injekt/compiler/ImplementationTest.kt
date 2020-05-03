@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.Provider
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ImplementationTest {
@@ -91,6 +92,34 @@ class ImplementationTest {
     ) {
         val foo = Foo()
         assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testDependency() = codegen(
+        """
+        interface DependencyComponent {
+            val foo: Foo
+        }
+        
+         @Factory
+        fun createDep(): DependencyComponent = createImplementation {
+            transient { Foo() }
+        }
+        
+        interface TestComponent {
+            val bar: Bar
+        }
+
+        @Factory
+        fun createChild(): TestComponent = createImplementation {
+            dependency(createDep())
+            transient { Bar(get()) }
+        }
+        
+        fun invoke() = createChild().bar
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
     }
 
     @Test

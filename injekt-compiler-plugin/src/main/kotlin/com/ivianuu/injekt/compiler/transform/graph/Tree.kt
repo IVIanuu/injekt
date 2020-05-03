@@ -31,7 +31,7 @@ interface RequirementNode : Node {
     val initializerAccessor: InitializerAccessor
 }
 
-class InstanceRequirementNode(
+class InstanceNode(
     override val key: Key,
     override val initializerAccessor: InitializerAccessor
 ) : RequirementNode {
@@ -48,13 +48,22 @@ class ModuleNode(
         get() = "module"
 }
 
-class ComponentNode(
-    val component: IrClass,
+class FactoryImplementationNode(
+    val factoryImplementation: IrClass,
     override val key: Key,
     override val initializerAccessor: InitializerAccessor
 ) : RequirementNode {
     override val prefix: String
         get() = "component"
+}
+
+class DependencyNode(
+    val dependency: IrClass,
+    override val key: Key,
+    override val initializerAccessor: InitializerAccessor
+) : RequirementNode {
+    override val prefix: String
+        get() = "dependency"
 }
 
 data class BindingRequest(
@@ -77,11 +86,14 @@ sealed class BindingNode(
 
 class InstanceBindingNode(
     key: Key,
-    targetScope: FqName?,
-    scoped: Boolean,
-    module: ModuleNode?,
-    val requirementNode: InstanceRequirementNode
-) : BindingNode(key, emptyList(), targetScope, scoped, module)
+    val requirementNode: InstanceNode
+) : BindingNode(key, emptyList(), null, false, null)
+
+class DependencyBindingNode(
+    key: Key,
+    val provider: IrClass,
+    val requirementNode: DependencyNode
+) : BindingNode(key, emptyList(), null, false, null)
 
 class ProvisionBindingNode(
     key: Key,

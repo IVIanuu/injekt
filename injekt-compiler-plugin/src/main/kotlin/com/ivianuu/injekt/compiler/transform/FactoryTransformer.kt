@@ -4,9 +4,9 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.graph.BindingRequest
-import com.ivianuu.injekt.compiler.transform.graph.ComponentNode
 import com.ivianuu.injekt.compiler.transform.graph.FactoryExpressions
 import com.ivianuu.injekt.compiler.transform.graph.FactoryField
+import com.ivianuu.injekt.compiler.transform.graph.FactoryImplementationNode
 import com.ivianuu.injekt.compiler.transform.graph.FactoryMembers
 import com.ivianuu.injekt.compiler.transform.graph.Graph
 import com.ivianuu.injekt.compiler.transform.graph.Key
@@ -60,13 +60,11 @@ import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.BindingTrace
 
 class FactoryTransformer(
     context: IrPluginContext,
-    bindingTrace: BindingTrace,
     private val declarationStore: InjektDeclarationStore
-) : AbstractInjektTransformer(context, bindingTrace) {
+) : AbstractInjektTransformer(context) {
 
     private val factoryFunctions = mutableListOf<IrFunction>()
     private val transformedFactories = mutableMapOf<IrFunction, IrClass>()
@@ -205,9 +203,9 @@ class FactoryTransformer(
             )
         }
 
-        val componentNode = ComponentNode(
+        val componentNode = FactoryImplementationNode(
             key = Key(defaultType),
-            component = this,
+            factoryImplementation = this,
             initializerAccessor = { it }
         )
 
@@ -219,6 +217,7 @@ class FactoryTransformer(
         )
 
         val graph = Graph(
+            factoryTransformer = this@FactoryTransformer,
             context = this@FactoryTransformer.context,
             componentModule = moduleClass?.let {
                 ModuleNode(
@@ -230,7 +229,9 @@ class FactoryTransformer(
                 )
             },
             declarationStore = declarationStore,
-            symbols = symbols
+            symbols = symbols,
+            factoryExpressions = factoryExpressions,
+            factoryMembers = factoryMembers
         )
 
         factoryExpressions.graph = graph
@@ -342,7 +343,7 @@ class FactoryTransformer(
 
                 var lastRoundFields: Map<Key, FactoryField>? = null
                 while (true) {
-                    val fieldsToInitialize = factoryMembers.componentFields
+                    val fieldsToInitialize = factoryMembers.fields
                         .filterKeys { it !in factoryMembers.initializedFields }
                     if (fieldsToInitialize.isEmpty()) {
                         break
