@@ -15,9 +15,11 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.superTypes
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
@@ -195,14 +197,21 @@ class AnnotatedClassBindingResolver(
     }
 }
 
-class SetBindingResolver : BindingResolver {
+class SetBindingResolver(
+    private val context: IrPluginContext,
+    private val symbols: InjektSymbols
+) : BindingResolver {
 
     private val sets = mutableMapOf<Key, MutableSet<DependencyRequest>>()
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return sets
-            .flatMap { (setKey, elementKeys) ->
-                listOf(SetBindingNode(setKey, elementKeys.toList()))
+            .flatMap { (setKey, elements) ->
+                listOf(
+                    SetBindingNode(setKey, elements.toList()),
+                    frameworkBinding(symbols.lazy, setKey, elements),
+                    frameworkBinding(symbols.provider, setKey, elements)
+                )
             }
             .filter { it.key == requestedKey }
     }
@@ -211,14 +220,35 @@ class SetBindingResolver : BindingResolver {
         sets.getOrPut(setKey) { mutableSetOf() }
     }
 
-    fun addSetElement(setKey: Key, elementKey: Key) {
+    fun addSetElement(setKey: Key, element: DependencyRequest) {
         val set = sets[setKey]!!
-        if (elementKey in set) {
-            error("Already bound $elementKey into set $setKey")
+        if (element in set) {
+            error("Already bound $element into set $setKey")
         }
 
-        set += DependencyRequest(elementKey)
+        set += element
     }
+
+    private fun frameworkBinding(
+        wrapper: IrClassSymbol,
+        setKey: Key,
+        elements: Set<DependencyRequest>
+    ) = SetBindingNode(
+        Key(
+            context.symbolTable.referenceClass(context.builtIns.set)
+                .typeWith(
+                    wrapper.typeWith(
+                        setKey.unwrapSingleArgKey().type
+                    )
+                )
+        ),
+        elements
+            .map {
+                DependencyRequest(
+                    key = Key(wrapper.typeWith(it.key.type))
+                )
+            }
+    )
 }
 
 class LazyOrProviderBindingResolver(

@@ -32,7 +32,7 @@ class Graph(
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
-    private val setBindingResolver = SetBindingResolver()
+    private val setBindingResolver = SetBindingResolver(context, symbols)
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
@@ -165,6 +165,6 @@ class Graph(
     }
 
     private fun addSetElement(setKey: Key, elementKey: Key) {
-        setBindingResolver.addSetElement(setKey, elementKey)
+        setBindingResolver.addSetElement(setKey, DependencyRequest(elementKey))
     }
 }
