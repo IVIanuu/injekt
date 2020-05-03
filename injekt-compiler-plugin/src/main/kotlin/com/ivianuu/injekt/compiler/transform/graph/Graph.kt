@@ -1,14 +1,21 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
+import com.ivianuu.injekt.compiler.ClassKey
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.IntKey
+import com.ivianuu.injekt.compiler.LongKey
+import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.transform.FactoryTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -32,12 +39,14 @@ class Graph(
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
+    private val mapBindingResolver = MapBindingResolver(context, symbols)
     private val setBindingResolver = SetBindingResolver(context, symbols)
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
+        implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
         implicitBindingResolvers += FactoryImplementationBindingResolver(
             factoryImplementationNode
@@ -110,6 +119,54 @@ class Graph(
             }
 
         functions
+            .filter { it.hasAnnotation(InjektFqNames.AstMap) }
+            .forEach { function ->
+                addMap(Key(function.returnType))
+            }
+
+        functions
+            .filter { it.hasAnnotation(InjektFqNames.AstMapEntry) }
+            .forEach { function ->
+                putMapEntry(
+                    Key(function.valueParameters[0].type),
+                    function.valueParameters[1].let { entry ->
+                        when {
+                            entry.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
+                                ClassKey(
+                                    (entry.getAnnotation(InjektFqNames.AstMapClassKey)
+                                    !!.getValueArgument(0) as IrClassReference)
+                                        .classType
+                                )
+                            }
+                            entry.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
+                                IntKey(
+                                    (entry.getAnnotation(InjektFqNames.AstMapIntKey)
+                                    !!.getValueArgument(0)!! as IrConst<Int>)
+                                        .value
+                                )
+                            }
+                            entry.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
+                                LongKey(
+                                    (entry.getAnnotation(InjektFqNames.AstMapLongKey)
+                                    !!.getValueArgument(0)!! as IrConst<Long>)
+                                        .value
+                                )
+                            }
+                            entry.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
+                                StringKey(
+                                    (entry.getAnnotation(InjektFqNames.AstMapStringKey)
+                                    !!.getValueArgument(0)!! as IrConst<String>)
+                                        .value
+                                )
+                            }
+                            else -> error("Corrupt map binding ${entry.dump()}")
+                        }
+                    },
+                    Key(function.valueParameters[1].type)
+                )
+            }
+
+        functions
             .filter { it.hasAnnotation(InjektFqNames.AstSet) }
             .forEach { function ->
                 addSet(Key(function.returnType))
@@ -158,6 +215,18 @@ class Graph(
 
     private fun addExplicitBindingResolver(bindingResolver: BindingResolver) {
         explicitBindingResolvers += bindingResolver
+    }
+
+    private fun addMap(key: Key) {
+        mapBindingResolver.addMap(key)
+    }
+
+    private fun putMapEntry(
+        mapKey: Key,
+        entryKey: MapKey,
+        entryValue: Key
+    ) {
+        mapBindingResolver.putMapEntry(mapKey, entryKey, DependencyRequest(entryValue))
     }
 
     private fun addSet(key: Key) {

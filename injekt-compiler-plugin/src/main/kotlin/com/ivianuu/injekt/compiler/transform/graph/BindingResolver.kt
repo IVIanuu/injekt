@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.superTypes
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -196,6 +198,67 @@ class AnnotatedClassBindingResolver(
         )
     }
 }
+
+class MapBindingResolver(
+    private val context: IrPluginContext,
+    private val symbols: InjektSymbols
+) : BindingResolver {
+
+    private val maps =
+        mutableMapOf<Key, MutableMap<MapKey, DependencyRequest>>()
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return maps
+            .flatMap { (mapKey, entries) ->
+                listOf(
+                    MapBindingNode(mapKey, entries),
+                    frameworkBinding(symbols.lazy, mapKey, entries),
+                    frameworkBinding(symbols.provider, mapKey, entries)
+                )
+            }
+            .filter { it.key == requestedKey }
+    }
+
+    fun addMap(mapKey: Key) {
+        maps.getOrPut(mapKey) { mutableMapOf() }
+    }
+
+    fun putMapEntry(
+        mapKey: Key,
+        entryKey: MapKey,
+        entryValue: DependencyRequest
+    ) {
+        val map = maps[mapKey]!!
+        if (entryKey in map) {
+            error("Already bound value with $entryKey into map $mapKey")
+        }
+
+        map[entryKey] = entryValue
+    }
+
+    private fun frameworkBinding(
+        wrapper: IrClassSymbol,
+        mapKey: Key,
+        entries: Map<MapKey, DependencyRequest>
+    ) = MapBindingNode(
+        Key(
+            context.symbolTable.referenceClass(context.builtIns.map)
+                .typeWith(
+                    (mapKey.type as IrSimpleType).arguments[0].typeOrNull!!,
+                    wrapper.typeWith(
+                        mapKey.type.arguments[1].typeOrNull!!
+                    )
+                )
+        ),
+        entries
+            .mapValues {
+                DependencyRequest(
+                    key = Key(wrapper.typeWith(it.value.key.type))
+                )
+            }
+    )
+}
+
 
 class SetBindingResolver(
     private val context: IrPluginContext,

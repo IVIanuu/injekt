@@ -39,6 +39,7 @@ object InjektFqNames {
     val InstanceProvider = InternalPackage.child("InstanceProvider")
 
     val MapDsl = InjektPackage.child("MapDsl")
+    val MapProvider = InternalPackage.child("MapProvider")
 
     val Module = InjektPackage.child("Module")
 
@@ -53,7 +54,6 @@ object InjektFqNames {
     val Scope = InjektPackage.child("Scope")
 
     val SetDsl = InjektPackage.child("SetDsl")
-
     val SetProvider = InternalPackage.child("SetProvider")
 
     val Transient = InjektPackage.child("Transient")

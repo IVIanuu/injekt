@@ -55,6 +55,7 @@ class InjektSymbols(private val context: IrPluginContext) {
     val lazy = getTopLevelClass(InjektFqNames.Lazy)
 
     val mapDsl = getTopLevelClass(InjektFqNames.MapDsl)
+    val mapProvider = getTopLevelClass(InjektFqNames.MapProvider)
 
     val module = getTopLevelClass(InjektFqNames.Module)
 

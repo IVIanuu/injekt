@@ -1,8 +1,11 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.ensureBound
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -43,6 +46,17 @@ class FactoryExpressions(
 
     private val requirementExpressions = mutableMapOf<RequirementNode, FactoryExpression>()
 
+    private val collectionsScope = symbols.getPackage(FqName("kotlin.collections"))
+    private val kotlinScope = symbols.getPackage(FqName("kotlin"))
+
+    private val pair = context.symbolTable.referenceClass(
+        kotlinScope.memberScope
+            .getContributedClassifier(
+                Name.identifier("Pair"),
+                NoLookupLocation.FROM_BACKEND
+            ) as ClassDescriptor
+    ).ensureBound(context.irProviders)
+
     fun getRequirementExpression(node: RequirementNode): FactoryExpression {
         requirementExpressions[node]?.let { return it }
         val field = members.getOrCreateField(node.key, node.prefix) fieldInit@{ parent ->
@@ -73,6 +87,7 @@ class FactoryExpressions(
                     )
                     is InstanceBindingNode -> instanceExpressionForInstance(binding)
                     is LazyBindingNode -> instanceExpressionForLazy(binding)
+                    is MapBindingNode -> instanceExpressionForMap(binding)
                     is ProviderBindingNode -> instanceExpressionForProvider(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                     is SetBindingNode -> instanceExpressionForSet(binding)
@@ -87,6 +102,7 @@ class FactoryExpressions(
                     )
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is LazyBindingNode -> providerExpressionForLazy(binding)
+                    is MapBindingNode -> providerExpressionForMap(binding)
                     is ProviderBindingNode -> providerExpressionForProvider(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
                     is SetBindingNode -> providerExpressionForSet(binding)
@@ -147,6 +163,101 @@ class FactoryExpressions(
                     (this, it)
             )
         }
+    }
+
+    private fun instanceExpressionForMap(binding: MapBindingNode): FactoryExpression {
+        val entryExpressions = binding.entries
+            .map { (key, entryValue) ->
+                val entryValueExpression = getBindingExpression(entryValue.asBindingRequest())
+                val pairExpression: FactoryExpression = pairExpression@{
+                    irCall(
+                        pair.constructors.single(),
+                        pair.typeWith(binding.keyKey.type, binding.valueKey.type)
+                    ).apply {
+                        putTypeArgument(0, binding.keyKey.type)
+                        putTypeArgument(1, binding.valueKey.type)
+
+                        putValueArgument(
+                            0,
+                            with(key) { asExpression() }
+                        )
+                        putValueArgument(
+                            1,
+                            entryValueExpression(this@pairExpression, it)
+                        )
+                    }
+                }
+                pairExpression
+            }
+
+        val expression: FactoryExpression = bindingExpression@{ parent ->
+            when (entryExpressions.size) {
+                0 -> {
+                    irCall(
+                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                            collectionsScope.memberScope.findSingleFunction(Name.identifier("emptyMap"))
+                        ),
+                        binding.key.type
+                    ).apply {
+                        putTypeArgument(0, binding.keyKey.type)
+                        putTypeArgument(1, binding.valueKey.type)
+                    }
+                }
+                1 -> {
+                    irCall(
+                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                            collectionsScope.memberScope.findFirstFunction("mapOf") {
+                                it.valueParameters.singleOrNull()?.isVararg == false
+                            }
+                        ),
+                        binding.key.type
+                    ).apply {
+                        putTypeArgument(0, binding.keyKey.type)
+                        putTypeArgument(1, binding.valueKey.type)
+                        putValueArgument(
+                            0,
+                            entryExpressions.single()(this@bindingExpression, parent),
+                        )
+                    }
+                }
+                else -> {
+                    irCall(
+                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                            collectionsScope.memberScope.findFirstFunction("mapOf") {
+                                it.valueParameters.singleOrNull()?.isVararg == true
+                            }
+                        ),
+                        binding.key.type
+                    ).apply {
+                        putTypeArgument(0, binding.keyKey.type)
+                        putTypeArgument(1, binding.valueKey.type)
+                        putValueArgument(
+                            0,
+                            IrVarargImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                context.irBuiltIns.arrayClass
+                                    .typeWith(
+                                        pair.typeWith(
+                                            binding.keyKey.type,
+                                            binding.valueKey.type
+                                        )
+                                    ),
+                                pair.typeWith(
+                                    binding.keyKey.type,
+                                    binding.valueKey.type
+                                ),
+                                entryExpressions.map {
+                                    it(this@bindingExpression, parent)
+                                }
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
+        return expression.wrapInFunction(binding.key)
     }
 
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
@@ -242,8 +353,6 @@ class FactoryExpressions(
             .map { getBindingExpression(it.asBindingRequest()) }
 
         val expression: FactoryExpression = bindingExpression@{ parent ->
-            val collectionsScope = symbols.getPackage(FqName("kotlin.collections"))
-
             when (elementExpressions.size) {
                 0 -> {
                     irCall(
@@ -342,6 +451,99 @@ class FactoryExpressions(
                     .constructors
                     .single()
             ).apply { putValueArgument(0, dependencyExpression(this@providerFieldExpression, it)) }
+        }
+    }
+
+    private fun providerExpressionForMap(binding: MapBindingNode): FactoryExpression {
+        val entryExpressions = binding.entries
+            .map { (key, entryValue) ->
+                val entryValueExpression = getBindingExpression(entryValue.asBindingRequest())
+                val pairExpression: FactoryExpression = pairExpression@{
+                    irCall(
+                        pair.constructors.single(),
+                        pair.typeWith(binding.keyKey.type, binding.valueKey.type)
+                    ).apply {
+                        putTypeArgument(0, binding.keyKey.type)
+                        putTypeArgument(1, binding.valueKey.type)
+
+                        putValueArgument(
+                            0,
+                            with(key) { asExpression() }
+                        )
+                        putValueArgument(
+                            1,
+                            entryValueExpression(this@pairExpression, it)
+                        )
+                    }
+                }
+                pairExpression
+            }
+
+        return providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
+            val mapProviderCompanion = symbols.mapProvider.owner
+                .companionObject() as IrClass
+
+            if (entryExpressions.isEmpty()) {
+                irCall(
+                    mapProviderCompanion.functions
+                        .single { it.name.asString() == "empty" }
+                ).apply {
+                    putTypeArgument(0, binding.keyKey.type)
+                    putTypeArgument(1, binding.valueKey.type)
+                }
+            } else {
+                when (entryExpressions.size) {
+                    1 -> {
+                        val create = mapProviderCompanion.functions
+                            .single {
+                                it.name.asString() == "create" &&
+                                        !it.valueParameters.single().isVararg
+                            }
+
+                        irCall(create).apply {
+                            putTypeArgument(0, binding.keyKey.type)
+                            putTypeArgument(1, binding.valueKey.type)
+                            putValueArgument(
+                                0,
+                                entryExpressions.single()(this@providerFieldExpression, parent)
+                            )
+                        }
+                    }
+                    else -> {
+                        val create = mapProviderCompanion.functions
+                            .single {
+                                it.name.asString() == "create" &&
+                                        it.valueParameters.single().isVararg
+                            }
+
+                        irCall(create).apply {
+                            putTypeArgument(0, binding.keyKey.type)
+                            putTypeArgument(1, binding.valueKey.type)
+                            putValueArgument(
+                                0,
+                                IrVarargImpl(
+                                    UNDEFINED_OFFSET,
+                                    UNDEFINED_OFFSET,
+                                    context.irBuiltIns.arrayClass
+                                        .typeWith(
+                                            pair.typeWith(
+                                                binding.keyKey.type,
+                                                binding.valueKey.type
+                                            )
+                                        ),
+                                    pair.typeWith(
+                                        binding.keyKey.type,
+                                        binding.valueKey.type
+                                    ),
+                                    entryExpressions.map {
+                                        it(this@providerFieldExpression, parent)
+                                    }
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 

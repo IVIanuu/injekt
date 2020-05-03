@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.MapKey
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -129,6 +130,22 @@ class LazyBindingNode(key: Key) : BindingNode(
     null
 )
 
+class MapBindingNode(
+    key: Key,
+    val entries: Map<MapKey, DependencyRequest>
+) : BindingNode(key, entries.values.toList(), null, false, null) {
+    val keyKey = Key(
+        (key.type as IrSimpleType)
+            .arguments[0]
+            .typeOrNull!!
+    )
+    val valueKey = Key(
+        (key.type as IrSimpleType)
+            .arguments[1]
+            .typeOrNull!!
+    )
+}
+
 class ProviderBindingNode(key: Key) : BindingNode(
     key,
     listOf(DependencyRequest(key = key.unwrapSingleArgKey())),
@@ -148,8 +165,8 @@ class ProvisionBindingNode(
 
 class SetBindingNode(
     key: Key,
-    dependencies: List<DependencyRequest>
-) : BindingNode(key, dependencies, null, false, null) {
+    val elements: List<DependencyRequest>
+) : BindingNode(key, elements, null, false, null) {
     val elementKey = Key(
         (key.type as IrSimpleType)
             .arguments
