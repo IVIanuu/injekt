@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -120,6 +121,22 @@ class DependencyBindingNode(
     val requirementNode: DependencyNode
 ) : BindingNode(key, emptyList(), null, false, null)
 
+class LazyBindingNode(key: Key) : BindingNode(
+    key,
+    listOf(DependencyRequest(key = key.unwrapSingleArgKey())),
+    null,
+    false,
+    null
+)
+
+class ProviderBindingNode(key: Key) : BindingNode(
+    key,
+    listOf(DependencyRequest(key = key.unwrapSingleArgKey())),
+    null,
+    false,
+    null
+)
+
 class ProvisionBindingNode(
     key: Key,
     dependencies: List<DependencyRequest>,
@@ -172,3 +189,11 @@ class Key(val type: IrType) {
     override fun toString(): String = "Key(type=${type.render()})"
 
 }
+
+fun Key.unwrapSingleArgKey() = Key(
+    type.let { it as IrSimpleType }.arguments.single().typeOrNull!!
+        .let { it as IrSimpleType }
+        .buildSimpleType {
+            annotations += type.annotations
+        },
+)

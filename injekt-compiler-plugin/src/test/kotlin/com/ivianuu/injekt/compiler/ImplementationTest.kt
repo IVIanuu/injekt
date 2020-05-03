@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
@@ -258,6 +259,86 @@ class ImplementationTest {
     """
     ) {
         assertOk()
+    }
+
+    @Test
+    fun testLazyOfTransient() = codegen(
+        """
+        interface TestComponent {
+            val lazy: Lazy<Foo>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            transient { Foo() }
+        }
+        
+        fun invoke() = create().lazy
+    """
+    ) {
+        val lazy = invokeSingleFile<Lazy<Foo>>()
+        assertSame(lazy(), lazy())
+    }
+
+    @Test
+    fun testLazyOfScoped() = codegen(
+        """
+        interface TestComponent {
+            val lazy: Lazy<Foo>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            scoped { Foo() }
+        }
+        
+        fun invoke() = create().lazy
+    """
+    ) {
+        val lazy = invokeSingleFile<Lazy<Foo>>()
+        assertSame(lazy(), lazy())
+    }
+
+    @Test
+    fun testQualifiedLazy() = codegen(
+        """
+        interface TestComponent {
+            val lazy: @TestQualifier1 Lazy<Foo>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            @TestQualifier1 transient { Foo() }
+        }
+        
+        fun invoke() = create().lazy
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testProviderOfLazy() = codegen(
+        """
+        interface TestComponent {
+            val providerOfLazy: Provider<Lazy<Foo>>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation { 
+            transient { Foo() }
+        }
+        
+        val component = create()
+        fun invoke() = component.providerOfLazy
+    """
+    ) {
+        val lazyA = invokeSingleFile<Provider<Lazy<Foo>>>()()
+        val lazyB = invokeSingleFile<Provider<Lazy<Foo>>>()()
+        assertNotSame(lazyA, lazyB)
+        assertSame(lazyA(), lazyA())
+        assertSame(lazyB(), lazyB())
+        assertNotSame(lazyA(), lazyB())
     }
 
 }

@@ -17,9 +17,7 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.superTypes
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
@@ -234,23 +232,9 @@ class LazyOrProviderBindingResolver(
             requestedType.classifier != symbols.provider
         ) return emptyList()
 
-        val dependency = Key(
-            requestedType.arguments.single().typeOrNull!!
-                .let { it as IrSimpleType }
-                .buildSimpleType { annotations += requestedKey.type.annotations }
-        ).let { DependencyRequest(it) }
-
         return when (requestedType.classifier) {
-            /*symbols.provider -> {
-                DelegateBindingNode(
-                    key = requestedKey,
-                    dependencies = listOf(dependency),
-                    null,
-                    false,
-                    null,
-
-                )
-            }*/
+            symbols.lazy -> listOf(LazyBindingNode(key = requestedKey))
+            symbols.provider -> listOf(ProviderBindingNode(key = requestedKey))
             else -> emptyList()
         }
     }

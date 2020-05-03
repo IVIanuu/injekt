@@ -61,6 +61,7 @@ class InjektSymbols(private val context: IrPluginContext) {
     val provider = getTopLevelClass(InjektFqNames.Provider)
     val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
     val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
+    val providerOfLazy = getTopLevelClass(InjektFqNames.ProviderOfLazy)
 
     val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
 

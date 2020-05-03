@@ -28,23 +28,23 @@ class Graph(
     symbols: InjektSymbols
 ) {
 
-    val scopes = mutableSetOf<FqName>()
+    private val scopes = mutableSetOf<FqName>()
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
-    private val annotatedClassBindingResolver =
-        AnnotatedClassBindingResolver(
-            context,
-            declarationStore
-        )
+    private val implicitBindingResolvers = mutableListOf<BindingResolver>()
     private val setBindingResolver = SetBindingResolver()
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
-        explicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
-        explicitBindingResolvers += setBindingResolver
-        explicitBindingResolvers += FactoryImplementationBindingResolver(
+        implicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
+        implicitBindingResolvers += setBindingResolver
+        implicitBindingResolvers += FactoryImplementationBindingResolver(
             factoryImplementationNode
+        )
+        implicitBindingResolvers += AnnotatedClassBindingResolver(
+            context,
+            declarationStore
         )
     }
 
@@ -55,15 +55,17 @@ class Graph(
                 error("Multiple bindings found for $key")
             }
 
-            val binding = explicitBindings.singleOrNull()
-                ?: annotatedClassBindingResolver(key).singleOrNull()
-                ?: error("No binding found for $key")
+            var binding = explicitBindings.singleOrNull()
 
-            if (binding.targetScope != null && binding.targetScope !in scopes) {
-                error(
-                    "Scope mismatch binding ${binding.key} " +
-                            "with scope ${binding.targetScope} is not compatible with this component $scopes"
-                )
+            if (binding == null) {
+                val implicitBindings = implicitBindingResolvers.flatMap { it(key) }
+                binding = implicitBindings.singleOrNull() ?: error("No binding found for $key")
+                if (binding.targetScope != null && binding.targetScope !in scopes) {
+                    error(
+                        "Scope mismatch binding ${binding.key} " +
+                                "with scope ${binding.targetScope} is not compatible with this component $scopes"
+                    )
+                }
             }
 
             binding

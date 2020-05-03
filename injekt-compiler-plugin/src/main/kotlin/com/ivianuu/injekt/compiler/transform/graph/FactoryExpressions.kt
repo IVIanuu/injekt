@@ -72,6 +72,8 @@ class FactoryExpressions(
                         binding
                     )
                     is InstanceBindingNode -> instanceExpressionForInstance(binding)
+                    is LazyBindingNode -> instanceExpressionForLazy(binding)
+                    is ProviderBindingNode -> instanceExpressionForProvider(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                     is SetBindingNode -> instanceExpressionForSet(binding)
                 }
@@ -84,6 +86,8 @@ class FactoryExpressions(
                         binding
                     )
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
+                    is LazyBindingNode -> providerExpressionForLazy(binding)
+                    is ProviderBindingNode -> providerExpressionForProvider(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
                     is SetBindingNode -> providerExpressionForSet(binding)
                 }
@@ -129,6 +133,26 @@ class FactoryExpressions(
 
     private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
         return getRequirementExpression(binding.requirementNode)
+    }
+
+    private fun instanceExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
+        return {
+            doubleCheck(
+                getBindingExpression(
+                    BindingRequest(
+                        binding.key.unwrapSingleArgKey(),
+                        RequestType.Provider
+                    )
+                )
+                    (this, it)
+            )
+        }
+    }
+
+    private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
+        return getBindingExpression(
+            BindingRequest(binding.key.unwrapSingleArgKey(), RequestType.Provider)
+        )
     }
 
     private fun instanceExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
@@ -306,6 +330,25 @@ class FactoryExpressions(
                     .initializerAccessor(this, it)
             )
         }
+    }
+
+    private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
+        val dependencyExpression = getBindingExpression(
+            BindingRequest(binding.key.unwrapSingleArgKey(), RequestType.Provider)
+        )
+        return providerFieldExpression(binding.key) {
+            irCall(
+                symbols.providerOfLazy
+                    .constructors
+                    .single()
+            ).apply { putValueArgument(0, dependencyExpression(this@providerFieldExpression, it)) }
+        }
+    }
+
+    private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
+        return getBindingExpression(
+            BindingRequest(binding.key.unwrapSingleArgKey(), RequestType.Provider)
+        )
     }
 
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
