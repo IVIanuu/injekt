@@ -68,6 +68,9 @@ class FactoryExpressions(
                 when (binding) {
                     is DelegateBindingNode -> instanceExpressionForDelegate(binding)
                     is DependencyBindingNode -> instanceExpressionForDependency(binding)
+                    is FactoryImplementationBindingNode -> instanceExpressionForFactoryImplementation(
+                        binding
+                    )
                     is InstanceBindingNode -> instanceExpressionForInstance(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                     is SetBindingNode -> instanceExpressionForSet(binding)
@@ -77,6 +80,9 @@ class FactoryExpressions(
                 when (binding) {
                     is DelegateBindingNode -> providerExpressionForDelegate(binding)
                     is DependencyBindingNode -> providerExpressionForDependency(binding)
+                    is FactoryImplementationBindingNode -> providerExpressionForFactoryImplementation(
+                        binding
+                    )
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
                     is SetBindingNode -> providerExpressionForSet(binding)
@@ -113,6 +119,12 @@ class FactoryExpressions(
         }
 
         return expression.wrapInFunction(binding.key)
+    }
+
+    private fun instanceExpressionForFactoryImplementation(
+        binding: FactoryImplementationBindingNode
+    ): FactoryExpression {
+        return { it() }
     }
 
     private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
@@ -268,51 +280,30 @@ class FactoryExpressions(
         getBindingExpression(BindingRequest(binding.originalKey, RequestType.Provider))
 
     private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
-        val field = members.getOrCreateField(
-            Key(
-                symbols.provider.typeWith(binding.key.type).buildSimpleType {
-                    annotations += binding.key.type.annotations
-                }
-            ),
-            "provider"
-        ) { parent ->
+        return providerFieldExpression(binding.key) providerFieldExpression@{
             val provider = binding.provider
             irCall(provider.constructors.single()).apply {
                 putValueArgument(
                     0, binding.requirementNode
-                        .initializerAccessor(this@getOrCreateField, parent)
+                        .initializerAccessor(this@providerFieldExpression, it)
                 )
             }
         }
-        return { irGetField(it(), field.field) }
+    }
+
+    private fun providerExpressionForFactoryImplementation(
+        binding: FactoryImplementationBindingNode
+    ): FactoryExpression {
+        return providerFieldExpression(binding.key) { instanceProvider(it()) }
     }
 
     private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
-        val field = members.getOrCreateField(
-            Key(
-                symbols.provider.typeWith(binding.key.type).buildSimpleType {
-                    annotations += binding.key.type.annotations
-                }
-            ),
-            "provider"
-        ) { parent ->
-            val instanceProviderCompanion = symbols.instanceProvider.owner
-                .companionObject() as IrClass
-            irCall(
-                instanceProviderCompanion
-                    .declarations
-                    .filterIsInstance<IrFunction>()
-                    .single { it.name.asString() == "create" }
-            ).apply {
-                dispatchReceiver = irGetObject(instanceProviderCompanion.symbol)
-                putValueArgument(
-                    0,
-                    binding.requirementNode
-                        .initializerAccessor(this@getOrCreateField, parent)
-                )
-            }
+        return providerFieldExpression(binding.key) {
+            instanceProvider(
+                binding.requirementNode
+                    .initializerAccessor(this, it)
+            )
         }
-        return { irGetField(it(), field.field) }
     }
 
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
@@ -326,27 +317,20 @@ class FactoryExpressions(
         val dependencies = binding.dependencies
             .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
 
-        val field = members.getOrCreateField(
-            Key(
-                symbols.provider.typeWith(binding.key.type).buildSimpleType {
-                    annotations += binding.key.type.annotations
-                }
-            ),
-            "provider"
-        ) fieldInit@{ parent ->
+        return providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
             val provider = binding.provider
 
             val moduleRequired =
                 provider.constructors.single().valueParameters.firstOrNull()
                     ?.name?.asString() == "module"
 
-            if (dependencyKeys.any { it !in members.initializedFields }) return@fieldInit null
+            if (dependencyKeys.any { it !in members.initializedFields }) return@providerFieldExpression null
 
             val newProvider = irCall(provider.constructors.single()).apply {
                 if (moduleRequired) {
                     putValueArgument(
                         0,
-                        binding.module!!.initializerAccessor(this@fieldInit, parent)
+                        binding.module!!.initializerAccessor(this@providerFieldExpression, parent)
                     )
                 }
 
@@ -354,37 +338,24 @@ class FactoryExpressions(
                     val realIndex = index + if (moduleRequired) 1 else 0
                     putValueArgument(
                         realIndex,
-                        dependency(this@fieldInit, parent)
+                        dependency(this@providerFieldExpression, parent)
                     )
                 }
             }
 
             if (binding.scoped) {
-                irCall(
-                    symbols.doubleCheck
-                        .constructors
-                        .single()
-                ).apply { putValueArgument(0, newProvider) }
+                doubleCheck(newProvider)
             } else {
                 newProvider
             }
         }
-
-        return bindingExpression@{ irGetField(it(), field.field) }
     }
 
     private fun providerExpressionForSet(binding: SetBindingNode): FactoryExpression {
         val elementExpressions = binding.dependencies
             .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
 
-        val field = members.getOrCreateField(
-            Key(
-                symbols.provider.typeWith(binding.key.type).buildSimpleType {
-                    annotations += binding.key.type.annotations
-                }
-            ),
-            "provider"
-        ) { parent ->
+        return providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
             val setProviderCompanion = symbols.setProvider.owner
                 .companionObject() as IrClass
 
@@ -408,7 +379,7 @@ class FactoryExpressions(
                             putTypeArgument(0, binding.elementKey.type)
                             putValueArgument(
                                 0,
-                                elementExpressions.single()(this@getOrCreateField, parent)
+                                elementExpressions.single()(this@providerFieldExpression, parent)
                             )
                         }
                     }
@@ -434,7 +405,7 @@ class FactoryExpressions(
                                         ),
                                     binding.elementKey.type,
                                     elementExpressions.map {
-                                        it(this@getOrCreateField, parent)
+                                        it(this@providerFieldExpression, parent)
                                     }
                                 )
                             )
@@ -443,7 +414,44 @@ class FactoryExpressions(
                 }
             }
         }
+    }
+
+    private fun providerFieldExpression(
+        key: Key,
+        providerInitializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
+    ): FactoryExpression {
+        val field = members.getOrCreateField(
+            Key(
+                symbols.provider.typeWith(key.type).buildSimpleType {
+                    annotations += key.type.annotations
+                }
+            ),
+            "provider",
+            providerInitializer
+        )
         return { irGetField(it(), field.field) }
+    }
+
+    private fun IrBuilderWithScope.instanceProvider(instance: IrExpression): IrExpression {
+        val instanceProviderCompanion = symbols.instanceProvider.owner
+            .companionObject() as IrClass
+        return irCall(
+            instanceProviderCompanion
+                .declarations
+                .filterIsInstance<IrFunction>()
+                .single { it.name.asString() == "create" }
+        ).apply {
+            dispatchReceiver = irGetObject(instanceProviderCompanion.symbol)
+            putValueArgument(0, instance)
+        }
+    }
+
+    private fun IrBuilderWithScope.doubleCheck(provider: IrExpression): IrExpression {
+        return irCall(
+            symbols.doubleCheck
+                .constructors
+                .single()
+        ).apply { putValueArgument(0, provider) }
     }
 
     private fun FactoryExpression.wrapInFunction(key: Key): FactoryExpression {

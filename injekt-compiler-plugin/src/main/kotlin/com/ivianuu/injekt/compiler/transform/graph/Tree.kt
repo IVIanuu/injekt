@@ -95,6 +95,10 @@ class DelegateBindingNode(
     val originalKey: Key,
 ) : BindingNode(key, listOf(originalKey), null, false, null)
 
+class FactoryImplementationBindingNode(
+    val factoryImplementationNode: FactoryImplementationNode
+) : BindingNode(factoryImplementationNode.key, emptyList(), null, false, null)
+
 class InstanceBindingNode(
     key: Key,
     val requirementNode: InstanceNode

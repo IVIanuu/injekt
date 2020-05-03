@@ -21,8 +21,9 @@ class Graph(
     val factoryTransformer: FactoryTransformer,
     val factoryExpressions: FactoryExpressions,
     val factoryMembers: FactoryMembers,
+    factoryImplementationNode: FactoryImplementationNode,
     context: IrPluginContext,
-    componentModule: ModuleNode?,
+    factoryImplementationModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
     symbols: InjektSymbols
 ) {
@@ -39,9 +40,12 @@ class Graph(
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
-        if (componentModule != null) addModule(componentModule)
+        if (factoryImplementationModule != null) addModule(factoryImplementationModule)
         explicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
         explicitBindingResolvers += setBindingResolver
+        explicitBindingResolvers += FactoryImplementationBindingResolver(
+            factoryImplementationNode
+        )
     }
 
     fun getBinding(key: Key): BindingNode {

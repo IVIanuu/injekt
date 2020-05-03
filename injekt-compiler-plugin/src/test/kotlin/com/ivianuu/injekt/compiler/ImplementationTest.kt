@@ -183,6 +183,27 @@ class ImplementationTest {
         assertNotSame(foo1, foo2)
     }
 
+    @Test
+    fun testFactoryImplementationBinding() = codegen(
+        """
+        interface TestComponent {
+            val dep: Dep
+        }
+        
+        @Transient class Dep(val testComponent: TestComponent)
+        
+        @Factory
+        fun create(): TestComponent = createImplementation()
+        
+        fun invoke(): Pair<TestComponent, TestComponent> = create().let {
+            it to it.dep.testComponent
+        }
+    """
+    ) {
+        val (component, dep) = invokeSingleFile<Pair<*, *>>()
+        assertSame(component, dep)
+    }
+
     // todo @Test
     fun testProviderOfTransient() = codegen(
         """

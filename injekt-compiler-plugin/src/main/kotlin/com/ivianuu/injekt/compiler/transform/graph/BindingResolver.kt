@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
+import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -257,5 +258,19 @@ class LazyOrProviderBindingResolver(
             else -> emptyList()
         }*/
         return emptyList()
+    }
+}
+
+class FactoryImplementationBindingResolver(
+    private val factoryImplementationNode: FactoryImplementationNode
+) : BindingResolver {
+    private val factorySuperClassKey =
+        Key(factoryImplementationNode.key.type.classOrNull!!.superTypes().single())
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        if (requestedKey != factorySuperClassKey) return emptyList()
+        return listOf(
+            FactoryImplementationBindingNode(factoryImplementationNode)
+        )
     }
 }

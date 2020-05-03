@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -130,8 +131,7 @@ class FactoryTransformer(
             val moduleClass = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
             else null
 
-
-            val implementationClass = implementationClass(function, moduleClass)
+            val implementationClass = implementationClass(function, moduleClass, function.file)
             println(implementationClass.dump())
 
             function.file.addChild(implementationClass)
@@ -177,11 +177,13 @@ class FactoryTransformer(
 
     private fun IrBuilderWithScope.implementationClass(
         function: IrFunction,
-        moduleClass: IrClass?
+        moduleClass: IrClass?,
+        parent: IrDeclarationParent
     ) = buildClass {
         // todo make kind = OBJECT if this component has no state
         name = InjektNameConventions.getImplementationNameForFactoryFunction(function.name)
     }.apply clazz@{
+        this.parent = parent
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
@@ -203,13 +205,14 @@ class FactoryTransformer(
             )
         }
 
-        val componentNode = FactoryImplementationNode(
+        val factoryImplementationNode = FactoryImplementationNode(
             key = Key(defaultType),
             factoryImplementation = this,
             initializerAccessor = { it() }
         )
 
-        val factoryMembers = FactoryMembers(componentNode, this@FactoryTransformer.context)
+        val factoryMembers =
+            FactoryMembers(factoryImplementationNode, this@FactoryTransformer.context)
 
         val factoryExpressions = FactoryExpressions(
             this@FactoryTransformer.context,
@@ -220,7 +223,8 @@ class FactoryTransformer(
         val graph = Graph(
             factoryTransformer = this@FactoryTransformer,
             context = this@FactoryTransformer.context,
-            componentModule = moduleClass?.let {
+            factoryImplementationNode = factoryImplementationNode,
+            factoryImplementationModule = moduleClass?.let {
                 ModuleNode(
                     key = Key(moduleClass.defaultType),
                     module = moduleClass,
