@@ -86,7 +86,7 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryWithAbstractClass() = codegen(
+    fun testFactoryWithAbstractClassWithZeroArgsConstructor() = codegen(
         """
         abstract class Impl
         @Factory
@@ -94,6 +94,17 @@ class FactoryDslTest {
     """
     ) {
         assertOk()
+    }
+
+    @Test
+    fun testFactoryWithAbstractClassWithConstructorParams() = codegen(
+        """
+        abstract class Impl(p0: String)
+        @Factory
+        fun factory(): Impl = createImplementation()
+    """
+    ) {
+        assertCompileError("empty")
     }
 
     @Test

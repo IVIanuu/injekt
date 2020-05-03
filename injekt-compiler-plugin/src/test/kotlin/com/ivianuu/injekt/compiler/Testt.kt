@@ -45,6 +45,29 @@ class Testt {
     }
 
     @Test
+    fun loloRosso() = codegen(
+        source(
+            """
+           @Transient class TestDep 
+        """
+        ),
+        source(
+            """
+           interface MyComponent {
+            val helloWorld: TestDep
+        }
+        
+        @Factory 
+        fun create(): MyComponent = createImplementation()
+        
+        fun invoke() = create().helloWorld 
+        """
+        )
+    ) {
+        assertOk()
+    }
+
+    @Test
     fun fib() = codegen(
         """
         interface MyComponent {

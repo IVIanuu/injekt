@@ -18,8 +18,10 @@ import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -44,6 +46,8 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
+import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
@@ -261,7 +265,8 @@ class FactoryTransformer(
                 .forEach { it.collectDependencyRequests() }
         }
 
-        superTypes.single().classOrNull?.owner?.collectDependencyRequests()
+        val superType = superTypes.single().classOrNull!!.owner
+        superType.collectDependencyRequests()
 
         dependencyRequests.forEach { (declaration, key) ->
             val binding = graph.getBinding(key)
@@ -317,7 +322,23 @@ class FactoryTransformer(
 
         constructor.apply {
             body = irBlockBody {
-                initializeClassWithAnySuperClass(this@clazz.symbol)
+                if (superType.kind == ClassKind.CLASS) {
+                    +IrDelegatingConstructorCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        irBuiltIns.unitType,
+                        superType.constructors.single { it.valueParameters.isEmpty() }
+                            .symbol
+                    )
+                    +IrInstanceInitializerCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        this@clazz.symbol,
+                        irBuiltIns.unitType
+                    )
+                } else {
+                    initializeClassWithAnySuperClass(this@clazz.symbol)
+                }
 
                 var lastRoundFields: Map<Key, FactoryField>? = null
                 while (true) {

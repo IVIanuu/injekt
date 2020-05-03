@@ -134,6 +134,13 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             )
         }
 
+        if (type?.kind == ClassKind.CLASS && type.constructors.none { it.valueParameters.isEmpty() }) {
+            context.trace.report(
+                InjektErrors.IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR
+                    .on(reportOn)
+            )
+        }
+
         type?.forEachDeclarationInThisAndSuperTypes { declaration ->
             when (declaration) {
                 is FunctionDescriptor -> {

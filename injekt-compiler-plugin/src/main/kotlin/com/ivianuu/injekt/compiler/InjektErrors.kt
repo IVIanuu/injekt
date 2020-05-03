@@ -35,11 +35,11 @@ interface InjektErrors {
         val FACTORY_IMPL_MUST_BE_ABSTRACT = error()
 
         @JvmField
+        val IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR = error()
+        @JvmField
         val IMPL_CANNOT_CONTAIN_VARS = error()
-
         @JvmField
         val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error()
-
         @JvmField
         val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
 
@@ -113,6 +113,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.IMPL_CANNOT_CONTAIN_VARS,
             "createImplementation result types cannot contain mutable properties"
+        )
+        map.put(
+            InjektErrors.IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR,
+            "Implementation super class must have an empty constructor"
         )
         map.put(
             InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS,

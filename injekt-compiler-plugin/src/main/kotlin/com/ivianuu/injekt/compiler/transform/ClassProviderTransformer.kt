@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.addClass
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -68,16 +67,12 @@ class ClassProviderTransformer(
         })
 
         classes.forEach { clazz ->
-            moduleFragment.addClass(
-                context,
-                project,
-                clazz.name,
-                clazz.file.fqName
-            ) {
+            val file = clazz.file
+            file.addChild(
                 DeclarationIrBuilder(context, clazz.symbol)
                     .provider(clazz)
                     .also { providersByClass[clazz] = it }
-            }
+            )
         }
 
         return super.visitModuleFragment(declaration)
@@ -219,7 +214,7 @@ class ClassProviderTransformer(
             name = Name.identifier("create")
             returnType = clazz.defaultType
             visibility = Visibilities.PUBLIC
-            // todo isInline = true
+            isInline = true
         }.apply {
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
 
