@@ -894,6 +894,7 @@ class ModuleTransformer(
             name = Name.identifier("create")
             returnType = resultType
             visibility = Visibilities.PUBLIC
+            isInline = true
         }.apply {
             copyTypeParametersFrom(module)
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
