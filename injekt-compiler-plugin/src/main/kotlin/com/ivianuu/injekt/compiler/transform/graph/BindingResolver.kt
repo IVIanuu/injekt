@@ -116,6 +116,7 @@ class ModuleBindingResolver(
 
             val dependencies = bindingFunction.valueParameters
                 .map { Key(it.type) }
+                .map { DependencyRequest(it) }
 
             when {
                 fieldName != null -> {
@@ -177,6 +178,7 @@ class AnnotatedClassBindingResolver(
 
         val dependencies = constructor.valueParameters
             .map { Key(it.type) }
+            .map { DependencyRequest(it) }
 
         val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
@@ -197,7 +199,7 @@ class AnnotatedClassBindingResolver(
 
 class SetBindingResolver : BindingResolver {
 
-    private val sets = mutableMapOf<Key, MutableSet<Key>>()
+    private val sets = mutableMapOf<Key, MutableSet<DependencyRequest>>()
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return sets
@@ -217,7 +219,7 @@ class SetBindingResolver : BindingResolver {
             error("Already bound $elementKey into set $setKey")
         }
 
-        set += elementKey
+        set += DependencyRequest(elementKey)
     }
 }
 
@@ -236,28 +238,21 @@ class LazyOrProviderBindingResolver(
             requestedType.arguments.single().typeOrNull!!
                 .let { it as IrSimpleType }
                 .buildSimpleType { annotations += requestedKey.type.annotations }
-        )
+        ).let { DependencyRequest(it) }
 
-        /*return when (requestedType.classifier) {
-            symbols.provider -> {
-                Binding(
+        return when (requestedType.classifier) {
+            /*symbols.provider -> {
+                DelegateBindingNode(
                     key = requestedKey,
                     dependencies = listOf(dependency),
-                    targetScope = null,
-                    providerExpression = {
-                        graph.getBinding(dependency)
-                            .providerExpression(this, it)
-                    },
-                    getFunction = graph.getFunction(requestedKey) { function ->
-                        graph.getBinding(dependency)
-                            .providerExpression(this, irGet(function.dispatchReceiverParameter!!))
-                    },
-                    providerField = { null }
-                ).let { listOf(it) }
-            }
+                    null,
+                    false,
+                    null,
+
+                )
+            }*/
             else -> emptyList()
-        }*/
-        return emptyList()
+        }
     }
 }
 

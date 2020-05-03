@@ -84,16 +84,26 @@ enum class RequestType {
 
 sealed class BindingNode(
     val key: Key,
-    val dependencies: List<Key>,
+    val dependencies: List<DependencyRequest>,
     val targetScope: FqName?,
     val scoped: Boolean,
     val module: ModuleNode?
 ) : Node
 
+data class DependencyRequest(
+    val key: Key,
+    val requestType: RequestType = when (key.type.classOrNull?.descriptor?.fqNameSafe) {
+        InjektFqNames.Provider -> RequestType.Provider
+        else -> RequestType.Instance
+    }
+) {
+    fun asBindingRequest() = BindingRequest(key, requestType)
+}
+
 class DelegateBindingNode(
     key: Key,
     val originalKey: Key,
-) : BindingNode(key, listOf(originalKey), null, false, null)
+) : BindingNode(key, listOf(DependencyRequest(originalKey)), null, false, null)
 
 class FactoryImplementationBindingNode(
     val factoryImplementationNode: FactoryImplementationNode
@@ -112,7 +122,7 @@ class DependencyBindingNode(
 
 class ProvisionBindingNode(
     key: Key,
-    dependencies: List<Key>,
+    dependencies: List<DependencyRequest>,
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
@@ -121,7 +131,7 @@ class ProvisionBindingNode(
 
 class SetBindingNode(
     key: Key,
-    dependencies: List<Key>
+    dependencies: List<DependencyRequest>
 ) : BindingNode(key, dependencies, null, false, null) {
     val elementKey = Key(
         (key.type as IrSimpleType)

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.comparison.dagger2
 
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import dagger.Component
+import javax.inject.Provider
 
 @Component
 interface Dagger2Component {
@@ -27,4 +28,9 @@ interface Dagger2Component {
     interface Factory {
         fun create(): Dagger2Component
     }
+}
+
+@Component
+interface Test {
+    val fib8: Provider<Fib8>
 }

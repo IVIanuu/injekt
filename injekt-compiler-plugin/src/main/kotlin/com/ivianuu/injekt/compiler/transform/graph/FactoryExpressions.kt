@@ -149,7 +149,9 @@ class FactoryExpressions(
             val provider = binding.provider
 
             val dependencies = binding.dependencies
-                .map { getBindingExpression(BindingRequest(it, RequestType.Instance)) }
+                .map {
+                    getBindingExpression(it.asBindingRequest())
+                }
 
             val moduleRequired =
                 provider.kind != ClassKind.OBJECT && provider.constructors
@@ -213,7 +215,7 @@ class FactoryExpressions(
 
     private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
         val elementExpressions = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it, RequestType.Instance)) }
+            .map { getBindingExpression(it.asBindingRequest()) }
 
         val expression: FactoryExpression = bindingExpression@{ parent ->
             val collectionsScope = symbols.getPackage(FqName("kotlin.collections"))
@@ -309,51 +311,64 @@ class FactoryExpressions(
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
         val dependencyKeys = binding.dependencies
             .map {
-                Key(symbols.provider.typeWith(it.type).buildSimpleType {
-                    annotations += it.type.annotations
+                Key(symbols.provider.typeWith(it.key.type).buildSimpleType {
+                    annotations += it.key.type.annotations
                 })
             }
 
+        val provider = binding.provider
+
+        val moduleRequired =
+            provider.constructors.single().valueParameters.firstOrNull()
+                ?.name?.asString() == "module"
+
         val dependencies = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
+            .map { getBindingExpression(BindingRequest(it.key, RequestType.Provider)) }
 
-        return providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
-            val provider = binding.provider
+        return if (!moduleRequired && dependencies.isEmpty() && !binding.scoped) {
+            { irGetObject(provider.symbol) }
+        } else {
+            providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
+                if (dependencyKeys.any {
+                        it in members.fields && it !in members.initializedFields
+                    }) return@providerFieldExpression null
 
-            val moduleRequired =
-                provider.constructors.single().valueParameters.firstOrNull()
-                    ?.name?.asString() == "module"
+                val newProvider = if (!moduleRequired && dependencies.isEmpty()) {
+                    irGetObject(provider.symbol)
+                } else {
+                    irCall(provider.constructors.single()).apply {
+                        if (moduleRequired) {
+                            putValueArgument(
+                                0,
+                                binding.module!!.initializerAccessor(
+                                    this@providerFieldExpression,
+                                    parent
+                                )
+                            )
+                        }
 
-            if (dependencyKeys.any { it !in members.initializedFields }) return@providerFieldExpression null
-
-            val newProvider = irCall(provider.constructors.single()).apply {
-                if (moduleRequired) {
-                    putValueArgument(
-                        0,
-                        binding.module!!.initializerAccessor(this@providerFieldExpression, parent)
-                    )
+                        dependencies.forEachIndexed { index, dependency ->
+                            val realIndex = index + if (moduleRequired) 1 else 0
+                            putValueArgument(
+                                realIndex,
+                                dependency(this@providerFieldExpression, parent)
+                            )
+                        }
+                    }
                 }
 
-                dependencies.forEachIndexed { index, dependency ->
-                    val realIndex = index + if (moduleRequired) 1 else 0
-                    putValueArgument(
-                        realIndex,
-                        dependency(this@providerFieldExpression, parent)
-                    )
+                if (binding.scoped) {
+                    doubleCheck(newProvider)
+                } else {
+                    newProvider
                 }
-            }
-
-            if (binding.scoped) {
-                doubleCheck(newProvider)
-            } else {
-                newProvider
             }
         }
     }
 
     private fun providerExpressionForSet(binding: SetBindingNode): FactoryExpression {
         val elementExpressions = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it, RequestType.Provider)) }
+            .map { getBindingExpression(BindingRequest(it.key, RequestType.Provider)) }
 
         return providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
             val setProviderCompanion = symbols.setProvider.owner

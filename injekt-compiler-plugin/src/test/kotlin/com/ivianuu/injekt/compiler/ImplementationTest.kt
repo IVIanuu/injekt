@@ -204,7 +204,7 @@ class ImplementationTest {
         assertSame(component, dep)
     }
 
-    // todo @Test
+    @Test
     fun testProviderOfTransient() = codegen(
         """
         interface TestComponent {
@@ -223,7 +223,7 @@ class ImplementationTest {
         assertNotSame(provider(), provider())
     }
 
-    // todo @Test
+    @Test
     fun testProviderOfScoped() = codegen(
         """
         interface TestComponent {
@@ -242,7 +242,7 @@ class ImplementationTest {
         assertSame(provider(), provider())
     }
 
-    // todo @Test
+    @Test
     fun testQualifiedProvider() = codegen(
         """
         interface TestComponent {
