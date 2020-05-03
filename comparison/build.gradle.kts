@@ -42,7 +42,7 @@ dependencies {
     implementation(Deps.AndroidX.appCompat)
 
     implementation(files("libs/dagger-1-shadowed.jar"))
-    //kapt(files("libs/dagger-1-compiler-shadowed.jar"))
+    kapt(files("libs/dagger-1-compiler-shadowed.jar"))
 
     implementation(Deps.Dagger2.dagger2)
     kapt(Deps.Dagger2.compiler)

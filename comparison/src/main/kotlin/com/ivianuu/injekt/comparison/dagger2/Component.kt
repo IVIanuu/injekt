@@ -17,10 +17,7 @@
 package com.ivianuu.injekt.comparison.dagger2
 
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
-import dagger.BindsInstance
 import dagger.Component
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Component
 interface Dagger2Component {
@@ -31,29 +28,3 @@ interface Dagger2Component {
         fun create(): Dagger2Component
     }
 }
-
-
-@Component
-interface DepComponent {
-    val string: String
-
-    @Component.Factory
-    interface Factory {
-        fun create(@BindsInstance string: String): DepComponent
-    }
-}
-
-@Singleton
-@Component(dependencies = [DepComponent::class])
-interface ChildComponent {
-    val string: String
-    val lol: Lol
-
-    @Component.Factory
-    interface Factory {
-        fun create(depComponent: DepComponent): ChildComponent
-    }
-}
-
-@Singleton
-class Lol @Inject constructor(val string: String)
