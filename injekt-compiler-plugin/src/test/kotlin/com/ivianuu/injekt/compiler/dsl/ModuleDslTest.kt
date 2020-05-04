@@ -39,7 +39,7 @@ class ModuleDslTest {
         assertCompileError("@ChildFactory")
     }
 
-    @Test
+    //@Test
     fun testModuleDescriptor() = codegen(
         """ 
         @Module

@@ -209,7 +209,7 @@ class ImplementationTest {
     fun testProviderOfTransient() = codegen(
         """
         interface TestComponent {
-            val provider: Provider<Foo>
+            val provider: @Provider () -> Foo
         }
         
         @Factory
@@ -220,7 +220,7 @@ class ImplementationTest {
         fun invoke() = create().provider
     """
     ) {
-        val provider = invokeSingleFile<Provider<Foo>>()
+        val provider = invokeSingleFile<@Provider () -> Foo>()
         assertNotSame(provider(), provider())
     }
 
@@ -228,7 +228,7 @@ class ImplementationTest {
     fun testProviderOfScoped() = codegen(
         """
         interface TestComponent {
-            val provider: Provider<Foo>
+            val provider: @Provider () -> Foo
         }
         
         @Factory
@@ -239,7 +239,7 @@ class ImplementationTest {
         fun invoke() = create().provider
     """
     ) {
-        val provider = invokeSingleFile<Provider<Foo>>()
+        val provider = invokeSingleFile<@Provider () -> Foo>()
         assertSame(provider(), provider())
     }
 
@@ -247,7 +247,7 @@ class ImplementationTest {
     fun testQualifiedProvider() = codegen(
         """
         interface TestComponent {
-            val provider: @TestQualifier1 Provider<Foo>
+            val provider: @Provider () -> @TestQualifier1 Foo
         }
         
         @Factory
@@ -265,7 +265,7 @@ class ImplementationTest {
     fun testLazyOfTransient() = codegen(
         """
         interface TestComponent {
-            val lazy: Lazy<Foo>
+            val lazy: @Lazy () -> Foo
         }
         
         @Factory
@@ -276,7 +276,7 @@ class ImplementationTest {
         fun invoke() = create().lazy
     """
     ) {
-        val lazy = invokeSingleFile<Lazy<Foo>>()
+        val lazy = invokeSingleFile<@Lazy () -> Foo>()
         assertSame(lazy(), lazy())
     }
 
@@ -284,7 +284,7 @@ class ImplementationTest {
     fun testLazyOfScoped() = codegen(
         """
         interface TestComponent {
-            val lazy: Lazy<Foo>
+            val lazy: @Lazy () -> Foo
         }
         
         @Factory
@@ -295,7 +295,7 @@ class ImplementationTest {
         fun invoke() = create().lazy
     """
     ) {
-        val lazy = invokeSingleFile<Lazy<Foo>>()
+        val lazy = invokeSingleFile<@Lazy () -> Foo>()
         assertSame(lazy(), lazy())
     }
 
@@ -303,7 +303,7 @@ class ImplementationTest {
     fun testQualifiedLazy() = codegen(
         """
         interface TestComponent {
-            val lazy: @TestQualifier1 Lazy<Foo>
+            val lazy: @Lazy () -> @TestQualifier1 Foo
         }
         
         @Factory
@@ -321,7 +321,7 @@ class ImplementationTest {
     fun testProviderOfLazy() = codegen(
         """
         interface TestComponent {
-            val providerOfLazy: Provider<Lazy<Foo>>
+            val providerOfLazy: @Provider () -> @Lazy () -> Foo
         }
         
         @Factory
@@ -333,8 +333,8 @@ class ImplementationTest {
         fun invoke() = component.providerOfLazy
     """
     ) {
-        val lazyA = invokeSingleFile<Provider<Lazy<Foo>>>()()
-        val lazyB = invokeSingleFile<Provider<Lazy<Foo>>>()()
+        val lazyA = invokeSingleFile<@Provider () -> @Lazy () -> Foo>()()
+        val lazyB = invokeSingleFile<@Provider () -> @Lazy () -> Foo>()()
         assertNotSame(lazyA, lazyB)
         assertSame(lazyA(), lazyA())
         assertSame(lazyB(), lazyB())

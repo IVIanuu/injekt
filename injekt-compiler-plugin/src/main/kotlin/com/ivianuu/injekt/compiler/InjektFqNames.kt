@@ -45,10 +45,10 @@ object InjektFqNames {
 
     val Lazy = InjektPackage.child("Lazy")
     val MembersInjector = InjektPackage.child("MembersInjector")
+
     val Provider = InjektPackage.child("Provider")
     val ProviderDefinition = InjektPackage.child("ProviderDefinition")
     val ProviderDsl = InjektPackage.child("ProviderDsl")
-    val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")
 
     val Qualifier = InjektPackage.child("Qualifier")
     val Scope = InjektPackage.child("Scope")

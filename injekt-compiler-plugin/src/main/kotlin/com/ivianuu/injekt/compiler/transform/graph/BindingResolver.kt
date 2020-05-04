@@ -3,10 +3,14 @@ package com.ivianuu.injekt.compiler.transform.graph
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeWith
+import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -16,11 +20,8 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.superTypes
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -28,6 +29,8 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 typealias BindingResolver = (Key) -> List<BindingNode>
@@ -62,8 +65,14 @@ class DependencyBindingResolver(
                 with(DeclarationIrBuilder(injektTransformer.context, dependencyFunction.symbol)) {
                     provider(
                         name = Name.identifier("dep_provider_${providersByDependency.size}"),
-                        dependencies = mapOf("dependency" to dependencyNode.dependency.defaultType),
-                        type = dependencyFunction.returnType,
+                        parameters = listOf(
+                            AbstractInjektTransformer.ProviderParameter(
+                                name = "dependency",
+                                type = dependencyNode.dependency.defaultType,
+                                assisted = false
+                            )
+                        ),
+                        returnType = dependencyFunction.returnType,
                         createBody = { createFunction ->
                             irExprBody(
                                 irCall(dependencyFunction).apply {
@@ -79,7 +88,7 @@ class DependencyBindingResolver(
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return allDependencyFunctions
-            .filter { Key(it.returnType) == requestedKey }
+            .filter { it.returnType.asKey() == requestedKey }
             .map { dependencyFunction ->
                 val provider = provider(dependencyFunction)
                 DependencyBindingNode(
@@ -103,7 +112,7 @@ class ModuleBindingResolver(
     private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
         .mapNotNull { bindingFunction ->
-            val key = Key(bindingFunction.returnType)
+            val key = bindingFunction.returnType.asKey()
             val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
@@ -117,7 +126,7 @@ class ModuleBindingResolver(
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
             val dependencies = bindingFunction.valueParameters
-                .map { Key(it.type) }
+                .map { it.type.asKey() }
                 .map { DependencyRequest(it) }
 
             when {
@@ -127,7 +136,7 @@ class ModuleBindingResolver(
                     InstanceBindingNode(
                         key = key,
                         requirementNode = InstanceNode(
-                            key = Key(field.type),
+                            key = field.type.asKey(),
                             initializerAccessor = moduleNode.initializerAccessor.child(field)
                         )
                     )
@@ -179,7 +188,7 @@ class AnnotatedClassBindingResolver(
             }) return emptyList()
 
         val dependencies = constructor.valueParameters
-            .map { Key(it.type) }
+            .map { it.type.asKey() }
             .map { DependencyRequest(it) }
 
         val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
@@ -200,6 +209,7 @@ class AnnotatedClassBindingResolver(
 }
 
 class MapBindingResolver(
+    private val injektTransformer: AbstractInjektTransformer,
     private val context: IrPluginContext,
     private val symbols: InjektSymbols
 ) : BindingResolver {
@@ -212,8 +222,8 @@ class MapBindingResolver(
             .flatMap { (mapKey, entries) ->
                 listOf(
                     MapBindingNode(mapKey, entries),
-                    frameworkBinding(symbols.lazy, mapKey, entries),
-                    frameworkBinding(symbols.provider, mapKey, entries)
+                    frameworkBinding(InjektFqNames.Lazy, mapKey, entries),
+                    frameworkBinding(InjektFqNames.Provider, mapKey, entries)
                 )
             }
             .filter { it.key == requestedKey }
@@ -237,23 +247,25 @@ class MapBindingResolver(
     }
 
     private fun frameworkBinding(
-        wrapper: IrClassSymbol,
+        qualifier: FqName,
         mapKey: Key,
         entries: Map<MapKey, DependencyRequest>
     ) = MapBindingNode(
-        Key(
-            context.symbolTable.referenceClass(context.builtIns.map)
-                .typeWith(
-                    (mapKey.type as IrSimpleType).arguments[0].typeOrNull!!,
-                    wrapper.typeWith(
-                        mapKey.type.arguments[1].typeOrNull!!
-                    )
-                )
-        ),
+        context.symbolTable.referenceClass(context.builtIns.map)
+            .typeWith(
+                mapKey.type.typeArguments[0],
+                symbols.getQualifiedFunctionType(
+                        0,
+                        listOf(qualifier)
+                    ).typeWith(mapKey.type.typeArguments[1])
+                    .withQualifiers(symbols, listOf(qualifier))
+            ).asKey(),
         entries
             .mapValues {
                 DependencyRequest(
-                    key = Key(wrapper.typeWith(it.value.key.type))
+                    key = symbols.getFunction(0).typeWith(
+                        it.value.key.type
+                    ).withQualifiers(symbols, listOf(qualifier)).asKey()
                 )
             }
     )
@@ -272,8 +284,8 @@ class SetBindingResolver(
             .flatMap { (setKey, elements) ->
                 listOf(
                     SetBindingNode(setKey, elements.toList()),
-                    frameworkBinding(symbols.lazy, setKey, elements),
-                    frameworkBinding(symbols.provider, setKey, elements)
+                    frameworkBinding(InjektFqNames.Lazy, setKey, elements),
+                    frameworkBinding(InjektFqNames.Provider, setKey, elements)
                 )
             }
             .filter { it.key == requestedKey }
@@ -293,22 +305,26 @@ class SetBindingResolver(
     }
 
     private fun frameworkBinding(
-        wrapper: IrClassSymbol,
+        qualifier: FqName,
         setKey: Key,
         elements: Set<DependencyRequest>
     ) = SetBindingNode(
         Key(
             context.symbolTable.referenceClass(context.builtIns.set)
                 .typeWith(
-                    wrapper.typeWith(
-                        setKey.unwrapSingleArgKey().type
-                    )
+                    symbols.getFunction(0).typeWith(
+                        setKey.type.typeArguments.single()
+                    ).withQualifiers(symbols, listOf(qualifier))
                 )
         ),
         elements
             .map {
                 DependencyRequest(
-                    key = Key(wrapper.typeWith(it.key.type))
+                    key = Key(
+                        symbols.getFunction(0).typeWith(
+                            it.key.type
+                        ).withQualifiers(symbols, listOf(qualifier))
+                    )
                 )
             }
     )
@@ -319,15 +335,11 @@ class LazyOrProviderBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
-        if (requestedType !is IrSimpleType) return emptyList()
-        if (requestedType.arguments.size != 1) return emptyList()
-        if (requestedType.classifier != symbols.lazy &&
-            requestedType.classifier != symbols.provider
-        ) return emptyList()
-
-        return when (requestedType.classifier) {
-            symbols.lazy -> listOf(LazyBindingNode(key = requestedKey))
-            symbols.provider -> listOf(ProviderBindingNode(key = requestedKey))
+        return when {
+            requestedType.isFunction() && requestedType.hasAnnotation(InjektFqNames.Lazy) ->
+                listOf(LazyBindingNode(key = requestedKey))
+            requestedType.isFunction() && requestedType.hasAnnotation(InjektFqNames.Provider) ->
+                listOf(ProviderBindingNode(key = requestedKey))
             else -> emptyList()
         }
     }
@@ -337,7 +349,7 @@ class FactoryImplementationBindingResolver(
     private val factoryImplementationNode: FactoryImplementationNode
 ) : BindingResolver {
     private val factorySuperClassKey =
-        Key(factoryImplementationNode.key.type.classOrNull!!.superTypes().single())
+        factoryImplementationNode.key.type.classOrFail.superTypes().single().asKey()
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (requestedKey != factorySuperClassKey) return emptyList()

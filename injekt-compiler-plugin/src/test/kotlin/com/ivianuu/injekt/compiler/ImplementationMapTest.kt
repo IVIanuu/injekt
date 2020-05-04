@@ -42,7 +42,7 @@ class ImplementationMapTest {
     fun testMapOfProvider() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, Provider<Command>>
+            val map: Map<kotlin.reflect.KClass<out Command>, @Provider () -> Command>
         }
         
         @Factory
@@ -60,7 +60,7 @@ class ImplementationMapTest {
         fun invoke() = create().map
     """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, Provider<Command>>>()
+        val map = invokeSingleFile<Map<KClass<out Command>, @Provider () -> Command>>()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)
@@ -71,7 +71,7 @@ class ImplementationMapTest {
     fun testMapOfLazy() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, Lazy<Command>>
+            val map: Map<kotlin.reflect.KClass<out Command>, @Lazy () -> Command>
         }
         
         @Factory
@@ -89,7 +89,9 @@ class ImplementationMapTest {
         fun invoke() = create().map
     """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, Lazy<Command>>>()
+        val map = invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
+        println(map)
+        println("${map.mapValues { it.value() }}")
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)

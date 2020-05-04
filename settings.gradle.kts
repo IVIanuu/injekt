@@ -1,8 +1,9 @@
 include(
     ":comparison",
-    ":injekt-core",
+    ":generator",
     ":injekt-android",
     ":injekt-compiler-plugin",
+    ":injekt-core",
     ":injekt-gradle-plugin",
     ":sample"
 )

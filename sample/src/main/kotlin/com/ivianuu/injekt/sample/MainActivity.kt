@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         (application as App).component
             .activityComponentFactory(this)
             .injector
-            .inject(this)
+            .invoke(this)
     }
 
     private fun inject(viewModel: HomeViewModel) {
@@ -31,10 +31,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     class MainActivityMembersInjector(
-        private val viewModelProvider: Provider<HomeViewModel>
-    ) : MembersInjector<MainActivity> {
-        override fun inject(instance: MainActivity) {
-            inject(instance, viewModelProvider())
+        private val viewModelProvider: @Provider () -> HomeViewModel
+    ) : (MainActivity) -> Unit {
+        override fun invoke(p1: MainActivity) {
+            inject(p1, viewModelProvider())
         }
 
         companion object {
@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 }
 
 interface ActivityComponent {
-    val injector: MembersInjector<MainActivity>
+    val injector: @MembersInjector (MainActivity) -> Unit
 }
 
 @ChildFactory

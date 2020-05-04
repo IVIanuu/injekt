@@ -6,6 +6,8 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.irTrace
+import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -42,10 +44,6 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
@@ -249,14 +247,8 @@ class ModuleTransformer(
         val instanceFieldsByCall = instanceCalls.associateWith { call ->
             val instanceQualifiers =
                 context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
-            val rawType = call.getTypeArgument(0)!!
-            val instanceType = (rawType as? IrSimpleType)?.buildSimpleType {
-                instanceQualifiers.forEach { qualifier ->
-                    annotations += noArgSingleConstructorCall(
-                        symbols.getTopLevelClass(qualifier)
-                    )
-                }
-            } ?: rawType
+            val instanceType = call.getTypeArgument(0)!!
+                .withQualifiers(symbols, instanceQualifiers)
             addField(
                 fieldName = "instance_${instanceIndex++}",
                 fieldType = instanceType,
@@ -499,14 +491,8 @@ class ModuleTransformer(
         (transientCalls + instanceCalls + scopedCalls).forEachIndexed { index, bindingCall ->
             val bindingQualifiers =
                 context.irTrace[InjektWritableSlices.QUALIFIERS, bindingCall] ?: emptyList()
-            val rawType = bindingCall.getTypeArgument(0)!!
-            val bindingType = (rawType as? IrSimpleType)?.buildSimpleType {
-                bindingQualifiers.forEach { qualifier ->
-                    annotations += noArgSingleConstructorCall(
-                        symbols.getTopLevelClass(qualifier)
-                    )
-                }
-            } ?: rawType
+            val bindingType = bindingCall.getTypeArgument(0)!!
+                .withQualifiers(symbols, bindingQualifiers)
 
             addFunction(
                 name = "binding_$index",
@@ -520,7 +506,7 @@ class ModuleTransformer(
                         .constructors
                         .single()
                         .valueParameters
-                        .map { it to (it.type as IrSimpleType).arguments.single().typeOrNull!! }
+                        .map { it to it.type.typeArguments.single() }
                         .forEachIndexed { index, (valueParameter, type) ->
                             addValueParameter(
                                 name = "p$index",
@@ -551,13 +537,7 @@ class ModuleTransformer(
             val mapType = symbolTable.referenceClass(builtIns.map)
                 .ensureBound(irProviders)
                 .typeWith(mapKeyType, mapValueType)
-                .buildSimpleType {
-                    mapQualifiers.forEach { qualifier ->
-                        annotations += noArgSingleConstructorCall(
-                            symbols.getTopLevelClass(qualifier)
-                        )
-                    }
-                }
+                .withQualifiers(symbols, mapQualifiers)
 
             addFunction(
                 name = "map_$mapIndex",
@@ -606,13 +586,7 @@ class ModuleTransformer(
             val setType = symbolTable.referenceClass(builtIns.set)
                 .ensureBound(irProviders)
                 .typeWith(setElementType)
-                .buildSimpleType {
-                    setQualifiers.forEach { qualifier ->
-                        annotations += noArgSingleConstructorCall(
-                            symbols.getTopLevelClass(qualifier)
-                        )
-                    }
-                }
+                .withQualifiers(symbols, setQualifiers)
 
             addFunction(
                 name = "set_$setIndex",
@@ -690,18 +664,28 @@ class ModuleTransformer(
             }
         })
 
-        val dependencies = mutableMapOf<String, IrType>()
+        val parameters = mutableListOf<ProviderParameter>()
 
         if (capturedModuleValueParameters.isNotEmpty()) {
-            dependencies["module"] = module.defaultType
+            parameters += ProviderParameter(
+                name = "module",
+                type = module.defaultType,
+                assisted = false
+            )
         }
 
-        dependencyCalls.forEachIndexed { i, call -> dependencies["p$i"] = call.type }
+        (assistedParameterCalls + dependencyCalls).forEachIndexed { i, call ->
+            parameters += ProviderParameter(
+                name = "p$i",
+                type = call.type,
+                assisted = call in assistedParameterCalls
+            )
+        }
 
         return provider(
             name = Name.identifier("provider\$$providerIndex"),
-            dependencies = dependencies,
-            type = type,
+            parameters = parameters,
+            returnType = type,
             createBody = { createFunction ->
                 val body = definitionFunction.body!!
                 body.transformChildrenVoid(object : IrElementTransformerVoid() {

@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.graph
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -16,7 +17,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
@@ -77,6 +77,7 @@ class FactoryExpressions(
         chain += request
 
         val binding = graph.getBinding(request.key)
+
         val expression = when (request.requestType) {
             RequestType.Instance -> {
                 when (binding) {
@@ -156,7 +157,7 @@ class FactoryExpressions(
             doubleCheck(
                 getBindingExpression(
                     BindingRequest(
-                        binding.key.unwrapSingleArgKey(),
+                        Key(binding.key.type.typeArguments.single()),
                         RequestType.Provider
                     )
                 )
@@ -262,7 +263,7 @@ class FactoryExpressions(
 
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
-            BindingRequest(binding.key.unwrapSingleArgKey(), RequestType.Provider)
+            BindingRequest(Key(binding.key.type.typeArguments.single()), RequestType.Provider)
         )
     }
 
@@ -271,10 +272,9 @@ class FactoryExpressions(
             val providerExpression = providerExpressionForProvision(binding)
             val expression: FactoryExpression = bindingExpression@{ parent ->
                 irCall(
-                    symbols.provider
-                        .owner
-                        .declarations
-                        .single { it.nameForIrSerialization.asString() == "invoke" } as IrFunction
+                    symbols.getFunction(0)
+                        .functions
+                        .single { it.owner.name.asString() == "invoke" }
                 ).apply {
                     dispatchReceiver = providerExpression(this@bindingExpression, parent)
                 }
@@ -443,14 +443,16 @@ class FactoryExpressions(
 
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
-            BindingRequest(binding.key.unwrapSingleArgKey(), RequestType.Provider)
+            BindingRequest(Key(binding.key.type.typeArguments.single()), RequestType.Provider)
         )
         return providerFieldExpression(binding.key) {
             irCall(
-                symbols.providerOfLazy
+                symbols.getProviderOfLazy(0)
                     .constructors
                     .single()
-            ).apply { putValueArgument(0, dependencyExpression(this@providerFieldExpression, it)) }
+            ).apply {
+                putValueArgument(0, dependencyExpression(this@providerFieldExpression, it))
+            }
         }
     }
 
@@ -549,17 +551,13 @@ class FactoryExpressions(
 
     private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
-            BindingRequest(binding.key.unwrapSingleArgKey(), RequestType.Provider)
+            BindingRequest(Key(binding.key.type.typeArguments.single()), RequestType.Provider)
         )
     }
 
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
         val dependencyKeys = binding.dependencies
-            .map {
-                Key(symbols.provider.typeWith(it.key.type).buildSimpleType {
-                    annotations += it.key.type.annotations
-                })
-            }
+            .map { Key(symbols.getFunction(0).typeWith(it.key.type)) }
 
         val provider = binding.provider
 
@@ -659,9 +657,8 @@ class FactoryExpressions(
                                     UNDEFINED_OFFSET,
                                     context.irBuiltIns.arrayClass
                                         .typeWith(
-                                            symbols.provider.typeWith(
-                                                binding.key.type
-                                            )
+                                            symbols.getFunction(0)
+                                                .typeWith(binding.key.type)
                                         ),
                                     binding.elementKey.type,
                                     elementExpressions.map {
@@ -681,11 +678,7 @@ class FactoryExpressions(
         providerInitializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
     ): FactoryExpression {
         val field = members.getOrCreateField(
-            Key(
-                symbols.provider.typeWith(key.type).buildSimpleType {
-                    annotations += key.type.annotations
-                }
-            ),
+            Key(symbols.getFunction(0).typeWith(key.type)),
             "provider",
             providerInitializer
         )
@@ -708,7 +701,7 @@ class FactoryExpressions(
 
     private fun IrBuilderWithScope.doubleCheck(provider: IrExpression): IrExpression {
         return irCall(
-            symbols.doubleCheck
+            symbols.getDoubleCheck(0)
                 .constructors
                 .single()
         ).apply { putValueArgument(0, provider) }
@@ -728,4 +721,3 @@ class FactoryExpressions(
         }
     }
 }
-

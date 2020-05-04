@@ -41,7 +41,7 @@ class ImplementationSetTest {
     fun testSetOfProvider() = codegen(
         """
         interface TestComponent {
-            val set: Set<Provider<Command>>
+            val set: Set<@Provider () -> Command>
         }
         
         @Factory
@@ -59,7 +59,7 @@ class ImplementationSetTest {
         fun invoke() = create().set
     """
     ) {
-        val set = invokeSingleFile<Set<Provider<Command>>>().toList()
+        val set = invokeSingleFile<Set<@Provider () -> Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)
@@ -70,7 +70,7 @@ class ImplementationSetTest {
     fun testSetOfLazy() = codegen(
         """
         interface TestComponent {
-            val set: Set<Lazy<Command>>
+            val set: Set<@Lazy () -> Command>
         }
         
         @Factory
@@ -88,7 +88,7 @@ class ImplementationSetTest {
         fun invoke() = create().set
     """
     ) {
-        val set = invokeSingleFile<Set<Lazy<Command>>>().toList()
+        val set = invokeSingleFile<Set<@Lazy () -> Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)

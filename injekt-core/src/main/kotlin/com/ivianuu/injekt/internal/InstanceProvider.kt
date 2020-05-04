@@ -1,8 +1,7 @@
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Lazy
+class InstanceProvider<T>(private val instance: T) : () -> T {
 
-class InstanceProvider<T>(private val instance: T) : Lazy<T> {
     override fun invoke() = instance
 
     companion object {

@@ -16,4 +16,7 @@
 
 package com.ivianuu.injekt
 
-fun interface Lazy<T> : Provider<T>
+@Retention(AnnotationRetention.SOURCE)
+@Qualifier
+@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
+annotation class Lazy

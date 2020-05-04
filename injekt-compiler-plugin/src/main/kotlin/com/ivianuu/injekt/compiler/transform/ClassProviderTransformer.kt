@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
@@ -47,12 +48,15 @@ class ClassProviderTransformer(
                 DeclarationIrBuilder(context, clazz.symbol)
                     .provider(
                         name = InjektNameConventions.getProviderNameForClass(clazz.name),
-                        dependencies = constructor?.valueParameters
+                        parameters = constructor?.valueParameters
                             ?.mapIndexed { index, valueParameter ->
-                                "p$index" to valueParameter.type
-                            }
-                            ?.toMap() ?: emptyMap(),
-                        type = clazz.defaultType,
+                                ProviderParameter(
+                                    name = "p$index",
+                                    type = valueParameter.type,
+                                    assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
+                                )
+                            } ?: emptyList(),
+                        returnType = clazz.defaultType,
                         createBody = { createFunction ->
                             irExprBody(
                                 if (clazz.kind == ClassKind.OBJECT) {

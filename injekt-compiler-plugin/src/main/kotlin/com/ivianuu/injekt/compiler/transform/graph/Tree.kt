@@ -1,21 +1,18 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.equalsWithQualifiers
+import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
-import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
 
@@ -84,6 +81,16 @@ enum class RequestType {
     Provider
 }
 
+data class DependencyRequest(
+    val key: Key,
+    val requestType: RequestType = when {
+        key.type.isFunction() -> RequestType.Provider
+        else -> RequestType.Instance
+    }
+) {
+    fun asBindingRequest() = BindingRequest(key, requestType)
+}
+
 sealed class BindingNode(
     val key: Key,
     val dependencies: List<DependencyRequest>,
@@ -91,16 +98,6 @@ sealed class BindingNode(
     val scoped: Boolean,
     val module: ModuleNode?
 ) : Node
-
-data class DependencyRequest(
-    val key: Key,
-    val requestType: RequestType = when (key.type.classOrNull?.descriptor?.fqNameSafe) {
-        InjektFqNames.Provider -> RequestType.Provider
-        else -> RequestType.Instance
-    }
-) {
-    fun asBindingRequest() = BindingRequest(key, requestType)
-}
 
 class DelegateBindingNode(
     key: Key,
@@ -124,7 +121,7 @@ class DependencyBindingNode(
 
 class LazyBindingNode(key: Key) : BindingNode(
     key,
-    listOf(DependencyRequest(key = key.unwrapSingleArgKey())),
+    listOf(DependencyRequest(key = Key(key.type.typeArguments.single()))),
     null,
     false,
     null
@@ -134,21 +131,13 @@ class MapBindingNode(
     key: Key,
     val entries: Map<MapKey, DependencyRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null) {
-    val keyKey = Key(
-        (key.type as IrSimpleType)
-            .arguments[0]
-            .typeOrNull!!
-    )
-    val valueKey = Key(
-        (key.type as IrSimpleType)
-            .arguments[1]
-            .typeOrNull!!
-    )
+    val keyKey = Key(key.type.typeArguments[0])
+    val valueKey = Key(key.type.typeArguments[1])
 }
 
 class ProviderBindingNode(key: Key) : BindingNode(
     key,
-    listOf(DependencyRequest(key = key.unwrapSingleArgKey())),
+    listOf(DependencyRequest(key = Key(key.type.typeArguments.single()))),
     null,
     false,
     null
@@ -167,50 +156,25 @@ class SetBindingNode(
     key: Key,
     val elements: List<DependencyRequest>
 ) : BindingNode(key, elements, null, false, null) {
-    val elementKey = Key(
-        (key.type as IrSimpleType)
-            .arguments
-            .single()
-            .typeOrNull!!
-    )
+    val elementKey = Key(key.type.typeArguments.single())
 }
 
-class Key(val type: IrType) {
-    val qualifiers = type.annotations
-        .filter {
-            it.type.classOrNull!!
-                .descriptor
-                .annotations
-                .hasAnnotation(InjektFqNames.Qualifier)
-        }
-        .map { it.type.classifierOrFail.descriptor.fqNameSafe }
+fun IrType.asKey() = Key(this)
 
+class Key(val type: IrType) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as Key
 
-        if (type != other.type) return false
-        if (qualifiers != other.qualifiers) return false
+        if (!type.equalsWithQualifiers(other.type)) return false
 
         return true
     }
 
-    override fun hashCode(): Int {
-        var result = type.hashCode()
-        result = 31 * result + qualifiers.hashCode()
-        return result
-    }
+    override fun hashCode(): Int = type.hashCodeWithQualifiers()
 
     override fun toString(): String = "Key(type=${type.render()})"
 
 }
-
-fun Key.unwrapSingleArgKey() = Key(
-    type.let { it as IrSimpleType }.arguments.single().typeOrNull!!
-        .let { it as IrSimpleType }
-        .buildSimpleType {
-            annotations += type.annotations
-        },
-)

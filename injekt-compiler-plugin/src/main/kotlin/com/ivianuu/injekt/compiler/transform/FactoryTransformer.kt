@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.graph.BindingRequest
 import com.ivianuu.injekt.compiler.transform.graph.FactoryExpressions
 import com.ivianuu.injekt.compiler.transform.graph.FactoryField
@@ -12,6 +13,7 @@ import com.ivianuu.injekt.compiler.transform.graph.Graph
 import com.ivianuu.injekt.compiler.transform.graph.Key
 import com.ivianuu.injekt.compiler.transform.graph.ModuleNode
 import com.ivianuu.injekt.compiler.transform.graph.RequestType
+import com.ivianuu.injekt.compiler.transform.graph.asKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -206,7 +208,7 @@ class FactoryTransformer(
         }
 
         val factoryImplementationNode = FactoryImplementationNode(
-            key = Key(defaultType),
+            key = defaultType.asKey(),
             factoryImplementation = this,
             initializerAccessor = { it() }
         )
@@ -226,7 +228,7 @@ class FactoryTransformer(
             factoryImplementationNode = factoryImplementationNode,
             factoryImplementationModule = moduleClass?.let {
                 ModuleNode(
-                    key = Key(moduleClass.defaultType),
+                    key = moduleClass.defaultType.asKey(),
                     module = moduleClass,
                     initializerAccessor = {
                         irGet(moduleConstructorValueParameter)
@@ -251,17 +253,12 @@ class FactoryTransformer(
                             declaration.dispatchReceiverParameter?.type != irBuiltIns.anyType &&
                             !declaration.isFakeOverride
                         )
-                            dependencyRequests[declaration] =
-                                Key(
-                                    declaration.returnType
-                                )
+                            dependencyRequests[declaration] = declaration.returnType.asKey()
                     }
                     is IrProperty -> {
                         if (!declaration.isFakeOverride)
                             dependencyRequests[declaration] =
-                                Key(
-                                    declaration.getter!!.returnType
-                                )
+                                declaration.getter!!.returnType.asKey()
                     }
                 }
             }
@@ -271,7 +268,7 @@ class FactoryTransformer(
                 .forEach { it.collectDependencyRequests() }
         }
 
-        val superType = superTypes.single().classOrNull!!.owner
+        val superType = superTypes.single().classOrFail.owner
         superType.collectDependencyRequests()
 
         dependencyRequests.forEach { (declaration, key) ->

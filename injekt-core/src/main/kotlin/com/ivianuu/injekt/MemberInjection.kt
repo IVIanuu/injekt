@@ -5,8 +5,9 @@ import kotlin.properties.ReadOnlyProperty
 
 // todo implement
 
-fun interface MembersInjector<T> {
-    fun inject(instance: T)
-}
+@Retention(AnnotationRetention.SOURCE)
+@Qualifier
+@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
+annotation class MembersInjector
 
 fun <T> Any.inject(): ReadOnlyProperty<Any?, T> = injektIntrinsic()

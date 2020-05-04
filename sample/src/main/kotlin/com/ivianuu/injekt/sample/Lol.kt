@@ -3,12 +3,10 @@ package com.ivianuu.injekt.sample
 import android.content.Context
 import com.ivianuu.injekt.Assisted
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.internal.InjektAst
-import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.transient
 import kotlin.reflect.KClass
@@ -111,9 +109,19 @@ class applicationModuleImpl {
         )
     }
 
-    class provider_0 : Provider<MyWorker> {
-        override fun invoke(): MyWorker {
-            return injektIntrinsic()
+    class provider_0(private val p3: () -> Repo) : (Context, WorkerParameters) -> MyWorker {
+        override fun invoke(p1: Context, p2: WorkerParameters): MyWorker {
+            return create(p1, p2, p3())
+        }
+
+        companion object {
+            inline fun create(
+                p1: Context,
+                p2: WorkerParameters,
+                p3: Repo
+            ): MyWorker {
+                return MyWorker(p1, p2, p3)
+            }
         }
     }
 }

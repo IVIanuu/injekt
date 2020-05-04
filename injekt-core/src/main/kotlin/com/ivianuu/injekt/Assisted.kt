@@ -6,7 +6,6 @@ package com.ivianuu.injekt
 annotation class Assisted
 
 interface AssistedParameters {
-    operator fun <T> component0(): T
     operator fun <T> component1(): T
     operator fun <T> component2(): T
     operator fun <T> component3(): T
@@ -28,4 +27,5 @@ interface AssistedParameters {
     operator fun <T> component19(): T
     operator fun <T> component20(): T
     operator fun <T> component21(): T
+    operator fun <T> component22(): T
 }

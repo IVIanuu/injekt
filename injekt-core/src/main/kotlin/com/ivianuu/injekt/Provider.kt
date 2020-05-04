@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt
 
-fun interface Provider<T> {
-    operator fun invoke(): T
-}
+@Retention(AnnotationRetention.SOURCE)
+@Qualifier
+@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
+annotation class Provider
 
 @InjektDslMarker
 interface ProviderDsl {

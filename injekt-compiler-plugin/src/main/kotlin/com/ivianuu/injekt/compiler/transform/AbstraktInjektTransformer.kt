@@ -18,6 +18,9 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.classOrFail
+import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -79,9 +82,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
-import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -318,37 +319,50 @@ abstract class AbstractInjektTransformer(
         }
     }
 
+    data class ProviderParameter(
+        val name: String,
+        val type: IrType,
+        val assisted: Boolean
+    )
+
     fun IrBuilderWithScope.provider(
         name: Name,
-        dependencies: Map<String, IrType>,
-        type: IrType,
+        parameters: List<ProviderParameter>,
+        returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
     ): IrClass {
+        val (assistedParameters, nonAssistedParameters) = parameters
+            .partition { it.assisted }
         return buildClass {
-            kind = if (dependencies.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
+            kind = if (nonAssistedParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
             this.name = name
         }.apply clazz@{
-            superTypes += symbols.provider.typeWith(type)
+            val superType = symbols.getFunction(assistedParameters.size)
+                .typeWith(
+                    assistedParameters
+                        .map { it.type } + returnType
+                )
+            superTypes += superType
 
             (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val fieldsByDependency = dependencies
+            val fieldsByNonAssistedParameter = nonAssistedParameters
                 .toList()
                 .associateWith { (name, type) ->
                     addField(
                         name,
-                        symbols.provider.typeWith(type)
+                        symbols.getFunction(0).typeWith(type)
                     )
                 }
 
             addConstructor {
-                returnType = defaultType
+                this.returnType = defaultType
                 isPrimary = true
                 visibility = Visibilities.PUBLIC
             }.apply {
-                fieldsByDependency.forEach { (_, field) ->
+                fieldsByNonAssistedParameter.forEach { (_, field) ->
                     addValueParameter(
                         field.name.asString(),
                         field.type
@@ -361,34 +375,36 @@ abstract class AbstractInjektTransformer(
                         .forEach { valueParameter ->
                             +irSetField(
                                 irGet(thisReceiver!!),
-                                fieldsByDependency.values.toList()[valueParameter.index],
+                                fieldsByNonAssistedParameter.values.toList()[valueParameter.index],
                                 irGet(valueParameter)
                             )
                         }
                 }
             }
 
-            val companion = if (dependencies.isNotEmpty()) {
-                providerCompanion(dependencies, type, createBody).also { addChild(it) }
+            val companion = if (nonAssistedParameters.isNotEmpty()) {
+                providerCompanion(parameters, returnType, createBody).also { addChild(it) }
             } else null
 
-            val createFunction = if (dependencies.isEmpty()) {
-                providerCreateFunction(dependencies, type, this, createBody)
+            val createFunction = if (nonAssistedParameters.isEmpty()) {
+                providerCreateFunction(parameters, returnType, this, createBody)
             } else {
                 null
             }
 
             addFunction {
                 this.name = Name.identifier("invoke")
-                returnType = type
+                this.returnType = returnType
                 visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
-                overriddenSymbols += symbolTable.referenceSimpleFunction(
-                    symbols.provider.descriptor
-                        .unsubstitutedMemberScope.findSingleFunction(Name.identifier("invoke"))
-                )
+                overriddenSymbols += superType.classOrFail
+                    .ensureBound(this@AbstractInjektTransformer.context.irProviders)
+                    .owner
+                    .functions
+                    .single { it.name.asString() == "invoke" }
+                    .symbol
 
                 body = irExprBody(
                     irCall(companion?.functions?.single() ?: createFunction!!).apply {
@@ -397,17 +413,14 @@ abstract class AbstractInjektTransformer(
                                 dispatchReceiverParameter!!
                             )
 
-                        fieldsByDependency.values.forEachIndexed { index, field ->
+                        fieldsByNonAssistedParameter.values.forEachIndexed { index, field ->
                             putValueArgument(
                                 index,
                                 irCall(
-                                    symbolTable.referenceFunction(
-                                        symbols.provider.descriptor
-                                            .unsubstitutedMemberScope.findSingleFunction(
-                                            Name.identifier("invoke")
-                                        )
-                                    ),
-                                    (field.type as IrSimpleType).arguments.single().typeOrNull!!
+                                    symbols.getFunction(0)
+                                        .functions
+                                        .single { it.owner.name.asString() == "invoke" },
+                                    field.type.typeArguments.single()
                                 ).apply {
                                     dispatchReceiver = irGetField(
                                         irGet(dispatchReceiverParameter!!),
@@ -423,8 +436,8 @@ abstract class AbstractInjektTransformer(
     }
 
     private fun IrBuilderWithScope.providerCompanion(
-        dependencies: Map<String, IrType>,
-        type: IrType,
+        parameters: List<ProviderParameter>,
+        returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
     ) = buildClass {
         kind = ClassKind.OBJECT
@@ -436,7 +449,7 @@ abstract class AbstractInjektTransformer(
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
 
         addConstructor {
-            returnType = defaultType
+            this.returnType = defaultType
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
@@ -445,24 +458,24 @@ abstract class AbstractInjektTransformer(
             }
         }
 
-        providerCreateFunction(dependencies, type, this, createBody)
+        providerCreateFunction(parameters, returnType, this, createBody)
     }
 
     private fun IrBuilderWithScope.providerCreateFunction(
-        dependencies: Map<String, IrType>,
-        type: IrType,
+        parameters: List<ProviderParameter>,
+        returnType: IrType,
         owner: IrClass,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
     ): IrFunction {
         return owner.addFunction {
             name = Name.identifier("create")
-            returnType = type
+            this.returnType = returnType
             visibility = Visibilities.PUBLIC
             isInline = true
         }.apply {
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
 
-            dependencies
+            parameters
                 .forEach { (name, type) ->
                     addValueParameter(
                         name,

@@ -3,6 +3,7 @@ package com.ivianuu.injekt.sample
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Transient
 import com.ivianuu.injekt.childFactory
@@ -14,7 +15,7 @@ class App : Application() {
 
 interface AppComponent {
     val repo: Repo
-    val activityComponentFactory: (MainActivity) -> ActivityComponent
+    val activityComponentFactory: @ChildFactory (MainActivity) -> ActivityComponent
 }
 
 @Factory
@@ -28,3 +29,4 @@ class MyWorker(
     @Assisted private val workerParameters: WorkerParameters,
     private val repo: Repo
 ) : Worker(context, workerParameters)
+

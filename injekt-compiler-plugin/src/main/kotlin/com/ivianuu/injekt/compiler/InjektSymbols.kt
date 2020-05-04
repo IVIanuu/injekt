@@ -7,11 +7,12 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-class InjektSymbols(private val context: IrPluginContext) {
+class InjektSymbols(val context: IrPluginContext) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
     val internalPackage = getPackage(InjektFqNames.InternalPackage)
@@ -48,8 +49,6 @@ class InjektSymbols(private val context: IrPluginContext) {
     val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
     val factory = getTopLevelClass(InjektFqNames.Factory)
 
-    val doubleCheck = getTopLevelClass(InjektFqNames.DoubleCheck)
-
     val instanceProvider = getTopLevelClass(InjektFqNames.InstanceProvider)
 
     val lazy = getTopLevelClass(InjektFqNames.Lazy)
@@ -62,13 +61,43 @@ class InjektSymbols(private val context: IrPluginContext) {
     val provider = getTopLevelClass(InjektFqNames.Provider)
     val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
     val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
-    val providerOfLazy = getTopLevelClass(InjektFqNames.ProviderOfLazy)
 
     val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
-
     val setProvider = getTopLevelClass(InjektFqNames.SetProvider)
 
     val transient = getTopLevelClass(InjektFqNames.Transient)
+
+    fun getFunction(parameterCount: Int) = context.builtIns.getFunction(parameterCount)
+        .let { context.symbolTable.referenceClass(it).ensureBound(context.irProviders) }
+
+    fun getQualifiedFunctionType(
+        parameterCount: Int,
+        qualifiers: List<FqName>
+    ) = getFunction(parameterCount).defaultType.withQualifiers(this, qualifiers)
+
+    fun getChildFactory(parameterCount: Int) = getQualifiedFunctionType(
+        parameterCount, listOf(InjektFqNames.ChildFactory)
+    )
+
+    fun getMembersInjector(parameterCount: Int) = getQualifiedFunctionType(
+        parameterCount, listOf(InjektFqNames.MembersInjector)
+    )
+
+    fun getLazy(parameterCount: Int) = getQualifiedFunctionType(
+        parameterCount, listOf(InjektFqNames.Lazy)
+    )
+
+    fun getProvider(parameterCount: Int) = getQualifiedFunctionType(
+        parameterCount, listOf(InjektFqNames.Provider)
+    )
+
+    fun getDoubleCheck(parameterCount: Int) = getTopLevelClass(
+        InjektFqNames.InternalPackage.child(Name.identifier("DoubleCheck$parameterCount"))
+    )
+
+    fun getProviderOfLazy(parameterCount: Int) = getTopLevelClass(
+        InjektFqNames.InternalPackage.child(Name.identifier("ProviderOfLazy$parameterCount"))
+    )
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

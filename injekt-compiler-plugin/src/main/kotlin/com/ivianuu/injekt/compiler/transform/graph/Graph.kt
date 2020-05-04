@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.IntKey
 import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
+import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.FactoryTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -39,7 +40,7 @@ class Graph(
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
-    private val mapBindingResolver = MapBindingResolver(context, symbols)
+    private val mapBindingResolver = MapBindingResolver(factoryTransformer, context, symbols)
     private val setBindingResolver = SetBindingResolver(context, symbols)
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
@@ -92,7 +93,7 @@ class Graph(
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstScope) }
-            .forEach { addScope(it.returnType.classOrNull!!.descriptor.fqNameSafe) }
+            .forEach { addScope(it.returnType.classOrFail.descriptor.fqNameSafe) }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstDependency) }
@@ -108,7 +109,7 @@ class Graph(
                     DependencyBindingResolver(
                         injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
-                            dependency = function.returnType.classOrNull!!.owner,
+                            dependency = function.returnType.classOrFail.owner,
                             key = Key(function.returnType),
                             initializerAccessor = moduleNode.initializerAccessor.child(field)
                         ),
