@@ -683,7 +683,7 @@ class ModuleTransformer(
         }
 
         return provider(
-            name = Name.identifier("provider\$$providerIndex"),
+            name = Name.identifier("Factory_$providerIndex"),
             parameters = parameters,
             returnType = type,
             createBody = { createFunction ->
