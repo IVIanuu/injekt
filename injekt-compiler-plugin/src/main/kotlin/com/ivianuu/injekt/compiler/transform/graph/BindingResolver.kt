@@ -336,7 +336,7 @@ class MapBindingResolver(
             .mapValues {
                 DependencyRequest(
                     key = symbols.getFunction(0)
-                        .typeWith(mapKey.type.typeArguments[1])
+                        .typeWith(it.value.key.type)
                         .withQualifiers(symbols, listOf(qualifier)).asKey()
                 )
             }
