@@ -103,7 +103,8 @@ class DependencyBindingResolver(
 
 class ModuleBindingResolver(
     private val moduleNode: ModuleNode,
-    private val descriptor: IrClass
+    private val descriptor: IrClass,
+    private val symbols: InjektSymbols
 ) : BindingResolver {
 
     private val bindingFunctions = descriptor
@@ -112,30 +113,21 @@ class ModuleBindingResolver(
 
     private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
-        .mapNotNull { bindingFunction ->
-            val key = bindingFunction.returnType.asKey()
+        .map { bindingFunction ->
+            val bindingKey = bindingFunction.returnType.asKey()
             val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
                 ?.getTypeArgument(0)?.classOrNull?.owner
 
-            // todo handle assisted
-            if (bindingFunction.valueParameters.any {
-                    it.hasAnnotation(InjektFqNames.Assisted)
-                }) return@mapNotNull null
-
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
-
-            val dependencies = bindingFunction.valueParameters
-                .map { it.type.asKey() }
-                .map { DependencyRequest(it) }
 
             when {
                 fieldName != null -> {
                     val field =
                         moduleNode.module.fields.single { it.name.asString() == fieldName }
                     InstanceBindingNode(
-                        key = key,
+                        key = bindingKey,
                         requirementNode = InstanceNode(
                             key = field.type.asKey(),
                             initializerAccessor = moduleNode.initializerAccessor.child(field)
@@ -143,14 +135,43 @@ class ModuleBindingResolver(
                     )
                 }
                 else -> {
-                    ProvisionBindingNode(
-                        key = key,
-                        dependencies = dependencies,
-                        targetScope = null,
-                        scoped = scoped,
-                        module = moduleNode,
-                        provider = provider!!
-                    )
+                    if (bindingFunction.valueParameters.any { it.hasAnnotation(InjektFqNames.AstAssisted) }) {
+                        val (assistedValueParameters, nonAssistedValueParameters) = bindingFunction.valueParameters
+                            .partition { it.hasAnnotation(InjektFqNames.AstAssisted) }
+
+                        val assistedFactoryType = symbols.getFunction(assistedValueParameters.size)
+                            .typeWith(
+                                assistedValueParameters
+                                    .map { it.type } + bindingKey.type
+                            ).withQualifiers(symbols, listOf(InjektFqNames.Provider))
+
+                        val dependencies = bindingFunction.valueParameters
+                            .filterNot { it.hasAnnotation(InjektFqNames.AstAssisted) }
+                            .map { it.type.asKey() }
+                            .map { DependencyRequest(it) }
+
+                        AssistedProvisionBindingNode(
+                            key = Key(assistedFactoryType),
+                            dependencies = dependencies,
+                            targetScope = null,
+                            scoped = scoped,
+                            module = moduleNode,
+                            provider = provider!!
+                        )
+                    } else {
+                        val dependencies = bindingFunction.valueParameters
+                            .map { it.type.asKey() }
+                            .map { DependencyRequest(it) }
+
+                        ProvisionBindingNode(
+                            key = bindingKey,
+                            dependencies = dependencies,
+                            targetScope = null,
+                            scoped = scoped,
+                            module = moduleNode,
+                            provider = provider!!
+                        )
+                    }
                 }
             }
         }
@@ -202,28 +223,44 @@ class AnnotatedClassBindingResolver(
         val constructor = clazz.constructors
             .single()
 
-        if (constructor.valueParameters.any {
-                it.hasAnnotation(InjektFqNames.Assisted)
-            }) return emptyList()
-
-        val dependencies = constructor.valueParameters
-            .map { it.type.asKey() }
-            .map { DependencyRequest(it) }
-
         val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
         val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-        return listOf(
-            ProvisionBindingNode(
-                key = requestedKey,
-                dependencies = dependencies,
-                targetScope = targetScope,
-                scoped = scoped,
-                module = null,
-                provider = provider
+        if (constructor.valueParameters.any {
+                it.hasAnnotation(InjektFqNames.Assisted)
+            }) {
+            val dependencies = constructor.valueParameters
+                .filterNot { it.hasAnnotation(InjektFqNames.Assisted) }
+                .map { it.type.asKey() }
+                .map { DependencyRequest(it) }
+
+            return listOf(
+                AssistedProvisionBindingNode(
+                    key = requestedKey,
+                    dependencies = dependencies,
+                    targetScope = targetScope,
+                    scoped = scoped,
+                    module = null,
+                    provider = provider
+                )
             )
-        )
+        } else {
+            val dependencies = constructor.valueParameters
+                .map { it.type.asKey() }
+                .map { DependencyRequest(it) }
+
+            return listOf(
+                ProvisionBindingNode(
+                    key = requestedKey,
+                    dependencies = dependencies,
+                    targetScope = targetScope,
+                    scoped = scoped,
+                    module = null,
+                    provider = provider
+                )
+            )
+        }
     }
 }
 

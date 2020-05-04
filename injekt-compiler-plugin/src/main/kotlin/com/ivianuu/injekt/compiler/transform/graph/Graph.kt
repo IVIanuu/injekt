@@ -206,7 +206,8 @@ class Graph(
         addExplicitBindingResolver(
             ModuleBindingResolver(
                 moduleNode,
-                descriptor
+                descriptor,
+                factoryTransformer.symbols
             )
         )
     }

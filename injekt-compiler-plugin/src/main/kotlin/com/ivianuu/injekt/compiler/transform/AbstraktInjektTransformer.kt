@@ -406,12 +406,39 @@ abstract class AbstractInjektTransformer(
                     .single { it.name.asString() == "invoke" }
                     .symbol
 
+                val valueParametersByAssistedParameter = assistedParameters.associateWith {
+                    addValueParameter(
+                        it.name,
+                        it.type
+                    )
+                }
+
                 body = irExprBody(
                     irCall(companion?.functions?.single() ?: createFunction!!).apply {
                         dispatchReceiver =
                             if (companion != null) irGetObject(companion.symbol) else irGet(
                                 dispatchReceiverParameter!!
                             )
+
+                        parameters.forEachIndexed { index, parameter ->
+                            putValueArgument(
+                                index,
+                                if (parameter in assistedParameters) {
+                                    irGet(valueParametersByAssistedParameter.getValue(parameter))
+                                } else {
+                                    irCall(
+                                        symbols.getFunction(0)
+                                            .functions
+                                            .single { it.owner.name.asString() == "invoke" })
+                                        .apply {
+                                            dispatchReceiver = irGetField(
+                                                irGet(dispatchReceiverParameter!!),
+                                                fieldsByNonAssistedParameter.getValue(parameter)
+                                            )
+                                        }
+                                }
+                            )
+                        }
 
                         fieldsByNonAssistedParameter.values.forEachIndexed { index, field ->
                             putValueArgument(

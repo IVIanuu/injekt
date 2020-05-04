@@ -502,21 +502,28 @@ class ModuleTransformer(
                 annotations += noArgSingleConstructorCall(symbols.astBinding)
 
                 if (bindingCall !in instanceCalls) {
-                    providerByCall.getValue(bindingCall)
-                        .constructors
+                    val provider = providerByCall.getValue(bindingCall)
+
+                    val assisted = provider.functions
+                        .single { it.name.asString() == "invoke" }
+                        .valueParameters
+                        .map { it.type }
+
+                    val nonAssisted = provider.constructors
                         .single()
                         .valueParameters
-                        .map { it to it.type.typeArguments.single() }
-                        .forEachIndexed { index, (valueParameter, type) ->
-                            addValueParameter(
-                                name = "p$index",
-                                type = type
-                            ).apply {
-                                if (valueParameter.annotations.hasAnnotation(InjektFqNames.AstAssisted)) {
-                                    annotations += noArgSingleConstructorCall(symbols.astAssisted)
-                                }
+                        .map { it.type.typeArguments.single() }
+
+                    (assisted + nonAssisted).forEachIndexed { index, type ->
+                        addValueParameter(
+                            name = "p$index",
+                            type = type
+                        ).apply {
+                            if (type in assisted) {
+                                annotations += noArgSingleConstructorCall(symbols.astAssisted)
                             }
                         }
+                    }
 
                     annotations += classPathAnnotation(providerByCall.getValue(bindingCall))
                     if (bindingCall in scopedCalls) {
@@ -642,11 +649,11 @@ class ModuleTransformer(
         definitionFunction.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                when ((expression.dispatchReceiver as? IrGetValue)?.symbol) {
-                    definitionFunction.extensionReceiverParameter!!.symbol -> {
+                when ((expression.dispatchReceiver as? IrGetValue)?.type) {
+                    definitionFunction.extensionReceiverParameter!!.type -> {
                         dependencyCalls += expression
                     }
-                    definitionFunction.valueParameters.single().symbol -> {
+                    definitionFunction.valueParameters.single().type -> {
                         assistedParameterCalls += expression
                     }
                 }
@@ -674,12 +681,13 @@ class ModuleTransformer(
             )
         }
 
+        val parametersByCall = mutableMapOf<IrCall, ProviderParameter>()
         (assistedParameterCalls + dependencyCalls).forEachIndexed { i, call ->
             parameters += ProviderParameter(
                 name = "p$i",
                 type = call.type,
                 assisted = call in assistedParameterCalls
-            )
+            ).also { parametersByCall[call] = it }
         }
 
         return provider(
@@ -709,11 +717,14 @@ class ModuleTransformer(
 
                     override fun visitCall(expression: IrCall): IrExpression {
                         super.visitCall(expression)
-                        val dependencyIndex = dependencyCalls.indexOf(expression)
-                        if (dependencyIndex == -1) return super.visitCall(expression)
-                        val valueParameter = createFunction.valueParameters
-                            .single { it.name.asString() == "p$dependencyIndex" }
-                        return irGet(valueParameter)
+                        return when (expression) {
+                            in assistedParameterCalls, in dependencyCalls -> {
+                                irGet(createFunction.valueParameters.single {
+                                    it.name.asString() == parametersByCall.getValue(expression).name
+                                })
+                            }
+                            else -> expression
+                        }
                     }
 
                     override fun visitGetValue(expression: IrGetValue): IrExpression {

@@ -104,6 +104,15 @@ sealed class BindingNode(
     val module: ModuleNode?
 ) : Node
 
+class AssistedProvisionBindingNode(
+    key: Key,
+    dependencies: List<DependencyRequest>,
+    targetScope: FqName?,
+    scoped: Boolean,
+    module: ModuleNode?,
+    val provider: IrClass
+) : BindingNode(key, dependencies, targetScope, scoped, module)
+
 class DelegateBindingNode(
     key: Key,
     val originalKey: Key,

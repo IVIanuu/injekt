@@ -90,8 +90,6 @@ class MapTest {
     """
     ) {
         val map = invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
-        println(map)
-        println("${map.mapValues { it.value() }}")
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)
