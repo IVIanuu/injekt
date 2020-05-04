@@ -172,8 +172,7 @@ class FactoryExpressions(
                         Key(binding.key.type.typeArguments.single()),
                         RequestType.Provider
                     )
-                )
-                    (this, it)
+                )(this, it)
             )
         }
     }

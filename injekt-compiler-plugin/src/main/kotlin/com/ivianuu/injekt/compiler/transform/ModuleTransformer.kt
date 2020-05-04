@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
@@ -112,6 +113,7 @@ class ModuleTransformer(
             }
             transformingModules += moduleFqName
             val moduleClass = moduleClass(function)
+            println(moduleClass.dump())
             function.file.addChild(moduleClass)
             (function.file as IrFileImpl).metadata =
                 MetadataSource.File(function.file.declarations.map { it.descriptor })
@@ -447,9 +449,13 @@ class ModuleTransformer(
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astChildFactory)
                 if (childFactoryModule != null) {
+                    annotations += classPathAnnotation(childFactoryModule)
+                }
+
+                functionRef.symbol.owner.valueParameters.forEachIndexed { index, valueParameter ->
                     addValueParameter(
-                        "module",
-                        childFactoryModule.defaultType
+                        "p${index}",
+                        valueParameter.type
                     )
                 }
             }

@@ -202,4 +202,28 @@ class FactoryDslTest {
         assertCompileError("static")
     }
 
+    @Test
+    fun testCannotInvokeChildFactories() = codegen(
+        """
+            @ChildFactory
+            fun factory(): TestComponent = createImplementation()
+            
+            fun invoke() = factory()
+    """
+    ) {
+        assertCompileError("cannot invoke")
+    }
+
+    @Test
+    fun testCanReferenceChildFactories() = codegen(
+        """
+            @ChildFactory
+            fun factory(): TestComponent = createImplementation()
+            
+            fun invoke() = ::factory
+    """
+    ) {
+        assertOk()
+    }
+
 }

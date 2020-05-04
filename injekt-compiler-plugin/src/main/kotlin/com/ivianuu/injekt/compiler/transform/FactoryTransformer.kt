@@ -62,111 +62,16 @@ import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 
 class FactoryTransformer(
     context: IrPluginContext,
     private val declarationStore: InjektDeclarationStore
 ) : AbstractInjektTransformer(context) {
 
-    private val factoryFunctions = mutableListOf<IrFunction>()
-    private val transformedFactories = mutableMapOf<IrFunction, IrClass>()
-    private val transformingFactories = mutableSetOf<FqName>()
-    private var computedFactoryFunctions = false
-
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        computeFactoryFunctionsIfNeeded()
+        val factoryFunctions = mutableListOf<IrFunction>()
 
-        factoryFunctions.forEach { function ->
-            DeclarationIrBuilder(context, function.symbol).run {
-                getImplementationClassForFactory(function)
-            }
-        }
-
-        return super.visitModuleFragment(declaration)
-    }
-
-    // todo simplify implementation if we don't need it
-    fun getImplementationClassForFactory(fqName: FqName): IrClass? {
-        transformedFactories.values.firstOrNull {
-            it.fqNameForIrSerialization == fqName
-        }?.let { return it }
-
-        val function = factoryFunctions.firstOrNull {
-            val packageName = it.fqNameForIrSerialization.parent()
-            packageName.child(
-                InjektNameConventions.getModuleNameForModuleFunction(it.name)
-            ) == fqName
-        } ?: return null
-
-        return getImplementationClassForFactory(function)
-    }
-
-    fun getImplementationClassForFactory(function: IrFunction): IrClass? {
-        computeFactoryFunctionsIfNeeded()
-        check(function in factoryFunctions) {
-            "Unknown function $function"
-        }
-        transformedFactories[function]?.let { return it }
-        return DeclarationIrBuilder(context, function.symbol).run {
-            val packageName = function.fqNameForIrSerialization.parent()
-            val implementationName =
-                InjektNameConventions.getImplementationNameForFactoryFunction(function.name)
-            val implementationFqName = packageName.child(implementationName)
-            check(implementationFqName !in transformingFactories) {
-                "Circular dependency for factory $implementationFqName"
-            }
-            transformingFactories += implementationFqName
-
-            val moduleCall = function.body?.statements?.single()
-                ?.let { (it as? IrReturn)?.value }
-                ?.let { (it as? IrCall)?.getValueArgument(0) as? IrFunctionExpression }
-                ?.function
-                ?.body
-                ?.statements
-                ?.single() as? IrCall
-
-            val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
-                ?.parent()
-                ?.child(InjektNameConventions.getModuleNameForModuleFunction(moduleCall.symbol.owner.name))
-
-            val moduleClass = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
-            else null
-
-            val implementationClass = implementationClass(function, moduleClass, function.file)
-            println("impl ${implementationClass.dump()}")
-
-            function.file.addChild(implementationClass)
-            (function.file as IrFileImpl).metadata =
-                MetadataSource.File(function.file.declarations.map { it.descriptor })
-
-            val implementationConstructor = implementationClass.constructors.single()
-            function.body = irExprBody(
-                irCall(implementationConstructor).apply {
-                    if (implementationConstructor.valueParameters.isNotEmpty()) {
-                        putValueArgument(
-                            0,
-                            irCall(moduleClass!!.constructors.single()).apply {
-                                copyTypeArgumentsFrom(moduleCall!!)
-                                (0 until moduleCall.valueArgumentsCount).forEach {
-                                    putValueArgument(it, moduleCall.getValueArgument(it))
-                                }
-                            }
-                        )
-                    }
-                }
-            )
-
-            transformedFactories[function] = implementationClass
-            transformingFactories -= implementationFqName
-            implementationClass
-        }
-    }
-
-    private fun computeFactoryFunctionsIfNeeded() {
-        if (computedFactoryFunctions) return
-        computedFactoryFunctions = true
-        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
+        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (declaration.annotations.hasAnnotation(InjektFqNames.Factory)) {
                     factoryFunctions += declaration
@@ -175,6 +80,51 @@ class FactoryTransformer(
                 return super.visitFunction(declaration)
             }
         })
+
+        factoryFunctions.forEach { function ->
+            DeclarationIrBuilder(context, function.symbol).run {
+                val moduleCall = function.body?.statements?.single()
+                    ?.let { (it as? IrReturn)?.value }
+                    ?.let { (it as? IrCall)?.getValueArgument(0) as? IrFunctionExpression }
+                    ?.function
+                    ?.body
+                    ?.statements
+                    ?.single() as? IrCall
+
+                val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
+                    ?.parent()
+                    ?.child(InjektNameConventions.getModuleNameForModuleFunction(moduleCall.symbol.owner.name))
+
+                val moduleClass = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
+                else null
+
+                val implementationClass = implementationClass(function, moduleClass, function.file)
+                println("impl ${implementationClass.dump()}")
+
+                function.file.addChild(implementationClass)
+                (function.file as IrFileImpl).metadata =
+                    MetadataSource.File(function.file.declarations.map { it.descriptor })
+
+                val implementationConstructor = implementationClass.constructors.single()
+                function.body = irExprBody(
+                    irCall(implementationConstructor).apply {
+                        if (implementationConstructor.valueParameters.isNotEmpty()) {
+                            putValueArgument(
+                                0,
+                                irCall(moduleClass!!.constructors.single()).apply {
+                                    copyTypeArgumentsFrom(moduleCall!!)
+                                    (0 until moduleCall.valueArgumentsCount).forEach {
+                                        putValueArgument(it, moduleCall.getValueArgument(it))
+                                    }
+                                }
+                            )
+                        }
+                    }
+                )
+            }
+        }
+
+        return super.visitModuleFragment(declaration)
     }
 
     private fun IrBuilderWithScope.implementationClass(

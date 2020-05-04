@@ -61,17 +61,19 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        when (resolvedCall.resultingDescriptor.fqNameSafe.asString()) {
+        val resultingDescriptor = resolvedCall.resultingDescriptor
+
+        when (resultingDescriptor.fqNameSafe.asString()) {
             "com.ivianuu.injekt.childFactory" -> {
-                val referencedFunction =
-                    resolvedCall.valueArgumentsByIndex!!.singleOrNull()
-                        ?.arguments
-                        ?.single()
-                        ?.getArgumentExpression()
-                        ?.let { it as? KtCallableReferenceExpression }
-                        ?.callableReference
-                        ?.getResolvedCall(context.trace.bindingContext)
-                        ?.resultingDescriptor
+                val referencedFunction = resolvedCall
+                    .valueArgumentsByIndex!!.singleOrNull()
+                    ?.arguments
+                    ?.single()
+                    ?.getArgumentExpression()
+                    ?.let { it as? KtCallableReferenceExpression }
+                    ?.callableReference
+                    ?.getResolvedCall(context.trace.bindingContext)
+                    ?.resultingDescriptor
 
                 if (referencedFunction?.annotations?.hasAnnotation(InjektFqNames.ChildFactory) != true) {
                     context.trace.report(InjektErrors.NOT_A_CHILD_FACTORY.on(reportOn))
@@ -80,6 +82,12 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             "com.ivianuu.injekt.createImplementation" -> {
                 checkCreateImplementationInvocation(resolvedCall, reportOn, context)
             }
+        }
+
+        if (resultingDescriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) &&
+            !resolvedCall.call.isCallableReference()
+        ) {
+            context.trace.report(InjektErrors.CANNOT_INVOKE_CHILD_FACTORIES.on(reportOn))
         }
     }
 

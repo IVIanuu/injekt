@@ -41,9 +41,11 @@ interface InjektErrors {
         val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error()
         @JvmField
         val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
-
         @JvmField
         val INJECT_MUST_BE_LATEINIT_VAR = error()
+
+        @JvmField
+        val CANNOT_INVOKE_CHILD_FACTORIES = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -131,6 +133,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.INJECT_MUST_BE_LATEINIT_VAR,
             "@Inject property must be lateinit var"
+        )
+        map.put(
+            InjektErrors.CANNOT_INVOKE_CHILD_FACTORIES,
+            "Cannot invoke @ChildFactory functions"
         )
     }
 }

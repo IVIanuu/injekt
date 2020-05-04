@@ -122,6 +122,12 @@ class Graph(
             }
 
         functions
+            .filter { it.hasAnnotation(InjektFqNames.AstChildFactory) }
+            .forEach { function ->
+                println("child factory ${function.dump()}")
+            }
+
+        functions
             .filter { it.hasAnnotation(InjektFqNames.AstMap) }
             .forEach { function ->
                 addMap(Key(function.returnType))
