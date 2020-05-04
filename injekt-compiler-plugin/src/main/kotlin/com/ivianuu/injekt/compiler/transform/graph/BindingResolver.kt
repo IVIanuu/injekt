@@ -10,7 +10,6 @@ import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -233,7 +232,12 @@ class AnnotatedClassBindingResolver(
 
             val dependencies = constructor.valueParameters
                 .filterNot { it.hasAnnotation(InjektFqNames.Assisted) }
-                .map { it.type.asKey() }
+                .map {
+                    symbols.getFunction(0)
+                        .typeWith(it.type)
+                        .withQualifiers(symbols, listOf(InjektFqNames.Provider))
+                }
+                .map { it.asKey() }
                 .map { DependencyRequest(it) }
 
             listOf(
@@ -324,18 +328,16 @@ class MapBindingResolver(
         context.symbolTable.referenceClass(context.builtIns.map)
             .typeWith(
                 mapKey.type.typeArguments[0],
-                symbols.getQualifiedFunctionType(
-                        0,
-                        listOf(qualifier)
-                    ).typeWith(mapKey.type.typeArguments[1])
+                symbols.getFunction(0)
+                    .typeWith(mapKey.type.typeArguments[1])
                     .withQualifiers(symbols, listOf(qualifier))
             ).asKey(),
         entries
             .mapValues {
                 DependencyRequest(
-                    key = symbols.getFunction(0).typeWith(
-                        it.value.key.type
-                    ).withQualifiers(symbols, listOf(qualifier)).asKey()
+                    key = symbols.getFunction(0)
+                        .typeWith(mapKey.type.typeArguments[1])
+                        .withQualifiers(symbols, listOf(qualifier)).asKey()
                 )
             }
     )

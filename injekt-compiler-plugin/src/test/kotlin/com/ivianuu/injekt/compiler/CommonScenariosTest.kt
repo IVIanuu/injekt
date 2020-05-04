@@ -2,17 +2,17 @@ package com.ivianuu.injekt.compiler
 
 import org.junit.Test
 
-class Lul {
+class CommonScenariosTest {
 
     @Test
-    fun test() = codegen(
+    fun testWorkerMapInApplicationScenario() = codegen(
         """
         abstract class Worker(context: Context)
         
         @Transient class Context
         
-        class WorkerA(context: Context, foo: Foo) : Worker(context)
-        class WorkerB(context: Context) : Worker(context)
+        @Transient class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
+        @Transient class WorkerB(@Assisted context: Context) : Worker(context)
         
         @Transient
         class WorkerFactory(
@@ -20,6 +20,7 @@ class Lul {
             private val context: Context
         ) {
             init {
+                println(workers)
                 println(workers.mapValues { it.value(context) })
             }
         }

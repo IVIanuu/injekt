@@ -22,7 +22,7 @@ class MembersInjectorTest {
         
         @Factory
         fun create(): TestComponent = createImplementation {
-            scoped { Foo() }
+            transient { Foo() }
             scoped { Bar(get()) }
         }
         

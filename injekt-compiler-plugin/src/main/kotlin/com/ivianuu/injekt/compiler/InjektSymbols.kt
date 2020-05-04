@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -69,27 +68,6 @@ class InjektSymbols(val context: IrPluginContext) {
 
     fun getFunction(parameterCount: Int) = context.builtIns.getFunction(parameterCount)
         .let { context.symbolTable.referenceClass(it).ensureBound(context.irProviders) }
-
-    fun getQualifiedFunctionType(
-        parameterCount: Int,
-        qualifiers: List<FqName>
-    ) = getFunction(parameterCount).defaultType.withQualifiers(this, qualifiers)
-
-    fun getChildFactory(parameterCount: Int) = getQualifiedFunctionType(
-        parameterCount, listOf(InjektFqNames.ChildFactory)
-    )
-
-    fun getMembersInjector(parameterCount: Int) = getQualifiedFunctionType(
-        parameterCount, listOf(InjektFqNames.MembersInjector)
-    )
-
-    fun getLazy(parameterCount: Int) = getQualifiedFunctionType(
-        parameterCount, listOf(InjektFqNames.Lazy)
-    )
-
-    fun getProvider(parameterCount: Int) = getQualifiedFunctionType(
-        parameterCount, listOf(InjektFqNames.Provider)
-    )
 
     fun getDoubleCheck(parameterCount: Int) = getTopLevelClass(
         InjektFqNames.InternalPackage.child(Name.identifier("DoubleCheck$parameterCount"))

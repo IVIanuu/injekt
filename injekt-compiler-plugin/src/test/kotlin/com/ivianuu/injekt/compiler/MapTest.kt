@@ -97,6 +97,48 @@ class MapTest {
     }
 
     @Test
+    fun testEmptyMap() = codegen(
+        """
+        interface TestComponent {
+            val map: Map<kotlin.reflect.KClass<out Command>, Command>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            map<kotlin.reflect.KClass<out Command>, Command>()
+        }
+        
+        fun invoke() = create().map
+    """
+    ) {
+        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        assertEquals(0, map.size)
+    }
+
+    @Test
+    fun testSingleEntryMap() = codegen(
+        """
+        interface TestComponent {
+            val map: Map<kotlin.reflect.KClass<out Command>, Command>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            transient { CommandA() }
+            map<kotlin.reflect.KClass<out Command>, Command> {
+                put<CommandA>(CommandA::class)
+            }
+        }
+        
+        fun invoke() = create().map
+    """
+    ) {
+        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        assertEquals(1, map.size)
+        assertTrue(map[CommandA::class] is CommandA)
+    }
+
+    @Test
     fun testMapOverrideFails() = codegen(
         """
         interface TestComponent {

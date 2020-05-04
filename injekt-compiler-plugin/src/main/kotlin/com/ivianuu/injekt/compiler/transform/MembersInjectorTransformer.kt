@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
+import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -115,7 +116,8 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
             name = InjektNameConventions.getMembersInjectorNameForClass(clazz.name)
         }.apply clazz@{
-            superTypes += symbols.getFunction(1).typeWith(clazz.defaultType, irBuiltIns.unitType)
+            superTypes += symbols.getFunction(1)
+                .typeWith(clazz.defaultType, irBuiltIns.unitType)
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -125,7 +127,9 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             val fieldsByInjectProperty = injectProperties.associateWith { property ->
                 addField {
                     name = Name.identifier("p${fieldIndex++}")
-                    type = symbols.getFunction(0).typeWith(property.backingField!!.type)
+                    type = symbols.getFunction(0)
+                        .typeWith(property.backingField!!.type)
+                        .withQualifiers(symbols, listOf(InjektFqNames.Provider))
                 }
             }
 

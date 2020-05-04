@@ -96,6 +96,47 @@ class SetTest {
     }
 
     @Test
+    fun testEmptySet() = codegen(
+        """
+        interface TestComponent {
+            val set: Set<Command>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            set<Command>()
+        }
+        
+        fun invoke() = create().set
+    """
+    ) {
+        val set = invokeSingleFile<Set<Command>>().toList()
+        assertEquals(0, set.size)
+    }
+
+    @Test
+    fun testSingleElementSet() = codegen(
+        """
+        interface TestComponent {
+            val set: Set<Command>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            transient { CommandA() }
+            set<Command> {
+                add<CommandA>()
+            }
+        }
+        
+        fun invoke() = create().set
+    """
+    ) {
+        val set = invokeSingleFile<Set<Command>>().toList()
+        assertEquals(1, set.size)
+    }
+
+    @Test
     fun testSetOverridesFails() = codegen(
         """
         interface TestComponent {

@@ -80,7 +80,7 @@ data class BindingRequest(
 )
 
 fun Key.inferRequestType() = when {
-    type.isFunction() && InjektFqNames.Provider in type.getQualifiers() -> RequestType.Provider
+    type.isFunction() && type.typeArguments.size == 1 && InjektFqNames.Provider in type.getQualifiers() -> RequestType.Provider
     else -> RequestType.Instance
 }
 
@@ -156,8 +156,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { it.type.typeArguments.single() }
-        .map { DependencyRequest(it.asKey()) },
+        .map { DependencyRequest(it.type.asKey()) },
     null,
     false,
     null

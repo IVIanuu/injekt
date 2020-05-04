@@ -20,30 +20,17 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.builtins.extractParameterNameFromFunctionTypeArgument
-import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
-import org.jetbrains.kotlin.builtins.getReturnTypeFromFunctionType
-import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -66,7 +53,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.IrBody
@@ -75,12 +61,9 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -97,7 +80,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -177,97 +159,6 @@ abstract class AbstractInjektTransformer(
 
         assert(typeParameters.isEmpty()) { "types ${typeParameters.map { it.name }}" }
         typeParameters + descriptor.typeParameters.map { it.irTypeParameter() }
-    }
-
-    fun IrBuilderWithScope.irLambdaExpression(
-        descriptor: FunctionDescriptor,
-        type: IrType,
-        body: IrBlockBodyBuilder.(IrFunction) -> Unit
-    ) = irLambdaExpression(this.startOffset, this.endOffset, descriptor, type, body)
-
-    fun IrBuilderWithScope.irLambdaExpression(
-        startOffset: Int,
-        endOffset: Int,
-        descriptor: FunctionDescriptor,
-        type: IrType,
-        body: IrBlockBodyBuilder.(IrFunction) -> Unit
-    ): IrExpression {
-        val symbol = IrSimpleFunctionSymbolImpl(descriptor)
-
-        val returnType = descriptor.returnType!!.toIrType()
-
-        val lambda = IrFunctionImpl(
-            startOffset, endOffset,
-            IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA,
-            symbol,
-            returnType
-        ).also {
-            it.parent = scope.getLocalDeclarationParent()
-            it.createParameterDeclarations(descriptor)
-            it.body = DeclarationIrBuilder(this@AbstractInjektTransformer.context, symbol)
-                .irBlockBody { body(it) }
-        }
-
-        return IrFunctionExpressionImpl(
-            startOffset = startOffset,
-            endOffset = endOffset,
-            type = type,
-            origin = IrStatementOrigin.LAMBDA,
-            function = lambda
-        )
-    }
-
-    fun IrBuilderWithScope.createFunctionDescriptor(
-        type: KotlinType,
-        owner: DeclarationDescriptor = scope.scopeOwner
-    ): FunctionDescriptor {
-        return AnonymousFunctionDescriptor(
-            owner,
-            Annotations.EMPTY,
-            CallableMemberDescriptor.Kind.SYNTHESIZED,
-            SourceElement.NO_SOURCE,
-            false
-        ).apply {
-            initialize(
-                type.getReceiverTypeFromFunctionType()?.let {
-                    DescriptorFactory.createExtensionReceiverParameterForCallable(
-                        this,
-                        it,
-                        Annotations.EMPTY
-                    )
-                },
-                null,
-                emptyList(),
-                type.getValueParameterTypesFromFunctionType().mapIndexed { i, t ->
-                    ValueParameterDescriptorImpl(
-                        containingDeclaration = this,
-                        original = null,
-                        index = i,
-                        annotations = Annotations.EMPTY,
-                        name = t.type.extractParameterNameFromFunctionTypeArgument()
-                            ?: Name.identifier("p$i"),
-                        outType = t.type,
-                        declaresDefaultValue = false,
-                        isCrossinline = false,
-                        isNoinline = false,
-                        varargElementType = null,
-                        source = SourceElement.NO_SOURCE
-                    )
-                },
-                type.getReturnTypeFromFunctionType(),
-                Modality.FINAL,
-                Visibilities.LOCAL,
-                null
-            )
-            isOperator = false
-            isInfix = false
-            isExternal = false
-            isInline = false
-            isTailrec = false
-            isSuspend = false
-            isExpect = false
-            isActual = false
-        }
     }
 
     fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {
@@ -436,23 +327,6 @@ abstract class AbstractInjektTransformer(
                                                 fieldsByNonAssistedParameter.getValue(parameter)
                                             )
                                         }
-                                }
-                            )
-                        }
-
-                        fieldsByNonAssistedParameter.values.forEachIndexed { index, field ->
-                            putValueArgument(
-                                index,
-                                irCall(
-                                    symbols.getFunction(0)
-                                        .functions
-                                        .single { it.owner.name.asString() == "invoke" },
-                                    field.type.typeArguments.single()
-                                ).apply {
-                                    dispatchReceiver = irGetField(
-                                        irGet(dispatchReceiverParameter!!),
-                                        field
-                                    )
                                 }
                             )
                         }

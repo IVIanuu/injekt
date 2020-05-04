@@ -421,9 +421,9 @@ class FactoryExpressions(
         val constructor = binding.provider.constructors.single()
 
         val dependencyKeys = binding.dependencies
-            .map { Key(it.key.type) }
+            .map { it.key }
 
-        val dependencies = binding.dependencies
+        val dependencyExpressions = binding.dependencies
             .map { getBindingExpression(BindingRequest(it.key, it.requestType)) }
 
         return providerFieldExpression(binding.key) { parent ->
@@ -433,7 +433,7 @@ class FactoryExpressions(
 
             instanceProvider(
                 irCall(constructor).apply {
-                    dependencies.forEachIndexed { index, dependency ->
+                    dependencyExpressions.forEachIndexed { index, dependency ->
                         putValueArgument(index, dependency(this@providerFieldExpression, parent))
                     }
                 }
@@ -489,7 +489,9 @@ class FactoryExpressions(
     private fun providerExpressionForMap(binding: MapBindingNode): FactoryExpression {
         val entryExpressions = binding.entries
             .map { (key, entryValue) ->
-                val entryValueExpression = getBindingExpression(entryValue.asBindingRequest())
+                val entryValueExpression = getBindingExpression(
+                    BindingRequest(entryValue.key, RequestType.Provider)
+                )
                 val pairExpression: FactoryExpression = pairExpression@{
                     irCall(
                         pair.constructors.single(),
@@ -520,6 +522,7 @@ class FactoryExpressions(
                     mapProviderCompanion.functions
                         .single { it.name.asString() == "empty" }
                 ).apply {
+                    dispatchReceiver = irGetObject(mapProviderCompanion.symbol)
                     putTypeArgument(0, binding.keyKey.type)
                     putTypeArgument(1, binding.valueKey.type)
                 }
@@ -533,6 +536,7 @@ class FactoryExpressions(
                             }
 
                         irCall(create).apply {
+                            dispatchReceiver = irGetObject(mapProviderCompanion.symbol)
                             putTypeArgument(0, binding.keyKey.type)
                             putTypeArgument(1, binding.valueKey.type)
                             putValueArgument(
@@ -549,6 +553,7 @@ class FactoryExpressions(
                             }
 
                         irCall(create).apply {
+                            dispatchReceiver = irGetObject(mapProviderCompanion.symbol)
                             putTypeArgument(0, binding.keyKey.type)
                             putTypeArgument(1, binding.valueKey.type)
                             putValueArgument(
@@ -585,7 +590,7 @@ class FactoryExpressions(
         val dependencyKeys = binding.dependencies
             .map { it.key }
 
-        val dependencies = binding.dependencies
+        val dependencyExpressions = binding.dependencies
             .map { getBindingExpression(BindingRequest(it.key, it.requestType)) }
 
         return providerFieldExpression(binding.key) { parent ->
@@ -595,7 +600,7 @@ class FactoryExpressions(
 
             instanceProvider(
                 irCall(constructor).apply {
-                    dependencies.forEachIndexed { index, dependency ->
+                    dependencyExpressions.forEachIndexed { index, dependency ->
                         putValueArgument(index, dependency(this@providerFieldExpression, parent))
                     }
                 }
@@ -676,6 +681,7 @@ class FactoryExpressions(
                     setProviderCompanion.functions
                         .single { it.name.asString() == "empty" }
                 ).apply {
+                    dispatchReceiver = irGetObject(setProviderCompanion.symbol)
                     putTypeArgument(0, binding.elementKey.type)
                 }
             } else {
@@ -688,6 +694,7 @@ class FactoryExpressions(
                             }
 
                         irCall(create).apply {
+                            dispatchReceiver = irGetObject(setProviderCompanion.symbol)
                             putTypeArgument(0, binding.elementKey.type)
                             putValueArgument(
                                 0,
@@ -703,6 +710,7 @@ class FactoryExpressions(
                             }
 
                         irCall(create).apply {
+                            dispatchReceiver = irGetObject(setProviderCompanion.symbol)
                             putTypeArgument(0, binding.elementKey.type)
                             putValueArgument(
                                 0,

@@ -55,6 +55,7 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.isFakeOverride
@@ -133,6 +134,7 @@ class FactoryTransformer(
             else null
 
             val implementationClass = implementationClass(function, moduleClass, function.file)
+            println("impl ${implementationClass.dump()}")
 
             function.file.addChild(implementationClass)
             (function.file as IrFileImpl).metadata =
