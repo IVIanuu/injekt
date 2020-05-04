@@ -238,6 +238,6 @@ class Key(val type: IrType) {
 
     override fun hashCode(): Int = type.hashCodeWithQualifiers()
 
-    override fun toString(): String = "Key(type=${type.render()})"
+    override fun toString(): String = "${type.getQualifiers()}${type.render()}"
 
 }

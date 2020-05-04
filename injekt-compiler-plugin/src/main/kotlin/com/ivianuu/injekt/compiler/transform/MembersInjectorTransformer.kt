@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
+import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -107,7 +108,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             injectProperties += properties
                 .filter { it.hasAnnotation(InjektFqNames.Inject) }
             superTypes
-                .forEach { it.classOrNull?.owner?.collectInjectorProperties() }
+                .forEach { it.classOrNull?.ensureBound(irProviders)?.owner?.collectInjectorProperties() }
         }
 
         clazz.collectInjectorProperties()

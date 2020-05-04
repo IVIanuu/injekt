@@ -81,10 +81,14 @@ class Graph(
             val implicitBindings = implicitBindingResolvers.flatMap { it(key) }
             binding = implicitBindings.singleOrNull()
             if (binding?.targetScope != null && binding.targetScope !in scopes) {
-                error(
-                    "Scope mismatch binding ${binding.key} " +
-                            "with scope ${binding.targetScope} is not compatible with this component $scopes"
-                )
+                if (parent == null) {
+                    error(
+                        "Scope mismatch binding ${binding.key} " +
+                                "with scope ${binding.targetScope} is not compatible with this component $scopes"
+                    )
+                } else {
+                    binding = null
+                }
             }
         }
 

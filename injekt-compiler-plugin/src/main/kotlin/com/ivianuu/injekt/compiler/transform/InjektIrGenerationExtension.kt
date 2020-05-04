@@ -34,7 +34,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .also { declarationStore.classProviderTransformer = it }
             .visitModuleAndGenerateSymbols()
 
-        // move the module block of @Factory createImplementation { ... } to a function
+        // move the module block of @Factory createImplementation { ... } to a @Module function
         FactoryBlockTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         val moduleTransformer = ModuleTransformer(pluginContext, declarationStore)

@@ -191,10 +191,10 @@ class ChildFactoryBindingResolver(
                             )
                         )
 
-                        if (childFactoryImplementation.moduleClass != null) {
+                        if (childFactoryImplementation.moduleConstructorValueParameter.isInitialized()) {
                             putValueArgument(
                                 1,
-                                irCall(childFactoryImplementation.moduleClass.constructors.single()).apply {
+                                irCall(childFactoryImplementation.moduleClass!!.constructors.single()).apply {
                                     valueParameters.forEachIndexed { index, parameter ->
                                         putValueArgument(
                                             index,

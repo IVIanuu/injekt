@@ -106,7 +106,7 @@ class FactoryImplementation(
         } else null
     }
 
-    val moduleConstructorValueParameter by lazy {
+    val moduleConstructorValueParameter = lazy {
         constructor.addValueParameter(
             "module",
             moduleClass!!.defaultType
@@ -124,7 +124,7 @@ class FactoryImplementation(
                 key = moduleClass.defaultType.asKey(),
                 module = moduleClass,
                 initializerAccessor = {
-                    irGet(moduleConstructorValueParameter)
+                    irGet(moduleConstructorValueParameter.value)
                 }
             )
         },
