@@ -76,7 +76,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 it.name == Name.identifier("inject\$${property.name}")
             } ?: clazz.addFunction {
                 this.name = Name.identifier("inject\$${property.name}")
-                this.returnType = property.backingField!!.type
+                this.returnType = irBuiltIns.unitType
                 visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = clazz.thisReceiver?.copyTo(this)
