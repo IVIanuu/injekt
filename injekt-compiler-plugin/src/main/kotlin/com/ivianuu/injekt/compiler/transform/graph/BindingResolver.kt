@@ -211,31 +211,32 @@ class MembersInjectorBindingResolver(
 
 class AnnotatedClassBindingResolver(
     private val context: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore
+    private val declarationStore: InjektDeclarationStore,
+    private val symbols: InjektSymbols
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
-        val clazz = requestedKey.type.classOrNull
-            ?.ensureBound(context.irProviders)?.owner ?: return emptyList()
-        val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
-            .singleOrNull() ?: return emptyList()
-        val provider = declarationStore.getProvider(clazz)
+        return if (requestedKey.type.isFunction() &&
+            requestedKey.type.classOrFail != symbols.getFunction(0) &&
+            InjektFqNames.Provider in requestedKey.type.getQualifiers()
+        ) {
+            val clazz = requestedKey.type.typeArguments.last().classOrFail.owner
+            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+                .singleOrNull() ?: return emptyList()
+            val provider = declarationStore.getProvider(clazz)
 
-        val constructor = clazz.constructors
-            .single()
+            val constructor = clazz.constructors
+                .single()
 
-        val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
+            val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
-        val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
+            val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-        if (constructor.valueParameters.any {
-                it.hasAnnotation(InjektFqNames.Assisted)
-            }) {
             val dependencies = constructor.valueParameters
                 .filterNot { it.hasAnnotation(InjektFqNames.Assisted) }
                 .map { it.type.asKey() }
                 .map { DependencyRequest(it) }
 
-            return listOf(
+            listOf(
                 AssistedProvisionBindingNode(
                     key = requestedKey,
                     dependencies = dependencies,
@@ -246,11 +247,24 @@ class AnnotatedClassBindingResolver(
                 )
             )
         } else {
+            val clazz = requestedKey.type.classOrNull
+                ?.ensureBound(context.irProviders)?.owner ?: return emptyList()
+            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+                .singleOrNull() ?: return emptyList()
+            val provider = declarationStore.getProvider(clazz)
+
+            val constructor = clazz.constructors
+                .single()
+
+            val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
+
+            val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
+
             val dependencies = constructor.valueParameters
                 .map { it.type.asKey() }
                 .map { DependencyRequest(it) }
 
-            return listOf(
+            listOf(
                 ProvisionBindingNode(
                     key = requestedKey,
                     dependencies = dependencies,
@@ -392,9 +406,13 @@ class LazyOrProviderBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
         return when {
-            requestedType.isFunction() && requestedType.hasAnnotation(InjektFqNames.Lazy) ->
+            requestedType.isFunction() &&
+                    requestedKey.type.classOrFail == symbols.getFunction(0) &&
+                    requestedType.hasAnnotation(InjektFqNames.Lazy) ->
                 listOf(LazyBindingNode(key = requestedKey))
-            requestedType.isFunction() && requestedType.hasAnnotation(InjektFqNames.Provider) ->
+            requestedType.isFunction() &&
+                    requestedKey.type.classOrFail == symbols.getFunction(0) &&
+                    requestedType.hasAnnotation(InjektFqNames.Provider) ->
                 listOf(ProviderBindingNode(key = requestedKey))
             else -> emptyList()
         }

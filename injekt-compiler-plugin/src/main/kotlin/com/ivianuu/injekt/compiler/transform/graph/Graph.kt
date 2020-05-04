@@ -55,7 +55,8 @@ class Graph(
         )
         implicitBindingResolvers += AnnotatedClassBindingResolver(
             context,
-            declarationStore
+            declarationStore,
+            symbols
         )
     }
 
