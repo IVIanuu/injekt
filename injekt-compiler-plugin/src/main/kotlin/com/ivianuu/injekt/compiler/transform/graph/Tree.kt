@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler.transform.graph
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.equalsWithQualifiers
+import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -74,8 +76,13 @@ class DependencyNode(
 
 data class BindingRequest(
     val key: Key,
-    val requestType: RequestType
+    val requestType: RequestType = key.inferRequestType()
 )
+
+fun Key.inferRequestType() = when {
+    type.isFunction() && InjektFqNames.Provider in type.getQualifiers() -> RequestType.Provider
+    else -> RequestType.Instance
+}
 
 enum class RequestType {
     Instance,
@@ -84,10 +91,7 @@ enum class RequestType {
 
 data class DependencyRequest(
     val key: Key,
-    val requestType: RequestType = when {
-        key.type.isFunction() -> RequestType.Provider
-        else -> RequestType.Instance
-    }
+    val requestType: RequestType = key.inferRequestType()
 ) {
     fun asBindingRequest() = BindingRequest(key, requestType)
 }
