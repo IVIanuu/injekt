@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/generator/generator.iml" filepath="$PROJECT_DIR$/generator/generator.iml" group="injekt/generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/injekt.iml" filepath="$PROJECT_DIR$/.idea/injekt.iml" group="injekt" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" group="injekt/injekt-android" />
+      <module fileurl="file://$PROJECT_DIR$/injekt-core/injekt-core.iml" filepath="$PROJECT_DIR$/injekt-core/injekt-core.iml" group="injekt/injekt-core" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.buildSrc.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/comparison/injekt.comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/comparison/injekt.comparison.iml" group="injekt/comparison" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt.injekt-compiler-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-compiler-plugin/injekt.injekt-compiler-plugin.iml" group="injekt/injekt-compiler-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt.injekt-gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-gradle-plugin/injekt.injekt-gradle-plugin.iml" group="injekt/injekt-gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sample/injekt.sample.iml" filepath="$PROJECT_DIR$/.idea/modules/sample/injekt.sample.iml" group="injekt/sample" />
+    </modules>
+  </component>
+</project>
