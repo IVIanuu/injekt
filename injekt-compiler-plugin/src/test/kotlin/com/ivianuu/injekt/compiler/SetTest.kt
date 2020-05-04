@@ -95,4 +95,25 @@ class SetTest {
         assertTrue(set[2]() is CommandC)
     }
 
+    @Test
+    fun testSetOverridesFails() = codegen(
+        """
+        interface TestComponent {
+            val set: Set<Command>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            transient { CommandA() }
+            transient { CommandB() }
+            set<Command> {
+                add<CommandA>()
+                add<CommandA>()
+            }
+        }
+    """
+    ) {
+        assertInternalError()
+    }
+
 }

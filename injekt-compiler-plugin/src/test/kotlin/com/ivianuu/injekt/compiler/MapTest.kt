@@ -96,4 +96,25 @@ class MapTest {
         assertTrue(map[CommandC::class]!!() is CommandC)
     }
 
+    @Test
+    fun testMapOverrideFails() = codegen(
+        """
+        interface TestComponent {
+            val map: Map<String, Command>
+        }
+        
+        @Factory
+        fun create(): TestComponent = createImplementation {
+            transient { CommandA() }
+            transient { CommandB() }
+            map<String, Command> {
+                put<CommandA>("a")
+                put<CommandB>("a")
+            }
+        }
+    """
+    ) {
+        assertInternalError()
+    }
+
 }
