@@ -8,8 +8,8 @@ import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.transform.FactoryTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.transform.TopLevelFactoryTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
@@ -26,62 +26,71 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
-    val factoryTransformer: FactoryTransformer,
-    val factoryExpressions: FactoryExpressions,
+    val parent: Graph?,
+    val factoryImplementation: FactoryImplementation,
+    val factoryTransformer: TopLevelFactoryTransformer,
     val factoryMembers: FactoryMembers,
     factoryImplementationNode: FactoryImplementationNode,
     context: IrPluginContext,
     factoryImplementationModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
-    symbols: InjektSymbols
+    val symbols: InjektSymbols
 ) {
 
     private val scopes = mutableSetOf<FqName>()
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
-    private val mapBindingResolver = MapBindingResolver(factoryTransformer, context, symbols)
-    private val setBindingResolver = SetBindingResolver(context, symbols)
+    private val mapBindingResolver = MapBindingResolver(context, symbols, factoryImplementation)
+    private val setBindingResolver = SetBindingResolver(context, symbols, factoryImplementation)
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     init {
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
-        implicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
+        implicitBindingResolvers += LazyOrProviderBindingResolver(symbols, factoryImplementation)
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
-        implicitBindingResolvers += MembersInjectorBindingResolver(symbols, declarationStore)
+        implicitBindingResolvers += MembersInjectorBindingResolver(
+            symbols,
+            declarationStore,
+            factoryImplementation
+        )
         implicitBindingResolvers += FactoryImplementationBindingResolver(
             factoryImplementationNode
         )
         implicitBindingResolvers += AnnotatedClassBindingResolver(
             context,
             declarationStore,
-            symbols
+            symbols,
+            factoryImplementation
         )
     }
 
     fun getBinding(key: Key): BindingNode {
-        return resolvedBindings.getOrPut(key) {
-            val explicitBindings = explicitBindingResolvers.flatMap { it(key) }
-            if (explicitBindings.size > 1) {
-                error("Multiple bindings found for $key")
-            }
+        var binding = resolvedBindings[key]
+        if (binding != null) return binding
 
-            var binding = explicitBindings.singleOrNull()
-
-            if (binding == null) {
-                val implicitBindings = implicitBindingResolvers.flatMap { it(key) }
-                binding = implicitBindings.singleOrNull() ?: error("No binding found for $key")
-                if (binding.targetScope != null && binding.targetScope !in scopes) {
-                    error(
-                        "Scope mismatch binding ${binding.key} " +
-                                "with scope ${binding.targetScope} is not compatible with this component $scopes"
-                    )
-                }
-            }
-
-            binding
+        val explicitBindings = explicitBindingResolvers.flatMap { it(key) }
+        if (explicitBindings.size > 1) {
+            error("Multiple bindings found for $key")
         }
+
+        binding = explicitBindings.singleOrNull()
+
+        if (binding == null) {
+            val implicitBindings = implicitBindingResolvers.flatMap { it(key) }
+            binding = implicitBindings.singleOrNull()
+            if (binding?.targetScope != null && binding.targetScope !in scopes) {
+                error(
+                    "Scope mismatch binding ${binding.key} " +
+                            "with scope ${binding.targetScope} is not compatible with this component $scopes"
+                )
+            }
+        }
+
+        binding?.let { resolvedBindings[key] = it }
+
+        return binding ?: parent?.getBinding(key) ?: error("No binding found for $key")
     }
 
     private fun addModule(moduleNode: ModuleNode) {
@@ -115,16 +124,10 @@ class Graph(
                             key = Key(function.returnType),
                             initializerAccessor = moduleNode.initializerAccessor.child(field)
                         ),
-                        expressions = factoryExpressions,
-                        members = factoryMembers
+                        members = factoryMembers,
+                        factoryImplementation = factoryImplementation
                     )
                 )
-            }
-
-        functions
-            .filter { it.hasAnnotation(InjektFqNames.AstChildFactory) }
-            .forEach { function ->
-                println("child factory ${function.dump()}")
             }
 
         functions
@@ -214,7 +217,18 @@ class Graph(
             ModuleBindingResolver(
                 moduleNode,
                 descriptor,
-                factoryTransformer.symbols
+                symbols,
+                factoryImplementation
+            )
+        )
+
+        addExplicitBindingResolver(
+            ChildFactoryBindingResolver(
+                factoryTransformer,
+                factoryImplementation,
+                descriptor,
+                symbols,
+                factoryMembers
             )
         )
     }

@@ -9,6 +9,9 @@ class ChildTest {
         """
         class Parent {
             val component = createParent(this)
+            init {
+                Child(this)
+            }
         }
         class Child(val parent: Parent) {
             init {
@@ -39,6 +42,8 @@ class ChildTest {
         
         fun invoke() = Parent()
     """
-    )
+    ) {
+        invokeSingleFile()
+    }
 
 }

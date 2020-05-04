@@ -19,53 +19,9 @@ class InjektDeclarationStore(
 ) {
 
     lateinit var classProviderTransformer: ClassProviderTransformer
-    lateinit var factoryTransformer: FactoryTransformer
+    lateinit var factoryTransformer: TopLevelFactoryTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleTransformer: ModuleTransformer
-
-    /*fun getComponent(key: String): IrClass {
-        return try {
-            componentTransformer.getProcessedComponent(key)
-                ?: throw DeclarationNotFound("Couldn't find for $key")
-        } catch (e: DeclarationNotFound) {
-            try {
-                moduleFragment.files
-                    .flatMap { it.declarations }
-                    .filterIsInstance<IrClass>()
-                    .singleOrNull { it.name.asString().endsWith("$key\$Impl") }
-                    ?.name
-                    ?.asString()
-                    ?.replace("_", ".")
-                    ?.let { fqName ->
-                        moduleFragment.files
-                            .flatMap { it.declarations }
-                            .filterIsInstance<IrClass>()
-                            .singleOrNull {
-                                it.fqNameForIrSerialization.asString() == fqName
-                            }
-                    }
-                    ?: throw DeclarationNotFound("Decls ${moduleFragment.files.flatMap { it.declarations }
-                        .map { it.descriptor.name }}")
-            } catch (e: DeclarationNotFound) {
-                try {
-                    val componentPackage = context.moduleDescriptor
-                        .getPackage(InjektFqNames.InjektModulesPackage)
-
-                    return componentPackage.memberScope
-                        .getContributedDescriptors()
-                        .filterIsInstance<ClassDescriptor>()
-                        .singleOrNull { it.name.asString().endsWith("$key\$Impl") }
-                        ?.name
-                        ?.asString()
-                        ?.replace("_", ".")
-                        ?.let { symbols.getTopLevelClass(FqName(it)).owner }
-                        ?: throw DeclarationNotFound("Found ${componentPackage.memberScope.getClassifierNames()}")
-                } catch (e: DeclarationNotFound) {
-                    throw DeclarationNotFound("Couldn't find component for $key")
-                }
-            }
-        }
-    }*/
 
     fun getProvider(clazz: IrClass): IrClass {
         classProviderTransformer.providersByClass[clazz]?.let { return it }

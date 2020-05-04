@@ -35,7 +35,9 @@ typealias FactoryExpression = IrBuilderWithScope.(() -> IrExpression) -> IrExpre
 class FactoryExpressions(
     private val context: IrPluginContext,
     private val symbols: InjektSymbols,
-    private val members: FactoryMembers
+    private val members: FactoryMembers,
+    private val parent: FactoryExpressions?,
+    private val factoryImplementation: FactoryImplementation
 ) {
 
     // todo remove this circular dep
@@ -78,12 +80,17 @@ class FactoryExpressions(
 
         val binding = graph.getBinding(request.key)
 
+        if (binding.owner != factoryImplementation) {
+            return parent?.getBindingExpression(request)!!
+        }
+
         val expression = when (request.requestType) {
             RequestType.Instance -> {
                 when (binding) {
                     is AssistedProvisionBindingNode -> instanceExpressionForAssistedProvision(
                         binding
                     )
+                    is ChildFactoryBindingNode -> instanceExpressionForChildFactory(binding)
                     is DelegateBindingNode -> instanceExpressionForDelegate(binding)
                     is DependencyBindingNode -> instanceExpressionForDependency(binding)
                     is FactoryImplementationBindingNode -> instanceExpressionForFactoryImplementation(
@@ -103,6 +110,7 @@ class FactoryExpressions(
                     is AssistedProvisionBindingNode -> providerExpressionForAssistedProvision(
                         binding
                     )
+                    is ChildFactoryBindingNode -> providerExpressionForChildFactory(binding)
                     is DelegateBindingNode -> providerExpressionForDelegate(binding)
                     is DependencyBindingNode -> providerExpressionForDependency(binding)
                     is FactoryImplementationBindingNode -> providerExpressionForFactoryImplementation(
@@ -126,6 +134,10 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForAssistedProvision(binding: AssistedProvisionBindingNode): FactoryExpression {
+        return invokeProviderInstanceExpression(binding)
+    }
+
+    private fun instanceExpressionForChildFactory(binding: ChildFactoryBindingNode): FactoryExpression {
         return invokeProviderInstanceExpression(binding)
     }
 
@@ -433,6 +445,23 @@ class FactoryExpressions(
             instanceProvider(
                 irCall(constructor).apply {
                     dependencyExpressions.forEachIndexed { index, dependency ->
+                        putValueArgument(index, dependency(this@providerFieldExpression, parent))
+                    }
+                }
+            )
+        }
+    }
+
+    private fun providerExpressionForChildFactory(binding: ChildFactoryBindingNode): FactoryExpression {
+        val constructor = binding.childFactory.constructors.single()
+
+        val parentExpression = binding.dependencies
+            .map { getBindingExpression(BindingRequest(it.key, it.requestType)) }
+
+        return providerFieldExpression(binding.key) { parent ->
+            instanceProvider(
+                irCall(constructor).apply {
+                    parentExpression.forEachIndexed { index, dependency ->
                         putValueArgument(index, dependency(this@providerFieldExpression, parent))
                     }
                 }

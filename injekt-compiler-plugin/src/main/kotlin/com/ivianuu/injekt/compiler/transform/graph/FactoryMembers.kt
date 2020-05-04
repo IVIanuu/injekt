@@ -25,7 +25,7 @@ class FactoryMembers(
     private val getFunctions = mutableListOf<IrFunction>()
 
     fun addClass(clazz: IrClass) {
-        factoryImplementationNode.factoryImplementation.addChild(clazz)
+        factoryImplementationNode.factoryImplementation.clazz.addChild(clazz)
     }
 
     fun getOrCreateField(
@@ -37,11 +37,12 @@ class FactoryMembers(
             val index = fields
                 .filter { it.value.field.name.asString().startsWith(prefix) }
                 .size
-            val field = factoryImplementationNode.factoryImplementation.addField(
+            val field = factoryImplementationNode.factoryImplementation.clazz.addField(
                 Name.identifier("${prefix}_$index"),
                 key.type
             )
             FactoryField(
+                factoryImplementationNode.factoryImplementation.clazz,
                 field,
                 initializer
             )
@@ -52,13 +53,13 @@ class FactoryMembers(
         key: Key,
         body: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrFunction {
-        return factoryImplementationNode.factoryImplementation.addFunction {
+        return factoryImplementationNode.factoryImplementation.clazz.addFunction {
             val currentGetFunctionIndex = getFunctions.size
             this.name = Name.identifier("get_$currentGetFunctionIndex")
             returnType = key.type
         }.apply {
             dispatchReceiverParameter =
-                factoryImplementationNode.factoryImplementation.thisReceiver!!.copyTo(this)
+                factoryImplementationNode.factoryImplementation.clazz.thisReceiver!!.copyTo(this)
             this.body = DeclarationIrBuilder(context, symbol).run {
                 irExprBody(body(this, this@apply))
             }
@@ -68,6 +69,7 @@ class FactoryMembers(
 }
 
 class FactoryField(
+    val owner: IrClass,
     val field: IrField,
     val initializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
 )

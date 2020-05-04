@@ -40,7 +40,7 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
 
         val moduleTransformer = ModuleTransformer(pluginContext, declarationStore)
             .also { declarationStore.moduleTransformer = it }
-        val factoryTransformer = FactoryTransformer(pluginContext, declarationStore)
+        val factoryTransformer = TopLevelFactoryTransformer(pluginContext, declarationStore)
             .also { declarationStore.factoryTransformer = it }
 
         // transform @Module functions to their ast representation
