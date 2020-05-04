@@ -8,14 +8,14 @@ class ChildTest {
     fun testParentChild() = codegen(
         """
         class Parent {
-            val component = createParent(this)
+            val component = createParent(this).also { it.parent }
             init {
                 Child(this)
             }
         }
         class Child(val parent: Parent) {
             init {
-                parent.component.childFactory(this)
+                parent.component.childFactory(this).also { it.child }
             }
         }
         

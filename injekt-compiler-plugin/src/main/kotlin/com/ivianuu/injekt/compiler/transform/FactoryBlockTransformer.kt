@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -58,13 +59,17 @@ class FactoryBlockTransformer(
                 (factoryFunction.parent as IrDeclarationContainer).addChild(moduleFunction)
                 moduleFunction.parent = factoryFunction.parent
 
-                moduleBlock.function.body = irExprBody(
-                    irCall(moduleFunction).apply {
-                        factoryFunction.valueParameters.forEach {
-                            putValueArgument(it.index, irGet(it))
+                if (factoryFunction.hasAnnotation(InjektFqNames.Factory)) {
+                    moduleBlock.function.body = irExprBody(
+                        irCall(moduleFunction).apply {
+                            factoryFunction.valueParameters.forEach {
+                                putValueArgument(it.index, irGet(it))
+                            }
                         }
-                    }
-                )
+                    )
+                } else {
+                    moduleBlock.function.body = irExprBody(irInjektIntrinsicUnit())
+                }
             }
         }
 

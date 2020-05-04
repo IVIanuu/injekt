@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -175,29 +176,31 @@ class ChildFactoryBindingResolver(
             }
 
             body = irBlockBody {
-                irCall(childFactoryImplementation.constructor).apply {
-                    putValueArgument(
-                        0,
-                        irGetField(
-                            irGet(dispatchReceiverParameter!!),
-                            parentField
-                        )
-                    )
-
-                    if (childFactoryImplementation.moduleClass != null) {
+                +DeclarationIrBuilder(context, symbol).irReturn(
+                    irCall(childFactoryImplementation.constructor).apply {
                         putValueArgument(
-                            1,
-                            irCall(childFactoryImplementation.moduleClass.constructors.single()).apply {
-                                valueParameters.forEachIndexed { index, parameter ->
-                                    putValueArgument(
-                                        index,
-                                        irGet(parameter)
-                                    )
-                                }
-                            }
+                            0,
+                            irGetField(
+                                irGet(dispatchReceiverParameter!!),
+                                parentField
+                            )
                         )
+
+                        if (childFactoryImplementation.moduleClass != null) {
+                            putValueArgument(
+                                1,
+                                irCall(childFactoryImplementation.moduleClass.constructors.single()).apply {
+                                    valueParameters.forEachIndexed { index, parameter ->
+                                        putValueArgument(
+                                            index,
+                                            irGet(parameter)
+                                        )
+                                    }
+                                }
+                            )
+                        }
                     }
-                }
+                )
             }
         }
     }
