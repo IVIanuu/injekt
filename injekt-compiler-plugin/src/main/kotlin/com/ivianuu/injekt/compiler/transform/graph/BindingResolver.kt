@@ -94,7 +94,7 @@ class ChildFactoryBindingResolver(
         val childFactoryImplementation = FactoryImplementation(
             parent = factoryImplementation,
             irParent = factoryImplementation.clazz,
-            name = Name.identifier("child"),
+            name = members.nameForGroup("child"),
             superType = superType,
             moduleClass = moduleClass,
             context = factoryImplementation.context,
@@ -107,7 +107,11 @@ class ChildFactoryBindingResolver(
 
         val childFactory =
             DeclarationIrBuilder(injektTransformer.context, factoryImplementation.clazz.symbol)
-                .childFactory(childFactoryImplementation, key.type)
+                .childFactory(
+                    members.nameForGroup("child_factory"),
+                    childFactoryImplementation,
+                    key.type
+                )
 
         members.addClass(childFactory)
 
@@ -120,10 +124,11 @@ class ChildFactoryBindingResolver(
     }
 
     private fun IrBuilderWithScope.childFactory(
+        name: Name,
         childFactoryImplementation: FactoryImplementation,
         superType: IrType
     ) = buildClass {
-        name = Name.identifier("childFactory")
+        this.name = name
     }.apply clazz@{
         parent = factoryImplementation.clazz
         createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -158,7 +163,7 @@ class ChildFactoryBindingResolver(
         }
 
         addFunction {
-            name = Name.identifier("invoke")
+            this.name = Name.identifier("invoke")
             returnType = childFactoryImplementation.clazz.defaultType
         }.apply {
             dispatchReceiverParameter = thisReceiver!!.copyTo(this)

@@ -45,7 +45,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
         IrGenerationExtension.registerExtension(
             project,
-            InjektIrGenerationExtension(project)
+            InjektIrGenerationExtension()
         )
     }
 }

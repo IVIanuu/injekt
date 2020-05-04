@@ -24,6 +24,15 @@ class FactoryMembers(
 
     private val getFunctions = mutableListOf<IrFunction>()
 
+    private val groupNames = mutableMapOf<String, Int>()
+
+    fun nameForGroup(prefix: String): Name {
+        val index = groupNames.getOrPut(prefix) { 0 }
+        val name = Name.identifier("${prefix}_$index")
+        groupNames[prefix] = index + 1
+        return name
+    }
+
     fun addClass(clazz: IrClass) {
         factoryImplementationNode.factoryImplementation.clazz.addChild(clazz)
     }
@@ -34,11 +43,8 @@ class FactoryMembers(
         initializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
     ): FactoryField {
         return fields.getOrPut(key) {
-            val index = fields
-                .filter { it.value.field.name.asString().startsWith(prefix) }
-                .size
             val field = factoryImplementationNode.factoryImplementation.clazz.addField(
-                Name.identifier("${prefix}_$index"),
+                nameForGroup(prefix),
                 key.type
             )
             FactoryField(

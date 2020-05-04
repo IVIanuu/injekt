@@ -14,9 +14,14 @@ class ChildTest {
             }
         }
         class Child(val parent: Parent) {
+            val component = parent.component.childFactory(this).also { it.child }
             init {
-                parent.component.childFactory(this).also { it.child }
+                Baby(this)
             }
+        }
+        
+        class Baby(val child: Child) {  
+            val component = child.component.babyFactory(this).also { it.baby }
         }
         
         interface ParentComponent {
@@ -26,7 +31,14 @@ class ChildTest {
 
         interface ChildComponent {
             val child: Child
+            val parent: Parent 
+            val babyFactory: @ChildFactory (Baby) -> BabyComponent
+        }
+        
+        interface BabyComponent { 
+            val child: Child
             val parent: Parent
+            val baby: Baby
         }
         
         @Factory
@@ -38,6 +50,12 @@ class ChildTest {
         @ChildFactory
         fun createChild(child: Child): ChildComponent = createImplementation {
             instance(child)
+            childFactory(::createBaby)
+        }
+        
+        @ChildFactory
+        fun createBaby(baby: Baby): BabyComponent = createImplementation {
+            instance(baby)
         }
         
         fun invoke() = Parent()

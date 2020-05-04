@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -199,15 +201,33 @@ class FactoryImplementation(
                         }.apply {
                             overriddenSymbols += declaration.getter!!.symbol
                             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+                            val bindingExpression = factoryExpressions.getBindingExpression(
+                                BindingRequest(
+                                    binding.key,
+                                    RequestType.Instance
+                                )
+                            )
+
+                            val allImplementations = mutableListOf<FactoryImplementation>()
+                            var current: FactoryImplementation? = this@FactoryImplementation
+                            while (current != null) {
+                                allImplementations += current
+                                current = current.parent
+                            }
+                            val implementationWithAccessor =
+                                mutableMapOf<FactoryImplementation, () -> IrExpression>()
+
+                            allImplementations.fold(
+                                { irGet(dispatchReceiverParameter!!) }
+                            ) { acc: () -> IrExpression, impl: FactoryImplementation ->
+                                implementationWithAccessor[impl] = acc
+                                { irGetField(acc(), impl.parentField!!) }
+                            }
+
                             body = irExprBody(
-                                factoryExpressions.getBindingExpression(
-                                        BindingRequest(
-                                            binding.key,
-                                            RequestType.Instance
-                                        )
-                                    )
+                                bindingExpression
                                     .invoke(this@writeClass) {
-                                        irGet(dispatchReceiverParameter!!)
+                                        implementationWithAccessor.getValue(binding.owner)()
                                     }
                             )
                         }

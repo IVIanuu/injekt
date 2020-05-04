@@ -44,7 +44,6 @@ class FactoryExpressions(
     lateinit var graph: Graph
 
     private val bindingExpressions = mutableMapOf<BindingRequest, FactoryExpression>()
-    private val chain = mutableSetOf<BindingRequest>()
 
     private val requirementExpressions = mutableMapOf<RequirementNode, FactoryExpression>()
 
@@ -71,12 +70,6 @@ class FactoryExpressions(
 
     fun getBindingExpression(request: BindingRequest): FactoryExpression {
         bindingExpressions[request]?.let { return it }
-
-        check(request !in chain) {
-            "Circular dep $request"
-        }
-
-        chain += request
 
         val binding = graph.getBinding(request.key)
 
@@ -126,8 +119,6 @@ class FactoryExpressions(
                 }
             }
         }
-
-        chain -= request
 
         bindingExpressions[request] = expression
         return expression
