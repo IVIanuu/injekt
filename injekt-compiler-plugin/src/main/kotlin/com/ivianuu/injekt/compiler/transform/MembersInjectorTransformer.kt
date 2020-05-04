@@ -125,7 +125,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             val fieldsByInjectProperty = injectProperties.associateWith { property ->
                 addField {
                     name = Name.identifier("p${fieldIndex++}")
-                    type = property.backingField!!.type
+                    type = symbols.getFunction(0).typeWith(property.backingField!!.type)
                 }
             }
 
@@ -175,7 +175,14 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             dispatchReceiver = irGet(instanceValueParameter)
                             putValueArgument(
                                 0,
-                                irGetField(irGet(dispatchReceiverParameter!!), field)
+                                irCall(
+                                    symbols.getFunction(0)
+                                        .functions
+                                        .single { it.owner.name.asString() == "invoke" }
+                                ).apply {
+                                    dispatchReceiver =
+                                        irGetField(irGet(dispatchReceiverParameter!!), field)
+                                }
                             )
                         }
                     }

@@ -143,7 +143,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { it.type }
+        .map { it.type.typeArguments.single() }
         .map { DependencyRequest(it.asKey()) },
     null,
     false,
