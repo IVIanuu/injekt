@@ -24,7 +24,7 @@ sealed class MapKey {
     abstract fun IrBuilderWithScope.asExpression(): IrExpression
 }
 
-class ClassKey(val value: IrType) : MapKey() {
+data class ClassKey(val value: IrType) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression {
         return IrClassReferenceImpl(
             UNDEFINED_OFFSET,
@@ -36,14 +36,14 @@ class ClassKey(val value: IrType) : MapKey() {
     }
 }
 
-class IntKey(val value: Int) : MapKey() {
+data class IntKey(val value: Int) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression = irInt(value)
 }
 
-class LongKey(val value: Long) : MapKey() {
+data class LongKey(val value: Long) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression = irLong(value)
 }
 
-class StringKey(val value: String) : MapKey() {
+data class StringKey(val value: String) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression = irString(value)
 }
