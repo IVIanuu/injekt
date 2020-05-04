@@ -46,6 +46,7 @@ class InjektSymbols(val context: IrPluginContext) {
     val assisted = getTopLevelClass(InjektFqNames.Assisted)
 
     val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
+    val doubleCheck = getTopLevelClass(InjektFqNames.DoubleCheck)
     val factory = getTopLevelClass(InjektFqNames.Factory)
 
     val instanceProvider = getTopLevelClass(InjektFqNames.InstanceProvider)
@@ -60,6 +61,7 @@ class InjektSymbols(val context: IrPluginContext) {
     val provider = getTopLevelClass(InjektFqNames.Provider)
     val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
     val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
+    val providerOfLazy = getTopLevelClass(InjektFqNames.ProviderOfLazy)
 
     val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
     val setProvider = getTopLevelClass(InjektFqNames.SetProvider)
@@ -68,14 +70,6 @@ class InjektSymbols(val context: IrPluginContext) {
 
     fun getFunction(parameterCount: Int) = context.builtIns.getFunction(parameterCount)
         .let { context.symbolTable.referenceClass(it).ensureBound(context.irProviders) }
-
-    fun getDoubleCheck(parameterCount: Int) = getTopLevelClass(
-        InjektFqNames.InternalPackage.child(Name.identifier("DoubleCheck$parameterCount"))
-    )
-
-    fun getProviderOfLazy(parameterCount: Int) = getTopLevelClass(
-        InjektFqNames.InternalPackage.child(Name.identifier("ProviderOfLazy$parameterCount"))
-    )
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         context.symbolTable.referenceClass(

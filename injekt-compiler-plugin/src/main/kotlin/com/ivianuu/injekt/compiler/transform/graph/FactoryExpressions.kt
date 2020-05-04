@@ -505,7 +505,7 @@ class FactoryExpressions(
         )
         return providerFieldExpression(binding.key) {
             irCall(
-                symbols.getProviderOfLazy(0)
+                symbols.providerOfLazy
                     .constructors
                     .single()
             ).apply {
@@ -791,7 +791,7 @@ class FactoryExpressions(
 
     private fun IrBuilderWithScope.doubleCheck(provider: IrExpression): IrExpression {
         return irCall(
-            symbols.getDoubleCheck(0)
+            symbols.doubleCheck
                 .constructors
                 .single()
         ).apply { putValueArgument(0, provider) }
