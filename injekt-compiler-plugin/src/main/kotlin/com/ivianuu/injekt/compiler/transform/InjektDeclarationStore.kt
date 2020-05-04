@@ -20,6 +20,7 @@ class InjektDeclarationStore(
 
     lateinit var classProviderTransformer: ClassProviderTransformer
     lateinit var factoryTransformer: FactoryTransformer
+    lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleTransformer: ModuleTransformer
 
     /*fun getComponent(key: String): IrClass {
@@ -75,6 +76,20 @@ class InjektDeclarationStore(
         return memberScope.getContributedDescriptors()
             .filterIsInstance<ClassDescriptor>()
             .single { it.name == InjektNameConventions.getProviderNameForClass(clazz.name) }
+            .let { context.symbolTable.referenceClass(it) }
+            .ensureBound(context.irProviders)
+            .owner
+    }
+
+    fun getMembersInjector(clazz: IrClass): IrClass {
+        membersInjectorTransformer.membersInjectorByClass[clazz]?.let { return it }
+        val memberScope =
+            (clazz.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                ?: (clazz.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
+        return memberScope.getContributedDescriptors()
+            .filterIsInstance<ClassDescriptor>()
+            .single { it.name == InjektNameConventions.getMembersInjectorNameForClass(clazz.name) }
             .let { context.symbolTable.referenceClass(it) }
             .ensureBound(context.irProviders)
             .owner

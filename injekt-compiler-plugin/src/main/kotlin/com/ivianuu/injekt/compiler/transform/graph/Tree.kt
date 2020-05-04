@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -134,6 +135,20 @@ class MapBindingNode(
     val keyKey = Key(key.type.typeArguments[0])
     val valueKey = Key(key.type.typeArguments[1])
 }
+
+class MembersInjectorBindingNode(
+    key: Key,
+    val membersInjector: IrClass
+) : BindingNode(
+    key,
+    membersInjector.constructors.single()
+        .valueParameters
+        .map { it.type }
+        .map { DependencyRequest(it.asKey()) },
+    null,
+    false,
+    null
+)
 
 class ProviderBindingNode(key: Key) : BindingNode(
     key,

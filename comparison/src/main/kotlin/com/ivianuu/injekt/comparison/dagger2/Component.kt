@@ -16,18 +16,28 @@
 
 package com.ivianuu.injekt.comparison.dagger2
 
+import com.ivianuu.injekt.comparison.fibonacci.Fib4
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import dagger.Component
+import dagger.MembersInjector
+import javax.inject.Inject
 import javax.inject.Provider
 
 @Component
 interface Dagger2Component {
     val fib8: Fib8
 
+    val myClassInjector: MembersInjector<MyClass>
+
     @Component.Factory
     interface Factory {
         fun create(): Dagger2Component
     }
+}
+
+class MyClass {
+    @Inject
+    lateinit var fib4: Fib4
 }
 
 @Component

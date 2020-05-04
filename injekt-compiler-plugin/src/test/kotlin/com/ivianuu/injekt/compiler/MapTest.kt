@@ -7,7 +7,7 @@ import junit.framework.Assert.assertTrue
 import org.junit.Test
 import kotlin.reflect.KClass
 
-class ImplementationMapTest {
+class MapTest {
 
     @Test
     fun testMap() = codegen(

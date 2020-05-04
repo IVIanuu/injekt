@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -166,6 +167,24 @@ class ModuleBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return (allBindings + delegateBindings)
             .filter { it.key == requestedKey }
+    }
+}
+
+class MembersInjectorBindingResolver(
+    private val symbols: InjektSymbols,
+    private val declarationStore: InjektDeclarationStore
+) : BindingResolver {
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifiers()) return emptyList()
+        if (requestedKey.type.classOrNull != symbols.getFunction(1)) return emptyList()
+        val target = requestedKey.type.typeArguments.first().classOrFail.owner
+        val membersInjector = declarationStore.getMembersInjector(target)
+        return listOf(
+            MembersInjectorBindingNode(
+                key = requestedKey,
+                membersInjector = membersInjector
+            )
+        )
     }
 }
 

@@ -2,11 +2,6 @@ package com.ivianuu.injekt.internal
 
 class DoubleCheck0<R>(private var delegate: (() -> R)?) : () -> R {
     private var value: Any? = this
-
-    init {
-        println("init double check $this with $delegate")
-    }
-
     override fun invoke(): R {
         var value = this.value
         if (value === this) {

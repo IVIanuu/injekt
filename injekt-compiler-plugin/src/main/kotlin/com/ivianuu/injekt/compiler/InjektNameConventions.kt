@@ -7,6 +7,10 @@ object InjektNameConventions {
         return Name.identifier("${className}_Provider")
     }
 
+    fun getMembersInjectorNameForClass(className: Name): Name {
+        return Name.identifier("${className}_MembersInjector")
+    }
+
     fun getModuleNameForModuleFunction(moduleFunction: Name): Name {
         return Name.identifier("${moduleFunction.asString().capitalize()}_Impl")
     }

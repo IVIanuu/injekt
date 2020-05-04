@@ -49,6 +49,7 @@ class Graph(
         implicitBindingResolvers += LazyOrProviderBindingResolver(symbols)
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
+        implicitBindingResolvers += MembersInjectorBindingResolver(symbols, declarationStore)
         implicitBindingResolvers += FactoryImplementationBindingResolver(
             factoryImplementationNode
         )

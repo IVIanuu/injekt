@@ -25,6 +25,11 @@ class InjektIrGenerationExtension(private val project: Project) : IrGenerationEx
         // write qualifiers of expression to the irTrace
         QualifiedMetadataTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
+        // generate a members injector for each annotated class
+        MembersInjectorTransformer(pluginContext)
+            .also { declarationStore.membersInjectorTransformer = it }
+            .visitModuleAndGenerateSymbols()
+
         // generate a provider for each annotated class
         ClassProviderTransformer(pluginContext)
             .also { declarationStore.classProviderTransformer = it }

@@ -33,7 +33,6 @@ interface InjektErrors {
         val NO_TYPE_PARAMETERS_ON_FACTORY = error()
         @JvmField
         val FACTORY_IMPL_MUST_BE_ABSTRACT = error()
-
         @JvmField
         val IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR = error()
         @JvmField
@@ -42,6 +41,9 @@ interface InjektErrors {
         val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error()
         @JvmField
         val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
+
+        @JvmField
+        val INJECT_MUST_BE_LATEINIT_VAR = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -125,6 +127,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS,
             "Provision functions cannot have type parameters"
+        )
+        map.put(
+            InjektErrors.INJECT_MUST_BE_LATEINIT_VAR,
+            "@Inject property must be lateinit var"
         )
     }
 }

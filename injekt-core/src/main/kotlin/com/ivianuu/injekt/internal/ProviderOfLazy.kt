@@ -3,10 +3,6 @@ package com.ivianuu.injekt.internal
 import com.ivianuu.injekt.Lazy
 
 class ProviderOfLazy0<R>(private val provider: () -> R) : () -> @Lazy () -> R {
-    init {
-        println("init provider of lazy $provider")
-    }
-
     override fun invoke() = DoubleCheck0(provider)
 }
 
