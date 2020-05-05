@@ -6,6 +6,7 @@ import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.MembersInjector
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.childFactory
 import com.ivianuu.injekt.createImplementation
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
@@ -33,6 +34,6 @@ interface AppComponent {
 fun createAppComponent(app: App): AppComponent = createImplementation {
     instance(app)
     dataModule()
-    mainActivityFactoryModule()
+    childFactory(::createMainActivityComponent)
     scope<ApplicationScoped>()
 }

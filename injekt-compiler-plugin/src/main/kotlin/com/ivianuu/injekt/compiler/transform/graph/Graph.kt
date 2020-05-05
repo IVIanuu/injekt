@@ -45,6 +45,8 @@ class Graph(
     private val setBindingResolver = SetBindingResolver(context, symbols, factoryImplementation)
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
+    private val chain = mutableSetOf<Key>()
+
     init {
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(symbols, factoryImplementation)
@@ -70,6 +72,11 @@ class Graph(
         var binding = resolvedBindings[key]
         if (binding != null) return binding
 
+        check(key !in chain) {
+            "Circular dependency $key"
+        }
+        chain += key
+
         val explicitBindings = explicitBindingResolvers.flatMap { it(key) }
         if (explicitBindings.size > 1) {
             error("Multiple bindings found for $key")
@@ -94,7 +101,16 @@ class Graph(
 
         binding?.let { resolvedBindings[key] = it }
 
+        chain -= key
+
         return binding ?: parent?.getBinding(key) ?: error("No binding found for $key")
+    }
+
+    fun validate(keys: List<Key>) {
+        keys.forEach {
+            val binding = getBinding(it)
+            validate(binding.dependencies.map { it.key })
+        }
     }
 
     private fun addModule(moduleNode: ModuleNode) {

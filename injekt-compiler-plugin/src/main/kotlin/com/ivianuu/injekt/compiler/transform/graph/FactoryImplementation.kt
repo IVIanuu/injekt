@@ -131,43 +131,21 @@ class FactoryImplementation(
         declarationStore = declarationStore,
         symbols = symbols,
         factoryMembers = factoryMembers
-    )
+    ).also { factoryExpressions.graph = it }
 
+    private val dependencyRequests = mutableMapOf<IrDeclaration, Key>()
 
     init {
-        factoryExpressions.graph = graph
-        DeclarationIrBuilder(context, clazz.symbol).writeClass()
+        collectDependencyRequests()
+        graph.validate(dependencyRequests.values.toList())
+
+        DeclarationIrBuilder(context, clazz.symbol).run {
+            implementDependencyRequests()
+            writeConstructor()
+        }
     }
 
-    private fun IrBuilderWithScope.writeClass(): Unit = clazz.run clazz@{
-        val dependencyRequests = mutableMapOf<IrDeclaration, Key>()
-
-        fun IrClass.collectDependencyRequests() {
-            for (declaration in declarations) {
-                when (declaration) {
-                    is IrFunction -> {
-                        if (declaration !is IrConstructor &&
-                            declaration.dispatchReceiverParameter?.type != context.irBuiltIns.anyType &&
-                            !declaration.isFakeOverride
-                        )
-                            dependencyRequests[declaration] = declaration.returnType.asKey()
-                    }
-                    is IrProperty -> {
-                        if (!declaration.isFakeOverride)
-                            dependencyRequests[declaration] =
-                                declaration.getter!!.returnType.asKey()
-                    }
-                }
-            }
-
-            superTypes
-                .mapNotNull { it.classOrNull?.owner }
-                .forEach { it.collectDependencyRequests() }
-        }
-
-        val superType = superTypes.single().classOrFail.owner
-        superType.collectDependencyRequests()
-
+    private fun IrBuilderWithScope.implementDependencyRequests(): Unit = clazz.run clazz@{
         dependencyRequests.forEach { (declaration, key) ->
             val binding = graph.getBinding(key)
             when (declaration) {
@@ -186,7 +164,7 @@ class FactoryImplementation(
                                         RequestType.Instance
                                     )
                                 )
-                                .invoke(this@writeClass) {
+                                .invoke(this@implementDependencyRequests) {
                                     irGet(dispatchReceiverParameter!!)
                                 }
                         )
@@ -226,7 +204,7 @@ class FactoryImplementation(
 
                             body = irExprBody(
                                 bindingExpression
-                                    .invoke(this@writeClass) {
+                                    .invoke(this@implementDependencyRequests) {
                                         implementationWithAccessor.getValue(binding.owner)()
                                     }
                             )
@@ -235,53 +213,82 @@ class FactoryImplementation(
                 }
             }
         }
+    }
 
-        constructor.apply {
-            body = irBlockBody {
-                +IrDelegatingConstructorCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    context.irBuiltIns.unitType,
-                    if (superType.kind == ClassKind.CLASS)
-                        superType.constructors.single { it.valueParameters.isEmpty() }
-                            .symbol
-                    else context.irBuiltIns.anyClass.constructors.single()
-                )
-                +IrInstanceInitializerCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
-
-                if (this@FactoryImplementation.parentField != null) {
-                    +irSetField(
-                        irGet(thisReceiver!!),
-                        this@FactoryImplementation.parentField!!,
-                        irGet(parentConstructorValueParameter!!)
-                    )
-                }
-
-                var lastRoundFields: Map<Key, FactoryField>? = null
-                while (true) {
-                    val fieldsToInitialize = factoryMembers.fields
-                        .filterKeys { it !in factoryMembers.initializedFields }
-                    if (fieldsToInitialize.isEmpty()) {
-                        break
-                    } else if (lastRoundFields == fieldsToInitialize) {
-                        error("Initializing error ${lastRoundFields.keys}")
+    private fun collectDependencyRequests() {
+        fun IrClass.collectDependencyRequests() {
+            for (declaration in declarations) {
+                when (declaration) {
+                    is IrFunction -> {
+                        if (declaration !is IrConstructor &&
+                            declaration.dispatchReceiverParameter?.type != context.irBuiltIns.anyType &&
+                            !declaration.isFakeOverride
+                        )
+                            dependencyRequests[declaration] = declaration.returnType.asKey()
                     }
-                    lastRoundFields = fieldsToInitialize
+                    is IrProperty -> {
+                        if (!declaration.isFakeOverride)
+                            dependencyRequests[declaration] =
+                                declaration.getter!!.returnType.asKey()
+                    }
+                }
+            }
 
-                    fieldsToInitialize.forEach { (key, field) ->
-                        field.initializer(this) { irGet(thisReceiver!!) }?.let { initExpr ->
-                            +irSetField(
-                                irGet(thisReceiver!!),
-                                field.field,
-                                initExpr
-                            )
-                            factoryMembers.initializedFields += key
-                        }
+            superTypes
+                .mapNotNull { it.classOrNull?.owner }
+                .forEach { it.collectDependencyRequests() }
+        }
+
+        val superType = clazz.superTypes.single().classOrFail.owner
+        superType.collectDependencyRequests()
+    }
+
+    private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
+        val superType = clazz.superTypes.single().classOrFail.owner
+        body = irBlockBody {
+            +IrDelegatingConstructorCallImpl(
+                UNDEFINED_OFFSET,
+                UNDEFINED_OFFSET,
+                context.irBuiltIns.unitType,
+                if (superType.kind == ClassKind.CLASS)
+                    superType.constructors.single { it.valueParameters.isEmpty() }
+                        .symbol
+                else context.irBuiltIns.anyClass.constructors.single()
+            )
+            +IrInstanceInitializerCallImpl(
+                UNDEFINED_OFFSET,
+                UNDEFINED_OFFSET,
+                clazz.symbol,
+                context.irBuiltIns.unitType
+            )
+
+            if (this@FactoryImplementation.parentField != null) {
+                +irSetField(
+                    irGet(clazz.thisReceiver!!),
+                    this@FactoryImplementation.parentField!!,
+                    irGet(parentConstructorValueParameter!!)
+                )
+            }
+
+            var lastRoundFields: Map<Key, FactoryField>? = null
+            while (true) {
+                val fieldsToInitialize = factoryMembers.fields
+                    .filterKeys { it !in factoryMembers.initializedFields }
+                if (fieldsToInitialize.isEmpty()) {
+                    break
+                } else if (lastRoundFields == fieldsToInitialize) {
+                    error("Initializing error ${lastRoundFields.keys}")
+                }
+                lastRoundFields = fieldsToInitialize
+
+                fieldsToInitialize.forEach { (key, field) ->
+                    field.initializer(this) { irGet(clazz.thisReceiver!!) }?.let { initExpr ->
+                        +irSetField(
+                            irGet(clazz.thisReceiver!!),
+                            field.field,
+                            initExpr
+                        )
+                        factoryMembers.initializedFields += key
                     }
                 }
             }
