@@ -40,7 +40,7 @@ class FactoryMembers(
     fun getOrCreateField(
         key: Key,
         prefix: String,
-        initializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
+        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?
     ): FactoryField {
         return fields.getOrPut(key) {
             val field = factoryImplementationNode.factoryImplementation.clazz.addField(
@@ -77,5 +77,5 @@ class FactoryMembers(
 class FactoryField(
     val owner: IrClass,
     val field: IrField,
-    val initializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
+    val initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?
 )
