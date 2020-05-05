@@ -46,24 +46,25 @@ class ModuleChecker : CallChecker, DeclarationChecker {
     ) {
         val resulting = resolvedCall.resultingDescriptor
         if (resulting !is FunctionDescriptor ||
-            !resulting.annotations.hasAnnotation(InjektFqNames.Module)
+            (!resulting.annotations.hasAnnotation(InjektFqNames.Module) &&
+                    !resulting.annotations.hasAnnotation(InjektFqNames.Declaration))
         ) return
-        checkModuleInvocations(resolvedCall, reportOn, context)
+        checkInvocations(resolvedCall, reportOn, context)
     }
 
-    private fun checkModuleInvocations(
+    private fun checkInvocations(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
+        val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
             it.annotations.hasAnnotation(InjektFqNames.Module) ||
                     it.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     it.annotations.hasAnnotation(InjektFqNames.ChildFactory)
         }
 
         when {
-            enclosingModuleFunction != null -> {
+            enclosingInjektDslFunction != null -> {
                 var isConditional = false
 
                 var walker: PsiElement? = resolvedCall.call.callElement
@@ -87,14 +88,14 @@ class ModuleChecker : CallChecker, DeclarationChecker {
 
                 if (isConditional) {
                     context.trace.report(
-                        InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE.on(reportOn)
+                        InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES.on(reportOn)
                     )
                 }
 
 
                 if (context.scope.parentsWithSelf.any {
                         it.isScopeForDefaultParameterValuesOf(
-                            enclosingModuleFunction
+                            enclosingInjektDslFunction
                         )
                     }) {
                     context.trace.report(

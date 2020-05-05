@@ -12,7 +12,7 @@ interface InjektErrors {
         @JvmField
         val FORBIDDEN_MODULE_INVOCATION = error()
         @JvmField
-        val CONDITIONAL_NOT_ALLOWED_IN_MODULE = error()
+        val CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES = error()
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
         @JvmField
@@ -71,8 +71,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Only @Factory, @ChildFactory or @Module functions can invoke @Module functions"
         )
         map.put(
-            InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE,
-            "Conditional logic is not allowed around a @Module function call"
+            InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES,
+            "Conditional logic is not allowed inside @Factory, @ChildFactory and @Module functions"
         )
         map.put(
             InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE,
