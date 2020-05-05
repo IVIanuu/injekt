@@ -18,8 +18,9 @@ class AssistedTest {
         )
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             instance(Foo())
+            return createImpl()
         }
     """
     ) {
@@ -36,11 +37,10 @@ class AssistedTest {
         class Dep(val assisted: String, val foo: Foo)
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { Foo() }
-            transient {
-                Dep(it.component1(), get())
-            }
+            transient { Dep(it.component1(), get()) }
+            return createImpl()
         }
     """
     ) {

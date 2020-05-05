@@ -128,7 +128,7 @@ class ModuleTransformer(
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Module)
-                    && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createImplementation"
+                    && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createImpl"
                     && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createInstance"
                 ) {
                     moduleFunctions += declaration

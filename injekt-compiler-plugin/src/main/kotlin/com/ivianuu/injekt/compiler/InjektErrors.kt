@@ -10,13 +10,13 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 interface InjektErrors {
     companion object {
         @JvmField
-        val MODULE_INVOCATION_IN_NON_MODULE = error()
+        val FORBIDDEN_MODULE_INVOCATION = error()
         @JvmField
         val CONDITIONAL_NOT_ALLOWED_IN_MODULE = error()
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
         @JvmField
-        val CREATE_IMPLEMENTATION_INVOCATION_WITHOUT_FACTORY = error()
+        val CREATE_IMPl_INVOCATION_WITHOUT_FACTORY = error()
         @JvmField
         val UNSUPPORTED_MAP_KEY_TYPE = error()
         @JvmField
@@ -26,7 +26,7 @@ interface InjektErrors {
         @JvmField
         val NOT_A_CHILD_FACTORY = error()
         @JvmField
-        val ONLY_CREATE_ALLOWED = error()
+        val LAST_STATEMENT_MUST_BE_CREATE = error()
         @JvmField
         val FACTORY_MUST_BE_STATIC = error()
         @JvmField
@@ -64,9 +64,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
 
     init {
         map.put(
-            InjektErrors.MODULE_INVOCATION_IN_NON_MODULE,
-            "Functions which invoke @Module functions must be marked with the @Module " +
-                    "annotation"
+            InjektErrors.FORBIDDEN_MODULE_INVOCATION,
+            "Only @Factory, @ChildFactory or @Module functions can invoke @Module functions"
         )
         map.put(
             InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE,
@@ -77,8 +76,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "@Module functions cannot return anything"
         )
         map.put(
-            InjektErrors.CREATE_IMPLEMENTATION_INVOCATION_WITHOUT_FACTORY,
-            "createImplementation can only be called from within a @Factory or @ChildFactory function"
+            InjektErrors.CREATE_IMPl_INVOCATION_WITHOUT_FACTORY,
+            "createImpl can only be called from within a @Factory or @ChildFactory function"
         )
 
         map.put(
@@ -99,12 +98,12 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "Not a @ChildFactory"
         )
         map.put(
-            InjektErrors.ONLY_CREATE_ALLOWED,
-            "Factories must have exact 1 statement: either createImplementation or createInstance"
+            InjektErrors.LAST_STATEMENT_MUST_BE_CREATE,
+            "A factories last statement must be either a createImpl() or a createInstance() call"
         )
         map.put(
             InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT,
-            "createImplementation result types must be a interface or a abstract class"
+            "createImpl result types must be a interface or a abstract class"
         )
         map.put(
             InjektErrors.FACTORY_MUST_BE_STATIC,
@@ -116,7 +115,7 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         )
         map.put(
             InjektErrors.IMPL_CANNOT_CONTAIN_VARS,
-            "createImplementation result types cannot contain mutable properties"
+            "createImpl result types cannot contain mutable properties"
         )
         map.put(
             InjektErrors.IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR,

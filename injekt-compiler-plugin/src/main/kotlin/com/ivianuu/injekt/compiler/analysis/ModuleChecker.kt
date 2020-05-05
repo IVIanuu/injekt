@@ -239,7 +239,8 @@ class ModuleChecker : CallChecker, DeclarationChecker,
         context: CallCheckerContext
     ) {
         val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
-            analyze(context.trace, it)
+            analyze(context.trace, it) || it.annotations.hasAnnotation(InjektFqNames.Factory) ||
+                    it.annotations.hasAnnotation(InjektFqNames.ChildFactory)
         }
 
         when {
@@ -290,7 +291,7 @@ class ModuleChecker : CallChecker, DeclarationChecker,
             }
             else -> {
                 context.trace.report(
-                    InjektErrors.MODULE_INVOCATION_IN_NON_MODULE.on(reportOn)
+                    InjektErrors.FORBIDDEN_MODULE_INVOCATION.on(reportOn)
                 )
             }
         }

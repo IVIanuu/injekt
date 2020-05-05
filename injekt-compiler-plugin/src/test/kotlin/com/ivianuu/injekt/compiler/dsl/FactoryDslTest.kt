@@ -8,30 +8,30 @@ import org.junit.Test
 class FactoryDslTest {
 
     @Test
-    fun testCreateImplementationInAFactory() =
+    fun testCreateImplInAFactory() =
         codegen(
             """
-        @Factory fun factory() = createImplementation<TestComponent>()
+        @Factory fun factory() = createImpl<TestComponent>()
     """
         ) {
             assertOk()
         }
 
     @Test
-    fun testCreateImplementationInAChildFactory() =
+    fun testCreateImplInAChildFactory() =
         codegen(
             """
-        @ChildFactory fun factory() = createImplementation<TestComponent>()
+        @ChildFactory fun factory() = createImpl<TestComponent>()
     """
         ) {
             assertOk()
         }
 
     @Test
-    fun testCreateImplementationCannotBeCalledOutsideOfAFactory() =
+    fun testCreateImplCannotBeCalledOutsideOfAFactory() =
         codegen(
             """
-        fun nonFactory() = createImplementation<TestComponent>()
+        fun nonFactory() = createImpl<TestComponent>()
     """
         ) {
             assertCompileError("factory")
@@ -41,7 +41,7 @@ class FactoryDslTest {
     fun testFactoryWithCreateExpression() = codegen(
         """
         @Factory
-        fun exampleFactory(): TestComponent = createImplementation()
+        fun exampleFactory(): TestComponent = createImpl()
     """
     ) {
         assertOk()
@@ -53,7 +53,7 @@ class FactoryDslTest {
             """
         @Factory
         fun exampleFactory(): TestComponent {
-            return createImplementation()
+            return createImpl()
         }
     """
         ) {
@@ -67,11 +67,11 @@ class FactoryDslTest {
         @Factory
         fun exampleFactory(): TestComponent {
             println()
-            return createImplementation()
+            return createImpl()
         }
     """
         ) {
-            assertCompileError("statement")
+            assertOk()
         }
 
     @Test
@@ -90,7 +90,7 @@ class FactoryDslTest {
         """
         abstract class Impl
         @Factory
-        fun factory(): Impl = createImplementation()
+        fun factory(): Impl = createImpl()
     """
     ) {
         assertOk()
@@ -101,7 +101,7 @@ class FactoryDslTest {
         """
         abstract class Impl(p0: String)
         @Factory
-        fun factory(): Impl = createImplementation()
+        fun factory(): Impl = createImpl()
     """
     ) {
         assertCompileError("empty")
@@ -112,7 +112,7 @@ class FactoryDslTest {
         """
         interface Impl
         @Factory
-        fun factory(): Impl = createImplementation()
+        fun factory(): Impl = createImpl()
     """
     ) {
         assertOk()
@@ -123,7 +123,7 @@ class FactoryDslTest {
         """
         class Impl
         @Factory
-        fun factory(): Impl = createImplementation()
+        fun factory(): Impl = createImpl()
     """
     ) {
         assertCompileError("abstract")
@@ -134,7 +134,7 @@ class FactoryDslTest {
         """
         class Impl
         @Factory
-        fun <T> factory(): Impl = createImplementation()
+        fun <T> factory(): Impl = createImpl()
     """
     ) {
         assertCompileError("type parameter")
@@ -148,7 +148,7 @@ class FactoryDslTest {
             var state: String
         }
         @Factory
-        fun <T> factory(): Impl = createImplementation()
+        fun <T> factory(): Impl = createImpl()
     """
         ) {
             assertCompileError("mutable")
@@ -162,7 +162,7 @@ class FactoryDslTest {
             fun provisionFunction(p0: String): String
         }
         @Factory
-        fun <T> factory(): Impl = createImplementation()
+        fun <T> factory(): Impl = createImpl()
     """
         ) {
             assertCompileError("parameters")
@@ -172,7 +172,7 @@ class FactoryDslTest {
     fun testStaticFactoryOk() = codegen(
         """
         @Factory
-        fun factory(): TestComponent = createImplementation()
+        fun factory(): TestComponent = createImpl()
     """
     ) {
         assertOk()
@@ -183,7 +183,7 @@ class FactoryDslTest {
         """
         object Object {
             @Factory
-            fun factory(): TestComponent = createImplementation()
+            fun factory(): TestComponent = createImpl()
         }
     """
     ) {
@@ -195,7 +195,7 @@ class FactoryDslTest {
         """
         class Class {
             @Factory
-            fun factory(): TestComponent = createImplementation()
+            fun factory(): TestComponent = createImpl()
         }
     """
     ) {
@@ -206,7 +206,7 @@ class FactoryDslTest {
     fun testCannotInvokeChildFactories() = codegen(
         """
             @ChildFactory
-            fun factory(): TestComponent = createImplementation()
+            fun factory(): TestComponent = createImpl()
             
             fun invoke() = factory()
     """
@@ -218,7 +218,7 @@ class FactoryDslTest {
     fun testCanReferenceChildFactories() = codegen(
         """
             @ChildFactory
-            fun factory(): TestComponent = createImplementation()
+            fun factory(): TestComponent = createImpl()
             
             fun invoke() = ::factory
     """

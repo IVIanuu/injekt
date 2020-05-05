@@ -6,7 +6,7 @@ import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.MembersInjector
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.createImplementation
+import com.ivianuu.injekt.createImpl
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 
@@ -36,8 +36,8 @@ annotation class ActivityScoped
 class MainViewModel(private val repo: Repo)
 
 @ChildFactory
-fun createMainActivityComponent(mainActivity: MainActivity): MainActivityComponent =
-    createImplementation {
-        scope<ActivityScoped>()
-        instance(mainActivity)
-    }
+fun createMainActivityComponent(mainActivity: MainActivity): MainActivityComponent {
+    scope<ActivityScoped>()
+    instance(mainActivity)
+    return createImpl()
+}

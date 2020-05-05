@@ -21,9 +21,10 @@ class MembersInjectorTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { Foo() }
             scoped { Bar(get()) }
+            return createImpl()
         }
         
         fun invoke() { 

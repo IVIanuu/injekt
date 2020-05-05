@@ -16,7 +16,7 @@ class SetTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -25,6 +25,7 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
+            return createImpl()
         }
         
         fun invoke() = create().set
@@ -45,7 +46,7 @@ class SetTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -54,6 +55,7 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
+            return createImpl()
         }
         
         fun invoke() = create().set
@@ -74,7 +76,7 @@ class SetTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -83,6 +85,7 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
+            return createImpl()
         }
         
         fun invoke() = create().set
@@ -103,8 +106,9 @@ class SetTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             set<Command>()
+            return createImpl()
         }
         
         fun invoke() = create().set
@@ -122,11 +126,12 @@ class SetTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
+            return createImpl()
         }
         
         fun invoke() = create().set
@@ -144,13 +149,14 @@ class SetTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             set<Command> {
                 add<CommandA>()
                 add<CommandA>()
             }
+            return createImpl()
         }
     """
     ) {

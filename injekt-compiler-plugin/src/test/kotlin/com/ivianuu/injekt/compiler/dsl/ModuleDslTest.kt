@@ -12,7 +12,7 @@ class ModuleDslTest {
         """
         @ChildFactory
         fun factory(): TestComponent {
-            return createImplementation()
+            return createImpl()
         }
         
         @Module
@@ -37,58 +37,6 @@ class ModuleDslTest {
     """
     ) {
         assertCompileError("@ChildFactory")
-    }
-
-    //@Test
-    fun testModuleDescriptor() = codegen(
-        """ 
-        @Module
-        fun <T> other(instance: T) {
-        }
-        
-        interface Dependency
-        
-        @ChildFactory
-        fun myChildFactory(): TestComponent = createImplementation()
-        
-        @Module
-        fun module(dependency: Dependency) {
-            other("")
-            
-            instance("")
-            
-            dependency(dependency)
-            
-            childFactory(::myChildFactory)
-            
-            @TestQualifier1
-            transient { (p0: String, p1: String) ->
-                get<Int>().toString()
-            }
-            
-            alias<@TestQualifier1 String, @TestQualifier2 Any>()
-            
-            @TestQualifier1
-            map<kotlin.reflect.KClass<*>, String> {
-                put<@TestQualifier1 String>(String::class)
-            }
-            
-            @TestQualifier1
-            set<String> {
-                add<@TestQualifier1 String>()
-            }
-        }
-    """
-    ) {
-        assertOk()
-        val descriptorClass = classLoader.loadClass("module_Impl").declaredClasses
-            .single { it.name == "module_Impl\$Descriptor" }
-        println(descriptorClass)
-        /*val methods = descriptorClass.declaredMethods
-        methods[0].let {
-            assertEquals(0, it.parameterCount)
-        }*/
-
     }
 
     @Test
@@ -121,6 +69,36 @@ class ModuleDslTest {
                 module()
             }
             @Module fun module() {}
+        """
+        ) {
+            assertOk()
+        }
+
+    @Test
+    fun testModuleInvocationInFactoryAllowed() =
+        codegen(
+            """
+                interface TestComponent
+            @Module fun module() {}
+            @Factory fun factory(): TestComponent { 
+                module()
+                return createImpl() 
+            }
+        """
+        ) {
+            assertOk()
+        }
+
+    @Test
+    fun testModuleInvocationInChildFactoryAllowed() =
+        codegen(
+            """
+                interface TestComponent
+            @Module fun module() {}
+            @ChildFactory fun factory(): TestComponent { 
+                module()
+                return createImpl() 
+            }
         """
         ) {
             assertOk()

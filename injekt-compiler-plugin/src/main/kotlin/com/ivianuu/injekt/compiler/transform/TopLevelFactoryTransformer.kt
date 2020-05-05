@@ -14,8 +14,6 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
@@ -45,13 +43,7 @@ class TopLevelFactoryTransformer(
 
         factoryFunctions.forEach { function ->
             DeclarationIrBuilder(context, function.symbol).run {
-                val moduleCall = function.body?.statements?.single()
-                    ?.let { (it as? IrReturn)?.value }
-                    ?.let { (it as? IrCall)?.getValueArgument(0) as? IrFunctionExpression }
-                    ?.function
-                    ?.body
-                    ?.statements
-                    ?.single() as? IrCall
+                val moduleCall = function.body?.statements?.single() as? IrCall
 
                 val moduleFqName = moduleCall?.symbol?.owner?.fqNameForIrSerialization
                     ?.parent()

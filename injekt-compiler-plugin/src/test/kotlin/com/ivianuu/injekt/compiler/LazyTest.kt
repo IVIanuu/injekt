@@ -15,8 +15,9 @@ class LazyTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             transient { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().lazy
@@ -34,8 +35,9 @@ class LazyTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             scoped { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().lazy
@@ -53,8 +55,9 @@ class LazyTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             @TestQualifier1 transient { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().lazy
@@ -71,8 +74,9 @@ class LazyTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             transient { Foo() }
+            return createImpl()
         }
         
         val component = create()

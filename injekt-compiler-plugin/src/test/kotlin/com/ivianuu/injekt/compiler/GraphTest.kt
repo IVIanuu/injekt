@@ -12,8 +12,9 @@ class GraphTest {
         }
 
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { Bar(get()) }
+            return createImpl()
         }
         """
     ) {
@@ -28,9 +29,10 @@ class GraphTest {
         }
 
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { Foo() }
             transient { Foo() }
+            return createImpl()
         }
         """
     ) {
@@ -47,7 +49,7 @@ class GraphTest {
         @Transient class A(b: B)
         @Transient class B(a: A)
 
-        @Factory fun create(): TestComponent = createImplementation()
+        @Factory fun create(): TestComponent = createImpl()
     """
     ) {
         assertInternalError("circular")
@@ -64,8 +66,9 @@ class GraphTest {
         class Dep
 
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             scope<TestScope>()
+            return createImpl()
         }
         """
     ) {

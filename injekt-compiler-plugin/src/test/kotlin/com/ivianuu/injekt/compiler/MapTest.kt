@@ -17,7 +17,7 @@ class MapTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -26,6 +26,7 @@ class MapTest {
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
             }
+            return createImpl()
         }
         
         fun invoke() = create().map
@@ -46,7 +47,7 @@ class MapTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -55,6 +56,7 @@ class MapTest {
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
             }
+            return createImpl()
         }
         
         fun invoke() = create().map
@@ -75,7 +77,7 @@ class MapTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -84,6 +86,7 @@ class MapTest {
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
             }
+            return createImpl()
         }
         
         fun invoke() = create().map
@@ -104,8 +107,9 @@ class MapTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             map<kotlin.reflect.KClass<out Command>, Command>()
+            return createImpl()
         }
         
         fun invoke() = create().map
@@ -123,11 +127,12 @@ class MapTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             map<kotlin.reflect.KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
+            return createImpl()
         }
         
         fun invoke() = create().map
@@ -146,13 +151,14 @@ class MapTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { CommandA() }
             transient { CommandB() }
             map<String, Command> {
                 put<CommandA>("a")
                 put<CommandB>("a")
             }
+            return createImpl()
         }
     """
     ) {

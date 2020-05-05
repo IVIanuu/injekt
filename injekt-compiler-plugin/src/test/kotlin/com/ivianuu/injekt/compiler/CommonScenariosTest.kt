@@ -30,12 +30,13 @@ class CommonScenariosTest {
         }
         
         @Factory
-        fun createAppComponent(): AppComponent = createImplementation {
+        fun createAppComponent(): AppComponent {
             transient { Foo() }
             map<String, @Provider (Context) -> Worker> {
                 put<@Provider (Context) -> WorkerA>("a")
                 put<@Provider (Context) -> WorkerB>("b")
             }
+            return createImpl()
         }
         
         class App {

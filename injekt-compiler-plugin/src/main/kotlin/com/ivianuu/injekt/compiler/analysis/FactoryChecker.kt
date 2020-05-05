@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtCallableReferenceExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -48,7 +47,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 ?.takeIf { it.kind != ClassKind.OBJECT }
                 ?.let { context.trace.report(InjektErrors.FACTORY_MUST_BE_STATIC.on(declaration)) }
 
-            checkFactoryFunctionHasOnlyCreateImplementationStatement(
+            checkFactoryFunctionHasOnlyCreateImplStatement(
                 declaration as KtFunction,
                 descriptor,
                 context
@@ -79,8 +78,8 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                     context.trace.report(InjektErrors.NOT_A_CHILD_FACTORY.on(reportOn))
                 }
             }
-            "com.ivianuu.injekt.createImplementation" -> {
-                checkCreateImplementationInvocation(resolvedCall, reportOn, context)
+            "com.ivianuu.injekt.createImpl" -> {
+                checkCreateImplInvocation(resolvedCall, reportOn, context)
             }
         }
 
@@ -91,24 +90,24 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         }
     }
 
-    private fun checkFactoryFunctionHasOnlyCreateImplementationStatement(
+    private fun checkFactoryFunctionHasOnlyCreateImplStatement(
         element: KtFunction,
         descriptor: FunctionDescriptor,
         context: DeclarationCheckerContext
     ) {
         fun report() {
-            context.trace.report(InjektErrors.ONLY_CREATE_ALLOWED.on(element))
+            context.trace.report(InjektErrors.LAST_STATEMENT_MUST_BE_CREATE.on(element))
         }
 
-        val expression = if (element.bodyExpression != null) element.bodyExpression else
-            element.bodyBlockExpression?.statements?.singleOrNull()
+        val statements = element.bodyBlockExpression?.statements
+            ?: listOfNotNull(element.bodyExpression)
 
-        val returnedExpression = when (expression) {
-            is KtBlockExpression -> expression.statements.singleOrNull()
-                ?.let { it as? KtReturnExpression }?.returnedExpression
-            is KtReturnExpression -> expression.returnedExpression
-            else -> expression
+        val returnedExpression = when (val lastStatement = statements.lastOrNull()) {
+            is KtReturnExpression -> lastStatement.returnedExpression
+            is KtCallExpression -> lastStatement
+            else -> null
         }
+
         if (returnedExpression !is KtCallExpression) {
             report()
             return
@@ -120,14 +119,14 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             return
         }
 
-        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImplementation" ||
-            resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImplementation"
+        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
+            resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createInstance"
         ) {
             report()
         }
     }
 
-    private fun checkCreateImplementationInvocation(
+    private fun checkCreateImplInvocation(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
@@ -191,7 +190,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                     context.trace.report(
                         Errors.UNSUPPORTED.on(
                             reportOn,
-                            "createImplementation function calls in a context of default parameter value"
+                            "createImpl function calls in a context of default parameter value"
                         )
                     )
                 }
@@ -201,7 +200,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             }
             else -> {
                 context.trace.report(
-                    InjektErrors.CREATE_IMPLEMENTATION_INVOCATION_WITHOUT_FACTORY.on(reportOn)
+                    InjektErrors.CREATE_IMPl_INVOCATION_WITHOUT_FACTORY.on(reportOn)
                 )
             }
         }

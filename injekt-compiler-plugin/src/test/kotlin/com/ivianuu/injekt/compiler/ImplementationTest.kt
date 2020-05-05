@@ -15,8 +15,9 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             transient { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().foo
@@ -36,8 +37,9 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             scoped { Foo() }
+            return createImpl()
         }
         
         val component = create()
@@ -58,8 +60,9 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(foo: Foo): TestComponent = createImplementation {
+        fun create(foo: Foo): TestComponent {
             instance(foo)
+            return createImpl()
         }
         
         fun invoke(foo: Foo) = create(foo).foo
@@ -82,8 +85,9 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(foo: Foo): TestComponent = createImplementation {
+        fun create(foo: Foo): TestComponent {
             module(foo)
+            return createImpl()
         }
         
         fun invoke(foo: Foo) = create(foo).foo
@@ -101,8 +105,9 @@ class ImplementationTest {
         }
         
          @Factory
-        fun createDep(): DependencyComponent = createImplementation {
+        fun createDep(): DependencyComponent {
             transient { Foo() }
+            return createImpl()
         }
         
         interface TestComponent {
@@ -110,9 +115,10 @@ class ImplementationTest {
         }
 
         @Factory
-        fun createChild(): TestComponent = createImplementation {
+        fun createChild(): TestComponent {
             dependency(createDep())
             transient { Bar(get()) }
+            return createImpl()
         }
         
         fun invoke() = createChild().bar
@@ -130,9 +136,10 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             scoped { Foo() }
             alias<Foo, Any>()
+            return createImpl()
         }
         
         val component = create()
@@ -150,7 +157,7 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation()
+        fun create(): TestComponent = createImpl()
         
         fun invoke() = create()
     """
@@ -167,9 +174,10 @@ class ImplementationTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation {
+        fun create(): TestComponent {
             @TestQualifier1 scoped { Foo() }
             @TestQualifier2 scoped { Foo() }
+            return createImpl()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
@@ -192,7 +200,7 @@ class ImplementationTest {
         @Transient class Dep(val testComponent: TestComponent)
         
         @Factory
-        fun create(): TestComponent = createImplementation()
+        fun create(): TestComponent = createImpl()
         
         fun invoke(): Pair<TestComponent, TestComponent> = create().let {
             it to it.dep.testComponent

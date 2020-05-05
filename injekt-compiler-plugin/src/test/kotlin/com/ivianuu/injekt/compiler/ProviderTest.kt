@@ -14,8 +14,9 @@ class ProviderTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             transient { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().provider
@@ -33,8 +34,9 @@ class ProviderTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             scoped { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().provider
@@ -52,8 +54,9 @@ class ProviderTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImplementation { 
+        fun create(): TestComponent { 
             @TestQualifier1 transient { Foo() }
+            return createImpl()
         }
         
         fun invoke() = create().provider
