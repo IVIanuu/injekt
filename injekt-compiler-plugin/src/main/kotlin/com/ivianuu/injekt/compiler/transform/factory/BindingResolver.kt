@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.transform.graph
+package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
@@ -91,17 +91,18 @@ class ChildFactoryBindingResolver(
         val moduleClass: IrClass? = function.getAnnotation(InjektFqNames.AstClassPath)
             ?.getTypeArgument(0)?.classOrFail?.owner
 
-        val childFactoryImplementation = FactoryImplementation(
-            parent = factoryImplementation,
-            irParent = factoryImplementation.clazz,
-            name = members.nameForGroup("child"),
-            superType = superType,
-            moduleClass = moduleClass,
-            context = factoryImplementation.context,
-            symbols = factoryImplementation.symbols,
-            factoryTransformer = factoryImplementation.factoryTransformer,
-            declarationStore = factoryImplementation.declarationStore
-        )
+        val childFactoryImplementation =
+            FactoryImplementation(
+                parent = factoryImplementation,
+                irParent = factoryImplementation.clazz,
+                name = members.nameForGroup("child"),
+                superType = superType,
+                moduleClass = moduleClass,
+                context = factoryImplementation.context,
+                symbols = factoryImplementation.symbols,
+                factoryTransformer = factoryImplementation.factoryTransformer,
+                declarationStore = factoryImplementation.declarationStore
+            )
 
         members.addClass(childFactoryImplementation.clazz)
 
@@ -326,10 +327,16 @@ class ModuleBindingResolver(
                         val dependencies = bindingFunction.valueParameters
                             .filterNot { it.hasAnnotation(InjektFqNames.AstAssisted) }
                             .map { it.type.asKey() }
-                            .map { DependencyRequest(it) }
+                            .map {
+                                DependencyRequest(
+                                    it
+                                )
+                            }
 
                         AssistedProvisionBindingNode(
-                            key = Key(assistedFactoryType),
+                            key = Key(
+                                assistedFactoryType
+                            ),
                             dependencies = dependencies,
                             targetScope = null,
                             scoped = scoped,
@@ -340,7 +347,11 @@ class ModuleBindingResolver(
                     } else {
                         val dependencies = bindingFunction.valueParameters
                             .map { it.type.asKey() }
-                            .map { DependencyRequest(it) }
+                            .map {
+                                DependencyRequest(
+                                    it
+                                )
+                            }
 
                         ProvisionBindingNode(
                             key = bindingKey,
@@ -360,8 +371,12 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstAlias) }
         .map { delegateFunction ->
             DelegateBindingNode(
-                key = Key(delegateFunction.returnType),
-                originalKey = Key(delegateFunction.valueParameters.single().type),
+                key = Key(
+                    delegateFunction.returnType
+                ),
+                originalKey = Key(
+                    delegateFunction.valueParameters.single().type
+                ),
                 owner = factoryImplementation
             )
         }
@@ -423,7 +438,11 @@ class AnnotatedClassBindingResolver(
                         .withQualifiers(symbols, listOf(InjektFqNames.Provider))
                 }
                 .map { it.asKey() }
-                .map { DependencyRequest(it) }
+                .map {
+                    DependencyRequest(
+                        it
+                    )
+                }
 
             listOf(
                 AssistedProvisionBindingNode(
@@ -452,7 +471,11 @@ class AnnotatedClassBindingResolver(
 
             val dependencies = constructor.valueParameters
                 .map { it.type.asKey() }
-                .map { DependencyRequest(it) }
+                .map {
+                    DependencyRequest(
+                        it
+                    )
+                }
 
             listOf(
                 ProvisionBindingNode(
@@ -482,7 +505,11 @@ class MapBindingResolver(
         return maps
             .flatMap { (mapKey, entries) ->
                 listOf(
-                    MapBindingNode(mapKey, factoryImplementation, entries),
+                    MapBindingNode(
+                        mapKey,
+                        factoryImplementation,
+                        entries
+                    ),
                     frameworkBinding(InjektFqNames.Lazy, mapKey, entries),
                     frameworkBinding(InjektFqNames.Provider, mapKey, entries)
                 )
@@ -544,7 +571,11 @@ class SetBindingResolver(
         return sets
             .flatMap { (setKey, elements) ->
                 listOf(
-                    SetBindingNode(setKey, factoryImplementation, elements.toList()),
+                    SetBindingNode(
+                        setKey,
+                        factoryImplementation,
+                        elements.toList()
+                    ),
                     frameworkBinding(InjektFqNames.Lazy, setKey, elements),
                     frameworkBinding(InjektFqNames.Provider, setKey, elements)
                 )
@@ -602,11 +633,21 @@ class LazyOrProviderBindingResolver(
             requestedType.isFunction() &&
                     requestedKey.type.classOrFail == symbols.getFunction(0) &&
                     requestedType.hasAnnotation(InjektFqNames.Lazy) ->
-                listOf(LazyBindingNode(requestedKey, factoryImplementation))
+                listOf(
+                    LazyBindingNode(
+                        requestedKey,
+                        factoryImplementation
+                    )
+                )
             requestedType.isFunction() &&
                     requestedKey.type.classOrFail == symbols.getFunction(0) &&
                     requestedType.hasAnnotation(InjektFqNames.Provider) ->
-                listOf(ProviderBindingNode(requestedKey, factoryImplementation))
+                listOf(
+                    ProviderBindingNode(
+                        requestedKey,
+                        factoryImplementation
+                    )
+                )
             else -> emptyList()
         }
     }
@@ -623,7 +664,9 @@ class FactoryImplementationBindingResolver(
             requestedKey != factoryImplementationNode.key
         ) return emptyList()
         return listOf(
-            FactoryImplementationBindingNode(factoryImplementationNode)
+            FactoryImplementationBindingNode(
+                factoryImplementationNode
+            )
         )
     }
 }

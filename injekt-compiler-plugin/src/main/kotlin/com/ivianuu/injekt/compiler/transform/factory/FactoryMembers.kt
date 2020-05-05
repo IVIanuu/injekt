@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.transform.graph
+package com.ivianuu.injekt.compiler.transform.factory
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild

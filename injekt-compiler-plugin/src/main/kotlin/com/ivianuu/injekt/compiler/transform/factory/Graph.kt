@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.transform.graph
+package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.ClassKey
 import com.ivianuu.injekt.compiler.InjektFqNames
@@ -9,7 +9,6 @@ import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.transform.TopLevelFactoryTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
@@ -41,15 +40,28 @@ class Graph(
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
-    private val mapBindingResolver = MapBindingResolver(context, symbols, factoryImplementation)
-    private val setBindingResolver = SetBindingResolver(context, symbols, factoryImplementation)
+    private val mapBindingResolver =
+        MapBindingResolver(
+            context,
+            symbols,
+            factoryImplementation
+        )
+    private val setBindingResolver =
+        SetBindingResolver(
+            context,
+            symbols,
+            factoryImplementation
+        )
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     private val chain = mutableSetOf<Key>()
 
     init {
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
-        implicitBindingResolvers += LazyOrProviderBindingResolver(symbols, factoryImplementation)
+        implicitBindingResolvers += LazyOrProviderBindingResolver(
+            symbols,
+            factoryImplementation
+        )
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
         implicitBindingResolvers += MembersInjectorBindingResolver(
@@ -141,7 +153,9 @@ class Graph(
                         injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = Key(function.returnType),
+                            key = Key(
+                                function.returnType
+                            ),
                             initializerAccessor = moduleNode.initializerAccessor.child(field)
                         ),
                         members = factoryMembers,
@@ -227,7 +241,9 @@ class Graph(
                 addModule(
                     ModuleNode(
                         includedModule,
-                        Key(includedModule.defaultType),
+                        Key(
+                            includedModule.defaultType
+                        ),
                         moduleNode.initializerAccessor.child(field)
                     )
                 )
@@ -270,7 +286,12 @@ class Graph(
         entryKey: MapKey,
         entryValue: Key
     ) {
-        mapBindingResolver.putMapEntry(mapKey, entryKey, DependencyRequest(entryValue))
+        mapBindingResolver.putMapEntry(
+            mapKey, entryKey,
+            DependencyRequest(
+                entryValue
+            )
+        )
     }
 
     private fun addSet(key: Key) {
@@ -278,6 +299,11 @@ class Graph(
     }
 
     private fun addSetElement(setKey: Key, elementKey: Key) {
-        setBindingResolver.addSetElement(setKey, DependencyRequest(elementKey))
+        setBindingResolver.addSetElement(
+            setKey,
+            DependencyRequest(
+                elementKey
+            )
+        )
     }
 }

@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.transform.graph
+package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
@@ -94,7 +94,11 @@ data class DependencyRequest(
     val key: Key,
     val requestType: RequestType = key.inferRequestType()
 ) {
-    fun asBindingRequest() = BindingRequest(key, requestType)
+    fun asBindingRequest() =
+        BindingRequest(
+            key,
+            requestType
+        )
 }
 
 sealed class BindingNode(
@@ -122,7 +126,11 @@ class ChildFactoryBindingNode(
     val childFactoryImplementation: FactoryImplementation,
     val childFactory: IrClass
 ) : BindingNode(
-    key, listOf(DependencyRequest(childFactoryImplementation.parent!!.clazz.defaultType.asKey())),
+    key, listOf(
+        DependencyRequest(
+            childFactoryImplementation.parent!!.clazz.defaultType.asKey()
+        )
+    ),
     null, false, null, owner
 )
 
@@ -130,7 +138,11 @@ class DelegateBindingNode(
     key: Key,
     owner: FactoryImplementation,
     val originalKey: Key,
-) : BindingNode(key, listOf(DependencyRequest(originalKey)), null, false, null, owner)
+) : BindingNode(
+    key, listOf(
+        DependencyRequest(originalKey)
+    ), null, false, null, owner
+)
 
 class DependencyBindingNode(
     key: Key,
@@ -161,7 +173,13 @@ class LazyBindingNode(
     owner: FactoryImplementation
 ) : BindingNode(
     key,
-    listOf(DependencyRequest(key = Key(key.type.typeArguments.single()))),
+    listOf(
+        DependencyRequest(
+            key = Key(
+                key.type.typeArguments.single()
+            )
+        )
+    ),
     null,
     false,
     null,
@@ -173,8 +191,10 @@ class MapBindingNode(
     owner: FactoryImplementation,
     val entries: Map<MapKey, DependencyRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner) {
-    val keyKey = Key(key.type.typeArguments[0])
-    val valueKey = Key(key.type.typeArguments[1])
+    val keyKey =
+        Key(key.type.typeArguments[0])
+    val valueKey =
+        Key(key.type.typeArguments[1])
 }
 
 class MembersInjectorBindingNode(
@@ -197,7 +217,13 @@ class ProviderBindingNode(
     owner: FactoryImplementation
 ) : BindingNode(
     key,
-    listOf(DependencyRequest(key = Key(key.type.typeArguments.single()))),
+    listOf(
+        DependencyRequest(
+            key = Key(
+                key.type.typeArguments.single()
+            )
+        )
+    ),
     null,
     false,
     null,
@@ -219,7 +245,8 @@ class SetBindingNode(
     owner: FactoryImplementation,
     val elements: List<DependencyRequest>
 ) : BindingNode(key, elements, null, false, null, owner) {
-    val elementKey = Key(key.type.typeArguments.single())
+    val elementKey =
+        Key(key.type.typeArguments.single())
 }
 
 fun IrType.asKey() = Key(this)

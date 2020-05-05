@@ -1,8 +1,9 @@
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.transform.graph.FactoryImplementation
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -52,17 +53,18 @@ class TopLevelFactoryTransformer(
                 val moduleClass = if (moduleFqName != null) declarationStore.getModule(moduleFqName)
                 else null
 
-                val implementation = FactoryImplementation(
-                    parent = null,
-                    irParent = function.file,
-                    name = InjektNameConventions.getImplNameForFactoryFunction(function.name),
-                    superType = function.returnType,
-                    moduleClass = moduleClass,
-                    context = this@TopLevelFactoryTransformer.context,
-                    symbols = symbols,
-                    factoryTransformer = this@TopLevelFactoryTransformer,
-                    declarationStore = declarationStore
-                )
+                val implementation =
+                    FactoryImplementation(
+                        parent = null,
+                        irParent = function.file,
+                        name = InjektNameConventions.getImplNameForFactoryFunction(function.name),
+                        superType = function.returnType,
+                        moduleClass = moduleClass,
+                        context = this@TopLevelFactoryTransformer.context,
+                        symbols = symbols,
+                        factoryTransformer = this@TopLevelFactoryTransformer,
+                        declarationStore = declarationStore
+                    )
 
                 println("impl ${implementation.clazz.dump()}")
 

@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.transform.graph
+package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
@@ -133,7 +133,12 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForDelegate(binding: DelegateBindingNode): FactoryExpression =
-        getBindingExpression(BindingRequest(binding.originalKey, RequestType.Instance))
+        getBindingExpression(
+            BindingRequest(
+                binding.originalKey,
+                RequestType.Instance
+            )
+        )
 
     private fun instanceExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         val dependencyExpression = getRequirementExpression(binding.requirementNode)
@@ -281,7 +286,10 @@ class FactoryExpressions(
 
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
-            BindingRequest(Key(binding.key.type.typeArguments.single()), RequestType.Provider)
+            BindingRequest(
+                Key(binding.key.type.typeArguments.single()),
+                RequestType.Provider
+            )
         )
     }
 
@@ -426,7 +434,14 @@ class FactoryExpressions(
             .map { it.key }
 
         val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it.key, it.requestType)) }
+            .map {
+                getBindingExpression(
+                    BindingRequest(
+                        it.key,
+                        it.requestType
+                    )
+                )
+            }
 
         return providerFieldExpression(binding.key) { parent ->
             if (dependencyKeys.any {
@@ -447,7 +462,14 @@ class FactoryExpressions(
         val constructor = binding.childFactory.constructors.single()
 
         val parentExpression = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it.key, it.requestType)) }
+            .map {
+                getBindingExpression(
+                    BindingRequest(
+                        it.key,
+                        it.requestType
+                    )
+                )
+            }
 
         return providerFieldExpression(binding.key) { parent ->
             instanceProvider(
@@ -461,7 +483,12 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForDelegate(binding: DelegateBindingNode): FactoryExpression =
-        getBindingExpression(BindingRequest(binding.originalKey, RequestType.Provider))
+        getBindingExpression(
+            BindingRequest(
+                binding.originalKey,
+                RequestType.Provider
+            )
+        )
 
     private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         return providerFieldExpression(binding.key) providerFieldExpression@{
@@ -492,7 +519,10 @@ class FactoryExpressions(
 
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
-            BindingRequest(Key(binding.key.type.typeArguments.single()), RequestType.Provider)
+            BindingRequest(
+                Key(binding.key.type.typeArguments.single()),
+                RequestType.Provider
+            )
         )
         return providerFieldExpression(binding.key) {
             irCall(
@@ -509,7 +539,10 @@ class FactoryExpressions(
         val entryExpressions = binding.entries
             .map { (key, entryValue) ->
                 val entryValueExpression = getBindingExpression(
-                    BindingRequest(entryValue.key, RequestType.Provider)
+                    BindingRequest(
+                        entryValue.key,
+                        RequestType.Provider
+                    )
                 )
                 val pairExpression: FactoryExpression = pairExpression@{
                     irCall(
@@ -610,7 +643,14 @@ class FactoryExpressions(
             .map { it.key }
 
         val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it.key, it.requestType)) }
+            .map {
+                getBindingExpression(
+                    BindingRequest(
+                        it.key,
+                        it.requestType
+                    )
+                )
+            }
 
         return providerFieldExpression(binding.key) { parent ->
             if (dependencyKeys.any {
@@ -629,13 +669,22 @@ class FactoryExpressions(
 
     private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
-            BindingRequest(Key(binding.key.type.typeArguments.single()), RequestType.Provider)
+            BindingRequest(
+                Key(binding.key.type.typeArguments.single()),
+                RequestType.Provider
+            )
         )
     }
 
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
         val dependencyKeys = binding.dependencies
-            .map { Key(symbols.getFunction(0).typeWith(it.key.type)) }
+            .map {
+                Key(
+                    symbols.getFunction(
+                        0
+                    ).typeWith(it.key.type)
+                )
+            }
 
         val provider = binding.provider
 
@@ -644,7 +693,14 @@ class FactoryExpressions(
                 ?.name?.asString() == "module"
 
         val dependencies = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it.key, RequestType.Provider)) }
+            .map {
+                getBindingExpression(
+                    BindingRequest(
+                        it.key,
+                        RequestType.Provider
+                    )
+                )
+            }
 
         return if (!moduleRequired && dependencies.isEmpty() && !binding.scoped) {
             { irGetObject(provider.symbol) }
@@ -689,7 +745,14 @@ class FactoryExpressions(
 
     private fun providerExpressionForSet(binding: SetBindingNode): FactoryExpression {
         val elementExpressions = binding.dependencies
-            .map { getBindingExpression(BindingRequest(it.key, RequestType.Provider)) }
+            .map {
+                getBindingExpression(
+                    BindingRequest(
+                        it.key,
+                        RequestType.Provider
+                    )
+                )
+            }
 
         return providerFieldExpression(binding.key) providerFieldExpression@{ parent ->
             val setProviderCompanion = symbols.setProvider.owner
@@ -759,7 +822,11 @@ class FactoryExpressions(
         providerInitializer: IrBuilderWithScope.(() -> IrExpression) -> IrExpression?
     ): FactoryExpression {
         val field = members.getOrCreateField(
-            Key(symbols.getFunction(0).typeWith(key.type)),
+            Key(
+                symbols.getFunction(
+                    0
+                ).typeWith(key.type)
+            ),
             "provider",
             providerInitializer
         )
@@ -804,7 +871,10 @@ class FactoryExpressions(
 
     private fun invokeProviderInstanceExpression(binding: BindingNode): FactoryExpression {
         val providerExpression = getBindingExpression(
-            BindingRequest(binding.key, RequestType.Provider)
+            BindingRequest(
+                binding.key,
+                RequestType.Provider
+            )
         )
         return bindingExpression@{ parent ->
             irCall(

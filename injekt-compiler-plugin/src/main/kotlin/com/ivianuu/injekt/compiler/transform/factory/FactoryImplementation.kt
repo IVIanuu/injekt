@@ -1,10 +1,9 @@
-package com.ivianuu.injekt.compiler.transform.graph
+package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.transform.TopLevelFactoryTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -72,22 +71,27 @@ class FactoryImplementation(
     }.apply {
         copyTypeParametersFrom(clazz)
     }
-    val factoryImplementationNode = FactoryImplementationNode(
-        key = clazz.defaultType.asKey(),
-        factoryImplementation = this,
-        initializerAccessor = { it() }
-    )
+    val factoryImplementationNode =
+        FactoryImplementationNode(
+            key = clazz.defaultType.asKey(),
+            factoryImplementation = this,
+            initializerAccessor = { it() }
+        )
 
     val factoryMembers =
-        FactoryMembers(factoryImplementationNode, this@FactoryImplementation.context)
+        FactoryMembers(
+            factoryImplementationNode,
+            this@FactoryImplementation.context
+        )
 
-    val factoryExpressions: FactoryExpressions = FactoryExpressions(
-        context = this@FactoryImplementation.context,
-        symbols = symbols,
-        members = factoryMembers,
-        parent = parent?.factoryExpressions,
-        factoryImplementation = this
-    )
+    val factoryExpressions: FactoryExpressions =
+        FactoryExpressions(
+            context = this@FactoryImplementation.context,
+            symbols = symbols,
+            members = factoryMembers,
+            parent = parent?.factoryExpressions,
+            factoryImplementation = this
+        )
 
     val parentField by lazy {
         if (parent != null) {
