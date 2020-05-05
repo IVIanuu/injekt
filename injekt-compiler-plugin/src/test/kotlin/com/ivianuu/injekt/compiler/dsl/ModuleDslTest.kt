@@ -62,19 +62,6 @@ class ModuleDslTest {
         }
 
     @Test
-    fun testModuleInvocationInModuleLambdaIsAllowed() =
-        codegen(
-            """
-            val lambda: @Module () -> Unit = {
-                module()
-            }
-            @Module fun module() {}
-        """
-        ) {
-            assertOk()
-        }
-
-    @Test
     fun testModuleInvocationInFactoryAllowed() =
         codegen(
             """

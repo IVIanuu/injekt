@@ -6,9 +6,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageContainerContributor(
-    private val moduleChecker: ModuleChecker
-) : StorageComponentContainerContributor {
+class InjektStorageContainerContributor : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
@@ -17,7 +15,7 @@ class InjektStorageContainerContributor(
         container.useInstance(QualifiedExpressionCollector())
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())
-        container.useInstance(moduleChecker)
+        container.useInstance(ModuleChecker())
         container.useInstance(ScopeChecker())
         container.useInstance(MembersInjectorChecker())
     }

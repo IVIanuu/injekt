@@ -4,10 +4,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -25,12 +22,8 @@ import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -148,26 +141,3 @@ fun generateSymbols(pluginContext: IrPluginContext) {
         }
     } while ((unbound - visited).isNotEmpty())
 }
-
-fun KotlinType.makeModule(module: ModuleDescriptor): KotlinType {
-    if (hasModuleAnnotation()) return this
-    val annotation = makeModuleAnnotation(module)
-    return replaceAnnotations(Annotations.create(annotations + annotation))
-}
-
-fun KotlinType.hasModuleAnnotation(): Boolean =
-    annotations.findAnnotation(InjektFqNames.Module) != null
-
-fun Annotated.hasModuleAnnotation(): Boolean =
-    annotations.findAnnotation(InjektFqNames.Module) != null
-
-fun makeModuleAnnotation(module: ModuleDescriptor): AnnotationDescriptor =
-    object : AnnotationDescriptor {
-        override val type: KotlinType
-            get() = module.findClassAcrossModuleDependencies(
-                ClassId.topLevel(InjektFqNames.Module)
-            )!!.defaultType
-        override val allValueArguments: Map<Name, ConstantValue<*>> get() = emptyMap()
-        override val source: SourceElement get() = SourceElement.NO_SOURCE
-        override fun toString() = "[@Module]"
-    }

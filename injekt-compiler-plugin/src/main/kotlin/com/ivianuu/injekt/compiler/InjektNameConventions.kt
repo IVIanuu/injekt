@@ -15,7 +15,7 @@ object InjektNameConventions {
         return Name.identifier("${moduleFunction.asString().capitalize()}_Impl")
     }
 
-    fun getImplementationNameForFactoryFunction(factoryFunction: Name): Name {
+    fun getImplNameForFactoryFunction(factoryFunction: Name): Name {
         return Name.identifier("${factoryFunction.asString().capitalize()}_Impl")
     }
 

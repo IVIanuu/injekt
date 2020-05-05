@@ -1,4 +1,4 @@
 package com.ivianuu.injekt
 
-@Target(AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.FUNCTION)
 annotation class Module

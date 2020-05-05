@@ -55,7 +55,7 @@ class TopLevelFactoryTransformer(
                 val implementation = FactoryImplementation(
                     parent = null,
                     irParent = function.file,
-                    name = InjektNameConventions.getModuleNameForModuleFunction(function.name),
+                    name = InjektNameConventions.getImplNameForFactoryFunction(function.name),
                     superType = function.returnType,
                     moduleClass = moduleClass,
                     context = this@TopLevelFactoryTransformer.context,

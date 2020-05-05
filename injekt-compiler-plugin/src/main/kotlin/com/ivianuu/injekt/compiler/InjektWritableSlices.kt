@@ -7,8 +7,6 @@ import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 object InjektWritableSlices {
-    val IS_MODULE: WritableSlice<Any, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val QUALIFIERS: WritableSlice<IrAttributeContainer, List<FqName>> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }
