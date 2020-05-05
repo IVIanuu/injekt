@@ -16,7 +16,10 @@ interface InjektErrors {
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
         @JvmField
-        val CREATE_IMPl_INVOCATION_WITHOUT_FACTORY = error()
+        val CREATE_IMPl_WITHOUT_FACTORY = error()
+
+        @JvmField
+        val CREATE_INSTANCE_IN_CHILD_FACTORY = error()
         @JvmField
         val UNSUPPORTED_MAP_KEY_TYPE = error()
         @JvmField
@@ -76,10 +79,13 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "@Module functions cannot return anything"
         )
         map.put(
-            InjektErrors.CREATE_IMPl_INVOCATION_WITHOUT_FACTORY,
+            InjektErrors.CREATE_IMPl_WITHOUT_FACTORY,
             "createImpl can only be called from within a @Factory or @ChildFactory function"
         )
-
+        map.put(
+            InjektErrors.CREATE_INSTANCE_IN_CHILD_FACTORY,
+            "createInstance cannot be called in a @ChildFactory function"
+        )
         map.put(
             InjektErrors.UNSUPPORTED_MAP_KEY_TYPE,
             "Unsupported map key type"

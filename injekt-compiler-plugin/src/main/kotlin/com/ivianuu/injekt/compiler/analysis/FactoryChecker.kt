@@ -47,7 +47,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 ?.takeIf { it.kind != ClassKind.OBJECT }
                 ?.let { context.trace.report(InjektErrors.FACTORY_MUST_BE_STATIC.on(declaration)) }
 
-            checkFactoryFunctionHasOnlyCreateImplStatement(
+            checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,
                 descriptor,
                 context
@@ -90,12 +90,12 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         }
     }
 
-    private fun checkFactoryFunctionHasOnlyCreateImplStatement(
+    private fun checkFactoriesLastStatementIsCreate(
         element: KtFunction,
         descriptor: FunctionDescriptor,
         context: DeclarationCheckerContext
     ) {
-        fun report() {
+        fun reportLastStatementMustBeCreate() {
             context.trace.report(InjektErrors.LAST_STATEMENT_MUST_BE_CREATE.on(element))
         }
 
@@ -109,20 +109,26 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         }
 
         if (returnedExpression !is KtCallExpression) {
-            report()
+            reportLastStatementMustBeCreate()
             return
         }
 
         val resolvedCall = returnedExpression.getResolvedCall(context.trace.bindingContext)
         if (resolvedCall == null) {
-            report()
+            reportLastStatementMustBeCreate()
             return
+        }
+
+        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
+            descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory)
+        ) {
+            context.trace.report(InjektErrors.CREATE_INSTANCE_IN_CHILD_FACTORY.on(element))
         }
 
         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
             resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createInstance"
         ) {
-            report()
+            reportLastStatementMustBeCreate()
         }
     }
 
@@ -200,7 +206,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             }
             else -> {
                 context.trace.report(
-                    InjektErrors.CREATE_IMPl_INVOCATION_WITHOUT_FACTORY.on(reportOn)
+                    InjektErrors.CREATE_IMPl_WITHOUT_FACTORY.on(reportOn)
                 )
             }
         }

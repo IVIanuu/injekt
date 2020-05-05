@@ -226,4 +226,24 @@ class FactoryDslTest {
         assertOk()
     }
 
+    @Test
+    fun testCreateInstanceInFactory() = codegen(
+        """
+            @Factory
+            fun factory(): TestComponent = createInstance()
+            """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testCreateInstanceInChildFactory() = codegen(
+        """
+            @ChildFactory
+            fun factory(): TestComponent = createInstance()
+            """
+    ) {
+        assertCompileError("childfactory")
+    }
+
 }
