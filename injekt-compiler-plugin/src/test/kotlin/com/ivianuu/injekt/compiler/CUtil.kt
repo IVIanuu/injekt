@@ -4,9 +4,11 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
+import io.github.classgraph.ClassGraph
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
+import java.io.File
 import kotlin.reflect.KClass
 
 var fileIndex = 0
@@ -42,11 +44,30 @@ fun codegen(
 
 fun codegen(
     vararg sources: SourceFile,
-    assertions: KotlinCompilation.Result.() -> Unit = {}
+    assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
 ) {
     val result = compile { this.sources = sources.toList() }
     println("Result: ${result.exitCode} m: ${result.messages}")
     assertions(result)
+}
+
+fun multiCompilationCodegen(
+    vararg sources: List<SourceFile>,
+    assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } }
+) {
+    val results = sources.scan(null) { prevCompilation: KotlinCompilation.Result?, sourceFiles ->
+        compile {
+            this.sources = sourceFiles
+            if (prevCompilation != null) {
+                val classGraph = ClassGraph()
+                    .addClassLoader(prevCompilation.classLoader)
+                val classpaths = classGraph.classpathFiles
+                val modules = classGraph.modules.mapNotNull { it.locationFile }
+                this.classpaths += (classpaths + modules).distinctBy(File::getAbsolutePath)
+            }
+        }
+    }.filterNotNull()
+    assertions(results)
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
@@ -59,20 +80,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
-
-fun <T> componentTest(
-    @Language("kotlin") source: String,
-    @Language("kotlin") invokeExpression: String,
-    assertions: KotlinCompilation.Result.(T) -> Unit
-) {
-    codegen(
-        buildString {
-            append(source)
-            appendln()
-            append("fun invoke() = $invokeExpression")
-        }
-    )
-}
 
 fun KotlinCompilation.Result.assertOk() {
     assertEquals(KotlinCompilation.ExitCode.OK, exitCode)
