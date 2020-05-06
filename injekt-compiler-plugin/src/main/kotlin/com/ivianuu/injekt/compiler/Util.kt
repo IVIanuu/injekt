@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.ClassId
@@ -243,14 +242,6 @@ fun generateSymbols(pluginContext: IrPluginContext) {
 
 fun IrAnnotationContainer.hasAnnotation(fqName: FqName): Boolean =
     annotations.any { (it.symbol.descriptor.constructedClass.fqNameSafe == fqName) }
-
-fun IrAnnotationContainer.getQualifiers(): List<FqName> {
-    return getAnnotation(InjektFqNames.AstQualifiers)!!.getValueArgument(0)
-        .let { it as IrVarargImpl }
-        .elements
-        .filterIsInstance<IrClassReference>()
-        .map { it.classType.classOrFail.descriptor.fqNameSafe }
-}
 
 fun IrClass.findPropertyGetter(
     name: String
