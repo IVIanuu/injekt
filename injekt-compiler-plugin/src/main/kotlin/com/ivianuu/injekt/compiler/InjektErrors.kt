@@ -48,10 +48,8 @@ interface InjektErrors {
         val INJECT_MUST_BE_LATEINIT_VAR = error()
         @JvmField
         val CANNOT_INVOKE_CHILD_FACTORIES = error()
-
         @JvmField
         val MUST_HAVE_RUNTIME_RETENTION = error()
-
         @JvmField
         val MISSING_QUALIFIER_TARGETS = error()
 

@@ -30,6 +30,29 @@ class ImplementationTest {
     }
 
     @Test
+    fun testTransientWithoutDefinition() = codegen(
+        """
+        interface TestComponent {
+            val bar: Bar
+        }
+        
+        @Factory
+        fun create(): TestComponent {
+            transient<Foo>()
+            transient<Bar>()
+            return createImpl()
+        }
+        
+        fun invoke() = create().bar
+    """
+    ) {
+        assertNotSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
     fun testScoped() = codegen(
         """
         interface TestComponent {

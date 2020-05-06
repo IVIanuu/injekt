@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.irTrace
@@ -29,6 +30,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -239,15 +241,23 @@ class ModuleTransformer(
         val providerByCall = mutableMapOf<IrCall, IrClass>()
 
         (transientCalls + scopedCalls).forEachIndexed { index, bindingCall ->
-            val definition = bindingCall.getValueArgument(0)!! as IrFunctionExpression
+            val definition = bindingCall.getValueArgument(0) as? IrFunctionExpression
             addChild(
-                provider(
-                    providerIndex = index,
-                    definition = definition,
-                    module = this,
-                    moduleParametersMap = parameterMap,
-                    moduleFieldsByParameter = fieldsByParameters
-                ).also { providerByCall[bindingCall] = it }
+                (if (definition != null) {
+                    providerForDefinition(
+                        providerIndex = index,
+                        definition = definition,
+                        module = this,
+                        moduleParametersMap = parameterMap,
+                        moduleFieldsByParameter = fieldsByParameters
+                    )
+                } else {
+                    providerForClass(
+                        providerIndex = index,
+                        clazz = bindingCall.getTypeArgument(0)!!.classOrFail
+                            .ensureBound(irProviders).owner
+                    )
+                }).also { providerByCall[bindingCall] = it }
             )
         }
 
@@ -581,7 +591,7 @@ class ModuleTransformer(
             val setType = symbolTable.referenceClass(builtIns.set)
                 .ensureBound(irProviders)
                 .typeWith(setElementType)
-                .withAnnotations(annotations)
+                .withAnnotations(setQualifiers)
 
             addFunction(
                 name = "set_$setIndex",
@@ -619,7 +629,42 @@ class ModuleTransformer(
         }
     }
 
-    private fun IrBuilderWithScope.provider(
+    private fun IrBuilderWithScope.providerForClass(
+        providerIndex: Int,
+        clazz: IrClass
+    ): IrClass {
+        val constructor = clazz.constructors.singleOrNull()
+        return provider(
+            name = Name.identifier("Factory_$providerIndex"),
+            parameters = constructor?.valueParameters
+                ?.mapIndexed { index, valueParameter ->
+                    ProviderParameter(
+                        name = "p$index",
+                        type = valueParameter.type,
+                        assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
+                    )
+                } ?: emptyList(),
+            returnType = clazz.defaultType,
+            createBody = { createFunction ->
+                irExprBody(
+                    if (clazz.kind == ClassKind.OBJECT) {
+                        irGetObject(clazz.symbol)
+                    } else {
+                        irCall(constructor!!).apply {
+                            createFunction.valueParameters.forEach { valueParameter ->
+                                putValueArgument(
+                                    valueParameter.index,
+                                    irGet(valueParameter)
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        )
+    }
+
+    private fun IrBuilderWithScope.providerForDefinition(
         providerIndex: Int,
         definition: IrFunctionExpression,
         module: IrClass,
