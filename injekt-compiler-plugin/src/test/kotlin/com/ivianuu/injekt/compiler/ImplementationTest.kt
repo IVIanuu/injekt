@@ -191,6 +191,35 @@ class ImplementationTest {
     }
 
     @Test
+    fun testQualifiedWithValues() = codegen(
+        """
+            @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class QualifierWithValue(val value: String)
+            
+        interface TestComponent {
+            val foo1: @QualifierWithValue("A") Foo
+            val foo2: @QualifierWithValue("B") Foo
+        }
+        
+        @Factory
+        fun create(): TestComponent {
+            @QualifierWithValue("A") scoped { Foo() }
+            @QualifierWithValue("B") scoped { Foo() }
+            return createImpl()
+        }
+        
+        fun invoke(): Pair<Foo, Foo> { 
+            val component = create()
+            return component.foo1 to component.foo2
+        }
+    """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    @Test
     fun testFactoryImplementationBinding() = codegen(
         """
         interface TestComponent {
