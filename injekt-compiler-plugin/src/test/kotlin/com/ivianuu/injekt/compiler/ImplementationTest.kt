@@ -287,4 +287,24 @@ class ImplementationTest {
         assertOk()
     }
 
+    @Test
+    fun testComponentSuperTypeWithTypeParameters() = codegen(
+        """
+        interface BaseComponent<T> {
+            val inject: @MembersInjector (T) -> Unit
+        }
+        
+        class Injectable {
+            @Inject private lateinit var foo: Foo
+        }
+        
+        interface ImplComponent : BaseComponent<Injectable>
+        
+        @Factory
+        fun createImplComponent(): ImplComponent {
+            transient { Foo() }
+            return createImpl()
+        }
+    """
+    )
 }

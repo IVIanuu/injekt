@@ -127,7 +127,7 @@ val IrType.typeArguments: List<IrType>
 
 val IrTypeArgument.type get() = typeOrNull ?: error("Type is null for ${render()}")
 
-val IrType.classOrFail get() = classOrNull!!
+val IrType.classOrFail get() = classOrNull ?: error("Cannot get class for ${render()}")
 
 fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWith(*arguments)
 

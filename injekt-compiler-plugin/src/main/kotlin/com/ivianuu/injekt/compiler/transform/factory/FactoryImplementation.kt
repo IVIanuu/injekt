@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.Name
 
 class FactoryImplementation(
@@ -210,32 +212,40 @@ class FactoryImplementation(
     }
 
     private fun collectDependencyRequests() {
-        fun IrClass.collectDependencyRequests() {
+        fun IrClass.collectDependencyRequests(sub: IrClass?) {
             for (declaration in declarations) {
+                fun reqisterRequest(type: IrType) {
+                    dependencyRequests[declaration] = type
+                        .substitute(
+                            typeParameters,
+                            sub?.superTypes
+                                ?.single { it.classOrNull?.owner == this }
+                                ?.typeArguments ?: emptyList()
+                        )
+                        .asKey(context)
+                }
+
                 when (declaration) {
                     is IrFunction -> {
                         if (declaration !is IrConstructor &&
                             declaration.dispatchReceiverParameter?.type != context.irBuiltIns.anyType &&
                             !declaration.isFakeOverride
-                        )
-                            dependencyRequests[declaration] = declaration.returnType
-                                .asKey(context)
+                        ) reqisterRequest(declaration.returnType)
                     }
                     is IrProperty -> {
                         if (!declaration.isFakeOverride)
-                            dependencyRequests[declaration] = declaration.getter!!.returnType
-                                .asKey(context)
+                            reqisterRequest(declaration.getter!!.returnType)
                     }
                 }
             }
 
             superTypes
                 .mapNotNull { it.classOrNull?.owner }
-                .forEach { it.collectDependencyRequests() }
+                .forEach { it.collectDependencyRequests(this) }
         }
 
         val superType = clazz.superTypes.single().classOrFail.owner
-        superType.collectDependencyRequests()
+        superType.collectDependencyRequests(clazz)
     }
 
     private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
