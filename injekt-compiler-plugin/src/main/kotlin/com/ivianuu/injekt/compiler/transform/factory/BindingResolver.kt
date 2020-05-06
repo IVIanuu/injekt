@@ -311,7 +311,6 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
         .map { bindingFunction ->
             val bindingKey = bindingFunction.returnType.asKey()
-            println("binding key $bindingKey")
             val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
