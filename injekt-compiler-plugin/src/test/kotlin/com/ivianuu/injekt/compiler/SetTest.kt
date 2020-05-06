@@ -160,7 +160,82 @@ class SetTest {
         }
     """
     ) {
-        assertInternalError()
+        assertInternalError("already bound")
+    }
+
+    @Test
+    fun testNestedSet() = codegen(
+        """
+        interface ParentComponent {
+            val set: Set<Command>
+            val childFactory: @ChildFactory () -> ChildComponent
+        }
+        
+        interface ChildComponent {
+            val set: Set<Command>
+        }
+        
+        @Factory
+        fun createParent(): ParentComponent {
+            transient { CommandA() }
+            set<Command> {
+                add<CommandA>()
+            }
+            childFactory(::createChild)
+            return createImpl()
+        }
+        
+        @ChildFactory
+        fun createChild(): ChildComponent {
+            transient { CommandB() }
+            set<Command> {
+                add<CommandB>()
+            }
+            return createImpl()
+        }
+        
+        fun invoke() = createParent().childFactory().set
+    """
+    ) {
+        val set = invokeSingleFile<Set<Command>>().toList()
+        assertEquals(2, set.size)
+        assertTrue(set[0] is CommandA)
+        assertTrue(set[1] is CommandB)
+    }
+
+    @Test
+    fun testNestedOverrideFails() = codegen(
+        """
+        interface ParentComponent {
+            val set: Set<Command>
+            val childFactory: @ChildFactory () -> ChildComponent
+        }
+        
+        interface ChildComponent {
+            val set: Set<Command>
+        }
+        
+        @Factory
+        fun createParent(): ParentComponent {
+            transient { CommandA() }
+            set<Command> {
+                add<CommandA>()
+            }
+            childFactory(::createChild)
+            return createImpl()
+        }
+        
+        @ChildFactory
+        fun createChild(): ChildComponent {
+            transient { CommandB() }
+            set<Command> {
+                add<CommandA>()
+            }
+            return createImpl()
+        }
+         """
+    ) {
+        assertInternalError("already bound")
     }
 
 }

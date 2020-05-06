@@ -508,14 +508,31 @@ class AnnotatedClassBindingResolver(
 class MapBindingResolver(
     private val context: IrPluginContext,
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryImplementation: FactoryImplementation,
+    private val parent: MapBindingResolver?
 ) : BindingResolver {
 
-    private val maps =
+    private val mapBuilders =
         mutableMapOf<Key, MutableMap<MapKey, DependencyRequest>>()
+    private val finalMaps: Map<Key, Map<MapKey, DependencyRequest>> by lazy {
+        val mergedMaps: MutableMap<Key, MutableMap<MapKey, DependencyRequest>> = parent?.finalMaps
+            ?.mapValues { it.value.toMutableMap() }
+            ?.toMutableMap() ?: mutableMapOf()
+        mapBuilders.forEach { (mapKey, mapBuilder) ->
+            val mergedMap = mergedMaps.getOrPut(mapKey) { mutableMapOf() }
+            mapBuilder.forEach { (entryKey, entryValue) ->
+                if (entryKey in mergedMap) {
+                    error("Already bound value with $entryKey into map $mapKey")
+                }
+
+                mergedMap[entryKey] = entryValue
+            }
+        }
+        mergedMaps
+    }
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
-        return maps
+        return finalMaps
             .flatMap { (mapKey, entries) ->
                 listOf(
                     MapBindingNode(
@@ -531,7 +548,7 @@ class MapBindingResolver(
     }
 
     fun addMap(mapKey: Key) {
-        maps.getOrPut(mapKey) { mutableMapOf() }
+        mapBuilders.getOrPut(mapKey) { mutableMapOf() }
     }
 
     fun putMapEntry(
@@ -539,7 +556,7 @@ class MapBindingResolver(
         entryKey: MapKey,
         entryValue: DependencyRequest
     ) {
-        val map = maps[mapKey]!!
+        val map = mapBuilders[mapKey]!!
         if (entryKey in map) {
             error("Already bound value with $entryKey into map $mapKey")
         }
@@ -577,13 +594,30 @@ class MapBindingResolver(
 class SetBindingResolver(
     private val context: IrPluginContext,
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryImplementation: FactoryImplementation,
+    private val parent: SetBindingResolver?
 ) : BindingResolver {
 
-    private val sets = mutableMapOf<Key, MutableSet<DependencyRequest>>()
+    private val setBuilders = mutableMapOf<Key, MutableSet<DependencyRequest>>()
+    private val finalSets: Map<Key, Set<DependencyRequest>> by lazy {
+        val mergedSets: MutableMap<Key, MutableSet<DependencyRequest>> = parent?.finalSets
+            ?.mapValues { it.value.toMutableSet() }
+            ?.toMutableMap() ?: mutableMapOf()
+        setBuilders.forEach { (setKey, setBuilder) ->
+            val mergedSet = mergedSets.getOrPut(setKey) { mutableSetOf() }
+            setBuilder.forEach { element ->
+                if (element in mergedSet) {
+                    error("Already bound $element into set $setKey")
+                }
+
+                mergedSet += element
+            }
+        }
+        mergedSets
+    }
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
-        return sets
+        return finalSets
             .flatMap { (setKey, elements) ->
                 listOf(
                     SetBindingNode(
@@ -599,11 +633,11 @@ class SetBindingResolver(
     }
 
     fun addSet(setKey: Key) {
-        sets.getOrPut(setKey) { mutableSetOf() }
+        setBuilders.getOrPut(setKey) { mutableSetOf() }
     }
 
     fun addSetElement(setKey: Key, element: DependencyRequest) {
-        val set = sets[setKey]!!
+        val set = setBuilders[setKey]!!
         if (element in set) {
             error("Already bound $element into set $setKey")
         }

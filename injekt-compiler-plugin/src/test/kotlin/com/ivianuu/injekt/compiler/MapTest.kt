@@ -162,7 +162,82 @@ class MapTest {
         }
     """
     ) {
-        assertInternalError()
+        assertInternalError("already bound")
+    }
+
+    @Test
+    fun testNestedMap() = codegen(
+        """
+        interface ParentComponent {
+            val map: Map<KClass<out Command>, Command>
+            val childFactory: @ChildFactory () -> ChildComponent
+        }
+        
+        interface ChildComponent {
+            val map: Map<KClass<out Command>, Command>
+        }
+        
+        @Factory
+        fun createParent(): ParentComponent {
+            transient { CommandA() }
+            map<KClass<out Command>, Command> {
+                put<CommandA>(CommandA::class)
+            }
+            childFactory(::createChild)
+            return createImpl()
+        }
+        
+        @ChildFactory
+        fun createChild(): ChildComponent {
+            transient { CommandB() }
+            map<KClass<out Command>, Command> {
+                put<CommandB>(CommandB::class)
+            }
+            return createImpl()
+        }
+        
+        fun invoke() = createParent().childFactory().map
+    """
+    ) {
+        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        assertEquals(2, map.size)
+        assertTrue(map[CommandA::class] is CommandA)
+        assertTrue(map[CommandB::class] is CommandB)
+    }
+
+    @Test
+    fun testNestedOverrideFails() = codegen(
+        """
+        interface ParentComponent {
+            val map: Map<KClass<out Command>, Command>
+            val childFactory: @ChildFactory () -> ChildComponent
+        }
+        
+        interface ChildComponent {
+            val map: Map<KClass<out Command>, Command>
+        }
+        
+        @Factory
+        fun createParent(): ParentComponent {
+            transient { CommandA() }
+            map<KClass<out Command>, Command> {
+                put<CommandA>(CommandA::class)
+            }
+            childFactory(::createChild)
+            return createImpl()
+        }
+        
+        @ChildFactory
+        fun createChild(): ChildComponent {
+            transient { CommandB() }
+            map<KClass<out Command>, Command> {
+                put<CommandB>(CommandA::class)
+            }
+            return createImpl()
+        }
+         """
+    ) {
+        assertInternalError("already bound")
     }
 
 }
