@@ -5,8 +5,8 @@ import kotlin.reflect.KClass
 object InjektAst {
 
     annotation class Path {
-        annotation class Field(val name: String)
         annotation class Class(val clazz: KClass<*>)
+        annotation class Property(val name: String)
     }
 
     annotation class ChildFactory

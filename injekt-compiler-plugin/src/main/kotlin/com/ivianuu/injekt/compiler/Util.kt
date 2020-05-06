@@ -12,6 +12,8 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -35,7 +37,10 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -245,4 +250,15 @@ fun IrAnnotationContainer.getQualifiers(): List<FqName> {
         .elements
         .filterIsInstance<IrClassReference>()
         .map { it.classType.classOrFail.descriptor.fqNameSafe }
+}
+
+fun IrClass.findPropertyGetter(
+    name: String
+): IrFunction {
+    return properties
+        .singleOrNull { it.name.asString() == name }
+        ?.getter ?: functions
+        .singleOrNull { function ->
+            function.name.asString() == "<get-$name>"
+        } ?: error("Couldn't find property '$name' in ${dump()}")
 }

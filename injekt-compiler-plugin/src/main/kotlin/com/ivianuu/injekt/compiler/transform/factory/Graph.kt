@@ -9,6 +9,7 @@ import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -18,7 +19,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
@@ -146,22 +146,19 @@ class Graph(
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstDependency) }
             .forEach { function ->
-                val field = module.fields
-                    .single { field ->
-                        field.name.asString() == function.getAnnotation(InjektFqNames.AstFieldPath)!!
-                            .getValueArgument(0)!!
-                            .let { it as IrConst<String> }
-                            .value
-                    }
+                val dependencyName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                    .getValueArgument(0)!!
+                    .let { it as IrConst<String> }
+                    .value
                 addExplicitBindingResolver(
                     DependencyBindingResolver(
                         injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = Key(
-                                function.returnType
-                            ),
-                            initializerAccessor = moduleNode.initializerAccessor.child(field)
+                            key = Key(function.returnType),
+                            initializerAccessor = moduleNode.initializerAccessor.child(
+                                moduleNode.module.findPropertyGetter(dependencyName)
+                            )
                         ),
                         members = factoryMembers,
                         factoryImplementation = factoryImplementation
@@ -236,18 +233,19 @@ class Graph(
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
             .map { it to it.returnType.classOrNull?.owner as IrClass }
             .forEach { (function, includedModule) ->
-                val field = module.fields
-                    .single { field ->
-                        field.name.asString() == function.getAnnotation(InjektFqNames.AstFieldPath)!!
-                            .getValueArgument(0)!!
-                            .let { it as IrConst<String> }
-                            .value
-                    }
+                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                    .getValueArgument(0)!!
+                    .let { it as IrConst<String> }
+                    .value
+
                 addModule(
                     ModuleNode(
                         includedModule,
                         Key(includedModule.defaultType),
-                        moduleNode.initializerAccessor.child(field)
+                        moduleNode.initializerAccessor.child(
+                            moduleNode.module
+                                .findPropertyGetter(moduleName)
+                        )
                     )
                 )
             }

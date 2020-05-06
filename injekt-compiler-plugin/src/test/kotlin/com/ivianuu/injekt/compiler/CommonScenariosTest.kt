@@ -59,7 +59,7 @@ class CommonScenariosTest {
                     interface ThisComponent {
                         val annotated: OtherAnnotatedClass
                         val injector: @MembersInjector (OtherMembersInjectorTarget) -> Unit
-                        val childFactory: @ChildFactory (OtherChildComponent) -> Unit
+                        val childFactory: @ChildFactory () -> OtherChildComponent
                     }
                 """
                 )

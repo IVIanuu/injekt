@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -35,19 +36,23 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrBody
@@ -106,9 +111,9 @@ abstract class AbstractInjektTransformer(
     fun IrBuilderWithScope.noArgSingleConstructorCall(clazz: IrClassSymbol): IrConstructorCall =
         irCall(clazz.constructors.single())
 
-    fun IrBuilderWithScope.fieldPathAnnotation(field: IrField): IrConstructorCall =
-        irCall(symbols.astFieldPath.constructors.single()).apply {
-            putValueArgument(0, irString(field.name.asString()))
+    fun IrBuilderWithScope.propertyPathAnnotation(property: IrProperty): IrConstructorCall =
+        irCall(symbols.astPropertyPath.constructors.single()).apply {
+            putValueArgument(0, irString(property.name.asString()))
         }
 
     fun IrBuilderWithScope.classPathAnnotation(clazz: IrClass): IrConstructorCall =
@@ -326,6 +331,37 @@ abstract class AbstractInjektTransformer(
         }
 
         providerCreateFunction(parameters, returnType, this, createBody)
+    }
+
+    fun IrClass.fieldBakedProperty(
+        name: Name,
+        type: IrType
+    ) = addProperty {
+        this.name = name
+    }.apply {
+        parent = this@fieldBakedProperty
+
+        backingField = buildField {
+            this.name = this@apply.name
+            this.type = type
+        }.apply {
+            parent = this@fieldBakedProperty
+        }
+        addGetter {
+            returnType = type
+        }.apply {
+            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+            body = DeclarationIrBuilder(context, symbol).run {
+                irExprBody(
+                    irReturn(
+                        irGetField(
+                            irGet(dispatchReceiverParameter!!),
+                            backingField!!
+                        )
+                    )
+                )
+            }
+        }
     }
 
     private fun IrBuilderWithScope.providerCreateFunction(

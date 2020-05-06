@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.ensureQualifiers
+import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -18,6 +19,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -44,14 +46,13 @@ import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
@@ -91,12 +92,23 @@ class ChildFactoryBindingResolver(
     ) = lazy {
         val superType = function.returnType
 
-        val moduleClass: IrClass? = function.getAnnotation(InjektFqNames.AstClassPath)
+        val moduleClass = function.getAnnotation(InjektFqNames.AstClassPath)
             ?.getValueArgument(0)
             ?.let { it as IrClassReferenceImpl }
             ?.classType
             ?.classOrFail
             ?.owner
+            ?: function.descriptor.annotations.findAnnotation(InjektFqNames.AstClassPath)
+                ?.allValueArguments
+                ?.get(Name.identifier("clazz"))
+                ?.let { it as KClassValue }
+                ?.getArgumentType(factoryImplementation.context.moduleDescriptor)
+                ?.let {
+                    factoryImplementation.context.symbolTable
+                        .referenceClass(it.constructor.declarationDescriptor as ClassDescriptor)
+                }
+                ?.ensureBound(factoryImplementation.context.irProviders)
+                ?.owner
 
         val childFactoryImplementation =
             FactoryImplementation(
@@ -305,27 +317,42 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
         .map { bindingFunction ->
             val bindingKey = bindingFunction.returnType.asKey()
-            val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
+            val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
-                ?.also { println(it.dump()) }
                 ?.getValueArgument(0)
                 ?.let { it as IrClassReferenceImpl }
                 ?.classType
                 ?.classOrFail
                 ?.owner
+                ?: bindingFunction.descriptor.annotations.findAnnotation(InjektFqNames.AstClassPath)
+                    ?.allValueArguments
+                    ?.get(Name.identifier("clazz"))
+                    ?.let { it as KClassValue }
+                    ?.let { it.value as KClassValue.Value.NormalClass }
+                    ?.classId
+                    ?.shortClassName
+                    ?.asString()
+                    ?.substringAfter("\$")
+                    ?.let { name ->
+                        moduleNode.module.declarations
+                            .filterIsInstance<IrClass>()
+                            .single { it.name.asString() == name }
+                    }
 
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
             when {
-                fieldName != null -> {
-                    val field =
-                        moduleNode.module.fields.single { it.name.asString() == fieldName }
+                propertyName != null -> {
+                    val propertyGetter =
+                        moduleNode.module.findPropertyGetter(propertyName)
                     InstanceBindingNode(
                         key = bindingKey,
                         requirementNode = InstanceNode(
-                            key = field.type.asKey(),
-                            initializerAccessor = moduleNode.initializerAccessor.child(field)
+                            key = propertyGetter.returnType.asKey(),
+                            initializerAccessor = moduleNode.initializerAccessor.child(
+                                propertyGetter
+                            )
                         ),
                         owner = factoryImplementation
                     )

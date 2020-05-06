@@ -8,9 +8,11 @@ import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.constructors
@@ -32,6 +34,14 @@ fun InitializerAccessor.child(
 fun InitializerAccessor.child(
     field: IrField
 ): InitializerAccessor = child { irGetField(it(), field) }
+
+fun InitializerAccessor.child(
+    accessor: IrFunction
+): InitializerAccessor = child {
+    irCall(accessor).apply {
+        dispatchReceiver = it()
+    }
+}
 
 interface Node
 

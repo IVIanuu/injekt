@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
@@ -204,11 +205,10 @@ class ModuleTransformer(
         })
 
         var dependencyIndex = 0
-        val dependencyFieldsByCall = dependencyCalls.associateWith { call ->
-            addField(
-                fieldName = "dependency_${dependencyIndex++}",
-                fieldType = call.getTypeArgument(0)!!.ensureQualifiers(symbols),
-                fieldVisibility = Visibilities.PUBLIC
+        val dependencyPropertiesByCall = dependencyCalls.associateWith { call ->
+            fieldBakedProperty(
+                Name.identifier("dependency_${dependencyIndex++}"),
+                call.getTypeArgument(0)!!.ensureQualifiers(symbols)
             )
         }
 
@@ -217,29 +217,24 @@ class ModuleTransformer(
         }
 
         var includeIndex = 0
-        val moduleFieldsByCall = moduleCalls.associateWith { call ->
-            val moduleClass = declarationStore.getModuleClass(
-                call.symbol.owner
-            )
-            addField(
-                fieldName = "module_${includeIndex++}",
-                fieldType = moduleClass.typeWith((0 until call.typeArgumentsCount)
-                    .map { call.getTypeArgument(it)!! }
-                ),
-                fieldVisibility = Visibilities.PUBLIC
+        val modulePropertiesByCalls = moduleCalls.associateWith { call ->
+            val moduleClass = declarationStore.getModuleClass(call.symbol.owner)
+            fieldBakedProperty(
+                Name.identifier("module_${includeIndex++}"),
+                moduleClass.typeWith((0 until call.typeArgumentsCount)
+                    .map { call.getTypeArgument(it)!! })
             )
         }
 
         var instanceIndex = 0
-        val instanceFieldsByCall = instanceCalls.associateWith { call ->
+        val instancePropertiesByCalls = instanceCalls.associateWith { call ->
             val instanceQualifiers =
                 context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: call.getTypeArgument(0)!!
                     .getUserQualifiers()
             val instanceType = call.getTypeArgument(0)!!.withQualifiers(symbols, instanceQualifiers)
-            addField(
-                fieldName = "instance_${instanceIndex++}",
-                fieldType = instanceType,
-                fieldVisibility = Visibilities.PUBLIC
+            fieldBakedProperty(
+                Name.identifier("instance_${instanceIndex++}"),
+                instanceType
             )
         }
 
@@ -290,19 +285,19 @@ class ModuleTransformer(
                     )
                 }
 
-                instanceFieldsByCall.forEach { (call, field) ->
+                instancePropertiesByCalls.forEach { (call, property) ->
                     +irSetField(
                         irGet(thisReceiver!!),
-                        field,
+                        property.backingField!!,
                         call.getValueArgument(0)!!
                     )
                 }
 
-                moduleFieldsByCall.forEach { (call, field) ->
+                modulePropertiesByCalls.forEach { (call, property) ->
                     val module = modulesByCalls.getValue(call)
                     +irSetField(
                         irGet(thisReceiver!!),
-                        field,
+                        property.backingField!!,
                         irCall(module.constructors.single()).apply {
                             (0 until call.typeArgumentsCount)
                                 .map { call.getTypeArgument(it)!! }
@@ -314,10 +309,10 @@ class ModuleTransformer(
                     )
                 }
 
-                dependencyFieldsByCall.forEach { (call, field) ->
+                dependencyPropertiesByCall.forEach { (call, property) ->
                     +irSetField(
                         irGet(thisReceiver!!),
-                        field,
+                        property.backingField!!,
                         call.getValueArgument(0)!!
                     )
                 }
@@ -329,14 +324,14 @@ class ModuleTransformer(
                 module = this,
                 scopeCalls = scopeCalls,
                 dependencyCalls = dependencyCalls,
-                dependencyFieldByCall = dependencyFieldsByCall,
+                dependencyPropertiesByCall = dependencyPropertiesByCall,
                 childFactoryCalls = childFactoryCalls,
                 moduleCalls = moduleCalls,
                 modulesByCalls = modulesByCalls,
-                moduleFieldByCall = moduleFieldsByCall,
+                modulePropertiesByCall = modulePropertiesByCalls,
                 aliasCalls = aliasCalls,
                 instanceCalls = instanceCalls,
-                instanceFieldByCall = instanceFieldsByCall,
+                instancePropertiesByCall = instancePropertiesByCalls,
                 transientCalls = transientCalls,
                 scopedCalls = scopedCalls,
                 providerByCall = providerByCall,
@@ -365,14 +360,14 @@ class ModuleTransformer(
         module: IrClass,
         scopeCalls: List<IrCall>,
         dependencyCalls: List<IrCall>,
-        dependencyFieldByCall: Map<IrCall, IrField>,
+        dependencyPropertiesByCall: Map<IrCall, IrProperty>,
         childFactoryCalls: List<IrCall>,
         moduleCalls: List<IrCall>,
         modulesByCalls: Map<IrCall, IrClass>,
-        moduleFieldByCall: Map<IrCall, IrField>,
+        modulePropertiesByCall: Map<IrCall, IrProperty>,
         aliasCalls: List<IrCall>,
         instanceCalls: List<IrCall>,
-        instanceFieldByCall: Map<IrCall, IrField>,
+        instancePropertiesByCall: Map<IrCall, IrProperty>,
         transientCalls: List<IrCall>,
         scopedCalls: List<IrCall>,
         providerByCall: Map<IrCall, IrClass>,
@@ -410,7 +405,11 @@ class ModuleTransformer(
                 returnType = dependencyType,
                 modality = Modality.ABSTRACT
             ).apply {
-                annotations += fieldPathAnnotation(dependencyFieldByCall.getValue(dependencyCall))
+                annotations += propertyPathAnnotation(
+                    dependencyPropertiesByCall.getValue(
+                        dependencyCall
+                    )
+                )
                 annotations += noArgSingleConstructorCall(symbols.astDependency)
             }
         }
@@ -424,7 +423,7 @@ class ModuleTransformer(
 
             addFunction(
                 name = "child_factory_$index",
-                returnType = functionRef.symbol.owner.returnType,
+                returnType = functionRef.symbol.owner.returnType.ensureQualifiers(symbols),
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astChildFactory)
@@ -435,7 +434,7 @@ class ModuleTransformer(
                 functionRef.symbol.owner.valueParameters.forEachIndexed { index, valueParameter ->
                     addValueParameter(
                         "p${index}",
-                        valueParameter.type
+                        valueParameter.type.ensureQualifiers(symbols)
                     )
                 }
             }
@@ -455,7 +454,7 @@ class ModuleTransformer(
                     }),
                 modality = Modality.ABSTRACT
             ).apply {
-                annotations += fieldPathAnnotation(moduleFieldByCall.getValue(moduleCall))
+                annotations += propertyPathAnnotation(modulePropertiesByCall.getValue(moduleCall))
                 annotations += noArgSingleConstructorCall(symbols.astModule)
             }
         }
@@ -495,12 +494,12 @@ class ModuleTransformer(
                     val assisted = provider.functions
                         .single { it.name.asString() == "invoke" }
                         .valueParameters
-                        .map { it.type }
+                        .map { it.type.ensureQualifiers(symbols) }
 
                     val nonAssisted = provider.constructors
                         .single()
                         .valueParameters
-                        .map { it.type.typeArguments.single() }
+                        .map { it.type.typeArguments.single().ensureQualifiers(symbols) }
 
                     (assisted + nonAssisted).forEachIndexed { index, type ->
                         addValueParameter(
@@ -518,7 +517,11 @@ class ModuleTransformer(
                         annotations += noArgSingleConstructorCall(symbols.astScoped)
                     }
                 } else {
-                    annotations += fieldPathAnnotation(instanceFieldByCall.getValue(bindingCall))
+                    annotations += propertyPathAnnotation(
+                        instancePropertiesByCall.getValue(
+                            bindingCall
+                        )
+                    )
                 }
             }
         }

@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
@@ -318,8 +317,7 @@ class FactoryExpressions(
             val expression: FactoryExpression = bindingExpression@{ context ->
                 val createFunction = (if (provider.kind == ClassKind.OBJECT)
                     provider else provider.declarations
-                    .singleOrNull { it.nameForIrSerialization.asString() == "Companion" } as? IrClass)
-                    .let { it ?: error("lol corrupt provider ${provider.dump()}") }
+                    .single { it.nameForIrSerialization.asString() == "Companion" } as IrClass)
                     .functions
                     .single { it.name.asString() == "create" }
 
@@ -698,10 +696,10 @@ class FactoryExpressions(
 
         val provider = binding.provider
 
-        println(provider.dump())
-
         val moduleRequired =
-            provider.constructors.single().valueParameters.firstOrNull()
+            provider.constructors.singleOrNull()
+                ?.valueParameters
+                ?.firstOrNull()
                 ?.name?.asString() == "module"
 
         val dependencies = binding.dependencies
