@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -39,5 +40,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
             project,
             InjektIrGenerationExtension()
         )
+        InjektDiagnosticSuppressor.registerExtension(project, InjektDiagnosticSuppressor())
     }
 }

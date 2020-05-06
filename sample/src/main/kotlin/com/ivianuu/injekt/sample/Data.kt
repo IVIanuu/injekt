@@ -12,7 +12,6 @@ fun dataModule() {
 }
 
 @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
-@Retention(AnnotationRetention.SOURCE)
 @Qualifier
 annotation class DatabaseFile
 

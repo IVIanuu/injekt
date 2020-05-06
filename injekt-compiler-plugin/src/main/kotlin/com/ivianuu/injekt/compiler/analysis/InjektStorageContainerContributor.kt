@@ -16,6 +16,7 @@ class InjektStorageContainerContributor : StorageComponentContainerContributor {
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())
         container.useInstance(ModuleChecker())
+        container.useInstance(QualifierChecker())
         container.useInstance(ScopeChecker())
         container.useInstance(MembersInjectorChecker())
     }

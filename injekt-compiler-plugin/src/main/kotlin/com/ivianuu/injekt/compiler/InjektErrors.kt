@@ -46,9 +46,14 @@ interface InjektErrors {
         val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
         @JvmField
         val INJECT_MUST_BE_LATEINIT_VAR = error()
-
         @JvmField
         val CANNOT_INVOKE_CHILD_FACTORIES = error()
+
+        @JvmField
+        val MUST_HAVE_RUNTIME_RETENTION = error()
+
+        @JvmField
+        val MISSING_QUALIFIER_TARGETS = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -142,6 +147,14 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.CANNOT_INVOKE_CHILD_FACTORIES,
             "Cannot invoke @ChildFactory functions"
+        )
+        map.put(
+            InjektErrors.MUST_HAVE_RUNTIME_RETENTION,
+            "Annotated class must have runtime retention"
+        )
+        map.put(
+            InjektErrors.MISSING_QUALIFIER_TARGETS,
+            "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)"
         )
     }
 }

@@ -3,6 +3,6 @@ package com.ivianuu.injekt
 @Target(AnnotationTarget.FUNCTION)
 annotation class Factory
 
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
 @Qualifier
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
 annotation class ChildFactory
