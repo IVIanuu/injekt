@@ -39,6 +39,26 @@ class AssistedTest {
         @Factory
         fun create(): TestComponent {
             transient { Foo() }
+            transient { (assisted: String) -> Dep(assisted, get()) }
+            return createImpl()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testAssistedInDsl2() = codegen(
+        """
+        interface TestComponent {
+            val depProvider: @Provider (String) -> Dep
+        } 
+        
+        class Dep(val assisted: String, val foo: Foo)
+        
+        @Factory
+        fun create(): TestComponent {
+            transient { Foo() }
             transient { Dep(it.component1(), get()) }
             return createImpl()
         }
