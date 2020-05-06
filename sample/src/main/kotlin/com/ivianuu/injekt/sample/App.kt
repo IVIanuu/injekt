@@ -19,6 +19,7 @@ class App : Application() {
         super.onCreate()
         appComponent.injectApp(this)
         repo.refresh()
+        println("injected app $repo")
     }
 }
 

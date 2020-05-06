@@ -14,14 +14,14 @@ class MainActivity : AppCompatActivity() {
     val activityComponent by lazy {
         (application as App).appComponent
             .mainActivityComponentFactory(this)
-            .also { it.injectMainActivity(this) }
     }
     @Inject
     private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel
+        activityComponent.injectMainActivity(this)
+        println("Got view model $viewModel")
     }
 }
 
