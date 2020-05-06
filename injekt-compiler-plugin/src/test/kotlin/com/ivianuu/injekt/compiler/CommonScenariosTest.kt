@@ -13,7 +13,8 @@ class CommonScenariosTest {
                 source(
                     """
                     @Module
-                    fun otherModule() {
+                    fun otherModule(instance: String) {
+                        instance(instance)
                         transient { Foo() }
                     }
                     
@@ -49,9 +50,9 @@ class CommonScenariosTest {
                     }
                     
                     @Factory
-                    fun thisFactory(): ThisComponent {
+                    fun thisFactory(instance: String): ThisComponent {
                         thisModule()
-                        otherModule()
+                        otherModule(instance)
                         return createImpl()
                     }
                     

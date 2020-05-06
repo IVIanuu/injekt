@@ -37,12 +37,14 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -71,9 +73,7 @@ class ChildFactoryBindingResolver(
             .forEach { function ->
                 val key = symbols.getFunction(function.valueParameters.size)
                     .typeWith(function.valueParameters.map { it.type } + function.returnType)
-                    .withQualifiers(
-                        symbols,
-                    )
+                    .withQualifiers(symbols, listOf(InjektFqNames.ChildFactory))
                     .asKey()
 
                 childFactoryFunctions.getOrPut(key) { mutableListOf() } += childFactoryBindingNode(
@@ -92,7 +92,11 @@ class ChildFactoryBindingResolver(
         val superType = function.returnType
 
         val moduleClass: IrClass? = function.getAnnotation(InjektFqNames.AstClassPath)
-            ?.getTypeArgument(0)?.classOrFail?.owner
+            ?.getValueArgument(0)
+            ?.let { it as IrClassReferenceImpl }
+            ?.classType
+            ?.classOrFail
+            ?.owner
 
         val childFactoryImplementation =
             FactoryImplementation(
@@ -304,9 +308,12 @@ class ModuleBindingResolver(
             val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
-                ?.getTypeArgument(0)
-                .also { println(it.toString()) }
-                ?.classOrNull?.owner
+                ?.also { println(it.dump()) }
+                ?.getValueArgument(0)
+                ?.let { it as IrClassReferenceImpl }
+                ?.classType
+                ?.classOrFail
+                ?.owner
 
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 

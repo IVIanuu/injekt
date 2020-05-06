@@ -56,6 +56,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
@@ -112,7 +113,16 @@ abstract class AbstractInjektTransformer(
 
     fun IrBuilderWithScope.classPathAnnotation(clazz: IrClass): IrConstructorCall =
         irCall(symbols.astClassPath.constructors.single()).apply {
-            putTypeArgument(0, clazz.defaultType)
+            putValueArgument(
+                0,
+                IrClassReferenceImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    context.irBuiltIns.kClassClass.typeWith(clazz.defaultType),
+                    clazz.symbol,
+                    clazz.defaultType
+                )
+            )
         }
 
     fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {

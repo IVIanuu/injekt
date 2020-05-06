@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.util.toAnnotationDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -17,11 +18,16 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
+import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -30,13 +36,16 @@ import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.types.StarProjectionImpl
+import org.jetbrains.kotlin.types.TypeProjectionImpl
+import org.jetbrains.kotlin.types.Variance
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -53,11 +62,16 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     return descriptor.annotations.hasAnnotation(annotation)
 }
 
-fun IrType.withQualifiers(symbols: InjektSymbols, qualifiers: List<FqName> = emptyList()): IrType {
+fun IrType.withQualifiers(symbols: InjektSymbols, qualifiers: List<FqName>): IrType {
     this as IrSimpleType
     return replace(
-        symbols = symbols,
-        newArguments = arguments.map { it.type.ensureQualifiers(symbols) },
+        newArguments = arguments.map {
+            if (it is IrStarProjection) it
+            else makeTypeProjection(
+                it.type.ensureQualifiers(symbols),
+                (it as? IrTypeProjection)?.variance ?: Variance.INVARIANT
+            )
+        },
         newAnnotations = listOf(
             DeclarationIrBuilder(symbols.context, classOrFail)
                 .irCall(symbols.astQualifiers.constructors.single()).apply {
@@ -119,25 +133,35 @@ fun IrType.getUserQualifiers(): List<FqName> {
 }
 
 private fun IrType.replace(
-    symbols: InjektSymbols,
-    newArguments: List<IrType>,
+    newArguments: List<IrTypeArgument>,
     newAnnotations: List<IrConstructorCall>
 ): IrType {
-    return KotlinTypeFactory.simpleType(
+    val kotlinType = KotlinTypeFactory.simpleType(
         toKotlinType() as SimpleType,
-        arguments = newArguments.map { it.toKotlinType().asTypeProjection() },
+        arguments = newArguments.mapIndexed { index, it ->
+            when (it) {
+                is IrTypeProjection -> TypeProjectionImpl(it.variance, it.type.toKotlinType())
+                is IrStarProjection -> StarProjectionImpl((classifierOrFail.descriptor as ClassDescriptor).typeConstructor.parameters[index])
+                else -> error(it)
+            }
+        },
         annotations = Annotations.create(
             newAnnotations.map { it.toAnnotationDescriptor() }
         )
-    ).let {
-        symbols.context.typeTranslator.translateType(it)
-    }
+    )
+    return IrSimpleTypeImpl(
+        kotlinType,
+        classifierOrFail,
+        isMarkedNullable(),
+        newArguments,
+        newAnnotations,
+    )
 }
 
 val IrType.typeArguments: List<IrType>
     get() = (this as? IrSimpleType)?.arguments?.map { it.type } ?: emptyList()
 
-val IrTypeArgument.type get() = typeOrNull!!
+val IrTypeArgument.type get() = typeOrNull ?: error("Type is null for ${render()}")
 
 val IrType.classOrFail get() = classOrNull!!
 

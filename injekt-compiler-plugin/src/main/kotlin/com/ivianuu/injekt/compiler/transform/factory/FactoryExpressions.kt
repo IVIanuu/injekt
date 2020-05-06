@@ -529,7 +529,10 @@ class FactoryExpressions(
 
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
-            binding.dependencies.single().asBindingRequest()
+            BindingRequest(
+                Key(binding.key.type.typeArguments.single()),
+                RequestType.Provider
+            )
         )
         return providerFieldExpression(binding.key) {
             irCall(
@@ -694,6 +697,8 @@ class FactoryExpressions(
             }
 
         val provider = binding.provider
+
+        println(provider.dump())
 
         val moduleRequired =
             provider.constructors.single().valueParameters.firstOrNull()

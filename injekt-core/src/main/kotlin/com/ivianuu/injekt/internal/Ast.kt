@@ -6,7 +6,7 @@ object InjektAst {
 
     annotation class Path {
         annotation class Field(val name: String)
-        annotation class Class<T>
+        annotation class Class(val clazz: KClass<*>)
     }
 
     annotation class ChildFactory
