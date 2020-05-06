@@ -158,7 +158,7 @@ class Graph(
                         injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = Key(function.returnType),
+                            key = function.returnType.asKey(factoryImplementation.context),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 moduleNode.module.findPropertyGetter(dependencyName)
                             )
@@ -172,14 +172,14 @@ class Graph(
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstMap) }
             .forEach { function ->
-                addMap(Key(function.returnType))
+                addMap(function.returnType.asKey(factoryImplementation.context))
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstMapEntry) }
             .forEach { function ->
                 putMapEntry(
-                    Key(function.valueParameters[0].type),
+                    function.valueParameters[0].type.asKey(factoryImplementation.context),
                     function.valueParameters[1].let { entry ->
                         val entryDescriptor = entry.descriptor
                         when {
@@ -223,22 +223,22 @@ class Graph(
                             else -> error("Corrupt map binding ${function.dump()}")
                         }
                     },
-                    Key(function.valueParameters[1].type)
+                    function.valueParameters[1].type.asKey(factoryImplementation.context)
                 )
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstSet) }
             .forEach { function ->
-                addSet(Key(function.returnType))
+                addSet(function.returnType.asKey(factoryImplementation.context))
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstSetElement) }
             .forEach { function ->
                 addSetElement(
-                    Key(function.valueParameters[0].type),
-                    Key(function.valueParameters[1].type)
+                    function.valueParameters[0].type.asKey(factoryImplementation.context),
+                    function.valueParameters[1].type.asKey(factoryImplementation.context)
                 )
             }
 
@@ -254,7 +254,7 @@ class Graph(
                 addModule(
                     ModuleNode(
                         includedModule,
-                        Key(includedModule.defaultType),
+                        includedModule.defaultType.asKey(factoryImplementation.context),
                         moduleNode.initializerAccessor.child(
                             moduleNode.module
                                 .findPropertyGetter(moduleName)

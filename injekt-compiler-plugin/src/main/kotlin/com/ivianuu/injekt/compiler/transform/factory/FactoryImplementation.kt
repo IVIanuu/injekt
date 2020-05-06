@@ -71,7 +71,7 @@ class FactoryImplementation(
     }
     val factoryImplementationNode =
         FactoryImplementationNode(
-            key = clazz.defaultType.asKey(),
+            key = clazz.defaultType.asKey(context),
             factoryImplementation = this,
             initializerAccessor = { it() }
         )
@@ -123,7 +123,7 @@ class FactoryImplementation(
         factoryImplementationNode = factoryImplementationNode,
         factoryImplementationModule = moduleClass?.let {
             ModuleNode(
-                key = moduleClass.defaultType.asKey(),
+                key = moduleClass.defaultType.asKey(context),
                 module = moduleClass,
                 initializerAccessor = {
                     irGet(moduleConstructorValueParameter.value)
@@ -218,12 +218,12 @@ class FactoryImplementation(
                             !declaration.isFakeOverride
                         )
                             dependencyRequests[declaration] = declaration.returnType
-                                .asKey()
+                                .asKey(context)
                     }
                     is IrProperty -> {
                         if (!declaration.isFakeOverride)
                             dependencyRequests[declaration] = declaration.getter!!.returnType
-                                .asKey()
+                                .asKey(context)
                     }
                 }
             }

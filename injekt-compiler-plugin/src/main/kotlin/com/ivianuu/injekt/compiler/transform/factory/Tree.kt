@@ -2,10 +2,12 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.equalsWithQualifiers
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetField
@@ -139,7 +141,7 @@ class ChildFactoryBindingNode(
     key, listOf(
         DependencyRequest(
             childFactoryImplementation.parent!!.clazz.defaultType
-                .asKey()
+                .asKey(owner.context)
         )
     ),
     null, false, null, owner
@@ -186,7 +188,7 @@ class LazyBindingNode(
     key,
     listOf(
         DependencyRequest(
-            key = Key(key.type.typeArguments.single())
+            key = key.type.typeArguments.single().asKey(owner.context)
         )
     ),
     null,
@@ -200,10 +202,8 @@ class MapBindingNode(
     owner: FactoryImplementation,
     val entries: Map<MapKey, DependencyRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner) {
-    val keyKey =
-        Key(key.type.typeArguments[0])
-    val valueKey =
-        Key(key.type.typeArguments[1])
+    val keyKey = key.type.typeArguments[0].asKey(owner.context)
+    val valueKey = key.type.typeArguments[1].asKey(owner.context)
 }
 
 class MembersInjectorBindingNode(
@@ -214,7 +214,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { DependencyRequest(it.type.asKey()) },
+        .map { DependencyRequest(it.type.asKey(owner.context)) },
     null,
     false,
     null,
@@ -226,11 +226,7 @@ class ProviderBindingNode(
     owner: FactoryImplementation
 ) : BindingNode(
     key,
-    listOf(
-        DependencyRequest(
-            key = Key(key.type.typeArguments.single())
-        )
-    ),
+    listOf(DependencyRequest(key.type.typeArguments.single().asKey(owner.context))),
     null,
     false,
     null,
@@ -252,11 +248,13 @@ class SetBindingNode(
     owner: FactoryImplementation,
     val elements: List<DependencyRequest>
 ) : BindingNode(key, elements, null, false, null, owner) {
-    val elementKey =
-        Key(key.type.typeArguments.single())
+    val elementKey = key.type.typeArguments.single().asKey(owner.context)
 }
 
-fun IrType.asKey() = Key(this)
+fun IrType.asKey(context: IrPluginContext): Key {
+    annotations.forEach { it.symbol.ensureBound(context.irProviders) }
+    return Key(this)
+}
 
 class Key(val type: IrType) {
 

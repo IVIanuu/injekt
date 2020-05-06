@@ -74,7 +74,7 @@ class ChildFactoryBindingResolver(
                 val key = symbols.getFunction(function.valueParameters.size)
                     .typeWith(function.valueParameters.map { it.type } + function.returnType)
                     .withNoArgQualifiers(symbols, listOf(InjektFqNames.ChildFactory))
-                    .asKey()
+                    .asKey(factoryImplementation.context)
 
                 childFactoryFunctions.getOrPut(key) { mutableListOf() } += childFactoryBindingNode(
                     key, function
@@ -283,7 +283,7 @@ class DependencyBindingResolver(
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return allDependencyFunctions
-            .filter { it.returnType.asKey() == requestedKey }
+            .filter { it.returnType.asKey(factoryImplementation.context) == requestedKey }
             .map { dependencyFunction ->
                 val provider = provider(dependencyFunction)
                 DependencyBindingNode(
@@ -310,7 +310,7 @@ class ModuleBindingResolver(
     private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
         .map { bindingFunction ->
-            val bindingKey = bindingFunction.returnType.asKey()
+            val bindingKey = bindingFunction.returnType.asKey(factoryImplementation.context)
             val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
@@ -343,7 +343,7 @@ class ModuleBindingResolver(
                     InstanceBindingNode(
                         key = bindingKey,
                         requirementNode = InstanceNode(
-                            key = propertyGetter.returnType.asKey(),
+                            key = propertyGetter.returnType.asKey(factoryImplementation.context),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 propertyGetter
                             )
@@ -368,11 +368,11 @@ class ModuleBindingResolver(
 
                         val dependencies = bindingFunction.valueParameters
                             .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
-                            .map { it.type.asKey() }
+                            .map { it.type.asKey(factoryImplementation.context) }
                             .map { DependencyRequest(it) }
 
                         AssistedProvisionBindingNode(
-                            key = Key(assistedFactoryType),
+                            key = assistedFactoryType.asKey(factoryImplementation.context),
                             dependencies = dependencies,
                             targetScope = null,
                             scoped = scoped,
@@ -382,12 +382,8 @@ class ModuleBindingResolver(
                         )
                     } else {
                         val dependencies = bindingFunction.valueParameters
-                            .map { it.type.asKey() }
-                            .map {
-                                DependencyRequest(
-                                    it
-                                )
-                            }
+                            .map { it.type.asKey(factoryImplementation.context) }
+                            .map { DependencyRequest(it) }
 
                         ProvisionBindingNode(
                             key = bindingKey,
@@ -407,10 +403,9 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstAlias) }
         .map { delegateFunction ->
             DelegateBindingNode(
-                key = Key(delegateFunction.returnType),
-                originalKey = Key(
-                    delegateFunction.valueParameters.single().type
-                ),
+                key = delegateFunction.returnType.asKey(factoryImplementation.context),
+                originalKey = delegateFunction.valueParameters.single().type
+                    .asKey(factoryImplementation.context),
                 owner = factoryImplementation
             )
         }
@@ -464,7 +459,7 @@ class AnnotatedClassBindingResolver(
 
             val dependencies = provider.constructors.single().valueParameters
                 .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.Assisted) }
-                .map { it.type.asKey() }
+                .map { it.type.asKey(context) }
                 .map { DependencyRequest(it) }
 
             listOf(
@@ -489,9 +484,11 @@ class AnnotatedClassBindingResolver(
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-            val dependencies = provider.constructors.single().valueParameters
-                .map { it.type.typeArguments.single().asKey() }
-                .map { DependencyRequest(it) }
+            val dependencies = provider.constructors
+                .singleOrNull()
+                ?.valueParameters
+                ?.map { it.type.typeArguments.single().asKey(context) }
+                ?.map { DependencyRequest(it) } ?: emptyList()
 
             listOf(
                 ProvisionBindingNode(
@@ -562,14 +559,15 @@ class MapBindingResolver(
                     .typeWith(mapKey.type.typeArguments[1])
                     .withNoArgQualifiers(symbols, listOf(qualifier))
             )
-            .asKey(),
+            .asKey(factoryImplementation.context),
         factoryImplementation,
         entries
             .mapValues {
                 DependencyRequest(
                     key = symbols.getFunction(0)
                         .typeWith(it.value.key.type)
-                        .withNoArgQualifiers(symbols, listOf(qualifier)).asKey()
+                        .withNoArgQualifiers(symbols, listOf(qualifier))
+                        .asKey(factoryImplementation.context)
                 )
             }
     )
@@ -618,23 +616,20 @@ class SetBindingResolver(
         setKey: Key,
         elements: Set<DependencyRequest>
     ) = SetBindingNode(
-        Key(
-            context.symbolTable.referenceClass(context.builtIns.set)
-                .typeWith(
-                    symbols.getFunction(0).typeWith(
-                        setKey.type.typeArguments.single()
-                    ).withNoArgQualifiers(symbols, listOf(qualifier))
-                )
-        ),
+        context.symbolTable.referenceClass(context.builtIns.set)
+            .typeWith(
+                symbols.getFunction(0).typeWith(
+                    setKey.type.typeArguments.single()
+                ).withNoArgQualifiers(symbols, listOf(qualifier))
+            ).asKey(factoryImplementation.context),
         factoryImplementation,
         elements
             .map {
                 DependencyRequest(
-                    key = Key(
-                        symbols.getFunction(0).typeWith(
+                    key = symbols.getFunction(0).typeWith(
                             it.key.type
                         ).withNoArgQualifiers(symbols, listOf(qualifier))
-                    )
+                        .asKey(factoryImplementation.context)
                 )
             }
     )
@@ -674,8 +669,8 @@ class FactoryImplementationBindingResolver(
     private val factoryImplementationNode: FactoryImplementationNode
 ) : BindingResolver {
     private val factorySuperClassKey =
-        factoryImplementationNode.key.type.classOrFail
-            .superTypes().single().asKey()
+        factoryImplementationNode.key.type.classOrFail.superTypes().single()
+            .asKey(factoryImplementationNode.factoryImplementation.context)
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (requestedKey != factorySuperClassKey &&

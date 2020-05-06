@@ -289,7 +289,7 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                Key(binding.key.type.typeArguments.single()),
+                binding.key.type.typeArguments.single().asKey(context),
                 RequestType.Provider
             )
         )
@@ -527,7 +527,7 @@ class FactoryExpressions(
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
             BindingRequest(
-                Key(binding.key.type.typeArguments.single()),
+                binding.key.type.typeArguments.single().asKey(context),
                 RequestType.Provider
             )
         )
@@ -686,11 +686,9 @@ class FactoryExpressions(
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
         val dependencyKeys = binding.dependencies
             .map {
-                Key(
-                    symbols.getFunction(
-                        0
-                    ).typeWith(it.key.type)
-                )
+                symbols.getFunction(0)
+                    .typeWith(it.key.type)
+                    .asKey(context)
             }
 
         val provider = binding.provider
@@ -831,13 +829,12 @@ class FactoryExpressions(
         providerInitializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?
     ): FactoryExpression {
         val field = members.getOrCreateField(
-            Key(
-                symbols.getFunction(
+            symbols.getFunction(
                     0
-                    )
-                    .typeWith(key.type)
-                    .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
-            ),
+                )
+                .typeWith(key.type)
+                .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
+                .asKey(context),
             "provider",
             providerInitializer
         )
