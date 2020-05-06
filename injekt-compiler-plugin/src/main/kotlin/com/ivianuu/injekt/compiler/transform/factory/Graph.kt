@@ -14,7 +14,6 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -23,6 +22,10 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.constants.IntValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.constants.LongValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
@@ -178,36 +181,46 @@ class Graph(
                 putMapEntry(
                     Key(function.valueParameters[0].type),
                     function.valueParameters[1].let { entry ->
+                        val entryDescriptor = entry.descriptor
                         when {
-                            entry.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
+                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
                                 ClassKey(
-                                    (entry.getAnnotation(InjektFqNames.AstMapClassKey)
-                                    !!.getValueArgument(0) as IrClassReference)
-                                        .classType
+                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
+                                    !!.allValueArguments.values.single())
+                                        .let { it as KClassValue }
+                                        .getArgumentType(factoryImplementation.context.moduleDescriptor)
+                                        .let {
+                                            factoryImplementation.context.typeTranslator.translateType(
+                                                it
+                                            )
+                                        }
                                 )
                             }
-                            entry.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
+                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
                                 IntKey(
-                                    (entry.getAnnotation(InjektFqNames.AstMapIntKey)
-                                    !!.getValueArgument(0)!! as IrConst<Int>)
+                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapIntKey)
+                                    !!.allValueArguments.values.single())
+                                        .let { it as IntValue }
                                         .value
                                 )
                             }
-                            entry.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
+                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
                                 LongKey(
-                                    (entry.getAnnotation(InjektFqNames.AstMapLongKey)
-                                    !!.getValueArgument(0)!! as IrConst<Long>)
+                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapLongKey)
+                                    !!.allValueArguments.values.single())
+                                        .let { it as LongValue }
                                         .value
                                 )
                             }
-                            entry.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
+                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
                                 StringKey(
-                                    (entry.getAnnotation(InjektFqNames.AstMapStringKey)
-                                    !!.getValueArgument(0)!! as IrConst<String>)
+                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapStringKey)
+                                    !!.allValueArguments.values.single())
+                                        .let { it as StringValue }
                                         .value
                                 )
                             }
-                            else -> error("Corrupt map binding ${entry.dump()}")
+                            else -> error("Corrupt map binding ${function.dump()}")
                         }
                     },
                     Key(function.valueParameters[1].type)

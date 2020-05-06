@@ -358,9 +358,13 @@ class ModuleBindingResolver(
                     )
                 }
                 else -> {
-                    if (bindingFunction.valueParameters.any { it.hasAnnotation(InjektFqNames.AstAssisted) }) {
+                    if (bindingFunction.valueParameters.any {
+                            it.descriptor.annotations.hasAnnotation(
+                                InjektFqNames.AstAssisted
+                            )
+                        }) {
                         val assistedValueParameters = bindingFunction.valueParameters
-                            .filter { it.hasAnnotation(InjektFqNames.AstAssisted) }
+                            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
 
                         val assistedFactoryType = symbols.getFunction(assistedValueParameters.size)
                             .typeWith(
@@ -369,7 +373,7 @@ class ModuleBindingResolver(
                             ).withQualifiers(symbols, listOf(InjektFqNames.Provider))
 
                         val dependencies = bindingFunction.valueParameters
-                            .filterNot { it.hasAnnotation(InjektFqNames.AstAssisted) }
+                            .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
                             .map { it.type.asKey() }
                             .map {
                                 DependencyRequest(
@@ -470,7 +474,7 @@ class AnnotatedClassBindingResolver(
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
             val dependencies = provider.constructors.single().valueParameters
-                .filterNot { it.hasAnnotation(InjektFqNames.Assisted) }
+                .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.Assisted) }
                 .map { it.type.asKey() }
                 .map { DependencyRequest(it) }
 

@@ -13,7 +13,7 @@ class MapTest {
     fun testMap() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, Command>
+            val map: Map<KClass<out Command>, Command>
         }
         
         @Factory
@@ -21,7 +21,7 @@ class MapTest {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
-            map<kotlin.reflect.KClass<out Command>, Command> {
+            map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
@@ -43,7 +43,7 @@ class MapTest {
     fun testMapOfProvider() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, @Provider () -> Command>
+            val map: Map<KClass<out Command>, @Provider () -> Command>
         }
         
         @Factory
@@ -51,7 +51,7 @@ class MapTest {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
-            map<kotlin.reflect.KClass<out Command>, Command> {
+            map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
@@ -73,7 +73,7 @@ class MapTest {
     fun testMapOfLazy() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, @Lazy () -> Command>
+            val map: Map<KClass<out Command>, @Lazy () -> Command>
         }
         
         @Factory
@@ -81,7 +81,7 @@ class MapTest {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
-            map<kotlin.reflect.KClass<out Command>, Command> {
+            map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
@@ -103,12 +103,12 @@ class MapTest {
     fun testEmptyMap() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, Command>
+            val map: Map<KClass<out Command>, Command>
         }
         
         @Factory
         fun create(): TestComponent {
-            map<kotlin.reflect.KClass<out Command>, Command>()
+            map<KClass<out Command>, Command>()
             return createImpl()
         }
         
@@ -123,13 +123,13 @@ class MapTest {
     fun testSingleEntryMap() = codegen(
         """
         interface TestComponent {
-            val map: Map<kotlin.reflect.KClass<out Command>, Command>
+            val map: Map<KClass<out Command>, Command>
         }
         
         @Factory
         fun create(): TestComponent {
             transient { CommandA() }
-            map<kotlin.reflect.KClass<out Command>, Command> {
+            map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
             return createImpl()

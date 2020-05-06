@@ -24,6 +24,7 @@ fun source(
             appendln("import com.ivianuu.injekt.*")
             appendln("import com.ivianuu.injekt.internal.*")
             appendln("import com.ivianuu.injekt.compiler.*")
+            appendln("import kotlin.reflect.*")
             appendln()
         }
 

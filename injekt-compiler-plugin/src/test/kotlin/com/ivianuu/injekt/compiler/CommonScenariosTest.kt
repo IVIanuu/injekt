@@ -13,6 +13,13 @@ class CommonScenariosTest {
                     fun otherModule(instance: String) {
                         instance(instance)
                         transient { Foo() }
+                        transient { CommandA() }
+                        set<Command> {
+                            add<CommandA>()
+                        }
+                        map<KClass<out Command>, Command> {
+                            put<CommandA>(CommandA::class)
+                        }
                     }
                     
                     @ChildFactory
@@ -22,6 +29,12 @@ class CommonScenariosTest {
                     
                     @Transient
                     class OtherAnnotatedClass(foo: Foo)
+                    
+                    @Transient
+                    class OtherAssistedClass(
+                        @Assisted assisted: String,
+                        foo: Foo
+                    )
                     
                     class OtherMembersInjectorTarget {
                         @Inject lateinit var foo: Foo
@@ -39,6 +52,13 @@ class CommonScenariosTest {
                     @Module
                     fun thisModule() {
                         childFactory(::otherChildFactory)
+                        transient { CommandB() }
+                        set<Command> {
+                            add<CommandB>()
+                        }
+                        map<KClass<out Command>, Command> {
+                            put<CommandB>(CommandB::class)
+                        }
                     }
                     
                     @Factory
@@ -50,8 +70,10 @@ class CommonScenariosTest {
                     
                     interface ThisComponent {
                         val annotated: OtherAnnotatedClass
+                        val assisted: @Provider (String) -> OtherAssistedClass
                         val injector: @MembersInjector (OtherMembersInjectorTarget) -> Unit
                         val childFactory: @ChildFactory () -> OtherChildComponent
+                        val commandSet: Set<Command>
                     }
                 """
             )

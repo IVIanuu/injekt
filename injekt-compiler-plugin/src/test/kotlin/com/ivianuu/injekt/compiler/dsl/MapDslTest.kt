@@ -36,7 +36,7 @@ class MapDslTest {
         """
         @Module
         fun test() { 
-            map<kotlin.reflect.KClass<*>, Any> {
+            map<KClass<*>, Any> {
                 put<String>(String::class)
             }
         }
@@ -51,7 +51,7 @@ class MapDslTest {
         fun key() = String::class
         @Module
         fun test() { 
-            map<kotlin.reflect.KClass<*>, Any> {
+            map<KClass<*>, Any> {
                 put<String>(key())
             }
         }
