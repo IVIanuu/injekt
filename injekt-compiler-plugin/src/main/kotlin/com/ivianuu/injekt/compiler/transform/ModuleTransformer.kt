@@ -5,6 +5,9 @@ import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.ensureQualifiers
+import com.ivianuu.injekt.compiler.getUserQualifiers
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withQualifiers
@@ -37,6 +40,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -51,7 +55,6 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -72,27 +75,20 @@ class ModuleTransformer(
         computeModuleFunctionsIfNeeded()
 
         moduleFunctions.forEach { function ->
-            DeclarationIrBuilder(context, function.symbol).run {
+            DeclarationIrBuilder(context, function.file.symbol).run {
                 getGeneratedModuleClass(function)
             }
         }
 
+        moduleFunctions
+            .map { it.file }
+            .distinct()
+            .forEach {
+                (it as IrFileImpl).metadata =
+                    MetadataSource.File(it.declarations.map { it.descriptor })
+            }
+
         return super.visitModuleFragment(declaration)
-    }
-
-    fun getGeneratedModuleClass(fqName: FqName): IrClass? {
-        transformedModules.values.firstOrNull {
-            it.fqNameForIrSerialization == fqName
-        }?.let { return it }
-
-        val function = moduleFunctions.firstOrNull {
-            val packageName = it.fqNameForIrSerialization.parent()
-            packageName.child(
-                InjektNameConventions.getModuleNameForModuleFunction(it.name)
-            ) == fqName
-        } ?: return null
-
-        return getGeneratedModuleClass(function)
     }
 
     fun getGeneratedModuleClass(function: IrFunction): IrClass? {
@@ -102,10 +98,10 @@ class ModuleTransformer(
             "Unknown function $function"
         }
         transformedModules[function]?.let { return it }
-        return DeclarationIrBuilder(context, function.symbol).run {
+        return DeclarationIrBuilder(context, function.file.symbol).run {
             val packageName = function.fqNameForIrSerialization.parent()
             val moduleName =
-                InjektNameConventions.getModuleNameForModuleFunction(function.name)
+                InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
             val moduleFqName = packageName.child(moduleName)
             check(moduleFqName !in transformingModules) {
                 "Circular dependency for module $moduleFqName"
@@ -113,8 +109,6 @@ class ModuleTransformer(
             transformingModules += moduleFqName
             val moduleClass = moduleClass(function)
             function.file.addChild(moduleClass)
-            (function.file as IrFileImpl).metadata =
-                MetadataSource.File(function.file.declarations.map { it.descriptor })
             function.body = irExprBody(irInjektIntrinsicUnit())
             transformedModules[function] = moduleClass
             transformingModules -= moduleFqName
@@ -142,9 +136,11 @@ class ModuleTransformer(
     private fun IrBuilderWithScope.moduleClass(
         function: IrFunction
     ) = buildClass {
-        name = InjektNameConventions.getModuleNameForModuleFunction(function.name)
+        name = InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
 
         val parameterMap = mutableMapOf<IrValueParameter, IrValueParameter>()
         val fieldsByParameters = mutableMapOf<IrValueParameter, IrField>()
@@ -211,28 +207,19 @@ class ModuleTransformer(
         val dependencyFieldsByCall = dependencyCalls.associateWith { call ->
             addField(
                 fieldName = "dependency_${dependencyIndex++}",
-                fieldType = call.getTypeArgument(0)!!,
+                fieldType = call.getTypeArgument(0)!!.ensureQualifiers(symbols),
                 fieldVisibility = Visibilities.PUBLIC
             )
         }
 
         val modulesByCalls = moduleCalls.associateWith { call ->
-            val packageName = call.symbol.owner.fqNameForIrSerialization
-                .parent()
-            declarationStore.getModule(
-                packageName
-                    .child(InjektNameConventions.getModuleNameForModuleFunction(call.symbol.owner.name))
-            )
+            declarationStore.getModuleClass(call.symbol.owner)
         }
 
         var includeIndex = 0
         val moduleFieldsByCall = moduleCalls.associateWith { call ->
-            val packageName = call.symbol.owner.fqNameForIrSerialization
-                .parent()
-            val moduleClass = declarationStore.getModule(
-                packageName.child(
-                    InjektNameConventions.getModuleNameForModuleFunction(call.symbol.owner.name)
-                )
+            val moduleClass = declarationStore.getModuleClass(
+                call.symbol.owner
             )
             addField(
                 fieldName = "module_${includeIndex++}",
@@ -246,9 +233,9 @@ class ModuleTransformer(
         var instanceIndex = 0
         val instanceFieldsByCall = instanceCalls.associateWith { call ->
             val instanceQualifiers =
-                context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
-            val instanceType = call.getTypeArgument(0)!!
-                .withQualifiers(symbols, instanceQualifiers)
+                context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: call.getTypeArgument(0)!!
+                    .getUserQualifiers()
+            val instanceType = call.getTypeArgument(0)!!.withQualifiers(symbols, instanceQualifiers)
             addField(
                 fieldName = "instance_${instanceIndex++}",
                 fieldType = instanceType,
@@ -397,6 +384,8 @@ class ModuleTransformer(
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
         copyTypeParametersFrom(module)
 
         annotations += noArgSingleConstructorCall(symbols.astModule)
@@ -429,16 +418,9 @@ class ModuleTransformer(
         // child factories
         childFactoryCalls.forEachIndexed { index, childFactoryCall ->
             val functionRef = childFactoryCall.getValueArgument(0)!! as IrFunctionReference
-            val packageName = functionRef.symbol.owner.fqNameForIrSerialization
-                .parent()
-            val moduleFunctionName = InjektNameConventions.getModuleNameForFactoryBlock(
-                functionRef.symbol.owner.name
+            val childFactoryModule = declarationStore.getModuleClassOrNull(
+                declarationStore.getModuleFunctionForFactory(functionRef.symbol.owner)
             )
-            val moduleClassName = InjektNameConventions.getModuleNameForModuleFunction(
-                moduleFunctionName
-            )
-            val moduleClassFqName = packageName.child(moduleClassName)
-            val childFactoryModule = declarationStore.getModuleOrNull(moduleClassFqName)
 
             addFunction(
                 name = "child_factory_$index",
@@ -481,20 +463,22 @@ class ModuleTransformer(
         aliasCalls.forEachIndexed { index, aliasCall ->
             addFunction(
                 name = "alias_$index",
-                returnType = aliasCall.getTypeArgument(1)!!,
+                returnType = aliasCall.getTypeArgument(1)!!.ensureQualifiers(symbols),
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astAlias)
                 addValueParameter(
                     name = "original",
-                    type = aliasCall.getTypeArgument(0)!!
+                    type = aliasCall.getTypeArgument(0)!!.ensureQualifiers(symbols)
                 )
             }
         }
 
         (transientCalls + instanceCalls + scopedCalls).forEachIndexed { index, bindingCall ->
             val bindingQualifiers =
-                context.irTrace[InjektWritableSlices.QUALIFIERS, bindingCall] ?: emptyList()
+                context.irTrace[InjektWritableSlices.QUALIFIERS, bindingCall]
+                    ?: bindingCall.getTypeArgument(0)!!.getUserQualifiers()
+
             val bindingType = bindingCall.getTypeArgument(0)!!
                 .withQualifiers(symbols, bindingQualifiers)
 
@@ -575,7 +559,7 @@ class ModuleTransformer(
                             )
                             addValueParameter(
                                 name = "entry",
-                                type = expression.getTypeArgument(0)!!
+                                type = expression.getTypeArgument(0)!!.ensureQualifiers(symbols)
                             ).apply {
                                 annotations += irMapKeyConstructorForKey(
                                     expression.getValueArgument(0)!!
@@ -625,7 +609,7 @@ class ModuleTransformer(
                             )
                             addValueParameter(
                                 name = "element",
-                                type = expression.getTypeArgument(0)!!
+                                type = expression.getTypeArgument(0)!!.ensureQualifiers(symbols)
                             )
                         }
                     }

@@ -44,18 +44,21 @@ fun codegen(
     vararg sources: SourceFile,
     assertions: KotlinCompilation.Result.() -> Unit = {}
 ) {
-    val result = KotlinCompilation().apply {
-        this.sources = sources.toList()
-        compilerPlugins = listOf(InjektComponentRegistrar())
-        inheritClassPath = true
-        useIR = true
-        jvmTarget = "1.8"
-        verbose = false
-
-    }.compile()
+    val result = compile { this.sources = sources.toList() }
     println("Result: ${result.exitCode} m: ${result.messages}")
     assertions(result)
 }
+
+fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
+    compilerPlugins = listOf(InjektComponentRegistrar())
+    inheritClassPath = true
+    useIR = true
+    jvmTarget = "1.8"
+    verbose = false
+    block()
+}
+
+fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
 
 fun <T> componentTest(
     @Language("kotlin") source: String,
@@ -126,18 +129,12 @@ annotation class TestScope
 annotation class TestScope2
 
 @Retention(AnnotationRetention.SOURCE)
-@Target(
-    AnnotationTarget.EXPRESSION,
-    AnnotationTarget.TYPE
-)
+@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
 @Qualifier
 annotation class TestQualifier1
 
 @Retention(AnnotationRetention.SOURCE)
-@Target(
-    AnnotationTarget.EXPRESSION,
-    AnnotationTarget.TYPE
-)
+@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
 @Qualifier
 annotation class TestQualifier2
 

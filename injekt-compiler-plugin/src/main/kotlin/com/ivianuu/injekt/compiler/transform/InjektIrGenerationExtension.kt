@@ -1,8 +1,7 @@
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.generateSymbols
-import com.ivianuu.injekt.compiler.transform.factory.FactoryBlockTransformer
+import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -18,9 +17,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         }
 
         val declarationStore = InjektDeclarationStore(
-            pluginContext,
-            moduleFragment,
-            InjektSymbols(pluginContext)
+            pluginContext
         )
 
         // write qualifiers of expression to the irTrace
@@ -37,9 +34,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .visitModuleAndGenerateSymbols()
 
         // move the module block of @Factory createImpl { ... } to a @Module function
-        FactoryBlockTransformer(
-            pluginContext
-        ).visitModuleAndGenerateSymbols()
+        FactoryModuleTransformer(pluginContext)
+            .also { declarationStore.factoryModuleTransformer = it }
+            .visitModuleAndGenerateSymbols()
 
         val moduleTransformer = ModuleTransformer(pluginContext, declarationStore)
             .also { declarationStore.moduleTransformer = it }
@@ -54,6 +51,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // create implementations for factories
         factoryTransformer.visitModuleAndGenerateSymbols()
+
+        //WrappedDeclarationRewriter(pluginContext).visitModuleAndGenerateSymbols()
     }
 
 }

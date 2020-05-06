@@ -23,6 +23,7 @@ object InjektFqNames {
     val AstPath = InjektAst.child("Path")
     val AstFieldPath = AstPath.child("Field")
     val AstClassPath = AstPath.child("Class")
+    val AstQualifiers = InjektAst.child("Qualifiers")
     val AstScope = InjektAst.child("Scope")
     val AstScoped = InjektAst.child("Scoped")
     val AstSet = InjektAst.child("Set")
@@ -56,6 +57,7 @@ object InjektFqNames {
     val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")
 
     val Qualifier = InjektPackage.child("Qualifier")
+
     val Scope = InjektPackage.child("Scope")
 
     val SetDsl = InjektPackage.child("SetDsl")

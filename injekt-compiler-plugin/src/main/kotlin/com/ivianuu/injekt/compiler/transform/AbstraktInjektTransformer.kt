@@ -16,20 +16,18 @@ package com.ivianuu.injekt.compiler.transform
  * limitations under the License.
  */
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
@@ -47,14 +45,11 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -64,24 +59,18 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.endOffset
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.referenceFunction
-import org.jetbrains.kotlin.ir.util.startOffset
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
     val context: IrPluginContext
@@ -89,12 +78,11 @@ abstract class AbstractInjektTransformer(
 
     val symbols = InjektSymbols(context)
 
-    protected val irProviders = context.irProviders
+    val irProviders = context.irProviders
     protected val symbolTable = context.symbolTable
     val irBuiltIns = context.irBuiltIns
     protected val builtIns = context.builtIns
     protected val typeTranslator = context.typeTranslator
-    protected fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     lateinit var moduleFragment: IrModuleFragment
 
@@ -103,9 +91,6 @@ abstract class AbstractInjektTransformer(
         visitModuleFragment(module, null)
         module.patchDeclarationParents()
     }
-
-    fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
-        any { it.symbol.descriptor.constructedClass.fqNameSafe == fqName }
 
     fun IrBuilderWithScope.irInjektIntrinsicUnit(): IrExpression {
         return irCall(
@@ -129,37 +114,6 @@ abstract class AbstractInjektTransformer(
         irCall(symbols.astClassPath.constructors.single()).apply {
             putTypeArgument(0, clazz.defaultType)
         }
-
-    fun IrFunction.createParameterDeclarations(descriptor: FunctionDescriptor) {
-        fun ParameterDescriptor.irValueParameter() = IrValueParameterImpl(
-            this.startOffset ?: UNDEFINED_OFFSET,
-            this.endOffset ?: UNDEFINED_OFFSET,
-            IrDeclarationOrigin.DEFINED,
-            this,
-            type.toIrType(),
-            (this as? ValueParameterDescriptor)?.varargElementType?.toIrType()
-        ).also {
-            it.parent = this@createParameterDeclarations
-        }
-
-        fun TypeParameterDescriptor.irTypeParameter() = IrTypeParameterImpl(
-            this.startOffset ?: UNDEFINED_OFFSET,
-            this.endOffset ?: UNDEFINED_OFFSET,
-            IrDeclarationOrigin.DEFINED,
-            IrTypeParameterSymbolImpl(this)
-        ).also {
-            it.parent = this@createParameterDeclarations
-        }
-
-        dispatchReceiverParameter = descriptor.dispatchReceiverParameter?.irValueParameter()
-        extensionReceiverParameter = descriptor.extensionReceiverParameter?.irValueParameter()
-
-        assert(valueParameters.isEmpty()) { "params ${valueParameters.map { it.name }}" }
-        valueParameters = descriptor.valueParameters.map { it.irValueParameter() }
-
-        assert(typeParameters.isEmpty()) { "types ${typeParameters.map { it.name }}" }
-        typeParameters + descriptor.typeParameters.map { it.irTypeParameter() }
-    }
 
     fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {
         +IrDelegatingConstructorCallImpl(
@@ -244,7 +198,9 @@ abstract class AbstractInjektTransformer(
                 .associateWith { (name, type) ->
                     addField(
                         name,
-                        symbols.getFunction(0).typeWith(type)
+                        symbols.getFunction(0)
+                            .typeWith(type)
+                            .withQualifiers(symbols, listOf(InjektFqNames.Provider))
                     )
                 }
 

@@ -1,26 +1,24 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
-import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.ir.util.referenceFunction
 
-class InjektDeclarationStore(
-    private val context: IrPluginContext,
-    private val moduleFragment: IrModuleFragment,
-    private val symbols: InjektSymbols
-) {
+class InjektDeclarationStore(private val context: IrPluginContext) {
 
     lateinit var classProviderTransformer: ClassProviderTransformer
     lateinit var factoryTransformer: TopLevelFactoryTransformer
+    lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleTransformer: ModuleTransformer
 
@@ -52,29 +50,45 @@ class InjektDeclarationStore(
             .owner
     }
 
-    fun getModule(fqName: FqName): IrClass {
-        return getModuleOrNull(fqName)
-            ?: throw DeclarationNotFound("Couldn't find module for $fqName")
+    fun getModuleFunctionForFactory(factoryFunction: IrFunction): IrFunction {
+        factoryModuleTransformer.moduleFunctionsByFactoryFunctions[factoryFunction]?.let { return it }
+        val memberScope =
+            (factoryFunction.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                ?: (factoryFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                ?: error("Unexpected parent ${factoryFunction.descriptor.containingDeclaration} for ${factoryFunction.dump()}")
+        return memberScope.getContributedDescriptors()
+            .filterIsInstance<FunctionDescriptor>()
+            .single {
+                it.name == InjektNameConventions.getModuleNameForFactoryFunction(
+                    factoryFunction.name
+                )
+            }
+            .let { context.symbolTable.referenceFunction(it) }
+            .ensureBound(context.irProviders)
+            .owner
     }
 
-    fun getModuleOrNull(fqName: FqName): IrClass? {
+    fun getModuleClass(moduleFunction: IrFunction): IrClass {
+        return getModuleClassOrNull(moduleFunction)
+            ?: throw DeclarationNotFound("Couldn't find module for ${moduleFunction.dump()}")
+    }
+
+    fun getModuleClassOrNull(moduleFunction: IrFunction): IrClass? {
         return try {
-            moduleTransformer.getGeneratedModuleClass(fqName)
+            moduleTransformer.getGeneratedModuleClass(moduleFunction)
                 ?: throw DeclarationNotFound()
-        } catch (e: DeclarationNotFound) {
-            try {
-                moduleFragment.files
-                    .flatMap { it.declarations }
-                    .filterIsInstance<IrClass>()
-                    .firstOrNull { it.fqNameForIrSerialization == fqName }
-                    ?: throw DeclarationNotFound()
-            } catch (e: DeclarationNotFound) {
-                try {
-                    symbols.getTopLevelClass(fqName).owner
-                } catch (e: Exception) {
-                    null
-                }
-            }
+        } catch (e: Exception) {
+            val memberScope =
+                (moduleFunction.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                    ?: (moduleFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                    ?: error("Unexpected parent ${moduleFunction.descriptor.containingDeclaration} for ${moduleFunction.dump()}")
+            return memberScope.getContributedClassifier(
+                InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction.name),
+                NoLookupLocation.FROM_BACKEND
+            ).let { it as ClassDescriptor }
+                .let { context.symbolTable.referenceClass(it) }
+                .ensureBound(context.irProviders)
+                .owner
         }
     }
 

@@ -1,29 +1,42 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.util.toAnnotationDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeBuilder
-import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
+import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.starProjectedType
+import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.types.KotlinTypeFactory
+import org.jetbrains.kotlin.types.SimpleType
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -40,21 +53,89 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     return descriptor.annotations.hasAnnotation(annotation)
 }
 
-fun IrType.withQualifiers(symbols: InjektSymbols, qualifiers: List<FqName>): IrType {
-    return buildSimpleType {
-        qualifiers.forEach { qualifier ->
-            annotations += DeclarationIrBuilder(symbols.context, classifier!!).irCall(
-                symbols.getTopLevelClass(qualifier).constructors.single()
-            )
+fun IrType.withQualifiers(symbols: InjektSymbols, qualifiers: List<FqName> = emptyList()): IrType {
+    this as IrSimpleType
+    return replace(
+        symbols = symbols,
+        newArguments = arguments.map { it.type.ensureQualifiers(symbols) },
+        newAnnotations = listOf(
+            DeclarationIrBuilder(symbols.context, classOrFail)
+                .irCall(symbols.astQualifiers.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        IrVarargImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            symbols.context.irBuiltIns.arrayClass
+                                .typeWith(
+                                    symbols.context.irBuiltIns.kClassClass
+                                        .starProjectedType
+                                ),
+                            symbols.context.irBuiltIns.kClassClass
+                                .starProjectedType,
+                            qualifiers
+                                .map { symbols.getTopLevelClass(it) }
+                                .map {
+                                    IrClassReferenceImpl(
+                                        UNDEFINED_OFFSET,
+                                        UNDEFINED_OFFSET,
+                                        symbols.context.irBuiltIns.kClassClass.typeWith(it.defaultType),
+                                        it,
+                                        it.defaultType
+                                    )
+                                }
+                        )
+                    )
+                }
+        )
+    )
+}
+
+fun IrType.ensureQualifiers(symbols: InjektSymbols): IrType {
+    return if (hasAnnotation(InjektFqNames.AstQualifiers)) this
+    else withQualifiers(symbols, getUserQualifiers())
+}
+
+fun IrType.getQualifiers(): List<FqName> {
+    return annotations
+        .singleOrNull { it.type.classOrFail.descriptor.fqNameSafe == InjektFqNames.AstQualifiers }
+        ?.getValueArgument(0)
+        ?.let { it as IrVarargImpl }
+        ?.elements
+        ?.filterIsInstance<IrClassReference>()
+        ?.map { it.classType.classOrFail.descriptor.fqNameSafe }
+        ?: emptyList()
+}
+
+fun IrType.getUserQualifiers(): List<FqName> {
+    return annotations
+        .filter {
+            it.type.classOrFail
+                .descriptor
+                .annotations
+                .hasAnnotation(InjektFqNames.Qualifier)
         }
+        .map { it.type.classifierOrFail.descriptor.fqNameSafe }
+}
+
+private fun IrType.replace(
+    symbols: InjektSymbols,
+    newArguments: List<IrType>,
+    newAnnotations: List<IrConstructorCall>
+): IrType {
+    return KotlinTypeFactory.simpleType(
+        toKotlinType() as SimpleType,
+        arguments = newArguments.map { it.toKotlinType().asTypeProjection() },
+        annotations = Annotations.create(
+            newAnnotations.map { it.toAnnotationDescriptor() }
+        )
+    ).let {
+        symbols.context.typeTranslator.translateType(it)
     }
 }
 
 val IrType.typeArguments: List<IrType>
     get() = (this as? IrSimpleType)?.arguments?.map { it.type } ?: emptyList()
-
-fun IrType.buildSimpleType(b: IrSimpleTypeBuilder.() -> Unit): IrSimpleType =
-    (this as IrSimpleType).buildSimpleType(b)
 
 val IrTypeArgument.type get() = typeOrNull!!
 
@@ -88,17 +169,6 @@ fun IrType?.equalsWithQualifiers(other: Any?): Boolean {
     }
 
     return true
-}
-
-fun IrType.getQualifiers(): List<FqName> {
-    return annotations
-        .filter {
-            it.type.classOrFail
-                .descriptor
-                .annotations
-                .hasAnnotation(InjektFqNames.Qualifier)
-        }
-        .map { it.type.classifierOrFail.descriptor.fqNameSafe }
 }
 
 fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
@@ -140,4 +210,15 @@ fun generateSymbols(pluginContext: IrPluginContext) {
             }
         }
     } while ((unbound - visited).isNotEmpty())
+}
+
+fun IrAnnotationContainer.hasAnnotation(fqName: FqName): Boolean =
+    annotations.any { (it.symbol.descriptor.constructedClass.fqNameSafe == fqName) }
+
+fun IrAnnotationContainer.getQualifiers(): List<FqName> {
+    return getAnnotation(InjektFqNames.AstQualifiers)!!.getValueArgument(0)
+        .let { it as IrVarargImpl }
+        .elements
+        .filterIsInstance<IrClassReference>()
+        .map { it.classType.classOrFail.descriptor.fqNameSafe }
 }

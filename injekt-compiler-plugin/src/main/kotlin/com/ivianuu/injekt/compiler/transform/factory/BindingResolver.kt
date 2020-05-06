@@ -6,8 +6,10 @@ import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.ensureQualifiers
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getQualifiers
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -44,7 +46,6 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
@@ -70,7 +71,9 @@ class ChildFactoryBindingResolver(
             .forEach { function ->
                 val key = symbols.getFunction(function.valueParameters.size)
                     .typeWith(function.valueParameters.map { it.type } + function.returnType)
-                    .withQualifiers(symbols, listOf(InjektFqNames.ChildFactory))
+                    .withQualifiers(
+                        symbols,
+                    )
                     .asKey()
 
                 childFactoryFunctions.getOrPut(key) { mutableListOf() } += childFactoryBindingNode(
@@ -245,11 +248,13 @@ class DependencyBindingResolver(
                         parameters = listOf(
                             AbstractInjektTransformer.ProviderParameter(
                                 name = "dependency",
-                                type = dependencyNode.dependency.defaultType,
+                                type = dependencyNode.dependency.defaultType.ensureQualifiers(
+                                    symbols
+                                ),
                                 assisted = false
                             )
                         ),
-                        returnType = dependencyFunction.returnType,
+                        returnType = dependencyFunction.returnType.ensureQualifiers(symbols),
                         createBody = { createFunction ->
                             irExprBody(
                                 irCall(dependencyFunction).apply {
@@ -265,7 +270,10 @@ class DependencyBindingResolver(
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return allDependencyFunctions
-            .filter { it.returnType.asKey() == requestedKey }
+            .filter {
+                it.returnType.ensureQualifiers(factoryImplementation.symbols)
+                    .asKey() == requestedKey
+            }
             .map { dependencyFunction ->
                 val provider = provider(dependencyFunction)
                 DependencyBindingNode(
@@ -296,7 +304,9 @@ class ModuleBindingResolver(
             val fieldName = bindingFunction.getAnnotation(InjektFqNames.AstFieldPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
-                ?.getTypeArgument(0)?.classOrNull?.owner
+                ?.getTypeArgument(0)
+                .also { println(it.toString()) }
+                ?.classOrNull?.owner
 
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
@@ -371,9 +381,7 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstAlias) }
         .map { delegateFunction ->
             DelegateBindingNode(
-                key = Key(
-                    delegateFunction.returnType
-                ),
+                key = Key(delegateFunction.returnType),
                 originalKey = Key(
                     delegateFunction.valueParameters.single().type
                 ),
@@ -423,26 +431,14 @@ class AnnotatedClassBindingResolver(
                 .singleOrNull() ?: return emptyList()
             val provider = declarationStore.getProvider(clazz)
 
-            val constructor = clazz.constructors
-                .single()
-
             val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-            val dependencies = constructor.valueParameters
+            val dependencies = provider.constructors.single().valueParameters
                 .filterNot { it.hasAnnotation(InjektFqNames.Assisted) }
-                .map {
-                    symbols.getFunction(0)
-                        .typeWith(it.type)
-                        .withQualifiers(symbols, listOf(InjektFqNames.Provider))
-                }
-                .map { it.asKey() }
-                .map {
-                    DependencyRequest(
-                        it
-                    )
-                }
+                .map { it.type.asKey() }
+                .map { DependencyRequest(it) }
 
             listOf(
                 AssistedProvisionBindingNode(
@@ -462,20 +458,13 @@ class AnnotatedClassBindingResolver(
                 .singleOrNull() ?: return emptyList()
             val provider = declarationStore.getProvider(clazz)
 
-            val constructor = clazz.constructors
-                .single()
-
             val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-            val dependencies = constructor.valueParameters
-                .map { it.type.asKey() }
-                .map {
-                    DependencyRequest(
-                        it
-                    )
-                }
+            val dependencies = provider.constructors.single().valueParameters
+                .map { it.type.typeArguments.single().asKey() }
+                .map { DependencyRequest(it) }
 
             listOf(
                 ProvisionBindingNode(
@@ -545,7 +534,9 @@ class MapBindingResolver(
                 symbols.getFunction(0)
                     .typeWith(mapKey.type.typeArguments[1])
                     .withQualifiers(symbols, listOf(qualifier))
-            ).asKey(),
+            )
+            .ensureQualifiers(symbols)
+            .asKey(),
         factoryImplementation,
         entries
             .mapValues {
@@ -608,6 +599,7 @@ class SetBindingResolver(
                         setKey.type.typeArguments.single()
                     ).withQualifiers(symbols, listOf(qualifier))
                 )
+                .ensureQualifiers(symbols)
         ),
         factoryImplementation,
         elements
@@ -632,7 +624,7 @@ class LazyOrProviderBindingResolver(
         return when {
             requestedType.isFunction() &&
                     requestedKey.type.classOrFail == symbols.getFunction(0) &&
-                    requestedType.hasAnnotation(InjektFqNames.Lazy) ->
+                    InjektFqNames.Lazy in requestedType.getQualifiers() ->
                 listOf(
                     LazyBindingNode(
                         requestedKey,
@@ -641,7 +633,7 @@ class LazyOrProviderBindingResolver(
                 )
             requestedType.isFunction() &&
                     requestedKey.type.classOrFail == symbols.getFunction(0) &&
-                    requestedType.hasAnnotation(InjektFqNames.Provider) ->
+                    InjektFqNames.Provider in requestedType.getQualifiers() ->
                 listOf(
                     ProviderBindingNode(
                         requestedKey,
@@ -657,7 +649,8 @@ class FactoryImplementationBindingResolver(
     private val factoryImplementationNode: FactoryImplementationNode
 ) : BindingResolver {
     private val factorySuperClassKey =
-        factoryImplementationNode.key.type.classOrFail.superTypes().single().asKey()
+        factoryImplementationNode.key.type.classOrFail
+            .superTypes().single().asKey()
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (requestedKey != factorySuperClassKey &&

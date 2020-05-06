@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.ensureQualifiers
 import com.ivianuu.injekt.compiler.equalsWithQualifiers
 import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
@@ -128,7 +129,8 @@ class ChildFactoryBindingNode(
 ) : BindingNode(
     key, listOf(
         DependencyRequest(
-            childFactoryImplementation.parent!!.clazz.defaultType.asKey()
+            childFactoryImplementation.parent!!.clazz.defaultType
+                .asKey()
         )
     ),
     null, false, null, owner
@@ -177,6 +179,7 @@ class LazyBindingNode(
         DependencyRequest(
             key = Key(
                 key.type.typeArguments.single()
+                    .ensureQualifiers(owner.symbols)
             )
         )
     ),
@@ -205,7 +208,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { DependencyRequest(it.type.asKey()) },
+        .map { DependencyRequest(it.type.ensureQualifiers(owner.symbols).asKey()) },
     null,
     false,
     null,
@@ -221,6 +224,7 @@ class ProviderBindingNode(
         DependencyRequest(
             key = Key(
                 key.type.typeArguments.single()
+                    .ensureQualifiers(owner.symbols)
             )
         )
     ),
@@ -265,6 +269,6 @@ class Key(val type: IrType) {
 
     override fun hashCode(): Int = type.hashCodeWithQualifiers()
 
-    override fun toString(): String = "${type.getQualifiers()}${type.render()}"
+    override fun toString(): String = type.render()
 
 }

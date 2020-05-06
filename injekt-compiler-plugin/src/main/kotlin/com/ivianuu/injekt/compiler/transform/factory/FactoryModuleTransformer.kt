@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -23,23 +24,23 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class FactoryBlockTransformer(
+class FactoryModuleTransformer(
     context: IrPluginContext
 ) : AbstractInjektTransformer(context) {
+
+    val moduleFunctionsByFactoryFunctions = mutableMapOf<IrFunction, IrFunction>()
 
     override fun visitFile(declaration: IrFile): IrFile {
         val factoryFunctions = mutableListOf<IrFunction>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    declaration.annotations.hasAnnotation(InjektFqNames.ChildFactory)
+                if (declaration.hasAnnotation(InjektFqNames.Factory) ||
+                    declaration.hasAnnotation(InjektFqNames.ChildFactory)
                 ) {
                     factoryFunctions += declaration
                 }
@@ -49,8 +50,8 @@ class FactoryBlockTransformer(
 
         factoryFunctions.forEach { factoryFunction ->
             DeclarationIrBuilder(context, factoryFunction.symbol).run {
-                val pre = factoryFunction.dump()
                 val moduleFunction = moduleFunction(factoryFunction)
+                moduleFunctionsByFactoryFunctions[factoryFunction] = moduleFunction
                 (factoryFunction.parent as IrDeclarationContainer).addChild(moduleFunction)
                 moduleFunction.parent = factoryFunction.parent
                 factoryFunction.body = irExprBody(
@@ -64,8 +65,6 @@ class FactoryBlockTransformer(
                         irInjektIntrinsicUnit()
                     }
                 )
-
-                println("transformed factory:\n$pre\n\nto:\n${factoryFunction.dump()}\n\nmodule is:${moduleFunction.dump()}")
             }
         }
 
@@ -74,7 +73,7 @@ class FactoryBlockTransformer(
 
     private fun IrBuilderWithScope.moduleFunction(factoryFunction: IrFunction): IrFunction {
         return buildFun {
-            name = InjektNameConventions.getModuleNameForFactoryBlock(factoryFunction.name)
+            name = InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction.name)
             returnType = irBuiltIns.unitType
         }.apply {
             annotations += noArgSingleConstructorCall(symbols.module)

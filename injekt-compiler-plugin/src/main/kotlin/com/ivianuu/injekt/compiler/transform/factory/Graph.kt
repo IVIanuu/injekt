@@ -8,6 +8,8 @@ import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.classOrFail
+import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -19,7 +21,6 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -132,7 +133,11 @@ class Graph(
             it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
         } as IrClass
 
-        val functions = descriptor.functions
+        val functions = descriptor.functions.toList()
+
+        functions
+            .flatMap { it.annotations }
+            .forEach { it.symbol.ensureBound(factoryTransformer.irProviders) }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstScope) }
@@ -241,9 +246,7 @@ class Graph(
                 addModule(
                     ModuleNode(
                         includedModule,
-                        Key(
-                            includedModule.defaultType
-                        ),
+                        Key(includedModule.defaultType),
                         moduleNode.initializerAccessor.child(field)
                     )
                 )

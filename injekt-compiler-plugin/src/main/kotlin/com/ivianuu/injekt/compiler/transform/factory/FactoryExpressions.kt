@@ -1,8 +1,11 @@
 package com.ivianuu.injekt.compiler.transform.factory
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.ensureQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.withQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -20,6 +23,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
@@ -177,7 +181,7 @@ class FactoryExpressions(
             doubleCheck(
                 getBindingExpression(
                     BindingRequest(
-                        Key(binding.key.type.typeArguments.single()),
+                        binding.dependencies.single().key,
                         RequestType.Provider
                     )
                 )(this, it)
@@ -287,7 +291,7 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                Key(binding.key.type.typeArguments.single()),
+                Key(binding.key.type.typeArguments.single().ensureQualifiers(symbols)),
                 RequestType.Provider
             )
         )
@@ -314,7 +318,8 @@ class FactoryExpressions(
             val expression: FactoryExpression = bindingExpression@{ context ->
                 val createFunction = (if (provider.kind == ClassKind.OBJECT)
                     provider else provider.declarations
-                    .single { it.nameForIrSerialization.asString() == "Companion" } as IrClass)
+                    .singleOrNull { it.nameForIrSerialization.asString() == "Companion" } as? IrClass)
+                    .let { it ?: error("lol corrupt provider ${provider.dump()}") }
                     .functions
                     .single { it.name.asString() == "create" }
 
@@ -524,10 +529,7 @@ class FactoryExpressions(
 
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
-            BindingRequest(
-                Key(binding.key.type.typeArguments.single()),
-                RequestType.Provider
-            )
+            binding.dependencies.single().asBindingRequest()
         )
         return providerFieldExpression(binding.key) {
             irCall(
@@ -675,7 +677,7 @@ class FactoryExpressions(
     private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                Key(binding.key.type.typeArguments.single()),
+                binding.dependencies.single().key,
                 RequestType.Provider
             )
         )
@@ -830,7 +832,9 @@ class FactoryExpressions(
             Key(
                 symbols.getFunction(
                     0
-                ).typeWith(key.type)
+                    )
+                    .typeWith(key.type)
+                    .withQualifiers(symbols, listOf(InjektFqNames.Provider))
             ),
             "provider",
             providerInitializer
