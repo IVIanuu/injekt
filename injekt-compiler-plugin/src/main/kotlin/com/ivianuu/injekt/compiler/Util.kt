@@ -9,15 +9,11 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
@@ -26,11 +22,8 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
-import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -49,7 +42,6 @@ import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
-import org.jetbrains.kotlin.types.Variance
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -66,66 +58,29 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     return descriptor.annotations.hasAnnotation(annotation)
 }
 
-fun IrType.withQualifiers(symbols: InjektSymbols, qualifiers: List<FqName>): IrType {
+fun IrType.withAnnotations(annotations: List<IrConstructorCall>): IrType {
+    if (annotations.isEmpty()) return this
     this as IrSimpleType
     return replace(
-        newArguments = arguments.map {
-            if (it is IrStarProjection) it
-            else makeTypeProjection(
-                it.type.ensureQualifiers(symbols),
-                (it as? IrTypeProjection)?.variance ?: Variance.INVARIANT
-            )
-        },
-        newAnnotations = listOf(
-            DeclarationIrBuilder(symbols.context, classOrFail)
-                .irCall(symbols.astQualifiers.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        IrVarargImpl(
-                            UNDEFINED_OFFSET,
-                            UNDEFINED_OFFSET,
-                            symbols.context.irBuiltIns.arrayClass
-                                .typeWith(
-                                    symbols.context.irBuiltIns.kClassClass
-                                        .starProjectedType
-                                ),
-                            symbols.context.irBuiltIns.kClassClass
-                                .starProjectedType,
-                            qualifiers
-                                .map { symbols.getTopLevelClass(it) }
-                                .map {
-                                    IrClassReferenceImpl(
-                                        UNDEFINED_OFFSET,
-                                        UNDEFINED_OFFSET,
-                                        symbols.context.irBuiltIns.kClassClass.typeWith(it.defaultType),
-                                        it,
-                                        it.defaultType
-                                    )
-                                }
-                        )
-                    )
-                }
-        )
+        newArguments = arguments,
+        newAnnotations = this.annotations + annotations
     )
 }
 
-fun IrType.ensureQualifiers(symbols: InjektSymbols): IrType {
-    return if (hasAnnotation(InjektFqNames.AstQualifiers)) this
-    else withQualifiers(symbols, getUserQualifiers())
+fun IrType.withNoArgQualifiers(symbols: InjektSymbols, qualifiers: List<FqName>): IrType {
+    this as IrSimpleType
+    return replace(
+        newArguments = arguments,
+        newAnnotations = annotations + qualifiers
+            .map { symbols.getTopLevelClass(it) }
+            .map {
+                DeclarationIrBuilder(symbols.context, it)
+                    .irCall(it.constructors.single())
+            }
+    )
 }
 
-fun IrType.getQualifiers(): List<FqName> {
-    return annotations
-        .singleOrNull { it.type.classOrFail.descriptor.fqNameSafe == InjektFqNames.AstQualifiers }
-        ?.getValueArgument(0)
-        ?.let { it as IrVarargImpl }
-        ?.elements
-        ?.filterIsInstance<IrClassReference>()
-        ?.map { it.classType.classOrFail.descriptor.fqNameSafe }
-        ?: emptyList()
-}
-
-fun IrType.getUserQualifiers(): List<FqName> {
+fun IrType.getQualifiers(): List<IrConstructorCall> {
     return annotations
         .filter {
             it.type.classOrFail
@@ -133,8 +88,10 @@ fun IrType.getUserQualifiers(): List<FqName> {
                 .annotations
                 .hasAnnotation(InjektFqNames.Qualifier)
         }
-        .map { it.type.classifierOrFail.descriptor.fqNameSafe }
 }
+
+fun IrType.getQualifierFqNames(): List<FqName> =
+    getQualifiers().map { it.type.classOrFail.descriptor.fqNameSafe }
 
 private fun IrType.replace(
     newArguments: List<IrTypeArgument>,
@@ -173,7 +130,7 @@ fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWit
 
 fun IrType.hashCodeWithQualifiers(): Int {
     var result = hashCode()
-    result = 31 * result + getQualifiers().hashCode()
+    result = 31 * result + qualifiersHash()
     return result
 }
 
@@ -184,7 +141,7 @@ fun IrType?.equalsWithQualifiers(other: Any?): Boolean {
 
     if (this != other) return false
 
-    if (getQualifiers() != other.getQualifiers()) return false
+    if (!getQualifiers().qualifiersEquals(other.getQualifiers())) return false
 
     if (this is IrSimpleType) {
         other as IrSimpleType
@@ -198,6 +155,40 @@ fun IrType?.equalsWithQualifiers(other: Any?): Boolean {
 
     return true
 }
+
+private fun IrType.qualifiersHash() = getQualifiers()
+    .map { it.hash() }
+    .hashCode()
+
+private fun List<IrConstructorCall>.qualifiersEquals(other: List<IrConstructorCall>): Boolean {
+    if (size != other.size) return false
+    for (i in indices) {
+        val thisAnnotation = this[i].toAnnotationDescriptor()
+        val otherAnnotation = other[i].toAnnotationDescriptor()
+        if (thisAnnotation.fqName != otherAnnotation.fqName) return false
+        val thisValues = thisAnnotation.allValueArguments.entries.toList()
+        val otherValues = otherAnnotation.allValueArguments.entries.toList()
+        if (thisValues.size != otherValues.size) return false
+        for (j in thisValues.indices) {
+            val thisValue = thisValues[j]
+            val otherValue = otherValues[j]
+            if (thisValue.key != otherValue.key) return false
+            if (thisValue.value.value != otherValue.value.value) return false
+        }
+    }
+
+    return true
+}
+
+private fun IrConstructorCall.hash(): Int {
+    var result = type.hashCode()
+    result = 31 * result + toAnnotationDescriptor()
+        .allValueArguments
+        .map { it.key to it.value.value }
+        .hashCode()
+    return result
+}
+
 
 fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
     if (!this.isBound) irProviders.forEach { it.getDeclaration(this) }

@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.transform.factory
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.ensureQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -219,13 +218,11 @@ class FactoryImplementation(
                             !declaration.isFakeOverride
                         )
                             dependencyRequests[declaration] = declaration.returnType
-                                .ensureQualifiers(factoryTransformer.symbols)
                                 .asKey()
                     }
                     is IrProperty -> {
                         if (!declaration.isFakeOverride)
                             dependencyRequests[declaration] = declaration.getter!!.returnType
-                                .ensureQualifiers(factoryTransformer.symbols)
                                 .asKey()
                     }
                 }

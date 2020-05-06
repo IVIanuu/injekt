@@ -1,16 +1,16 @@
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 
 object QualifiedExpressionsStore {
 
-    private val qualifiersByKey = mutableMapOf<Int, List<FqName>>()
+    private val qualifiersByKey = mutableMapOf<Int, List<AnnotationDescriptor>>()
 
     fun putQualifiers(
         fileName: String,
         startOffset: Int,
         endOffset: Int,
-        qualifiers: List<FqName>
+        qualifiers: List<AnnotationDescriptor>
     ) {
         qualifiersByKey[key(fileName, startOffset, endOffset)] = qualifiers
     }
@@ -19,7 +19,7 @@ object QualifiedExpressionsStore {
         fileName: String,
         startOffset: Int,
         endOffset: Int
-    ): List<FqName>? {
+    ): List<AnnotationDescriptor>? {
         return qualifiersByKey[key(fileName, startOffset, endOffset)]
     }
 

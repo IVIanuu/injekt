@@ -5,12 +5,10 @@ import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.ensureQualifiers
-import com.ivianuu.injekt.compiler.getUserQualifiers
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.withQualifiers
+import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -208,7 +206,7 @@ class ModuleTransformer(
         val dependencyPropertiesByCall = dependencyCalls.associateWith { call ->
             fieldBakedProperty(
                 Name.identifier("dependency_${dependencyIndex++}"),
-                call.getTypeArgument(0)!!.ensureQualifiers(symbols)
+                call.getTypeArgument(0)!!
             )
         }
 
@@ -229,9 +227,9 @@ class ModuleTransformer(
         var instanceIndex = 0
         val instancePropertiesByCalls = instanceCalls.associateWith { call ->
             val instanceQualifiers =
-                context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: call.getTypeArgument(0)!!
-                    .getUserQualifiers()
-            val instanceType = call.getTypeArgument(0)!!.withQualifiers(symbols, instanceQualifiers)
+                context.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
+            val instanceType = call.getTypeArgument(0)!!
+                .withAnnotations(instanceQualifiers)
             fieldBakedProperty(
                 Name.identifier("instance_${instanceIndex++}"),
                 instanceType
@@ -423,7 +421,7 @@ class ModuleTransformer(
 
             addFunction(
                 name = "child_factory_$index",
-                returnType = functionRef.symbol.owner.returnType.ensureQualifiers(symbols),
+                returnType = functionRef.symbol.owner.returnType,
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astChildFactory)
@@ -434,7 +432,7 @@ class ModuleTransformer(
                 functionRef.symbol.owner.valueParameters.forEachIndexed { index, valueParameter ->
                     addValueParameter(
                         "p${index}",
-                        valueParameter.type.ensureQualifiers(symbols)
+                        valueParameter.type
                     )
                 }
             }
@@ -462,24 +460,23 @@ class ModuleTransformer(
         aliasCalls.forEachIndexed { index, aliasCall ->
             addFunction(
                 name = "alias_$index",
-                returnType = aliasCall.getTypeArgument(1)!!.ensureQualifiers(symbols),
+                returnType = aliasCall.getTypeArgument(1)!!,
                 modality = Modality.ABSTRACT
             ).apply {
                 annotations += noArgSingleConstructorCall(symbols.astAlias)
                 addValueParameter(
                     name = "original",
-                    type = aliasCall.getTypeArgument(0)!!.ensureQualifiers(symbols)
+                    type = aliasCall.getTypeArgument(0)!!
                 )
             }
         }
 
         (transientCalls + instanceCalls + scopedCalls).forEachIndexed { index, bindingCall ->
             val bindingQualifiers =
-                context.irTrace[InjektWritableSlices.QUALIFIERS, bindingCall]
-                    ?: bindingCall.getTypeArgument(0)!!.getUserQualifiers()
+                context.irTrace[InjektWritableSlices.QUALIFIERS, bindingCall] ?: emptyList()
 
             val bindingType = bindingCall.getTypeArgument(0)!!
-                .withQualifiers(symbols, bindingQualifiers)
+                .withAnnotations(bindingQualifiers)
 
             addFunction(
                 name = "binding_$index",
@@ -494,12 +491,12 @@ class ModuleTransformer(
                     val assisted = provider.functions
                         .single { it.name.asString() == "invoke" }
                         .valueParameters
-                        .map { it.type.ensureQualifiers(symbols) }
+                        .map { it.type }
 
                     val nonAssisted = provider.constructors
                         .single()
                         .valueParameters
-                        .map { it.type.typeArguments.single().ensureQualifiers(symbols) }
+                        .map { it.type.typeArguments.single() }
 
                     (assisted + nonAssisted).forEachIndexed { index, type ->
                         addValueParameter(
@@ -535,7 +532,7 @@ class ModuleTransformer(
             val mapType = symbolTable.referenceClass(builtIns.map)
                 .ensureBound(irProviders)
                 .typeWith(mapKeyType, mapValueType)
-                .withQualifiers(symbols, mapQualifiers)
+                .withAnnotations(mapQualifiers)
 
             addFunction(
                 name = "map_$mapIndex",
@@ -562,7 +559,7 @@ class ModuleTransformer(
                             )
                             addValueParameter(
                                 name = "entry",
-                                type = expression.getTypeArgument(0)!!.ensureQualifiers(symbols)
+                                type = expression.getTypeArgument(0)!!
                             ).apply {
                                 annotations += irMapKeyConstructorForKey(
                                     expression.getValueArgument(0)!!
@@ -584,7 +581,7 @@ class ModuleTransformer(
             val setType = symbolTable.referenceClass(builtIns.set)
                 .ensureBound(irProviders)
                 .typeWith(setElementType)
-                .withQualifiers(symbols, setQualifiers)
+                .withAnnotations(annotations)
 
             addFunction(
                 name = "set_$setIndex",
@@ -612,7 +609,7 @@ class ModuleTransformer(
                             )
                             addValueParameter(
                                 name = "element",
-                                type = expression.getTypeArgument(0)!!.ensureQualifiers(symbols)
+                                type = expression.getTypeArgument(0)!!
                             )
                         }
                     }

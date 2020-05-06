@@ -23,7 +23,6 @@ object InjektFqNames {
     val AstPath = InjektAst.child("Path")
     val AstClassPath = AstPath.child("Class")
     val AstPropertyPath = AstPath.child("Property")
-    val AstQualifiers = InjektAst.child("Qualifiers")
     val AstScope = InjektAst.child("Scope")
     val AstScoped = InjektAst.child("Scoped")
     val AstSet = InjektAst.child("Set")

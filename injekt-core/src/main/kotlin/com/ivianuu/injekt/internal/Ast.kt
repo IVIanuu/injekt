@@ -19,9 +19,6 @@ object InjektAst {
 
     annotation class Module
 
-    @Target(AnnotationTarget.TYPE)
-    annotation class Qualifiers(val entries: Array<KClass<*>>)
-
     annotation class Scope
 
     annotation class Scoped

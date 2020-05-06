@@ -2,9 +2,8 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
-import com.ivianuu.injekt.compiler.ensureQualifiers
 import com.ivianuu.injekt.compiler.equalsWithQualifiers
-import com.ivianuu.injekt.compiler.getQualifiers
+import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -92,7 +91,7 @@ data class BindingRequest(
 )
 
 fun Key.inferRequestType() = when {
-    type.isFunction() && type.typeArguments.size == 1 && InjektFqNames.Provider in type.getQualifiers() -> RequestType.Provider
+    type.isFunction() && type.typeArguments.size == 1 && InjektFqNames.Provider in type.getQualifierFqNames() -> RequestType.Provider
     else -> RequestType.Instance
 }
 
@@ -187,10 +186,7 @@ class LazyBindingNode(
     key,
     listOf(
         DependencyRequest(
-            key = Key(
-                key.type.typeArguments.single()
-                    .ensureQualifiers(owner.symbols)
-            )
+            key = Key(key.type.typeArguments.single())
         )
     ),
     null,
@@ -218,7 +214,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { DependencyRequest(it.type.ensureQualifiers(owner.symbols).asKey()) },
+        .map { DependencyRequest(it.type.asKey()) },
     null,
     false,
     null,
@@ -232,10 +228,7 @@ class ProviderBindingNode(
     key,
     listOf(
         DependencyRequest(
-            key = Key(
-                key.type.typeArguments.single()
-                    .ensureQualifiers(owner.symbols)
-            )
+            key = Key(key.type.typeArguments.single())
         )
     ),
     null,
@@ -266,6 +259,7 @@ class SetBindingNode(
 fun IrType.asKey() = Key(this)
 
 class Key(val type: IrType) {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

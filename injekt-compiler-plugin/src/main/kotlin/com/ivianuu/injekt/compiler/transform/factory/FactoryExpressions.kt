@@ -3,9 +3,8 @@ package com.ivianuu.injekt.compiler.transform.factory
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.ensureQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.withQualifiers
+import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -290,7 +289,7 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                Key(binding.key.type.typeArguments.single().ensureQualifiers(symbols)),
+                Key(binding.key.type.typeArguments.single()),
                 RequestType.Provider
             )
         )
@@ -837,7 +836,7 @@ class FactoryExpressions(
                     0
                     )
                     .typeWith(key.type)
-                    .withQualifiers(symbols, listOf(InjektFqNames.Provider))
+                    .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
             ),
             "provider",
             providerInitializer

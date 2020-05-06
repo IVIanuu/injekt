@@ -6,7 +6,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.withQualifiers
+import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -130,7 +130,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                     name = Name.identifier("p${fieldIndex++}")
                     type = symbols.getFunction(0)
                         .typeWith(property.backingField!!.type)
-                        .withQualifiers(symbols, listOf(InjektFqNames.Provider))
+                        .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
                 }
             }
 
