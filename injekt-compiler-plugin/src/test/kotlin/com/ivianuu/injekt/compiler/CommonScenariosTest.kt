@@ -5,7 +5,7 @@ import org.junit.Test
 class CommonScenariosTest {
 
     @Test
-    fun testDifferentCompilations() = multiCompilationCodegen(
+    fun testDifferentCompilations() = multiCodegen(
         listOf(
             source(
                 """

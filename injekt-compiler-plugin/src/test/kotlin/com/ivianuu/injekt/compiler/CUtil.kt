@@ -51,7 +51,7 @@ fun codegen(
     assertions(result)
 }
 
-fun multiCompilationCodegen(
+fun multiCodegen(
     vararg sources: List<SourceFile>,
     assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } }
 ) {
