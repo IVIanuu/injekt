@@ -14,10 +14,13 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -63,10 +66,19 @@ class InstanceNode(
 class ModuleNode(
     val module: IrClass,
     override val key: Key,
-    override val initializerAccessor: InitializerAccessor
+    override val initializerAccessor: InitializerAccessor,
+    val typeParametersMap: Map<IrTypeParameterSymbol, IrType>
 ) : RequirementNode {
     override val prefix: String
         get() = "module"
+
+    init {
+        typeParametersMap.forEach {
+            check(it.value !is IrTypeParameter) {
+                "Must be concrete type ${it.key.owner.dump()} -> ${it.value}"
+            }
+        }
+    }
 }
 
 class FactoryImplementationNode(

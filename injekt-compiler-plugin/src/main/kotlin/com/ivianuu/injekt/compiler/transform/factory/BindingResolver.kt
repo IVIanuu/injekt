@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.substituteByName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -310,7 +311,9 @@ class ModuleBindingResolver(
     private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
         .map { bindingFunction ->
-            val bindingKey = bindingFunction.returnType.asKey(factoryImplementation.context)
+            val bindingKey = bindingFunction.returnType
+                .substituteByName(moduleNode.typeParametersMap)
+                .asKey(factoryImplementation.context)
             val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
@@ -343,7 +346,9 @@ class ModuleBindingResolver(
                     InstanceBindingNode(
                         key = bindingKey,
                         requirementNode = InstanceNode(
-                            key = propertyGetter.returnType.asKey(factoryImplementation.context),
+                            key = propertyGetter.returnType
+                                .substituteByName(moduleNode.typeParametersMap)
+                                .asKey(factoryImplementation.context),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 propertyGetter
                             )
@@ -363,12 +368,19 @@ class ModuleBindingResolver(
                         val assistedFactoryType = symbols.getFunction(assistedValueParameters.size)
                             .typeWith(
                                 assistedValueParameters
-                                    .map { it.type } + bindingKey.type
+                                    .map {
+                                        it.type
+                                            .substituteByName(moduleNode.typeParametersMap)
+                                    } + bindingKey.type
                             ).withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
 
                         val dependencies = bindingFunction.valueParameters
                             .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
-                            .map { it.type.asKey(factoryImplementation.context) }
+                            .map {
+                                it.type
+                                    .substituteByName(moduleNode.typeParametersMap)
+                                    .asKey(factoryImplementation.context)
+                            }
                             .map { DependencyRequest(it) }
 
                         AssistedProvisionBindingNode(
@@ -382,7 +394,11 @@ class ModuleBindingResolver(
                         )
                     } else {
                         val dependencies = bindingFunction.valueParameters
-                            .map { it.type.asKey(factoryImplementation.context) }
+                            .map {
+                                it.type
+                                    .substituteByName(moduleNode.typeParametersMap)
+                                    .asKey(factoryImplementation.context)
+                            }
                             .map { DependencyRequest(it) }
 
                         ProvisionBindingNode(

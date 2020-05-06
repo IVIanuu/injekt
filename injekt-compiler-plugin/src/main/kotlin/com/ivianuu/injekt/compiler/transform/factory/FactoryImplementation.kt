@@ -127,7 +127,8 @@ class FactoryImplementation(
                 module = moduleClass,
                 initializerAccessor = {
                     irGet(moduleConstructorValueParameter.value)
-                }
+                },
+                typeParametersMap = emptyMap()
             )
         },
         declarationStore = declarationStore,

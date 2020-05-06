@@ -263,4 +263,28 @@ class ImplementationTest {
         assertSame(component, dep)
     }
 
+    @Test
+    fun testModuleWithTypeArguments() = codegen(
+        """
+        interface TestComponent {
+            val string: String
+            val int: Int
+        }
+        
+        @Module
+        fun <T> generic(instance: T) {
+            instance(instance)
+        }
+
+        @Factory
+        fun create(): TestComponent { 
+            generic("hello world")
+            generic(42)
+            return createImpl()
+        }
+    """
+    ) {
+        assertOk()
+    }
+
 }

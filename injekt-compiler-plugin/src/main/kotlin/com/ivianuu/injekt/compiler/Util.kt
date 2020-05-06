@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
@@ -23,6 +24,7 @@ import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -30,6 +32,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.IrProvider
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
@@ -243,4 +246,32 @@ fun IrClass.findPropertyGetter(
         .singleOrNull { function ->
             function.name.asString() == "<get-$name>"
         } ?: error("Couldn't find property '$name' in ${dump()}")
+}
+
+fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+    if (this !is IrSimpleType) return this
+
+    (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
+        substitutionMap.toList()
+            .firstOrNull { it.first.owner.name == typeParam.owner.name }
+            ?.let { return it.second }
+    }
+
+    substitutionMap[classifier]?.let { return it }
+
+    val newArguments = arguments.map {
+        if (it is IrTypeProjection) {
+            makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
+        } else {
+            it
+        }
+    }
+
+    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+    return IrSimpleTypeImpl(
+        classifier,
+        hasQuestionMark,
+        newArguments,
+        newAnnotations
+    )
 }

@@ -11,16 +11,20 @@ import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.substituteByName
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.type
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -155,12 +159,14 @@ class Graph(
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
                     .value
+                val dependencyType = function.returnType
+                    .substituteByName(moduleNode.typeParametersMap)
                 addExplicitBindingResolver(
                     DependencyBindingResolver(
                         injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = function.returnType.asKey(factoryImplementation.context),
+                            key = dependencyType.asKey(factoryImplementation.context),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 moduleNode.module.findPropertyGetter(dependencyName)
                             )
@@ -174,14 +180,21 @@ class Graph(
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstMap) }
             .forEach { function ->
-                addMap(function.returnType.asKey(factoryImplementation.context))
+                addMap(
+                    function
+                        .returnType
+                        .substituteByName(moduleNode.typeParametersMap)
+                        .asKey(factoryImplementation.context)
+                )
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstMapEntry) }
             .forEach { function ->
                 putMapEntry(
-                    function.valueParameters[0].type.asKey(factoryImplementation.context),
+                    function.valueParameters[0].type
+                        .substituteByName(moduleNode.typeParametersMap)
+                        .asKey(factoryImplementation.context),
                     function.valueParameters[1].let { entry ->
                         val entryDescriptor = entry.descriptor
                         when {
@@ -225,42 +238,64 @@ class Graph(
                             else -> error("Corrupt map binding ${function.dump()}")
                         }
                     },
-                    function.valueParameters[1].type.asKey(factoryImplementation.context)
+                    function.valueParameters[1].type
+                        .substituteByName(moduleNode.typeParametersMap)
+                        .asKey(factoryImplementation.context)
                 )
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstSet) }
             .forEach { function ->
-                addSet(function.returnType.asKey(factoryImplementation.context))
+                addSet(
+                    function.returnType
+                        .substituteByName(moduleNode.typeParametersMap)
+                        .asKey(factoryImplementation.context)
+                )
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstSetElement) }
             .forEach { function ->
                 addSetElement(
-                    function.valueParameters[0].type.asKey(factoryImplementation.context),
-                    function.valueParameters[1].type.asKey(factoryImplementation.context)
+                    function.valueParameters[0].type
+                        .substituteByName(moduleNode.typeParametersMap)
+                        .asKey(factoryImplementation.context),
+                    function.valueParameters[1].type
+                        .substituteByName(moduleNode.typeParametersMap)
+                        .asKey(factoryImplementation.context)
                 )
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
-            .map { it to it.returnType.classOrNull?.owner as IrClass }
+            .map {
+                it to it.returnType
+                    .substituteByName(moduleNode.typeParametersMap)
+                    .classOrNull?.owner as IrClass
+            }
             .forEach { (function, includedModule) ->
                 val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
                     .value
 
+                val property = moduleNode.module.findPropertyGetter(moduleName)
+
+                val typeParametersMap = includedModule.typeParameters
+                    .map { it.symbol to (property.returnType as IrSimpleType).arguments[it.index].type }
+                    .toMap()
+
+                println("include property ${property.returnType.render()} type params map $typeParametersMap")
+
                 addModule(
                     ModuleNode(
                         includedModule,
-                        includedModule.defaultType.asKey(factoryImplementation.context),
-                        moduleNode.initializerAccessor.child(
-                            moduleNode.module
-                                .findPropertyGetter(moduleName)
-                        )
+                        includedModule.defaultType
+                            .substituteByName(moduleNode.typeParametersMap)
+                            .asKey(factoryImplementation.context),
+                        moduleNode.initializerAccessor.child(property),
+                        typeParametersMap
                     )
                 )
             }
