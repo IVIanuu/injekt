@@ -17,7 +17,6 @@ interface InjektErrors {
         val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error()
         @JvmField
         val CREATE_IMPl_WITHOUT_FACTORY = error()
-
         @JvmField
         val CREATE_INSTANCE_IN_CHILD_FACTORY = error()
         @JvmField
