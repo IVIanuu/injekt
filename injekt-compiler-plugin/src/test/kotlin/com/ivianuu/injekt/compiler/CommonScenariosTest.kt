@@ -129,4 +129,46 @@ class CommonScenariosTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun viewModelFeature() = codegen(
+        """
+        abstract class ViewModel
+        
+        @Transient
+        class ViewModelStore {
+            fun <T : ViewModel> getOrCreate(key: String, factory: () -> T): T = error("")
+        }
+        
+        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+        @Qualifier
+        annotation class OriginalViewModel
+        
+        @Module
+        fun <T : ViewModel> viewModel(key: String, definition: ProviderDefinition<T>) {
+            transient<@OriginalViewModel T>(definition)
+            transient {
+                val viewModelStore = get<ViewModelStore>()
+                val viewModelProvider = get<@Provider () -> @OriginalViewModel T>()
+                viewModelStore.getOrCreate<T>(key, viewModelProvider)
+            }
+        }
+        
+        class MyViewModel : ViewModel()
+
+        interface ViewModelComponent {
+            val myViewModel: MyViewModel
+        }
+        
+        @Factory
+        fun create(): ViewModelComponent {
+            viewModel("a") { MyViewModel() }
+            return createImpl()
+        }
+        
+        fun invoke() = create().myViewModel
+    """
+    ) {
+        invokeSingleFile()
+    }
+
 }

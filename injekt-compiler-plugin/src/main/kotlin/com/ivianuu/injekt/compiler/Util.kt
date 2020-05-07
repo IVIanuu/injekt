@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -97,6 +98,23 @@ fun IrType.withAnnotations(annotations: List<IrConstructorCall>): IrType {
     return replace(
         newArguments = arguments,
         newAnnotations = this.annotations + annotations
+    )
+}
+
+fun IrType.withAnnotations(
+    pluginContext: IrPluginContext,
+    symbol: IrSymbol,
+    annotations: List<AnnotationDescriptor>
+): IrType {
+    if (annotations.isEmpty()) return this
+    this as IrSimpleType
+    return replace(
+        newArguments = arguments,
+        newAnnotations = this.annotations + annotations
+            .map {
+                InjektDeclarationIrBuilder(pluginContext, symbol)
+                    .generateAnnotationConstructorCall(it)!!
+            }
     )
 }
 
@@ -284,10 +302,12 @@ fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>)
     (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
         substitutionMap.toList()
             .firstOrNull { it.first.owner.name == typeParam.owner.name }
-            ?.let { return it.second }
+            ?.let { return it.second.withAnnotations(annotations) }
     }
 
-    substitutionMap[classifier]?.let { return it }
+    substitutionMap[classifier]?.let {
+        return it.withAnnotations(annotations)
+    }
 
     val newArguments = arguments.map {
         if (it is IrTypeProjection) {

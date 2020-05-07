@@ -143,6 +143,7 @@ class ModuleDeclarationFactory(
             val nonAssisted = provider.constructors
                 .single()
                 .valueParameters
+                .filter { it.name.asString() != "module" }
                 .map { it.type.typeArguments.single() }
 
             parameters += (assisted + nonAssisted).mapIndexed { index, type ->
@@ -379,6 +380,10 @@ class ModuleDeclarationFactory(
                                     .indexOfFirst { it.name.asString() == typeParameterName }
                                 call.getTypeArgument(index)!!
                             }
+                            .withAnnotations(
+                                pluginContext, moduleClass.symbol,
+                                bindingFunction.returnType.toKotlinType().annotations.toList()
+                            )
 
                     if (!bindingType.toKotlinType().isTypeParameter()) {
                         val provider = providerFactory.providerForClass(
@@ -414,6 +419,10 @@ class ModuleDeclarationFactory(
                                 call.getValueArgument(index)
                             }
                     bindingType = definitionExpression!!.type.typeArguments.last()
+                        .withAnnotations(
+                            pluginContext, moduleClass.symbol,
+                            bindingFunction.returnType.toKotlinType().annotations.toList()
+                        )
 
                     if (definitionExpression is IrFunctionExpression) {
                         val provider = providerFactory.providerForDefinition(

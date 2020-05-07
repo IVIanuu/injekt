@@ -69,6 +69,7 @@ class ModuleImplementation(
         name = InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
         visibility = function.visibility
     }.apply {
+        parent = function.parent
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
         copyTypeParametersFrom(function)
@@ -76,13 +77,7 @@ class ModuleImplementation(
 
     fun build() {
         clazz.apply clazz@{
-            val declarations = parseModuleDefinition()
-            moduleDescriptor.addDeclarations(declarations)
-
-            addChild(moduleDescriptor.clazz)
-            println(moduleDescriptor.clazz.dump())
-
-            addConstructor {
+            val constructor = addConstructor {
                 returnType = defaultType
                 isPrimary = true
                 visibility = Visibilities.PUBLIC
@@ -107,22 +102,27 @@ class ModuleImplementation(
                         p.type
                     ).also { fieldsByParameters[p] = it }
                 }
+            }
+            val declarations = parseModuleDefinition()
+            moduleDescriptor.addDeclarations(declarations)
 
-                body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                    builder.irBlockBody {
-                        initializeClassWithAnySuperClass(this@clazz.symbol)
+            addChild(moduleDescriptor.clazz)
+            println(moduleDescriptor.clazz.dump())
 
-                        fieldsByParameters.forEach { (parameter, field) ->
-                            +irSetField(
-                                irGet(thisReceiver!!),
-                                field,
-                                irGet(parameter)
-                            )
-                        }
+            constructor.body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                builder.irBlockBody {
+                    initializeClassWithAnySuperClass(this@clazz.symbol)
 
-                        initializerBlocks.forEach {
-                            +it(this) { irGet(thisReceiver!!) }
-                        }
+                    fieldsByParameters.forEach { (parameter, field) ->
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            field,
+                            irGet(parameter)
+                        )
+                    }
+
+                    initializerBlocks.forEach {
+                        +it(this) { irGet(thisReceiver!!) }
                     }
                 }
             }
