@@ -222,4 +222,29 @@ class ModuleDslTest {
     ) {
         assertCompileError("@Scope")
     }
+
+    @Test
+    fun testModuleInsideClass() = codegen(
+        """
+            class Class {
+                @Factory
+                fun factory(): TestComponent = createImpl()
+            }
+            """
+    ) {
+        assertCompileError("top level")
+    }
+
+    @Test
+    fun testModuleInsideObject() = codegen(
+        """
+            object Class {
+                @Factory
+                fun factory(): TestComponent = createImpl()
+            }
+            """
+    ) {
+        assertOk()
+    }
+
 }

@@ -45,7 +45,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
                 ?.let { it as? ClassDescriptor }
                 ?.takeIf { it.kind != ClassKind.OBJECT }
-                ?.let { context.trace.report(InjektErrors.FACTORY_MUST_BE_STATIC.on(declaration)) }
+                ?.let { context.trace.report(InjektErrors.MUST_BE_STATIC.on(declaration)) }
 
             checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,

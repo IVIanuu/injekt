@@ -191,18 +191,6 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testNonStaticFactoryFails() = codegen(
-        """
-        class Class {
-            @Factory
-            fun factory(): TestComponent = createImpl()
-        }
-    """
-    ) {
-        assertCompileError("static")
-    }
-
-    @Test
     fun testCannotInvokeChildFactories() = codegen(
         """
             @ChildFactory
@@ -247,6 +235,30 @@ class FactoryDslTest {
             """
     ) {
         assertCompileError("childfactory")
+    }
+
+    @Test
+    fun testFactoryInsideClass() = codegen(
+        """
+            class Class {
+                @Factory
+                fun factory(): TestComponent = createImpl()
+            }
+            """
+    ) {
+        assertCompileError("top level")
+    }
+
+    @Test
+    fun testFactoryInsideObject() = codegen(
+        """
+            object Class {
+                @Factory
+                fun factory(): TestComponent = createImpl()
+            }
+            """
+    ) {
+        assertOk()
     }
 
 }
