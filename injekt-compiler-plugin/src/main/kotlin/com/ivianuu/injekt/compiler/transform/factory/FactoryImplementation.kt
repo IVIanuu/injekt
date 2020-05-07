@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -21,17 +22,20 @@ import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -39,26 +43,29 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.Name
 
 class FactoryImplementation(
-    val parent: FactoryImplementation?,
-    val irParent: IrDeclarationParent,
     val name: Name,
     val superType: IrType,
-    val moduleClass: IrClass?,
-    val context: IrPluginContext,
-    val symbols: InjektSymbols,
-    val factoryTransformer: TopLevelFactoryTransformer,
-    val declarationStore: InjektDeclarationStore
-) {
+    val parent: FactoryImplementation?,
+    val factoryFunction: IrFunction?,
+    irParent: IrDeclarationContainer,
+    moduleClass: IrClass,
+    context: IrPluginContext,
+    symbols: InjektSymbols,
+    factoryTransformer: TopLevelFactoryTransformer,
+    declarationStore: InjektDeclarationStore
+) : AbstractFactoryProduct(moduleClass, context, symbols, factoryTransformer, declarationStore) {
 
     val clazz = buildClass {
         this.name = this@FactoryImplementation.name
     }.apply {
-        parent = irParent
+        this.parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
         superTypes += superType
@@ -78,20 +85,11 @@ class FactoryImplementation(
             initializerAccessor = { it() }
         )
 
-    val factoryMembers =
-        FactoryMembers(
-            factoryImplementationNode,
-            this@FactoryImplementation.context
-        )
-
-    val factoryExpressions: FactoryExpressions =
-        FactoryExpressions(
-            context = this@FactoryImplementation.context,
-            symbols = symbols,
-            members = factoryMembers,
-            parent = parent?.factoryExpressions,
-            factoryImplementation = this
-        )
+    override val factoryMembers = ClassFactoryMembers(
+        context,
+        clazz,
+        factoryImplementationNode.factoryImplementation
+    )
 
     val parentField by lazy {
         if (parent != null) {
@@ -113,46 +111,52 @@ class FactoryImplementation(
     val moduleConstructorValueParameter = lazy {
         constructor.addValueParameter(
             "module",
-            moduleClass!!.defaultType
+            moduleClass.defaultType
         )
     }
 
-    val graph: Graph = Graph(
-        parent = parent?.graph,
-        factoryImplementation = this,
-        factoryTransformer = factoryTransformer,
-        context = this@FactoryImplementation.context,
-        factoryImplementationNode = factoryImplementationNode,
-        factoryImplementationModule = moduleClass?.let {
-            ModuleNode(
-                key = moduleClass.defaultType.asKey(context),
-                module = moduleClass,
-                initializerAccessor = {
-                    irGet(moduleConstructorValueParameter.value)
-                },
-                typeParametersMap = emptyMap()
-            )
-        },
-        declarationStore = declarationStore,
-        symbols = symbols,
-        factoryMembers = factoryMembers
-    ).also { factoryExpressions.graph = it }
-
-    private val dependencyRequests = mutableMapOf<IrDeclaration, Key>()
-
     init {
-        collectDependencyRequests()
-        graph.validate(dependencyRequests.values.toList())
+        val dependencyRequests = collectDependencyRequests()
+        init(
+            parent,
+            dependencyRequests.values.toList()
+        ) {
+            irGet(moduleConstructorValueParameter.value)
+        }
 
         DeclarationIrBuilder(context, clazz.symbol).run {
-            implementDependencyRequests()
+            implementDependencyRequests(dependencyRequests)
             writeConstructor()
+        }
+
+        if (factoryFunction != null) {
+            val moduleCall = factoryFunction.body!!.statements[0] as IrCall
+            factoryFunction.file.addChild(clazz)
+            factoryFunction.body = DeclarationIrBuilder(context, factoryFunction.symbol).run {
+                irExprBody(
+                    irCall(constructor).apply {
+                        if (constructor.valueParameters.isNotEmpty()) {
+                            putValueArgument(
+                                0,
+                                irCall(moduleClass.constructors.single()).apply {
+                                    copyTypeArgumentsFrom(moduleCall)
+                                    (0 until moduleCall.valueArgumentsCount).forEach {
+                                        putValueArgument(it, moduleCall.getValueArgument(it))
+                                    }
+                                }
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
 
-    private fun IrBuilderWithScope.implementDependencyRequests(): Unit = clazz.run clazz@{
-        dependencyRequests.forEach { (declaration, key) ->
-            val binding = graph.getBinding(key)
+    private fun IrBuilderWithScope.implementDependencyRequests(
+        dependencyRequests: Map<IrDeclaration, DependencyRequest>
+    ): Unit = clazz.run clazz@{
+        dependencyRequests.forEach { (declaration, request) ->
+            val binding = graph.getBinding(request.key)
             when (declaration) {
                 is IrFunction -> {
                     addFunction {
@@ -211,18 +215,21 @@ class FactoryImplementation(
         }
     }
 
-    private fun collectDependencyRequests() {
+    private fun collectDependencyRequests(): Map<IrDeclaration, DependencyRequest> {
+        val dependencyRequests = mutableMapOf<IrDeclaration, DependencyRequest>()
         fun IrClass.collectDependencyRequests(sub: IrClass?) {
             for (declaration in declarations) {
                 fun reqisterRequest(type: IrType) {
-                    dependencyRequests[declaration] = type
-                        .substitute(
-                            typeParameters,
-                            sub?.superTypes
-                                ?.single { it.classOrNull?.owner == this }
-                                ?.typeArguments ?: emptyList()
-                        )
-                        .asKey(context)
+                    dependencyRequests[declaration] = DependencyRequest(
+                        type
+                            .substitute(
+                                typeParameters,
+                                sub?.superTypes
+                                    ?.single { it.classOrNull?.owner == this }
+                                    ?.typeArguments ?: emptyList()
+                            )
+                            .asKey(context)
+                    )
                 }
 
                 when (declaration) {
@@ -246,6 +253,7 @@ class FactoryImplementation(
 
         val superType = clazz.superTypes.single().classOrFail.owner
         superType.collectDependencyRequests(clazz)
+        return dependencyRequests
     }
 
     private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
@@ -297,7 +305,7 @@ class FactoryImplementation(
                     )?.let { initExpr ->
                         +irSetField(
                             irGet(clazz.thisReceiver!!),
-                            field.field,
+                            field.backingField!!,
                             initExpr
                         )
                         factoryMembers.initializedFields += key

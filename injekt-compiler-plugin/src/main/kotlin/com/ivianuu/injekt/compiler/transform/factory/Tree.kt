@@ -10,9 +10,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -34,10 +32,6 @@ fun InitializerAccessor.child(
         invoke(this, it)
     }
 }
-
-fun InitializerAccessor.child(
-    field: IrField
-): InitializerAccessor = child { irGetField(it(), field) }
 
 fun InitializerAccessor.child(
     accessor: IrFunction
@@ -131,7 +125,7 @@ sealed class BindingNode(
     val targetScope: FqName?,
     val scoped: Boolean,
     val module: ModuleNode?,
-    val owner: FactoryImplementation
+    val owner: AbstractFactoryProduct
 ) : Node
 
 class AssistedProvisionBindingNode(
@@ -140,7 +134,7 @@ class AssistedProvisionBindingNode(
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val provider: IrClass
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner)
 
@@ -161,7 +155,7 @@ class ChildFactoryBindingNode(
 
 class DelegateBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val originalKey: Key,
 ) : BindingNode(
     key, listOf(
@@ -171,7 +165,7 @@ class DelegateBindingNode(
 
 class DependencyBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val provider: IrClass,
     val requirementNode: DependencyNode
 ) : BindingNode(key, emptyList(), null, false, null, owner)
@@ -189,13 +183,13 @@ class FactoryImplementationBindingNode(
 
 class InstanceBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val requirementNode: InstanceNode,
 ) : BindingNode(key, emptyList(), null, false, null, owner)
 
 class LazyBindingNode(
     key: Key,
-    owner: FactoryImplementation
+    owner: AbstractFactoryProduct
 ) : BindingNode(
     key,
     listOf(
@@ -211,7 +205,7 @@ class LazyBindingNode(
 
 class MapBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val entries: Map<MapKey, DependencyRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner) {
     val keyKey = key.type.typeArguments[0].asKey(owner.context)
@@ -220,7 +214,7 @@ class MapBindingNode(
 
 class MembersInjectorBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val membersInjector: IrClass
 ) : BindingNode(
     key,
@@ -235,7 +229,7 @@ class MembersInjectorBindingNode(
 
 class ProviderBindingNode(
     key: Key,
-    owner: FactoryImplementation
+    owner: AbstractFactoryProduct
 ) : BindingNode(
     key,
     listOf(DependencyRequest(key.type.typeArguments.single().asKey(owner.context))),
@@ -251,13 +245,13 @@ class ProvisionBindingNode(
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val provider: IrClass
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner)
 
 class SetBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: AbstractFactoryProduct,
     val elements: List<DependencyRequest>
 ) : BindingNode(key, elements, null, false, null, owner) {
     val elementKey = key.type.typeArguments.single().asKey(owner.context)

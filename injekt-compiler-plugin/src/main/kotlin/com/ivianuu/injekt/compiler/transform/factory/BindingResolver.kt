@@ -109,9 +109,11 @@ class ChildFactoryBindingResolver(
                 }
                 ?.ensureBound(factoryImplementation.context.irProviders)
                 ?.owner
+        moduleClass!!
 
         val childFactoryImplementation =
             FactoryImplementation(
+                factoryFunction = null,
                 parent = factoryImplementation,
                 irParent = factoryImplementation.clazz,
                 name = members.nameForGroup("child"),
@@ -214,7 +216,7 @@ class ChildFactoryBindingResolver(
                         if (childFactoryImplementation.moduleConstructorValueParameter.isInitialized()) {
                             putValueArgument(
                                 1,
-                                irCall(childFactoryImplementation.moduleClass!!.constructors.single()).apply {
+                                irCall(childFactoryImplementation.moduleClass.constructors.single()).apply {
                                     valueParameters.forEachIndexed { index, parameter ->
                                         putValueArgument(
                                             index,
@@ -235,7 +237,7 @@ class DependencyBindingResolver(
     private val injektTransformer: AbstractInjektTransformer,
     private val dependencyNode: DependencyNode,
     private val members: FactoryMembers,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryProduct: AbstractFactoryProduct
 ) : BindingResolver {
 
     private val allDependencyFunctions = dependencyNode.dependency
@@ -284,14 +286,14 @@ class DependencyBindingResolver(
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return allDependencyFunctions
-            .filter { it.returnType.asKey(factoryImplementation.context) == requestedKey }
+            .filter { it.returnType.asKey(factoryProduct.context) == requestedKey }
             .map { dependencyFunction ->
                 val provider = provider(dependencyFunction)
                 DependencyBindingNode(
                     key = requestedKey,
                     provider = provider,
                     requirementNode = dependencyNode,
-                    owner = factoryImplementation
+                    owner = factoryProduct
                 )
             }
     }
@@ -301,7 +303,7 @@ class ModuleBindingResolver(
     private val moduleNode: ModuleNode,
     descriptor: IrClass,
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryProduct: AbstractFactoryProduct
 ) : BindingResolver {
 
     private val bindingFunctions = descriptor
@@ -313,7 +315,7 @@ class ModuleBindingResolver(
         .map { bindingFunction ->
             val bindingKey = bindingFunction.returnType
                 .substituteByName(moduleNode.typeParametersMap)
-                .asKey(factoryImplementation.context)
+                .asKey(factoryProduct.context)
             val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
             val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
@@ -348,12 +350,12 @@ class ModuleBindingResolver(
                         requirementNode = InstanceNode(
                             key = propertyGetter.returnType
                                 .substituteByName(moduleNode.typeParametersMap)
-                                .asKey(factoryImplementation.context),
+                                .asKey(factoryProduct.context),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 propertyGetter
                             )
                         ),
-                        owner = factoryImplementation
+                        owner = factoryProduct
                     )
                 }
                 else -> {
@@ -379,25 +381,25 @@ class ModuleBindingResolver(
                             .map {
                                 it.type
                                     .substituteByName(moduleNode.typeParametersMap)
-                                    .asKey(factoryImplementation.context)
+                                    .asKey(factoryProduct.context)
                             }
                             .map { DependencyRequest(it) }
 
                         AssistedProvisionBindingNode(
-                            key = assistedFactoryType.asKey(factoryImplementation.context),
+                            key = assistedFactoryType.asKey(factoryProduct.context),
                             dependencies = dependencies,
                             targetScope = null,
                             scoped = scoped,
                             module = moduleNode,
                             provider = provider!!,
-                            owner = factoryImplementation
+                            owner = factoryProduct
                         )
                     } else {
                         val dependencies = bindingFunction.valueParameters
                             .map {
                                 it.type
                                     .substituteByName(moduleNode.typeParametersMap)
-                                    .asKey(factoryImplementation.context)
+                                    .asKey(factoryProduct.context)
                             }
                             .map { DependencyRequest(it) }
 
@@ -408,7 +410,7 @@ class ModuleBindingResolver(
                             scoped = scoped,
                             module = moduleNode,
                             provider = provider!!,
-                            owner = factoryImplementation
+                            owner = factoryProduct
                         )
                     }
                 }
@@ -419,10 +421,10 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstAlias) }
         .map { delegateFunction ->
             DelegateBindingNode(
-                key = delegateFunction.returnType.asKey(factoryImplementation.context),
+                key = delegateFunction.returnType.asKey(factoryProduct.context),
                 originalKey = delegateFunction.valueParameters.single().type
-                    .asKey(factoryImplementation.context),
-                owner = factoryImplementation
+                    .asKey(factoryProduct.context),
+                owner = factoryProduct
             )
         }
 
@@ -435,7 +437,7 @@ class ModuleBindingResolver(
 class MembersInjectorBindingResolver(
     private val symbols: InjektSymbols,
     private val declarationStore: InjektDeclarationStore,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryImplementation: AbstractFactoryProduct
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifierFqNames()) return emptyList()
@@ -456,7 +458,7 @@ class AnnotatedClassBindingResolver(
     private val context: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryProduct: AbstractFactoryProduct
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
 
@@ -486,7 +488,7 @@ class AnnotatedClassBindingResolver(
                     scoped = scoped,
                     module = null,
                     provider = provider,
-                    owner = factoryImplementation
+                    owner = factoryProduct
                 )
             )
         } else {
@@ -514,7 +516,7 @@ class AnnotatedClassBindingResolver(
                     scoped = scoped,
                     module = null,
                     provider = provider,
-                    owner = factoryImplementation
+                    owner = factoryProduct
                 )
             )
         }
@@ -524,7 +526,7 @@ class AnnotatedClassBindingResolver(
 class MapBindingResolver(
     private val context: IrPluginContext,
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation,
+    private val factoryProduct: AbstractFactoryProduct,
     private val parent: MapBindingResolver?
 ) : BindingResolver {
 
@@ -553,7 +555,7 @@ class MapBindingResolver(
                 listOf(
                     MapBindingNode(
                         mapKey,
-                        factoryImplementation,
+                        factoryProduct,
                         entries
                     ),
                     frameworkBinding(InjektFqNames.Lazy, mapKey, entries),
@@ -592,15 +594,15 @@ class MapBindingResolver(
                     .typeWith(mapKey.type.typeArguments[1])
                     .withNoArgQualifiers(symbols, listOf(qualifier))
             )
-            .asKey(factoryImplementation.context),
-        factoryImplementation,
+            .asKey(factoryProduct.context),
+        factoryProduct,
         entries
             .mapValues {
                 DependencyRequest(
                     key = symbols.getFunction(0)
                         .typeWith(it.value.key.type)
                         .withNoArgQualifiers(symbols, listOf(qualifier))
-                        .asKey(factoryImplementation.context)
+                        .asKey(factoryProduct.context)
                 )
             }
     )
@@ -610,7 +612,7 @@ class MapBindingResolver(
 class SetBindingResolver(
     private val context: IrPluginContext,
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation,
+    private val factoryImplementation: AbstractFactoryProduct,
     private val parent: SetBindingResolver?
 ) : BindingResolver {
 
@@ -687,7 +689,7 @@ class SetBindingResolver(
 
 class LazyOrProviderBindingResolver(
     private val symbols: InjektSymbols,
-    private val factoryImplementation: FactoryImplementation
+    private val factoryProduct: AbstractFactoryProduct
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
@@ -698,7 +700,7 @@ class LazyOrProviderBindingResolver(
                 listOf(
                     LazyBindingNode(
                         requestedKey,
-                        factoryImplementation
+                        factoryProduct
                     )
                 )
             requestedType.isFunction() &&
@@ -707,7 +709,7 @@ class LazyOrProviderBindingResolver(
                 listOf(
                     ProviderBindingNode(
                         requestedKey,
-                        factoryImplementation
+                        factoryProduct
                     )
                 )
             else -> emptyList()

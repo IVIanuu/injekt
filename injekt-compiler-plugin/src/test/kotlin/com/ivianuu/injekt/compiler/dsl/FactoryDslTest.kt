@@ -230,7 +230,10 @@ class FactoryDslTest {
     fun testCreateInstanceInFactory() = codegen(
         """
             @Factory
-            fun factory(): TestComponent = createInstance()
+            fun factory(): Foo {
+                transient<Foo>()
+                return createInstance()
+            }
             """
     ) {
         assertOk()

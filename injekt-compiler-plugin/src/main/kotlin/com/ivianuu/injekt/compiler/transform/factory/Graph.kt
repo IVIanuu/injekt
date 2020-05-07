@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -34,10 +33,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
     val parent: Graph?,
-    val factoryImplementation: FactoryImplementation,
+    val factoryProduct: AbstractFactoryProduct,
     val factoryTransformer: TopLevelFactoryTransformer,
     val factoryMembers: FactoryMembers,
-    factoryImplementationNode: FactoryImplementationNode,
     context: IrPluginContext,
     factoryImplementationModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
@@ -52,14 +50,14 @@ class Graph(
         MapBindingResolver(
             context,
             symbols,
-            factoryImplementation,
+            factoryProduct,
             parent?.mapBindingResolver
         )
     val setBindingResolver: SetBindingResolver =
         SetBindingResolver(
             context,
             symbols,
-            factoryImplementation,
+            factoryProduct,
             parent?.setBindingResolver
         )
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
@@ -70,23 +68,25 @@ class Graph(
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(
             symbols,
-            factoryImplementation
+            factoryProduct
         )
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
         implicitBindingResolvers += MembersInjectorBindingResolver(
             symbols,
             declarationStore,
-            factoryImplementation
+            factoryProduct
         )
-        implicitBindingResolvers += FactoryImplementationBindingResolver(
-            factoryImplementationNode
-        )
+        if (factoryProduct is FactoryImplementation) {
+            implicitBindingResolvers += FactoryImplementationBindingResolver(
+                factoryProduct.factoryImplementationNode
+            )
+        }
         implicitBindingResolvers += AnnotatedClassBindingResolver(
             context,
             declarationStore,
             symbols,
-            factoryImplementation
+            factoryProduct
         )
     }
 
@@ -128,10 +128,10 @@ class Graph(
         return binding ?: parent?.getBinding(key) ?: error("No binding found for $key")
     }
 
-    fun validate(keys: List<Key>) {
+    fun validate(keys: List<DependencyRequest>) {
         keys.forEach {
-            val binding = getBinding(it)
-            validate(binding.dependencies.map { it.key })
+            val binding = getBinding(it.key)
+            validate(binding.dependencies)
         }
     }
 
@@ -166,13 +166,13 @@ class Graph(
                         injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = dependencyType.asKey(factoryImplementation.context),
+                            key = dependencyType.asKey(factoryProduct.context),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 moduleNode.module.findPropertyGetter(dependencyName)
                             )
                         ),
                         members = factoryMembers,
-                        factoryImplementation = factoryImplementation
+                        factoryProduct = factoryProduct
                     )
                 )
             }
@@ -184,7 +184,7 @@ class Graph(
                     function
                         .returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryImplementation.context)
+                        .asKey(factoryProduct.context)
                 )
             }
 
@@ -194,7 +194,7 @@ class Graph(
                 putMapEntry(
                     function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryImplementation.context),
+                        .asKey(factoryProduct.context),
                     function.valueParameters[1].let { entry ->
                         val entryDescriptor = entry.descriptor
                         when {
@@ -203,9 +203,9 @@ class Graph(
                                     (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
                                     !!.allValueArguments.values.single())
                                         .let { it as KClassValue }
-                                        .getArgumentType(factoryImplementation.context.moduleDescriptor)
+                                        .getArgumentType(factoryProduct.context.moduleDescriptor)
                                         .let {
-                                            factoryImplementation.context.typeTranslator.translateType(
+                                            factoryProduct.context.typeTranslator.translateType(
                                                 it
                                             )
                                         }
@@ -240,7 +240,7 @@ class Graph(
                     },
                     function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryImplementation.context)
+                        .asKey(factoryProduct.context)
                 )
             }
 
@@ -250,7 +250,7 @@ class Graph(
                 addSet(
                     function.returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryImplementation.context)
+                        .asKey(factoryProduct.context)
                 )
             }
 
@@ -260,10 +260,10 @@ class Graph(
                 addSetElement(
                     function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryImplementation.context),
+                        .asKey(factoryProduct.context),
                     function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryImplementation.context)
+                        .asKey(factoryProduct.context)
                 )
             }
 
@@ -286,14 +286,12 @@ class Graph(
                     .map { it.symbol to (property.returnType as IrSimpleType).arguments[it.index].type }
                     .toMap()
 
-                println("include property ${property.returnType.render()} type params map $typeParametersMap")
-
                 addModule(
                     ModuleNode(
                         includedModule,
                         includedModule.defaultType
                             .substituteByName(moduleNode.typeParametersMap)
-                            .asKey(factoryImplementation.context),
+                            .asKey(factoryProduct.context),
                         moduleNode.initializerAccessor.child(property),
                         typeParametersMap
                     )
@@ -305,19 +303,21 @@ class Graph(
                 moduleNode,
                 descriptor,
                 symbols,
-                factoryImplementation
+                factoryProduct
             )
         )
 
-        addExplicitBindingResolver(
-            ChildFactoryBindingResolver(
-                factoryTransformer,
-                factoryImplementation,
-                descriptor,
-                symbols,
-                factoryMembers
+        if (factoryProduct is FactoryImplementation) {
+            addExplicitBindingResolver(
+                ChildFactoryBindingResolver(
+                    factoryTransformer,
+                    factoryProduct,
+                    descriptor,
+                    symbols,
+                    factoryMembers
+                )
             )
-        )
+        }
     }
 
     private fun addScope(scope: FqName) {

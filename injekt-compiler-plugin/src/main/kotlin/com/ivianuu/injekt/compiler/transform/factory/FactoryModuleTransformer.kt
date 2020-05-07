@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.ir.builders.at
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -54,17 +53,15 @@ class FactoryModuleTransformer(
                 moduleFunctionsByFactoryFunctions[factoryFunction] = moduleFunction
                 (factoryFunction.parent as IrDeclarationContainer).addChild(moduleFunction)
                 moduleFunction.parent = factoryFunction.parent
-                factoryFunction.body = irExprBody(
-                    if (factoryFunction.hasAnnotation(InjektFqNames.Factory)) {
-                        irCall(moduleFunction).apply {
-                            factoryFunction.valueParameters.forEach {
-                                putValueArgument(it.index, irGet(it))
-                            }
+                val oldBody = factoryFunction.body!!
+                factoryFunction.body = irBlockBody {
+                    +irCall(moduleFunction).apply {
+                        factoryFunction.valueParameters.forEach {
+                            putValueArgument(it.index, irGet(it))
                         }
-                    } else {
-                        irInjektIntrinsicUnit()
                     }
-                )
+                    +oldBody.statements.last()
+                }
             }
         }
 
