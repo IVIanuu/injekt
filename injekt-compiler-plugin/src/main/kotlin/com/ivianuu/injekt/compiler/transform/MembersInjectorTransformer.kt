@@ -116,6 +116,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         return buildClass {
             kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
             name = InjektNameConventions.getMembersInjectorNameForClass(clazz.name)
+            visibility = clazz.visibility
         }.apply clazz@{
             superTypes += symbols.getFunction(1)
                 .typeWith(clazz.defaultType, irBuiltIns.unitType)

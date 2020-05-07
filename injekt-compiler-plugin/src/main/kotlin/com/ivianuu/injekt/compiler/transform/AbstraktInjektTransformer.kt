@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.NotFoundClasses
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -224,6 +225,7 @@ abstract class AbstractInjektTransformer(
 
     fun IrBuilderWithScope.provider(
         name: Name,
+        visibility: Visibility,
         parameters: List<ProviderParameter>,
         returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
@@ -233,6 +235,7 @@ abstract class AbstractInjektTransformer(
         return buildClass {
             kind = if (nonAssistedParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
             this.name = name
+            this.visibility = visibility
         }.apply clazz@{
             val superType = symbols.getFunction(assistedParameters.size)
                 .typeWith(
@@ -259,7 +262,7 @@ abstract class AbstractInjektTransformer(
             addConstructor {
                 this.returnType = defaultType
                 isPrimary = true
-                visibility = Visibilities.PUBLIC
+                this.visibility = visibility
             }.apply {
                 fieldsByNonAssistedParameter.forEach { (_, field) ->
                     addValueParameter(
@@ -282,7 +285,12 @@ abstract class AbstractInjektTransformer(
             }
 
             val companion = if (nonAssistedParameters.isNotEmpty()) {
-                providerCompanion(parameters, returnType, createBody).also { addChild(it) }
+                providerCompanion(
+                    visibility,
+                    parameters,
+                    returnType,
+                    createBody
+                ).also { addChild(it) }
             } else null
 
             val createFunction = if (nonAssistedParameters.isEmpty()) {
@@ -294,7 +302,7 @@ abstract class AbstractInjektTransformer(
             addFunction {
                 this.name = Name.identifier("invoke")
                 this.returnType = returnType
-                visibility = Visibilities.PUBLIC
+                this.visibility = Visibilities.PUBLIC
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
@@ -345,6 +353,7 @@ abstract class AbstractInjektTransformer(
     }
 
     private fun IrBuilderWithScope.providerCompanion(
+        visibility: Visibility,
         parameters: List<ProviderParameter>,
         returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
@@ -352,6 +361,7 @@ abstract class AbstractInjektTransformer(
         kind = ClassKind.OBJECT
         name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
         isCompanion = true
+        this.visibility = visibility
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -360,7 +370,7 @@ abstract class AbstractInjektTransformer(
         addConstructor {
             this.returnType = defaultType
             isPrimary = true
-            visibility = Visibilities.PUBLIC
+            this.visibility = visibility
         }.apply {
             body = irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)

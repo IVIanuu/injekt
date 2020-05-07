@@ -64,6 +64,7 @@ class FactoryImplementation(
 
     val clazz = buildClass {
         this.name = this@FactoryImplementation.name
+        visibility = Visibilities.PRIVATE
     }.apply {
         this.parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()

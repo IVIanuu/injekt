@@ -48,6 +48,7 @@ class ClassProviderTransformer(
                 DeclarationIrBuilder(context, clazz.symbol)
                     .provider(
                         name = InjektNameConventions.getProviderNameForClass(clazz.name),
+                        visibility = clazz.visibility,
                         parameters = constructor?.valueParameters
                             ?.mapIndexed { index, valueParameter ->
                                 ProviderParameter(

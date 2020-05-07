@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
@@ -138,6 +139,7 @@ class ModuleTransformer(
         function: IrFunction
     ) = buildClass {
         name = InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
+        visibility = function.visibility
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -247,6 +249,7 @@ class ModuleTransformer(
                     providerForDefinition(
                         providerIndex = index,
                         definition = definition,
+                        visibility = visibility,
                         module = this,
                         moduleParametersMap = parameterMap,
                         moduleFieldsByParameter = fieldsByParameters
@@ -255,7 +258,8 @@ class ModuleTransformer(
                     providerForClass(
                         providerIndex = index,
                         clazz = bindingCall.getTypeArgument(0)!!.classOrFail
-                            .ensureBound(irProviders).owner
+                            .ensureBound(irProviders).owner,
+                        visibility = visibility
                     )
                 }).also { providerByCall[bindingCall] = it }
             )
@@ -631,11 +635,13 @@ class ModuleTransformer(
 
     private fun IrBuilderWithScope.providerForClass(
         providerIndex: Int,
-        clazz: IrClass
+        clazz: IrClass,
+        visibility: Visibility
     ): IrClass {
         val constructor = clazz.constructors.singleOrNull()
         return provider(
             name = Name.identifier("Factory_$providerIndex"),
+            visibility = visibility,
             parameters = constructor?.valueParameters
                 ?.mapIndexed { index, valueParameter ->
                     ProviderParameter(
@@ -667,6 +673,7 @@ class ModuleTransformer(
     private fun IrBuilderWithScope.providerForDefinition(
         providerIndex: Int,
         definition: IrFunctionExpression,
+        visibility: Visibility,
         module: IrClass,
         moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
         moduleFieldsByParameter: Map<IrValueParameter, IrField>
@@ -725,6 +732,7 @@ class ModuleTransformer(
 
         return provider(
             name = Name.identifier("Factory_$providerIndex"),
+            visibility = visibility,
             parameters = parameters,
             returnType = type,
             createBody = { createFunction ->

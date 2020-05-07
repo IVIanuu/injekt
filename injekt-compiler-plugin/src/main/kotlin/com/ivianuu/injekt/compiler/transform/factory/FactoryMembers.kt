@@ -92,6 +92,7 @@ class ClassFactoryMembers(
             val currentGetFunctionIndex = getFunctions.size
             this.name = Name.identifier("get_$currentGetFunctionIndex")
             returnType = key.type
+            visibility = Visibilities.PRIVATE
         }.apply {
             dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
             this.body = DeclarationIrBuilder(context, symbol).run {

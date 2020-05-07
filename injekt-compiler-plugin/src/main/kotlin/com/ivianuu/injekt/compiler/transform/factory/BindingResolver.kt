@@ -151,6 +151,7 @@ class ChildFactoryBindingResolver(
         superType: IrType
     ) = buildClass {
         this.name = name
+        visibility = Visibilities.PRIVATE
     }.apply clazz@{
         parent = factoryImplementation.clazz
         createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -263,6 +264,7 @@ class DependencyBindingResolver(
                 with(DeclarationIrBuilder(injektTransformer.context, dependencyFunction.symbol)) {
                     provider(
                         name = Name.identifier("dep_provider_${providersByDependency.size}"),
+                        visibility = Visibilities.PRIVATE,
                         parameters = listOf(
                             AbstractInjektTransformer.ProviderParameter(
                                 name = "dependency",
