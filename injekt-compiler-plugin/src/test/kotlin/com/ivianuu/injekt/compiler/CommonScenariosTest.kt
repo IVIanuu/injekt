@@ -90,16 +90,18 @@ class CommonScenariosTest {
         @Transient class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
         @Transient class WorkerB(@Assisted context: Context) : Worker(context)
         
-        @Transient
-        class WorkerFactory(
-            private val workers: Map<String, @Provider (Context) -> Worker>,
-            private val context: Context
-        ) {
-            init {
-                println(workers)
-                println(workers.mapValues { it.value(context) })
+        @Module
+        inline fun <reified T : Worker> bindWorkerIntoMap() {
+            map<KClass<out Worker>, @Provider (Context) -> Worker> {
+                put<@Provider (Context) -> T>(T::class)
             }
         }
+        
+        @Transient
+        class WorkerFactory(
+            private val workers: Map<KClass<out Worker>, @Provider (Context) -> Worker>,
+            private val context: Context
+        )
         
         interface AppComponent {
             val injectApp: @MembersInjector (App) -> Unit
@@ -108,10 +110,8 @@ class CommonScenariosTest {
         @Factory
         fun createAppComponent(): AppComponent {
             transient { Foo() }
-            map<String, @Provider (Context) -> Worker> {
-                put<@Provider (Context) -> WorkerA>("a")
-                put<@Provider (Context) -> WorkerB>("b")
-            }
+            bindWorkerIntoMap<WorkerA>()
+            bindWorkerIntoMap<WorkerB>()
             return createImpl()
         }
         

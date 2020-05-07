@@ -209,6 +209,20 @@ class Graph(
                                         }
                                 )
                             }
+                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapTypeParameterClassKey) -> {
+                                ClassKey(
+                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapTypeParameterClassKey)
+                                    !!.allValueArguments.values.single())
+                                        .let { it as StringValue }
+                                        .value
+                                        .let { typeParameterName ->
+                                            moduleNode.typeParametersMap.toList()
+                                                .filter { it.first.descriptor.name.asString() == typeParameterName }
+                                                .single()
+                                                .second
+                                        }
+                                )
+                            }
                             entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
                                 IntKey(
                                     (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapIntKey)

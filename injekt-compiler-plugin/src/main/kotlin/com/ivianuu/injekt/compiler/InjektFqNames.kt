@@ -13,9 +13,11 @@ object InjektFqNames {
     val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
+    val AstInline = InjektAst.child("Inline")
     val AstMap = InjektAst.child("Map")
     val AstMapEntry = AstMap.child("Entry")
     val AstMapClassKey = AstMap.child("ClassKey")
+    val AstMapTypeParameterClassKey = AstMap.child("TypeParameterClassKey")
     val AstMapIntKey = AstMap.child("IntKey")
     val AstMapLongKey = AstMap.child("LongKey")
     val AstMapStringKey = AstMap.child("StringKey")
@@ -31,6 +33,7 @@ object InjektFqNames {
     val AstSetElement = AstSet.child("Element")
 
     val Assisted = InjektPackage.child("Assisted")
+    val AssistedParameters = InjektPackage.child("AssistedParameters")
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 

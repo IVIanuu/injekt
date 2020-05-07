@@ -5,12 +5,12 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -30,8 +30,11 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
@@ -50,8 +53,6 @@ class ModuleImplementation(
         symbols, nameProvider, declarationStore, providerFactory
     )
 
-    val isInline = function.isInline
-
     val moduleDescriptor = ModuleDescriptorImplementation(
         this@ModuleImplementation,
         pluginContext,
@@ -67,7 +68,6 @@ class ModuleImplementation(
     val clazz: IrClass = buildClass {
         name = InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
         visibility = function.visibility
-        if (function.isInline) modality = Modality.ABSTRACT
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
@@ -80,6 +80,7 @@ class ModuleImplementation(
             moduleDescriptor.addDeclarations(declarations)
 
             addChild(moduleDescriptor.clazz)
+            println(moduleDescriptor.clazz.dump())
 
             addConstructor {
                 returnType = defaultType
@@ -88,12 +89,17 @@ class ModuleImplementation(
             }.apply {
                 copyTypeParametersFrom(this@clazz)
 
-                function.valueParameters.forEach { p ->
-                    addValueParameter(
-                        name = p.name.asString(),
-                        type = p.type
-                    ).also { parameterMap[p] = it }
-                }
+                function.valueParameters
+                    .filter {
+                        !it.type.isFunction() ||
+                                it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl
+                    }
+                    .forEach { p ->
+                        addValueParameter(
+                            name = p.name.asString(),
+                            type = p.type
+                        ).also { parameterMap[p] = it }
+                    }
 
                 valueParameters.forEach { p ->
                     addField(
@@ -150,9 +156,7 @@ class ModuleImplementation(
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 super.visitCall(expression)
-                declarationFactory.create(expression)?.let {
-                    declarations += it
-                }
+                declarations += declarationFactory.create(expression)
                 return expression
             }
         })

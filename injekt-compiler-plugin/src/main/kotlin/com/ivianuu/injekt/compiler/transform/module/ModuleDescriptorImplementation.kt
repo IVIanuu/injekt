@@ -126,6 +126,9 @@ class ModuleDescriptorImplementation(
             if (declaration.scoped) {
                 annotations += builder.noArgSingleConstructorCall(symbols.astScoped)
             }
+            if (declaration.inline) {
+                annotations += builder.noArgSingleConstructorCall(symbols.astInline)
+            }
             annotations += declaration.path.asAnnotation(
                 DeclarationIrBuilder(pluginContext, symbol),
                 symbols

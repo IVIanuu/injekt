@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.NotFoundClasses
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -37,6 +38,7 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -57,6 +59,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -93,6 +96,7 @@ import org.jetbrains.kotlin.resolve.constants.UShortValue
 import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektDeclarationIrBuilder(
@@ -145,10 +149,24 @@ class InjektDeclarationIrBuilder(
     fun irMapKeyConstructorForKey(expression: IrExpression): IrConstructorCall {
         return when (expression) {
             is IrClassReference -> {
-                builder.irCall(symbols.astMapClassKey.constructors.single())
-                    .apply {
-                        putValueArgument(0, expression.deepCopyWithVariables())
-                    }
+                val type = expression.classType
+                if (type.toKotlinType().isTypeParameter()) {
+                    builder.irCall(symbols.astMapTypeParameterClassKey.constructors.single())
+                        .apply {
+                            putValueArgument(
+                                0,
+                                builder.irString(
+                                    (type.toKotlinType().constructor.declarationDescriptor as TypeParameterDescriptor)
+                                        .name.asString()
+                                )
+                            )
+                        }
+                } else {
+                    builder.irCall(symbols.astMapClassKey.constructors.single())
+                        .apply {
+                            putValueArgument(0, expression.deepCopyWithVariables())
+                        }
+                }
             }
             is IrConst<*> -> {
                 when (expression.kind) {

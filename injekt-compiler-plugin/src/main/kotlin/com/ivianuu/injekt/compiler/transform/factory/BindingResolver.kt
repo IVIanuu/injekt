@@ -318,6 +318,7 @@ class ModuleBindingResolver(
 
     private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
+        .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
         .map { bindingFunction ->
             val bindingKey = bindingFunction.returnType
                 .substituteByName(moduleNode.typeParametersMap)

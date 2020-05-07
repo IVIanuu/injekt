@@ -28,9 +28,12 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astBinding = injektAst.childClass(InjektFqNames.AstBinding.shortName())
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
+    val astInline = injektAst.childClass(InjektFqNames.AstInline.shortName())
     val astMap = injektAst.childClass(InjektFqNames.AstMap.shortName())
     val astMapEntry = astMap.childClass(InjektFqNames.AstMapEntry.shortName())
     val astMapClassKey = astMap.childClass(InjektFqNames.AstMapClassKey.shortName())
+    val astMapTypeParameterClassKey =
+        astMap.childClass(InjektFqNames.AstMapTypeParameterClassKey.shortName())
     val astMapIntKey = astMap.childClass(InjektFqNames.AstMapIntKey.shortName())
     val astMapLongKey = astMap.childClass(InjektFqNames.AstMapLongKey.shortName())
     val astMapStringKey = astMap.childClass(InjektFqNames.AstMapStringKey.shortName())
@@ -46,6 +49,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
 
     val assisted = getTopLevelClass(InjektFqNames.Assisted)
+    val assistedParameters = getTopLevelClass(InjektFqNames.AssistedParameters)
 
     val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
     val doubleCheck = getTopLevelClass(InjektFqNames.DoubleCheck)

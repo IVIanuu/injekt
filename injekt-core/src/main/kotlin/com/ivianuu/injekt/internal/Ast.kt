@@ -19,6 +19,8 @@ object InjektAst {
 
     annotation class Alias
 
+    annotation class Inline
+
     annotation class Module
 
     annotation class Scope

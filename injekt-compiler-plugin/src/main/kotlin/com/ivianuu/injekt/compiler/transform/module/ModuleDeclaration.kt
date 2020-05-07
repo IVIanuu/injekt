@@ -31,6 +31,7 @@ class BindingDeclaration(
     val bindingType: IrType,
     val parameters: List<InjektDeclarationIrBuilder.ProviderParameter>,
     val scoped: Boolean,
+    val inline: Boolean,
     val path: Path
 ) : ModuleDeclaration()
 
