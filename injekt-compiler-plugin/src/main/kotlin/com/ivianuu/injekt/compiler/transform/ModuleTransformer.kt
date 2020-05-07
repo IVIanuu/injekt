@@ -243,7 +243,8 @@ class ModuleTransformer(
         val providerByCall = mutableMapOf<IrCall, IrClass>()
 
         (transientCalls + scopedCalls).forEachIndexed { index, bindingCall ->
-            val definition = bindingCall.getValueArgument(0) as? IrFunctionExpression
+            val definition = if (bindingCall.valueArgumentsCount != 0)
+                bindingCall.getValueArgument(0) as? IrFunctionExpression else null
             addChild(
                 (if (definition != null) {
                     providerForDefinition(

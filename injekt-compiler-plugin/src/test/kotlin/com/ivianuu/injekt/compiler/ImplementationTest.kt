@@ -288,6 +288,32 @@ class ImplementationTest {
     }
 
     @Test
+    fun testProviderDefinitionWhichUsesTypeParameters() = codegen(
+        """
+        interface TestComponent {
+            val any: Any
+        }
+        
+        @Module
+        fun <T : S, S> diyAlias() {
+            transient { get<T>() as S }
+        }
+
+        @Factory
+        fun create(): TestComponent {
+            transient<Foo>()
+            transient<Bar>()
+            diyAlias<Bar, Any>()
+            return createImpl()
+        }
+        
+        fun invoke() = create().any
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
     fun testComponentSuperTypeWithTypeParameters() = codegen(
         """
         interface BaseComponent<T> {
