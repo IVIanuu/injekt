@@ -247,4 +247,24 @@ class ModuleDslTest {
         assertOk()
     }
 
+    @Test
+    fun testCapturingModule() = codegen(
+        """
+        @Module
+        fun capturingModule(capture: String) {
+            transient { capture }
+        }
+        
+        interface TestComponent {
+            val string: String
+        }
+        
+        @Factory
+        fun create(): TestComponent {
+            capturingModule("hello world")
+            return createImpl()
+        }
+    """
+    )
+
 }
