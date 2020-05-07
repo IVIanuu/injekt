@@ -248,7 +248,7 @@ class ModuleDslTest {
     }
 
     @Test
-    fun testCapturingModule() = codegen(
+    fun testValueParameterCapturingModule() = codegen(
         """
         @Module
         fun capturingModule(capture: String) {
@@ -262,6 +262,27 @@ class ModuleDslTest {
         @Factory
         fun create(): TestComponent {
             capturingModule("hello world")
+            return createImpl()
+        }
+    """
+    )
+
+    @Test
+    fun testTypeParameterCapturingModule() = codegen(
+        """
+        @Module
+        fun <T> capturingModule() {
+            transient<@TestQualifier1 T> { get<T>() }
+        }
+        
+        interface TestComponent {
+            val string: @TestQualifier1 String
+        }
+        
+        @Factory
+        fun create(): TestComponent {
+            transient { "hello world" }
+            capturingModule<String>()
             return createImpl()
         }
     """
