@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class Graph(
     val parent: Graph?,
     val factoryProduct: AbstractFactoryProduct,
-    val factoryTransformer: TopLevelFactoryTransformer,
     val factoryMembers: FactoryMembers,
     context: IrPluginContext,
     factoryImplementationModule: ModuleNode?,
@@ -146,7 +145,7 @@ class Graph(
 
         functions
             .flatMap { it.annotations }
-            .forEach { it.symbol.ensureBound(factoryTransformer.irProviders) }
+            .forEach { it.symbol.ensureBound(factoryProduct.pluginContext.irProviders) }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstScope) }
@@ -163,10 +162,9 @@ class Graph(
                     .substituteByName(moduleNode.typeParametersMap)
                 addExplicitBindingResolver(
                     DependencyBindingResolver(
-                        injektTransformer = factoryTransformer,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = dependencyType.asKey(factoryProduct.context),
+                            key = dependencyType.asKey(factoryProduct.pluginContext),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 moduleNode.module.findPropertyGetter(dependencyName)
                             )
@@ -184,7 +182,7 @@ class Graph(
                     function
                         .returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.context)
+                        .asKey(factoryProduct.pluginContext)
                 )
             }
 
@@ -194,7 +192,7 @@ class Graph(
                 putMapEntry(
                     function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.context),
+                        .asKey(factoryProduct.pluginContext),
                     function.valueParameters[1].let { entry ->
                         val entryDescriptor = entry.descriptor
                         when {
@@ -203,9 +201,9 @@ class Graph(
                                     (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
                                     !!.allValueArguments.values.single())
                                         .let { it as KClassValue }
-                                        .getArgumentType(factoryProduct.context.moduleDescriptor)
+                                        .getArgumentType(factoryProduct.pluginContext.moduleDescriptor)
                                         .let {
-                                            factoryProduct.context.typeTranslator.translateType(
+                                            factoryProduct.pluginContext.typeTranslator.translateType(
                                                 it
                                             )
                                         }
@@ -240,7 +238,7 @@ class Graph(
                     },
                     function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.context)
+                        .asKey(factoryProduct.pluginContext)
                 )
             }
 
@@ -250,7 +248,7 @@ class Graph(
                 addSet(
                     function.returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.context)
+                        .asKey(factoryProduct.pluginContext)
                 )
             }
 
@@ -260,10 +258,10 @@ class Graph(
                 addSetElement(
                     function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.context),
+                        .asKey(factoryProduct.pluginContext),
                     function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.context)
+                        .asKey(factoryProduct.pluginContext)
                 )
             }
 
@@ -291,7 +289,7 @@ class Graph(
                         includedModule,
                         includedModule.defaultType
                             .substituteByName(moduleNode.typeParametersMap)
-                            .asKey(factoryProduct.context),
+                            .asKey(factoryProduct.pluginContext),
                         moduleNode.initializerAccessor.child(property),
                         typeParametersMap
                     )
@@ -310,7 +308,6 @@ class Graph(
         if (factoryProduct is FactoryImplementation) {
             addExplicitBindingResolver(
                 ChildFactoryBindingResolver(
-                    factoryTransformer,
                     factoryProduct,
                     descriptor,
                     symbols,

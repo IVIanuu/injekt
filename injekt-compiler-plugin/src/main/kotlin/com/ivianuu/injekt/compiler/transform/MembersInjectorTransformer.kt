@@ -62,7 +62,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
         classes.forEach { clazz ->
             clazz.file.addChild(
-                DeclarationIrBuilder(context, clazz.symbol)
+                DeclarationIrBuilder(pluginContext, clazz.symbol)
                     .membersInjector(clazz)
                     .also { membersInjectorByClass[clazz] = it }
             )
@@ -88,7 +88,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                     property.backingField!!.type
                 )
 
-                body = DeclarationIrBuilder(context, symbol).run {
+                body = DeclarationIrBuilder(pluginContext, symbol).run {
                     irExprBody(
                         irSetField(
                             irGet(dispatchReceiverParameter!!),
@@ -148,7 +148,9 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }
 
                 body = irBlockBody {
-                    initializeClassWithAnySuperClass(this@clazz.symbol)
+                    with(InjektDeclarationIrBuilder(pluginContext, symbol)) {
+                        initializeClassWithAnySuperClass(this@clazz.symbol)
+                    }
                     valueParametersByField.forEach { (field, valueParameter) ->
                         +irSetField(
                             irGet(thisReceiver!!),

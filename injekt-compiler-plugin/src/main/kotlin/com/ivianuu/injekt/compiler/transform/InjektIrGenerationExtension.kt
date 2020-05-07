@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.generateSymbols
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -38,7 +39,10 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .also { declarationStore.factoryModuleTransformer = it }
             .visitModuleAndGenerateSymbols()
 
-        val moduleTransformer = ModuleTransformer(pluginContext, declarationStore)
+        val moduleTransformer = ModuleTransformer(
+            pluginContext,
+            declarationStore
+        )
             .also { declarationStore.moduleTransformer = it }
         val factoryTransformer = TopLevelFactoryTransformer(
             pluginContext,

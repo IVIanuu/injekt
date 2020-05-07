@@ -56,11 +56,17 @@ class FactoryImplementation(
     val factoryFunction: IrFunction?,
     irParent: IrDeclarationContainer,
     moduleClass: IrClass,
-    context: IrPluginContext,
+    pluginContext: IrPluginContext,
     symbols: InjektSymbols,
     factoryTransformer: TopLevelFactoryTransformer,
     declarationStore: InjektDeclarationStore
-) : AbstractFactoryProduct(moduleClass, context, symbols, factoryTransformer, declarationStore) {
+) : AbstractFactoryProduct(
+    moduleClass,
+    pluginContext,
+    symbols,
+    factoryTransformer,
+    declarationStore
+) {
 
     val clazz = buildClass {
         this.name = this@FactoryImplementation.name
@@ -81,13 +87,13 @@ class FactoryImplementation(
     }
     val factoryImplementationNode =
         FactoryImplementationNode(
-            key = clazz.defaultType.asKey(context),
+            key = clazz.defaultType.asKey(pluginContext),
             factoryImplementation = this,
             initializerAccessor = { it() }
         )
 
     override val factoryMembers = ClassFactoryMembers(
-        context,
+        pluginContext,
         clazz,
         factoryImplementationNode.factoryImplementation
     )
@@ -125,7 +131,7 @@ class FactoryImplementation(
             irGet(moduleConstructorValueParameter.value)
         }
 
-        DeclarationIrBuilder(context, clazz.symbol).run {
+        DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             implementDependencyRequests(dependencyRequests)
             writeConstructor()
         }
@@ -133,7 +139,7 @@ class FactoryImplementation(
         if (factoryFunction != null) {
             val moduleCall = factoryFunction.body!!.statements[0] as IrCall
             factoryFunction.file.addChild(clazz)
-            factoryFunction.body = DeclarationIrBuilder(context, factoryFunction.symbol).run {
+            factoryFunction.body = DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
                 irExprBody(
                     irCall(constructor).apply {
                         if (constructor.valueParameters.isNotEmpty()) {
@@ -229,14 +235,14 @@ class FactoryImplementation(
                                     ?.single { it.classOrNull?.owner == this }
                                     ?.typeArguments ?: emptyList()
                             )
-                            .asKey(context)
+                            .asKey(pluginContext)
                     )
                 }
 
                 when (declaration) {
                     is IrFunction -> {
                         if (declaration !is IrConstructor &&
-                            declaration.dispatchReceiverParameter?.type != context.irBuiltIns.anyType &&
+                            declaration.dispatchReceiverParameter?.type != pluginContext.irBuiltIns.anyType &&
                             !declaration.isFakeOverride
                         ) reqisterRequest(declaration.returnType)
                     }

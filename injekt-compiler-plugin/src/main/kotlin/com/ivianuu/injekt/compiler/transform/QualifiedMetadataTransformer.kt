@@ -23,9 +23,12 @@ class QualifiedMetadataTransformer(context: IrPluginContext) :
     override fun visitCall(expression: IrCall): IrExpression {
         val qualifiers = QualifiedExpressionsStore.getQualifiers(
             fileStack.last().symbol.owner.name, expression.startOffset, expression.endOffset
-        )?.mapNotNull { generateAnnotationConstructorCall(it) }
+        )?.mapNotNull {
+            InjektDeclarationIrBuilder(pluginContext, expression.symbol)
+                .generateAnnotationConstructorCall(it)
+        }
             ?: return super.visitCall(expression)
-        context.irTrace.record(InjektWritableSlices.QUALIFIERS, expression, qualifiers)
+        pluginContext.irTrace.record(InjektWritableSlices.QUALIFIERS, expression, qualifiers)
         return super.visitCall(expression)
     }
 }

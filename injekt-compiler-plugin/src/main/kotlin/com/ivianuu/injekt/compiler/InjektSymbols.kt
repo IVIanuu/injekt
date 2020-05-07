@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-class InjektSymbols(val context: IrPluginContext) {
+class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
     val internalPackage = getPackage(InjektFqNames.InternalPackage)
@@ -38,6 +38,8 @@ class InjektSymbols(val context: IrPluginContext) {
     val astPath = injektAst.childClass(InjektFqNames.AstPath.shortName())
     val astClassPath = astPath.childClass(InjektFqNames.AstClassPath.shortName())
     val astPropertyPath = astPath.childClass(InjektFqNames.AstPropertyPath.shortName())
+    val astTypeParameterPath = astPath.childClass(InjektFqNames.AstTypeParameterPath.shortName())
+    val astValueParameterPath = astPath.childClass(InjektFqNames.AstValueParameterPath.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
     val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
@@ -68,21 +70,25 @@ class InjektSymbols(val context: IrPluginContext) {
 
     val transient = getTopLevelClass(InjektFqNames.Transient)
 
-    fun getFunction(parameterCount: Int) = context.builtIns.getFunction(parameterCount)
-        .let { context.symbolTable.referenceClass(it).ensureBound(context.irProviders) }
+    fun getFunction(parameterCount: Int) = pluginContext.builtIns.getFunction(parameterCount)
+        .let { pluginContext.symbolTable.referenceClass(it).ensureBound(pluginContext.irProviders) }
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
-        context.symbolTable.referenceClass(
-            context.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
+        pluginContext.symbolTable.referenceClass(
+            pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
                 ?: error("No class found for $fqName")
-        ).ensureBound(context.irProviders)
+        ).ensureBound(pluginContext.irProviders)
 
     fun getTypeAlias(fqName: FqName): IrTypeAliasSymbol =
-        context.symbolTable.referenceTypeAlias(
-            context.moduleDescriptor.findTypeAliasAcrossModuleDependencies(ClassId.topLevel(fqName))
+        pluginContext.symbolTable.referenceTypeAlias(
+            pluginContext.moduleDescriptor.findTypeAliasAcrossModuleDependencies(
+                ClassId.topLevel(
+                    fqName
+                )
+            )
                 ?: error("No class found for $fqName")
-        ).ensureBound(context.irProviders)
+        ).ensureBound(pluginContext.irProviders)
 
     fun getPackage(fqName: FqName): PackageViewDescriptor =
-        context.moduleDescriptor.getPackage(fqName)
+        pluginContext.moduleDescriptor.getPackage(fqName)
 }

@@ -147,7 +147,7 @@ class ChildFactoryBindingNode(
     key, listOf(
         DependencyRequest(
             childFactoryImplementation.parent!!.clazz.defaultType
-                .asKey(owner.context)
+                .asKey(owner.pluginContext)
         )
     ),
     null, false, null, owner
@@ -194,7 +194,7 @@ class LazyBindingNode(
     key,
     listOf(
         DependencyRequest(
-            key = key.type.typeArguments.single().asKey(owner.context)
+            key = key.type.typeArguments.single().asKey(owner.pluginContext)
         )
     ),
     null,
@@ -208,8 +208,8 @@ class MapBindingNode(
     owner: AbstractFactoryProduct,
     val entries: Map<MapKey, DependencyRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner) {
-    val keyKey = key.type.typeArguments[0].asKey(owner.context)
-    val valueKey = key.type.typeArguments[1].asKey(owner.context)
+    val keyKey = key.type.typeArguments[0].asKey(owner.pluginContext)
+    val valueKey = key.type.typeArguments[1].asKey(owner.pluginContext)
 }
 
 class MembersInjectorBindingNode(
@@ -220,7 +220,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { DependencyRequest(it.type.asKey(owner.context)) },
+        .map { DependencyRequest(it.type.asKey(owner.pluginContext)) },
     null,
     false,
     null,
@@ -232,7 +232,7 @@ class ProviderBindingNode(
     owner: AbstractFactoryProduct
 ) : BindingNode(
     key,
-    listOf(DependencyRequest(key.type.typeArguments.single().asKey(owner.context))),
+    listOf(DependencyRequest(key.type.typeArguments.single().asKey(owner.pluginContext))),
     null,
     false,
     null,
@@ -254,7 +254,7 @@ class SetBindingNode(
     owner: AbstractFactoryProduct,
     val elements: List<DependencyRequest>
 ) : BindingNode(key, elements, null, false, null, owner) {
-    val elementKey = key.type.typeArguments.single().asKey(owner.context)
+    val elementKey = key.type.typeArguments.single().asKey(owner.pluginContext)
 }
 
 fun IrType.asKey(context: IrPluginContext): Key {

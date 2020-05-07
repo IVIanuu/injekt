@@ -33,7 +33,7 @@ import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 
 class FactoryExpressions(
-    private val context: IrPluginContext,
+    private val pluginContext: IrPluginContext,
     private val symbols: InjektSymbols,
     private val members: FactoryMembers,
     private val parent: FactoryExpressions?,
@@ -50,13 +50,13 @@ class FactoryExpressions(
     private val collectionsScope = symbols.getPackage(FqName("kotlin.collections"))
     private val kotlinScope = symbols.getPackage(FqName("kotlin"))
 
-    private val pair = context.symbolTable.referenceClass(
+    private val pair = pluginContext.symbolTable.referenceClass(
         kotlinScope.memberScope
             .getContributedClassifier(
                 Name.identifier("Pair"),
                 NoLookupLocation.FROM_BACKEND
             ) as ClassDescriptor
-    ).ensureBound(context.irProviders)
+    ).ensureBound(pluginContext.irProviders)
 
     fun getRequirementExpression(node: RequirementNode): FactoryExpression {
         requirementExpressions[node]?.let { return it }
@@ -214,7 +214,7 @@ class FactoryExpressions(
             when (entryExpressions.size) {
                 0 -> {
                     irCall(
-                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
                             collectionsScope.memberScope.findSingleFunction(Name.identifier("emptyMap"))
                         ),
                         binding.key.type
@@ -225,7 +225,7 @@ class FactoryExpressions(
                 }
                 1 -> {
                     irCall(
-                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
                             collectionsScope.memberScope.findFirstFunction("mapOf") {
                                 it.valueParameters.singleOrNull()?.isVararg == false
                             }
@@ -242,7 +242,7 @@ class FactoryExpressions(
                 }
                 else -> {
                     irCall(
-                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
                             collectionsScope.memberScope.findFirstFunction("mapOf") {
                                 it.valueParameters.singleOrNull()?.isVararg == true
                             }
@@ -256,7 +256,7 @@ class FactoryExpressions(
                             IrVarargImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                this@FactoryExpressions.context.irBuiltIns.arrayClass
+                                this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
                                     .typeWith(
                                         pair.typeWith(
                                             binding.keyKey.type,
@@ -287,7 +287,7 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().asKey(context),
+                binding.key.type.typeArguments.single().asKey(pluginContext),
                 RequestType.Provider
             )
         )
@@ -372,7 +372,7 @@ class FactoryExpressions(
             when (elementExpressions.size) {
                 0 -> {
                     irCall(
-                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
                             collectionsScope.memberScope.findSingleFunction(Name.identifier("emptySet"))
                         ),
                         binding.key.type
@@ -382,7 +382,7 @@ class FactoryExpressions(
                 }
                 1 -> {
                     irCall(
-                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
                             collectionsScope.memberScope.findFirstFunction("setOf") {
                                 it.valueParameters.singleOrNull()?.isVararg == false
                             }
@@ -398,7 +398,7 @@ class FactoryExpressions(
                 }
                 else -> {
                     irCall(
-                        this@FactoryExpressions.context.symbolTable.referenceFunction(
+                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
                             collectionsScope.memberScope.findFirstFunction("setOf") {
                                 it.valueParameters.singleOrNull()?.isVararg == true
                             }
@@ -411,7 +411,7 @@ class FactoryExpressions(
                             IrVarargImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                this@FactoryExpressions.context.irBuiltIns.arrayClass
+                                this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
                                     .typeWith(binding.elementKey.type),
                                 binding.elementKey.type,
                                 elementExpressions.map {
@@ -525,7 +525,7 @@ class FactoryExpressions(
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().asKey(context),
+                binding.key.type.typeArguments.single().asKey(pluginContext),
                 RequestType.Provider
             )
         )
@@ -618,7 +618,7 @@ class FactoryExpressions(
                                 IrVarargImpl(
                                     UNDEFINED_OFFSET,
                                     UNDEFINED_OFFSET,
-                                    this@FactoryExpressions.context.irBuiltIns.arrayClass
+                                    this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
                                         .typeWith(
                                             pair.typeWith(
                                                 binding.keyKey.type,
@@ -686,7 +686,7 @@ class FactoryExpressions(
             .map {
                 symbols.getFunction(0)
                     .typeWith(it.key.type)
-                    .asKey(context)
+                    .asKey(pluginContext)
             }
 
         val provider = binding.provider
@@ -804,7 +804,7 @@ class FactoryExpressions(
                                 IrVarargImpl(
                                     UNDEFINED_OFFSET,
                                     UNDEFINED_OFFSET,
-                                    this@FactoryExpressions.context.irBuiltIns.arrayClass
+                                    this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
                                         .typeWith(
                                             symbols.getFunction(0)
                                                 .typeWith(binding.key.type)
@@ -832,7 +832,7 @@ class FactoryExpressions(
                 )
                 .typeWith(key.type)
                 .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
-                .asKey(context),
+                .asKey(pluginContext),
             "provider",
             providerInitializer
         )

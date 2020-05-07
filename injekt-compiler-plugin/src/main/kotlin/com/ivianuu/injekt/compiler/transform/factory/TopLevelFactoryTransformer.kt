@@ -52,7 +52,7 @@ class TopLevelFactoryTransformer(
                         name = InjektNameConventions.getImplNameForFactoryFunction(function.name),
                         superType = function.returnType,
                         moduleClass = moduleClass,
-                        context = this@TopLevelFactoryTransformer.context,
+                        pluginContext = pluginContext,
                         symbols = symbols,
                         factoryTransformer = this@TopLevelFactoryTransformer,
                         declarationStore = declarationStore
@@ -62,7 +62,7 @@ class TopLevelFactoryTransformer(
                     FactoryInstance(
                         factoryFunction = function,
                         moduleClass = moduleClass,
-                        context = this@TopLevelFactoryTransformer.context,
+                        context = pluginContext,
                         symbols = symbols,
                         factoryTransformer = this@TopLevelFactoryTransformer,
                         declarationStore = declarationStore

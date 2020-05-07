@@ -40,7 +40,7 @@ interface FactoryMembers {
 }
 
 class ClassFactoryMembers(
-    private val context: IrPluginContext,
+    private val pluginContext: IrPluginContext,
     private val clazz: IrClass,
     private val factoryImplementation: FactoryImplementation
 ) : FactoryMembers {
@@ -95,7 +95,7 @@ class ClassFactoryMembers(
             visibility = Visibilities.PRIVATE
         }.apply {
             dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
-            this.body = DeclarationIrBuilder(context, symbol).run {
+            this.body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(body(this, this@apply))
             }
         }.also { getFunctions += it }
@@ -104,7 +104,7 @@ class ClassFactoryMembers(
 }
 
 class FunctionFactoryMembers(
-    private val context: IrPluginContext,
+    private val pluginContext: IrPluginContext,
     private val function: IrFunction
 ) : FactoryMembers {
     override val fields = mutableMapOf<Key, FactoryField>()
@@ -145,7 +145,7 @@ class FunctionFactoryMembers(
             returnType = key.type
             visibility = Visibilities.LOCAL
         }.apply {
-            this.body = DeclarationIrBuilder(context, symbol).run {
+            this.body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(body(this, this@apply))
             }
         }.also { getFunctions += it }

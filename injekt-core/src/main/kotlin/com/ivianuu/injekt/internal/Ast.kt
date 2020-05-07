@@ -7,6 +7,8 @@ object InjektAst {
     annotation class Path {
         annotation class Class(val clazz: KClass<*>)
         annotation class Property(val name: String)
+        annotation class TypeParameter(val name: String)
+        annotation class ValueParameter(val name: String)
     }
 
     annotation class ChildFactory
@@ -27,6 +29,7 @@ object InjektAst {
         annotation class Entry
 
         annotation class ClassKey(val value: KClass<*>)
+        annotation class TypeParameterClassKey(val name: String)
         annotation class IntKey(val value: Int)
         annotation class LongKey(val value: Long)
         annotation class StringKey(val value: String)

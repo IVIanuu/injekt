@@ -127,7 +127,7 @@ class ImplementationTest {
             val foo: Foo
         }
         
-         @Factory
+        @Factory
         fun createDep(): DependencyComponent {
             transient { Foo() }
             return createImpl()

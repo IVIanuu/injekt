@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -14,7 +15,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
 
-class InjektDeclarationStore(private val context: IrPluginContext) {
+class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
     lateinit var classProviderTransformer: ClassProviderTransformer
     lateinit var factoryTransformer: TopLevelFactoryTransformer
@@ -31,8 +32,8 @@ class InjektDeclarationStore(private val context: IrPluginContext) {
         return memberScope.getContributedDescriptors()
             .filterIsInstance<ClassDescriptor>()
             .single { it.name == InjektNameConventions.getProviderNameForClass(clazz.name) }
-            .let { context.symbolTable.referenceClass(it) }
-            .ensureBound(context.irProviders)
+            .let { pluginContext.symbolTable.referenceClass(it) }
+            .ensureBound(pluginContext.irProviders)
             .owner
     }
 
@@ -45,8 +46,8 @@ class InjektDeclarationStore(private val context: IrPluginContext) {
         return memberScope.getContributedDescriptors()
             .filterIsInstance<ClassDescriptor>()
             .single { it.name == InjektNameConventions.getMembersInjectorNameForClass(clazz.name) }
-            .let { context.symbolTable.referenceClass(it) }
-            .ensureBound(context.irProviders)
+            .let { pluginContext.symbolTable.referenceClass(it) }
+            .ensureBound(pluginContext.irProviders)
             .owner
     }
 
@@ -63,8 +64,8 @@ class InjektDeclarationStore(private val context: IrPluginContext) {
                     factoryFunction.name
                 )
             }
-            .let { context.symbolTable.referenceFunction(it) }
-            .ensureBound(context.irProviders)
+            .let { pluginContext.symbolTable.referenceFunction(it) }
+            .ensureBound(pluginContext.irProviders)
             .owner
     }
 
@@ -77,7 +78,7 @@ class InjektDeclarationStore(private val context: IrPluginContext) {
         return try {
             moduleTransformer.getGeneratedModuleClass(moduleFunction)
                 ?: throw DeclarationNotFound()
-        } catch (e: Exception) {
+        } catch (e: DeclarationNotFound) {
             val memberScope =
                 (moduleFunction.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
                     ?: (moduleFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
@@ -86,8 +87,8 @@ class InjektDeclarationStore(private val context: IrPluginContext) {
                 InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction.name),
                 NoLookupLocation.FROM_BACKEND
             ).let { it as ClassDescriptor }
-                .let { context.symbolTable.referenceClass(it) }
-                .ensureBound(context.irProviders)
+                .let { pluginContext.symbolTable.referenceClass(it) }
+                .ensureBound(pluginContext.irProviders)
                 .owner
         }
     }

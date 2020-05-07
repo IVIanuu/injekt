@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 
 abstract class AbstractFactoryProduct(
     val moduleClass: IrClass,
-    val context: IrPluginContext,
+    val pluginContext: IrPluginContext,
     val symbols: InjektSymbols,
     val factoryTransformer: TopLevelFactoryTransformer,
     val declarationStore: InjektDeclarationStore
@@ -28,7 +28,7 @@ abstract class AbstractFactoryProduct(
         moduleAccessor: InitializerAccessor
     ) {
         factoryExpressions = FactoryExpressions(
-            context = context,
+            pluginContext = pluginContext,
             symbols = symbols,
             members = factoryMembers,
             parent = parent?.factoryExpressions,
@@ -37,10 +37,9 @@ abstract class AbstractFactoryProduct(
         graph = Graph(
             parent = parent?.graph,
             factoryProduct = this,
-            factoryTransformer = factoryTransformer,
-            context = context,
+            context = pluginContext,
             factoryImplementationModule = ModuleNode(
-                key = moduleClass.defaultType.asKey(context),
+                key = moduleClass.defaultType.asKey(pluginContext),
                 module = moduleClass,
                 initializerAccessor = moduleAccessor,
                 typeParametersMap = emptyMap()

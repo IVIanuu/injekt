@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -45,13 +44,13 @@ class ClassProviderTransformer(
             val file = clazz.file
             val constructor = clazz.constructors.singleOrNull()
             file.addChild(
-                DeclarationIrBuilder(context, clazz.symbol)
-                    .provider(
+                InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
+                    provider(
                         name = InjektNameConventions.getProviderNameForClass(clazz.name),
                         visibility = clazz.visibility,
                         parameters = constructor?.valueParameters
                             ?.mapIndexed { index, valueParameter ->
-                                ProviderParameter(
+                                InjektDeclarationIrBuilder.ProviderParameter(
                                     name = "p$index",
                                     type = valueParameter.type,
                                     assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
@@ -59,11 +58,11 @@ class ClassProviderTransformer(
                             } ?: emptyList(),
                         returnType = clazz.defaultType,
                         createBody = { createFunction ->
-                            irExprBody(
+                            builder.irExprBody(
                                 if (clazz.kind == ClassKind.OBJECT) {
-                                    irGetObject(clazz.symbol)
+                                    builder.irGetObject(clazz.symbol)
                                 } else {
-                                    irCall(constructor!!).apply {
+                                    builder.irCall(constructor!!).apply {
                                         createFunction.valueParameters.forEach { valueParameter ->
                                             putValueArgument(
                                                 valueParameter.index,
@@ -75,7 +74,8 @@ class ClassProviderTransformer(
                             )
                         }
                     )
-                    .also { providersByClass[clazz] = it }
+                        .also { providersByClass[clazz] = it }
+                }
             )
         }
 

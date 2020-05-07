@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -48,7 +49,7 @@ class FactoryModuleTransformer(
         })
 
         factoryFunctions.forEach { factoryFunction ->
-            DeclarationIrBuilder(context, factoryFunction.symbol).run {
+            DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
                 val moduleFunction = moduleFunction(factoryFunction)
                 moduleFunctionsByFactoryFunctions[factoryFunction] = moduleFunction
                 (factoryFunction.parent as IrDeclarationContainer).addChild(moduleFunction)
@@ -73,7 +74,8 @@ class FactoryModuleTransformer(
             name = InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction.name)
             returnType = irBuiltIns.unitType
         }.apply {
-            annotations += noArgSingleConstructorCall(symbols.module)
+            annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
+                .noArgSingleConstructorCall(symbols.module)
 
             val valueParametersMap = factoryFunction.valueParameters.associateWith {
                 it.copyTo(this)
