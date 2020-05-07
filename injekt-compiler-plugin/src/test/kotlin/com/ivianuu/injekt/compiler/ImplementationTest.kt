@@ -333,4 +333,23 @@ class ImplementationTest {
         }
     """
     )
+
+    @Test
+    fun testComponentWithTypeParameters() = codegen(
+        """
+        interface TypedComponent<T> {
+            val inject: @MembersInjector (T) -> Unit
+        }
+        
+        class Injectable {
+            @Inject private lateinit var foo: Foo
+        }
+
+        @Factory
+        fun createImplComponent(): TypedComponent<Injectable> {
+            transient { Foo() }
+            return createImpl()
+        }
+    """
+    )
 }
