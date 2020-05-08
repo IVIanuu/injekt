@@ -12,11 +12,12 @@ class InjektStorageContainerContributor : StorageComponentContainerContributor {
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(QualifiedExpressionCollector())
+        container.useInstance(AnnotatedBindingChecker())
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())
         container.useInstance(ModuleChecker())
         container.useInstance(QualifierChecker())
+        container.useInstance(QualifiedExpressionCollector())
         container.useInstance(ScopeChecker())
         container.useInstance(MembersInjectorChecker())
     }

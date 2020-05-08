@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -63,7 +64,8 @@ class ClassProviderTransformer(
                                 if (clazz.kind == ClassKind.OBJECT) {
                                     builder.irGetObject(clazz.symbol)
                                 } else {
-                                    builder.irCall(constructor!!).apply {
+                                    builder.irCall(constructor ?: error("Wtf ${clazz.dump()}"))
+                                        .apply {
                                         createFunction.valueParameters.forEach { valueParameter ->
                                             putValueArgument(
                                                 valueParameter.index,

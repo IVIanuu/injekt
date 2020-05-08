@@ -52,6 +52,9 @@ interface InjektErrors {
         @JvmField
         val MISSING_QUALIFIER_TARGETS = error()
 
+        @JvmField
+        val ANNOTATED_BINDING_CANNOT_BE_ABSTRACT = error()
+
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
         init {
@@ -152,6 +155,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.MISSING_QUALIFIER_TARGETS,
             "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)"
+        )
+        map.put(
+            InjektErrors.ANNOTATED_BINDING_CANNOT_BE_ABSTRACT,
+            "Annotated bindings cannot be an interface or abstract."
         )
     }
 }
