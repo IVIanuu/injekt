@@ -155,17 +155,31 @@ class FactoryDslTest {
         }
 
     @Test
-    fun testParametersNotAllowedInProvisionFunctions() =
+    fun testValueParametersNotAllowedInProvisionFunctions() =
         codegen(
             """
         interface Impl {
             fun provisionFunction(p0: String): String
         }
         @Factory
-        fun <T> factory(): Impl = createImpl()
+        fun factory(): Impl = createImpl()
     """
         ) {
             assertCompileError("parameters")
+        }
+
+    @Test
+    fun testSuspendValueNotAllowedInProvisionFunctions() =
+        codegen(
+            """
+        interface Impl {
+            suspend fun provisionFunction(): String
+        }
+        @Factory
+        fun factory(): Impl = createImpl()
+    """
+        ) {
+            assertCompileError("suspend")
         }
 
     @Test

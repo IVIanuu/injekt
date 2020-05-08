@@ -195,6 +195,12 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                                 .on(reportOn)
                         )
                     }
+                    if (declaration.isSuspend) {
+                        context.trace.report(
+                            InjektErrors.PROVISION_FUNCTION_CANNOT_BE_SUSPEND
+                                .on(reportOn)
+                        )
+                    }
                 }
                 is PropertyDescriptor -> {
                     if (declaration.isVar) {

@@ -43,6 +43,9 @@ interface InjektErrors {
         val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error()
         @JvmField
         val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
+
+        @JvmField
+        val PROVISION_FUNCTION_CANNOT_BE_SUSPEND = error()
         @JvmField
         val INJECT_MUST_BE_LATEINIT_VAR = error()
         @JvmField
@@ -55,10 +58,8 @@ interface InjektErrors {
         val ANNOTATED_BINDING_CANNOT_BE_ABSTRACT = error()
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error()
-
         @JvmField
         val CANNOT_BE_INLINE = error()
-
         @JvmField
         val CANNOT_BE_SUSPEND = error()
 
@@ -146,6 +147,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS,
             "Provision functions cannot have type parameters"
+        )
+        map.put(
+            InjektErrors.PROVISION_FUNCTION_CANNOT_BE_SUSPEND,
+            "Provision functions cannot be suspend"
         )
         map.put(
             InjektErrors.INJECT_MUST_BE_LATEINIT_VAR,
