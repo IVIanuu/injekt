@@ -53,6 +53,20 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 context
             )
         }
+
+        if (descriptor is FunctionDescriptor) {
+            val annotationsSize = descriptor.annotations
+                .filter {
+                    it.fqName == InjektFqNames.ChildFactory ||
+                            it.fqName == InjektFqNames.Factory ||
+                            it.fqName == InjektFqNames.Module
+                }
+                .size
+
+            if (annotationsSize > 1) {
+                context.trace.report(InjektErrors.EITHER_MODULE_OR_FACTORY.on(declaration))
+            }
+        }
     }
 
     override fun check(

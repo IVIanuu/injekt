@@ -261,4 +261,16 @@ class FactoryDslTest {
         assertOk()
     }
 
+    @Test
+    fun testFactoryAndModule() = codegen(
+        """
+        @ChildFactory
+        @Factory 
+        @Module
+        fun factory(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("only")
+    }
+
 }

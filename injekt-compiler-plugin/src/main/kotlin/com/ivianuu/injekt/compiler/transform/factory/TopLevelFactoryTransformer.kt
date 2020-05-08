@@ -49,7 +49,7 @@ class TopLevelFactoryTransformer(
                         factoryFunction = function,
                         parent = null,
                         irParent = function.file,
-                        name = InjektNameConventions.getImplNameForFactoryFunction(function.name),
+                        name = InjektNameConventions.getImplNameForFactoryFunction(function),
                         superType = function.returnType,
                         moduleClass = moduleClass,
                         pluginContext = pluginContext,

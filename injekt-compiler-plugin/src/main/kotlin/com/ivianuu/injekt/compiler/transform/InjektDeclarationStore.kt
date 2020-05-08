@@ -60,9 +60,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         return memberScope.getContributedDescriptors()
             .filterIsInstance<FunctionDescriptor>()
             .single {
-                it.name == InjektNameConventions.getModuleNameForFactoryFunction(
-                    factoryFunction.name
-                )
+                it.name == InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction)
             }
             .let { pluginContext.symbolTable.referenceFunction(it) }
             .ensureBound(pluginContext.irProviders)
@@ -84,7 +82,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                     ?: (moduleFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
                     ?: error("Unexpected parent ${moduleFunction.descriptor.containingDeclaration} for ${moduleFunction.dump()}")
             return memberScope.getContributedClassifier(
-                InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction.name),
+                InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction),
                 NoLookupLocation.FROM_BACKEND
             ).let { it as ClassDescriptor }
                 .let { pluginContext.symbolTable.referenceClass(it) }

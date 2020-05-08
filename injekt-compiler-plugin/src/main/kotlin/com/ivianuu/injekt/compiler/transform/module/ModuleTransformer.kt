@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -14,11 +13,10 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleTransformer(
@@ -28,7 +26,7 @@ class ModuleTransformer(
 
     private val moduleFunctions = mutableListOf<IrFunction>()
     private val transformedModules = mutableMapOf<IrFunction, IrClass>()
-    private val transformingModules = mutableSetOf<FqName>()
+    private val transformingModules = mutableSetOf<IrFunction>()
     private var computedModuleFunctions = false
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
@@ -59,14 +57,10 @@ class ModuleTransformer(
         transformedModules[function]?.let { return it }
 
         return DeclarationIrBuilder(pluginContext, function.file.symbol).run {
-            val packageName = function.fqNameForIrSerialization.parent()
-            val moduleName =
-                InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
-            val moduleFqName = packageName.child(moduleName)
-            check(moduleFqName !in transformingModules) {
-                "Circular dependency for module $moduleFqName"
+            check(function !in transformedModules) {
+                "Circular dependency for module ${function.dump()}"
             }
-            transformingModules += moduleFqName
+            transformingModules += function
             val moduleImplementation = ModuleImplementation(
                 function,
                 pluginContext,
@@ -74,7 +68,7 @@ class ModuleTransformer(
                 declarationStore
             ).also { it.build() }
             transformedModules[function] = moduleImplementation.clazz
-            transformingModules -= moduleFqName
+            transformingModules -= function
             moduleImplementation.clazz
         }
     }

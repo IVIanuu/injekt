@@ -71,7 +71,7 @@ class FactoryModuleTransformer(
 
     private fun IrBuilderWithScope.moduleFunction(factoryFunction: IrFunction): IrFunction {
         return buildFun {
-            name = InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction.name)
+            name = InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction)
             returnType = irBuiltIns.unitType
         }.apply {
             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)

@@ -309,4 +309,16 @@ class ModuleDslTest {
     """
     )
 
+    @Test
+    fun testMultipleModulesWithSameName() = codegen(
+        """
+        @Module
+        fun module() {
+        }
+        
+        @Module
+        fun module(p0: String) {
+        }
+    """
+    )
 }

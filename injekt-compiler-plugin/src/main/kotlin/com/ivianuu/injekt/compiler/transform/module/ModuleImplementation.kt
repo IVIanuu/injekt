@@ -64,7 +64,7 @@ class ModuleImplementation(
     val fieldsByParameters = mutableMapOf<IrValueDeclaration, IrField>()
 
     val clazz: IrClass = buildClass {
-        name = InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
+        name = InjektNameConventions.getModuleClassNameForModuleFunction(function)
         visibility = function.visibility
     }.apply {
         parent = function.parent

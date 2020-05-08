@@ -51,9 +51,11 @@ interface InjektErrors {
         val MUST_HAVE_RUNTIME_RETENTION = error()
         @JvmField
         val MISSING_QUALIFIER_TARGETS = error()
-
         @JvmField
         val ANNOTATED_BINDING_CANNOT_BE_ABSTRACT = error()
+
+        @JvmField
+        val EITHER_MODULE_OR_FACTORY = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -158,7 +160,11 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         )
         map.put(
             InjektErrors.ANNOTATED_BINDING_CANNOT_BE_ABSTRACT,
-            "Annotated bindings cannot be an interface or abstract."
+            "Annotated bindings cannot be an interface or abstract"
+        )
+        map.put(
+            InjektErrors.EITHER_MODULE_OR_FACTORY,
+            "A function can only be annotated with one of @Factory, @ChildFactory or @Module"
         )
     }
 }

@@ -1,5 +1,7 @@
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.Name
 
 object InjektNameConventions {
@@ -11,15 +13,26 @@ object InjektNameConventions {
         return Name.identifier("${className}_MembersInjector")
     }
 
-    fun getModuleClassNameForModuleFunction(moduleFunction: Name): Name {
-        return Name.identifier("${moduleFunction.asString().capitalize()}_Impl")
+    fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name {
+        return Name.identifier(
+            "${moduleFunction.name.asString()
+                .capitalize()}${moduleFunction.valueParametersHash()}_Impl"
+        )
     }
 
-    fun getImplNameForFactoryFunction(factoryFunction: Name): Name {
-        return Name.identifier("${factoryFunction.asString().capitalize()}_Impl")
+    fun getImplNameForFactoryFunction(factoryFunction: IrFunction): Name {
+        return Name.identifier(
+            "${factoryFunction.name.asString()
+                .capitalize()}${factoryFunction.valueParametersHash()}_Impl"
+        )
     }
 
-    fun getModuleNameForFactoryFunction(factoryFunction: Name): Name {
-        return Name.identifier("${factoryFunction.asString().capitalize()}_Module")
-    }
+    fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
+        Name.identifier(
+            "${factoryFunction.name.asString()
+                .capitalize()}${factoryFunction.valueParametersHash()}_Module"
+        )
+
+    private fun IrFunction.valueParametersHash(): Int =
+        valueParameters.map { it.name.asString() + it.type.render() }.hashCode()
 }
