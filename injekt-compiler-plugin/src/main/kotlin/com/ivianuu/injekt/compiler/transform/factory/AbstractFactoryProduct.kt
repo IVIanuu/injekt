@@ -24,7 +24,7 @@ abstract class AbstractFactoryProduct(
 
     protected fun init(
         parent: AbstractFactoryProduct?,
-        dependencyRequests: List<DependencyRequest>,
+        dependencyRequests: List<BindingRequest>,
         moduleAccessor: InitializerAccessor
     ) {
         factoryExpressions = FactoryExpressions(

@@ -34,7 +34,7 @@ class FactoryInstance(
     init {
         init(
             null,
-            listOf(DependencyRequest(factoryFunction.returnType.asKey(context)))
+            listOf(BindingRequest(factoryFunction.returnType.asKey(context)))
         ) { moduleAccessor() }
         DeclarationIrBuilder(context, factoryFunction.symbol).writeBody()
     }

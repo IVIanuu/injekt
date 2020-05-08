@@ -108,20 +108,9 @@ enum class RequestType {
     Provider
 }
 
-data class DependencyRequest(
-    val key: Key,
-    val requestType: RequestType = key.inferRequestType()
-) {
-    fun asBindingRequest() =
-        BindingRequest(
-            key,
-            requestType
-        )
-}
-
 sealed class BindingNode(
     val key: Key,
-    val dependencies: List<DependencyRequest>,
+    val dependencies: List<BindingRequest>,
     val targetScope: FqName?,
     val scoped: Boolean,
     val module: ModuleNode?,
@@ -130,7 +119,7 @@ sealed class BindingNode(
 
 class AssistedProvisionBindingNode(
     key: Key,
-    dependencies: List<DependencyRequest>,
+    dependencies: List<BindingRequest>,
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
@@ -145,7 +134,7 @@ class ChildFactoryBindingNode(
     val childFactory: IrClass
 ) : BindingNode(
     key, listOf(
-        DependencyRequest(
+        BindingRequest(
             childFactoryImplementation.parent!!.clazz.defaultType
                 .asKey(owner.pluginContext)
         )
@@ -159,7 +148,7 @@ class DelegateBindingNode(
     val originalKey: Key,
 ) : BindingNode(
     key, listOf(
-        DependencyRequest(originalKey)
+        BindingRequest(originalKey)
     ), null, false, null, owner
 )
 
@@ -193,7 +182,7 @@ class LazyBindingNode(
 ) : BindingNode(
     key,
     listOf(
-        DependencyRequest(
+        BindingRequest(
             key = key.type.typeArguments.single().asKey(owner.pluginContext)
         )
     ),
@@ -206,7 +195,7 @@ class LazyBindingNode(
 class MapBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
-    val entries: Map<MapKey, DependencyRequest>
+    val entries: Map<MapKey, BindingRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner) {
     val keyKey = key.type.typeArguments[0].asKey(owner.pluginContext)
     val valueKey = key.type.typeArguments[1].asKey(owner.pluginContext)
@@ -220,7 +209,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { DependencyRequest(it.type.asKey(owner.pluginContext)) },
+        .map { BindingRequest(it.type.asKey(owner.pluginContext)) },
     null,
     false,
     null,
@@ -232,7 +221,7 @@ class ProviderBindingNode(
     owner: AbstractFactoryProduct
 ) : BindingNode(
     key,
-    listOf(DependencyRequest(key.type.typeArguments.single().asKey(owner.pluginContext))),
+    listOf(BindingRequest(key.type.typeArguments.single().asKey(owner.pluginContext))),
     null,
     false,
     null,
@@ -241,7 +230,7 @@ class ProviderBindingNode(
 
 class ProvisionBindingNode(
     key: Key,
-    dependencies: List<DependencyRequest>,
+    dependencies: List<BindingRequest>,
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
@@ -252,7 +241,7 @@ class ProvisionBindingNode(
 class SetBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
-    val elements: List<DependencyRequest>
+    val elements: List<BindingRequest>
 ) : BindingNode(key, elements, null, false, null, owner) {
     val elementKey = key.type.typeArguments.single().asKey(owner.pluginContext)
 }

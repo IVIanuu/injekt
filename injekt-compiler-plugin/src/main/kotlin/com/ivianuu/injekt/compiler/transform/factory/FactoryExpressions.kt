@@ -188,7 +188,7 @@ class FactoryExpressions(
     private fun instanceExpressionForMap(binding: MapBindingNode): FactoryExpression {
         val entryExpressions = binding.entries
             .map { (key, entryValue) ->
-                val entryValueExpression = getBindingExpression(entryValue.asBindingRequest())
+                val entryValueExpression = getBindingExpression(entryValue)
                 val pairExpression: FactoryExpression = pairExpression@{
                     irCall(
                         pair.constructors.single(),
@@ -300,9 +300,7 @@ class FactoryExpressions(
             val provider = binding.provider
 
             val dependencies = binding.dependencies
-                .map {
-                    getBindingExpression(it.asBindingRequest())
-                }
+                .map { getBindingExpression(it) }
 
             val moduleRequired =
                 provider.kind != ClassKind.OBJECT && provider.constructors
@@ -366,7 +364,7 @@ class FactoryExpressions(
 
     private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
         val elementExpressions = binding.dependencies
-            .map { getBindingExpression(it.asBindingRequest()) }
+            .map { getBindingExpression(it) }
 
         val expression: FactoryExpression = bindingExpression@{ context ->
             when (elementExpressions.size) {

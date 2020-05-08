@@ -160,7 +160,7 @@ class FactoryImplementation(
     }
 
     private fun IrBuilderWithScope.implementDependencyRequests(
-        dependencyRequests: Map<IrDeclaration, DependencyRequest>
+        dependencyRequests: Map<IrDeclaration, BindingRequest>
     ): Unit = clazz.run clazz@{
         dependencyRequests.forEach { (declaration, request) ->
             val binding = graph.getBinding(request.key)
@@ -222,12 +222,12 @@ class FactoryImplementation(
         }
     }
 
-    private fun collectDependencyRequests(): Map<IrDeclaration, DependencyRequest> {
-        val dependencyRequests = mutableMapOf<IrDeclaration, DependencyRequest>()
+    private fun collectDependencyRequests(): Map<IrDeclaration, BindingRequest> {
+        val dependencyRequests = mutableMapOf<IrDeclaration, BindingRequest>()
         fun IrClass.collectDependencyRequests(sub: IrClass?) {
             for (declaration in declarations) {
                 fun reqisterRequest(type: IrType) {
-                    dependencyRequests[declaration] = DependencyRequest(
+                    dependencyRequests[declaration] = BindingRequest(
                         type
                             .substitute(
                                 typeParameters,

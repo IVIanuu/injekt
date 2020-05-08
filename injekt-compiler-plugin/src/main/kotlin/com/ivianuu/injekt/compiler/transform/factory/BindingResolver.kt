@@ -390,7 +390,7 @@ class ModuleBindingResolver(
                                     .substituteByName(moduleNode.typeParametersMap)
                                     .asKey(factoryProduct.pluginContext)
                             }
-                            .map { DependencyRequest(it) }
+                            .map { BindingRequest(it) }
 
                         AssistedProvisionBindingNode(
                             key = assistedFactoryType.asKey(factoryProduct.pluginContext),
@@ -408,7 +408,7 @@ class ModuleBindingResolver(
                                     .substituteByName(moduleNode.typeParametersMap)
                                     .asKey(factoryProduct.pluginContext)
                             }
-                            .map { DependencyRequest(it) }
+                            .map { BindingRequest(it) }
 
                         ProvisionBindingNode(
                             key = bindingKey,
@@ -485,7 +485,7 @@ class AnnotatedClassBindingResolver(
             val dependencies = provider.constructors.single().valueParameters
                 .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.Assisted) }
                 .map { it.type.asKey(pluginContext) }
-                .map { DependencyRequest(it) }
+                .map { BindingRequest(it) }
 
             listOf(
                 AssistedProvisionBindingNode(
@@ -513,7 +513,7 @@ class AnnotatedClassBindingResolver(
                 .singleOrNull()
                 ?.valueParameters
                 ?.map { it.type.typeArguments.single().asKey(pluginContext) }
-                ?.map { DependencyRequest(it) } ?: emptyList()
+                ?.map { BindingRequest(it) } ?: emptyList()
 
             listOf(
                 ProvisionBindingNode(
@@ -538,9 +538,9 @@ class MapBindingResolver(
 ) : BindingResolver {
 
     private val mapBuilders =
-        mutableMapOf<Key, MutableMap<MapKey, DependencyRequest>>()
-    private val finalMaps: Map<Key, Map<MapKey, DependencyRequest>> by lazy {
-        val mergedMaps: MutableMap<Key, MutableMap<MapKey, DependencyRequest>> = parent?.finalMaps
+        mutableMapOf<Key, MutableMap<MapKey, BindingRequest>>()
+    private val finalMaps: Map<Key, Map<MapKey, BindingRequest>> by lazy {
+        val mergedMaps: MutableMap<Key, MutableMap<MapKey, BindingRequest>> = parent?.finalMaps
             ?.mapValues { it.value.toMutableMap() }
             ?.toMutableMap() ?: mutableMapOf()
         mapBuilders.forEach { (mapKey, mapBuilder) ->
@@ -579,7 +579,7 @@ class MapBindingResolver(
     fun putMapEntry(
         mapKey: Key,
         entryKey: MapKey,
-        entryValue: DependencyRequest
+        entryValue: BindingRequest
     ) {
         val map = mapBuilders[mapKey]!!
         if (entryKey in map) {
@@ -592,7 +592,7 @@ class MapBindingResolver(
     private fun frameworkBinding(
         qualifier: FqName,
         mapKey: Key,
-        entries: Map<MapKey, DependencyRequest>
+        entries: Map<MapKey, BindingRequest>
     ) = MapBindingNode(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.map)
             .typeWith(
@@ -605,7 +605,7 @@ class MapBindingResolver(
         factoryProduct,
         entries
             .mapValues {
-                DependencyRequest(
+                BindingRequest(
                     key = symbols.getFunction(0)
                         .typeWith(it.value.key.type)
                         .withNoArgQualifiers(symbols, listOf(qualifier))
@@ -623,9 +623,9 @@ class SetBindingResolver(
     private val parent: SetBindingResolver?
 ) : BindingResolver {
 
-    private val setBuilders = mutableMapOf<Key, MutableSet<DependencyRequest>>()
-    private val finalSets: Map<Key, Set<DependencyRequest>> by lazy {
-        val mergedSets: MutableMap<Key, MutableSet<DependencyRequest>> = parent?.finalSets
+    private val setBuilders = mutableMapOf<Key, MutableSet<BindingRequest>>()
+    private val finalSets: Map<Key, Set<BindingRequest>> by lazy {
+        val mergedSets: MutableMap<Key, MutableSet<BindingRequest>> = parent?.finalSets
             ?.mapValues { it.value.toMutableSet() }
             ?.toMutableMap() ?: mutableMapOf()
         setBuilders.forEach { (setKey, setBuilder) ->
@@ -661,7 +661,7 @@ class SetBindingResolver(
         setBuilders.getOrPut(setKey) { mutableSetOf() }
     }
 
-    fun addSetElement(setKey: Key, element: DependencyRequest) {
+    fun addSetElement(setKey: Key, element: BindingRequest) {
         val set = setBuilders[setKey]!!
         if (element in set) {
             error("Already bound $element into set $setKey")
@@ -673,7 +673,7 @@ class SetBindingResolver(
     private fun frameworkBinding(
         qualifier: FqName,
         setKey: Key,
-        elements: Set<DependencyRequest>
+        elements: Set<BindingRequest>
     ) = SetBindingNode(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.set)
             .typeWith(
@@ -684,7 +684,7 @@ class SetBindingResolver(
         factoryImplementation,
         elements
             .map {
-                DependencyRequest(
+                BindingRequest(
                     key = symbols.getFunction(0).typeWith(
                             it.key.type
                         ).withNoArgQualifiers(symbols, listOf(qualifier))

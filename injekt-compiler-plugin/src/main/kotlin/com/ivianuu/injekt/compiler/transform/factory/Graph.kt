@@ -127,7 +127,7 @@ class Graph(
         return binding ?: parent?.getBinding(key) ?: error("No binding found for $key")
     }
 
-    fun validate(keys: List<DependencyRequest>) {
+    fun validate(keys: List<BindingRequest>) {
         keys.forEach {
             val binding = getBinding(it.key)
             validate(binding.dependencies)
@@ -350,9 +350,7 @@ class Graph(
     ) {
         mapBindingResolver.putMapEntry(
             mapKey, entryKey,
-            DependencyRequest(
-                entryValue
-            )
+            BindingRequest(entryValue)
         )
     }
 
@@ -363,9 +361,7 @@ class Graph(
     private fun addSetElement(setKey: Key, elementKey: Key) {
         setBindingResolver.addSetElement(
             setKey,
-            DependencyRequest(
-                elementKey
-            )
+            BindingRequest(elementKey)
         )
     }
 }
