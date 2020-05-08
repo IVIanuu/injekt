@@ -2,8 +2,9 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
+import org.jetbrains.kotlin.descriptors.resolveClassByFqName
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
@@ -79,7 +80,10 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     fun getTopLevelClass(fqName: FqName): IrClassSymbol =
         pluginContext.symbolTable.referenceClass(
-            pluginContext.moduleDescriptor.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
+            pluginContext.moduleDescriptor.resolveClassByFqName(
+                fqName,
+                NoLookupLocation.FROM_BACKEND
+            )
                 ?: error("No class found for $fqName")
         ).ensureBound(pluginContext.irProviders)
 

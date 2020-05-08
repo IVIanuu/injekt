@@ -575,7 +575,7 @@ class MapBindingResolver(
             ?.toMutableMap() ?: mutableMapOf()
         mapBuilders.forEach { (mapKey, map) ->
             val mergedMap = mergedMaps.getOrPut(mapKey) {
-                MultiBindingMap(map.origin, map.entries.toMutableMap())
+                MultiBindingMap(map.origin, mutableMapOf())
             }
             map.entries.forEach { (entryKey, entryValue) ->
                 val existing = mergedMap.entries[entryKey]
@@ -678,7 +678,7 @@ class SetBindingResolver(
             ?.toMutableMap() ?: mutableMapOf()
         setBuilders.forEach { (setKey, set) ->
             val mergedSet = mergedSets.getOrPut(setKey) {
-                MultiBindingSet(set.origin, set.elements.toMutableSet())
+                MultiBindingSet(set.origin, mutableSetOf())
             }
             set.elements.forEach { element ->
                 val existing = mergedSet.elements.singleOrNull { it.key == element.key }
