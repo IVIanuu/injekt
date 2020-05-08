@@ -72,12 +72,12 @@ class MapTest {
     @Test
     fun testMapOfLazy() = codegen(
         """
-        interface TestComponent {
+        interface TestComponent2 {
             val map: Map<KClass<out Command>, @Lazy () -> Command>
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun create(): TestComponent2 {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }

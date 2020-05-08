@@ -7,14 +7,14 @@ class InlineModuleTest {
     @Test
     fun testSimpleInlineModule() = codegen(
         """
-        @Module
-        inline fun <T : Any, S> inlinedModule(definition: ProviderDefinition<S>) {
+        @Module 
+        fun <T : Any, S> inlinedModule(definition: ProviderDefinition<S>) {
             transient<T>()
             inlinedModule2(definition)
         }
         
-        @Module
-        inline fun <P> inlinedModule2(definition: ProviderDefinition<P>) {
+        @Module 
+        fun <P> inlinedModule2(definition: ProviderDefinition<P>) {
             transient(definition)
         }
         
