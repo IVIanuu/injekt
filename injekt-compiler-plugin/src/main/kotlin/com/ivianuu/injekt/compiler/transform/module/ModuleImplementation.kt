@@ -112,7 +112,6 @@ class ModuleImplementation(
                         fieldsByParameters
                             .filter { it.key.parent == this@apply }
                             .forEach { (parameter, field) ->
-                                println("initialize field ${field.name}")
                                 +irSetField(
                                     irGet(thisReceiver!!),
                                     field,
@@ -122,7 +121,6 @@ class ModuleImplementation(
                             }
 
                         function.body!!.statements.forEach { moduleStatement ->
-                            println("stmt ${moduleStatement.javaClass.name}")
                             when (moduleStatement) {
                                 is IrCall -> {
                                     declarations += declarationFactory.create(moduleStatement)
@@ -190,7 +188,7 @@ class ModuleImplementation(
             builder.irExprBody(irInjektIntrinsicUnit())
         }
 
-        println(clazz.dump())
+        println(moduleDescriptor.clazz.dump())
     }
 
 }

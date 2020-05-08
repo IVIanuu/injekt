@@ -403,11 +403,10 @@ class ModuleDeclarationFactory(
                     } else {
                         bindingPath = TypeParameterPath(
                             moduleClass.typeParameters.single {
-                                it.descriptor ==
-                                        bindingType.toKotlinType().constructor.declarationDescriptor
+                                it.name == bindingType.toKotlinType().constructor.declarationDescriptor!!.name
                             }
                         )
-                        inline = false
+                        inline = true
                     }
                 } else {
                     val definitionExpression =

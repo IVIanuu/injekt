@@ -321,4 +321,24 @@ class ModuleDslTest {
         }
     """
     )
+
+    @Test
+    fun testModuleCannotBeInline() = codegen(
+        """
+        @Module
+        inline fun module(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("inline")
+    }
+
+    @Test
+    fun testModuleCannotBeSuspend() = codegen(
+        """
+        @Module
+        suspend fun module(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("suspend")
+    }
 }

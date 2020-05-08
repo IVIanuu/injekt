@@ -273,4 +273,44 @@ class FactoryDslTest {
         assertCompileError("only")
     }
 
+    @Test
+    fun testFactoryCannotBeInline() = codegen(
+        """
+        @Factory 
+        inline fun factory(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("inline")
+    }
+
+    @Test
+    fun testChildFactoryCannotBeInline() = codegen(
+        """
+        @ChildFactory 
+        inline fun factory(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("inline")
+    }
+
+    @Test
+    fun testFactoryCannotBeSuspend() = codegen(
+        """
+        @Factory 
+        suspend fun factory(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("suspend")
+    }
+
+    @Test
+    fun testChildFactoryCannotBeSuspend() = codegen(
+        """
+        @ChildFactory 
+        suspend fun factory(): TestComponent = createImpl()
+        """
+    ) {
+        assertCompileError("suspend")
+    }
+
 }

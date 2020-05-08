@@ -52,9 +52,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 descriptor,
                 context
             )
-        }
 
-        if (descriptor is FunctionDescriptor) {
             val annotationsSize = descriptor.annotations
                 .filter {
                     it.fqName == InjektFqNames.ChildFactory ||
@@ -65,6 +63,20 @@ class FactoryChecker : CallChecker, DeclarationChecker {
 
             if (annotationsSize > 1) {
                 context.trace.report(InjektErrors.EITHER_MODULE_OR_FACTORY.on(declaration))
+            }
+
+            if (descriptor.isInline) {
+                context.trace.report(
+                    InjektErrors.CANNOT_BE_INLINE
+                        .on(declaration)
+                )
+            }
+
+            if (descriptor.isSuspend) {
+                context.trace.report(
+                    InjektErrors.CANNOT_BE_SUSPEND
+                        .on(declaration)
+                )
             }
         }
     }

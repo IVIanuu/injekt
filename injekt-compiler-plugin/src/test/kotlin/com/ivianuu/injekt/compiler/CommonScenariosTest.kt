@@ -90,8 +90,8 @@ class CommonScenariosTest {
         @Transient class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
         @Transient class WorkerB(@Assisted context: Context) : Worker(context)
         
-        @Module
-        inline fun <reified T : Worker> bindWorkerIntoMap() {
+        @Module 
+        fun <T : Worker> bindWorkerIntoMap() {
             map<KClass<out Worker>, @Provider (Context) -> Worker> {
                 put<@Provider (Context) -> T>(T::class)
             }
@@ -136,20 +136,25 @@ class CommonScenariosTest {
         
         @Transient
         class ViewModelStore {
-            fun <T : ViewModel> getOrCreate(key: String, factory: () -> T): T = factory()
+            fun <T : ViewModel> getOrCreate(clazz: KClass<T>, factory: () -> T): T = factory()
         }
         
         @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
         @Qualifier
         annotation class OriginalViewModel
         
+        @Module 
+        fun <T : ViewModel> viewModel() { 
+            viewModel(T::class)
+        }
+        
         @Module
-        fun <T : ViewModel> viewModel(key: String, definition: ProviderDefinition<T>) {
-            transient<@OriginalViewModel T>(definition)
+        fun <T : ViewModel> viewModel(clazz: KClass<T>) {
+            transient<@OriginalViewModel T>()
             transient {
                 val viewModelStore = get<ViewModelStore>()
                 val viewModelProvider = get<@Provider () -> @OriginalViewModel T>()
-                viewModelStore.getOrCreate<T>(key, viewModelProvider)
+                viewModelStore.getOrCreate<T>(clazz, viewModelProvider)
             }
         }
         
@@ -161,7 +166,7 @@ class CommonScenariosTest {
         
         @Factory
         fun create(): ViewModelComponent {
-            viewModel("a") { MyViewModel() }
+            viewModel<MyViewModel>()
             return createImpl()
         }
         

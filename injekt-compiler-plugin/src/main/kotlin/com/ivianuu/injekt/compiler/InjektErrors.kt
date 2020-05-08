@@ -53,9 +53,14 @@ interface InjektErrors {
         val MISSING_QUALIFIER_TARGETS = error()
         @JvmField
         val ANNOTATED_BINDING_CANNOT_BE_ABSTRACT = error()
-
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error()
+
+        @JvmField
+        val CANNOT_BE_INLINE = error()
+
+        @JvmField
+        val CANNOT_BE_SUSPEND = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -165,6 +170,14 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.EITHER_MODULE_OR_FACTORY,
             "A function can only be annotated with one of @Factory, @ChildFactory or @Module"
+        )
+        map.put(
+            InjektErrors.CANNOT_BE_INLINE,
+            "@Factory, @ChildFactory or @Module cannot be inlined"
+        )
+        map.put(
+            InjektErrors.CANNOT_BE_SUSPEND,
+            "@Factory, @ChildFactory or @Module cannot be suspend"
         )
     }
 }

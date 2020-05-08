@@ -310,6 +310,7 @@ class Graph(
                 val typeParametersMap = includedModule.typeParameters
                     .map { it.symbol to (property.returnType as IrSimpleType).arguments[it.index].type }
                     .toMap()
+                    .mapValues { it.value.substituteByName(moduleNode.typeParametersMap) }
 
                 addModule(
                     ModuleNode(

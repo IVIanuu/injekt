@@ -13,10 +13,10 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
 
@@ -70,8 +71,8 @@ class ModuleNode(
 
     init {
         typeParametersMap.forEach {
-            check(it.value !is IrTypeParameter) {
-                "Must be concrete type ${it.key.owner.dump()} -> ${it.value}"
+            check(!it.value.toKotlinType().isTypeParameter()) {
+                "Must be concrete type ${it.key.owner.dump()} -> ${it.value.render()}"
             }
         }
     }
@@ -274,6 +275,12 @@ fun IrType.asKey(context: IrPluginContext): Key {
 }
 
 class Key(val type: IrType) {
+
+    init {
+        check(!type.toKotlinType().isTypeParameter()) {
+            "Must be concrete type ${type.render()}"
+        }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

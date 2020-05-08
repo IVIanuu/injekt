@@ -43,6 +43,20 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             ?.let { it as? ClassDescriptor }
             ?.takeIf { it.kind != ClassKind.OBJECT }
             ?.let { context.trace.report(InjektErrors.MUST_BE_STATIC.on(declaration)) }
+
+        if (descriptor.isInline) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_INLINE
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.isSuspend) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_SUSPEND
+                    .on(declaration)
+            )
+        }
     }
 
     override fun check(
