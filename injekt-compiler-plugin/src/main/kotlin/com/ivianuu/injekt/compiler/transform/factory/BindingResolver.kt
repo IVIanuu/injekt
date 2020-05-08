@@ -274,7 +274,8 @@ class DependencyBindingResolver(
                         InjektDeclarationIrBuilder.ProviderParameter(
                             name = "dependency",
                             type = dependencyNode.dependency.defaultType,
-                            assisted = false
+                            assisted = false,
+                            requirement = true
                         )
                     ),
                     returnType = dependencyFunction.returnType,

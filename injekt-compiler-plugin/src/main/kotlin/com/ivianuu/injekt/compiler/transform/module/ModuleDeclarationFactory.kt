@@ -150,7 +150,8 @@ class ModuleDeclarationFactory(
                 InjektDeclarationIrBuilder.ProviderParameter(
                     name = "p$index",
                     type = type,
-                    assisted = type in assisted
+                    assisted = type in assisted,
+                    requirement = false
                 )
             }
         }
@@ -365,7 +366,8 @@ class ModuleDeclarationFactory(
                         InjektDeclarationIrBuilder.ProviderParameter(
                             name = "p$index",
                             type = type,
-                            assisted = type in assisted
+                            assisted = type in assisted,
+                            requirement = false
                         )
                     }
                 }

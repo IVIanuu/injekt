@@ -53,7 +53,8 @@ class ClassProviderTransformer(
                                 InjektDeclarationIrBuilder.ProviderParameter(
                                     name = "p$index",
                                     type = valueParameter.type,
-                                    assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
+                                    assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted),
+                                    requirement = false
                                 )
                             } ?: emptyList(),
                         returnType = clazz.defaultType,

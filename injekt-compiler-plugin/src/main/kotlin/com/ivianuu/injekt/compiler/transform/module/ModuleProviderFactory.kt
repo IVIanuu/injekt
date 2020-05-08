@@ -49,7 +49,8 @@ class ModuleProviderFactory(
                     InjektDeclarationIrBuilder.ProviderParameter(
                         name = "p$index",
                         type = valueParameter.type,
-                        assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
+                        assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted),
+                        requirement = false
                     )
                 } ?: emptyList(),
             returnType = clazz.defaultType,
@@ -118,7 +119,8 @@ class ModuleProviderFactory(
             parameters += InjektDeclarationIrBuilder.ProviderParameter(
                 name = "module",
                 type = module.clazz.defaultType,
-                assisted = false
+                assisted = false,
+                requirement = true
             )
         }
 
@@ -127,7 +129,8 @@ class ModuleProviderFactory(
             parameters += InjektDeclarationIrBuilder.ProviderParameter(
                 name = "p$i",
                 type = call.type,
-                assisted = call in assistedParameterCalls
+                assisted = call in assistedParameterCalls,
+                requirement = false
             ).also { parametersByCall[call] = it }
         }
 

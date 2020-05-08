@@ -192,7 +192,8 @@ class InjektDeclarationIrBuilder(
     data class ProviderParameter(
         val name: String,
         val type: IrType,
-        val assisted: Boolean
+        val assisted: Boolean,
+        val requirement: Boolean
     )
 
     fun provider(
@@ -222,14 +223,14 @@ class InjektDeclarationIrBuilder(
 
             val fieldsByNonAssistedParameter = nonAssistedParameters
                 .toList()
-                .associateWith { (name, type) ->
+                .associateWith { parameter ->
                     addField(
-                        name,
-                        if (name == "module") {
-                            type
+                        parameter.name,
+                        if (parameter.requirement) {
+                            parameter.type
                         } else {
                             symbols.getFunction(0)
-                                .typeWith(type)
+                                .typeWith(parameter.type)
                                 .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
                         }
                     )
@@ -313,7 +314,7 @@ class InjektDeclarationIrBuilder(
                                         )
                                     )
                                 } else {
-                                    if (parameter.name == "module") {
+                                    if (parameter.requirement) {
                                         builder.irGetField(
                                             builder.irGet(dispatchReceiverParameter!!),
                                             fieldsByNonAssistedParameter.getValue(parameter)
