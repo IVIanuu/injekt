@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
+import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -49,6 +50,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
@@ -59,6 +61,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -147,28 +150,13 @@ class InjektDeclarationIrBuilder(
     }
 
     fun irMapKeyConstructorForKey(expression: IrExpression): IrConstructorCall {
-        return when (expression) {
-            is IrClassReference -> {
-                val type = expression.classType
-                if (type.toKotlinType().isTypeParameter()) {
-                    builder.irCall(symbols.astMapTypeParameterClassKey.constructors.single())
-                        .apply {
-                            putValueArgument(
-                                0,
-                                builder.irString(
-                                    (type.toKotlinType().constructor.declarationDescriptor as TypeParameterDescriptor)
-                                        .name.asString()
-                                )
-                            )
-                        }
-                } else {
-                    builder.irCall(symbols.astMapClassKey.constructors.single())
-                        .apply {
-                            putValueArgument(0, expression.deepCopyWithVariables())
-                        }
-                }
+        return when {
+            expression is IrClassReference -> irClassKey(expression.classType)
+            expression is IrGetValue && expression.symbol.descriptor.name.asString()
+                .startsWith("class\$") -> {
+                irClassKey(expression.type.typeArguments.single())
             }
-            is IrConst<*> -> {
+            expression is IrConst<*> -> {
                 when (expression.kind) {
                     is IrConstKind.Int -> builder.irCall(symbols.astMapIntKey.constructors.single())
                         .apply {
@@ -186,6 +174,34 @@ class InjektDeclarationIrBuilder(
                 }
             }
             else -> error("Unexpected expression ${expression.dump()}")
+        }
+    }
+
+    private fun irClassKey(type: IrType): IrConstructorCall {
+        return if (type.toKotlinType().isTypeParameter()) {
+            builder.irCall(symbols.astMapTypeParameterClassKey.constructors.single())
+                .apply {
+                    putValueArgument(
+                        0,
+                        builder.irString(
+                            (type.toKotlinType().constructor.declarationDescriptor as TypeParameterDescriptor)
+                                .name.asString()
+                        )
+                    )
+                }
+        } else {
+            builder.irCall(symbols.astMapClassKey.constructors.single())
+                .apply {
+                    putValueArgument(
+                        0,
+                        IrClassReferenceImpl(
+                            startOffset, endOffset,
+                            irBuiltIns.kClassClass.typeWith(type),
+                            type.classifierOrFail,
+                            type
+                        )
+                    )
+                }
         }
     }
 

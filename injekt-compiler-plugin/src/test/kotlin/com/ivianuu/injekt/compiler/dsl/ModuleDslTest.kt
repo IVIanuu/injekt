@@ -341,4 +341,25 @@ class ModuleDslTest {
     ) {
         assertCompileError("suspend")
     }
+
+    @Test
+    fun testClassOfModule() = codegen(
+        """
+        @Module
+        fun <S : Any> classOfA() {
+            val classOf = classOf<S>()
+        }
+        
+        @Module
+        fun <T : Any, V : Any> classOfB() {
+            val classOf = classOf<T>()
+            classOfA<V>()
+        }
+        
+        @Module
+        fun callingModule() {
+            classOfB<String, Int>()
+        }
+    """
+    )
 }

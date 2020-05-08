@@ -27,6 +27,8 @@ object InjektAst {
 
     annotation class Scoped
 
+    annotation class Typed
+
     annotation class Map {
         annotation class Entry
 

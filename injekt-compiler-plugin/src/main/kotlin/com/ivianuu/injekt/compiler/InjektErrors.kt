@@ -43,7 +43,6 @@ interface InjektErrors {
         val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error()
         @JvmField
         val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error()
-
         @JvmField
         val PROVISION_FUNCTION_CANNOT_BE_SUSPEND = error()
         @JvmField
@@ -62,6 +61,9 @@ interface InjektErrors {
         val CANNOT_BE_INLINE = error()
         @JvmField
         val CANNOT_BE_SUSPEND = error()
+
+        @JvmField
+        val CLASS_OF_OUTSIDE_OF_MODULE = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -183,6 +185,10 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.CANNOT_BE_SUSPEND,
             "@Factory, @ChildFactory or @Module cannot be suspend"
+        )
+        map.put(
+            InjektErrors.CLASS_OF_OUTSIDE_OF_MODULE,
+            "classOf() can only be called from inside @Factory, @ChildFactory or @Module functions"
         )
     }
 }

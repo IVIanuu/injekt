@@ -43,7 +43,9 @@ class MapChecker : CallChecker {
                 keyArg.getArgumentExpression()!!,
                 context.trace.bindingContext
             )
-            if (constant == null && keyArg.getArgumentExpression() !is KtClassLiteralExpression) {
+            if (constant == null && keyArg.getArgumentExpression() !is KtClassLiteralExpression &&
+                keyArg.getArgumentExpression()?.text?.contains("classOf") != true
+            ) {
                 context.trace.report(InjektErrors.MAP_KEY_MUST_BE_CONSTANT.on(reportOn))
             }
         }

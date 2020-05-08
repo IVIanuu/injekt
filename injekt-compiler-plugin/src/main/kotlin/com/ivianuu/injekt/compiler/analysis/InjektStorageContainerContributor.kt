@@ -13,6 +13,7 @@ class InjektStorageContainerContributor : StorageComponentContainerContributor {
         moduleDescriptor: ModuleDescriptor
     ) {
         container.useInstance(AnnotatedBindingChecker())
+        container.useInstance(ClassOfChecker())
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())
         container.useInstance(ModuleChecker())

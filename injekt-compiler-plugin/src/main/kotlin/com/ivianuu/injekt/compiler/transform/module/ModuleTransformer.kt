@@ -81,7 +81,11 @@ class ModuleTransformer(
                 if (declaration.hasAnnotation(InjektFqNames.Module) &&
                     (declaration.parent as? IrFile)?.fqName != InjektFqNames.InjektPackage
                     && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createImpl"
-                    && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createInstance"
+                    && (declaration.parent as? IrFunction)?.descriptor?.fqNameSafe?.asString() != "com.ivianuu.injekt.createInstance" &&
+                    (!declaration.hasAnnotation(InjektFqNames.AstTyped) ||
+                            declaration.valueParameters.any {
+                                it.name.asString().startsWith("class\$")
+                            })
                 ) {
                     moduleFunctions += declaration
                 }

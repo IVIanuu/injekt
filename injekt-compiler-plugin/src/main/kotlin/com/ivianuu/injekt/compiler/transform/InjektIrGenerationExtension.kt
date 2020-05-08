@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.generateSymbols
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
+import com.ivianuu.injekt.compiler.transform.module.TypedModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -17,9 +18,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             generateSymbols(pluginContext)
         }
 
-        val declarationStore = InjektDeclarationStore(
-            pluginContext
-        )
+        val declarationStore = InjektDeclarationStore(pluginContext)
 
         // write qualifiers of expression to the irTrace
         QualifiedMetadataTransformer(pluginContext).visitModuleAndGenerateSymbols()
@@ -42,21 +41,19 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val moduleTransformer = ModuleTransformer(
             pluginContext,
             declarationStore
-        )
-            .also { declarationStore.moduleTransformer = it }
+        ).also { declarationStore.moduleTransformer = it }
         val factoryTransformer = TopLevelFactoryTransformer(
             pluginContext,
             declarationStore
-        )
-            .also { declarationStore.factoryTransformer = it }
+        ).also { declarationStore.factoryTransformer = it }
+
+        TypedModuleTransformer(pluginContext).visitModuleAndGenerateSymbols()
 
         // transform @Module functions to their ast representation
         moduleTransformer.visitModuleAndGenerateSymbols()
 
         // create implementations for factories
         factoryTransformer.visitModuleAndGenerateSymbols()
-
-        //WrappedDeclarationRewriter(pluginContext).visitModuleAndGenerateSymbols()
     }
 
 }

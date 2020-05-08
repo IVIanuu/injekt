@@ -93,7 +93,7 @@ class CommonScenariosTest {
         @Module 
         fun <T : Worker> bindWorkerIntoMap() {
             map<KClass<out Worker>, @Provider (Context) -> Worker> {
-                put<@Provider (Context) -> T>(T::class)
+                put<@Provider (Context) -> T>(classOf<T>())
             }
         }
         
@@ -143,13 +143,9 @@ class CommonScenariosTest {
         @Qualifier
         annotation class OriginalViewModel
         
-        @Module 
-        fun <T : ViewModel> viewModel() { 
-            viewModel(T::class)
-        }
-        
         @Module
-        fun <T : ViewModel> viewModel(clazz: KClass<T>) {
+        fun <T : ViewModel> viewModel() {
+            val clazz = classOf<T>()
             transient<@OriginalViewModel T>()
             transient {
                 val viewModelStore = get<ViewModelStore>()

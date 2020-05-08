@@ -46,6 +46,20 @@ class MapDslTest {
     }
 
     @Test
+    fun testClassOfMapKey() = codegen(
+        """
+        @Module
+        fun test() { 
+            map<KClass<*>, Any> {
+                put<String>(classOf<String>())
+            }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
     fun testDynamicMapKey() = codegen(
         """
         fun key() = String::class
