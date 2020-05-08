@@ -16,7 +16,6 @@ class MembersInjectorTest {
         
         interface TestComponent { 
             val injectMyClass: @MembersInjector (MyClass) -> Unit
-            val foo: Foo
             val bar: Bar
         }
         
@@ -32,11 +31,10 @@ class MembersInjectorTest {
             val myClass = MyClass()
             testComponent.injectMyClass(myClass)
             check(myClass.bar === testComponent.bar)
-            check(myClass.foo === testComponent.foo)
         }
     """
     ) {
-        assertOk()
+        invokeSingleFile()
     }
 
 }

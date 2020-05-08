@@ -74,9 +74,18 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
     private fun getInjectSetter(property: IrProperty): IrFunction {
         return injectSettersByProperty.getOrPut(property) {
             val clazz = property.parent as IrClass
-            clazz.functions.singleOrNull {
-                it.name == Name.identifier("inject\$${property.name}")
-            } ?: clazz.addFunction {
+            fun IrClass.findInjectSetter(): IrFunction? {
+                functions.singleOrNull {
+                    it.name == Name.identifier("inject\$${property.name}")
+                }?.let { return it }
+                for (superType in superTypes) {
+                    superType.classOrNull?.ensureBound(irProviders)?.owner?.findInjectSetter()
+                        ?.let { return it }
+                }
+                return null
+            }
+
+            clazz.findInjectSetter() ?: clazz.addFunction {
                 this.name = Name.identifier("inject\$${property.name}")
                 this.returnType = irBuiltIns.unitType
                 visibility = Visibilities.PUBLIC
