@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -24,16 +23,20 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
@@ -58,11 +61,7 @@ class ModuleImplementation(
         symbols
     )
 
-    val initializerBlocks =
-        mutableListOf<IrBuilderWithScope.(() -> IrExpression) -> IrExpression>()
-
-    val parameterMap = mutableMapOf<IrValueParameter, IrValueParameter>()
-    val fieldsByParameters = mutableMapOf<IrValueParameter, IrField>()
+    val fieldsByParameters = mutableMapOf<IrValueDeclaration, IrField>()
 
     val clazz: IrClass = buildClass {
         name = InjektNameConventions.getModuleClassNameForModuleFunction(function.name)
@@ -76,7 +75,11 @@ class ModuleImplementation(
 
     fun build() {
         clazz.apply clazz@{
-            val constructor = addConstructor {
+            val declarations = mutableListOf<ModuleDeclaration>()
+
+            val ignoreGetValue = mutableSetOf<IrGetValue>()
+
+            addConstructor {
                 returnType = defaultType
                 isPrimary = true
                 visibility = Visibilities.PUBLIC
@@ -89,49 +92,88 @@ class ModuleImplementation(
                                 it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl
                     }
                     .forEach { p ->
-                        addValueParameter(
+                        val newValueParameter = addValueParameter(
                             name = p.name.asString(),
                             type = p.type
-                        ).also { parameterMap[p] = it }
-                    }
-
-                valueParameters.forEach { p ->
-                    addField(
-                        "p_${p.name.asString()}",
-                        p.type
-                    ).also { fieldsByParameters[p] = it }
-                }
-            }
-            val declarations = parseModuleDefinition()
-            moduleDescriptor.addDeclarations(declarations)
-
-            addChild(moduleDescriptor.clazz)
-
-            constructor.body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                builder.irBlockBody {
-                    initializeClassWithAnySuperClass(this@clazz.symbol)
-
-                    fieldsByParameters.forEach { (parameter, field) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            field,
-                            irGet(parameter)
                         )
+                        addField(
+                            "p_${p.name.asString()}",
+                            p.type
+                        ).also {
+                            fieldsByParameters[p] = it
+                            fieldsByParameters[newValueParameter] = it
+                        }
                     }
 
-                    initializerBlocks.forEach {
-                        +it(this) { irGet(thisReceiver!!) }
+                body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                    builder.irBlockBody {
+                        initializeClassWithAnySuperClass(this@clazz.symbol)
+
+                        fieldsByParameters
+                            .filter { it.key.parent == this@apply }
+                            .forEach { (parameter, field) ->
+                                println("initialize field ${field.name}")
+                                +irSetField(
+                                    irGet(thisReceiver!!),
+                                    field,
+                                    irGet(parameter)
+                                        .also { ignoreGetValue += it }
+                                )
+                            }
+
+                        function.body!!.statements.forEach { moduleStatement ->
+                            println("stmt ${moduleStatement.javaClass.name}")
+                            when (moduleStatement) {
+                                is IrCall -> {
+                                    declarations += declarationFactory.create(moduleStatement)
+                                        .onEach {
+                                            it.statement?.invoke(builder) { irGet(thisReceiver!!) }
+                                                ?.let { +it }
+                                        }
+                                }
+                                is IrVariable -> {
+                                    val field = addField(
+                                        moduleStatement.name.asString(),
+                                        moduleStatement.type
+                                    )
+                                    fieldsByParameters[moduleStatement] = field
+                                    if (moduleStatement.initializer != null) {
+                                        +irSetField(
+                                            irGet(thisReceiver!!),
+                                            field,
+                                            moduleStatement.initializer!!
+                                        )
+                                    }
+                                }
+                                is IrSetVariable -> {
+                                    fieldsByParameters[moduleStatement.symbol.owner]?.let {
+                                        +irSetField(
+                                            irGet(thisReceiver!!),
+                                            it,
+                                            moduleStatement.value
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    +moduleStatement
+                                }
+                            }
+                        }
                     }
                 }
             }
+
+            moduleDescriptor.addDeclarations(declarations)
+            addChild(moduleDescriptor.clazz)
 
             transformChildrenVoid(object : IrElementTransformerVoid() {
                 override fun visitGetValue(expression: IrGetValue): IrExpression {
-                    return if (parameterMap.keys.none { it.symbol == expression.symbol }) {
+                    return if (expression in ignoreGetValue ||
+                        fieldsByParameters.keys.none { it.symbol == expression.symbol }
+                    ) {
                         super.visitGetValue(expression)
                     } else {
-                        val newParameter = parameterMap[expression.symbol.owner]!!
-                        val field = fieldsByParameters[newParameter]!!
+                        val field = fieldsByParameters[expression.symbol.owner]!!
                         return DeclarationIrBuilder(pluginContext, symbol).run {
                             irGetField(
                                 irGet(thisReceiver!!),
@@ -147,19 +189,8 @@ class ModuleImplementation(
         function.body = InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
             builder.irExprBody(irInjektIntrinsicUnit())
         }
-    }
 
-    private fun parseModuleDefinition(): List<ModuleDeclaration> {
-        val declarations = mutableListOf<ModuleDeclaration>()
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                super.visitCall(expression)
-                declarations += declarationFactory.create(expression)
-                return expression
-            }
-        })
-
-        return declarations
+        println(clazz.dump())
     }
 
 }

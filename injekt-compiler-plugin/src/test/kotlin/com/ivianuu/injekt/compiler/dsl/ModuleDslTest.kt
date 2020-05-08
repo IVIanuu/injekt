@@ -288,4 +288,25 @@ class ModuleDslTest {
     """
     )
 
+    @Test
+    fun testLocalDeclarationCapturing() = codegen(
+        """
+        @Module
+        fun capturingModule(greeting: String) {
+            val local = greeting + " world"
+            transient { local }
+        }
+        
+        interface TestComponent {
+            val greeting: String
+        }
+        
+        @Factory
+        fun create(): TestComponent {
+            capturingModule("hello")
+            return createImpl()
+        }
+    """
+    )
+
 }

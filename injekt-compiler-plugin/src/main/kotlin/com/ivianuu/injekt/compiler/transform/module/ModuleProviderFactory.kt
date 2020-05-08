@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -77,8 +77,7 @@ class ModuleProviderFactory(
         name: Name,
         definition: IrFunctionExpression,
         visibility: Visibility,
-        moduleParametersMap: Map<IrValueParameter, IrValueParameter>,
-        moduleFieldsByParameter: Map<IrValueParameter, IrField>
+        moduleFieldsByParameter: Map<IrValueDeclaration, IrField>
     ): IrClass {
         val definitionFunction = definition.function
 
@@ -86,7 +85,7 @@ class ModuleProviderFactory(
 
         val assistedParameterCalls = mutableListOf<IrCall>()
         val dependencyCalls = mutableListOf<IrCall>()
-        val capturedModuleValueParameters = mutableListOf<IrValueParameter>()
+        val capturedModuleValueParameters = mutableListOf<IrValueDeclaration>()
 
         definitionFunction.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
@@ -105,8 +104,8 @@ class ModuleProviderFactory(
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 super.visitGetValue(expression)
 
-                if (moduleParametersMap.keys.any { it.symbol == expression.symbol }) {
-                    capturedModuleValueParameters += expression.symbol.owner as IrValueParameter
+                if (moduleFieldsByParameter.keys.any { it.symbol == expression.symbol }) {
+                    capturedModuleValueParameters += expression.symbol.owner
                 }
 
                 return expression
@@ -173,17 +172,17 @@ class ModuleProviderFactory(
                     }
 
                     override fun visitGetValue(expression: IrGetValue): IrExpression {
-                        return if (moduleParametersMap.keys.none { it.symbol == expression.symbol }) {
+                        return if (moduleFieldsByParameter.keys.none { it.symbol == expression.symbol }) {
                             super.visitGetValue(expression)
                         } else {
-                            val newParameter = moduleParametersMap[expression.symbol.owner]!!
-                            val field = moduleFieldsByParameter[newParameter]!!
+                            val field = moduleFieldsByParameter[expression.symbol.owner]!!
                             return irGetField(
                                 irGet(createFunction.valueParameters.first()),
                                 field
                             )
                         }
                     }
+
                 })
 
                 body

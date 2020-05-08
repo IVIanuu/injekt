@@ -18,6 +18,8 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -98,15 +100,13 @@ class ModuleDeclarationFactory(
 
         val path = PropertyPath(property)
 
-        module.initializerBlocks += {
+        return DependencyDeclaration(dependencyType, path) {
             irSetField(
                 it(),
                 property.backingField!!,
                 call.getValueArgument(0)!!
             )
         }
-
-        return DependencyDeclaration(dependencyType, path)
     }
 
     private fun createChildFactoryDeclaration(call: IrCall): ChildFactoryDeclaration {
@@ -133,6 +133,7 @@ class ModuleDeclarationFactory(
         val inline: Boolean
         val parameters =
             mutableListOf<InjektDeclarationIrBuilder.ProviderParameter>()
+        val statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
 
         fun addParametersFromProvider(provider: IrClass) {
             val assisted = provider.functions
@@ -165,6 +166,7 @@ class ModuleDeclarationFactory(
                     }
                 )
                 inline = true
+                statement = null
             } else {
                 val provider = providerFactory.providerForClass(
                     name = Name.identifier(nameProvider.allocate("Factory")),
@@ -176,6 +178,7 @@ class ModuleDeclarationFactory(
                 addParametersFromProvider(provider)
                 bindingPath = ClassPath(provider)
                 inline = false
+                statement = null
             }
         } else {
             if (call.symbol.descriptor.name.asString() == "instance") {
@@ -186,14 +189,13 @@ class ModuleDeclarationFactory(
                         bindingType
                     )
 
-                module.initializerBlocks += {
+                statement = {
                     irSetField(
                         it(),
                         property.backingField!!,
                         singleArgument
                     )
                 }
-
                 bindingPath = PropertyPath(property)
                 inline = false
             } else {
@@ -203,13 +205,13 @@ class ModuleDeclarationFactory(
                             name = Name.identifier(nameProvider.allocate("Factory")),
                             definition = singleArgument,
                             visibility = module.clazz.visibility,
-                            moduleParametersMap = module.parameterMap,
                             moduleFieldsByParameter = module.fieldsByParameters
                         )
                         module.clazz.addChild(provider)
                         addParametersFromProvider(provider)
                         bindingPath = ClassPath(provider)
                         inline = false
+                        statement = null
                     }
                     is IrGetValue -> {
                         bindingPath = ValueParameterPath(
@@ -218,6 +220,7 @@ class ModuleDeclarationFactory(
                             }
                         )
                         inline = true
+                        statement = null
                     }
                     else -> error("Unexpected definition ${singleArgument.dump()}")
                 }
@@ -229,7 +232,8 @@ class ModuleDeclarationFactory(
             parameters = parameters,
             scoped = call.symbol.descriptor.name.asString() == "scoped",
             inline = inline,
-            path = bindingPath
+            path = bindingPath,
+            statement = statement
         )
     }
 
@@ -308,7 +312,10 @@ class ModuleDeclarationFactory(
                 includedType
             )
 
-        module.initializerBlocks += {
+        declarations += IncludedModuleDeclaration(
+            includedType,
+            PropertyPath(property)
+        ) {
             irSetField(
                 it(),
                 property.backingField!!,
@@ -330,11 +337,6 @@ class ModuleDeclarationFactory(
                 }
             )
         }
-
-        declarations += IncludedModuleDeclaration(
-            includedType,
-            PropertyPath(property)
-        )
 
         declarations += includedClass
             .declarations.single {
@@ -431,7 +433,6 @@ class ModuleDeclarationFactory(
                             name = Name.identifier(nameProvider.allocate("Factory")),
                             definition = definitionExpression,
                             visibility = module.clazz.visibility,
-                            moduleParametersMap = module.parameterMap,
                             moduleFieldsByParameter = module.fieldsByParameters
                         )
                         module.clazz.addChild(provider)
@@ -454,7 +455,8 @@ class ModuleDeclarationFactory(
                     parameters = parameters,
                     scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped),
                     inline = inline,
-                    path = bindingPath
+                    path = bindingPath,
+                    statement = null
                 )
             }
 
