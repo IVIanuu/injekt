@@ -8,5 +8,5 @@ interface SetDsl<E> {
     // todo fun <T : E> add(definition: ProviderDefinition<T>)
 }
 
-@Declaration
+@Module
 fun <E> set(block: SetDsl<E>.() -> Unit = {}): Unit = injektIntrinsic()

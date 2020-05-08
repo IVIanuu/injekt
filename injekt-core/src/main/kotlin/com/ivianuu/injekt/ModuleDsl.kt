@@ -3,32 +3,32 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KFunction
 
-@Declaration
+@Module
 fun <T> scope(): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 fun <T> dependency(dependency: T): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 fun <T : KFunction<*>> childFactory(factory: T): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 fun <S : T, T> alias(): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 fun <T> transient(): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 inline fun <T> transient(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
 
 @Scope
 annotation class Transient
 
-@Declaration
+@Module
 fun <T> instance(instance: T): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 fun <T> scoped(): Unit = injektIntrinsic()
 
-@Declaration
+@Module
 inline fun <T> scoped(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
