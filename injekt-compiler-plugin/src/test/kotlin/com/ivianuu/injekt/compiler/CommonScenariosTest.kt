@@ -136,7 +136,7 @@ class CommonScenariosTest {
         
         @Transient
         class ViewModelStore {
-            fun <T : ViewModel> getOrCreate(key: String, factory: () -> T): T = error("")
+            fun <T : ViewModel> getOrCreate(key: String, factory: () -> T): T = factory()
         }
         
         @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)

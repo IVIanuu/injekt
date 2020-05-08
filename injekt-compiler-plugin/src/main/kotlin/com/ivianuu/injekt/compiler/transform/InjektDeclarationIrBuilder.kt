@@ -225,9 +225,13 @@ class InjektDeclarationIrBuilder(
                 .associateWith { (name, type) ->
                     addField(
                         name,
-                        symbols.getFunction(0)
-                            .typeWith(type)
-                            .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
+                        if (name == "module") {
+                            type
+                        } else {
+                            symbols.getFunction(0)
+                                .typeWith(type)
+                                .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
+                        }
                     )
                 }
 
@@ -309,16 +313,23 @@ class InjektDeclarationIrBuilder(
                                         )
                                     )
                                 } else {
-                                    builder.irCall(
-                                            symbols.getFunction(0)
-                                                .functions
-                                                .single { it.owner.name.asString() == "invoke" })
-                                        .apply {
-                                            dispatchReceiver = builder.irGetField(
-                                                builder.irGet(dispatchReceiverParameter!!),
-                                                fieldsByNonAssistedParameter.getValue(parameter)
-                                            )
-                                        }
+                                    if (parameter.name == "module") {
+                                        builder.irGetField(
+                                            builder.irGet(dispatchReceiverParameter!!),
+                                            fieldsByNonAssistedParameter.getValue(parameter)
+                                        )
+                                    } else {
+                                        builder.irCall(
+                                                symbols.getFunction(0)
+                                                    .functions
+                                                    .single { it.owner.name.asString() == "invoke" })
+                                            .apply {
+                                                dispatchReceiver = builder.irGetField(
+                                                    builder.irGet(dispatchReceiverParameter!!),
+                                                    fieldsByNonAssistedParameter.getValue(parameter)
+                                                )
+                                            }
+                                    }
                                 }
                             )
                         }
