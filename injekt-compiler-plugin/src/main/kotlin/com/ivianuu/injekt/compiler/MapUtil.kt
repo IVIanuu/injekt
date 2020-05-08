@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
 val SupportedMapKeyTypes: List<FqName> = listOf(
@@ -34,16 +35,21 @@ data class ClassKey(val value: IrType) : MapKey() {
             value
         )
     }
+
+    override fun toString(): String = "kotlin.reflect.KClass<${value.render()}>"
 }
 
 data class IntKey(val value: Int) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression = irInt(value)
+    override fun toString(): String = value.toString()
 }
 
 data class LongKey(val value: Long) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression = irLong(value)
+    override fun toString(): String = value.toString()
 }
 
 data class StringKey(val value: String) : MapKey() {
     override fun IrBuilderWithScope.asExpression(): IrExpression = irString(value)
+    override fun toString(): String = value
 }

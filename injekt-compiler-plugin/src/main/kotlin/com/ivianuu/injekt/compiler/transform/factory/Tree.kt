@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.equalsWithQualifiers
 import com.ivianuu.injekt.compiler.getQualifierFqNames
@@ -22,6 +23,7 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
 
@@ -95,6 +97,7 @@ class DependencyNode(
 
 data class BindingRequest(
     val key: Key,
+    val requestOrigin: FqName?,
     val requestType: RequestType = key.inferRequestType()
 )
 
@@ -114,7 +117,8 @@ sealed class BindingNode(
     val targetScope: FqName?,
     val scoped: Boolean,
     val module: ModuleNode?,
-    val owner: AbstractFactoryProduct
+    val owner: AbstractFactoryProduct,
+    val origin: FqName?
 ) : Node
 
 class AssistedProvisionBindingNode(
@@ -124,40 +128,46 @@ class AssistedProvisionBindingNode(
     scoped: Boolean,
     module: ModuleNode?,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val provider: IrClass
-) : BindingNode(key, dependencies, targetScope, scoped, module, owner)
+) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class ChildFactoryBindingNode(
     key: Key,
     owner: FactoryImplementation,
+    origin: FqName?,
     val childFactoryImplementation: FactoryImplementation,
     val childFactory: IrClass
 ) : BindingNode(
     key, listOf(
         BindingRequest(
             childFactoryImplementation.parent!!.clazz.defaultType
-                .asKey(owner.pluginContext)
+                .asKey(owner.pluginContext),
+            null
         )
     ),
-    null, false, null, owner
+    null, false, null, owner, origin
 )
 
 class DelegateBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val originalKey: Key,
+    val requestOrigin: FqName
 ) : BindingNode(
     key, listOf(
-        BindingRequest(originalKey)
-    ), null, false, null, owner
+        BindingRequest(originalKey, requestOrigin)
+    ), null, false, null, owner, origin
 )
 
 class DependencyBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val provider: IrClass,
     val requirementNode: DependencyNode
-) : BindingNode(key, emptyList(), null, false, null, owner)
+) : BindingNode(key, emptyList(), null, false, null, owner, origin)
 
 class FactoryImplementationBindingNode(
     val factoryImplementationNode: FactoryImplementationNode,
@@ -167,36 +177,42 @@ class FactoryImplementationBindingNode(
     null,
     false,
     null,
-    factoryImplementationNode.factoryImplementation
+    factoryImplementationNode.factoryImplementation,
+    factoryImplementationNode.key.type.classOrFail.descriptor.fqNameSafe
 )
 
 class InstanceBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val requirementNode: InstanceNode,
-) : BindingNode(key, emptyList(), null, false, null, owner)
+) : BindingNode(key, emptyList(), null, false, null, owner, origin)
 
 class LazyBindingNode(
     key: Key,
+    origin: FqName?,
     owner: AbstractFactoryProduct
 ) : BindingNode(
     key,
     listOf(
         BindingRequest(
-            key = key.type.typeArguments.single().asKey(owner.pluginContext)
+            key = key.type.typeArguments.single().asKey(owner.pluginContext),
+            origin
         )
     ),
     null,
     false,
     null,
-    owner
+    owner,
+    origin
 )
 
 class MapBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val entries: Map<MapKey, BindingRequest>
-) : BindingNode(key, entries.values.toList(), null, false, null, owner) {
+) : BindingNode(key, entries.values.toList(), null, false, null, owner, origin) {
     val keyKey = key.type.typeArguments[0].asKey(owner.pluginContext)
     val valueKey = key.type.typeArguments[1].asKey(owner.pluginContext)
 }
@@ -204,28 +220,32 @@ class MapBindingNode(
 class MembersInjectorBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val membersInjector: IrClass
 ) : BindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { BindingRequest(it.type.asKey(owner.pluginContext)) },
+        .map { BindingRequest(it.type.asKey(owner.pluginContext), null) },
     null,
     false,
     null,
-    owner
+    owner,
+    origin
 )
 
 class ProviderBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct
+    owner: AbstractFactoryProduct,
+    origin: FqName?
 ) : BindingNode(
     key,
-    listOf(BindingRequest(key.type.typeArguments.single().asKey(owner.pluginContext))),
+    listOf(BindingRequest(key.type.typeArguments.single().asKey(owner.pluginContext), origin)),
     null,
     false,
     null,
-    owner
+    owner,
+    origin
 )
 
 class ProvisionBindingNode(
@@ -235,14 +255,16 @@ class ProvisionBindingNode(
     scoped: Boolean,
     module: ModuleNode?,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val provider: IrClass
-) : BindingNode(key, dependencies, targetScope, scoped, module, owner)
+) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class SetBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,
+    origin: FqName?,
     val elements: List<BindingRequest>
-) : BindingNode(key, elements, null, false, null, owner) {
+) : BindingNode(key, elements, null, false, null, owner, origin) {
     val elementKey = key.type.typeArguments.single().asKey(owner.pluginContext)
 }
 

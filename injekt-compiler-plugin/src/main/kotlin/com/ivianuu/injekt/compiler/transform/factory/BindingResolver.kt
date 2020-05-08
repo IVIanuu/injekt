@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
@@ -142,8 +143,9 @@ class ChildFactoryBindingResolver(
         return@lazy ChildFactoryBindingNode(
             key,
             factoryImplementation,
+            moduleClass.descriptor.fqNameSafe,
             childFactoryImplementation,
-            childFactory
+            childFactory,
         )
     }
 
@@ -237,6 +239,7 @@ class ChildFactoryBindingResolver(
 }
 
 class DependencyBindingResolver(
+    private val moduleNode: ModuleNode,
     private val dependencyNode: DependencyNode,
     private val members: FactoryMembers,
     private val factoryProduct: AbstractFactoryProduct
@@ -300,7 +303,8 @@ class DependencyBindingResolver(
                     key = requestedKey,
                     provider = provider,
                     requirementNode = dependencyNode,
-                    owner = factoryProduct
+                    owner = factoryProduct,
+                    origin = moduleNode.module.descriptor.fqNameSafe
                 )
             }
     }
@@ -312,6 +316,10 @@ class ModuleBindingResolver(
     private val symbols: InjektSymbols,
     private val factoryProduct: AbstractFactoryProduct
 ) : BindingResolver {
+
+    // todo make this the actual module function name origin or even better the exact location
+    private val moduleRequestOrigin = moduleNode.module.descriptor
+        .fqNameSafe
 
     private val bindingFunctions = descriptor
         .declarations
@@ -363,7 +371,8 @@ class ModuleBindingResolver(
                                 propertyGetter
                             )
                         ),
-                        owner = factoryProduct
+                        owner = factoryProduct,
+                        origin = moduleNode.module.descriptor.fqNameSafe
                     )
                 }
                 else -> {
@@ -391,7 +400,7 @@ class ModuleBindingResolver(
                                     .substituteByName(moduleNode.typeParametersMap)
                                     .asKey(factoryProduct.pluginContext)
                             }
-                            .map { BindingRequest(it) }
+                            .map { BindingRequest(it, moduleRequestOrigin) }
 
                         AssistedProvisionBindingNode(
                             key = assistedFactoryType.asKey(factoryProduct.pluginContext),
@@ -400,7 +409,8 @@ class ModuleBindingResolver(
                             scoped = scoped,
                             module = moduleNode,
                             provider = provider!!,
-                            owner = factoryProduct
+                            owner = factoryProduct,
+                            origin = moduleNode.module.descriptor.fqNameSafe
                         )
                     } else {
                         val dependencies = bindingFunction.valueParameters
@@ -409,7 +419,7 @@ class ModuleBindingResolver(
                                     .substituteByName(moduleNode.typeParametersMap)
                                     .asKey(factoryProduct.pluginContext)
                             }
-                            .map { BindingRequest(it) }
+                            .map { BindingRequest(it, moduleRequestOrigin) }
 
                         ProvisionBindingNode(
                             key = bindingKey,
@@ -418,7 +428,8 @@ class ModuleBindingResolver(
                             scoped = scoped,
                             module = moduleNode,
                             provider = provider!!,
-                            owner = factoryProduct
+                            owner = factoryProduct,
+                            origin = moduleNode.module.descriptor.fqNameSafe
                         )
                     }
                 }
@@ -432,7 +443,9 @@ class ModuleBindingResolver(
                 key = delegateFunction.returnType.asKey(factoryProduct.pluginContext),
                 originalKey = delegateFunction.valueParameters.single().type
                     .asKey(factoryProduct.pluginContext),
-                owner = factoryProduct
+                owner = factoryProduct,
+                requestOrigin = moduleRequestOrigin,
+                origin = moduleNode.module.descriptor.fqNameSafe
             )
         }
 
@@ -456,7 +469,8 @@ class MembersInjectorBindingResolver(
             MembersInjectorBindingNode(
                 key = requestedKey,
                 membersInjector = membersInjector,
-                owner = factoryImplementation
+                owner = factoryImplementation,
+                origin = target.descriptor.fqNameSafe
             )
         )
     }
@@ -483,10 +497,17 @@ class AnnotatedClassBindingResolver(
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-            val dependencies = provider.constructors.single().valueParameters
-                .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.Assisted) }
-                .map { it.type.asKey(pluginContext) }
-                .map { BindingRequest(it) }
+            val dependencies = provider.constructors.singleOrNull()
+                ?.valueParameters
+                ?.map { providerValueParameter ->
+                    BindingRequest(
+                        providerValueParameter.type.asKey(pluginContext),
+                        clazz.constructors.single().valueParameters
+                            .single { it.name == providerValueParameter.name }
+                            .descriptor
+                            .fqNameSafe
+                    )
+                } ?: emptyList()
 
             listOf(
                 AssistedProvisionBindingNode(
@@ -496,7 +517,8 @@ class AnnotatedClassBindingResolver(
                     scoped = scoped,
                     module = null,
                     provider = provider,
-                    owner = factoryProduct
+                    owner = factoryProduct,
+                    origin = clazz.descriptor.fqNameSafe
                 )
             )
         } else {
@@ -513,8 +535,15 @@ class AnnotatedClassBindingResolver(
             val dependencies = provider.constructors
                 .singleOrNull()
                 ?.valueParameters
-                ?.map { it.type.typeArguments.single().asKey(pluginContext) }
-                ?.map { BindingRequest(it) } ?: emptyList()
+                ?.map { providerValueParameter ->
+                    BindingRequest(
+                        providerValueParameter.type.typeArguments.single().asKey(pluginContext),
+                        clazz.constructors.single().valueParameters
+                            .single { it.name == providerValueParameter.name }
+                            .descriptor
+                            .fqNameSafe
+                    )
+                } ?: emptyList()
 
             listOf(
                 ProvisionBindingNode(
@@ -524,7 +553,8 @@ class AnnotatedClassBindingResolver(
                     scoped = scoped,
                     module = null,
                     provider = provider,
-                    owner = factoryProduct
+                    owner = factoryProduct,
+                    origin = clazz.descriptor.fqNameSafe
                 )
             )
         }
@@ -538,43 +568,54 @@ class MapBindingResolver(
     private val parent: MapBindingResolver?
 ) : BindingResolver {
 
-    private val mapBuilders =
-        mutableMapOf<Key, MutableMap<MapKey, BindingRequest>>()
-    private val finalMaps: Map<Key, Map<MapKey, BindingRequest>> by lazy {
-        val mergedMaps: MutableMap<Key, MutableMap<MapKey, BindingRequest>> = parent?.finalMaps
-            ?.mapValues { it.value.toMutableMap() }
+    private val mapBuilders = mutableMapOf<Key, MultiBindingMap>()
+    private val finalMaps: Map<Key, MultiBindingMap> by lazy {
+        val mergedMaps: MutableMap<Key, MultiBindingMap> = parent?.finalMaps
+            ?.mapValues { MultiBindingMap(it.value.origin, it.value.entries.toMutableMap()) }
             ?.toMutableMap() ?: mutableMapOf()
-        mapBuilders.forEach { (mapKey, mapBuilder) ->
-            val mergedMap = mergedMaps.getOrPut(mapKey) { mutableMapOf() }
-            mapBuilder.forEach { (entryKey, entryValue) ->
-                if (entryKey in mergedMap) {
-                    error("Already bound value with $entryKey into map $mapKey")
+        mapBuilders.forEach { (mapKey, map) ->
+            val mergedMap = mergedMaps.getOrPut(mapKey) {
+                MultiBindingMap(map.origin, map.entries.toMutableMap())
+            }
+            map.entries.forEach { (entryKey, entryValue) ->
+                val existing = mergedMap.entries[entryKey]
+                if (existing != null) {
+                    error(
+                        "Cannot bind '${entryValue.key}' with key '$entryKey' declared at '${entryValue.requestOrigin.orUnknown()}' " +
+                                "into map '$mapKey' declared at '${map.origin}'. Value was already bound at '${existing.requestOrigin.orUnknown()}'"
+                    )
                 }
 
-                mergedMap[entryKey] = entryValue
+                mergedMap.entries[entryKey] = entryValue
             }
         }
         mergedMaps
     }
 
+    private data class MultiBindingMap(
+        val origin: FqName,
+        val entries: MutableMap<MapKey, BindingRequest>
+    )
+
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return finalMaps
-            .flatMap { (mapKey, entries) ->
+            .flatMap { (mapKey, map) ->
                 listOf(
                     MapBindingNode(
                         mapKey,
                         factoryProduct,
-                        entries
+                        map.origin,
+                        map.entries
                     ),
-                    frameworkBinding(InjektFqNames.Lazy, mapKey, entries),
-                    frameworkBinding(InjektFqNames.Provider, mapKey, entries)
+                    frameworkBinding(InjektFqNames.Lazy, mapKey, map),
+                    frameworkBinding(InjektFqNames.Provider, mapKey, map)
                 )
             }
             .filter { it.key == requestedKey }
     }
 
-    fun addMap(mapKey: Key) {
-        mapBuilders.getOrPut(mapKey) { mutableMapOf() }
+    fun addMap(mapKey: Key, origin: FqName) {
+        mapBuilders.getOrPut(mapKey) { MultiBindingMap(origin, mutableMapOf()) }
     }
 
     fun putMapEntry(
@@ -583,17 +624,21 @@ class MapBindingResolver(
         entryValue: BindingRequest
     ) {
         val map = mapBuilders[mapKey]!!
-        if (entryKey in map) {
-            error("Already bound value with $entryKey into map $mapKey")
+        val existing = map.entries[entryKey]
+        if (existing != null) {
+            error(
+                "Cannot bind '${entryValue.key}' with key '$entryKey' declared at '${entryValue.requestOrigin.orUnknown()}' " +
+                        "into map '$mapKey' declared at '${map.origin}'. Value was already bound at '${existing.requestOrigin.orUnknown()}'"
+            )
         }
 
-        map[entryKey] = entryValue
+        map.entries[entryKey] = entryValue
     }
 
     private fun frameworkBinding(
         qualifier: FqName,
         mapKey: Key,
-        entries: Map<MapKey, BindingRequest>
+        map: MultiBindingMap
     ) = MapBindingNode(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.map)
             .typeWith(
@@ -604,13 +649,15 @@ class MapBindingResolver(
             )
             .asKey(factoryProduct.pluginContext),
         factoryProduct,
-        entries
+        map.origin,
+        map.entries
             .mapValues {
                 BindingRequest(
                     key = symbols.getFunction(0)
                         .typeWith(it.value.key.type)
                         .withNoArgQualifiers(symbols, listOf(qualifier))
-                        .asKey(factoryProduct.pluginContext)
+                        .asKey(factoryProduct.pluginContext),
+                    requestOrigin = it.value.requestOrigin
                 )
             }
     )
@@ -624,57 +671,73 @@ class SetBindingResolver(
     private val parent: SetBindingResolver?
 ) : BindingResolver {
 
-    private val setBuilders = mutableMapOf<Key, MutableSet<BindingRequest>>()
-    private val finalSets: Map<Key, Set<BindingRequest>> by lazy {
-        val mergedSets: MutableMap<Key, MutableSet<BindingRequest>> = parent?.finalSets
-            ?.mapValues { it.value.toMutableSet() }
+    private val setBuilders = mutableMapOf<Key, MultiBindingSet>()
+    private val finalSets: Map<Key, MultiBindingSet> by lazy {
+        val mergedSets: MutableMap<Key, MultiBindingSet> = parent?.finalSets
+            ?.mapValues { MultiBindingSet(it.value.origin, it.value.elements.toMutableSet()) }
             ?.toMutableMap() ?: mutableMapOf()
-        setBuilders.forEach { (setKey, setBuilder) ->
-            val mergedSet = mergedSets.getOrPut(setKey) { mutableSetOf() }
-            setBuilder.forEach { element ->
-                if (element in mergedSet) {
-                    error("Already bound $element into set $setKey")
+        setBuilders.forEach { (setKey, set) ->
+            val mergedSet = mergedSets.getOrPut(setKey) {
+                MultiBindingSet(set.origin, set.elements.toMutableSet())
+            }
+            set.elements.forEach { element ->
+                val existing = mergedSet.elements.singleOrNull { it.key == element.key }
+                if (existing != null) {
+                    error(
+                        "Cannot bind '${element.key}' declared at '${element.requestOrigin.orUnknown()}' " +
+                                "into set '$setKey' declared at '${set.origin}'. It was already bound at '${existing.requestOrigin.orUnknown()}'"
+                    )
                 }
 
-                mergedSet += element
+                mergedSet.elements += element
             }
         }
         mergedSets
     }
 
+    private data class MultiBindingSet(
+        val origin: FqName?,
+        val elements: MutableSet<BindingRequest>
+    )
+
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return finalSets
-            .flatMap { (setKey, elements) ->
+            .flatMap { (setKey, set) ->
                 listOf(
                     SetBindingNode(
                         setKey,
                         factoryImplementation,
-                        elements.toList()
+                        set.origin,
+                        set.elements.toList()
                     ),
-                    frameworkBinding(InjektFqNames.Lazy, setKey, elements),
-                    frameworkBinding(InjektFqNames.Provider, setKey, elements)
+                    frameworkBinding(InjektFqNames.Lazy, setKey, set),
+                    frameworkBinding(InjektFqNames.Provider, setKey, set)
                 )
             }
             .filter { it.key == requestedKey }
     }
 
-    fun addSet(setKey: Key) {
-        setBuilders.getOrPut(setKey) { mutableSetOf() }
+    fun addSet(setKey: Key, origin: FqName) {
+        setBuilders.getOrPut(setKey) { MultiBindingSet(origin, mutableSetOf()) }
     }
 
     fun addSetElement(setKey: Key, element: BindingRequest) {
         val set = setBuilders[setKey]!!
-        if (element in set) {
-            error("Already bound $element into set $setKey")
+        val existing = set.elements.singleOrNull { it.key == element.key }
+        if (existing != null) {
+            error(
+                "Cannot bind '${element.key}' declared at '${element.requestOrigin.orUnknown()}' " +
+                        "into set '$setKey' declared at '${set.origin}'. It was already bound at '${existing.requestOrigin.orUnknown()}'"
+            )
         }
 
-        set += element
+        set.elements += element
     }
 
     private fun frameworkBinding(
         qualifier: FqName,
         setKey: Key,
-        elements: Set<BindingRequest>
+        set: MultiBindingSet
     ) = SetBindingNode(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.set)
             .typeWith(
@@ -683,13 +746,15 @@ class SetBindingResolver(
                 ).withNoArgQualifiers(symbols, listOf(qualifier))
             ).asKey(factoryImplementation.pluginContext),
         factoryImplementation,
-        elements
+        set.origin,
+        set.elements
             .map {
                 BindingRequest(
                     key = symbols.getFunction(0).typeWith(
                             it.key.type
                         ).withNoArgQualifiers(symbols, listOf(qualifier))
-                        .asKey(factoryImplementation.pluginContext)
+                        .asKey(factoryImplementation.pluginContext),
+                    requestOrigin = it.requestOrigin
                 )
             }
     )
@@ -708,6 +773,7 @@ class LazyOrProviderBindingResolver(
                 listOf(
                     LazyBindingNode(
                         requestedKey,
+                        null,
                         factoryProduct
                     )
                 )
@@ -717,7 +783,8 @@ class LazyOrProviderBindingResolver(
                 listOf(
                     ProviderBindingNode(
                         requestedKey,
-                        factoryProduct
+                        factoryProduct,
+                        null
                     )
                 )
             else -> emptyList()

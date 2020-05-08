@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -107,7 +106,6 @@ class ModuleImplementation(
             moduleDescriptor.addDeclarations(declarations)
 
             addChild(moduleDescriptor.clazz)
-            println(moduleDescriptor.clazz.dump())
 
             constructor.body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
                 builder.irBlockBody {

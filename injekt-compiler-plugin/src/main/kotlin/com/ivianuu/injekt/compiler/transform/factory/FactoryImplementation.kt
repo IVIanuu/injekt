@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class FactoryImplementation(
     val name: Name,
@@ -163,7 +164,7 @@ class FactoryImplementation(
         dependencyRequests: Map<IrDeclaration, BindingRequest>
     ): Unit = clazz.run clazz@{
         dependencyRequests.forEach { (declaration, request) ->
-            val binding = graph.getBinding(request.key)
+            val binding = graph.getBinding(request)
             when (declaration) {
                 is IrFunction -> {
                     addFunction {
@@ -177,6 +178,7 @@ class FactoryImplementation(
                             factoryExpressions.getBindingExpression(
                                     BindingRequest(
                                         binding.key,
+                                        request.requestOrigin,
                                         RequestType.Instance
                                     )
                                 )
@@ -201,6 +203,7 @@ class FactoryImplementation(
                             val bindingExpression = factoryExpressions.getBindingExpression(
                                 BindingRequest(
                                     binding.key,
+                                    request.requestOrigin,
                                     RequestType.Instance
                                 )
                             )
@@ -235,7 +238,8 @@ class FactoryImplementation(
                                     ?.single { it.classOrNull?.owner == this }
                                     ?.typeArguments ?: emptyList()
                             )
-                            .asKey(pluginContext)
+                            .asKey(pluginContext),
+                        declaration.descriptor.fqNameSafe
                     )
                 }
 

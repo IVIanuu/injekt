@@ -49,9 +49,9 @@ class ClassProviderTransformer(
                         name = InjektNameConventions.getProviderNameForClass(clazz.name),
                         visibility = clazz.visibility,
                         parameters = constructor?.valueParameters
-                            ?.mapIndexed { index, valueParameter ->
+                            ?.map { valueParameter ->
                                 InjektDeclarationIrBuilder.ProviderParameter(
-                                    name = "p$index",
+                                    name = valueParameter.name.asString(),
                                     type = valueParameter.type,
                                     assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted),
                                     requirement = false

@@ -8,12 +8,14 @@ class GraphTest {
     fun testMissingBindingFails() = codegen(
         """
         interface TestComponent {
-            val bar: Bar
+            val dep: Dep
         }
+
+        @Transient
+        class Dep(bar: Bar)
 
         @Factory
         fun create(): TestComponent {
-            transient { Bar(get()) }
             return createImpl()
         }
         """

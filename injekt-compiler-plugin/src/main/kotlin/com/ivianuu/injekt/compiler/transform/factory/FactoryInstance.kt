@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.statements
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class FactoryInstance(
     val factoryFunction: IrFunction,
@@ -34,7 +35,12 @@ class FactoryInstance(
     init {
         init(
             null,
-            listOf(BindingRequest(factoryFunction.returnType.asKey(context)))
+            listOf(
+                BindingRequest(
+                    factoryFunction.returnType.asKey(context),
+                    factoryFunction.descriptor.fqNameSafe
+                )
+            )
         ) { moduleAccessor() }
         DeclarationIrBuilder(context, factoryFunction.symbol).writeBody()
     }
@@ -55,7 +61,10 @@ class FactoryInstance(
             moduleAccessor = { irGet(moduleVar) }
 
             val bindingExpression = factoryExpressions.getBindingExpression(
-                BindingRequest(Key(factoryFunction.returnType))
+                BindingRequest(
+                    Key(factoryFunction.returnType),
+                    factoryFunction.descriptor.fqNameSafe
+                )
             )(this, EmptyFactoryExpressionContext)
 
             var lastRoundFields: Map<Key, FactoryField>? = null

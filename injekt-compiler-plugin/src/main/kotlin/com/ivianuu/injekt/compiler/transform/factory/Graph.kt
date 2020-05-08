@@ -89,30 +89,36 @@ class Graph(
         )
     }
 
-    fun getBinding(key: Key): BindingNode {
-        var binding = resolvedBindings[key]
+    fun getBinding(request: BindingRequest): BindingNode {
+        var binding = resolvedBindings[request.key]
         if (binding != null) return binding
 
-        check(key !in chain) {
-            "Circular dependency $key"
+        check(request.key !in chain) {
+            "Circular dependency ${request.key}"
         }
-        chain += key
+        chain += request.key
 
-        val explicitBindings = explicitBindingResolvers.flatMap { it(key) }
+        val explicitBindings = explicitBindingResolvers.flatMap { it(request.key) }
         if (explicitBindings.size > 1) {
-            error("Multiple bindings found for $key")
+            error(
+                "Multiple bindings found for '${request.key}' at:\n${explicitBindings.joinToString(
+                    "\n"
+                ) {
+                    "'${it.origin.orUnknown()}'"
+                }}"
+            )
         }
 
         binding = explicitBindings.singleOrNull()
 
         if (binding == null) {
-            val implicitBindings = implicitBindingResolvers.flatMap { it(key) }
+            val implicitBindings = implicitBindingResolvers.flatMap { it(request.key) }
             binding = implicitBindings.singleOrNull()
             if (binding?.targetScope != null && binding.targetScope !in scopes) {
                 if (parent == null) {
                     error(
-                        "Scope mismatch binding ${binding.key} " +
-                                "with scope ${binding.targetScope} is not compatible with this component $scopes"
+                        "Scope mismatch binding '${binding.key}' " +
+                                "with scope '${binding.targetScope}' is not compatible with this component ${scopes.map { "'$it'" }}"
                     )
                 } else {
                     binding = null
@@ -120,16 +126,17 @@ class Graph(
             }
         }
 
-        binding?.let { resolvedBindings[key] = it }
+        binding?.let { resolvedBindings[request.key] = it }
 
-        chain -= key
+        chain -= request.key
 
-        return binding ?: parent?.getBinding(key) ?: error("No binding found for $key")
+        return binding ?: parent?.getBinding(request)
+        ?: error("No binding found for '${request.key}' required at '${request.requestOrigin.orUnknown()}'")
     }
 
     fun validate(keys: List<BindingRequest>) {
         keys.forEach {
-            val binding = getBinding(it.key)
+            val binding = getBinding(it)
             validate(binding.dependencies)
         }
     }
@@ -162,6 +169,7 @@ class Graph(
                     .substituteByName(moduleNode.typeParametersMap)
                 addExplicitBindingResolver(
                     DependencyBindingResolver(
+                        moduleNode = moduleNode,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
                             key = dependencyType.asKey(factoryProduct.pluginContext),
@@ -179,80 +187,83 @@ class Graph(
             .filter { it.hasAnnotation(InjektFqNames.AstMap) }
             .forEach { function ->
                 addMap(
-                    function
+                    key = function
                         .returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext)
+                        .asKey(factoryProduct.pluginContext),
+                    origin = module.descriptor.fqNameSafe
                 )
             }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstMapEntry) }
             .forEach { function ->
+                val entryKey = function.valueParameters[1].let { entry ->
+                    val entryDescriptor = entry.descriptor
+                    when {
+                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
+                            ClassKey(
+                                (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
+                                !!.allValueArguments.values.single())
+                                    .let { it as KClassValue }
+                                    .getArgumentType(factoryProduct.pluginContext.moduleDescriptor)
+                                    .let {
+                                        factoryProduct.pluginContext.typeTranslator.translateType(
+                                            it
+                                        )
+                                    }
+                            )
+                        }
+                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapTypeParameterClassKey) -> {
+                            ClassKey(
+                                (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapTypeParameterClassKey)
+                                !!.allValueArguments.values.single())
+                                    .let { it as StringValue }
+                                    .value
+                                    .let { typeParameterName ->
+                                        moduleNode.typeParametersMap.toList()
+                                            .filter { it.first.descriptor.name.asString() == typeParameterName }
+                                            .single()
+                                            .second
+                                    }
+                            )
+                        }
+                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
+                            IntKey(
+                                (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapIntKey)
+                                !!.allValueArguments.values.single())
+                                    .let { it as IntValue }
+                                    .value
+                            )
+                        }
+                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
+                            LongKey(
+                                (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapLongKey)
+                                !!.allValueArguments.values.single())
+                                    .let { it as LongValue }
+                                    .value
+                            )
+                        }
+                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
+                            StringKey(
+                                (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapStringKey)
+                                !!.allValueArguments.values.single())
+                                    .let { it as StringValue }
+                                    .value
+                            )
+                        }
+                        else -> error("Corrupt map binding ${function.dump()}")
+                    }
+                }
                 putMapEntry(
-                    function.valueParameters[0].type
+                    mapKey = function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
                         .asKey(factoryProduct.pluginContext),
-                    function.valueParameters[1].let { entry ->
-                        val entryDescriptor = entry.descriptor
-                        when {
-                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
-                                ClassKey(
-                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
-                                    !!.allValueArguments.values.single())
-                                        .let { it as KClassValue }
-                                        .getArgumentType(factoryProduct.pluginContext.moduleDescriptor)
-                                        .let {
-                                            factoryProduct.pluginContext.typeTranslator.translateType(
-                                                it
-                                            )
-                                        }
-                                )
-                            }
-                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapTypeParameterClassKey) -> {
-                                ClassKey(
-                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapTypeParameterClassKey)
-                                    !!.allValueArguments.values.single())
-                                        .let { it as StringValue }
-                                        .value
-                                        .let { typeParameterName ->
-                                            moduleNode.typeParametersMap.toList()
-                                                .filter { it.first.descriptor.name.asString() == typeParameterName }
-                                                .single()
-                                                .second
-                                        }
-                                )
-                            }
-                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
-                                IntKey(
-                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapIntKey)
-                                    !!.allValueArguments.values.single())
-                                        .let { it as IntValue }
-                                        .value
-                                )
-                            }
-                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
-                                LongKey(
-                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapLongKey)
-                                    !!.allValueArguments.values.single())
-                                        .let { it as LongValue }
-                                        .value
-                                )
-                            }
-                            entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
-                                StringKey(
-                                    (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapStringKey)
-                                    !!.allValueArguments.values.single())
-                                        .let { it as StringValue }
-                                        .value
-                                )
-                            }
-                            else -> error("Corrupt map binding ${function.dump()}")
-                        }
-                    },
-                    function.valueParameters[1].type
+                    entryKey = entryKey,
+                    entryValue = function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext)
+                        .asKey(factoryProduct.pluginContext),
+                    origin = module.descriptor.fqNameSafe
                 )
             }
 
@@ -260,9 +271,10 @@ class Graph(
             .filter { it.hasAnnotation(InjektFqNames.AstSet) }
             .forEach { function ->
                 addSet(
-                    function.returnType
+                    key = function.returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext)
+                        .asKey(factoryProduct.pluginContext),
+                    origin = module.descriptor.fqNameSafe
                 )
             }
 
@@ -270,12 +282,13 @@ class Graph(
             .filter { it.hasAnnotation(InjektFqNames.AstSetElement) }
             .forEach { function ->
                 addSetElement(
-                    function.valueParameters[0].type
+                    setKey = function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
                         .asKey(factoryProduct.pluginContext),
-                    function.valueParameters[1].type
+                    elementKey = function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext)
+                        .asKey(factoryProduct.pluginContext),
+                    origin = module.descriptor.fqNameSafe
                 )
             }
 
@@ -339,29 +352,34 @@ class Graph(
         explicitBindingResolvers += bindingResolver
     }
 
-    private fun addMap(key: Key) {
-        mapBindingResolver.addMap(key)
+    private fun addMap(key: Key, origin: FqName) {
+        mapBindingResolver.addMap(key, origin)
     }
 
     private fun putMapEntry(
         mapKey: Key,
         entryKey: MapKey,
-        entryValue: Key
+        entryValue: Key,
+        origin: FqName
     ) {
         mapBindingResolver.putMapEntry(
             mapKey, entryKey,
-            BindingRequest(entryValue)
+            BindingRequest(entryValue, origin)
         )
     }
 
-    private fun addSet(key: Key) {
-        setBindingResolver.addSet(key)
+    private fun addSet(key: Key, origin: FqName) {
+        setBindingResolver.addSet(key, origin)
     }
 
-    private fun addSetElement(setKey: Key, elementKey: Key) {
+    private fun addSetElement(
+        setKey: Key,
+        elementKey: Key,
+        origin: FqName
+    ) {
         setBindingResolver.addSetElement(
             setKey,
-            BindingRequest(elementKey)
+            BindingRequest(elementKey, origin)
         )
     }
 }
