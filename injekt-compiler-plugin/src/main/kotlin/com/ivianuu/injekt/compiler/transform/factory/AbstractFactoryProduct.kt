@@ -49,7 +49,7 @@ abstract class AbstractFactoryProduct(
             factoryMembers = factoryMembers
         ).also { factoryExpressions.graph = it }
 
-        graph.validate(dependencyRequests)
+        dependencyRequests.forEach { graph.validate(it) }
     }
 
 }

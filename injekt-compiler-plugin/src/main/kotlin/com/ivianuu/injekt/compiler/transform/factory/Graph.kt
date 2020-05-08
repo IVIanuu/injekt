@@ -93,11 +93,6 @@ class Graph(
         var binding = resolvedBindings[request.key]
         if (binding != null) return binding
 
-        check(request.key !in chain) {
-            "Circular dependency ${request.key}"
-        }
-        chain += request.key
-
         val explicitBindings = explicitBindingResolvers.flatMap { it(request.key) }
         if (explicitBindings.size > 1) {
             error(
@@ -128,17 +123,18 @@ class Graph(
 
         binding?.let { resolvedBindings[request.key] = it }
 
-        chain -= request.key
-
         return binding ?: parent?.getBinding(request)
         ?: error("No binding found for '${request.key}' required at '${request.requestOrigin.orUnknown()}'")
     }
 
-    fun validate(keys: List<BindingRequest>) {
-        keys.forEach {
-            val binding = getBinding(it)
-            validate(binding.dependencies)
+    fun validate(request: BindingRequest) {
+        check(request.key !in chain) {
+            "Circular dependency ${request.key}"
         }
+        chain += request.key
+        val binding = getBinding(request)
+        binding.dependencies.forEach { validate(it) }
+        chain -= request.key
     }
 
     private fun addModule(moduleNode: ModuleNode) {
