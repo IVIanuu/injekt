@@ -22,9 +22,12 @@ import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -40,6 +43,18 @@ class InjektComponentRegistrar : ComponentRegistrar {
             project,
             InjektIrGenerationExtension()
         )
-        InjektDiagnosticSuppressor.registerExtension(project, InjektDiagnosticSuppressor())
+        registerDiagnosticSuppressorExtension(
+            project,
+            InjektDiagnosticSuppressor()
+        )
+    }
+
+    private fun registerDiagnosticSuppressorExtension(
+        @Suppress("UNUSED_PARAMETER") project: Project,
+        extension: DiagnosticSuppressor
+    ) {
+        @Suppress("DEPRECATION")
+        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+            .registerExtension(extension)
     }
 }
