@@ -264,6 +264,25 @@ class ImplementationTest {
     }
 
     @Test
+    fun testGenericAnnotatedClass() = codegen(
+        """
+        interface TestComponent {
+            val stringDep: Dep<String> 
+            val intDep: Dep<Int>
+        }
+        
+        @Transient class Dep<T>(val value: T)
+        
+        @Factory
+        fun create(): TestComponent {
+            instance("hello world")
+            instance(0)
+            return createImpl()
+        }
+    """
+    )
+
+    @Test
     fun testModuleWithTypeArguments() = codegen(
         """
         interface TestComponent {

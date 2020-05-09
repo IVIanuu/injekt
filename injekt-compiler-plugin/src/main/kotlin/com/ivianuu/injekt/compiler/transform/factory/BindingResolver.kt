@@ -497,11 +497,17 @@ class AnnotatedClassBindingResolver(
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
+            val typeParametersMap = clazz.typeParameters
+                .map { it.symbol }
+                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
+
             val dependencies = provider.constructors.singleOrNull()
                 ?.valueParameters
                 ?.map { providerValueParameter ->
                     BindingRequest(
-                        providerValueParameter.type.asKey(pluginContext),
+                        providerValueParameter.type
+                            .substituteByName(typeParametersMap)
+                            .asKey(pluginContext),
                         clazz.constructors.single().valueParameters
                             .single { it.name == providerValueParameter.name }
                             .descriptor
@@ -532,12 +538,18 @@ class AnnotatedClassBindingResolver(
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
+            val typeParametersMap = clazz.typeParameters
+                .map { it.symbol }
+                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
+
             val dependencies = provider.constructors
                 .singleOrNull()
                 ?.valueParameters
                 ?.map { providerValueParameter ->
                     BindingRequest(
-                        providerValueParameter.type.typeArguments.single().asKey(pluginContext),
+                        providerValueParameter.type.typeArguments.single()
+                            .substituteByName(typeParametersMap)
+                            .asKey(pluginContext),
                         clazz.constructors.single().valueParameters
                             .single { it.name == providerValueParameter.name }
                             .descriptor
