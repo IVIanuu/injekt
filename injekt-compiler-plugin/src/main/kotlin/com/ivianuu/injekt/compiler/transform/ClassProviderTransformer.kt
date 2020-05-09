@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
@@ -44,7 +45,7 @@ class ClassProviderTransformer(
         classes.forEach { clazz ->
             val file = clazz.file
             val constructor = clazz.constructors.singleOrNull()
-            file.addChild(
+            (clazz.parent as IrDeclarationContainer).addChild(
                 InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
                     provider(
                         name = InjektNameConventions.getProviderNameForClass(clazz.name),

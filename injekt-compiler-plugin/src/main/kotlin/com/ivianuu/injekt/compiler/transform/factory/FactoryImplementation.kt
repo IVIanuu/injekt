@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.util.substitute
@@ -139,7 +138,7 @@ class FactoryImplementation(
 
         if (factoryFunction != null) {
             val moduleCall = factoryFunction.body!!.statements[0] as IrCall
-            factoryFunction.file.addChild(clazz)
+            (factoryFunction.parent as IrDeclarationContainer).addChild(clazz)
             factoryFunction.body = DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
                 irExprBody(
                     irCall(constructor).apply {

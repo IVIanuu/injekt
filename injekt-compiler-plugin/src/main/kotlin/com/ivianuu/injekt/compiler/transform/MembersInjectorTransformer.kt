@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -35,7 +36,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -61,7 +61,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         })
 
         classes.forEach { clazz ->
-            clazz.file.addChild(
+            (clazz.parent as IrDeclarationContainer).addChild(
                 DeclarationIrBuilder(pluginContext, clazz.symbol)
                     .membersInjector(clazz)
                     .also { membersInjectorByClass[clazz] = it }

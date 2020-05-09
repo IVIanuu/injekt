@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.Name
+import kotlin.math.absoluteValue
 
 object InjektNameConventions {
     fun getProviderNameForClass(className: Name): Name {
@@ -42,4 +43,5 @@ object InjektNameConventions {
 
     private fun IrFunction.valueParametersHash(): Int =
         valueParameters.map { it.name.asString() + it.type.render() }.hashCode()
+            .absoluteValue
 }
