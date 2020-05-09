@@ -19,7 +19,7 @@ fun <S : T, T> alias(): Unit = injektIntrinsic()
 fun <T> transient(): Unit = injektIntrinsic()
 
 @Module
-fun <T> transient(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
+inline fun <T> transient(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
 
 @Scope
 annotation class Transient
@@ -31,4 +31,4 @@ fun <T> instance(instance: T): Unit = injektIntrinsic()
 fun <T> scoped(): Unit = injektIntrinsic()
 
 @Module
-fun <T> scoped(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
+inline fun <T> scoped(definition: ProviderDefinition<T>): Unit = injektIntrinsic()

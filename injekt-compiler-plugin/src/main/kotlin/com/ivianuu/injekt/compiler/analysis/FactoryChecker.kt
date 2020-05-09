@@ -70,7 +70,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
 
             if (descriptor.isInline) {
                 context.trace.report(
-                    InjektErrors.CANNOT_BE_INLINE
+                    InjektErrors.FACTORY_CANNOT_BE_INLINE
                         .on(declaration)
                 )
             }

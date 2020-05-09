@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.Name
 
 interface FactoryMembers {
@@ -59,6 +58,8 @@ class ClassFactoryMembers(
     private val getFunctions = mutableListOf<IrFunction>()
 
     private val groupNames = mutableMapOf<String, Int>()
+
+    private val functionsByKey = mutableMapOf<Key, IrFunction>()
 
     override fun nameForGroup(prefix: String): Name {
         val index = groupNames.getOrPut(prefix) { 0 }
@@ -96,6 +97,8 @@ class ClassFactoryMembers(
         key: Key,
         body: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrFunction {
+        functionsByKey[key]?.let { return it }
+
         val matchingDependencyRequestFunction = factoryImplementation.dependencyRequests
             .mapNotNull { (declaration, request) ->
                 when (declaration) {
@@ -114,7 +117,7 @@ class ClassFactoryMembers(
             }
             .singleOrNull()
 
-        return if (matchingDependencyRequestFunction != null) {
+        val function = if (matchingDependencyRequestFunction != null) {
             addDependencyRequestImplementation(matchingDependencyRequestFunction, body)
                 .let { if (it is IrFunction) it else (it as IrProperty).getter!! }
                 .also {
@@ -134,13 +137,16 @@ class ClassFactoryMembers(
                 }
             }.also { getFunctions += it }
         }
+
+        functionsByKey[key] = function
+
+        return function
     }
 
     fun addDependencyRequestImplementation(
         declaration: IrDeclaration,
         body: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrDeclaration {
-        println("add dependency request ${declaration.render()}")
         fun IrFunctionImpl.implement(symbol: IrSimpleFunctionSymbol) {
             overriddenSymbols += symbol
             dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)

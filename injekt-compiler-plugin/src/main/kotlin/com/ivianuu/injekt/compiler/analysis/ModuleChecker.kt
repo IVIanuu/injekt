@@ -2,11 +2,13 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtForExpression
@@ -21,7 +23,9 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ModuleChecker : CallChecker, DeclarationChecker {
 
@@ -46,18 +50,24 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             )
         }
 
-        if (descriptor.isInline) {
-            context.trace.report(
-                InjektErrors.CANNOT_BE_INLINE
-                    .on(declaration)
-            )
-        }
-
         if (descriptor.isSuspend) {
             context.trace.report(
                 InjektErrors.CANNOT_BE_SUSPEND
                     .on(declaration)
             )
+        }
+
+        if (!descriptor.isInline) {
+            descriptor.valueParameters.forEach { valueParameter ->
+                if (valueParameter.type.isFunctionType &&
+                    valueParameter.type.arguments.firstOrNull()?.type?.constructor?.declarationDescriptor?.fqNameSafe == InjektFqNames.ProviderDsl
+                ) {
+                    context.trace.report(
+                        InjektErrors.DEFINITION_PARAMETER_WITHOUT_INLINE
+                            .on(valueParameter.findPsi() ?: declaration)
+                    )
+                }
+            }
         }
     }
 
@@ -83,6 +93,19 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             it.annotations.hasAnnotation(InjektFqNames.Module) ||
                     it.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     it.annotations.hasAnnotation(InjektFqNames.ChildFactory)
+        }
+
+        if (enclosingInjektDslFunction != null &&
+            (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.scoped" ||
+                    resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.transient") &&
+            resolvedCall.resultingDescriptor.valueParameters.isEmpty() &&
+            resolvedCall.typeArguments.values.single().isTypeParameter() &&
+            !enclosingInjektDslFunction.isInline
+        ) {
+            context.trace.report(
+                InjektErrors.GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION
+                    .on(reportOn)
+            )
         }
 
         when {

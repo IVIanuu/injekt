@@ -58,11 +58,26 @@ interface InjektErrors {
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error()
         @JvmField
-        val CANNOT_BE_INLINE = error()
+        val FACTORY_CANNOT_BE_INLINE = error()
         @JvmField
         val CANNOT_BE_SUSPEND = error()
         @JvmField
         val CLASS_OF_OUTSIDE_OF_MODULE = error()
+
+        @JvmField
+        val CLASS_OF_WITH_CONCRETE_TYPE = error()
+
+        @JvmField
+        val CLASS_OF_CALLING_MODULE_MUST_BE_INLINE = error()
+
+        @JvmField
+        val MODULE_CANNOT_USE_REIFIED = error()
+
+        @JvmField
+        val GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION = error()
+
+        @JvmField
+        val DEFINITION_PARAMETER_WITHOUT_INLINE = error()
 
         private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 
@@ -178,8 +193,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "A function can only be annotated with one of @Factory, @ChildFactory or @Module"
         )
         map.put(
-            InjektErrors.CANNOT_BE_INLINE,
-            "@Factory, @ChildFactory or @Module cannot be inlined"
+            InjektErrors.FACTORY_CANNOT_BE_INLINE,
+            "@Factory or @ChildFactory functions cannot be inlined"
         )
         map.put(
             InjektErrors.CANNOT_BE_SUSPEND,
@@ -188,6 +203,26 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
         map.put(
             InjektErrors.CLASS_OF_OUTSIDE_OF_MODULE,
             "classOf() can only be called from inside @Factory, @ChildFactory or @Module functions"
+        )
+        map.put(
+            InjektErrors.CLASS_OF_WITH_CONCRETE_TYPE,
+            "classOf() should be only called with generic types use class literals instead"
+        )
+        map.put(
+            InjektErrors.CLASS_OF_CALLING_MODULE_MUST_BE_INLINE,
+            "classOf() calling functions be marked with inline"
+        )
+        map.put(
+            InjektErrors.MODULE_CANNOT_USE_REIFIED,
+            "@Module functions cannot use reified"
+        )
+        map.put(
+            InjektErrors.GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION,
+            "Binding functions with a generic type can only be used inside a inline module or with a definition"
+        )
+        map.put(
+            InjektErrors.DEFINITION_PARAMETER_WITHOUT_INLINE,
+            "@Module functions with definition parameters must be marked with inline"
         )
     }
 }

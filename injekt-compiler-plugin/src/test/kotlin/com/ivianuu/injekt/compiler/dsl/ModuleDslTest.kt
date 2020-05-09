@@ -299,16 +299,6 @@ class ModuleDslTest {
     )
 
     @Test
-    fun testModuleCannotBeInline() = codegen(
-        """
-        @Module
-        inline fun module(): TestComponent = createImpl()
-        """
-    ) {
-        assertCompileError("inline")
-    }
-
-    @Test
     fun testModuleCannotBeSuspend() = codegen(
         """
         @Module
@@ -322,12 +312,12 @@ class ModuleDslTest {
     fun testClassOfModule() = codegen(
         """
         @Module
-        fun <S : Any> classOfA() {
+        inline fun <S : Any> classOfA() {
             val classOf = classOf<S>()
         }
         
         @Module
-        fun <T : Any, V : Any> classOfB() {
+        inline fun <T : Any, V : Any> classOfB() {
             val classOf = classOf<T>()
             classOfA<V>()
         }
@@ -350,5 +340,47 @@ class ModuleDslTest {
     """
     ) {
         assertCompileError("local")
+    }
+
+    @Test
+    fun testBindingWithTypeParameterInInlineModule() = codegen(
+        """ 
+        @Module
+        inline fun <T> module() {
+            transient<T>()
+        }
+    """
+    )
+
+    @Test
+    fun testBindingWithTypeParameterInNonInlineModule() = codegen(
+        """ 
+        @Module
+        fun <T> module() {
+            transient<T>()
+        }
+    """
+    ) {
+        assertCompileError("inline")
+    }
+
+    @Test
+    fun testInlineModuleWithDefinition() = codegen(
+        """ 
+        @Module
+        inline fun <T> module(definition: ProviderDefinition<T>) {
+        }
+    """
+    )
+
+    @Test
+    fun testNonInlineModuleWithDefinition() = codegen(
+        """ 
+        @Module
+        fun <T> module(definition: ProviderDefinition<T>) {
+        }
+    """
+    ) {
+        assertCompileError("inline")
     }
 }

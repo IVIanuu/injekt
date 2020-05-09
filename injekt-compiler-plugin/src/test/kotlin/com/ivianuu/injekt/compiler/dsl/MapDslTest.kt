@@ -49,9 +49,9 @@ class MapDslTest {
     fun testClassOfMapKey() = codegen(
         """
         @Module
-        fun test() { 
+        inline fun <T : Any> test() { 
             map<KClass<*>, Any> {
-                put<String>(classOf<String>())
+                put<String>(classOf<T>())
             }
         }
     """

@@ -91,7 +91,7 @@ class CommonScenariosTest {
         @Transient class WorkerB(@Assisted context: Context) : Worker(context)
         
         @Module 
-        fun <T : Worker> bindWorkerIntoMap() {
+        inline fun <T : Worker> bindWorkerIntoMap() {
             map<KClass<out Worker>, @Provider (Context) -> Worker> {
                 put<@Provider (Context) -> T>(classOf<T>())
             }
@@ -144,7 +144,7 @@ class CommonScenariosTest {
         annotation class OriginalViewModel
         
         @Module
-        fun <T : ViewModel> viewModel() {
+        inline fun <T : ViewModel> viewModel() {
             val clazz = classOf<T>()
             transient<@OriginalViewModel T>()
             transient {
