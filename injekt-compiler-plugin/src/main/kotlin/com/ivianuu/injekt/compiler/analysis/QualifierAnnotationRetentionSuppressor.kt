@@ -5,14 +5,8 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
-class InjektDiagnosticSuppressor : DiagnosticSuppressor {
-
-    override fun isSuppressed(diagnostic: Diagnostic): Boolean {
-        return isSuppressed(diagnostic, null)
-    }
-
+class QualifierAnnotationRetentionSuppressor : AbstractDiagnosticSuppressor() {
     override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
         if (diagnostic.factory == Errors.RESTRICTED_RETENTION_FOR_EXPRESSION_ANNOTATION ||
             diagnostic.factory == Errors.RESTRICTED_RETENTION_FOR_EXPRESSION_ANNOTATION_WARNING
