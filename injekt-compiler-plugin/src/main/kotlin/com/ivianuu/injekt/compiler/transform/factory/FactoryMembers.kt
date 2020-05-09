@@ -9,13 +9,21 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.Name
 
 interface FactoryMembers {
@@ -88,17 +96,79 @@ class ClassFactoryMembers(
         key: Key,
         body: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrFunction {
-        return clazz.addFunction {
-            val currentGetFunctionIndex = getFunctions.size
-            this.name = Name.identifier("get_$currentGetFunctionIndex")
-            returnType = key.type
-            visibility = Visibilities.PRIVATE
-        }.apply {
-            dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
-            this.body = DeclarationIrBuilder(pluginContext, symbol).run {
-                irExprBody(body(this, this@apply))
+        val matchingDependencyRequestFunction = factoryImplementation.dependencyRequests
+            .mapNotNull { (declaration, request) ->
+                when (declaration) {
+                    is IrFunction -> {
+                        if (request.key == key) declaration else null
+                    }
+                    is IrProperty -> {
+                        if (request.key == key) {
+                            declaration
+                        } else {
+                            null
+                        }
+                    }
+                    else -> error("Unexpected dependency request ${declaration.dump()}")
+                }
             }
-        }.also { getFunctions += it }
+            .singleOrNull()
+
+        return if (matchingDependencyRequestFunction != null) {
+            addDependencyRequestImplementation(matchingDependencyRequestFunction, body)
+                .let { if (it is IrFunction) it else (it as IrProperty).getter!! }
+                .also {
+                    factoryImplementation.implementedRequests[matchingDependencyRequestFunction] =
+                        it
+                }
+        } else {
+            clazz.addFunction {
+                val currentGetFunctionIndex = getFunctions.size
+                this.name = Name.identifier("get_$currentGetFunctionIndex")
+                returnType = key.type
+                visibility = Visibilities.PRIVATE
+            }.apply {
+                dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
+                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    irExprBody(body(this, this@apply))
+                }
+            }.also { getFunctions += it }
+        }
+    }
+
+    fun addDependencyRequestImplementation(
+        declaration: IrDeclaration,
+        body: IrBuilderWithScope.(IrFunction) -> IrExpression
+    ): IrDeclaration {
+        println("add dependency request ${declaration.render()}")
+        fun IrFunctionImpl.implement(symbol: IrSimpleFunctionSymbol) {
+            overriddenSymbols += symbol
+            dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
+            DeclarationIrBuilder(pluginContext, symbol).apply {
+                this@implement.body = irExprBody(body(this, this@implement))
+            }
+        }
+
+        return when (declaration) {
+            is IrFunction -> {
+                clazz.addFunction {
+                    name = declaration.name
+                    returnType = declaration.returnType
+                    visibility = declaration.visibility
+                }.apply { implement(declaration.symbol as IrSimpleFunctionSymbol) }
+            }
+            is IrProperty -> {
+                clazz.addProperty {
+                    name = declaration.name
+                    visibility = declaration.visibility
+                }.apply {
+                    addGetter {
+                        returnType = declaration.getter!!.returnType
+                    }.apply { (this as IrFunctionImpl).implement(declaration.getter!!.symbol) }
+                }
+            }
+            else -> error("Unexpected declaration ${declaration.dump()}")
+        }
     }
 
 }

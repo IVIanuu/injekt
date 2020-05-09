@@ -7,7 +7,6 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -17,9 +16,6 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addGetter
-import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -38,7 +34,6 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
@@ -123,17 +118,18 @@ class FactoryImplementation(
         )
     }
 
+    val dependencyRequests =
+        mutableMapOf<IrDeclaration, BindingRequest>()
+    val implementedRequests = mutableMapOf<IrDeclaration, IrDeclaration>()
+
     init {
-        val dependencyRequests = collectDependencyRequests()
-        init(
-            parent,
-            dependencyRequests.values.toList()
-        ) {
+        collectDependencyRequests()
+        init(parent, dependencyRequests.values.toList()) {
             irGet(moduleConstructorValueParameter.value)
         }
 
         DeclarationIrBuilder(pluginContext, clazz.symbol).run {
-            implementDependencyRequests(dependencyRequests)
+            implementDependencyRequests()
             writeConstructor()
         }
 
@@ -173,73 +169,35 @@ class FactoryImplementation(
         }
     }
 
-    private fun IrBuilderWithScope.implementDependencyRequests(
-        dependencyRequests: Map<IrDeclaration, BindingRequest>
-    ): Unit = clazz.run clazz@{
-        dependencyRequests.forEach { (declaration, request) ->
-            val binding = graph.getBinding(request)
-            when (declaration) {
-                is IrFunction -> {
-                    addFunction {
-                        name = declaration.name
-                        returnType = declaration.returnType
-                        visibility = declaration.visibility
-                    }.apply {
-                        overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                        dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-                        body = irExprBody(
-                            factoryExpressions.getBindingExpression(
-                                    BindingRequest(
-                                        binding.key,
-                                        request.requestOrigin,
-                                        RequestType.Instance
-                                    )
-                                )
-                                .invoke(this@implementDependencyRequests,
-                                    FactoryExpressionContext(this@FactoryImplementation) {
-                                        irGet(
-                                            dispatchReceiverParameter!!
-                                        )
-                                    })
-                        )
-                    }
-                }
-                is IrProperty -> {
-                    addProperty {
-                        name = declaration.name
-                    }.apply {
-                        addGetter {
-                            returnType = declaration.getter!!.returnType
-                        }.apply {
-                            overriddenSymbols += declaration.getter!!.symbol
-                            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-                            val bindingExpression = factoryExpressions.getBindingExpression(
-                                BindingRequest(
-                                    binding.key,
-                                    request.requestOrigin,
-                                    RequestType.Instance
-                                )
-                            )
+    private fun IrBuilderWithScope.implementDependencyRequests(): Unit = clazz.run clazz@{
+        dependencyRequests.forEach { factoryExpressions.getBindingExpression(it.value) }
 
-                            body = irExprBody(
-                                bindingExpression
-                                    .invoke(
-                                        this@implementDependencyRequests,
-                                        FactoryExpressionContext(this@FactoryImplementation) {
-                                            irGet(
-                                                dispatchReceiverParameter!!
-                                            )
-                                        })
+        dependencyRequests
+            .filter { it.key !in implementedRequests }
+            .forEach { (declaration, request) ->
+                val binding = graph.getBinding(request)
+                implementedRequests[declaration] =
+                    factoryMembers.addDependencyRequestImplementation(declaration) { function ->
+                        val bindingExpression = factoryExpressions.getBindingExpression(
+                            BindingRequest(
+                                binding.key,
+                                request.requestOrigin,
+                                RequestType.Instance
                             )
-                        }
+                        )
+
+                        bindingExpression
+                            .invoke(
+                                this@implementDependencyRequests,
+                                FactoryExpressionContext(this@FactoryImplementation) {
+                                    irGet(function.dispatchReceiverParameter!!)
+                                }
+                            )
                     }
-                }
-            }
         }
     }
 
-    private fun collectDependencyRequests(): Map<IrDeclaration, BindingRequest> {
-        val dependencyRequests = mutableMapOf<IrDeclaration, BindingRequest>()
+    private fun collectDependencyRequests() {
         fun IrClass.collectDependencyRequests(sub: IrClass?) {
             for (declaration in declarations) {
                 fun reqisterRequest(type: IrType) {
@@ -277,7 +235,6 @@ class FactoryImplementation(
 
         val superType = clazz.superTypes.single().classOrFail.owner
         superType.collectDependencyRequests(clazz)
-        return dependencyRequests
     }
 
     private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
