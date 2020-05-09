@@ -23,4 +23,3 @@ object InjektTest : InjectionTest {
     private fun createFib8(): Fib8 = createInstance()
 
 }
-
