@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -188,8 +187,6 @@ class ModuleImplementation(
         function.body = InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
             builder.irExprBody(irInjektIntrinsicUnit())
         }
-
-        println(clazz.dump())
     }
 
 }
