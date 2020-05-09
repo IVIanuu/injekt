@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -34,6 +35,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -85,18 +87,18 @@ class ModuleImplementation(
             }.apply {
                 copyTypeParametersFrom(this@clazz)
 
-                function.valueParameters
+                function.allParameters
                     .filter {
                         !it.type.isFunction() ||
                                 it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl
                     }
-                    .forEach { p ->
+                    .forEachIndexed { index, p ->
                         val newValueParameter = addValueParameter(
-                            name = p.name.asString(),
-                            type = p.type
+                            "p_$index",
+                            p.type
                         )
                         addField(
-                            "p_${p.name.asString()}",
+                            newValueParameter.name,
                             p.type
                         ).also {
                             fieldsByParameters[p] = it
@@ -186,6 +188,8 @@ class ModuleImplementation(
         function.body = InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
             builder.irExprBody(irInjektIntrinsicUnit())
         }
+
+        println(clazz.dump())
     }
 
 }

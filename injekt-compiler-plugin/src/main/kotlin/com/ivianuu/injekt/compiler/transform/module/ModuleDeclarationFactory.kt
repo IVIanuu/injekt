@@ -316,23 +316,39 @@ class ModuleDeclarationFactory(
             includedType,
             PropertyPath(property)
         ) {
+            val constructor = includedClass.constructors.single()
             irSetField(
                 it(),
                 property.backingField!!,
-                irCall(includedClass.constructors.single()).apply {
+                irCall(constructor).apply {
                     (0 until call.typeArgumentsCount)
                         .map { call.getTypeArgument(it)!! }
                         .forEachIndexed { index, type ->
                             putTypeArgument(index, type)
                         }
+
+                    var argIndex = 0
+                    if (call.dispatchReceiver != null) {
+                        putValueArgument(
+                            argIndex++,
+                            call.dispatchReceiver!!
+                        )
+                    }
+                    if (call.extensionReceiver != null) {
+                        putValueArgument(
+                            argIndex++,
+                            call.extensionReceiver!!
+                        )
+                    }
+
                     (0 until call.valueArgumentsCount)
                         .map { call.getValueArgument(it)!! }
                         .filter {
                             !it.type.isFunction() ||
                                     it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl
                         }
-                        .forEachIndexed { index, arg ->
-                            putValueArgument(index, arg)
+                        .forEach { arg ->
+                            putValueArgument(argIndex++, arg)
                         }
                 }
             )

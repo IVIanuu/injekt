@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.util.substitute
@@ -143,12 +144,23 @@ class FactoryImplementation(
                 irExprBody(
                     irCall(constructor).apply {
                         if (constructor.valueParameters.isNotEmpty()) {
+                            val moduleConstructor = moduleClass.constructors.single()
                             putValueArgument(
                                 0,
-                                irCall(moduleClass.constructors.single()).apply {
+                                irCall(moduleConstructor).apply {
                                     copyTypeArgumentsFrom(moduleCall)
+                                    var argIndex = 0
+                                    if (moduleCall.dispatchReceiver != null) {
+                                        putValueArgument(argIndex++, moduleCall.dispatchReceiver)
+                                    }
+                                    if (moduleCall.extensionReceiver != null) {
+                                        putValueArgument(argIndex++, moduleCall.extensionReceiver)
+                                    }
                                     (0 until moduleCall.valueArgumentsCount).forEach {
-                                        putValueArgument(it, moduleCall.getValueArgument(it))
+                                        putValueArgument(
+                                            argIndex++,
+                                            moduleCall.getValueArgument(it)
+                                        )
                                     }
                                 }
                             )
@@ -156,6 +168,8 @@ class FactoryImplementation(
                     }
                 )
             }
+
+            println(clazz.dump())
         }
     }
 

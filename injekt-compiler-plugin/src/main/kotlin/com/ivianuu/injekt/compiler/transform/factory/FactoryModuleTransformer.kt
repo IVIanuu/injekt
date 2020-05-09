@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
@@ -57,6 +58,12 @@ class FactoryModuleTransformer(
                 val oldBody = factoryFunction.body!!
                 factoryFunction.body = irBlockBody {
                     +irCall(moduleFunction).apply {
+                        if (factoryFunction.dispatchReceiverParameter != null) {
+                            dispatchReceiver = irGet(factoryFunction.dispatchReceiverParameter!!)
+                        }
+                        if (factoryFunction.extensionReceiverParameter != null) {
+                            dispatchReceiver = irGet(factoryFunction.extensionReceiverParameter!!)
+                        }
                         factoryFunction.valueParameters.forEach {
                             putValueArgument(it.index, irGet(it))
                         }
@@ -77,9 +84,23 @@ class FactoryModuleTransformer(
             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                 .noArgSingleConstructorCall(symbols.module)
 
-            val valueParametersMap = factoryFunction.valueParameters.associateWith {
-                it.copyTo(this)
+            dispatchReceiverParameter = factoryFunction.dispatchReceiverParameter?.copyTo(this)
+            extensionReceiverParameter = factoryFunction.extensionReceiverParameter?.copyTo(this)
+
+            val valueParametersMap = mutableMapOf<IrValueParameter, IrValueParameter>()
+            if (dispatchReceiverParameter != null) {
+                valueParametersMap[factoryFunction.dispatchReceiverParameter!!] =
+                    dispatchReceiverParameter!!
+            }
+            if (extensionReceiverParameter != null) {
+                valueParametersMap[factoryFunction.extensionReceiverParameter!!] =
+                    extensionReceiverParameter!!
+            }
+
+            factoryFunction.valueParameters.forEach { valueParameter ->
+                val copy = valueParameter.copyTo(this)
                     .also { valueParameters += it }
+                valueParametersMap[valueParameter] = copy
             }
 
             body = irBlockBody {

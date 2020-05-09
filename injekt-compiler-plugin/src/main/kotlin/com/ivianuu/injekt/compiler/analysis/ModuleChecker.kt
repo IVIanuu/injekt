@@ -3,10 +3,9 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -39,10 +38,13 @@ class ModuleChecker : CallChecker, DeclarationChecker {
                 InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE.on(declaration)
             )
         }
-        descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
-            ?.let { it as? ClassDescriptor }
-            ?.takeIf { it.kind != ClassKind.OBJECT }
-            ?.let { context.trace.report(InjektErrors.MUST_BE_STATIC.on(declaration)) }
+
+        if (descriptor.visibility == Visibilities.LOCAL) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_LOCAL
+                    .on(declaration)
+            )
+        }
 
         if (descriptor.isInline) {
             context.trace.report(

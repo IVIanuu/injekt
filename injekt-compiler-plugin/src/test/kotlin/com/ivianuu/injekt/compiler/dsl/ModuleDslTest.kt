@@ -224,30 +224,6 @@ class ModuleDslTest {
     }
 
     @Test
-    fun testModuleInsideClass() = codegen(
-        """
-            class Class {
-                @Factory
-                fun factory(): TestComponent = createImpl()
-            }
-            """
-    ) {
-        assertCompileError("top level")
-    }
-
-    @Test
-    fun testModuleInsideObject() = codegen(
-        """
-            object Class {
-                @Factory
-                fun factory(): TestComponent = createImpl()
-            }
-            """
-    ) {
-        assertOk()
-    }
-
-    @Test
     fun testValueParameterCapturingModule() = codegen(
         """
         @Module
@@ -362,4 +338,17 @@ class ModuleDslTest {
         }
     """
     )
+
+    @Test
+    fun testLocalModuleFails() = codegen(
+        """
+            fun outer() {
+                @Module
+                fun module() {
+                }
+            }
+    """
+    ) {
+        assertCompileError("local")
+    }
 }

@@ -183,25 +183,15 @@ class FactoryDslTest {
         }
 
     @Test
-    fun testStaticFactoryOk() = codegen(
+    fun testLocalFactoryFails() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent = createImpl()
+            fun outer() {
+                @Factory
+                fun factory(): TestComponent = createImpl()
+            }
     """
     ) {
-        assertOk()
-    }
-
-    @Test
-    fun testStaticFactoryInObjectOk() = codegen(
-        """
-        object Object {
-            @Factory
-            fun factory(): TestComponent = createImpl()
-        }
-    """
-    ) {
-        assertOk()
+        assertCompileError("local")
     }
 
     @Test
@@ -249,30 +239,6 @@ class FactoryDslTest {
             """
     ) {
         assertCompileError("childfactory")
-    }
-
-    @Test
-    fun testFactoryInsideClass() = codegen(
-        """
-            class Class {
-                @Factory
-                fun factory(): TestComponent = createImpl()
-            }
-            """
-    ) {
-        assertCompileError("top level")
-    }
-
-    @Test
-    fun testFactoryInsideObject() = codegen(
-        """
-            object Class {
-                @Factory
-                fun factory(): TestComponent = createImpl()
-            }
-            """
-    ) {
-        assertOk()
     }
 
     @Test

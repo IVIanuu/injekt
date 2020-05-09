@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtCallableReferenceExpression
@@ -42,10 +43,12 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 context.trace.report(InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY.on(declaration))
             }
 
-            descriptor.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
-                ?.let { it as? ClassDescriptor }
-                ?.takeIf { it.kind != ClassKind.OBJECT }
-                ?.let { context.trace.report(InjektErrors.MUST_BE_STATIC.on(declaration)) }
+            if (descriptor.visibility == Visibilities.LOCAL) {
+                context.trace.report(
+                    InjektErrors.CANNOT_BE_LOCAL
+                        .on(declaration)
+                )
+            }
 
             checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,

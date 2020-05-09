@@ -30,7 +30,7 @@ interface InjektErrors {
         @JvmField
         val LAST_STATEMENT_MUST_BE_CREATE = error()
         @JvmField
-        val MUST_BE_STATIC = error()
+        val CANNOT_BE_LOCAL = error()
         @JvmField
         val NO_TYPE_PARAMETERS_ON_FACTORY = error()
         @JvmField
@@ -61,7 +61,6 @@ interface InjektErrors {
         val CANNOT_BE_INLINE = error()
         @JvmField
         val CANNOT_BE_SUSPEND = error()
-
         @JvmField
         val CLASS_OF_OUTSIDE_OF_MODULE = error()
 
@@ -127,8 +126,8 @@ object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
             "createImpl result types must be a interface or a abstract class"
         )
         map.put(
-            InjektErrors.MUST_BE_STATIC,
-            "@Factory, @ChildFactory and @Module functions can only be declared at the top level or inside objects"
+            InjektErrors.CANNOT_BE_LOCAL,
+            "@Factory, @ChildFactory and @Module functions cannot be local functions"
         )
         map.put(
             InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY,
