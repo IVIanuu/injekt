@@ -19,7 +19,8 @@ object InjektTest : InjectionTest {
     override fun shutdown() {
     }
 
+    @Factory
+    private fun createFib8(): Fib8 = createInstance()
+
 }
 
-@Factory
-fun createFib8(): Fib8 = createInstance()
