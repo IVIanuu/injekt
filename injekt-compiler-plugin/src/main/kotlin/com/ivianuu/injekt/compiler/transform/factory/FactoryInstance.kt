@@ -39,8 +39,18 @@ class FactoryInstance(
                     irTemporaryVar(
                         irCall(moduleClass.constructors.single()).apply {
                             copyTypeArgumentsFrom(moduleCall)
+                            var argIndex = 0
+                            if (moduleCall.dispatchReceiver != null) {
+                                putValueArgument(argIndex++, moduleCall.dispatchReceiver)
+                            }
+                            if (moduleCall.extensionReceiver != null) {
+                                putValueArgument(argIndex++, moduleCall.extensionReceiver)
+                            }
                             (0 until moduleCall.valueArgumentsCount).forEach {
-                                putValueArgument(it, moduleCall.getValueArgument(it))
+                                putValueArgument(
+                                    argIndex++,
+                                    moduleCall.getValueArgument(it)
+                                )
                             }
                         }
                     )
