@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -74,7 +73,6 @@ import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
-import org.jetbrains.kotlin.types.replace
 
 fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
     annotations.any { it.hasAnnotation(annotation, module) }
@@ -178,68 +176,6 @@ val IrType.classOrFail get() = classOrNull ?: error("Cannot get class for ${rend
 
 fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWith(*arguments)
 
-fun IrType.hashCodeWithQualifiers(): Int {
-    var result = hashCode()
-    result = 31 * result + qualifiersHash()
-    return result
-}
-
-fun IrType?.equalsWithQualifiers(other: Any?): Boolean {
-    if (this === other) return true
-    if (this?.javaClass != other?.javaClass) return false
-    other as IrType
-
-    if (this != other) return false
-
-    if (!getQualifiers().qualifiersEquals(other.getQualifiers())) return false
-
-    if (this is IrSimpleType) {
-        other as IrSimpleType
-        arguments
-            .forEachIndexed { index, argument ->
-                if (!argument.type.equalsWithQualifiers(other.arguments[index].type)) {
-                    return false
-                }
-            }
-    }
-
-    return true
-}
-
-private fun IrType.qualifiersHash() = getQualifiers()
-    .map { it.hash() }
-    .hashCode()
-
-private fun List<IrConstructorCall>.qualifiersEquals(other: List<IrConstructorCall>): Boolean {
-    if (size != other.size) return false
-    for (i in indices) {
-        val thisAnnotation = this[i].toAnnotationDescriptor()
-        val otherAnnotation = other[i].toAnnotationDescriptor()
-        if (thisAnnotation.fqName != otherAnnotation.fqName) return false
-        val thisValues = thisAnnotation.allValueArguments.entries.toList()
-        val otherValues = otherAnnotation.allValueArguments.entries.toList()
-        if (thisValues.size != otherValues.size) return false
-        for (j in thisValues.indices) {
-            val thisValue = thisValues[j]
-            val otherValue = otherValues[j]
-            if (thisValue.key != otherValue.key) return false
-            if (thisValue.value.value != otherValue.value.value) return false
-        }
-    }
-
-    return true
-}
-
-private fun IrConstructorCall.hash(): Int {
-    var result = type.hashCode()
-    result = 31 * result + toAnnotationDescriptor()
-        .allValueArguments
-        .map { it.key to it.value.value }
-        .hashCode()
-    return result
-}
-
-
 fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
     if (!this.isBound) irProviders.forEach { it.getDeclaration(this) }
     check(this.isBound) { "$this is not bound" }
@@ -323,28 +259,6 @@ fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>)
         newArguments,
         newAnnotations
     )
-}
-
-private fun makeKotlinType(
-    classifier: IrClassifierSymbol,
-    arguments: List<IrTypeArgument>,
-    annotations: List<IrConstructorCall>,
-    hasQuestionMark: Boolean
-): SimpleType {
-    val kotlinTypeArguments = arguments.mapIndexed { index, it ->
-        when (it) {
-            is IrTypeProjection -> TypeProjectionImpl(it.variance, it.type.toKotlinType())
-            is IrStarProjection -> StarProjectionImpl((classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
-            else -> error(it)
-        }
-    }
-    return classifier.descriptor.defaultType.replace(
-        newArguments = kotlinTypeArguments,
-        newAnnotations = Annotations.create(
-            annotations
-                .map { it.toAnnotationDescriptor() }
-        )
-    ).makeNullableAsSpecified(hasQuestionMark)
 }
 
 fun IrConstructorCall.toAnnotationDescriptor(): AnnotationDescriptor {

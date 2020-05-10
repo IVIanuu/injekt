@@ -4,18 +4,23 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.equalsWithQualifiers
 import com.ivianuu.injekt.compiler.getQualifierFqNames
-import com.ivianuu.injekt.compiler.hashCodeWithQualifiers
+import com.ivianuu.injekt.compiler.getQualifiers
+import com.ivianuu.injekt.compiler.toAnnotationDescriptor
+import com.ivianuu.injekt.compiler.type
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.FqNameEqualityChecker
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -288,13 +293,74 @@ class Key(val type: IrType) {
 
         other as Key
 
-        if (!type.equalsWithQualifiers(other.type)) return false
+        if (!type.equalsForKey(other.type)) return false
 
         return true
     }
 
-    override fun hashCode(): Int = type.hashCodeWithQualifiers()
+    override fun hashCode(): Int {
+        return type.hashCodeForKey()
+    }
 
     override fun toString(): String = type.render()
+
+    private fun IrType.hashCodeForKey(): Int {
+        var result = classifierOrNull?.hashCode() ?: 0
+        result = 31 * result + qualifiersHash()
+        result = 32 * result + typeArguments.map { it.hashCodeForKey() }.hashCode()
+        return result
+    }
+
+    private fun IrType.equalsForKey(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is IrSimpleType) return false
+        this as IrSimpleType
+        if (!FqNameEqualityChecker.areEqual(classifier, other.classifier)) return false
+        if (!getQualifiers().qualifiersEquals(other.getQualifiers())) return false
+
+        if (arguments.size != arguments.size) return false
+
+        arguments
+            .forEachIndexed { index, argument ->
+                if (!argument.type.equalsForKey(other.arguments[index].type)) {
+                    return false
+                }
+            }
+
+        return true
+    }
+
+    private fun List<IrConstructorCall>.qualifiersEquals(other: List<IrConstructorCall>): Boolean {
+        if (size != other.size) return false
+        for (i in indices) {
+            val thisAnnotation = this[i].toAnnotationDescriptor()
+            val otherAnnotation = other[i].toAnnotationDescriptor()
+            if (thisAnnotation.fqName != otherAnnotation.fqName) return false
+            val thisValues = thisAnnotation.allValueArguments.entries.toList()
+            val otherValues = otherAnnotation.allValueArguments.entries.toList()
+            if (thisValues.size != otherValues.size) return false
+            for (j in thisValues.indices) {
+                val thisValue = thisValues[j]
+                val otherValue = otherValues[j]
+                if (thisValue.key != otherValue.key) return false
+                if (thisValue.value.value != otherValue.value.value) return false
+            }
+        }
+
+        return true
+    }
+
+    private fun IrType.qualifiersHash() = getQualifiers()
+        .map { it.hash() }
+        .hashCode()
+
+    private fun IrConstructorCall.hash(): Int {
+        var result = type.hashCode()
+        result = 31 * result + toAnnotationDescriptor()
+            .allValueArguments
+            .map { it.key to it.value.value }
+            .hashCode()
+        return result
+    }
 
 }
