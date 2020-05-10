@@ -497,7 +497,13 @@ class FactoryExpressions(
         return providerFieldExpression(binding.key) {
             instanceProvider(
                 binding.requirementNode
-                    .initializerAccessor(this, it.factoryAccessors[factoryProduct]!!)
+                    .initializerAccessor(this,
+                        if (factoryProduct is FactoryImplementation) {
+                            it.factoryAccessors[factoryProduct]!!
+                        } else {
+                            { error("Unsupported") }
+                        }
+                    )
             )
         }
     }

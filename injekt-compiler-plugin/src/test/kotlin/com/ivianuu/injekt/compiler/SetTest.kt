@@ -11,12 +11,8 @@ class SetTest {
     @Test
     fun testSet() = codegen(
         """
-        interface TestComponent {
-            val set: Set<Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Set<Command> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -25,11 +21,9 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().set
-    """
+         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
         assertEquals(3, set.size)
@@ -41,12 +35,8 @@ class SetTest {
     @Test
     fun testSetOfProvider() = codegen(
         """
-        interface TestComponent {
-            val set: Set<@Provider () -> Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Set<@Provider () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -55,11 +45,9 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().set
-    """
+         """
     ) {
         val set = invokeSingleFile<Set<@Provider () -> Command>>().toList()
         assertEquals(3, set.size)
@@ -71,12 +59,8 @@ class SetTest {
     @Test
     fun testSetOfLazy() = codegen(
         """
-        interface TestComponent {
-            val set: Set<@Lazy () -> Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Set<@Lazy () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -85,11 +69,9 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().set
-    """
+         """
     ) {
         val set = invokeSingleFile<Set<@Lazy () -> Command>>().toList()
         assertEquals(3, set.size)
@@ -101,41 +83,41 @@ class SetTest {
     @Test
     fun testEmptySet() = codegen(
         """
-        interface TestComponent {
-            val set: Set<Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Set<Command> {
             set<Command>()
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().set
-    """
+         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
         assertEquals(0, set.size)
     }
 
     @Test
+    fun testUndeclaredSet() = codegen(
+        """
+        @Factory
+        fun create(): Set<Command> {
+            return createInstance()
+        }
+        """
+    ) {
+        assertInternalError("no binding found")
+    }
+
+    @Test
     fun testSingleElementSet() = codegen(
         """
-        interface TestComponent {
-            val set: Set<Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Set<Command> {
             transient { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().set
-    """
+         """
     ) {
         val set = invokeSingleFile<Set<Command>>().toList()
         assertEquals(1, set.size)
@@ -144,19 +126,15 @@ class SetTest {
     @Test
     fun testSetOverridesFails() = codegen(
         """
-        interface TestComponent {
-            val set: Set<Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun create(): Set<Command> {
             transient { CommandA() }
             transient { CommandB() }
             set<Command> {
                 add<CommandA>()
                 add<CommandA>()
             }
-            return createImpl()
+            return createInstance()
         }
     """
     ) {

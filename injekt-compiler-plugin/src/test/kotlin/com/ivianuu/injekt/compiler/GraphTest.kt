@@ -10,17 +10,8 @@ class GraphTest {
     @Test
     fun testMissingBindingFails() = codegen(
         """
-        interface TestComponent {
-            val dep: Dep
-        }
-
-        @Transient
-        class Dep(bar: Bar)
-
-        @Factory
-        fun create(): TestComponent {
-            return createImpl()
-        }
+        @Transient class Dep(bar: Bar)
+        @Factory fun create(): Dep = createInstance()
         """
     ) {
         assertInternalError("no binding")
@@ -29,15 +20,11 @@ class GraphTest {
     @Test
     fun testDuplicatedBindingFails() = codegen(
         """
-        interface TestComponent {
-            val foo: Foo
-        }
-
         @Factory
-        fun create(): TestComponent {
+        fun create(): Foo {
             transient { Foo() }
             transient { Foo() }
-            return createImpl()
+            return createInstance()
         }
         """
     ) {
@@ -47,14 +34,9 @@ class GraphTest {
     @Test
     fun testCircularDependency() = codegen(
         """
-        interface TestComponent {
-            val a: A
-        }
-        
         @Transient class A(b: B)
         @Transient class B(a: A)
-
-        @Factory fun create(): TestComponent = createImpl()
+        @Factory fun create(): A = createInstance()
     """
     ) {
         assertInternalError("circular")
@@ -63,17 +45,12 @@ class GraphTest {
     @Test
     fun testScopeMismatch() = codegen(
         """
-        interface TestComponent {
-            val dep: Dep
-        }
-        
-        @TestScope2
-        class Dep
+        @TestScope2 class Dep
 
         @Factory
-        fun create(): TestComponent {
+        fun create(): Dep {
             scope<TestScope>()
-            return createImpl()
+            return createInstance()
         }
         """
     ) {
@@ -137,15 +114,11 @@ class GraphTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-        interface TestComponent {
-            val foo: Foo
-        }
-
         @Factory
-        fun create(): TestComponent {
+        fun create(): Foo {
             transient<Foo> { Foo() }
             transient<Foo?> { null }
-            return createImpl()
+            return createInstance()
         }
     """
     ) {

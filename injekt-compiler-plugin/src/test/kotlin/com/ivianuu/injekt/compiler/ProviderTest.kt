@@ -1,7 +1,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Provider
-import junit.framework.Assert
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class ProviderTest {
@@ -23,7 +24,7 @@ class ProviderTest {
     """
     ) {
         val provider = invokeSingleFile<@Provider () -> Foo>()
-        Assert.assertNotSame(provider(), provider())
+        assertNotSame(provider(), provider())
     }
 
     @Test
@@ -43,24 +44,18 @@ class ProviderTest {
     """
     ) {
         val provider = invokeSingleFile<@Provider () -> Foo>()
-        Assert.assertSame(provider(), provider())
+        assertSame(provider(), provider())
     }
 
     @Test
     fun testQualifiedProvider() = codegen(
         """
-        interface TestComponent {
-            val provider: @Provider () -> @TestQualifier1 Foo
-        }
-        
         @Factory
-        fun create(): TestComponent { 
+        fun invoke(): @Provider () -> @TestQualifier1 Foo { 
             @TestQualifier1 transient { Foo() }
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().provider
-    """
+         """
     ) {
         assertOk()
     }

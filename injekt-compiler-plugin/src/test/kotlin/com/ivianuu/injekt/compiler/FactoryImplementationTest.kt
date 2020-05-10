@@ -5,7 +5,7 @@ import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class ImplementationTest {
+class FactoryImplementationTest {
 
     @Test
     fun testTransient() = codegen(
@@ -78,18 +78,12 @@ class ImplementationTest {
     @Test
     fun testInstance() = codegen(
         """
-        interface TestComponent {
-            val foo: Foo
-        }
-        
         @Factory
-        fun create(foo: Foo): TestComponent {
+        fun invoke(foo: Foo): Foo {
             instance(foo)
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke(foo: Foo) = create(foo).foo
-    """
+         """
     ) {
         val foo = Foo()
         assertSame(foo, invokeSingleFile(foo))
@@ -98,23 +92,17 @@ class ImplementationTest {
     @Test
     fun testInclude() = codegen(
         """
-        interface TestComponent {
-            val foo: Foo
-        }
-        
         @Module
         fun module(foo: Foo) {
             instance(foo)
         }
         
         @Factory
-        fun create(foo: Foo): TestComponent {
+        fun invoke(foo: Foo): Foo {
             module(foo)
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke(foo: Foo) = create(foo).foo
-    """
+        """
     ) {
         val foo = Foo()
         assertSame(foo, invokeSingleFile(foo))
@@ -255,25 +243,19 @@ class ImplementationTest {
     @Test
     fun testProviderDefinitionWhichUsesTypeParameters() = codegen(
         """
-        interface TestComponent {
-            val any: Any
-        }
-        
         @Module
         fun <T : S, S> diyAlias() {
             transient { get<T>() as S }
         }
 
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Any {
             transient<Foo>()
             transient<Bar>()
             diyAlias<Bar, Any>()
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().any
-    """
+         """
     ) {
         assertTrue(invokeSingleFile() is Bar)
     }

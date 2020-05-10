@@ -7,10 +7,6 @@ class AssistedTest {
     @Test
     fun testAssistedWithAnnotations() = codegen(
         """
-        interface TestComponent {
-            val depProvider: @Provider (String) -> Dep
-        } 
-        
         @Transient
         class Dep(
             @Assisted val assisted: String,
@@ -18,9 +14,9 @@ class AssistedTest {
         )
         
         @Factory
-        fun create(): TestComponent {
+        fun create(): @Provider (String) -> Dep {
             instance(Foo())
-            return createImpl()
+            return createInstance()
         }
     """
     ) {
@@ -30,17 +26,13 @@ class AssistedTest {
     @Test
     fun testAssistedInDsl() = codegen(
         """
-        interface TestComponent {
-            val depProvider: @Provider (String) -> Dep
-        } 
-        
         class Dep(val assisted: String, val foo: Foo)
         
         @Factory
-        fun create(): TestComponent {
+        fun create(): @Provider (String) -> Dep {
             transient { Foo() }
             transient { (assisted: String) -> Dep(assisted, get()) }
-            return createImpl()
+            return createInstance()
         }
     """
     ) {
@@ -50,17 +42,13 @@ class AssistedTest {
     @Test
     fun testAssistedInDsl2() = codegen(
         """
-        interface TestComponent {
-            val depProvider: @Provider (String) -> Dep
-        } 
-        
         class Dep(val assisted: String, val foo: Foo)
         
         @Factory
-        fun create(): TestComponent {
+        fun create(): @Provider (String) -> Dep {
             transient { Foo() }
             transient { Dep(it.component1(), get()) }
-            return createImpl()
+            return createInstance()
         }
     """
     ) {

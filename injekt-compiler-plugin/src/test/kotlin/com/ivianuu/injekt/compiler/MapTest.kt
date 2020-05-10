@@ -102,41 +102,41 @@ class MapTest {
     @Test
     fun testEmptyMap() = codegen(
         """
-        interface TestComponent {
-            val map: Map<KClass<out Command>, Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Map<KClass<out Command>, Command> {
             map<KClass<out Command>, Command>()
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().map
-    """
+         """
     ) {
         val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(0, map.size)
     }
 
     @Test
+    fun testUndeclaredMap() = codegen(
+        """
+        @Factory
+        fun create(): Map<String, Command> {
+            return createInstance()
+        }
+        """
+    ) {
+        assertInternalError("no binding found")
+    }
+
+    @Test
     fun testSingleEntryMap() = codegen(
         """
-        interface TestComponent {
-            val map: Map<KClass<out Command>, Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun invoke(): Map<KClass<out Command>, Command> {
             transient { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
-            return createImpl()
+            return createInstance()
         }
-        
-        fun invoke() = create().map
-    """
+         """
     ) {
         val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(1, map.size)
@@ -146,19 +146,15 @@ class MapTest {
     @Test
     fun testMapOverrideFails() = codegen(
         """
-        interface TestComponent {
-            val map: Map<String, Command>
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun create(): Map<String, Command> {
             transient { CommandA() }
             transient { CommandB() }
             map<String, Command> {
                 put<CommandA>("a")
                 put<CommandB>("a")
             }
-            return createImpl()
+            return createInstance()
         }
     """
     ) {

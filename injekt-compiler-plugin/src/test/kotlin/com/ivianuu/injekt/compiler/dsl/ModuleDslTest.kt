@@ -65,7 +65,6 @@ class ModuleDslTest {
     fun testModuleInvocationInFactoryAllowed() =
         codegen(
             """
-                interface TestComponent
             @Module fun module() {}
             @Factory fun factory(): TestComponent { 
                 module()
@@ -80,7 +79,6 @@ class ModuleDslTest {
     fun testModuleInvocationInChildFactoryAllowed() =
         codegen(
             """
-                interface TestComponent
             @Module fun module() {}
             @ChildFactory fun factory(): TestComponent { 
                 module()
@@ -231,14 +229,10 @@ class ModuleDslTest {
             transient { capture }
         }
         
-        interface TestComponent {
-            val string: String
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun create(): String {
             capturingModule("hello world")
-            return createImpl()
+            return createInstance()
         }
     """
     )
@@ -251,15 +245,11 @@ class ModuleDslTest {
             transient<@TestQualifier1 T> { get<T>() }
         }
         
-        interface TestComponent {
-            val string: @TestQualifier1 String
-        }
-        
         @Factory
-        fun create(): TestComponent {
+        fun create(): @TestQualifier1 String {
             transient { "hello world" }
             capturingModule<String>()
-            return createImpl()
+            return createInstance()
         }
     """
     )
@@ -272,15 +262,11 @@ class ModuleDslTest {
             val local = greeting + " world"
             transient { local }
         }
-        
-        interface TestComponent {
-            val greeting: String
-        }
-        
+
         @Factory
-        fun create(): TestComponent {
+        fun create(): String {
             capturingModule("hello")
-            return createImpl()
+            return createInstance()
         }
     """
     )
