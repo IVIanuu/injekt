@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -121,10 +122,20 @@ class Graph(
             }
         }
 
-        binding?.let { resolvedBindings[request.key] = it }
+        binding?.let {
+            resolvedBindings[request.key] = it
+            return it
+        }
 
-        return binding ?: parent?.getBinding(request)
-        ?: error("No binding found for '${request.key}' required at '${request.requestOrigin.orUnknown()}'")
+        parent?.getBinding(request)?.let { return it }
+
+        if (request.key.type.isMarkedNullable()) {
+            binding = NullBindingNode(request.key, factoryProduct)
+            resolvedBindings[request.key] = binding
+            return binding
+        }
+
+        error("No binding found for '${request.key}' required at '${request.requestOrigin.orUnknown()}'")
     }
 
     fun validate(request: BindingRequest) {

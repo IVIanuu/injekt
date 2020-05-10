@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -78,13 +79,13 @@ class FactoryExpressions(
     }
 
     fun getBindingExpression(request: BindingRequest): FactoryExpression {
-        bindingExpressions[request]?.let { return it }
-
         val binding = graph.getBinding(request)
 
         if (binding.owner != factoryProduct) {
             return parent?.getBindingExpression(request)!!
         }
+
+        bindingExpressions[request]?.let { return it }
 
         val expression = when (request.requestType) {
             RequestType.Instance -> {
@@ -102,6 +103,7 @@ class FactoryExpressions(
                     is LazyBindingNode -> instanceExpressionForLazy(binding)
                     is MapBindingNode -> instanceExpressionForMap(binding)
                     is MembersInjectorBindingNode -> instanceExpressionForMembersInjector(binding)
+                    is NullBindingNode -> instanceExpressionForNull(binding)
                     is ProviderBindingNode -> instanceExpressionForProvider(binding)
                     is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                     is SetBindingNode -> instanceExpressionForSet(binding)
@@ -122,6 +124,7 @@ class FactoryExpressions(
                     is LazyBindingNode -> providerExpressionForLazy(binding)
                     is MapBindingNode -> providerExpressionForMap(binding)
                     is MembersInjectorBindingNode -> providerExpressionForMembersInjector(binding)
+                    is NullBindingNode -> providerExpressionForNull(binding)
                     is ProviderBindingNode -> providerExpressionForProvider(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
                     is SetBindingNode -> providerExpressionForSet(binding)
@@ -285,6 +288,10 @@ class FactoryExpressions(
 
     private fun instanceExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
         return invokeProviderInstanceExpression(binding)
+    }
+
+    private fun instanceExpressionForNull(binding: NullBindingNode): FactoryExpression {
+        return { irNull() }
     }
 
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
@@ -631,6 +638,10 @@ class FactoryExpressions(
                 }
             )
         }
+    }
+
+    private fun providerExpressionForNull(binding: NullBindingNode): FactoryExpression {
+        return { instanceProvider(irNull()) }
     }
 
     private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {

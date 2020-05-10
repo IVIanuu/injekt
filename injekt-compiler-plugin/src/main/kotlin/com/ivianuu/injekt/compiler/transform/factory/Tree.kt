@@ -240,6 +240,19 @@ class MembersInjectorBindingNode(
     origin
 )
 
+class NullBindingNode(
+    key: Key,
+    owner: AbstractFactoryProduct
+) : BindingNode(
+    key,
+    emptyList(),
+    null,
+    false,
+    null,
+    owner,
+    null
+)
+
 class ProviderBindingNode(
     key: Key,
     owner: AbstractFactoryProduct,

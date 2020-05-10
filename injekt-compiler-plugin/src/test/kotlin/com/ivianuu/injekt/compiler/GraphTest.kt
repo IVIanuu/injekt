@@ -1,6 +1,8 @@
 package com.ivianuu.injekt.compiler
 
+import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertNull
 import org.junit.Test
 
 class GraphTest {
@@ -147,7 +149,32 @@ class GraphTest {
         }
     """
     ) {
-        assertInternalError()
+        assertInternalError("multiple")
+    }
+
+    @Test
+    fun testReturnsInstanceForNullableBinidng() = codegen(
+        """
+        @Factory
+        fun invoke(): Foo? {
+            transient<Foo?>()
+            return createInstance()
+        }
+    """
+    ) {
+        assertNotNull(invokeSingleFile())
+    }
+
+    @Test
+    fun testReturnsNullOnMissingNullableBinding() = codegen(
+        """
+        @Factory
+        fun invoke(): Foo? {
+            return createInstance()
+        }
+        """
+    ) {
+        assertNull(invokeSingleFile())
     }
 
 }
