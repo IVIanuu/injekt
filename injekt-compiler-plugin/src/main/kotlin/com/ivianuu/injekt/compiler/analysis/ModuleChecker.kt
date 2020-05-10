@@ -78,8 +78,7 @@ class ModuleChecker : CallChecker, DeclarationChecker {
     ) {
         val resulting = resolvedCall.resultingDescriptor
         if (resulting !is FunctionDescriptor ||
-            (!resulting.annotations.hasAnnotation(InjektFqNames.Module) &&
-                    !resulting.annotations.hasAnnotation(InjektFqNames.Declaration))
+            !resulting.annotations.hasAnnotation(InjektFqNames.Module)
         ) return
         checkInvocations(resolvedCall, reportOn, context)
     }

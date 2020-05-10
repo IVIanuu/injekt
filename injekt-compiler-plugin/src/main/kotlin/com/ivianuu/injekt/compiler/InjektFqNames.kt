@@ -38,8 +38,6 @@ object InjektFqNames {
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
-    val Declaration = InjektPackage.child("Declaration")
-
     val DoubleCheck = InternalPackage.child("DoubleCheck")
 
     val Factory = InjektPackage.child("Factory")

@@ -50,6 +50,7 @@ import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -321,7 +322,11 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
             else
                 IrSimpleTypeImpl(
                     KotlinTypeFactory.simpleType(
-                        type.toKotlinType() as SimpleType,
+                        try {
+                            type.toKotlinType() as SimpleType
+                        } catch (e: Exception) {
+                            error("${type.render()} is not a SimpleType")
+                        },
                         arguments = type.arguments.mapIndexed { index, it ->
                             when (it) {
                                 is IrTypeProjection -> TypeProjectionImpl(
