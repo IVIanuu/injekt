@@ -115,28 +115,25 @@ class ChildFactoryBindingResolver(
             FactoryImplementation(
                 factoryFunction = null,
                 parent = factoryImplementation,
-                irParent = factoryImplementation.clazz,
+                irDeclarationParent = factoryImplementation.clazz,
                 name = members.nameForGroup("child"),
                 superType = superType,
                 moduleClass = moduleClass,
                 pluginContext = factoryImplementation.pluginContext,
                 symbols = factoryImplementation.symbols,
-                factoryTransformer = factoryImplementation.factoryTransformer,
                 declarationStore = factoryImplementation.declarationStore
             )
 
         members.addClass(childFactoryImplementation.clazz)
 
-        val childFactory =
-            DeclarationIrBuilder(
-                factoryImplementation.pluginContext,
-                factoryImplementation.clazz.symbol
-            )
-                .childFactory(
-                    members.nameForGroup("child_factory"),
-                    childFactoryImplementation,
-                    key.type
-                )
+        val childFactory = DeclarationIrBuilder(
+            factoryImplementation.pluginContext,
+            factoryImplementation.clazz.symbol
+        ).childFactory(
+            members.nameForGroup("childFactory"),
+            childFactoryImplementation,
+            key.type
+        )
 
         members.addClass(childFactory)
 
@@ -271,7 +268,7 @@ class DependencyBindingResolver(
                 )
             ) {
                 provider(
-                    name = Name.identifier("dep_provider_${providersByDependency.size}"),
+                    name = Name.identifier("${moduleNode.module.name}\$Factory${providersByDependency.size}"),
                     visibility = Visibilities.PRIVATE,
                     parameters = listOf(
                         InjektDeclarationIrBuilder.ProviderParameter(
@@ -342,13 +339,14 @@ class ModuleBindingResolver(
                 ?.owner
                 ?: bindingFunction.descriptor.annotations.findAnnotation(InjektFqNames.AstClassPath)
                     ?.allValueArguments
-                    ?.get(Name.identifier("clazz"))
+                    ?.values
+                    ?.single()
                     ?.let { it as KClassValue }
                     ?.let { it.value as KClassValue.Value.NormalClass }
                     ?.classId
                     ?.shortClassName
                     ?.asString()
-                    ?.substringAfter("\$")
+                    ?.substringAfterLast("\$")
                     ?.let { name ->
                         moduleNode.module.declarations
                             .filterIsInstance<IrClass>()

@@ -48,13 +48,12 @@ class TopLevelFactoryTransformer(
                     FactoryImplementation(
                         factoryFunction = function,
                         parent = null,
-                        irParent = function.file,
+                        irDeclarationParent = function.parent,
                         name = InjektNameConventions.getImplNameForFactoryFunction(function),
                         superType = function.returnType,
                         moduleClass = moduleClass,
                         pluginContext = pluginContext,
                         symbols = symbols,
-                        factoryTransformer = this@TopLevelFactoryTransformer,
                         declarationStore = declarationStore
                     )
                 }
@@ -64,7 +63,6 @@ class TopLevelFactoryTransformer(
                         moduleClass = moduleClass,
                         context = pluginContext,
                         symbols = symbols,
-                        factoryTransformer = this@TopLevelFactoryTransformer,
                         declarationStore = declarationStore
                     )
                 }

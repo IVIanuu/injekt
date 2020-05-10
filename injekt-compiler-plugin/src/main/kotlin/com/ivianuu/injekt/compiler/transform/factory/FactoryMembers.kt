@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -13,9 +13,12 @@ import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -27,18 +30,15 @@ import org.jetbrains.kotlin.name.Name
 
 interface FactoryMembers {
 
-    val fields: Map<Key, FactoryField>
-    val initializedFields: Set<Key>
-
     fun nameForGroup(prefix: String): Name
 
     fun addClass(clazz: IrClass)
 
-    fun getOrCreateField(
+    fun cachedValue(
         key: Key,
         prefix: String,
-        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?
-    ): FactoryField
+        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
+    ): FactoryExpression
 
     fun getGetFunction(
         key: Key,
@@ -52,8 +52,13 @@ class ClassFactoryMembers(
     private val factoryImplementation: FactoryImplementation
 ) : FactoryMembers {
 
-    override val fields = mutableMapOf<Key, FactoryField>()
-    override val initializedFields = mutableSetOf<Key>()
+    data class FieldWithInitializer(
+        val field: IrField,
+        val initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
+    )
+
+    val fields =
+        mutableMapOf<Key, FieldWithInitializer>()
 
     private val getFunctions = mutableListOf<IrFunction>()
 
@@ -63,7 +68,7 @@ class ClassFactoryMembers(
 
     override fun nameForGroup(prefix: String): Name {
         val index = groupNames.getOrPut(prefix) { 0 }
-        val name = Name.identifier("${prefix}_$index")
+        val name = Name.identifier("${prefix}$index")
         groupNames[prefix] = index + 1
         return name
     }
@@ -72,25 +77,20 @@ class ClassFactoryMembers(
         this.clazz.addChild(clazz)
     }
 
-    override fun getOrCreateField(
+    override fun cachedValue(
         key: Key,
         prefix: String,
-        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?
-    ): FactoryField {
-        return fields.getOrPut(key) {
-            val field = clazz.addField(
+        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
+    ): FactoryExpression {
+        val fieldWithInitializer = fields.getOrPut(key) {
+            FieldWithInitializer(
+                clazz.addField(
                 nameForGroup(prefix),
                 key.type
+                ), initializer
             )
-            FactoryField(clazz, initializer, field).also {
-                it.initialize {
-                    irGetField(
-                        it[factoryImplementation],
-                        field
-                    )
-                }
-            }
         }
+        return { irGetField(it[factoryImplementation], fieldWithInitializer.field) }
     }
 
     override fun getGetFunction(
@@ -127,7 +127,7 @@ class ClassFactoryMembers(
         } else {
             clazz.addFunction {
                 val currentGetFunctionIndex = getFunctions.size
-                this.name = Name.identifier("get_$currentGetFunctionIndex")
+                this.name = Name.identifier("get$currentGetFunctionIndex")
                 returnType = key.type
                 visibility = Visibilities.PRIVATE
             }.apply {
@@ -181,10 +181,10 @@ class ClassFactoryMembers(
 
 class FunctionFactoryMembers(
     private val pluginContext: IrPluginContext,
-    private val function: IrFunction
+    private val classParent: IrDeclarationContainer
 ) : FactoryMembers {
-    override val fields = mutableMapOf<Key, FactoryField>()
-    override val initializedFields = mutableSetOf<Key>()
+
+    lateinit var blockBodyBuilder: IrBlockBodyBuilder
 
     val getFunctions = mutableListOf<IrFunction>()
 
@@ -192,23 +192,25 @@ class FunctionFactoryMembers(
 
     override fun nameForGroup(prefix: String): Name {
         val index = groupNames.getOrPut(prefix) { 0 }
-        val name = Name.identifier("${prefix}_$index")
+        val name = Name.identifier("${prefix}$index")
         groupNames[prefix] = index + 1
         return name
     }
 
     override fun addClass(clazz: IrClass) {
-        throw UnsupportedOperationException("Cannot add classes")
+        clazz.parent = classParent
+        classParent.addChild(clazz)
     }
 
-    override fun getOrCreateField(
+    override fun cachedValue(
         key: Key,
         prefix: String,
-        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?
-    ): FactoryField {
-        return fields.getOrPut(key) {
-            FactoryField(function, initializer, null)
-        }
+        initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
+    ): FactoryExpression {
+        val tmp = blockBodyBuilder.irTemporaryVar(
+            initializer(blockBodyBuilder, EmptyFactoryExpressionContext)
+        )
+        return { irGet(tmp) }
     }
 
     override fun getGetFunction(
@@ -217,28 +219,18 @@ class FunctionFactoryMembers(
     ): IrFunction {
         return buildFun {
             val currentGetFunctionIndex = getFunctions.size
-            this.name = Name.identifier("get_$currentGetFunctionIndex")
+            this.name = Name.identifier("get$currentGetFunctionIndex")
             returnType = key.type
             visibility = Visibilities.LOCAL
         }.apply {
+            with(blockBodyBuilder) {
+                +this@apply
+                parent = scope.getLocalDeclarationParent()
+            }
             this.body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(body(this, this@apply))
             }
         }.also { getFunctions += it }
     }
 
-}
-
-class FactoryField(
-    val owner: IrElement,
-    val initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression?,
-    val backingField: IrField?
-) {
-    private var _accessor: (IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression)? = null
-    val accessor: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression =
-        { _accessor!!(this, it) }
-
-    fun initialize(accessor: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression) {
-        _accessor = accessor
-    }
 }

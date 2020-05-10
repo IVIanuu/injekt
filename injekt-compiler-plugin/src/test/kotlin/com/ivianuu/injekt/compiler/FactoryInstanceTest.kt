@@ -20,4 +20,38 @@ class FactoryInstanceTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testCreateInstanceAdvanced() = codegen(
+        """
+        @TestScope 
+        class MyClass(foo: Foo, bar: Bar)
+        @Factory
+        fun createBar(): MyClass {
+            scope<TestScope>()
+            scoped<Foo>()
+            transient<Bar>()
+            return createInstance()
+        }
+        
+        fun invoke() = createBar()
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testDependencyInInstance() = codegen(
+        """
+        interface FooOwner {
+            val foo: Foo
+        }
+        
+        @Factory
+        fun createFoo(fooOwner: FooOwner): Foo {
+            dependency(fooOwner)
+            return createInstance()
+        }
+    """
+    )
+
 }

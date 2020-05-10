@@ -93,7 +93,7 @@ class ModuleImplementation(
                     }
                     .forEachIndexed { index, p ->
                         val newValueParameter = addValueParameter(
-                            "p_$index",
+                            "p$index",
                             p.type
                         )
                         addField(

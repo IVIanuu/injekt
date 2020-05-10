@@ -5,6 +5,6 @@ class NameProvider {
     fun allocate(group: String): String {
         val index = indicesByGroup[group] ?: 0
         indicesByGroup[group] = index + 1
-        return "${group}_$index"
+        return "${group}$index"
     }
 }

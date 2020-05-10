@@ -7,32 +7,32 @@ import org.jetbrains.kotlin.name.Name
 import kotlin.math.absoluteValue
 
 object InjektNameConventions {
-    fun getProviderNameForClass(className: Name): Name {
-        return Name.identifier("${className}_Provider")
+    fun getFactoryNameForClass(className: Name): Name {
+        return Name.identifier("${className}\$Factory")
     }
 
     fun getMembersInjectorNameForClass(className: Name): Name {
-        return Name.identifier("${className}_MembersInjector")
+        return Name.identifier("${className}\$MembersInjector")
     }
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name {
         return Name.identifier(
             "${moduleFunction.name.asString()
-                .capitalize()}${moduleFunction.valueParametersHash()}_Impl"
+                .capitalize()}${moduleFunction.valueParametersHash()}\$Impl"
         )
     }
 
     fun getImplNameForFactoryFunction(factoryFunction: IrFunction): Name {
         return Name.identifier(
             "${factoryFunction.name.asString()
-                .capitalize()}${factoryFunction.valueParametersHash()}_Impl"
+                .capitalize()}${factoryFunction.valueParametersHash()}\$Impl"
         )
     }
 
     fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
         Name.identifier(
             "${factoryFunction.name.asString()
-                .capitalize()}${factoryFunction.valueParametersHash()}_Module"
+                .capitalize()}${factoryFunction.valueParametersHash()}\$Module"
         )
 
     fun classParameterNameForTypeParameter(typeParameter: IrTypeParameter): Name =

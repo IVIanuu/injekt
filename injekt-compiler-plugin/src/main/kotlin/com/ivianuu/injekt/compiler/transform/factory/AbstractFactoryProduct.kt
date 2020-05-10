@@ -10,7 +10,6 @@ abstract class AbstractFactoryProduct(
     val moduleClass: IrClass,
     val pluginContext: IrPluginContext,
     val symbols: InjektSymbols,
-    val factoryTransformer: TopLevelFactoryTransformer,
     val declarationStore: InjektDeclarationStore
 ) {
 

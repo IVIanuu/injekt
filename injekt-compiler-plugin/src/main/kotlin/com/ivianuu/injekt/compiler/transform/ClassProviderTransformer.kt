@@ -43,12 +43,11 @@ class ClassProviderTransformer(
         })
 
         classes.forEach { clazz ->
-            val file = clazz.file
             val constructor = clazz.constructors.singleOrNull()
             (clazz.parent as IrDeclarationContainer).addChild(
                 InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
                     provider(
-                        name = InjektNameConventions.getProviderNameForClass(clazz.name),
+                        name = InjektNameConventions.getFactoryNameForClass(clazz.name),
                         visibility = clazz.visibility,
                         parameters = constructor?.valueParameters
                             ?.map { valueParameter ->

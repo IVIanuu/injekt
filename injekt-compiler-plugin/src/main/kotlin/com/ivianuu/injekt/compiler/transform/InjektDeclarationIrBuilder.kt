@@ -255,7 +255,7 @@ class InjektDeclarationIrBuilder(
             addConstructor {
                 this.returnType = defaultType
                 isPrimary = true
-                this.visibility = visibility
+                this.visibility = Visibilities.PUBLIC
             }.apply {
                 fieldsByNonAssistedParameter.forEach { (_, field) ->
                     addValueParameter(
@@ -279,7 +279,6 @@ class InjektDeclarationIrBuilder(
 
             val companion = if (nonAssistedParameters.isNotEmpty()) {
                 providerCompanion(
-                    visibility,
                     parameters,
                     returnType,
                     createBody
@@ -357,7 +356,6 @@ class InjektDeclarationIrBuilder(
     }
 
     private fun providerCompanion(
-        visibility: Visibility,
         parameters: List<ProviderParameter>,
         returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
@@ -365,7 +363,7 @@ class InjektDeclarationIrBuilder(
         kind = ClassKind.OBJECT
         name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
         isCompanion = true
-        this.visibility = visibility
+        this.visibility = Visibilities.PUBLIC
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
 
@@ -374,7 +372,7 @@ class InjektDeclarationIrBuilder(
         addConstructor {
             this.returnType = defaultType
             isPrimary = true
-            this.visibility = visibility
+            this.visibility = Visibilities.PUBLIC
         }.apply {
             body = builder.irBlockBody {
                 initializeClassWithAnySuperClass(this@clazz.symbol)

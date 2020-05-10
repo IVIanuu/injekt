@@ -80,7 +80,7 @@ class ModuleDescriptorImplementation(
 
     private fun addChildFactoryFunction(declaration: ChildFactoryDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("child_factory"),
+            name = nameProvider.allocate("childFactory"),
             returnType = declaration.factoryRef.symbol.owner.returnType,
             modality = Modality.ABSTRACT
         ).apply {
@@ -175,7 +175,7 @@ class ModuleDescriptorImplementation(
 
     private fun addMapEntryFunction(declaration: MapEntryDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("map_entry"),
+            name = nameProvider.allocate("mapEntry"),
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {
@@ -208,7 +208,7 @@ class ModuleDescriptorImplementation(
 
     private fun addSetElementFunction(declaration: SetElementDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("set_element"),
+            name = nameProvider.allocate("setElement"),
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {

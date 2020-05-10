@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -48,19 +49,17 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class FactoryImplementation(
     val name: Name,
     val superType: IrType,
-    val parent: FactoryImplementation?,
     val factoryFunction: IrFunction?,
-    irParent: IrDeclarationContainer,
+    val parent: FactoryImplementation?,
+    irDeclarationParent: IrDeclarationParent,
     moduleClass: IrClass,
     pluginContext: IrPluginContext,
     symbols: InjektSymbols,
-    factoryTransformer: TopLevelFactoryTransformer,
     declarationStore: InjektDeclarationStore
 ) : AbstractFactoryProduct(
     moduleClass,
     pluginContext,
     symbols,
-    factoryTransformer,
     declarationStore
 ) {
 
@@ -68,7 +67,7 @@ class FactoryImplementation(
         this.name = this@FactoryImplementation.name
         visibility = Visibilities.PRIVATE
     }.apply {
-        this.parent = irParent
+        this.parent = irDeclarationParent
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
         superTypes += superType
@@ -264,34 +263,14 @@ class FactoryImplementation(
                 )
             }
 
-            var lastRoundFields: Map<Key, FactoryField>? = null
-            while (true) {
-                val fieldsToInitialize = factoryMembers.fields
-                    .filterKeys { it !in factoryMembers.initializedFields }
-                if (fieldsToInitialize.isEmpty()) {
-                    break
-                } else if (lastRoundFields == fieldsToInitialize) {
-                    error("Initializing error ${lastRoundFields.keys}")
-                }
-                lastRoundFields = fieldsToInitialize
-
-                fieldsToInitialize.forEach { (key, field) ->
-                    field.initializer(
-                        this,
-                        FactoryExpressionContext(
-                            this@FactoryImplementation
-                        ) {
-                            irGet(clazz.thisReceiver!!)
-                        }
-                    )?.let { initExpr ->
-                        +irSetField(
-                            irGet(clazz.thisReceiver!!),
-                            field.backingField!!,
-                            initExpr
-                        )
-                        factoryMembers.initializedFields += key
-                    }
-                }
+            factoryMembers.fields.values.forEach { (field, initializer) ->
+                +irSetField(
+                    irGet(clazz.thisReceiver!!),
+                    field,
+                    initializer(this, FactoryExpressionContext(this@FactoryImplementation) {
+                        irGet(clazz.thisReceiver!!)
+                    })
+                )
             }
         }
     }

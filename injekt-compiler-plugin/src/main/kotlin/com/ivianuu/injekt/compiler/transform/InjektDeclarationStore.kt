@@ -31,7 +31,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                 ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
         return memberScope.getContributedDescriptors()
             .filterIsInstance<ClassDescriptor>()
-            .single { it.name == InjektNameConventions.getProviderNameForClass(clazz.name) }
+            .single { it.name == InjektNameConventions.getFactoryNameForClass(clazz.name) }
             .let { pluginContext.symbolTable.referenceClass(it) }
             .ensureBound(pluginContext.irProviders)
             .owner
