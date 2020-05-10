@@ -44,4 +44,5 @@ object InjektNameConventions {
     private fun IrFunction.valueParametersHash(): Int =
         valueParameters.map { it.name.asString() + it.type.render() }.hashCode()
             .absoluteValue
+
 }

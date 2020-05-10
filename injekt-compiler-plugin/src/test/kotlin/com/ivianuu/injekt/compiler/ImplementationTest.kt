@@ -407,5 +407,34 @@ class ImplementationTest {
     ) {
         invokeSingleFile()
     }
-    
+
+    @Test
+    fun testLocalChildFactoryInLocalParentFactory() = codegen(
+        """
+        interface ChildComponent { 
+            val bar: Bar 
+        }
+        interface ParentComponent { 
+            val childFactory: @ChildFactory () -> ChildComponent 
+        }
+        
+        fun create(): ChildComponent {
+            @Factory
+            fun parent(): ParentComponent {
+                transient<Foo>()
+                
+                @ChildFactory
+                fun child(): ChildComponent {
+                    transient<Bar>()
+                    return createImpl()
+                }
+                
+                childFactory(::child)
+                
+                return createImpl()
+            }
+            return parent().childFactory()
+        }
+    """
+    )
 }

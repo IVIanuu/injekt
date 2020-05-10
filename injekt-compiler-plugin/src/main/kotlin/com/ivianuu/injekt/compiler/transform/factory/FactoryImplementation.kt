@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.transform.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -25,7 +26,6 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -134,7 +134,7 @@ class FactoryImplementation(
 
         if (factoryFunction != null) {
             val moduleCall = factoryFunction.body!!.statements[0] as IrCall
-            (factoryFunction.parent as IrDeclarationContainer).addChild(clazz)
+            factoryFunction.getNearestDeclarationContainer().addChild(clazz)
             factoryFunction.body = DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
                 irExprBody(
                     irCall(constructor).apply {

@@ -57,10 +57,6 @@ interface InjektErrors {
             "A factories last statement must be either a createImpl() or a createInstance() call"
         )
         @JvmField
-        val CANNOT_BE_LOCAL = error(
-            "@Factory, @ChildFactory and @Module functions cannot be local functions"
-        )
-        @JvmField
         val NO_TYPE_PARAMETERS_ON_FACTORY = error(
             "@Factory and @ChildFactory functions cannot have type parameters"
         )

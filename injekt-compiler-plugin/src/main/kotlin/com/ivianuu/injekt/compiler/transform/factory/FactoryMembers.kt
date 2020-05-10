@@ -181,7 +181,7 @@ class ClassFactoryMembers(
 
 class FunctionFactoryMembers(
     private val pluginContext: IrPluginContext,
-    private val classParent: IrDeclarationContainer
+    private val declarationContainer: IrDeclarationContainer
 ) : FactoryMembers {
 
     lateinit var blockBodyBuilder: IrBlockBodyBuilder
@@ -198,8 +198,8 @@ class FunctionFactoryMembers(
     }
 
     override fun addClass(clazz: IrClass) {
-        clazz.parent = classParent
-        classParent.addChild(clazz)
+        clazz.parent = declarationContainer
+        declarationContainer.addChild(clazz)
     }
 
     override fun cachedValue(

@@ -183,18 +183,6 @@ class FactoryDslTest {
         }
 
     @Test
-    fun testLocalFactoryFails() = codegen(
-        """
-            fun outer() {
-                @Factory
-                fun factory(): TestComponent = createImpl()
-            }
-    """
-    ) {
-        assertCompileError("local")
-    }
-
-    @Test
     fun testCannotInvokeChildFactories() = codegen(
         """
             @ChildFactory

@@ -70,7 +70,6 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
@@ -324,18 +323,6 @@ fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>)
         newArguments,
         newAnnotations
     )
-}
-
-fun IrType.toKotlinType(): KotlinType {
-    return when (this) {
-        is IrSimpleType -> makeKotlinType(
-            classifier,
-            arguments,
-            annotations,
-            hasQuestionMark
-        )
-        else -> TODO(toString())
-    }
 }
 
 private fun makeKotlinType(

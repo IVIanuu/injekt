@@ -330,19 +330,6 @@ class ModuleDslTest {
     )
 
     @Test
-    fun testLocalModuleFails() = codegen(
-        """
-            fun outer() {
-                @Module
-                fun module() {
-                }
-            }
-    """
-    ) {
-        assertCompileError("local")
-    }
-
-    @Test
     fun testBindingWithTypeParameterInInlineModule() = codegen(
         """ 
         @Module
@@ -383,4 +370,20 @@ class ModuleDslTest {
     ) {
         assertCompileError("inline")
     }
+
+    @Test
+    fun testIncludeLocalModule() = codegen(
+        """
+        @Module
+        fun outer() {
+            @Module
+            fun <T> inner(instance: T) {
+                instance(instance)
+            }
+            
+            inner("hello world")
+            inner(42)
+        }
+    """
+    )
 }

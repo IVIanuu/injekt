@@ -54,4 +54,19 @@ class FactoryInstanceTest {
     """
     )
 
+    @Test
+    fun testLocalFunctionInstanceFactory() = codegen(
+        """
+        fun create(): Bar {
+            @Factory
+            fun fooFactory(): Bar {
+                transient<Foo>()
+                transient<Bar>()
+                return createInstance()
+            }
+            return fooFactory()
+        }
+    """
+    )
+
 }

@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.transform.getNearestDeclarationContainer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -10,7 +11,6 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.copyTypeArgumentsFrom
@@ -27,7 +27,7 @@ class FactoryInstance(
 ) : AbstractFactoryProduct(moduleClass, context, symbols, declarationStore) {
 
     override val factoryMembers =
-        FunctionFactoryMembers(context, factoryFunction.parent as IrDeclarationContainer)
+        FunctionFactoryMembers(context, factoryFunction.getNearestDeclarationContainer()!!)
 
     init {
         with(DeclarationIrBuilder(context, factoryFunction.symbol)) {
