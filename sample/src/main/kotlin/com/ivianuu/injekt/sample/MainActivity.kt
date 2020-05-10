@@ -27,6 +27,15 @@ class MainActivity : AppCompatActivity() {
 
 interface MainActivityComponent {
     val injectMainActivity: @MembersInjector (MainActivity) -> Unit
+
+    companion object {
+        @ChildFactory
+        fun create(mainActivity: MainActivity): MainActivityComponent {
+            scope<ActivityScoped>()
+            instance(mainActivity)
+            return createImpl()
+        }
+    }
 }
 
 @Scope
@@ -35,9 +44,3 @@ annotation class ActivityScoped
 @ActivityScoped
 class MainViewModel(private val repo: Repo)
 
-@ChildFactory
-fun createMainActivityComponent(mainActivity: MainActivity): MainActivityComponent {
-    scope<ActivityScoped>()
-    instance(mainActivity)
-    return createImpl()
-}

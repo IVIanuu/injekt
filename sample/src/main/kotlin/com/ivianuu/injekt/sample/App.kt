@@ -12,7 +12,7 @@ import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 
 class App : Application() {
-    val appComponent by lazy { createAppComponent(this) }
+    val appComponent by lazy { AppComponent.create(this) }
     @Inject
     private lateinit var repo: Repo
     override fun onCreate() {
@@ -29,13 +29,15 @@ annotation class ApplicationScoped
 interface AppComponent {
     val injectApp: @MembersInjector (App) -> Unit
     val mainActivityComponentFactory: @ChildFactory (MainActivity) -> MainActivityComponent
-}
 
-@Factory
-fun createAppComponent(app: App): AppComponent {
-    scope<ApplicationScoped>()
-    instance(app)
-    dataModule()
-    childFactory(::createMainActivityComponent)
-    return createImpl()
+    companion object {
+        @Factory
+        fun create(app: App): AppComponent {
+            scope<ApplicationScoped>()
+            instance(app)
+            dataModule()
+            childFactory(MainActivityComponent::create)
+            return createImpl()
+        }
+    }
 }
