@@ -59,12 +59,26 @@ class FactoryInstanceTest {
         """
         fun create(): Bar {
             @Factory
-            fun fooFactory(): Bar {
+            fun factory(): Bar {
                 transient<Foo>()
                 transient<Bar>()
                 return createInstance()
             }
-            return fooFactory()
+            return factory()
+        }
+    """
+    )
+
+    @Test
+    fun testInstanceFactoryLambda() = codegen(
+        """
+        fun create(): Bar {
+            val factory = @Factory {
+                transient<Foo>()
+                transient<Bar>()
+                createInstance<Bar>()
+            }
+            return factory()
         }
     """
     )

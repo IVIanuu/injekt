@@ -337,6 +337,41 @@ class FactoryImplementationTest {
     }
 
     @Test
+    fun testLocalFunctionImplFactory() = codegen(
+        """
+        interface TestComponent { 
+            val bar: Bar 
+        }
+        fun create(): TestComponent {
+            @Factory
+            fun factory(): TestComponent {
+                transient<Foo>()
+                transient<Bar>()
+                return createImpl()
+            }
+            return factory()
+        }
+    """
+    )
+
+    @Test
+    fun testImplFactoryLambda() = codegen(
+        """
+        interface TestComponent { 
+            val bar: Bar 
+        }
+        fun create(): TestComponent {
+            val factory = @Factory {
+                transient<Foo>()
+                transient<Bar>()
+                createImpl<TestComponent>()
+            }
+            return factory()
+        }
+    """
+    )
+
+    @Test
     fun testLocalChildFactoryInLocalParentFactory() = codegen(
         """
         interface ChildComponent { 
