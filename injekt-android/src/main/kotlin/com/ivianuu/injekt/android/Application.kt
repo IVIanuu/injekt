@@ -22,7 +22,7 @@ interface ApplicationComponent
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        compositionFactoryOf<ApplicationComponent, @CompositionFactory (Application) -> ApplicationComponent>()
+        compositionFactoryOf<@CompositionFactory (Application) -> ApplicationComponent>()
             .invoke(this)
     }
 

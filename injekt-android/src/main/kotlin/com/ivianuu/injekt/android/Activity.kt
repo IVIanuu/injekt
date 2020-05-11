@@ -12,7 +12,7 @@ import com.ivianuu.injekt.createImpl
 import com.ivianuu.injekt.entryPointOf
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.parent
+import com.ivianuu.injekt.parentFactory
 import com.ivianuu.injekt.scope
 
 @Scope
@@ -32,13 +32,13 @@ val ComponentActivity.activityComponent: ActivityComponent
 
 @CompositionFactory
 fun createActivityComponent(instance: Activity): ActivityComponent {
+    parentFactory(::createActivityComponent)
     scope<ActivityScoped>()
     instance(instance)
-    parent<RetainedActivityComponent>()
     return createImpl()
 }
 
-@InstallIn<RetainedActivityComponent>
+@InstallIn<:: createActivityComponent>
 @EntryPoint
 interface ActivityComponentFactoryOwner {
     val activityComponentFactory: @ChildFactory (Activity) -> ActivityComponent

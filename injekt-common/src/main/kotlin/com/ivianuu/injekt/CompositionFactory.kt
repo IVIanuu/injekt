@@ -1,7 +1,9 @@
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
+
+@Qualifier
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
 annotation class CompositionFactory
 
-inline fun <reified T, reified F> compositionFactoryOf(): F =
-    CompositionFactories.get(T::class)
+fun <T> compositionFactoryOf(): T = injektIntrinsic()

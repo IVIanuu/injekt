@@ -23,10 +23,12 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
         val holder = ViewModelProvider(this, RetainedActivityComponentHolder.Factory)
             .get(RetainedActivityComponentHolder::class.java)
 
-        if (holder.component == null) {
-            holder.component =
-                entryPointOf<RetainedActivityComponentFactoryOwner>(application.applicationComponent)
-                    .retainedActivityComponentFactory()
+        synchronized(holder) {
+            if (holder.component == null) {
+                holder.component =
+                    entryPointOf<RetainedActivityComponentFactoryOwner>(application.applicationComponent)
+                        .retainedActivityComponentFactory()
+            }
         }
 
         return holder.component!!
@@ -34,8 +36,8 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
 
 @CompositionFactory
 fun createRetainedActivityComponent(): RetainedActivityComponent {
-    scope<RetainedActivityScoped>()
     parent<ApplicationComponent>()
+    scope<RetainedActivityScoped>()
     return createImpl()
 }
 
@@ -47,9 +49,8 @@ interface RetainedActivityComponentFactoryOwner {
 
 private class RetainedActivityComponentHolder : ViewModel() {
     var component: RetainedActivityComponent? = null
-
     companion object Factory : ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
             RetainedActivityComponentHolder() as T
     }
 }
