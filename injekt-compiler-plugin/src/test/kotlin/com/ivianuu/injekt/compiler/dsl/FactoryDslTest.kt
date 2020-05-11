@@ -130,14 +130,14 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryWithTypeParameters() = codegen(
+    fun testFactoryWithTypeParametersAndWithoutInline() = codegen(
         """
-        class Impl
+        interface Impl
         @Factory
         fun <T> factory(): Impl = createImpl()
     """
     ) {
-        assertCompileError("type parameter")
+        assertCompileError("inline")
     }
 
     @Test
@@ -239,26 +239,6 @@ class FactoryDslTest {
         """
     ) {
         assertCompileError("only")
-    }
-
-    @Test
-    fun testFactoryCannotBeInline() = codegen(
-        """
-        @Factory 
-        inline fun factory(): TestComponent = createImpl()
-        """
-    ) {
-        assertCompileError("inline")
-    }
-
-    @Test
-    fun testChildFactoryCannotBeInline() = codegen(
-        """
-        @ChildFactory 
-        inline fun factory(): TestComponent = createImpl()
-        """
-    ) {
-        assertCompileError("inline")
     }
 
     @Test

@@ -84,6 +84,23 @@ class FactoryInstanceTest {
     )
 
     @Test
+    fun testFactoryWithTypeParameters() = codegen(
+        """
+        @Factory
+        inline fun <T> create(): T {
+            transient<Foo>()
+            transient<Bar>()
+            return createInstance()
+        }
+        
+        fun invoke() {
+            create<Foo>()
+            create<Bar>()
+        }
+    """
+    )
+
+    @Test
     fun testComponentAsMemberFunction() = codegen(
         """
         class MyClass {

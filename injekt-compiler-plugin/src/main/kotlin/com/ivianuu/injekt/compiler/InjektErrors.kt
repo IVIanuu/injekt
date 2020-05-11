@@ -57,12 +57,13 @@ interface InjektErrors {
             "A factories last statement must be either a createImpl() or a createInstance() call"
         )
         @JvmField
-        val NO_TYPE_PARAMETERS_ON_FACTORY = error(
-            "@Factory and @ChildFactory functions cannot have type parameters"
-        )
-        @JvmField
         val FACTORY_IMPL_MUST_BE_ABSTRACT = error(
             "createImpl result types must be a interface or a abstract class"
+        )
+
+        @JvmField
+        val FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE = error(
+            "@Factory or @ChildFactory functions with type parameters must be marked with inline"
         )
         @JvmField
         val IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR = error(
@@ -107,10 +108,6 @@ interface InjektErrors {
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error(
             "A function can only be annotated with one of @Factory, @ChildFactory or @Module"
-        )
-        @JvmField
-        val FACTORY_CANNOT_BE_INLINE = error(
-            "@Factory or @ChildFactory functions cannot be inlined"
         )
         @JvmField
         val CANNOT_BE_SUSPEND = error(

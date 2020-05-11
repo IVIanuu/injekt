@@ -1,8 +1,9 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.generateSymbols
+import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
-import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import com.ivianuu.injekt.compiler.transform.module.TypedModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -33,6 +34,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .also { declarationStore.classProviderTransformer = it }
             .visitModuleAndGenerateSymbols()
 
+        FactoryFunctionAnnotationTransformer(pluginContext)
+            .visitModuleAndGenerateSymbols()
+
         // move the module block of @Factory createImpl { ... } to a @Module function
         FactoryModuleTransformer(pluginContext)
             .also { declarationStore.factoryModuleTransformer = it }
@@ -42,7 +46,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             pluginContext,
             declarationStore
         ).also { declarationStore.moduleTransformer = it }
-        val factoryTransformer = TopLevelFactoryTransformer(
+        val factoryTransformer = RootFactoryTransformer(
             pluginContext,
             declarationStore
         ).also { declarationStore.factoryTransformer = it }

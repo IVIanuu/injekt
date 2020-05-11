@@ -84,7 +84,7 @@ class ModuleNode(
 }
 
 class FactoryImplementationNode(
-    val factoryImplementation: FactoryImplementation,
+    val implFactory: ImplFactory,
     override val key: Key,
     override val initializerAccessor: InitializerAccessor
 ) : RequirementNode {
@@ -123,7 +123,7 @@ sealed class BindingNode(
     val targetScope: FqName?,
     val scoped: Boolean,
     val module: ModuleNode?,
-    val owner: AbstractFactoryProduct,
+    val owner: AbstractFactory,
     val origin: FqName?
 ) : Node
 
@@ -133,21 +133,21 @@ class AssistedProvisionBindingNode(
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val provider: IrClass
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class ChildFactoryBindingNode(
     key: Key,
-    owner: FactoryImplementation,
+    owner: ImplFactory,
     origin: FqName?,
-    val childFactoryImplementation: FactoryImplementation,
+    val childImplFactory: ImplFactory,
     val childFactory: IrClass
 ) : BindingNode(
     key, listOf(
         BindingRequest(
-            childFactoryImplementation.parent!!.clazz.defaultType
+            childImplFactory.parent!!.clazz.defaultType
                 .asKey(owner.pluginContext),
             null
         )
@@ -157,7 +157,7 @@ class ChildFactoryBindingNode(
 
 class DelegateBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val originalKey: Key,
     val requestOrigin: FqName
@@ -169,7 +169,7 @@ class DelegateBindingNode(
 
 class DependencyBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val provider: IrClass,
     val requirementNode: DependencyNode
@@ -183,13 +183,13 @@ class FactoryImplementationBindingNode(
     null,
     false,
     null,
-    factoryImplementationNode.factoryImplementation,
+    factoryImplementationNode.implFactory,
     factoryImplementationNode.key.type.classOrFail.descriptor.fqNameSafe
 )
 
 class InstanceBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val requirementNode: InstanceNode,
 ) : BindingNode(key, emptyList(), null, false, null, owner, origin)
@@ -197,7 +197,7 @@ class InstanceBindingNode(
 class LazyBindingNode(
     key: Key,
     origin: FqName?,
-    owner: AbstractFactoryProduct
+    owner: AbstractFactory
 ) : BindingNode(
     key,
     listOf(
@@ -215,7 +215,7 @@ class LazyBindingNode(
 
 class MapBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val entries: Map<MapKey, BindingRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner, origin) {
@@ -225,7 +225,7 @@ class MapBindingNode(
 
 class MembersInjectorBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val membersInjector: IrClass
 ) : BindingNode(
@@ -242,7 +242,7 @@ class MembersInjectorBindingNode(
 
 class NullBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct
+    owner: AbstractFactory
 ) : BindingNode(
     key,
     emptyList(),
@@ -255,7 +255,7 @@ class NullBindingNode(
 
 class ProviderBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?
 ) : BindingNode(
     key,
@@ -273,14 +273,14 @@ class ProvisionBindingNode(
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val provider: IrClass
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class SetBindingNode(
     key: Key,
-    owner: AbstractFactoryProduct,
+    owner: AbstractFactory,
     origin: FqName?,
     val elements: List<BindingRequest>
 ) : BindingNode(key, elements, null, false, null, owner, origin) {

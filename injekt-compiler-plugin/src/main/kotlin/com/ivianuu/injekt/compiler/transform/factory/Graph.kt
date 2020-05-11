@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
     val parent: Graph?,
-    val factoryProduct: AbstractFactoryProduct,
+    val factory: AbstractFactory,
     val factoryMembers: FactoryMembers,
     context: IrPluginContext,
     factoryImplementationModule: ModuleNode?,
@@ -50,14 +50,14 @@ class Graph(
         MapBindingResolver(
             context,
             symbols,
-            factoryProduct,
+            factory,
             parent?.mapBindingResolver
         )
     val setBindingResolver: SetBindingResolver =
         SetBindingResolver(
             context,
             symbols,
-            factoryProduct,
+            factory,
             parent?.setBindingResolver
         )
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
@@ -68,25 +68,25 @@ class Graph(
         if (factoryImplementationModule != null) addModule(factoryImplementationModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(
             symbols,
-            factoryProduct
+            factory
         )
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
         implicitBindingResolvers += MembersInjectorBindingResolver(
             symbols,
             declarationStore,
-            factoryProduct
+            factory
         )
-        if (factoryProduct is FactoryImplementation) {
+        if (factory is ImplFactory) {
             implicitBindingResolvers += FactoryImplementationBindingResolver(
-                factoryProduct.factoryImplementationNode
+                factory.factoryImplementationNode
             )
         }
         implicitBindingResolvers += AnnotatedClassBindingResolver(
             context,
             declarationStore,
             symbols,
-            factoryProduct
+            factory
         )
     }
 
@@ -130,7 +130,7 @@ class Graph(
         parent?.getBinding(request)?.let { return it }
 
         if (request.key.type.isMarkedNullable()) {
-            binding = NullBindingNode(request.key, factoryProduct)
+            binding = NullBindingNode(request.key, factory)
             resolvedBindings[request.key] = binding
             return binding
         }
@@ -159,7 +159,7 @@ class Graph(
 
         functions
             .flatMap { it.annotations }
-            .forEach { it.symbol.ensureBound(factoryProduct.pluginContext.irProviders) }
+            .forEach { it.symbol.ensureBound(factory.pluginContext.irProviders) }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstScope) }
@@ -179,13 +179,13 @@ class Graph(
                         moduleNode = moduleNode,
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.classOrFail.owner,
-                            key = dependencyType.asKey(factoryProduct.pluginContext),
+                            key = dependencyType.asKey(factory.pluginContext),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 moduleNode.module.findPropertyGetter(dependencyName)
                             )
                         ),
                         members = factoryMembers,
-                        factoryProduct = factoryProduct
+                        factory = factory
                     )
                 )
             }
@@ -197,7 +197,7 @@ class Graph(
                     key = function
                         .returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext),
+                        .asKey(factory.pluginContext),
                     origin = module.descriptor.fqNameSafe
                 )
             }
@@ -213,9 +213,9 @@ class Graph(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
                                 !!.allValueArguments.values.single())
                                     .let { it as KClassValue }
-                                    .getArgumentType(factoryProduct.pluginContext.moduleDescriptor)
+                                    .getArgumentType(factory.pluginContext.moduleDescriptor)
                                     .let {
-                                        factoryProduct.pluginContext.typeTranslator.translateType(
+                                        factory.pluginContext.typeTranslator.translateType(
                                             it
                                         )
                                     }
@@ -265,11 +265,11 @@ class Graph(
                 putMapEntry(
                     mapKey = function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext),
+                        .asKey(factory.pluginContext),
                     entryKey = entryKey,
                     entryValue = function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext),
+                        .asKey(factory.pluginContext),
                     origin = module.descriptor.fqNameSafe
                 )
             }
@@ -280,7 +280,7 @@ class Graph(
                 addSet(
                     key = function.returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext),
+                        .asKey(factory.pluginContext),
                     origin = module.descriptor.fqNameSafe
                 )
             }
@@ -291,10 +291,10 @@ class Graph(
                 addSetElement(
                     setKey = function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext),
+                        .asKey(factory.pluginContext),
                     elementKey = function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factoryProduct.pluginContext),
+                        .asKey(factory.pluginContext),
                     origin = module.descriptor.fqNameSafe
                 )
             }
@@ -324,7 +324,7 @@ class Graph(
                         includedModule,
                         includedModule.defaultType
                             .substituteByName(moduleNode.typeParametersMap)
-                            .asKey(factoryProduct.pluginContext),
+                            .asKey(factory.pluginContext),
                         moduleNode.initializerAccessor.child(property),
                         typeParametersMap
                     )
@@ -336,14 +336,14 @@ class Graph(
                 moduleNode,
                 descriptor,
                 symbols,
-                factoryProduct
+                factory
             )
         )
 
-        if (factoryProduct is FactoryImplementation) {
+        if (factory is ImplFactory) {
             addExplicitBindingResolver(
                 ChildFactoryBindingResolver(
-                    factoryProduct,
+                    factory,
                     descriptor,
                     symbols,
                     factoryMembers

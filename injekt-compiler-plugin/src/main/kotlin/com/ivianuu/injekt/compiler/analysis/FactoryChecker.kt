@@ -38,10 +38,6 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         if (descriptor is FunctionDescriptor && (descriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory))
         ) {
-            if (descriptor.typeParameters.isNotEmpty()) {
-                context.trace.report(InjektErrors.NO_TYPE_PARAMETERS_ON_FACTORY.on(declaration))
-            }
-
             checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,
                 descriptor,
@@ -60,9 +56,9 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 context.trace.report(InjektErrors.EITHER_MODULE_OR_FACTORY.on(declaration))
             }
 
-            if (descriptor.isInline) {
+            if (descriptor.typeParameters.isNotEmpty() && !descriptor.isInline) {
                 context.trace.report(
-                    InjektErrors.FACTORY_CANNOT_BE_INLINE
+                    InjektErrors.FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE
                         .on(declaration)
                 )
             }

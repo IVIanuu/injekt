@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
-import com.ivianuu.injekt.compiler.transform.factory.TopLevelFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.ir.util.referenceFunction
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
     lateinit var classProviderTransformer: ClassProviderTransformer
-    lateinit var factoryTransformer: TopLevelFactoryTransformer
+    lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleTransformer: ModuleTransformer

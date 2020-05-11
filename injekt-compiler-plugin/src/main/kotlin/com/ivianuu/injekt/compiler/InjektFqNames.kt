@@ -14,6 +14,8 @@ object InjektFqNames {
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
     val AstInline = InjektAst.child("Inline")
+    val AstImplFactory = InjektAst.child("ImplFactory")
+    val AstInstanceFactory = InjektAst.child("InstanceFactory")
     val AstMap = InjektAst.child("Map")
     val AstMapEntry = AstMap.child("Entry")
     val AstMapClassKey = AstMap.child("ClassKey")

@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
+import org.jetbrains.kotlin.ir.builders.IrBlockBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -49,7 +49,7 @@ interface FactoryMembers {
 class ClassFactoryMembers(
     private val pluginContext: IrPluginContext,
     private val clazz: IrClass,
-    private val factoryImplementation: FactoryImplementation
+    private val implFactory: ImplFactory
 ) : FactoryMembers {
 
     data class FieldWithInitializer(
@@ -90,7 +90,7 @@ class ClassFactoryMembers(
                 ), initializer
             )
         }
-        return { irGetField(it[factoryImplementation], fieldWithInitializer.field) }
+        return { irGetField(it[implFactory], fieldWithInitializer.field) }
     }
 
     override fun getGetFunction(
@@ -99,7 +99,7 @@ class ClassFactoryMembers(
     ): IrFunction {
         functionsByKey[key]?.let { return it }
 
-        val matchingDependencyRequestFunction = factoryImplementation.dependencyRequests
+        val matchingDependencyRequestFunction = implFactory.dependencyRequests
             .mapNotNull { (declaration, request) ->
                 when (declaration) {
                     is IrFunction -> {
@@ -121,7 +121,7 @@ class ClassFactoryMembers(
             addDependencyRequestImplementation(matchingDependencyRequestFunction, body)
                 .let { if (it is IrFunction) it else (it as IrProperty).getter!! }
                 .also {
-                    factoryImplementation.implementedRequests[matchingDependencyRequestFunction] =
+                    implFactory.implementedRequests[matchingDependencyRequestFunction] =
                         it
                 }
         } else {
@@ -184,7 +184,7 @@ class FunctionFactoryMembers(
     private val declarationContainer: IrDeclarationContainer
 ) : FactoryMembers {
 
-    lateinit var blockBodyBuilder: IrBlockBodyBuilder
+    lateinit var blockBuilder: IrBlockBuilder
 
     val getFunctions = mutableListOf<IrFunction>()
 
@@ -207,8 +207,8 @@ class FunctionFactoryMembers(
         prefix: String,
         initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
     ): FactoryExpression {
-        val tmp = blockBodyBuilder.irTemporaryVar(
-            initializer(blockBodyBuilder, EmptyFactoryExpressionContext)
+        val tmp = blockBuilder.irTemporaryVar(
+            initializer(blockBuilder, EmptyFactoryExpressionContext)
         )
         return { irGet(tmp) }
     }
@@ -223,7 +223,7 @@ class FunctionFactoryMembers(
             returnType = key.type
             visibility = Visibilities.LOCAL
         }.apply {
-            with(blockBodyBuilder) {
+            with(blockBuilder) {
                 +this@apply
                 parent = scope.getLocalDeclarationParent()
             }

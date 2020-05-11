@@ -38,7 +38,7 @@ class FactoryExpressions(
     private val symbols: InjektSymbols,
     private val members: FactoryMembers,
     private val parent: FactoryExpressions?,
-    private val factoryProduct: AbstractFactoryProduct
+    private val factory: AbstractFactory
 ) {
 
     // todo remove this circular dep
@@ -67,8 +67,8 @@ class FactoryExpressions(
         ) {
             node.initializerAccessor(
                 this,
-                if (factoryProduct is FactoryImplementation) {
-                    it.factoryAccessors[factoryProduct]!!
+                if (factory is ImplFactory) {
+                    it.factoryAccessors[factory]!!
                 } else {
                     { error("Unsupported") }
                 }
@@ -81,7 +81,7 @@ class FactoryExpressions(
     fun getBindingExpression(request: BindingRequest): FactoryExpression {
         val binding = graph.getBinding(request)
 
-        if (binding.owner != factoryProduct) {
+        if (binding.owner != factory) {
             return parent?.getBindingExpression(request)!!
         }
 
@@ -172,7 +172,7 @@ class FactoryExpressions(
     private fun instanceExpressionForFactoryImplementation(
         binding: FactoryImplementationBindingNode
     ): FactoryExpression {
-        return { it[factoryProduct] }
+        return { it[factory] }
     }
 
     private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
@@ -478,7 +478,7 @@ class FactoryExpressions(
                     0, binding.requirementNode
                         .initializerAccessor(
                             this@providerFieldExpression,
-                            context.factoryAccessors[factoryProduct]!!
+                            context.factoryAccessors[factory]!!
                         )
                 )
             }
@@ -489,7 +489,7 @@ class FactoryExpressions(
         binding: FactoryImplementationBindingNode
     ): FactoryExpression {
         return providerFieldExpression(binding.key) {
-            instanceProvider(it[factoryProduct])
+            instanceProvider(it[factory])
         }
     }
 
@@ -498,8 +498,8 @@ class FactoryExpressions(
             instanceProvider(
                 binding.requirementNode
                     .initializerAccessor(this,
-                        if (factoryProduct is FactoryImplementation) {
-                            it.factoryAccessors[factoryProduct]!!
+                        if (factory is ImplFactory) {
+                            it.factoryAccessors[factory]!!
                         } else {
                             { error("Unsupported") }
                         }
@@ -689,7 +689,7 @@ class FactoryExpressions(
                                 0,
                                 binding.module!!.initializerAccessor(
                                     this@providerFieldExpression,
-                                    context.factoryAccessors[factoryProduct]!!
+                                    context.factoryAccessors[factory]!!
                                 )
                             )
                         }
@@ -827,14 +827,14 @@ class FactoryExpressions(
         val function = members.getGetFunction(key) function@{ function ->
             factoryExpression(this, if (function.dispatchReceiverParameter != null) {
                 FactoryExpressionContext(
-                    factoryProduct
+                    factory
                 ) { irGet(function.dispatchReceiverParameter!!) }
             } else EmptyFactoryExpressionContext)
         }
         return bindingExpression@{
             irCall(function).apply {
                 if (function.dispatchReceiverParameter != null) {
-                    dispatchReceiver = it[factoryProduct]
+                    dispatchReceiver = it[factory]
                 }
             }
         }
@@ -863,34 +863,34 @@ class FactoryExpressions(
 typealias FactoryExpression = IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
 
 data class FactoryExpressionContext(
-    val factoryAccessors: Map<AbstractFactoryProduct, () -> IrExpression>
+    val factoryAccessors: Map<AbstractFactory, () -> IrExpression>
 ) {
-    operator fun get(factoryProduct: AbstractFactoryProduct) =
-        factoryAccessors.getValue(factoryProduct)()
+    operator fun get(factory: AbstractFactory) =
+        factoryAccessors.getValue(factory)()
 }
 
 val EmptyFactoryExpressionContext = FactoryExpressionContext(emptyMap())
 
 fun IrBuilderWithScope.FactoryExpressionContext(
-    factoryProduct: AbstractFactoryProduct,
+    factory: AbstractFactory,
     accessor: () -> IrExpression
 ): FactoryExpressionContext {
-    val allImplementations = mutableListOf<AbstractFactoryProduct>()
-    var current: FactoryImplementation? = factoryProduct as? FactoryImplementation
+    val allImplementations = mutableListOf<AbstractFactory>()
+    var current: ImplFactory? = factory as? ImplFactory
     if (current != null) {
         while (current != null) {
             allImplementations += current
             current = current.parent
         }
     } else {
-        allImplementations += factoryProduct
+        allImplementations += factory
     }
     val implementationWithAccessor =
-        mutableMapOf<AbstractFactoryProduct, () -> IrExpression>()
+        mutableMapOf<AbstractFactory, () -> IrExpression>()
 
-    allImplementations.fold(accessor) { acc: () -> IrExpression, impl: AbstractFactoryProduct ->
+    allImplementations.fold(accessor) { acc: () -> IrExpression, impl: AbstractFactory ->
         implementationWithAccessor[impl] = acc
-        { irGetField(acc(), (impl as FactoryImplementation).parentField!!) }
+        { irGetField(acc(), (impl as ImplFactory).parentField!!) }
     }
 
     return FactoryExpressionContext(implementationWithAccessor)

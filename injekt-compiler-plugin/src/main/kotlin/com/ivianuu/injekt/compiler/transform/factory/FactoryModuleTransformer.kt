@@ -9,6 +9,7 @@ import com.ivianuu.injekt.compiler.transform.getNearestDeclarationContainer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -17,7 +18,6 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -82,20 +82,9 @@ class FactoryModuleTransformer(
                 } else {
                     factoryFunction.getNearestDeclarationContainer().addChild(moduleFunction)
                 }
-                val oldBody = factoryFunction.body!!
                 factoryFunction.body = irBlockBody {
-                    +irCall(moduleFunction).apply {
-                        if (factoryFunction.dispatchReceiverParameter != null) {
-                            dispatchReceiver = irGet(factoryFunction.dispatchReceiverParameter!!)
-                        }
-                        if (factoryFunction.extensionReceiverParameter != null) {
-                            dispatchReceiver = irGet(factoryFunction.extensionReceiverParameter!!)
-                        }
-                        factoryFunction.valueParameters.forEach {
-                            putValueArgument(it.index, irGet(it))
-                        }
-                    }
-                    +oldBody.statements.last()
+                    InjektDeclarationIrBuilder(pluginContext, factoryFunction.symbol)
+                        .irInjektIntrinsicUnit()
                 }
             }
         }
@@ -111,6 +100,8 @@ class FactoryModuleTransformer(
         }.apply {
             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                 .noArgSingleConstructorCall(symbols.module)
+
+            copyTypeParametersFrom(factoryFunction)
 
             dispatchReceiverParameter = factoryFunction.dispatchReceiverParameter?.copyTo(this)
             extensionReceiverParameter = factoryFunction.extensionReceiverParameter?.copyTo(this)

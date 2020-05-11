@@ -1,7 +1,9 @@
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.Name
 import kotlin.math.absoluteValue
@@ -13,13 +15,16 @@ object InjektNameConventions {
         Name.identifier("${className}\$MembersInjector")
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        moduleFunction.nameOrUniqueName("Impl")
+        moduleFunction.nameOrUniqueName("ModuleImpl")
 
     fun getImplNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        factoryFunction.nameOrUniqueName("Impl")
+        factoryFunction.nameOrUniqueName("FactoryImpl")
+
+    fun getImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
+        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$FactoryImpl")
 
     fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        factoryFunction.nameOrUniqueName("Module")
+        factoryFunction.nameOrUniqueName("FactoryModule")
 
     fun classParameterNameForTypeParameter(typeParameter: IrTypeParameter): Name =
         Name.identifier("class\$${typeParameter.descriptor.name}")
@@ -34,6 +39,12 @@ object InjektNameConventions {
             (if (name.isSpecial)
                 "Lambda\$${generateSignatureUniqueHash()}"
             else "${name.asString()}\$${valueParametersHash()}") + "\$$suffix"
+        )
+    }
+
+    private fun IrCall.name(suffix: String): Name {
+        return Name.identifier(
+            "\$$suffix"
         )
     }
 

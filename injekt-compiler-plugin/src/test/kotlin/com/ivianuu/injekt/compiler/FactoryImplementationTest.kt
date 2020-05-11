@@ -282,7 +282,7 @@ class FactoryImplementationTest {
     )
 
     @Test
-    fun testComponentWithTypeParameters() = codegen(
+    fun testComponentWithGenericSuperType() = codegen(
         """
         interface TypedComponent<T> {
             val inject: @MembersInjector (T) -> Unit
@@ -350,6 +350,27 @@ class FactoryImplementationTest {
                 return createImpl()
             }
             return factory()
+        }
+    """
+    )
+
+    @Test
+    fun testFactoryWithTypeParameters() = codegen(
+        """
+        interface TestComponent<T> {
+            val dep: T
+        }
+        
+        @Factory
+        inline fun <T> create(): TestComponent<T> {
+            transient<Foo>()
+            transient<Bar>()
+            return createImpl()
+        }
+        
+        fun invoke() {
+            create<Foo>()
+            create<Bar>()
         }
     """
     )
