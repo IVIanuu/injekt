@@ -16,6 +16,7 @@ class InjektStorageContainerContributor(
     ) {
         container.useInstance(AnnotatedBindingChecker())
         container.useInstance(ClassOfChecker(typeAnnotationChecker))
+        container.useInstance(DslCallChecker(typeAnnotationChecker))
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())
         container.useInstance(ModuleChecker(typeAnnotationChecker))

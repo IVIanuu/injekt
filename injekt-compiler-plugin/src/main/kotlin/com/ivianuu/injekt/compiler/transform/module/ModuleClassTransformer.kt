@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.dump
@@ -45,7 +44,7 @@ class ModuleClassTransformer(
                         )
                     } catch (e: Exception) {
                         false
-                    } && (declaration.parent as? IrFile)?.fqName != InjektFqNames.InjektPackage &&
+                    } &&
                     (!declaration.hasAnnotation(InjektFqNames.AstTyped) ||
                             declaration.valueParameters.any {
                                 it.name.asString().startsWith("class\$")

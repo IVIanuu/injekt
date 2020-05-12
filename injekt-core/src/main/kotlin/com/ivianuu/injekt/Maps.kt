@@ -8,5 +8,4 @@ interface MapDsl<K, V> {
     // todo fun <T : V> put(entryKey: K, definition: ProviderDefinition<T>)
 }
 
-@Module
 fun <K, V> map(block: MapDsl<K, V>.() -> Unit = {}): Unit = injektIntrinsic()

@@ -74,4 +74,15 @@ object InjektFqNames {
 
     private fun FqName.child(name: String) = child(Name.identifier(name))
 
+    val DslNames = listOf(
+        InjektPackage.child("map"),
+        InjektPackage.child("set"),
+        InjektPackage.child("scope"),
+        InjektPackage.child("dependency"),
+        InjektPackage.child("childFactory"),
+        InjektPackage.child("alias"),
+        InjektPackage.child("transient"),
+        InjektPackage.child("scoped"),
+        InjektPackage.child("instance")
+    )
 }

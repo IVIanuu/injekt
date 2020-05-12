@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ModuleChecker(
     private val typeAnnotationChecker: TypeAnnotationChecker
@@ -101,19 +100,6 @@ class ModuleChecker(
                     InjektFqNames.ChildFactory in typeAnnotations
         }
 
-        if (enclosingInjektDslFunction != null &&
-            (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.scoped" ||
-                    resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.transient") &&
-            resolvedCall.resultingDescriptor.valueParameters.isEmpty() &&
-            resolvedCall.typeArguments.values.single().isTypeParameter() &&
-            !enclosingInjektDslFunction.isInline
-        ) {
-            context.trace.report(
-                InjektErrors.GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION
-                    .on(reportOn)
-            )
-        }
-
         when {
             enclosingInjektDslFunction != null -> {
                 var isConditional = false
@@ -142,7 +128,6 @@ class ModuleChecker(
                         InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES.on(reportOn)
                     )
                 }
-
 
                 if (context.scope.parentsWithSelf.any {
                         it.isScopeForDefaultParameterValuesOf(

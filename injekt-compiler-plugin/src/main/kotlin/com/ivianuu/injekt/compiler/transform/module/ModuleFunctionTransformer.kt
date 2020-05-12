@@ -125,7 +125,6 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 false
             }
         ) return function
-        if (function.descriptor.fqNameSafe == InjektFqNames.InjektPackage) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 

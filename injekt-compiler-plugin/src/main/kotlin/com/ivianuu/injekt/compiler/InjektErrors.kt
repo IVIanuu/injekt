@@ -20,6 +20,11 @@ interface InjektErrors {
         val FORBIDDEN_MODULE_INVOCATION = error(
             "Only @Factory, @ChildFactory or @Module functions can invoke @Module functions"
         )
+
+        @JvmField
+        val FORBIDDEN_DSL_FUNCTION_INVOCATION = error(
+            "Only @Factory, @ChildFactory or @Module functions can invoke this function"
+        )
         @JvmField
         val CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES = error(
             "Conditional logic is not allowed inside @Factory, @ChildFactory and @Module functions"
