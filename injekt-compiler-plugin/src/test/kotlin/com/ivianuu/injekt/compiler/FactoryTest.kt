@@ -21,6 +21,26 @@ class FactoryTest {
     }
 
     @Test
+    fun testNestedInlineModuleLambda() = codegen(
+        """
+        @Factory
+        inline fun <T> buildInstance(block: @Module () -> Unit): T {
+            nested(block)
+            return createInstance() 
+        }
+        
+        @Module
+        inline fun nested(block: @Module () -> Unit) {
+            block()
+        }
+        
+        fun invoke() = buildInstance<Foo> { transient<Foo>() }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testInlineModuleLambdaWithArgs() = codegen(
         """
         @Module
