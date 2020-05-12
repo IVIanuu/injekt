@@ -32,7 +32,7 @@ class AliasDeclaration(
 
 class BindingDeclaration(
     val bindingType: IrType,
-    val parameters: List<InjektDeclarationIrBuilder.ProviderParameter>,
+    val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
     val scoped: Boolean,
     val inline: Boolean,
     val path: Path,
@@ -41,9 +41,16 @@ class BindingDeclaration(
 
 class IncludedModuleDeclaration(
     val includedType: IrType,
-    val path: PropertyPath,
-    statement: IrBuilderWithScope.(() -> IrExpression) -> IrStatement
-) : ModuleDeclaration(statement)
+    val inline: Boolean,
+    val path: Path,
+    val capturedValueArguments: List<Parameter>,
+    statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
+) : ModuleDeclaration(statement) {
+    data class Parameter(
+        val path: Path,
+        val type: IrType
+    )
+}
 
 class MapDeclaration(
     val mapType: IrType

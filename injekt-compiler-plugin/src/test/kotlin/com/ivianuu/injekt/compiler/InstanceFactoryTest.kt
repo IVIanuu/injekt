@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler
 
 import org.junit.Test
 
-class FactoryInstanceTest {
+class InstanceFactoryTest {
 
     @Test
     fun testCreateInstance() = codegen(

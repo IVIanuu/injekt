@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.generateSymbols
 import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
+import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import com.ivianuu.injekt.compiler.transform.module.TypedModuleTransformer
@@ -30,28 +31,39 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .visitModuleAndGenerateSymbols()
 
         // generate a provider for each annotated class
-        ClassProviderTransformer(pluginContext)
-            .also { declarationStore.classProviderTransformer = it }
+        ClassFactoryTransformer(pluginContext)
+            .also { declarationStore.classFactoryTransformer = it }
             .visitModuleAndGenerateSymbols()
 
         FactoryFunctionAnnotationTransformer(pluginContext)
             .visitModuleAndGenerateSymbols()
 
-        // move the module block of @Factory createImpl { ... } to a @Module function
-        FactoryModuleTransformer(pluginContext)
-            .also { declarationStore.factoryModuleTransformer = it }
-            .visitModuleAndGenerateSymbols()
+        val typedModuleTransformer = TypedModuleTransformer(pluginContext)
 
+        // add @InstanceFactory or @ImplFactory annotations
+        val factoryModuleTransformer = FactoryModuleTransformer(
+            pluginContext, typedModuleTransformer
+        )
+            .also { declarationStore.factoryModuleTransformer = it }
         val moduleTransformer = ModuleTransformer(
             pluginContext,
-            declarationStore
+            declarationStore,
+            typedModuleTransformer
         ).also { declarationStore.moduleTransformer = it }
         val factoryTransformer = RootFactoryTransformer(
             pluginContext,
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
-        TypedModuleTransformer(pluginContext).visitModuleAndGenerateSymbols()
+        // add a local @Factory fun at each call side of a inline factory
+        InlineFactoryTransformer(pluginContext, declarationStore)
+            .visitModuleAndGenerateSymbols()
+
+        // transform typed modules
+        typedModuleTransformer.visitModuleAndGenerateSymbols()
+
+        // move the module block of @Factory createImpl { ... } to a @Module function
+        factoryModuleTransformer.visitModuleAndGenerateSymbols()
 
         // transform @Module functions to their ast representation
         moduleTransformer.visitModuleAndGenerateSymbols()

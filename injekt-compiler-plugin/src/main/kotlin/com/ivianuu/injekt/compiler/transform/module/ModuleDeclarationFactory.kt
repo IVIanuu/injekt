@@ -18,27 +18,36 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
+import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -46,7 +55,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ModuleDeclarationFactory(
-    private val module: ModuleImplementation,
+    private val module: ModuleImpl,
     private val pluginContext: IrPluginContext,
     private val symbols: InjektSymbols,
     private val nameProvider: NameProvider,
@@ -78,7 +87,8 @@ class ModuleDeclarationFactory(
                 declarations += createMapDeclarations(call)
             callee.fqNameSafe.asString() == "com.ivianuu.injekt.set" ->
                 declarations += createSetDeclarations(call)
-            call.symbol.descriptor.annotations.hasAnnotation(InjektFqNames.Module) ->
+            call.symbol.owner.hasAnnotation(InjektFqNames.Module) ||
+                    call.isModuleLambdaInvoke() ->
                 declarations += createIncludedModuleDeclarations(call)
         }
 
@@ -111,7 +121,7 @@ class ModuleDeclarationFactory(
 
     private fun createChildFactoryDeclaration(call: IrCall): ChildFactoryDeclaration {
         val factoryRef = call.getValueArgument(0)!! as IrFunctionReference
-        val factoryModuleClass = declarationStore.getModuleClassOrNull(
+        val factoryModuleClass = declarationStore.getModuleClassForFunctionOrNull(
             declarationStore.getModuleFunctionForFactory(factoryRef.symbol.owner)
         )
         return ChildFactoryDeclaration(factoryRef, factoryModuleClass)
@@ -125,115 +135,11 @@ class ModuleDeclarationFactory(
             pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
         val bindingType = call.getTypeArgument(0)!!
             .withAnnotations(bindingQualifiers)
-
-        val singleArgument = if (call.valueArgumentsCount != 0)
-            call.getValueArgument(0) else null
-
-        val bindingPath: Path
-        val inline: Boolean
-        val parameters =
-            mutableListOf<InjektDeclarationIrBuilder.ProviderParameter>()
-        val statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
-
-        fun addParametersFromProvider(provider: IrClass) {
-            val assisted = provider.functions
-                .single { it.name.asString() == "invoke" }
-                .valueParameters
-                .map { it.type }
-
-            val nonAssisted = provider.constructors
-                .single()
-                .valueParameters
-                .filter { it.name.asString() != "module" }
-                .map { it.type.typeArguments.single() }
-
-            parameters += (assisted + nonAssisted).mapIndexed { index, type ->
-                InjektDeclarationIrBuilder.ProviderParameter(
-                    name = "p$index",
-                    type = type,
-                    assisted = type in assisted,
-                    requirement = false
-                )
-            }
-        }
-
-        if (singleArgument == null) {
-            if (bindingType.toKotlinType().isTypeParameter()) {
-                bindingPath = TypeParameterPath(
-                    module.function.typeParameters.single {
-                        it.descriptor ==
-                                bindingType.toKotlinType().constructor.declarationDescriptor
-                    }
-                )
-                inline = true
-                statement = null
-            } else {
-                val provider = providerFactory.providerForClass(
-                    name = Name.identifier(nameProvider.allocate("Factory")),
-                    clazz = bindingType.classOrFail
-                        .ensureBound(pluginContext.irProviders).owner,
-                    visibility = module.clazz.visibility
-                )
-                module.clazz.addChild(provider)
-                addParametersFromProvider(provider)
-                bindingPath = ClassPath(provider)
-                inline = false
-                statement = null
-            }
-        } else {
-            if (call.symbol.descriptor.name.asString() == "instance") {
-                val property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-                    .fieldBakedProperty(
-                        moduleClass,
-                        Name.identifier(nameProvider.allocate("instance")),
-                        bindingType
-                    )
-
-                statement = {
-                    irSetField(
-                        it(),
-                        property.backingField!!,
-                        singleArgument
-                    )
-                }
-                bindingPath = PropertyPath(property)
-                inline = false
-            } else {
-                when (singleArgument) {
-                    is IrFunctionExpression -> {
-                        val provider = providerFactory.providerForDefinition(
-                            name = Name.identifier(nameProvider.allocate("Factory")),
-                            definition = singleArgument,
-                            visibility = module.clazz.visibility,
-                            moduleFieldsByParameter = module.fieldsByParameters
-                        )
-                        module.clazz.addChild(provider)
-                        addParametersFromProvider(provider)
-                        bindingPath = ClassPath(provider)
-                        inline = false
-                        statement = null
-                    }
-                    is IrGetValue -> {
-                        bindingPath = ValueParameterPath(
-                            module.function.valueParameters.single {
-                                it.symbol == singleArgument.symbol
-                            }
-                        )
-                        inline = true
-                        statement = null
-                    }
-                    else -> error("Unexpected definition ${singleArgument.dump()}")
-                }
-            }
-        }
-
-        return BindingDeclaration(
-            bindingType = bindingType,
-            parameters = parameters,
-            scoped = call.symbol.descriptor.name.asString() == "scoped",
-            inline = inline,
-            path = bindingPath,
-            statement = statement
+        return createBindingDeclarationFromSingleArgument(
+            bindingType,
+            if (call.valueArgumentsCount != 0) call.getValueArgument(0) else null,
+            call.symbol.owner.name.asString() == "instance",
+            call.symbol.owner.name.asString() == "scoped"
         )
     }
 
@@ -300,11 +206,79 @@ class ModuleDeclarationFactory(
         return declarations
     }
 
+    private fun IrCall.isModuleLambdaInvoke(): Boolean {
+        return origin == IrStatementOrigin.INVOKE &&
+                dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Module) == true
+    }
+
     private fun createIncludedModuleDeclarations(call: IrCall): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()
-        val includedClass = declarationStore.getModuleClass(call.symbol.owner)
-        val includedType = includedClass.typeWith((0 until call.typeArgumentsCount)
-            .map { call.getTypeArgument(it)!! })
+
+        if (call.isModuleLambdaInvoke()) {
+            val includeName = nameProvider.allocate("include")
+            val arguments = call.getArgumentsWithIr().drop(1)
+            val moduleValueParameterProperties = arguments
+                .mapIndexed { index, (valueParameter, _) ->
+                    InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
+                        .fieldBakedProperty(
+                            moduleClass,
+                            Name.identifier("${includeName}\$p$index"),
+                            valueParameter.type
+                        )
+                }
+            declarations += IncludedModuleDeclaration(
+                pluginContext.irBuiltIns.unitType,
+                true,
+                when (val dispatchReceiver = call.dispatchReceiver) {
+                    is IrGetValue -> ValueParameterPath(dispatchReceiver.symbol.owner as IrValueParameter)
+                    else -> error("Unexpected lambda expression ${call.dump()}")
+                },
+                moduleValueParameterProperties
+                    .map {
+                        IncludedModuleDeclaration.Parameter(
+                            PropertyPath(it),
+                            it.getter!!.returnType
+                        )
+                    }
+            ) { moduleExpression ->
+                irBlock {
+                    arguments
+                        .forEachIndexed { index, (_, expression) ->
+                            +irSetField(
+                                moduleExpression(),
+                                moduleValueParameterProperties[index].backingField!!,
+                                expression
+                            )
+                        }
+                }
+            }
+
+            return declarations
+        }
+
+        includeModuleFromFunction(
+            call.symbol.owner,
+            (0 until call.typeArgumentsCount).map { call.getTypeArgument(it)!! },
+            call.getArgumentsWithIr().map { it.first to { it.second } },
+            declarations
+        )
+
+        return declarations
+    }
+
+    private fun includeModuleFromFunction(
+        function: IrFunction,
+        typeArguments: List<IrType>,
+        valueArguments: List<Pair<IrValueParameter, () -> IrExpression>>,
+        declarations: MutableList<ModuleDeclaration>
+    ) {
+        val includedClass = declarationStore.getModuleClassForFunction(function)
+        val includedType = includedClass.typeWith(typeArguments)
+        val includedDescriptor = includedClass
+            .declarations.single {
+                it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
+            }
+            .let { it as IrClass }
         val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
             .fieldBakedProperty(
                 moduleClass,
@@ -314,139 +288,231 @@ class ModuleDeclarationFactory(
 
         declarations += IncludedModuleDeclaration(
             includedType,
-            PropertyPath(property)
-        ) {
+            false,
+            PropertyPath(property),
+            emptyList()
+        ) { moduleExpression ->
             val constructor = includedClass.constructors.single()
             irSetField(
-                it(),
+                moduleExpression(),
                 property.backingField!!,
                 irCall(constructor).apply {
-                    (0 until call.typeArgumentsCount)
-                        .map { call.getTypeArgument(it)!! }
-                        .forEachIndexed { index, type ->
-                            putTypeArgument(index, type)
-                        }
-
-                    var argIndex = 0
-                    if (call.dispatchReceiver != null) {
-                        putValueArgument(
-                            argIndex++,
-                            call.dispatchReceiver!!
-                        )
-                    }
-                    if (call.extensionReceiver != null) {
-                        putValueArgument(
-                            argIndex++,
-                            call.extensionReceiver!!
-                        )
+                    typeArguments.forEachIndexed { index, typeArgument ->
+                        putTypeArgument(index, typeArgument)
                     }
 
-                    (0 until call.valueArgumentsCount)
-                        .map { call.getValueArgument(it)!! }
-                        .filter {
-                            !it.type.isFunction() ||
-                                    it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl
+                    valueArguments
+                        .filter { (valueParameter, _) ->
+                            !valueParameter.type.isFunction() ||
+                                    (valueParameter.type.typeArguments.firstOrNull()?.classifierOrNull != symbols.providerDsl &&
+                                            !valueParameter.type.hasAnnotation(InjektFqNames.Module))
                         }
-                        .forEach { arg ->
-                            putValueArgument(argIndex++, arg)
+                        .map { it.second }
+                        .forEachIndexed { index, valueArgument ->
+                            putValueArgument(index, valueArgument())
                         }
                 }
             )
         }
 
-        declarations += includedClass
-            .declarations.single {
-                it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
-            }
-            .let { it as IrClass }
+        includedDescriptor
             .functions
+            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstModule) }
             .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstInline) }
-            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstBinding) }
-            .map { bindingFunction ->
-                val bindingType: IrType
-                val bindingPath: Path
-                val inline: Boolean
-                val parameters =
-                    mutableListOf<InjektDeclarationIrBuilder.ProviderParameter>()
+            .forEach { innerIncludeFunction ->
+                val moduleExpression =
+                    innerIncludeFunction.getAnnotation(InjektFqNames.AstValueParameterPath)!!
+                        .getValueArgument(0)!!
+                        .let { it as IrConst<String> }.value
+                        .let { valueParameterName ->
+                            val index = function
+                                .allParameters
+                                .indexOfFirst { it.name.asString() == valueParameterName }
+                            valueArguments[index].second
+                        }()
 
-                fun addParametersFromProvider(provider: IrClass) {
-                    val assisted = provider.functions
-                        .single { it.name.asString() == "invoke" }
-                        .valueParameters
-                        .map { it.type }
+                when (moduleExpression) {
+                    is IrFunctionExpression -> {
+                        includeModuleFromFunction(
+                            moduleExpression.function,
+                            emptyList(),
+                            innerIncludeFunction.valueParameters
+                                .map { valueParameter ->
+                                    val innerProperty =
+                                        valueParameter.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                                            .getValueArgument(0)!!
+                                            .let { it as IrConst<String> }.value
+                                            .let { propertyName ->
+                                                includedClass.properties
+                                                    .single { it.name.asString() == propertyName }
+                                            }
 
-                    val nonAssisted = provider.constructors
-                        .single()
-                        .valueParameters
-                        .map { it.type.typeArguments.single() }
-
-                    parameters += (assisted + nonAssisted).mapIndexed { index, type ->
-                        InjektDeclarationIrBuilder.ProviderParameter(
-                            name = "p$index",
-                            type = type,
-                            assisted = type in assisted,
-                            requirement = false
+                                    valueParameter to {
+                                        DeclarationIrBuilder(
+                                            pluginContext,
+                                            property.symbol
+                                        ).run {
+                                            irCall(innerProperty.getter!!).apply {
+                                                dispatchReceiver = irCall(property.getter!!).apply {
+                                                    dispatchReceiver =
+                                                        irGet(module.clazz.thisReceiver!!)
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                            declarations
                         )
                     }
+                    is IrGetValue -> {
+                        declarations += IncludedModuleDeclaration(
+                            innerIncludeFunction.returnType,
+                            true,
+                            ValueParameterPath(moduleExpression.symbol.owner as IrValueParameter),
+                            emptyList(),
+                            null
+                        )
+                    }
+                    else -> error("Unexpected include function expression ${innerIncludeFunction.dump()}")
                 }
+            }
 
-                if (bindingFunction.hasAnnotation(InjektFqNames.AstTypeParameterPath)) {
-                    bindingType =
-                        bindingFunction.getAnnotation(InjektFqNames.AstTypeParameterPath)!!
-                            .getValueArgument(0)!!
-                            .let { it as IrConst<String> }.value
-                            .let { typeParameterName ->
-                                val index = includedClass.typeParameters
-                                    .indexOfFirst { it.name.asString() == typeParameterName }
-                                call.getTypeArgument(index)!!
-                            }
+        declarations += includedDescriptor
+            .functions
+            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstBinding) }
+            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstInline) }
+            .map { bindingFunction ->
+                val singleArgumentExpression: IrExpression?
+                val bindingType: IrType
+                when {
+                    bindingFunction.hasAnnotation(InjektFqNames.AstTypeParameterPath) -> {
+                        bindingType =
+                            bindingFunction.getAnnotation(InjektFqNames.AstTypeParameterPath)!!
+                                .getValueArgument(0)!!
+                                .let { it as IrConst<String> }.value
+                                .let { typeParameterName ->
+                                    val index = includedClass.typeParameters
+                                        .indexOfFirst { it.name.asString() == typeParameterName }
+                                    typeArguments[index]
+                                }
+                                .withAnnotations(
+                                    pluginContext, moduleClass.symbol,
+                                    bindingFunction.returnType.toKotlinType().annotations.toList()
+                                )
+                        singleArgumentExpression = null
+                    }
+                    bindingFunction.hasAnnotation(InjektFqNames.AstValueParameterPath) -> {
+                        singleArgumentExpression =
+                            bindingFunction.getAnnotation(InjektFqNames.AstValueParameterPath)!!
+                                .getValueArgument(0)!!
+                                .let { it as IrConst<String> }.value
+                                .let { valueParameterName ->
+                                    val index = function
+                                        .allParameters
+                                        .indexOfFirst { it.name.asString() == valueParameterName }
+                                    valueArguments[index].second
+                                }()
+                        bindingType = singleArgumentExpression.type.typeArguments.last()
                             .withAnnotations(
                                 pluginContext, moduleClass.symbol,
                                 bindingFunction.returnType.toKotlinType().annotations.toList()
                             )
-
-                    if (!bindingType.toKotlinType().isTypeParameter()) {
-                        val provider = providerFactory.providerForClass(
-                            name = Name.identifier(nameProvider.allocate("Factory")),
-                            clazz = bindingType.classOrFail
-                                .ensureBound(pluginContext.irProviders).owner,
-                            visibility = module.clazz.visibility
-                        )
-                        module.clazz.addChild(provider)
-                        addParametersFromProvider(provider)
-                        bindingPath = ClassPath(provider)
-                        inline = false
-                    } else {
-                        bindingPath = TypeParameterPath(
-                            moduleClass.typeParameters.single {
-                                it.name == bindingType.toKotlinType().constructor.declarationDescriptor!!.name
-                            }
-                        )
-                        inline = true
                     }
-                } else {
-                    val definitionExpression =
-                        bindingFunction.getAnnotation(InjektFqNames.AstValueParameterPath)!!
-                            .getValueArgument(0)!!
-                            .let { it as IrConst<String> }.value
-                            .let { valueParameterName ->
-                                val index = call.symbol
-                                    .ensureBound(pluginContext.irProviders)
-                                    .owner
-                                    .valueParameters
-                                    .indexOfFirst { it.name.asString() == valueParameterName }
-                                call.getValueArgument(index)
-                            }
-                    bindingType = definitionExpression!!.type.typeArguments.last()
-                        .withAnnotations(
-                            pluginContext, moduleClass.symbol,
-                            bindingFunction.returnType.toKotlinType().annotations.toList()
-                        )
+                    else -> {
+                        error("Unexpected inline binding ${bindingFunction.dump()}")
+                    }
+                }
 
-                    if (definitionExpression is IrFunctionExpression) {
+                createBindingDeclarationFromSingleArgument(
+                    bindingType,
+                    singleArgumentExpression,
+                    false,
+                    bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
+                )
+            }
+    }
+
+    private fun createBindingDeclarationFromSingleArgument(
+        bindingType: IrType,
+        singleArgument: IrExpression?,
+        instance: Boolean,
+        scoped: Boolean
+    ): BindingDeclaration {
+        val bindingPath: Path
+        val inline: Boolean
+        val parameters =
+            mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
+        val statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
+
+        fun addParametersFromProvider(provider: IrClass) {
+            val assisted = provider.functions
+                .single { it.name.asString() == "invoke" }
+                .valueParameters
+                .map { it.type }
+
+            val nonAssisted = provider.constructors
+                .single()
+                .valueParameters
+                .filter { it.name.asString() != "module" }
+                .map { it.type.typeArguments.single() }
+
+            parameters += (assisted + nonAssisted).mapIndexed { index, type ->
+                InjektDeclarationIrBuilder.FactoryParameter(
+                    name = "p$index",
+                    type = type,
+                    assisted = type in assisted,
+                    requirement = false
+                )
+            }
+        }
+
+        if (singleArgument == null) {
+            if (bindingType.toKotlinType().isTypeParameter()) {
+                bindingPath = TypeParameterPath(
+                    module.function.typeParameters.single {
+                        it.descriptor ==
+                                bindingType.toKotlinType().constructor.declarationDescriptor
+                    }
+                )
+                inline = true
+                statement = null
+            } else {
+                val provider = providerFactory.providerForClass(
+                    name = Name.identifier(nameProvider.allocate("Factory")),
+                    clazz = bindingType.classOrFail
+                        .ensureBound(pluginContext.irProviders).owner,
+                    visibility = module.clazz.visibility
+                )
+                module.clazz.addChild(provider)
+                addParametersFromProvider(provider)
+                bindingPath = ClassPath(provider)
+                inline = false
+                statement = null
+            }
+        } else {
+            if (instance) {
+                val property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
+                    .fieldBakedProperty(
+                        moduleClass,
+                        Name.identifier(nameProvider.allocate("instance")),
+                        bindingType
+                    )
+
+                statement = {
+                    irSetField(
+                        it(),
+                        property.backingField!!,
+                        singleArgument
+                    )
+                }
+                bindingPath = PropertyPath(property)
+                inline = false
+            } else {
+                when (singleArgument) {
+                    is IrFunctionExpression -> {
                         val provider = providerFactory.providerForDefinition(
                             name = Name.identifier(nameProvider.allocate("Factory")),
-                            definition = definitionExpression,
+                            definition = singleArgument,
                             visibility = module.clazz.visibility,
                             moduleFieldsByParameter = module.fieldsByParameters
                         )
@@ -454,28 +520,30 @@ class ModuleDeclarationFactory(
                         addParametersFromProvider(provider)
                         bindingPath = ClassPath(provider)
                         inline = false
-                    } else {
-                        definitionExpression as IrGetValue
+                        statement = null
+                    }
+                    is IrGetValue -> {
                         bindingPath = ValueParameterPath(
                             module.function.valueParameters.single {
-                                it.symbol == definitionExpression.symbol
+                                it.symbol == singleArgument.symbol
                             }
                         )
                         inline = true
+                        statement = null
                     }
+                    else -> error("Unexpected definition ${singleArgument.dump()}")
                 }
-
-                BindingDeclaration(
-                    bindingType = bindingType,
-                    parameters = parameters,
-                    scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped),
-                    inline = inline,
-                    path = bindingPath,
-                    statement = null
-                )
             }
+        }
 
-        return declarations
+        return BindingDeclaration(
+            bindingType = bindingType,
+            parameters = parameters,
+            scoped = scoped,
+            inline = inline,
+            path = bindingPath,
+            statement = statement
+        )
     }
 
 }

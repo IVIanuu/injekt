@@ -60,10 +60,14 @@ interface InjektErrors {
         val FACTORY_IMPL_MUST_BE_ABSTRACT = error(
             "createImpl result types must be a interface or a abstract class"
         )
-
         @JvmField
         val FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE = error(
             "@Factory or @ChildFactory functions with type parameters must be marked with inline"
+        )
+
+        @JvmField
+        val MODULE_PARAMETER_WITHOUT_INLINE = error(
+            "@Factory or @ChildFactory or @Module functions with @Module function parameters must be marked with inline"
         )
         @JvmField
         val IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR = error(

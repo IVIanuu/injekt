@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -27,9 +28,8 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
@@ -38,37 +38,41 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
-    val membersInjectorByClass = mutableMapOf<IrClass, IrClass>()
+    private val membersInjectorByClass = mutableMapOf<IrClass, IrClass>()
 
     private val injectSettersByProperty = mutableMapOf<IrProperty, IrFunction>()
 
-    override fun visitFile(declaration: IrFile): IrFile {
-        val classes = mutableListOf<IrClass>()
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+        val classes = mutableSetOf<IrClass>()
 
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitProperty(declaration: IrProperty): IrStatement {
-                val clazz =
-                    declaration.parent as? IrClass ?: return super.visitProperty(declaration)
-                if (declaration.hasAnnotation(InjektFqNames.Inject)) classes += clazz
-                return super.visitProperty(declaration)
+        declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+            override fun visitPropertyNew(declaration: IrProperty): IrStatement {
+                if (declaration.hasAnnotation(InjektFqNames.Inject)) {
+                    classes += currentClass?.irElement as? IrClass ?: return super.visitPropertyNew(
+                        declaration
+                    )
+                }
+                return super.visitPropertyNew(declaration)
             }
         })
 
-        classes.forEach { clazz ->
-            (clazz.parent as IrDeclarationContainer).addChild(
-                DeclarationIrBuilder(pluginContext, clazz.symbol)
-                    .membersInjector(clazz)
-                    .also { membersInjectorByClass[clazz] = it }
-            )
-        }
+        classes.forEach { clazz -> getMembersInjectorForClass(clazz) }
 
-        return super.visitFile(declaration)
+        return super.visitModuleFragment(declaration)
+    }
+
+    fun getMembersInjectorForClass(clazz: IrClass): IrClass {
+        membersInjectorByClass[clazz]?.let { return it }
+        val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
+            .membersInjector(clazz)
+        clazz.getNearestDeclarationContainer(includeThis = false).addChild(membersInjector)
+        membersInjectorByClass[clazz] = membersInjector
+        return membersInjector
     }
 
     private fun getInjectSetter(property: IrProperty): IrFunction {

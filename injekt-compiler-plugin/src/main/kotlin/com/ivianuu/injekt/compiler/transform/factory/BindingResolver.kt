@@ -54,6 +54,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
@@ -267,11 +268,11 @@ class DependencyBindingResolver(
                     dependencyFunction.symbol
                 )
             ) {
-                provider(
+                factory(
                     name = Name.identifier("${moduleNode.module.name}\$Factory${providersByDependency.size}"),
                     visibility = Visibilities.PRIVATE,
                     parameters = listOf(
-                        InjektDeclarationIrBuilder.ProviderParameter(
+                        InjektDeclarationIrBuilder.FactoryParameter(
                             name = "dependency",
                             type = dependencyNode.dependency.defaultType,
                             assisted = false,
@@ -462,7 +463,7 @@ class MembersInjectorBindingResolver(
         if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifierFqNames()) return emptyList()
         if (requestedKey.type.classOrNull != symbols.getFunction(1)) return emptyList()
         val target = requestedKey.type.typeArguments.first().classOrFail.owner
-        val membersInjector = declarationStore.getMembersInjector(target)
+        val membersInjector = declarationStore.getMembersInjectorForClass(target)
         return listOf(
             MembersInjectorBindingNode(
                 key = requestedKey,
@@ -481,15 +482,17 @@ class AnnotatedClassBindingResolver(
     private val factory: AbstractFactory
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
-
         return if (requestedKey.type.isFunction() &&
             requestedKey.type.classOrFail != symbols.getFunction(0) &&
             InjektFqNames.Provider in requestedKey.type.getQualifierFqNames()
         ) {
             val clazz = requestedKey.type.typeArguments.last().classOrFail.owner
-            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
+                    InjektFqNames.Scope,
+                    clazz.descriptor.module
+                )
                 .singleOrNull() ?: return emptyList()
-            val provider = declarationStore.getProvider(clazz)
+            val provider = declarationStore.getFactoryForClass(clazz)
 
             val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 
@@ -528,9 +531,12 @@ class AnnotatedClassBindingResolver(
         } else {
             val clazz = requestedKey.type.classOrNull
                 ?.ensureBound(pluginContext.irProviders)?.owner ?: return emptyList()
-            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(InjektFqNames.Scope)
+            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
+                    InjektFqNames.Scope,
+                    clazz.descriptor.module
+                )
                 .singleOrNull() ?: return emptyList()
-            val provider = declarationStore.getProvider(clazz)
+            val provider = declarationStore.getFactoryForClass(clazz)
 
             val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
 

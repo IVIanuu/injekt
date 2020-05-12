@@ -261,4 +261,17 @@ class FactoryDslTest {
         assertCompileError("suspend")
     }
 
+    @Test
+    fun testNonInlineFactoryWithModuleParameter() = codegen(
+        """ 
+        @Factory
+        fun factory(block: @Module () -> Unit): TestComponent {
+            block()
+            return createImpl()
+        }
+    """
+    ) {
+        assertCompileError("inline")
+    }
+
 }

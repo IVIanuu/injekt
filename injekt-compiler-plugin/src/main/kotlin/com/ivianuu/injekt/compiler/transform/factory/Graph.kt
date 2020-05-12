@@ -37,7 +37,7 @@ class Graph(
     val factory: AbstractFactory,
     val factoryMembers: FactoryMembers,
     context: IrPluginContext,
-    factoryImplementationModule: ModuleNode?,
+    factoryModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
     val symbols: InjektSymbols
 ) {
@@ -65,7 +65,7 @@ class Graph(
     private val chain = mutableSetOf<Key>()
 
     init {
-        if (factoryImplementationModule != null) addModule(factoryImplementationModule)
+        if (factoryModule != null) addModule(factoryModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(
             symbols,
             factory
@@ -301,6 +301,7 @@ class Graph(
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
+            .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
             .map {
                 it to it.returnType
                     .substituteByName(moduleNode.typeParametersMap)

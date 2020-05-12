@@ -5,7 +5,7 @@ import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class FactoryImplementationTest {
+class ImplFactoryTest {
 
     @Test
     fun testTransient() = codegen(

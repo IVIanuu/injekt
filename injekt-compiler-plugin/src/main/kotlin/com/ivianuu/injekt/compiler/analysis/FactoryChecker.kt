@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtCallableReferenceExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -56,18 +57,28 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 context.trace.report(InjektErrors.EITHER_MODULE_OR_FACTORY.on(declaration))
             }
 
-            if (descriptor.typeParameters.isNotEmpty() && !descriptor.isInline) {
-                context.trace.report(
-                    InjektErrors.FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE
-                        .on(declaration)
-                )
-            }
-
             if (descriptor.isSuspend) {
                 context.trace.report(
                     InjektErrors.CANNOT_BE_SUSPEND
                         .on(declaration)
                 )
+            }
+
+            if (!descriptor.isInline) {
+                if (descriptor.typeParameters.isNotEmpty()) {
+                    context.trace.report(
+                        InjektErrors.FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE
+                            .on(declaration)
+                    )
+                }
+                descriptor.valueParameters.forEach { valueParameter ->
+                    if (valueParameter.type.annotations.hasAnnotation(InjektFqNames.Module)) {
+                        context.trace.report(
+                            InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
+                                .on(valueParameter.findPsi() ?: declaration)
+                        )
+                    }
+                }
             }
         }
     }

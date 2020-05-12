@@ -205,17 +205,17 @@ class InjektDeclarationIrBuilder(
         }
     }
 
-    data class ProviderParameter(
+    data class FactoryParameter(
         val name: String,
         val type: IrType,
         val assisted: Boolean,
         val requirement: Boolean
     )
 
-    fun provider(
+    fun factory(
         name: Name,
         visibility: Visibility,
-        parameters: List<ProviderParameter>,
+        parameters: List<FactoryParameter>,
         returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
     ): IrClass {
@@ -356,7 +356,7 @@ class InjektDeclarationIrBuilder(
     }
 
     private fun providerCompanion(
-        parameters: List<ProviderParameter>,
+        parameters: List<FactoryParameter>,
         returnType: IrType,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody
     ) = buildClass {
@@ -415,7 +415,7 @@ class InjektDeclarationIrBuilder(
     }
 
     private fun providerCreateFunction(
-        parameters: List<ProviderParameter>,
+        parameters: List<FactoryParameter>,
         returnType: IrType,
         owner: IrClass,
         createBody: IrBuilderWithScope.(IrFunction) -> IrBody

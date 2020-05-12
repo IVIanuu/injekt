@@ -11,77 +11,91 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.referenceFunction
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
-    lateinit var classProviderTransformer: ClassProviderTransformer
+    lateinit var classFactoryTransformer: ClassFactoryTransformer
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleTransformer: ModuleTransformer
 
-    fun getProvider(clazz: IrClass): IrClass {
-        classProviderTransformer.providersByClass[clazz]?.let { return it }
-        val memberScope =
-            (clazz.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
-                ?: (clazz.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
-                ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
-        return memberScope.getContributedDescriptors()
-            .filterIsInstance<ClassDescriptor>()
-            .single { it.name == InjektNameConventions.getFactoryNameForClass(clazz.name) }
-            .let { pluginContext.symbolTable.referenceClass(it) }
-            .ensureBound(pluginContext.irProviders)
-            .owner
+    private fun IrDeclaration.isExternalDeclaration() = origin ==
+            IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
+            origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
+
+    fun getFactoryForClass(clazz: IrClass): IrClass {
+        return if (!clazz.isExternalDeclaration()) {
+            classFactoryTransformer.getFactoryForClass(clazz)
+        } else {
+            val memberScope =
+                (clazz.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                    ?: (clazz.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                    ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
+            memberScope.getContributedDescriptors()
+                .filterIsInstance<ClassDescriptor>()
+                .single { it.name == InjektNameConventions.getFactoryNameForClass(clazz.name) }
+                .let { pluginContext.symbolTable.referenceClass(it) }
+                .ensureBound(pluginContext.irProviders)
+                .owner
+        }
     }
 
-    fun getMembersInjector(clazz: IrClass): IrClass {
-        membersInjectorTransformer.membersInjectorByClass[clazz]?.let { return it }
-        val memberScope =
-            (clazz.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
-                ?: (clazz.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
-                ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
-        return memberScope.getContributedDescriptors()
-            .filterIsInstance<ClassDescriptor>()
-            .single { it.name == InjektNameConventions.getMembersInjectorNameForClass(clazz.name) }
-            .let { pluginContext.symbolTable.referenceClass(it) }
-            .ensureBound(pluginContext.irProviders)
-            .owner
+    fun getMembersInjectorForClass(clazz: IrClass): IrClass {
+        return if (!clazz.isExternalDeclaration()) {
+            membersInjectorTransformer.getMembersInjectorForClass(clazz)
+        } else {
+            val memberScope =
+                (clazz.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                    ?: (clazz.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                    ?: error("Unexpected parent ${clazz.descriptor.containingDeclaration} for ${clazz.dump()}")
+            memberScope.getContributedDescriptors()
+                .filterIsInstance<ClassDescriptor>()
+                .single { it.name == InjektNameConventions.getMembersInjectorNameForClass(clazz.name) }
+                .let { pluginContext.symbolTable.referenceClass(it) }
+                .ensureBound(pluginContext.irProviders)
+                .owner
+        }
     }
 
     fun getModuleFunctionForFactory(factoryFunction: IrFunction): IrFunction {
-        factoryModuleTransformer.moduleFunctionsByFactoryFunctions[factoryFunction]?.let { return it }
-        val memberScope =
-            (factoryFunction.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
-                ?: (factoryFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
-                ?: error("Unexpected parent ${factoryFunction.descriptor.containingDeclaration} for ${factoryFunction.dump()}")
-        return memberScope.getContributedDescriptors()
-            .filterIsInstance<FunctionDescriptor>()
-            .single {
-                it.name == InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction)
-            }
-            .let { pluginContext.symbolTable.referenceFunction(it) }
-            .ensureBound(pluginContext.irProviders)
-            .owner
+        return if (!factoryFunction.isExternalDeclaration()) {
+            factoryModuleTransformer.getModuleFunctionForFactoryFunction(factoryFunction)
+        } else {
+            val memberScope =
+                (factoryFunction.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
+                    ?: (factoryFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
+                    ?: error("Unexpected parent ${factoryFunction.descriptor.containingDeclaration} for ${factoryFunction.dump()}")
+            memberScope.getContributedDescriptors()
+                .filterIsInstance<FunctionDescriptor>()
+                .single {
+                    it.name == InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction)
+                }
+                .let { pluginContext.symbolTable.referenceFunction(it) }
+                .ensureBound(pluginContext.irProviders)
+                .owner
+        }
     }
 
-    fun getModuleClass(moduleFunction: IrFunction): IrClass {
-        return getModuleClassOrNull(moduleFunction)
-            ?: throw DeclarationNotFound("Couldn't find module for ${moduleFunction.dump()}")
+    fun getModuleClassForFunction(moduleFunction: IrFunction): IrClass {
+        return getModuleClassForFunctionOrNull(moduleFunction)
+            ?: throw IllegalStateException("Couldn't find module for ${moduleFunction.dump()}")
     }
 
-    fun getModuleClassOrNull(moduleFunction: IrFunction): IrClass? {
-        return try {
-            moduleTransformer.getGeneratedModuleClass(moduleFunction)
-                ?: throw DeclarationNotFound()
-        } catch (e: DeclarationNotFound) {
+    fun getModuleClassForFunctionOrNull(moduleFunction: IrFunction): IrClass? {
+        return if (!moduleFunction.isExternalDeclaration()) {
+            moduleTransformer.getModuleClassForFunction(moduleFunction)
+        } else {
             val memberScope =
                 (moduleFunction.descriptor.containingDeclaration as? ClassDescriptor)?.unsubstitutedMemberScope
                     ?: (moduleFunction.descriptor.containingDeclaration as? PackageFragmentDescriptor)?.getMemberScope()
                     ?: error("Unexpected parent ${moduleFunction.descriptor.containingDeclaration} for ${moduleFunction.dump()}")
-            return memberScope.getContributedClassifier(
+            memberScope.getContributedClassifier(
                 InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction),
                 NoLookupLocation.FROM_BACKEND
             ).let { it as ClassDescriptor }
@@ -92,5 +106,3 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     }
 
 }
-
-class DeclarationNotFound(message: String? = null) : RuntimeException(message)

@@ -10,47 +10,48 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
-class ClassOfChecker : CallChecker {
+class ClassOfChecker(private val typeAnnotationChecker: TypeAnnotationChecker) : CallChecker {
 
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
-            val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
-                it.annotations.hasAnnotation(InjektFqNames.Module) ||
-                        it.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                        it.annotations.hasAnnotation(InjektFqNames.ChildFactory)
-            }
-            if (enclosingInjektDslFunction == null) {
+        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.classOf") return
+
+        val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
+            val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
+            InjektFqNames.Module in typeAnnotations ||
+                    InjektFqNames.Factory in typeAnnotations ||
+                    InjektFqNames.ChildFactory in typeAnnotations
+        }
+        if (enclosingInjektDslFunction == null) {
+            context.trace.report(
+                InjektErrors.CLASS_OF_OUTSIDE_OF_MODULE
+                    .on(reportOn)
+            )
+        } else {
+            val typeArgument = resolvedCall.typeArguments.values.single()
+            if (!typeArgument.isTypeParameter()) {
                 context.trace.report(
-                    InjektErrors.CLASS_OF_OUTSIDE_OF_MODULE
+                    InjektErrors.CLASS_OF_WITH_CONCRETE_TYPE
                         .on(reportOn)
                 )
-            } else {
-                val typeArgument = resolvedCall.typeArguments.values.single()
-                if (!typeArgument.isTypeParameter()) {
-                    context.trace.report(
-                        InjektErrors.CLASS_OF_WITH_CONCRETE_TYPE
-                            .on(reportOn)
-                    )
-                }
+            }
 
-                if (!enclosingInjektDslFunction.isInline) {
-                    context.trace.report(
-                        InjektErrors.CLASS_OF_CALLING_MODULE_MUST_BE_INLINE
-                            .on(reportOn)
-                    )
-                }
+            if (!enclosingInjektDslFunction.isInline) {
+                context.trace.report(
+                    InjektErrors.CLASS_OF_CALLING_MODULE_MUST_BE_INLINE
+                        .on(reportOn)
+                )
+            }
 
-                enclosingInjektDslFunction.typeParameters.forEach {
-                    if (it.isReified) {
-                        context.trace.report(
-                            InjektErrors.MODULE_CANNOT_USE_REIFIED
-                                .on(it.findPsi() ?: reportOn)
-                        )
-                    }
+            enclosingInjektDslFunction.typeParameters.forEach {
+                if (it.isReified) {
+                    context.trace.report(
+                        InjektErrors.MODULE_CANNOT_USE_REIFIED
+                            .on(it.findPsi() ?: reportOn)
+                    )
                 }
             }
         }

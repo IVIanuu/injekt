@@ -6,8 +6,10 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.getNearestDeclarationContainer
+import com.ivianuu.injekt.compiler.transform.module.TypedModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -23,7 +25,6 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -32,12 +33,15 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.Name
 
 class FactoryModuleTransformer(
-    context: IrPluginContext
+    context: IrPluginContext,
+    private val typedModuleTransformer: TypedModuleTransformer
 ) : AbstractInjektTransformer(context) {
 
-    val moduleFunctionsByFactoryFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val moduleFunctionsByFactoryFunctions =
+        mutableMapOf<IrFunction, IrFunction>()
 
     override fun visitFile(declaration: IrFile): IrFile {
         val factoryFunctions = mutableListOf<IrFunction>()
@@ -54,42 +58,51 @@ class FactoryModuleTransformer(
         })
 
         factoryFunctions.forEach { factoryFunction ->
-            DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
-                val moduleFunction = moduleFunction(factoryFunction)
-                moduleFunctionsByFactoryFunctions[factoryFunction] = moduleFunction
-                moduleFunction.parent = factoryFunction.parent
-                if (factoryFunction.parent is IrFunction) {
-                    var block: IrBlockBody? = null
-                    factoryFunction.parent.accept(object : IrElementTransformerVoid() {
-                        private val blockStack = mutableListOf<IrBlockBody>()
-                        override fun visitBlockBody(body: IrBlockBody): IrBody {
-                            blockStack.push(body)
-                            return super.visitBlockBody(body)
-                                .also { blockStack.pop() }
-                        }
-
-                        override fun visitFunction(declaration: IrFunction): IrStatement {
-                            if (declaration == factoryFunction) {
-                                block = blockStack.last()
-                            }
-                            return super.visitFunction(declaration)
-                        }
-                    }, null)
-                    checkNotNull(block)
-
-                    val index = block!!.statements.indexOf(factoryFunction)
-                    block!!.statements.add(index + 1, moduleFunction)
-                } else {
-                    factoryFunction.getNearestDeclarationContainer().addChild(moduleFunction)
-                }
-                factoryFunction.body = irBlockBody {
-                    InjektDeclarationIrBuilder(pluginContext, factoryFunction.symbol)
-                        .irInjektIntrinsicUnit()
-                }
-            }
+            getModuleFunctionForFactoryFunction(factoryFunction)
         }
 
         return super.visitFile(declaration)
+    }
+
+    fun getModuleFunctionForFactoryFunction(factoryFunction: IrFunction): IrFunction {
+        moduleFunctionsByFactoryFunctions[factoryFunction]?.let { return it }
+
+        val moduleFunction = DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
+            val moduleFunction = moduleFunction(factoryFunction)
+            moduleFunction.parent = factoryFunction.parent
+            if (factoryFunction.parent is IrFunction) {
+                var block: IrBlockBody? = null
+                factoryFunction.parent.accept(object : IrElementTransformerVoid() {
+                    private val blockStack = mutableListOf<IrBlockBody>()
+                    override fun visitBlockBody(body: IrBlockBody): IrBody {
+                        blockStack.push(body)
+                        return super.visitBlockBody(body)
+                            .also { blockStack.pop() }
+                    }
+
+                    override fun visitFunction(declaration: IrFunction): IrStatement {
+                        if (declaration == factoryFunction) {
+                            block = blockStack.last()
+                        }
+                        return super.visitFunction(declaration)
+                    }
+                }, null)
+                checkNotNull(block)
+
+                val index = block!!.statements.indexOf(factoryFunction)
+                block!!.statements.add(index + 1, moduleFunction)
+            } else {
+                factoryFunction.getNearestDeclarationContainer().addChild(moduleFunction)
+            }
+            factoryFunction.body = irBlockBody {
+                +InjektDeclarationIrBuilder(pluginContext, factoryFunction.symbol)
+                    .irInjektIntrinsicUnit()
+            }
+            moduleFunction
+        }.let { typedModuleTransformer.getTransformedModule(it) }
+
+        moduleFunctionsByFactoryFunctions[factoryFunction] = moduleFunction
+        return moduleFunction
     }
 
     private fun IrBuilderWithScope.moduleFunction(factoryFunction: IrFunction): IrFunction {
@@ -97,30 +110,22 @@ class FactoryModuleTransformer(
             name = InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction)
             returnType = irBuiltIns.unitType
             visibility = factoryFunction.visibility
+            isInline = factoryFunction.isInline
         }.apply {
             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                 .noArgSingleConstructorCall(symbols.module)
 
             copyTypeParametersFrom(factoryFunction)
 
-            dispatchReceiverParameter = factoryFunction.dispatchReceiverParameter?.copyTo(this)
-            extensionReceiverParameter = factoryFunction.extensionReceiverParameter?.copyTo(this)
-
-            val valueParametersMap = mutableMapOf<IrValueParameter, IrValueParameter>()
-            if (dispatchReceiverParameter != null) {
-                valueParametersMap[factoryFunction.dispatchReceiverParameter!!] =
-                    dispatchReceiverParameter!!
-            }
-            if (extensionReceiverParameter != null) {
-                valueParametersMap[factoryFunction.extensionReceiverParameter!!] =
-                    extensionReceiverParameter!!
-            }
-
-            factoryFunction.valueParameters.forEach { valueParameter ->
-                val copy = valueParameter.copyTo(this)
-                    .also { valueParameters += it }
-                valueParametersMap[valueParameter] = copy
-            }
+            val valueParametersMap = factoryFunction.allParameters
+                .associateWith {
+                    it.copyTo(
+                            this,
+                            index = valueParameters.size,
+                            name = Name.identifier("p${valueParameters.size}")
+                        )
+                        .also { valueParameters += it }
+                }
 
             body = irBlockBody {
                 factoryFunction.body!!.statements.dropLast(1).forEach {

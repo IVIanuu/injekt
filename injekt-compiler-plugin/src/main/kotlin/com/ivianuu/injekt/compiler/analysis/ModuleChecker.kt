@@ -26,15 +26,22 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
-class ModuleChecker : CallChecker, DeclarationChecker {
+class ModuleChecker(
+    private val typeAnnotationChecker: TypeAnnotationChecker
+) : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
+
         if (descriptor !is FunctionDescriptor ||
-            !descriptor.annotations.hasAnnotation(InjektFqNames.Module)
+            !typeAnnotationChecker.hasTypeAnnotation(
+                context.trace,
+                descriptor,
+                InjektFqNames.Module
+            )
         ) return
         if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
             context.trace.report(
@@ -59,6 +66,12 @@ class ModuleChecker : CallChecker, DeclarationChecker {
                             .on(valueParameter.findPsi() ?: declaration)
                     )
                 }
+                if (valueParameter.type.annotations.hasAnnotation(InjektFqNames.Module)) {
+                    context.trace.report(
+                        InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
+                            .on(valueParameter.findPsi() ?: declaration)
+                    )
+                }
             }
         }
     }
@@ -69,8 +82,9 @@ class ModuleChecker : CallChecker, DeclarationChecker {
         context: CallCheckerContext
     ) {
         val resulting = resolvedCall.resultingDescriptor
-        if (resulting !is FunctionDescriptor ||
-            !resulting.annotations.hasAnnotation(InjektFqNames.Module)
+        if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
+                context.trace, resulting, InjektFqNames.Module
+            )
         ) return
         checkInvocations(resolvedCall, reportOn, context)
     }
@@ -81,9 +95,10 @@ class ModuleChecker : CallChecker, DeclarationChecker {
         context: CallCheckerContext
     ) {
         val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
-            it.annotations.hasAnnotation(InjektFqNames.Module) ||
-                    it.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    it.annotations.hasAnnotation(InjektFqNames.ChildFactory)
+            val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
+            InjektFqNames.Module in typeAnnotations ||
+                    InjektFqNames.Factory in typeAnnotations ||
+                    InjektFqNames.ChildFactory in typeAnnotations
         }
 
         if (enclosingInjektDslFunction != null &&

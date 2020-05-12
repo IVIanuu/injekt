@@ -4,9 +4,9 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -68,16 +69,21 @@ import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
-fun DeclarationDescriptor.hasAnnotatedAnnotations(annotation: FqName): Boolean =
-    annotations.any { it.hasAnnotation(annotation, module) }
+fun Annotated.hasAnnotatedAnnotations(
+    annotation: FqName,
+    module: ModuleDescriptor
+): Boolean = annotations.any { it.hasAnnotation(annotation, module) }
 
-fun DeclarationDescriptor.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+fun Annotated.getAnnotatedAnnotations(
+    annotation: FqName,
+    module: ModuleDescriptor
+): List<AnnotationDescriptor> =
     annotations.filter {
         it.hasAnnotation(annotation, module)
     }
@@ -308,4 +314,15 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
         is IrConstructorCall -> AnnotationValue(this.toAnnotationDescriptor())
         else -> error("$this is not expected: ${this.dump()}")
     }
+}
+
+inline fun <K, V> BindingTrace.getOrPut(
+    slice: WritableSlice<K, V>,
+    key: K,
+    defaultValue: () -> V
+): V {
+    get(slice, key)?.let { return it }
+    val value = defaultValue()
+    record(slice, key, value)
+    return value
 }

@@ -21,7 +21,7 @@ object InjektNameConventions {
         factoryFunction.nameOrUniqueName("FactoryImpl")
 
     fun getImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
-        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$FactoryImpl")
+        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Factory")
 
     fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
         factoryFunction.nameOrUniqueName("FactoryModule")

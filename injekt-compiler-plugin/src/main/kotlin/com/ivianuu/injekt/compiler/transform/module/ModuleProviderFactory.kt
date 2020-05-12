@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 
 class ModuleProviderFactory(
-    private val module: ModuleImplementation,
+    private val module: ModuleImpl,
     private val pluginContext: IrPluginContext
 ) {
 
@@ -41,12 +41,12 @@ class ModuleProviderFactory(
         visibility: Visibility
     ): IrClass {
         val constructor = clazz.constructors.singleOrNull()
-        return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).provider(
+        return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).factory(
             name = name,
             visibility = visibility,
             parameters = constructor?.valueParameters
                 ?.mapIndexed { index, valueParameter ->
-                    InjektDeclarationIrBuilder.ProviderParameter(
+                    InjektDeclarationIrBuilder.FactoryParameter(
                         name = "p$index",
                         type = valueParameter.type,
                         assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted),
@@ -112,10 +112,10 @@ class ModuleProviderFactory(
             }
         })
 
-        val parameters = mutableListOf<InjektDeclarationIrBuilder.ProviderParameter>()
+        val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
 
         if (capturedModuleValueParameters.isNotEmpty()) {
-            parameters += InjektDeclarationIrBuilder.ProviderParameter(
+            parameters += InjektDeclarationIrBuilder.FactoryParameter(
                 name = "module",
                 type = module.clazz.defaultType,
                 assisted = false,
@@ -123,9 +123,9 @@ class ModuleProviderFactory(
             )
         }
 
-        val parametersByCall = mutableMapOf<IrCall, InjektDeclarationIrBuilder.ProviderParameter>()
+        val parametersByCall = mutableMapOf<IrCall, InjektDeclarationIrBuilder.FactoryParameter>()
         (assistedParameterCalls + dependencyCalls).forEachIndexed { i, call ->
-            parameters += InjektDeclarationIrBuilder.ProviderParameter(
+            parameters += InjektDeclarationIrBuilder.FactoryParameter(
                 name = "p$i",
                 type = call.type,
                 assisted = call in assistedParameterCalls,
@@ -133,7 +133,7 @@ class ModuleProviderFactory(
             ).also { parametersByCall[call] = it }
         }
 
-        return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).provider(
+        return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).factory(
             name = name,
             visibility = visibility,
             parameters = parameters,

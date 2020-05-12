@@ -18,8 +18,8 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.name.Name
 
-class ModuleDescriptorImplementation(
-    private val module: ModuleImplementation,
+class ModuleDescriptor(
+    private val module: ModuleImpl,
     private val pluginContext: IrPluginContext,
     private val symbols: InjektSymbols
 ) {
@@ -164,10 +164,26 @@ class ModuleDescriptorImplementation(
         ).apply {
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astModule)
+            if (declaration.inline) {
+                annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
+                    .noArgSingleConstructorCall(symbols.astInline)
+            }
             annotations += declaration.path.asAnnotation(
                 DeclarationIrBuilder(pluginContext, symbol),
                 symbols
             )
+
+            declaration.capturedValueArguments.forEachIndexed { index, parameter ->
+                addValueParameter(
+                    "p$index",
+                    parameter.type
+                ).apply {
+                    annotations += parameter.path.asAnnotation(
+                        DeclarationIrBuilder(pluginContext, symbol),
+                        symbols
+                    )
+                }
+            }
         }
     }
 

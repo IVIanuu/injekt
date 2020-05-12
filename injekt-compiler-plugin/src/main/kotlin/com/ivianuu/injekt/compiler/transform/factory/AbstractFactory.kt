@@ -54,7 +54,7 @@ abstract class AbstractFactory(
             parent = parent?.graph,
             factory = this,
             context = pluginContext,
-            factoryImplementationModule = ModuleNode(
+            factoryModule = ModuleNode(
                 key = moduleClass.defaultType
                     .typeWith(*typeParametersMap.values.toTypedArray())
                     .asKey(pluginContext),

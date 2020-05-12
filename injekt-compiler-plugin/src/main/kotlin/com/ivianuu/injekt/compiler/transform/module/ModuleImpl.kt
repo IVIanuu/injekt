@@ -1,11 +1,11 @@
 package com.ivianuu.injekt.compiler.transform.module
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.transform.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
@@ -35,12 +34,13 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class ModuleImplementation(
+class ModuleImpl(
     val function: IrFunction,
     val pluginContext: IrPluginContext,
     val symbols: InjektSymbols,
@@ -55,8 +55,8 @@ class ModuleImplementation(
         symbols, nameProvider, declarationStore, providerFactory
     )
 
-    val moduleDescriptor = ModuleDescriptorImplementation(
-        this@ModuleImplementation,
+    val moduleDescriptor = ModuleDescriptor(
+        this@ModuleImpl,
         pluginContext,
         symbols
     )
@@ -66,15 +66,15 @@ class ModuleImplementation(
     val clazz: IrClass = buildClass {
         name = InjektNameConventions.getModuleClassNameForModuleFunction(function)
         visibility = function.visibility
-    }.apply {
-        parent = function.parent
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
-        copyTypeParametersFrom(function)
     }
 
-    fun build() {
+    init {
         clazz.apply clazz@{
+            parent = function.parent
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+            copyTypeParametersFrom(function)
+
             val declarations = mutableListOf<ModuleDeclaration>()
 
             val ignoreGetValue = mutableSetOf<IrGetValue>()
@@ -89,7 +89,8 @@ class ModuleImplementation(
                 function.allParameters
                     .filter {
                         !it.type.isFunction() ||
-                                it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl
+                                (it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl &&
+                                        !it.type.hasAnnotation(InjektFqNames.Module))
                     }
                     .forEachIndexed { index, p ->
                         val newValueParameter = addValueParameter(
@@ -181,11 +182,6 @@ class ModuleImplementation(
                     }
                 }
             })
-        }
-
-        function.getNearestDeclarationContainer().addChild(clazz)
-        function.body = InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
-            builder.irExprBody(irInjektIntrinsicUnit())
         }
     }
 

@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
@@ -20,6 +21,7 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -54,6 +56,7 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
@@ -65,6 +68,9 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+
+    fun getTransformedModule(function: IrFunction): IrFunction =
+        transformFunctionIfNeeded(function)
 
     override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
@@ -101,8 +107,20 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
     }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
-        if (function.isExternal) return function
-        if (!function.hasAnnotation(InjektFqNames.Module)) return function
+        if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
+            function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
+        ) return function
+        val typeAnnotationChecker = TypeAnnotationChecker()
+        val bindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "Injekt IR")
+        if (try {
+                !typeAnnotationChecker.hasTypeAnnotation(
+                    bindingTrace, function.descriptor,
+                    InjektFqNames.Module
+                )
+            } catch (e: Exception) {
+                false
+            }
+        ) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
@@ -319,34 +337,40 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
         override fun remapType(type: IrType): IrType =
             if (type !is IrSimpleType)
                 type
-            else
+            else {
+                val kotlinType = type.toKotlinType()
                 IrSimpleTypeImpl(
-                    KotlinTypeFactory.simpleType(
-                        try {
-                            type.toKotlinType() as SimpleType
-                        } catch (e: Exception) {
-                            error("${type.render()} is not a SimpleType")
-                        },
-                        arguments = type.arguments.mapIndexed { index, it ->
-                            when (it) {
-                                is IrTypeProjection -> TypeProjectionImpl(
-                                    it.variance,
-                                    it.type.toKotlinType()
-                                )
-                                is IrStarProjection -> StarProjectionImpl((type.classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
-                                else -> error(it)
-                            }
-                        },
-                        annotations = Annotations.create(
-                            type.annotations.map { it.toAnnotationDescriptor() }
+                    if (kotlinType is SimpleType) {
+                        KotlinTypeFactory.simpleType(
+                            try {
+                                type.toKotlinType() as SimpleType
+                            } catch (e: Exception) {
+                                error("${type.render()} is not a SimpleType")
+                            },
+                            arguments = type.arguments.mapIndexed { index, it ->
+                                when (it) {
+                                    is IrTypeProjection -> TypeProjectionImpl(
+                                        it.variance,
+                                        it.type.toKotlinType()
+                                    )
+                                    is IrStarProjection -> StarProjectionImpl((type.classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
+                                    else -> error(it)
+                                }
+                            },
+                            annotations = Annotations.create(
+                                type.annotations.map { it.toAnnotationDescriptor() }
+                            )
                         )
-                    ),
+                    } else {
+                        kotlinType
+                    },
                     symbolRemapper.getReferencedClassifier(type.classifier),
                     type.hasQuestionMark,
                     type.arguments.map { remapTypeArgument(it) },
                     type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall },
                     type.abbreviation?.remapTypeAbbreviation()
                 )
+            }
 
         private fun remapTypeArgument(typeArgument: IrTypeArgument): IrTypeArgument =
             if (typeArgument is IrTypeProjection)

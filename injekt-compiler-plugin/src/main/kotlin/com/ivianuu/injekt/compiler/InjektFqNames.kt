@@ -70,6 +70,8 @@ object InjektFqNames {
 
     val Transient = InjektPackage.child("Transient")
 
+    val TypeAnnotation = InternalPackage.child("TypeAnnotation")
+
     private fun FqName.child(name: String) = child(Name.identifier(name))
 
 }
