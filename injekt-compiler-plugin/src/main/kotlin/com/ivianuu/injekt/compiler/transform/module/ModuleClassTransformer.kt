@@ -15,8 +15,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -63,15 +61,6 @@ class ModuleClassTransformer(
         moduleFunctions.forEach { function ->
             getModuleClassForFunction(function)
         }
-
-        transformedModules
-            .keys
-            .map { it.file }
-            .distinct()
-            .forEach {
-                (it as IrFileImpl).metadata =
-                    MetadataSource.File(it.declarations.map { it.descriptor })
-            }
 
         return super.visitModuleFragment(declaration)
     }

@@ -64,6 +64,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // create implementations for factories
         factoryTransformer.lower(moduleFragment)
+
+        // patch file metadata
+        FileMetadataPatcher(pluginContext).lower(moduleFragment)
     }
 
 }

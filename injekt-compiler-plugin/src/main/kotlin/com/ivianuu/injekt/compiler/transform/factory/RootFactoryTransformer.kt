@@ -13,11 +13,8 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
@@ -87,14 +84,6 @@ class RootFactoryTransformer(
                 )
             }
         }
-
-        factoryFunctions
-            .map { it.file }
-            .distinct()
-            .forEach {
-                (it as IrFileImpl).metadata =
-                    MetadataSource.File(it.declarations.map { it.descriptor })
-            }
 
         return super.visitModuleFragment(declaration)
     }
