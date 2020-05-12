@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import junit.framework.Assert.assertEquals
 import org.junit.Test
 
 class InstanceFactoryTest {
@@ -162,6 +163,23 @@ class InstanceFactoryTest {
     """
     ) {
         invokeSingleFile()
+    }
+
+    @Test
+    fun testFactoryWithDefaultParameters() = codegen(
+        """
+        @Factory
+        fun create(string: String = "default"): String {
+            instance(string)
+            return createInstance()
+        }
+        
+        fun invoke() = create() to create("non_default")
+    """
+    ) {
+        val pair = invokeSingleFile<Pair<String, String>>()
+        assertEquals("default", pair.first)
+        assertEquals("non_default", pair.second)
     }
 
 }

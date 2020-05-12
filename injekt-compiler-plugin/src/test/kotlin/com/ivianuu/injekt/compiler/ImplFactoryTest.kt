@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
@@ -457,4 +458,25 @@ class ImplFactoryTest {
         }
     """
     )
+
+    @Test
+    fun testFactoryWithDefaultParameters() = codegen(
+        """
+        interface TestComponent {
+            val string: String
+        }
+        
+        @Factory
+        fun create(string: String = "default"): TestComponent {
+            instance(string)
+            return createImpl()
+        }
+        
+        fun invoke() = create().string to create("non_default").string
+    """
+    ) {
+        val pair = invokeSingleFile<Pair<String, String>>()
+        assertEquals("default", pair.first)
+        assertEquals("non_default", pair.second)
+    }
 }
