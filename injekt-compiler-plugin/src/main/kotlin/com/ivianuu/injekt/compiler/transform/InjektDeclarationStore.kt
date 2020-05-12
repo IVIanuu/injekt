@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -19,7 +19,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
-    lateinit var moduleTransformer: ModuleTransformer
+    lateinit var moduleClassTransformer: ModuleClassTransformer
 
     private fun IrDeclaration.isExternalDeclaration() = origin ==
             IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
@@ -68,7 +68,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
     fun getModuleClassForFunctionOrNull(moduleFunction: IrFunction): IrClass? {
         return if (!moduleFunction.isExternalDeclaration()) {
-            moduleTransformer.getModuleClassForFunction(moduleFunction)
+            moduleClassTransformer.getModuleClassForFunction(moduleFunction)
         } else {
             pluginContext.referenceClass(
                 moduleFunction.descriptor.fqNameSafe

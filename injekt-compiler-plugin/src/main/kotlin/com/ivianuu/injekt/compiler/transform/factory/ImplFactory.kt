@@ -129,12 +129,12 @@ class ImplFactory(
     }
 
     fun getInitExpression(
-        valueArguments: List<IrExpression>
+        moduleValueArguments: List<IrExpression>
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irCall(constructor).apply {
                 if (constructor.valueParameters.isNotEmpty()) {
-                    putValueArgument(0, getModuleInitExpression(valueArguments))
+                    putValueArgument(0, getModuleInitExpression(moduleValueArguments))
                 }
             }
         }

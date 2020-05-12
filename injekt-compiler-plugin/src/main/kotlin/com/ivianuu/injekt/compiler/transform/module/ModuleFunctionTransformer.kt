@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -29,6 +30,7 @@ import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -49,7 +51,10 @@ import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.TypeRemapper
+import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -63,7 +68,7 @@ import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
-class TypedModuleTransformer(pluginContext: IrPluginContext) :
+class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -93,7 +98,7 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
             val transformed = transformedFunctions[function]
             if (transformed != null && transformed.valueParameters.size != function.valueParameters.size) {
                 declarations.add(
-                    function.deepCopyWithSymbols()
+                    function.deepCopyWithSymbolsWithPreservingQualifiers()
                         .apply {
                             InjektDeclarationIrBuilder(pluginContext, symbol).run {
                                 annotations += noArgSingleConstructorCall(symbols.astTyped)
@@ -120,15 +125,25 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
                 false
             }
         ) return function
+        if (function.descriptor.fqNameSafe == InjektFqNames.InjektPackage) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
+        val originalCaptures = mutableListOf<IrGetValue>()
         val originalClassOfCalls = mutableListOf<IrCall>()
         val originalTypedModuleCalls = mutableListOf<IrCall>()
-
         var hasUnresolvedClassOfCalls = false
 
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+        function.body?.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                if (function.isLocal &&
+                    expression.symbol.owner !in function.valueParameters &&
+                    currentScope == allScopes.singleOrNull { it.irElement == function }
+                ) {
+                    originalCaptures += expression
+                }
+                return super.visitGetValue(expression)
+            }
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(
                     expression.symbol
@@ -152,7 +167,7 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        if (!hasUnresolvedClassOfCalls) {
+        if (!hasUnresolvedClassOfCalls && originalCaptures.isEmpty()) {
             transformedFunctions[function] = function
             rewriteTypedFunctionCalls(
                 function,
@@ -163,13 +178,25 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
             return function
         }
 
-        val typedFunction = function.deepCopyWithSymbols()
-        transformedFunctions[function] = typedFunction
+        val transformedFunction = function.deepCopyWithSymbolsWithPreservingQualifiers()
+        transformedFunctions[function] = transformedFunction
 
         val classOfCalls = mutableListOf<IrCall>()
         val typedModuleCalls = mutableListOf<IrCall>()
+        val captures = mutableListOf<IrGetValue>()
 
-        typedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+        transformedFunction.body?.transformChildrenVoid(object :
+            IrElementTransformerVoidWithContext() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                if (function.isLocal &&
+                    expression.symbol.owner !in function.valueParameters &&
+                    currentScope == allScopes.singleOrNull { it.irElement == function }
+                ) {
+                    captures += expression
+                }
+                return super.visitGetValue(expression)
+            }
+
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(
                     expression.symbol.owner
@@ -183,39 +210,79 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        typedFunction.annotations +=
-            InjektDeclarationIrBuilder(pluginContext, typedFunction.symbol)
-                .noArgSingleConstructorCall(symbols.astTyped)
+        if (classOfCalls.isNotEmpty() || typedModuleCalls.isNotEmpty()) {
+            transformedFunction.annotations +=
+                InjektDeclarationIrBuilder(pluginContext, transformedFunction.symbol)
+                    .noArgSingleConstructorCall(symbols.astTyped)
 
-        val valueParametersByUnresolvedType =
-            mutableMapOf<IrTypeParameterSymbol, IrValueParameter>()
+            val valueParametersByUnresolvedType =
+                mutableMapOf<IrTypeParameterSymbol, IrValueParameter>()
 
-        (classOfCalls
-            .map { it.getTypeArgument(0)!! } +
-                typedModuleCalls
-                    .flatMap { call ->
-                        (0 until call.typeArgumentsCount)
-                            .map { call.getTypeArgument(it)!! }
-                    })
-            .filter { it.toKotlinType().isTypeParameter() }
-            .map { it.classifierOrFail as IrTypeParameterSymbol }
-            .distinct()
-            .forEach { typeParameter ->
-                valueParametersByUnresolvedType[typeParameter] = typedFunction.addValueParameter(
-                    name = InjektNameConventions.classParameterNameForTypeParameter(typeParameter.owner)
-                        .asString(),
-                    type = irBuiltIns.kClassClass.typeWith(typeParameter.defaultType)
+            (classOfCalls
+                .map { it.getTypeArgument(0)!! } +
+                    typedModuleCalls
+                        .flatMap { call ->
+                            (0 until call.typeArgumentsCount)
+                                .map { call.getTypeArgument(it)!! }
+                        })
+                .filter { it.toKotlinType().isTypeParameter() }
+                .map { it.classifierOrFail as IrTypeParameterSymbol }
+                .distinct()
+                .forEach { typeParameter ->
+                    valueParametersByUnresolvedType[typeParameter] =
+                        transformedFunction.addValueParameter(
+                            name = InjektNameConventions.classParameterNameForTypeParameter(
+                                    typeParameter.owner
+                                )
+                                .asString(),
+                            type = irBuiltIns.kClassClass.typeWith(typeParameter.defaultType)
+                        )
+                }
+
+            rewriteTypedFunctionCalls(
+                transformedFunction,
+                classOfCalls,
+                typedModuleCalls,
+                valueParametersByUnresolvedType
+            )
+        }
+
+        if (captures.isNotEmpty()) {
+            val valueParameterByCapture = captures.associateWith { capture ->
+                transformedFunction.addValueParameter(
+                    "capture_${captures.indexOf(capture)}",
+                    capture.type
                 )
             }
 
-        rewriteTypedFunctionCalls(
-            typedFunction,
-            classOfCalls,
-            typedModuleCalls,
-            valueParametersByUnresolvedType
-        )
+            transformedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                    return valueParameterByCapture[expression]?.let {
+                        DeclarationIrBuilder(pluginContext, expression.symbol)
+                            .irGet(it)
+                    } ?: super.visitGetValue(expression)
+                }
+            })
 
-        return typedFunction
+            transformedFunction.file.transformChildrenVoid(object : IrElementTransformerVoid() {
+                override fun visitCall(expression: IrCall): IrExpression {
+                    if (expression.symbol != function.symbol) {
+                        return super.visitCall(expression)
+                    }
+                    return DeclarationIrBuilder(pluginContext, transformedFunction.symbol).run {
+                        irCall(transformedFunction.symbol).apply {
+                            copyTypeAndValueArgumentsFrom(expression)
+                            captures.forEach { capture ->
+                                val valueParameter = valueParameterByCapture.getValue(capture)
+                                putValueArgument(valueParameter.index, capture)
+                            }
+                        }
+                    }
+                }
+            })
+        }
+
+        return transformedFunction
     }
 
     private fun rewriteTypedFunctionCalls(
@@ -300,7 +367,7 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
         })
     }
 
-    private fun IrFunction.deepCopyWithSymbols(): IrFunction {
+    private fun IrFunction.deepCopyWithSymbolsWithPreservingQualifiers(): IrFunction {
         val symbolRemapper = DeepCopySymbolRemapper(
             object : DescriptorsRemapper {
                 override fun remapDeclaredSimpleFunction(descriptor: FunctionDescriptor): FunctionDescriptor =
@@ -309,8 +376,9 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
         )
         acceptVoid(symbolRemapper)
         val typeRemapper = DeepCopyTypeRemapper(symbolRemapper)
-        return (transform(DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper)
-            .also { typeRemapper.deepCopy = it }, null
+        return (transform(
+            DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper)
+                .also { typeRemapper.deepCopy = it }, null
         )
             .patchDeclarationParents(parent) as IrSimpleFunction)
             .also { (it.descriptor as WrappedSimpleFunctionDescriptor).bind(it) }

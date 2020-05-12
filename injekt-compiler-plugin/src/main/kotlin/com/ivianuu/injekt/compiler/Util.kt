@@ -15,6 +15,8 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -287,4 +289,16 @@ inline fun <K, V> BindingTrace.getOrPut(
     val value = defaultValue()
     record(slice, key, value)
     return value
+}
+
+fun IrDeclaration.getNearestDeclarationContainer(
+    includeThis: Boolean = true
+): IrDeclarationContainer {
+    var current: IrElement? = if (includeThis) this else parent
+    while (current != null) {
+        if (current is IrDeclarationContainer) return current
+        current = (current as? IrDeclaration)?.parent
+    }
+
+    error("Couldn't get declaration container for $this")
 }

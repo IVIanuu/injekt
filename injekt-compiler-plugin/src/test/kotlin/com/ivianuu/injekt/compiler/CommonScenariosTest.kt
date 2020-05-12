@@ -156,7 +156,7 @@ class CommonScenariosTest {
         
         class MyViewModel : ViewModel()
 
-        interface ViewModelComponent {
+        interface ViewModelComponent { 
             val myViewModel: MyViewModel
         }
         

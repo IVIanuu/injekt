@@ -2,10 +2,10 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
+import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.transform.getNearestDeclarationContainer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -24,10 +24,10 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
-class ModuleTransformer(
+class ModuleClassTransformer(
     context: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
-    private val typedModuleTransformer: TypedModuleTransformer
+    private val moduleFunctionTransformer: ModuleFunctionTransformer
 ) : AbstractInjektTransformer(context) {
 
     private val transformedModules = mutableMapOf<IrFunction, IrClass>()
@@ -77,8 +77,8 @@ class ModuleTransformer(
     }
 
     fun getModuleClassForFunction(function: IrFunction): IrClass {
-        val finalFunction = typedModuleTransformer.getTransformedModule(function)
-        transformedModules[finalFunction]?.let { return it }
+        transformedModules[function]?.let { return it }
+        val finalFunction = moduleFunctionTransformer.getTransformedModule(function)
 
         return DeclarationIrBuilder(pluginContext, finalFunction.file.symbol).run {
             check(finalFunction !in transformedModules) {
@@ -97,6 +97,7 @@ class ModuleTransformer(
                     builder.irExprBody(irInjektIntrinsicUnit())
                 }
             transformedModules[finalFunction] = moduleImpl.clazz
+            transformedModules[function] = moduleImpl.clazz
             transformingModules -= finalFunction
             moduleImpl.clazz
         }

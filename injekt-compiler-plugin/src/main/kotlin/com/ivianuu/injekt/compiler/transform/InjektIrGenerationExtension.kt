@@ -4,12 +4,11 @@ import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTr
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
-import com.ivianuu.injekt.compiler.transform.module.TypedModuleTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -29,21 +28,22 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .also { declarationStore.classFactoryTransformer = it }
             .lower(moduleFragment)
 
+        // add @InstanceFactory or @ImplFactory annotations
         FactoryFunctionAnnotationTransformer(pluginContext)
             .lower(moduleFragment)
 
-        val typedModuleTransformer = TypedModuleTransformer(pluginContext)
+        val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext)
 
-        // add @InstanceFactory or @ImplFactory annotations
-        val factoryModuleTransformer = FactoryModuleTransformer(
-            pluginContext, typedModuleTransformer
-        )
-            .also { declarationStore.factoryModuleTransformer = it }
-        val moduleTransformer = ModuleTransformer(
+        val moduleClassTransformer = ModuleClassTransformer(
             pluginContext,
             declarationStore,
-            typedModuleTransformer
-        ).also { declarationStore.moduleTransformer = it }
+            moduleFunctionTransformer
+        ).also { declarationStore.moduleClassTransformer = it }
+
+        val factoryModuleTransformer = FactoryModuleTransformer(
+            pluginContext, moduleFunctionTransformer
+        )
+            .also { declarationStore.factoryModuleTransformer = it }
         val factoryTransformer = RootFactoryTransformer(
             pluginContext,
             declarationStore
@@ -54,20 +54,16 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .lower(moduleFragment)
 
         // transform typed modules
-        typedModuleTransformer.lower(moduleFragment)
+        moduleFunctionTransformer.lower(moduleFragment)
 
         // move the module block of @Factory createImpl { ... } to a @Module function
         factoryModuleTransformer.lower(moduleFragment)
 
         // transform @Module functions to their ast representation
-        moduleTransformer.lower(moduleFragment)
+        moduleClassTransformer.lower(moduleFragment)
 
         // create implementations for factories
         factoryTransformer.lower(moduleFragment)
-
-        moduleFragment.files.forEach {
-            println("file: ${it.dump()}")
-        }
     }
 
 }
