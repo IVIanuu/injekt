@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -54,12 +55,42 @@ class FactoryTest {
         }
         
         @Factory
-        fun factory(): String {
+        fun invoke(): String {
             calling()
             return createInstance()
         }
     """
-    )
+    ) {
+        assertEquals("hello world", invokeSingleFile())
+    }
+
+    @Test
+    fun testNestedInlineModuleLambdaWithArgs() = codegen(
+        """
+        @Module
+        fun calling() {
+            inlined { instance(it) }
+        }
+        
+        @Module
+        inline fun inlined(block: @Module (String) -> Unit) {
+            nestedInlined(block)
+        }
+        
+        @Module
+        inline fun nestedInlined(block: @Module (String) -> Unit) {
+            block("hello world")
+        }
+        
+        @Factory
+        fun invoke(): String {
+            calling()
+            return createInstance()
+        }
+    """
+    ) {
+        assertEquals("hello world", invokeSingleFile())
+    }
 
     @Test
     fun testFactoryWithModuleParam() = codegen(

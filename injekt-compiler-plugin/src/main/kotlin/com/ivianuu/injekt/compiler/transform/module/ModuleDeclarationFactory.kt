@@ -286,6 +286,11 @@ class ModuleDeclarationFactory(
                 includedType
             )
 
+        check(includedClass.constructors.single().valueParameters.size <= valueArguments.size) {
+            "Class needs ${includedClass.constructors.single().dump()} value args are " +
+                    "${valueArguments.map { it.first.dump() to it.second().dump() }}"
+        }
+
         declarations += IncludedModuleDeclaration(
             includedType,
             false,
@@ -365,13 +370,55 @@ class ModuleDeclarationFactory(
                         )
                     }
                     is IrGetValue -> {
+                        val innerProperties = innerIncludeFunction.valueParameters
+                            .mapIndexed { index, valueParameter ->
+                                InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
+                                    .fieldBakedProperty(
+                                        moduleClass,
+                                        Name.identifier("${innerIncludeFunction.name}\$p$index"),
+                                        valueParameter.type
+                                    )
+                            }
+
                         declarations += IncludedModuleDeclaration(
                             innerIncludeFunction.returnType,
                             true,
                             ValueParameterPath(moduleExpression.symbol.owner as IrValueParameter),
-                            emptyList(),
-                            null
-                        )
+                            innerProperties
+                                .map { property ->
+                                    IncludedModuleDeclaration.Parameter(
+                                        PropertyPath(property),
+                                        property.getter!!.returnType
+                                    )
+                                }
+                        ) { moduleExpression ->
+                            irBlock {
+                                innerIncludeFunction.valueParameters.forEachIndexed { index, innerValueParameter ->
+                                    val innerProperty =
+                                        innerValueParameter.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                                            .getValueArgument(0)!!
+                                            .let { it as IrConst<String> }.value
+                                            .let { propertyName ->
+                                                includedClass.properties
+                                                    .single { it.name.asString() == propertyName }
+                                            }
+
+                                    +irSetField(
+                                        moduleExpression(),
+                                        innerProperties[index].backingField!!,
+                                        DeclarationIrBuilder(
+                                            pluginContext,
+                                            innerProperty.symbol
+                                        ).irCall(innerProperty.getter!!).apply {
+                                            dispatchReceiver = irCall(property.getter!!).apply {
+                                                dispatchReceiver =
+                                                    irGet(module.clazz.thisReceiver!!)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                     else -> error("Unexpected include function expression ${innerIncludeFunction.dump()}")
                 }
