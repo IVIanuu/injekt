@@ -101,7 +101,7 @@ class InstanceFactoryTest {
     )
 
     @Test
-    fun testComponentAsMemberFunction() = codegen(
+    fun testFactoryAsMemberFunction() = codegen(
         """
         class MyClass {
             val outerField = ""
@@ -119,6 +119,38 @@ class InstanceFactoryTest {
                 instance(outerField)
                 myOtherModule()
             }
+        }
+        
+        @Module 
+        fun MyClass.myOtherModule() { 
+            transient { this@myOtherModule } 
+        }
+        
+        fun invoke() = MyClass().createComponent("")
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testFactoryAsExtensionFunction() = codegen(
+        """
+        class MyClass {
+            val outerField = "" 
+            @Transient class Dep(myClass: MyClass, foo: Foo)
+        }
+        
+        @Factory 
+        fun MyClass.createComponent(userId: String): MyClass.Dep { 
+            transient<Foo>()
+            myModule()
+            return createInstance() 
+        }
+        
+        @Module 
+        fun MyClass.myModule() { 
+            instance(outerField)
+            myOtherModule()
         }
         
         @Module 

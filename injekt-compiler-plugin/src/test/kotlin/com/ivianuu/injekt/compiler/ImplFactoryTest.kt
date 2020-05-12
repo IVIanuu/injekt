@@ -337,6 +337,42 @@ class ImplFactoryTest {
     }
 
     @Test
+    fun testComponentExtensionFunction() = codegen(
+        """
+        interface TestComponent {
+            val dep: MyClass.Dep
+        }
+
+        class MyClass {
+            val outerField = ""
+            @Transient class Dep(myClass: MyClass, foo: Foo)
+        }
+
+        @Factory 
+        fun MyClass.createComponent(userId: String): TestComponent { 
+            transient<Foo>()
+            myModule()
+            return createImpl()
+        }
+        
+        @Module 
+        fun MyClass.myModule() { 
+            instance(outerField)
+            myOtherModule() 
+        }
+        
+        @Module 
+        fun MyClass.myOtherModule() { 
+            transient { this@myOtherModule } 
+        }
+        
+        fun invoke() = MyClass().createComponent("")
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testLocalFunctionImplFactory() = codegen(
         """
         interface TestComponent { 
