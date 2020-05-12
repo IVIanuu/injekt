@@ -42,12 +42,6 @@ object InjektNameConventions {
         )
     }
 
-    private fun IrCall.name(suffix: String): Name {
-        return Name.identifier(
-            "\$$suffix"
-        )
-    }
-
     private fun IrFunction.generateSignatureUniqueHash(): Int {
         var result = startOffset.hashCode()
         result = 31 * result + endOffset.hashCode()
