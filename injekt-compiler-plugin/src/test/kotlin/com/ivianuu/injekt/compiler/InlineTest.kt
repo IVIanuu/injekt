@@ -4,7 +4,7 @@ import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class FactoryTest {
+class InlineTest {
 
     @Test
     fun testInlineModuleLambda() = codegen(
@@ -127,5 +127,49 @@ class FactoryTest {
     ) {
         assertTrue(invokeSingleFile() is Foo)
     }
+
+    @Test
+    fun testCapturingModuleLambda() = codegen(
+        """
+        interface TestComponent<T> {
+            val dep: T
+        }
+        @Factory
+        inline fun <T> createComponent(block: @Module () -> Unit): TestComponent<T> {
+            block()
+            return createImpl()
+        }
+        
+        class MyClass {
+            init {
+                createComponent<MyClass> {
+                    instance(this)
+                }
+            }
+        }
+    """
+    )
+
+    @Test
+    fun testCapturingLocalModule() = codegen(
+        """
+        interface TestComponent {
+            val dep: MyClass
+        }
+        class MyClass {
+            init {
+                @Module
+                fun localModule() {
+                    instance(this)
+                }
+                @Factory
+                fun create(): MyClass {
+                    localModule()
+                    return createInstance()
+                }
+            }
+        }
+    """
+    )
 
 }
