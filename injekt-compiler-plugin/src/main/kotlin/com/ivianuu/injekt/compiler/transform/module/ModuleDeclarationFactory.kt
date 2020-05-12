@@ -286,11 +286,6 @@ class ModuleDeclarationFactory(
                 includedType
             )
 
-        check(includedClass.constructors.single().valueParameters.size <= valueArguments.size) {
-            "Class needs ${includedClass.constructors.single().dump()} value args are " +
-                    "${valueArguments.map { it.first.dump() to it.second().dump() }}"
-        }
-
         declarations += IncludedModuleDeclaration(
             includedType,
             false,
