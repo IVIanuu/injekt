@@ -91,7 +91,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     }
 
     override fun visitFunction(declaration: IrFunction): IrStatement =
-        transformFunctionIfNeeded(declaration)
+        transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
 
     private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
         for (function in originalFunctions) {

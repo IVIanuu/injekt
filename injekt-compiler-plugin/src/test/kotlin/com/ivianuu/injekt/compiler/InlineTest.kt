@@ -243,4 +243,21 @@ class InlineTest {
     """
     )
 
+    @Test
+    fun testCapturingMemberAndExtensionInLocalFunction() = codegen(
+        """
+        class MyClass {
+            @Factory
+            fun String.factory(): Pair<MyClass, String> { 
+                @Module
+                fun local() {
+                    transient { this@MyClass to this@factory }
+                }
+                local()
+                return createInstance()
+            }
+        }
+    """
+    )
+
 }
