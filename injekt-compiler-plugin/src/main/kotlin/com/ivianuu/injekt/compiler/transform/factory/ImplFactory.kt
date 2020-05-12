@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.classOrFail
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -34,6 +33,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFakeOverride
@@ -77,7 +77,7 @@ class ImplFactory(
     }
     val factoryImplementationNode =
         FactoryImplementationNode(
-            key = clazz.defaultType.asKey(pluginContext),
+            key = clazz.defaultType.asKey(),
             implFactory = this,
             initializerAccessor = { it() }
         )
@@ -181,7 +181,7 @@ class ImplFactory(
                                     typeArguments[it.owner.index]
                                 }
                             )
-                            .asKey(pluginContext),
+                            .asKey(),
                         declaration.descriptor.fqNameSafe
                     )
                 }
@@ -210,12 +210,12 @@ class ImplFactory(
         }
 
         val superType = clazz.superTypes.single()
-        val superTypeClass = superType.classOrFail.owner
+        val superTypeClass = superType.getClass()!!
         superTypeClass.collectDependencyRequests(superType.typeArguments)
     }
 
     private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
-        val superType = clazz.superTypes.single().classOrFail.owner
+        val superType = clazz.superTypes.single().getClass()!!
         body = irBlockBody {
             +IrDelegatingConstructorCallImpl(
                 UNDEFINED_OFFSET,

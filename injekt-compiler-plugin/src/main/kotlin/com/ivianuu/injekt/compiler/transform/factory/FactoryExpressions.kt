@@ -2,13 +2,10 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -26,12 +23,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
-import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi2ir.findFirstFunction
-import org.jetbrains.kotlin.psi2ir.findSingleFunction
-import org.jetbrains.kotlin.resolve.calls.components.isVararg
 
 class FactoryExpressions(
     private val pluginContext: IrPluginContext,
@@ -48,16 +40,8 @@ class FactoryExpressions(
 
     private val requirementExpressions = mutableMapOf<RequirementNode, FactoryExpression>()
 
-    private val collectionsScope = symbols.getPackage(FqName("kotlin.collections"))
-    private val kotlinScope = symbols.getPackage(FqName("kotlin"))
-
-    private val pair = pluginContext.symbolTable.referenceClass(
-        kotlinScope.memberScope
-            .getContributedClassifier(
-                Name.identifier("Pair"),
-                NoLookupLocation.FROM_BACKEND
-            ) as ClassDescriptor
-    ).ensureBound(pluginContext.irProviders)
+    private val pair = pluginContext.referenceClass(FqName("kotlin.Pair"))!!
+        .owner
 
     fun getRequirementExpression(node: RequirementNode): FactoryExpression {
         requirementExpressions[node]?.let { return it }
@@ -196,10 +180,7 @@ class FactoryExpressions(
             .map { (key, entryValue) ->
                 val entryValueExpression = getBindingExpression(entryValue)
                 val pairExpression: FactoryExpression = pairExpression@{
-                    irCall(
-                        pair.constructors.single(),
-                        pair.typeWith(binding.keyKey.type, binding.valueKey.type)
-                    ).apply {
+                    irCall(pair.constructors.single()).apply {
                         putTypeArgument(0, binding.keyKey.type)
                         putTypeArgument(1, binding.valueKey.type)
 
@@ -220,10 +201,8 @@ class FactoryExpressions(
             when (entryExpressions.size) {
                 0 -> {
                     irCall(
-                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
-                            collectionsScope.memberScope.findSingleFunction(Name.identifier("emptyMap"))
-                        ),
-                        binding.key.type
+                        pluginContext.referenceFunctions(FqName("kotlin.collections.emptyMap"))
+                            .single()
                     ).apply {
                         putTypeArgument(0, binding.keyKey.type)
                         putTypeArgument(1, binding.valueKey.type)
@@ -231,12 +210,10 @@ class FactoryExpressions(
                 }
                 1 -> {
                     irCall(
-                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
-                            collectionsScope.memberScope.findFirstFunction("mapOf") {
-                                it.valueParameters.singleOrNull()?.isVararg == false
+                        pluginContext.referenceFunctions(FqName("kotlin.collections.mapOf"))
+                            .single {
+                                it.owner.valueParameters.singleOrNull()?.isVararg == false
                             }
-                        ),
-                        binding.key.type
                     ).apply {
                         putTypeArgument(0, binding.keyKey.type)
                         putTypeArgument(1, binding.valueKey.type)
@@ -248,12 +225,10 @@ class FactoryExpressions(
                 }
                 else -> {
                     irCall(
-                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
-                            collectionsScope.memberScope.findFirstFunction("mapOf") {
-                                it.valueParameters.singleOrNull()?.isVararg == true
+                        pluginContext.referenceFunctions(FqName("kotlin.collections.mapOf"))
+                            .single {
+                                it.owner.valueParameters.singleOrNull()?.isVararg == true
                             }
-                        ),
-                        binding.key.type
                     ).apply {
                         putTypeArgument(0, binding.keyKey.type)
                         putTypeArgument(1, binding.valueKey.type)
@@ -297,7 +272,7 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().asKey(pluginContext),
+                binding.key.type.typeArguments.single().asKey(),
                 binding.origin,
                 RequestType.Provider
             )
@@ -381,22 +356,18 @@ class FactoryExpressions(
             when (elementExpressions.size) {
                 0 -> {
                     irCall(
-                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
-                            collectionsScope.memberScope.findSingleFunction(Name.identifier("emptySet"))
-                        ),
-                        binding.key.type
+                        pluginContext.referenceFunctions(FqName("kotlin.collections.emptySet"))
+                            .single()
                     ).apply {
                         putTypeArgument(0, binding.elementKey.type)
                     }
                 }
                 1 -> {
                     irCall(
-                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
-                            collectionsScope.memberScope.findFirstFunction("setOf") {
-                                it.valueParameters.singleOrNull()?.isVararg == false
+                        pluginContext.referenceFunctions(FqName("kotlin.collections.setOf"))
+                            .single {
+                                it.owner.valueParameters.singleOrNull()?.isVararg == false
                             }
-                        ),
-                        binding.key.type
                     ).apply {
                         putTypeArgument(0, binding.elementKey.type)
                         putValueArgument(
@@ -407,12 +378,10 @@ class FactoryExpressions(
                 }
                 else -> {
                     irCall(
-                        this@FactoryExpressions.pluginContext.symbolTable.referenceFunction(
-                            collectionsScope.memberScope.findFirstFunction("setOf") {
-                                it.valueParameters.singleOrNull()?.isVararg == true
+                        pluginContext.referenceFunctions(FqName("kotlin.collections.setOf"))
+                            .single {
+                                it.owner.valueParameters.singleOrNull()?.isVararg == true
                             }
-                        ),
-                        binding.key.type
                     ).apply {
                         putTypeArgument(0, binding.elementKey.type)
                         putValueArgument(
@@ -511,7 +480,7 @@ class FactoryExpressions(
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().asKey(pluginContext),
+                binding.key.type.typeArguments.single().asKey(),
                 binding.origin,
                 RequestType.Provider
             )
@@ -538,10 +507,7 @@ class FactoryExpressions(
                     )
                 )
                 val pairExpression: FactoryExpression = pairExpression@{
-                    irCall(
-                        pair.constructors.single(),
-                        pair.typeWith(binding.keyKey.type, binding.valueKey.type)
-                    ).apply {
+                    irCall(pair.constructors.single()).apply {
                         putTypeArgument(0, binding.keyKey.type)
                         putTypeArgument(1, binding.valueKey.type)
 
@@ -768,7 +734,7 @@ class FactoryExpressions(
                                     UNDEFINED_OFFSET,
                                     this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
                                         .typeWith(
-                                            symbols.getFunction(0)
+                                            pluginContext.irBuiltIns.function(0)
                                                 .typeWith(binding.key.type)
                                         ),
                                     binding.elementKey.type,
@@ -789,12 +755,10 @@ class FactoryExpressions(
         providerInitializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
     ): FactoryExpression {
         return members.cachedValue(
-            symbols.getFunction(
-                    0
-                )
+            pluginContext.irBuiltIns.function(0)
                 .typeWith(key.type)
-                .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
-                .asKey(pluginContext),
+                .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
+                .asKey(),
             "provider",
             providerInitializer
         )
@@ -850,7 +814,7 @@ class FactoryExpressions(
         )
         return bindingExpression@{ context ->
             irCall(
-                symbols.getFunction(0)
+                pluginContext.irBuiltIns.function(0)
                     .functions
                     .single { it.owner.name.asString() == "invoke" }
             ).apply {

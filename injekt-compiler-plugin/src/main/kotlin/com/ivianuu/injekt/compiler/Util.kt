@@ -30,21 +30,21 @@ import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.IrProvider
-import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.properties
@@ -68,7 +68,6 @@ import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
@@ -87,6 +86,15 @@ fun Annotated.getAnnotatedAnnotations(
     annotations.filter {
         it.hasAnnotation(annotation, module)
     }
+
+fun IrAnnotationContainer.hasAnnotatedAnnotations(
+    annotation: FqName
+): Boolean = annotations.any { it.type.hasAnnotation(annotation) }
+
+fun IrAnnotationContainer.getAnnotatedAnnotations(
+    annotation: FqName
+): List<IrConstructorCall> =
+    annotations.filter { it.type.hasAnnotation(annotation) }
 
 fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
     val thisFqName = this.fqName ?: return false
@@ -121,14 +129,14 @@ fun IrType.withAnnotations(
     )
 }
 
-fun IrType.withNoArgQualifiers(symbols: InjektSymbols, qualifiers: List<FqName>): IrType {
+fun IrType.withNoArgQualifiers(pluginContext: IrPluginContext, qualifiers: List<FqName>): IrType {
     this as IrSimpleType
     return replace(
         newArguments = arguments,
         newAnnotations = annotations + qualifiers
-            .map { symbols.getTopLevelClass(it) }
+            .map { pluginContext.referenceClass(it)!! }
             .map {
-                DeclarationIrBuilder(symbols.pluginContext, it)
+                DeclarationIrBuilder(pluginContext, it)
                     .irCall(it.constructors.single())
             }
     )
@@ -137,7 +145,7 @@ fun IrType.withNoArgQualifiers(symbols: InjektSymbols, qualifiers: List<FqName>)
 fun IrType.getQualifiers(): List<IrConstructorCall> {
     return annotations
         .filter {
-            it.type.classOrFail
+            it.type.getClass()!!
                 .descriptor
                 .annotations
                 .hasAnnotation(InjektFqNames.Qualifier)
@@ -145,7 +153,7 @@ fun IrType.getQualifiers(): List<IrConstructorCall> {
 }
 
 fun IrType.getQualifierFqNames(): List<FqName> =
-    getQualifiers().map { it.type.classOrFail.descriptor.fqNameSafe }
+    getQualifiers().map { it.type.getClass()!!.fqNameForIrSerialization }
 
 private fun IrType.replace(
     newArguments: List<IrTypeArgument>,
@@ -178,53 +186,7 @@ val IrType.typeArguments: List<IrType>
 
 val IrTypeArgument.type get() = typeOrNull ?: error("Type is null for ${render()}")
 
-val IrType.classOrFail get() = classOrNull ?: error("Cannot get class for ${render()}")
-
 fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWith(*arguments)
-
-fun <T : IrSymbol> T.ensureBound(irProviders: List<IrProvider>): T {
-    if (!this.isBound) irProviders.forEach { it.getDeclaration(this) }
-    check(this.isBound) { "$this is not bound" }
-    return this
-}
-
-val SymbolTable.allUnbound: List<IrSymbol>
-    get() {
-        val r = mutableListOf<IrSymbol>()
-        r.addAll(unboundClasses)
-        r.addAll(unboundConstructors)
-        r.addAll(unboundEnumEntries)
-        r.addAll(unboundFields)
-        r.addAll(unboundSimpleFunctions)
-        r.addAll(unboundProperties)
-        r.addAll(unboundTypeParameters)
-        r.addAll(unboundTypeAliases)
-        return r
-    }
-
-fun generateSymbols(pluginContext: IrPluginContext) {
-    lateinit var unbound: List<IrSymbol>
-    val visited = mutableSetOf<IrSymbol>()
-    do {
-        unbound = pluginContext.symbolTable.allUnbound
-
-        for (symbol in unbound) {
-            if (visited.contains(symbol)) {
-                continue
-            }
-            // Symbol could get bound as a side effect of deserializing other symbols.
-            if (!symbol.isBound) {
-                pluginContext.irProviders.forEach { it.getDeclaration(symbol) }
-            }
-            if (!symbol.isBound) {
-                visited.add(symbol)
-            }
-        }
-    } while ((unbound - visited).isNotEmpty())
-}
-
-fun IrAnnotationContainer.hasAnnotation(fqName: FqName): Boolean =
-    annotations.any { (it.symbol.descriptor.constructedClass.fqNameSafe == fqName) }
 
 fun IrClass.findPropertyGetter(
     name: String

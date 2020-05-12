@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.types.KotlinType
 
 abstract class AbstractInjektTransformer(
     val pluginContext: IrPluginContext
@@ -29,12 +28,8 @@ abstract class AbstractInjektTransformer(
 
     val symbols = InjektSymbols(pluginContext)
 
-    val irProviders = pluginContext.irProviders
     protected val symbolTable = pluginContext.symbolTable
     val irBuiltIns = pluginContext.irBuiltIns
-    protected val builtIns = pluginContext.builtIns
-    protected val typeTranslator = pluginContext.typeTranslator
-    protected open fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     lateinit var moduleFragment: IrModuleFragment
 

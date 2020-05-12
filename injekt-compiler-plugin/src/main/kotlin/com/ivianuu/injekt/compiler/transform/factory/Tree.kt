@@ -2,14 +2,11 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
-import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.type
 import com.ivianuu.injekt.compiler.typeArguments
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -21,14 +18,15 @@ import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
@@ -148,7 +146,7 @@ class ChildFactoryBindingNode(
     key, listOf(
         BindingRequest(
             childImplFactory.parent!!.clazz.defaultType
-                .asKey(owner.pluginContext),
+                .asKey(),
             null
         )
     ),
@@ -184,7 +182,7 @@ class FactoryImplementationBindingNode(
     false,
     null,
     factoryImplementationNode.implFactory,
-    factoryImplementationNode.key.type.classOrFail.descriptor.fqNameSafe
+    factoryImplementationNode.key.type.getClass()!!.fqNameForIrSerialization
 )
 
 class InstanceBindingNode(
@@ -202,7 +200,7 @@ class LazyBindingNode(
     key,
     listOf(
         BindingRequest(
-            key = key.type.typeArguments.single().asKey(owner.pluginContext),
+            key = key.type.typeArguments.single().asKey(),
             origin
         )
     ),
@@ -219,8 +217,8 @@ class MapBindingNode(
     origin: FqName?,
     val entries: Map<MapKey, BindingRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner, origin) {
-    val keyKey = key.type.typeArguments[0].asKey(owner.pluginContext)
-    val valueKey = key.type.typeArguments[1].asKey(owner.pluginContext)
+    val keyKey = key.type.typeArguments[0].asKey()
+    val valueKey = key.type.typeArguments[1].asKey()
 }
 
 class MembersInjectorBindingNode(
@@ -232,7 +230,7 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.single()
         .valueParameters
-        .map { BindingRequest(it.type.asKey(owner.pluginContext), null) },
+        .map { BindingRequest(it.type.asKey(), null) },
     null,
     false,
     null,
@@ -259,7 +257,7 @@ class ProviderBindingNode(
     origin: FqName?
 ) : BindingNode(
     key,
-    listOf(BindingRequest(key.type.typeArguments.single().asKey(owner.pluginContext), origin)),
+    listOf(BindingRequest(key.type.typeArguments.single().asKey(), origin)),
     null,
     false,
     null,
@@ -284,11 +282,10 @@ class SetBindingNode(
     origin: FqName?,
     val elements: List<BindingRequest>
 ) : BindingNode(key, elements, null, false, null, owner, origin) {
-    val elementKey = key.type.typeArguments.single().asKey(owner.pluginContext)
+    val elementKey = key.type.typeArguments.single().asKey()
 }
 
-fun IrType.asKey(context: IrPluginContext): Key {
-    annotations.forEach { it.symbol.ensureBound(context.irProviders) }
+fun IrType.asKey(): Key {
     return Key(this)
 }
 

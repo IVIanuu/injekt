@@ -57,7 +57,7 @@ abstract class AbstractFactory(
             factoryModule = ModuleNode(
                 key = moduleClass.defaultType
                     .typeWith(*typeParametersMap.values.toTypedArray())
-                    .asKey(pluginContext),
+                    .asKey(),
                 module = moduleClass,
                 initializerAccessor = moduleAccessor,
                 typeParametersMap = emptyMap()

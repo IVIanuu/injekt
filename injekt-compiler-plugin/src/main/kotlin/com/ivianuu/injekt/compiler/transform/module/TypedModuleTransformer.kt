@@ -3,8 +3,6 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
-import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -51,6 +49,7 @@ import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.TypeRemapper
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -133,7 +132,6 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(
                     expression.symbol
-                        .ensureBound(irProviders)
                         .owner
                 )
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
@@ -174,9 +172,7 @@ class TypedModuleTransformer(pluginContext: IrPluginContext) :
         typedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(
-                    expression.symbol
-                        .ensureBound(irProviders)
-                        .owner
+                    expression.symbol.owner
                 )
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     classOfCalls += expression

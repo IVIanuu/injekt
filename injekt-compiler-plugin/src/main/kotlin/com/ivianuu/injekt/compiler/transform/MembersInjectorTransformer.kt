@@ -3,9 +3,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -34,9 +31,11 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -83,7 +82,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                     it.name == Name.identifier("inject\$${property.name}")
                 }?.let { return it }
                 for (superType in superTypes) {
-                    superType.classOrNull?.ensureBound(irProviders)?.owner?.findInjectSetter()
+                    superType.classOrNull?.owner?.findInjectSetter()
                         ?.let { return it }
                 }
                 return null
@@ -121,7 +120,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             injectProperties += properties
                 .filter { it.hasAnnotation(InjektFqNames.Inject) }
             superTypes
-                .forEach { it.classOrNull?.ensureBound(irProviders)?.owner?.collectInjectorProperties() }
+                .forEach { it.classOrNull?.owner?.collectInjectorProperties() }
         }
 
         clazz.collectInjectorProperties()
@@ -131,7 +130,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             name = InjektNameConventions.getMembersInjectorNameForClass(clazz.name)
             visibility = clazz.visibility
         }.apply clazz@{
-            superTypes += symbols.getFunction(1)
+            superTypes += irBuiltIns.function(1)
                 .typeWith(clazz.defaultType, irBuiltIns.unitType)
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -142,9 +141,9 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             val fieldsByInjectProperty = injectProperties.associateWith { property ->
                 addField {
                     name = Name.identifier("p${fieldIndex++}")
-                    type = symbols.getFunction(0)
+                    type = irBuiltIns.function(0)
                         .typeWith(property.backingField!!.type)
-                        .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
+                        .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                 }
             }
 
@@ -181,9 +180,10 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
                 overriddenSymbols += superTypes.single()
-                    .classOrFail
+                    .getClass()!!
                     .functions
-                    .single { it.owner.name.asString() == "invoke" }
+                    .single { it.name.asString() == "invoke" }
+                    .symbol
 
                 val instanceValueParameter = addValueParameter(
                     "instance",
@@ -197,7 +197,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             putValueArgument(
                                 0,
                                 irCall(
-                                    symbols.getFunction(0)
+                                    irBuiltIns.function(0)
                                         .functions
                                         .single { it.owner.name.asString() == "invoke" }
                                 ).apply {

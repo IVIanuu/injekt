@@ -3,8 +3,6 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
-import org.jetbrains.kotlin.descriptors.resolveClassByFqName
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
@@ -17,7 +15,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val injektPackage = getPackage(InjektFqNames.InjektPackage)
     val internalPackage = getPackage(InjektFqNames.InternalPackage)
 
-    val injektAst = getTopLevelClass(InjektFqNames.InjektAst)
+    val injektAst = pluginContext.referenceClass(InjektFqNames.InjektAst)!!
 
     private fun IrClassSymbol.childClass(name: Name) = owner.declarations
         .filterIsInstance<IrClass>()
@@ -25,7 +23,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         .symbol
 
     val astAlias = injektAst.childClass(InjektFqNames.AstAlias.shortName())
-    val astAssisted = getTopLevelClass(InjektFqNames.AstAssisted)
+    val astAssisted = pluginContext.referenceClass(InjektFqNames.AstAssisted)!!
     val astBinding = injektAst.childClass(InjektFqNames.AstBinding.shortName())
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
@@ -52,43 +50,31 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
     val astTyped = injektAst.childClass(InjektFqNames.AstTyped.shortName())
 
-    val assisted = getTopLevelClass(InjektFqNames.Assisted)
-    val assistedParameters = getTopLevelClass(InjektFqNames.AssistedParameters)
+    val assisted = pluginContext.referenceClass(InjektFqNames.Assisted)!!
+    val assistedParameters = pluginContext.referenceClass(InjektFqNames.AssistedParameters)!!
 
-    val childFactory = getTopLevelClass(InjektFqNames.ChildFactory)
-    val doubleCheck = getTopLevelClass(InjektFqNames.DoubleCheck)
-    val factory = getTopLevelClass(InjektFqNames.Factory)
+    val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
+    val doubleCheck = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
+    val factory = pluginContext.referenceClass(InjektFqNames.Factory)!!
 
-    val instanceProvider = getTopLevelClass(InjektFqNames.InstanceProvider)
+    val instanceProvider = pluginContext.referenceClass(InjektFqNames.InstanceProvider)!!
 
-    val lazy = getTopLevelClass(InjektFqNames.Lazy)
+    val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
 
-    val mapDsl = getTopLevelClass(InjektFqNames.MapDsl)
-    val mapProvider = getTopLevelClass(InjektFqNames.MapProvider)
+    val mapDsl = pluginContext.referenceClass(InjektFqNames.MapDsl)!!
+    val mapProvider = pluginContext.referenceClass(InjektFqNames.MapProvider)!!
 
-    val module = getTopLevelClass(InjektFqNames.Module)
+    val module = pluginContext.referenceClass(InjektFqNames.Module)!!
 
-    val provider = getTopLevelClass(InjektFqNames.Provider)
+    val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
     val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
-    val providerDsl = getTopLevelClass(InjektFqNames.ProviderDsl)
-    val providerOfLazy = getTopLevelClass(InjektFqNames.ProviderOfLazy)
+    val providerDsl = pluginContext.referenceClass(InjektFqNames.ProviderDsl)!!
+    val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 
-    val setDsl = getTopLevelClass(InjektFqNames.SetDsl)
-    val setProvider = getTopLevelClass(InjektFqNames.SetProvider)
+    val setDsl = pluginContext.referenceClass(InjektFqNames.SetDsl)!!
+    val setProvider = pluginContext.referenceClass(InjektFqNames.SetProvider)!!
 
-    val transient = getTopLevelClass(InjektFqNames.Transient)
-
-    fun getFunction(parameterCount: Int) = pluginContext.builtIns.getFunction(parameterCount)
-        .let { pluginContext.symbolTable.referenceClass(it).ensureBound(pluginContext.irProviders) }
-
-    fun getTopLevelClass(fqName: FqName): IrClassSymbol =
-        pluginContext.symbolTable.referenceClass(
-            pluginContext.moduleDescriptor.resolveClassByFqName(
-                fqName,
-                NoLookupLocation.FROM_BACKEND
-            )
-                ?: error("No class found for $fqName")
-        ).ensureBound(pluginContext.irProviders)
+    val transient = pluginContext.referenceClass(InjektFqNames.Transient)!!
 
     fun getTypeAlias(fqName: FqName): IrTypeAliasSymbol =
         pluginContext.symbolTable.referenceTypeAlias(
@@ -98,7 +84,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
                 )
             )
                 ?: error("No class found for $fqName")
-        ).ensureBound(pluginContext.irProviders)
+        )
 
     fun getPackage(fqName: FqName): PackageViewDescriptor =
         pluginContext.moduleDescriptor.getPackage(fqName)

@@ -8,9 +8,6 @@ import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
 import com.ivianuu.injekt.compiler.ValueParameterPath
-import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.ensureBound
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -20,6 +17,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlock
@@ -38,6 +36,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -45,6 +44,7 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.ir.util.properties
@@ -150,8 +150,7 @@ class ModuleDeclarationFactory(
         val mapKeyType = call.getTypeArgument(0)!!
         val mapValueType = call.getTypeArgument(1)!!
 
-        val mapType = pluginContext.symbolTable.referenceClass(pluginContext.builtIns.map)
-            .ensureBound(pluginContext.irProviders)
+        val mapType = pluginContext.referenceClass(KotlinBuiltIns.FQ_NAMES.map)!!
             .typeWith(mapKeyType, mapValueType)
             .withAnnotations(mapQualifiers)
 
@@ -182,8 +181,7 @@ class ModuleDeclarationFactory(
             pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
         val setElementType = call.getTypeArgument(0)!!
 
-        val setType = pluginContext.symbolTable.referenceClass(pluginContext.builtIns.set)
-            .ensureBound(pluginContext.irProviders)
+        val setType = pluginContext.referenceClass(KotlinBuiltIns.FQ_NAMES.set)!!
             .typeWith(setElementType)
             .withAnnotations(setQualifiers)
 
@@ -521,8 +519,7 @@ class ModuleDeclarationFactory(
             } else {
                 val provider = providerFactory.providerForClass(
                     name = Name.identifier(nameProvider.allocate("Factory")),
-                    clazz = bindingType.classOrFail
-                        .ensureBound(pluginContext.irProviders).owner,
+                    clazz = bindingType.getClass()!!,
                     visibility = module.clazz.visibility
                 )
                 module.clazz.addChild(provider)

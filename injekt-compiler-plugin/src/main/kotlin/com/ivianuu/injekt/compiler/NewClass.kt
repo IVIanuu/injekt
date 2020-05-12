@@ -1,12 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
-import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -14,23 +7,17 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptorVisitor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.builders.declarations.IrClassBuilder
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.descriptors.LazyTypeConstructor
 import org.jetbrains.kotlin.ir.descriptors.WrappedDeclarationDescriptor
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.ir.types.toKotlinType
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi2ir.PsiSourceManager
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScopeImpl
@@ -43,42 +30,6 @@ import org.jetbrains.kotlin.types.TypeSubstitution
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.utils.Printer
-import java.io.File
-
-fun IrModuleFragment.addClass(
-    context: IrPluginContext,
-    project: Project,
-    name: Name,
-    packageFqName: FqName,
-    clazz: IrClass
-) {
-    val sourceFile = File("${name}.kt")
-
-    val virtualFile = CoreLocalVirtualFile(CoreLocalFileSystem(), sourceFile)
-
-    val ktFile = KtFile(
-        SingleRootFileViewProvider(
-            PsiManager.getInstance(project),
-            virtualFile
-        ),
-        false
-    )
-
-    val packageFragmentDescriptor =
-        object : PackageFragmentDescriptorImpl(descriptor, packageFqName) {
-            override fun getMemberScope(): MemberScope = MemberScope.Empty
-        }
-
-    val psiSourceManager = context.psiSourceManager as PsiSourceManager
-
-    val fileEntry = psiSourceManager.getOrCreateFileEntry(ktFile)
-    val file = IrFileImpl(fileEntry, packageFragmentDescriptor)
-    psiSourceManager.putFileEntry(file, fileEntry)
-
-    file.addChild(clazz)
-    clazz.parent = file
-    files += file
-}
 
 fun IrClassBuilder.buildClass(): IrClass {
     val wrappedDescriptor = WrappedClassDescriptor()

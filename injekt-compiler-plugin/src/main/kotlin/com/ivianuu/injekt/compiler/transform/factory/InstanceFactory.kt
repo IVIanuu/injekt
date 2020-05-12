@@ -41,7 +41,7 @@ class InstanceFactory(
                 val instanceRequest = BindingRequest(
                     factoryFunction.returnType
                         .substituteWithFactoryTypeArguments()
-                        .asKey(pluginContext),
+                        .asKey(),
                     factoryFunction.descriptor.fqNameSafe
                 )
 

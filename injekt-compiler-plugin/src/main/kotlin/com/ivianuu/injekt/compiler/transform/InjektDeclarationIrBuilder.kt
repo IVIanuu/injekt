@@ -3,8 +3,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
@@ -62,6 +60,7 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -111,7 +110,6 @@ class InjektDeclarationIrBuilder(
 
     val symbols = InjektSymbols(pluginContext)
 
-    val irProviders = pluginContext.irProviders
     val symbolTable = pluginContext.symbolTable
     val irBuiltIns = pluginContext.irBuiltIns
     val builtIns = pluginContext.builtIns
@@ -226,7 +224,7 @@ class InjektDeclarationIrBuilder(
             this.name = name
             this.visibility = visibility
         }.apply clazz@{
-            val superType = symbols.getFunction(assistedParameters.size)
+            val superType = irBuiltIns.function(assistedParameters.size)
                 .typeWith(
                     assistedParameters
                         .map { it.type } + returnType
@@ -245,9 +243,9 @@ class InjektDeclarationIrBuilder(
                         if (parameter.requirement) {
                             parameter.type
                         } else {
-                            symbols.getFunction(0)
+                            irBuiltIns.function(0)
                                 .typeWith(parameter.type)
-                                .withNoArgQualifiers(symbols, listOf(InjektFqNames.Provider))
+                                .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                         }
                     )
                 }
@@ -298,9 +296,7 @@ class InjektDeclarationIrBuilder(
             }.apply func@{
                 dispatchReceiverParameter = thisReceiver?.copyTo(this, type = defaultType)
 
-                overriddenSymbols += superType.classOrFail
-                    .ensureBound(pluginContext.irProviders)
-                    .owner
+                overriddenSymbols += superType.getClass()!!
                     .functions
                     .single { it.name.asString() == "invoke" }
                     .symbol
@@ -336,7 +332,7 @@ class InjektDeclarationIrBuilder(
                                         )
                                     } else {
                                         builder.irCall(
-                                                symbols.getFunction(0)
+                                                irBuiltIns.function(0)
                                                     .functions
                                                     .single { it.owner.name.asString() == "invoke" })
                                             .apply {

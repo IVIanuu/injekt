@@ -7,10 +7,7 @@ import com.ivianuu.injekt.compiler.IntKey
 import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
-import com.ivianuu.injekt.compiler.classOrFail
-import com.ivianuu.injekt.compiler.ensureBound
 import com.ivianuu.injekt.compiler.findPropertyGetter
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteByName
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.type
@@ -19,18 +16,20 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.LongValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
     val parent: Graph?,
@@ -158,12 +157,8 @@ class Graph(
         val functions = descriptor.functions.toList()
 
         functions
-            .flatMap { it.annotations }
-            .forEach { it.symbol.ensureBound(factory.pluginContext.irProviders) }
-
-        functions
             .filter { it.hasAnnotation(InjektFqNames.AstScope) }
-            .forEach { addScope(it.returnType.classOrFail.descriptor.fqNameSafe) }
+            .forEach { addScope(it.returnType.getClass()!!.fqNameForIrSerialization) }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstDependency) }
@@ -178,8 +173,8 @@ class Graph(
                     DependencyBindingResolver(
                         moduleNode = moduleNode,
                         dependencyNode = DependencyNode(
-                            dependency = function.returnType.classOrFail.owner,
-                            key = dependencyType.asKey(factory.pluginContext),
+                            dependency = function.returnType.getClass()!!,
+                            key = dependencyType.asKey(),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 moduleNode.module.findPropertyGetter(dependencyName)
                             )
@@ -197,8 +192,8 @@ class Graph(
                     key = function
                         .returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factory.pluginContext),
-                    origin = module.descriptor.fqNameSafe
+                        .asKey(),
+                    origin = module.fqNameForIrSerialization
                 )
             }
 
@@ -265,12 +260,12 @@ class Graph(
                 putMapEntry(
                     mapKey = function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factory.pluginContext),
+                        .asKey(),
                     entryKey = entryKey,
                     entryValue = function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factory.pluginContext),
-                    origin = module.descriptor.fqNameSafe
+                        .asKey(),
+                    origin = module.fqNameForIrSerialization
                 )
             }
 
@@ -280,8 +275,8 @@ class Graph(
                 addSet(
                     key = function.returnType
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factory.pluginContext),
-                    origin = module.descriptor.fqNameSafe
+                        .asKey(),
+                    origin = module.fqNameForIrSerialization
                 )
             }
 
@@ -291,11 +286,11 @@ class Graph(
                 addSetElement(
                     setKey = function.valueParameters[0].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factory.pluginContext),
+                        .asKey(),
                     elementKey = function.valueParameters[1].type
                         .substituteByName(moduleNode.typeParametersMap)
-                        .asKey(factory.pluginContext),
-                    origin = module.descriptor.fqNameSafe
+                        .asKey(),
+                    origin = module.fqNameForIrSerialization
                 )
             }
 
@@ -325,7 +320,7 @@ class Graph(
                         includedModule,
                         includedModule.defaultType
                             .substituteByName(moduleNode.typeParametersMap)
-                            .asKey(factory.pluginContext),
+                            .asKey(),
                         moduleNode.initializerAccessor.child(property),
                         typeParametersMap
                     )
