@@ -48,14 +48,13 @@ class ModuleImpl(
 ) {
 
     val nameProvider = NameProvider()
-    val providerFactory = ModuleProviderFactory(this, pluginContext)
 
-    val declarationFactory = ModuleDeclarationFactory(
+    private val providerFactory = ModuleProviderFactory(this, pluginContext)
+    private val declarationFactory = ModuleDeclarationFactory(
         this, pluginContext,
         symbols, nameProvider, declarationStore, providerFactory
     )
-
-    val moduleDescriptor = ModuleDescriptor(
+    private val moduleDescriptor = ModuleDescriptor(
         this@ModuleImpl,
         pluginContext,
         symbols
