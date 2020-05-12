@@ -4,14 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.EntryPoint
 import com.ivianuu.injekt.InstallIn
 import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.createImpl
 import com.ivianuu.injekt.entryPointOf
-import com.ivianuu.injekt.parent
-import com.ivianuu.injekt.scope
 
 @Scope
 annotation class RetainedActivityScoped
@@ -34,12 +30,13 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
         return holder.component!!
     }
 
+/*
 @CompositionFactory
 fun createRetainedActivityComponent(): RetainedActivityComponent {
     parent<ApplicationComponent>()
     scope<RetainedActivityScoped>()
     return createImpl()
-}
+}*/
 
 @InstallIn<ApplicationComponent>
 @EntryPoint
