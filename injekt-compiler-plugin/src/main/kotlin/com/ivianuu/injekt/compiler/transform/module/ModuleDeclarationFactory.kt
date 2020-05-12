@@ -328,7 +328,6 @@ class ModuleDeclarationFactory(
                                 .indexOfFirst { it.name.asString() == valueParameterName }
                             valueArguments[index].second
                         }()
-
                 when (moduleExpression) {
                     is IrFunctionExpression -> {
                         includeModuleFromFunction(

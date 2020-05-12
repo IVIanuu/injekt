@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -39,6 +38,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
@@ -134,11 +134,11 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         val originalTypedModuleCalls = mutableListOf<IrCall>()
         var hasUnresolvedClassOfCalls = false
 
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (function.isLocal &&
                     expression.symbol.owner !in function.valueParameters &&
-                    currentScope == allScopes.singleOrNull { it.irElement == function }
+                    expression.type.classOrNull != symbols.providerDsl
                 ) {
                     originalCaptures += expression
                 }
@@ -186,11 +186,11 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         val captures = mutableListOf<IrGetValue>()
 
         transformedFunction.body?.transformChildrenVoid(object :
-            IrElementTransformerVoidWithContext() {
+            IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (function.isLocal &&
                     expression.symbol.owner !in function.valueParameters &&
-                    currentScope == allScopes.singleOrNull { it.irElement == function }
+                    expression.type.classOrNull != symbols.providerDsl
                 ) {
                     captures += expression
                 }

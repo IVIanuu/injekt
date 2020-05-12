@@ -153,9 +153,6 @@ class InlineTest {
     @Test
     fun testCapturingLocalModule() = codegen(
         """
-        interface TestComponent {
-            val dep: MyClass
-        }
         class MyClass {
             init {
                 @Module
@@ -167,6 +164,32 @@ class InlineTest {
                     localModule()
                     return createInstance()
                 }
+            }
+        }
+    """
+    )
+
+    @Test
+    fun testCapturingInnerClassLocalModule() = codegen(
+        """
+        interface TestComponent {
+            val outer: OuterClass
+            val inner: OuterClass.InnerClass
+        }
+        class OuterClass {
+            inner class InnerClass {
+                init { 
+                    @Module 
+                    fun localModule() { 
+                        instance(this@OuterClass)
+                        transient { this@InnerClass }
+                    } 
+                    @Factory 
+                    fun create(): TestComponent { 
+                        localModule()
+                        return createImpl() 
+                    } 
+                }   
             }
         }
     """
@@ -190,6 +213,32 @@ class InlineTest {
         fun factory(): Bar { 
             inlinedModule<Foo, Bar> { Bar(get()) }
             return createInstance()
+        }
+    """
+    )
+
+    @Test
+    fun testCapturingMemberFunction() = codegen(
+        """
+        class MyClass {
+            @Factory
+            fun factory(): MyClass { 
+                transient { this@MyClass }
+                return createInstance()
+            }
+        }
+    """
+    )
+
+    @Test
+    fun testCapturingMemberAndExtensionFunction() = codegen(
+        """
+        class MyClass {
+            @Factory
+            fun String.factory(): Pair<MyClass, String> { 
+                transient { this@MyClass to this@factory }
+                return createInstance()
+            }
         }
     """
     )
