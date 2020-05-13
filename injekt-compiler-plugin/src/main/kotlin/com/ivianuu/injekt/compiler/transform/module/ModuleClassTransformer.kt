@@ -1,8 +1,10 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
+import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -14,9 +16,9 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
@@ -44,11 +46,8 @@ class ModuleClassTransformer(
                         )
                     } catch (e: Exception) {
                         false
-                    } &&
-                    (!declaration.hasAnnotation(InjektFqNames.AstTyped) ||
-                            declaration.valueParameters.any {
-                                it.name.asString().startsWith("class\$")
-                            })
+                    } && (declaration !is IrSimpleFunction ||
+                            pluginContext.irTrace[InjektWritableSlices.DECOY_MARKER, declaration] == null)
                 ) {
                     moduleFunctions += declaration
                 }

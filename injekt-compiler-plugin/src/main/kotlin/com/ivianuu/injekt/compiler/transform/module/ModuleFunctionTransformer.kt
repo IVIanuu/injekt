@@ -2,7 +2,9 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
+import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -99,10 +101,19 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             if (transformed != null && transformed.valueParameters.size != function.valueParameters.size) {
                 declarations.add(
                     function.deepCopyWithSymbolsWithPreservingQualifiers()
-                        .apply {
-                            InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                                annotations += noArgSingleConstructorCall(symbols.astTyped)
-                                body = builder.irExprBody(irInjektIntrinsicUnit())
+                        .also { decoy ->
+                            pluginContext.irTrace.record(
+                                InjektWritableSlices.DECOY_MARKER,
+                                decoy as IrSimpleFunction,
+                                Unit
+                            )
+                            InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
+                                if (transformed.valueParameters
+                                        .any { it.name.asString().startsWith("class\$") }
+                                ) {
+                                    decoy.annotations += noArgSingleConstructorCall(symbols.astTyped)
+                                }
+                                decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
                             }
                         }
                 )
@@ -113,6 +124,9 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
+        ) return function
+        if (function is IrSimpleFunction &&
+            pluginContext.irTrace[InjektWritableSlices.DECOY_MARKER, function] != null
         ) return function
         val typeAnnotationChecker = TypeAnnotationChecker()
         val bindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "Injekt IR")

@@ -152,9 +152,7 @@ class ModuleImpl(
                                         )
                                     }
                                 }
-                                else -> {
-                                    +moduleStatement
-                                }
+                                else -> +moduleStatement
                             }
                         }
                     }
