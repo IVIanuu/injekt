@@ -136,21 +136,27 @@ class CommonScenariosTest {
         
         @Transient
         class ViewModelStore {
-            fun <T : ViewModel> getOrCreate(clazz: KClass<T>, factory: () -> T): T = factory()
+            fun <T : ViewModel> getOrCreate(clazz: Class<T>, factory: ViewModelFactory): T = factory.create(clazz)
+            abstract class ViewModelFactory {
+                abstract fun <T : ViewModel> create(clazz: Class<T>): T
+            }
         }
         
         @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
         @Qualifier
-        annotation class OriginalViewModel
+        annotation class UnscopedViewModel
         
         @Module
         inline fun <T : ViewModel> viewModel() {
             val clazz = classOf<T>()
-            transient<@OriginalViewModel T>()
+            transient<@UnscopedViewModel T>()
             transient {
                 val viewModelStore = get<ViewModelStore>()
-                val viewModelProvider = get<@Provider () -> @OriginalViewModel T>()
-                viewModelStore.getOrCreate<T>(clazz, viewModelProvider)
+                val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
+                viewModelStore.getOrCreate<T>(clazz.java, object : ViewModelStore.ViewModelFactory() {
+                    override fun <T : ViewModel> create(clazz: Class<T>): T =
+                        viewModelProvider() as T
+                })
             }
         }
         

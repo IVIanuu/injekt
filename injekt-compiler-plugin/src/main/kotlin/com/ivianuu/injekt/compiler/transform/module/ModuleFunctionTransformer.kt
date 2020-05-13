@@ -409,7 +409,19 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 .also { typeRemapper.deepCopy = it }, null
         )
             .patchDeclarationParents(parent) as IrSimpleFunction)
-            .also { (it.descriptor as WrappedSimpleFunctionDescriptor).bind(it) }
+            .also {
+                it.accept(object : IrElementTransformerVoid() {
+                    override fun visitFunction(declaration: IrFunction): IrStatement {
+                        val descriptor = declaration.descriptor
+                        if (descriptor is WrappedSimpleFunctionDescriptor &&
+                            !descriptor.isBound()
+                        ) {
+                            descriptor.bind(declaration as IrSimpleFunction)
+                        }
+                        return super.visitFunction(declaration)
+                    }
+                }, null)
+            }
     }
 
     private class DeepCopyTypeRemapper(
