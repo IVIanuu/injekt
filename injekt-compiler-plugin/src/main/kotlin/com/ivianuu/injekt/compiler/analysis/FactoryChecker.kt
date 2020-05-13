@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 class FactoryChecker : CallChecker, DeclarationChecker {
@@ -111,6 +112,22 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             }
         }
 
+        if (resultingDescriptor is FunctionDescriptor &&
+            resultingDescriptor.annotations.hasAnnotation(InjektFqNames.Factory) &&
+            resultingDescriptor.isInline
+        ) {
+            if (resolvedCall.typeArguments.any { it.value.isTypeParameter() }) {
+                context.trace.report(
+                    InjektErrors.INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE
+                        .on(reportOn)
+                )
+            }
+            // todo we need to detect whether this factory is a @ImplFactory
+            //resolvedCall.getReturnType().constructor.declarationDescriptor?.let {
+            //    if (it is ClassDescriptor) checkImplType(it, context, reportOn)
+            //}
+        }
+
         if (resultingDescriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) &&
             !resolvedCall.call.isCallableReference()
         ) {
@@ -166,53 +183,10 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         context: CallCheckerContext
     ) {
         val type =
-            resolvedCall.typeArguments.values.singleOrNull()?.constructor?.declarationDescriptor as? ClassDescriptor
+            resolvedCall.typeArguments.values.singleOrNull()
 
-        if (type?.modality != Modality.ABSTRACT) {
-            context.trace.report(
-                InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT
-                    .on(reportOn)
-            )
-        }
-
-        if (type?.kind == ClassKind.CLASS && type.constructors.none { it.valueParameters.isEmpty() }) {
-            context.trace.report(
-                InjektErrors.IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR
-                    .on(reportOn)
-            )
-        }
-
-        type?.forEachDeclarationInThisAndSuperTypes { declaration ->
-            when (declaration) {
-                is FunctionDescriptor -> {
-                    if (declaration.typeParameters.isNotEmpty()) {
-                        context.trace.report(
-                            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS
-                                .on(reportOn)
-                        )
-                    }
-                    if (declaration.valueParameters.isNotEmpty()) {
-                        context.trace.report(
-                            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS
-                                .on(reportOn)
-                        )
-                    }
-                    if (declaration.isSuspend) {
-                        context.trace.report(
-                            InjektErrors.PROVISION_FUNCTION_CANNOT_BE_SUSPEND
-                                .on(reportOn)
-                        )
-                    }
-                }
-                is PropertyDescriptor -> {
-                    if (declaration.isVar) {
-                        context.trace.report(
-                            InjektErrors.IMPL_CANNOT_CONTAIN_VARS
-                                .on(reportOn)
-                        )
-                    }
-                }
-            }
+        type?.constructor?.declarationDescriptor?.let {
+            if (it is ClassDescriptor) checkImplType(it, context, reportOn)
         }
 
         val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
@@ -242,6 +216,59 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 context.trace.report(
                     InjektErrors.CREATE_IMPl_WITHOUT_FACTORY.on(reportOn)
                 )
+            }
+        }
+    }
+
+    private fun checkImplType(
+        clazz: ClassDescriptor,
+        context: CallCheckerContext,
+        reportOn: PsiElement
+    ) {
+        if (clazz.modality != Modality.ABSTRACT) {
+            context.trace.report(
+                InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT
+                    .on(reportOn)
+            )
+        }
+
+        if (clazz.kind == ClassKind.CLASS && clazz.constructors.none { it.valueParameters.isEmpty() }) {
+            context.trace.report(
+                InjektErrors.IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR
+                    .on(reportOn)
+            )
+        }
+
+        clazz.forEachDeclarationInThisAndSuperTypes { declaration ->
+            when (declaration) {
+                is FunctionDescriptor -> {
+                    if (declaration.typeParameters.isNotEmpty()) {
+                        context.trace.report(
+                            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS
+                                .on(reportOn)
+                        )
+                    }
+                    if (declaration.valueParameters.isNotEmpty()) {
+                        context.trace.report(
+                            InjektErrors.PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS
+                                .on(reportOn)
+                        )
+                    }
+                    if (declaration.isSuspend) {
+                        context.trace.report(
+                            InjektErrors.PROVISION_FUNCTION_CANNOT_BE_SUSPEND
+                                .on(reportOn)
+                        )
+                    }
+                }
+                is PropertyDescriptor -> {
+                    if (declaration.isVar) {
+                        context.trace.report(
+                            InjektErrors.IMPL_CANNOT_CONTAIN_VARS
+                                .on(reportOn)
+                        )
+                    }
+                }
             }
         }
     }

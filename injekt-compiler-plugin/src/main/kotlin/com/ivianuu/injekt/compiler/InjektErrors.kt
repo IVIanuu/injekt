@@ -41,6 +41,11 @@ interface InjektErrors {
         val CREATE_INSTANCE_IN_CHILD_FACTORY = error(
             "createInstance cannot be called in a @ChildFactory function"
         )
+
+        @JvmField
+        val INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE = error(
+            "Inlined @Factory call cannot contain type parameters"
+        )
         @JvmField
         val UNSUPPORTED_MAP_KEY_TYPE = error(
             "Unsupported map key type"

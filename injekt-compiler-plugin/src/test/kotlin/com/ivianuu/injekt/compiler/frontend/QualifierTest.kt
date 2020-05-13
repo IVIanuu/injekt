@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.dsl
+package com.ivianuu.injekt.compiler.frontend
 
 import com.ivianuu.injekt.compiler.assertCompileError
 import com.ivianuu.injekt.compiler.assertOk

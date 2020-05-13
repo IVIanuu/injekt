@@ -18,11 +18,9 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi2ir.findSingleFunction
 
 class InlineFactoryTransformer(
     pluginContext: IrPluginContext,
@@ -81,21 +79,17 @@ class InlineFactoryTransformer(
                                         putValueArgument(index, valueArgument)
                                     }
                             }
-                            val createFunctionName =
-                                if (factoryFunction.hasAnnotation(InjektFqNames.AstInstanceFactory)) {
-                                    "createInstance"
-                                } else if (factoryFunction.hasAnnotation(InjektFqNames.AstImplFactory)) {
-                                    "createImpl"
-                                } else {
-                                    error("Unexpected factory function ${factoryFunction.dump()}")
-                                }
+                            val createFunctionName = when {
+                                factoryFunction.hasAnnotation(InjektFqNames.AstInstanceFactory) -> "createInstance"
+                                factoryFunction.hasAnnotation(InjektFqNames.AstImplFactory) -> "createImpl"
+                                else -> error("Unexpected factory function ${factoryFunction.dump()}")
+                            }
 
                             +irCall(
-                                symbolTable.referenceFunction(
-                                    symbols.getPackage(InjektFqNames.InjektPackage)
-                                        .memberScope
-                                        .findSingleFunction(Name.identifier(createFunctionName))
-                                ),
+                                pluginContext.referenceFunctions(
+                                    InjektFqNames.InjektPackage
+                                        .child(Name.identifier(createFunctionName))
+                                ).single(),
                                 inlineFactoryCall.type
                             )
                         }

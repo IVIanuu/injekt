@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.dsl
+package com.ivianuu.injekt.compiler.frontend
 
 import com.ivianuu.injekt.compiler.assertCompileError
 import com.ivianuu.injekt.compiler.assertOk
@@ -272,6 +272,22 @@ class FactoryDslTest {
     """
     ) {
         assertCompileError("inline")
+    }
+
+    @Test
+    fun testCallingInlineFactoryWithTypeParametersNotAllowed() = codegen(
+        """ 
+        @Factory
+        inline fun <T> factory(): TestComponent {
+            return createImpl()
+        }
+
+        fun <T> callerWithTypeParameters() {
+            factory<T>()
+        }
+    """
+    ) {
+        assertCompileError("type param")
     }
 
 }
