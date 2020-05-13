@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
 import org.junit.Test
 

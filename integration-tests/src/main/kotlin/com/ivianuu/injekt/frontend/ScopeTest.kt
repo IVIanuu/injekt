@@ -1,7 +1,7 @@
-package com.ivianuu.injekt.compiler.frontend
+package com.ivianuu.injekt.frontend
 
-import com.ivianuu.injekt.compiler.assertCompileError
-import com.ivianuu.injekt.compiler.codegen
+import com.ivianuu.injekt.assertCompileError
+import com.ivianuu.injekt.codegen
 import org.junit.Test
 
 class ScopeTest {

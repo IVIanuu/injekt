@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
@@ -242,8 +242,9 @@ class ImplFactoryTest {
     }
 
     @Test
-    fun testProviderDefinitionWhichUsesTypeParameters() = codegen(
-        """
+    fun testProviderDefinitionWhichUsesTypeParameters() =
+        codegen(
+            """
         @Module
         fun <T : S, S> diyAlias() {
             transient { get<T>() as S }
@@ -257,9 +258,9 @@ class ImplFactoryTest {
             return createInstance()
         }
          """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Bar)
+        }
 
     @Test
     fun testComponentSuperTypeWithTypeParameters() = codegen(

@@ -1,8 +1,8 @@
-package com.ivianuu.injekt.compiler.frontend
+package com.ivianuu.injekt.frontend
 
-import com.ivianuu.injekt.compiler.assertCompileError
-import com.ivianuu.injekt.compiler.assertOk
-import com.ivianuu.injekt.compiler.codegen
+import com.ivianuu.injekt.assertCompileError
+import com.ivianuu.injekt.assertOk
+import com.ivianuu.injekt.codegen
 import org.junit.Test
 
 class ModuleDslTest {
@@ -183,8 +183,9 @@ class ModuleDslTest {
         }
 
     @Test
-    fun testTryCatchNotAllowedAroundModuleInvocation() = codegen(
-        """
+    fun testTryCatchNotAllowedAroundModuleInvocation() =
+        codegen(
+            """
             @Module fun a() {}
             @Module fun b() {
                 try {
@@ -193,9 +194,9 @@ class ModuleDslTest {
                 }
             }
         """
-    ) {
-        assertCompileError()
-    }
+        ) {
+            assertCompileError()
+        }
 
     @Test
     fun testSupportedScope() = codegen(
@@ -232,16 +233,17 @@ class ModuleDslTest {
     }
 
     @Test
-    fun testBindingWithTypeParameterInNonInlineModule() = codegen(
-        """ 
+    fun testBindingWithTypeParameterInNonInlineModule() =
+        codegen(
+            """ 
         @Module
         fun <T> module() {
             transient<T>()
         }
     """
-    ) {
-        assertCompileError("inline")
-    }
+        ) {
+            assertCompileError("inline")
+        }
 
     @Test
     fun testInlineModuleWithDefinition() = codegen(

@@ -1,7 +1,5 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Lazy
-import com.ivianuu.injekt.Provider
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -49,7 +47,8 @@ class SetTest {
         }
          """
     ) {
-        val set = invokeSingleFile<Set<@Provider () -> Command>>().toList()
+        val set =
+            invokeSingleFile<Set<@Provider () -> Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)
@@ -73,7 +72,8 @@ class SetTest {
         }
          """
     ) {
-        val set = invokeSingleFile<Set<@Lazy () -> Command>>().toList()
+        val set =
+            invokeSingleFile<Set<@Lazy () -> Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)

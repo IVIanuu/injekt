@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
 import org.junit.Test
 
@@ -108,13 +108,14 @@ class ModuleTest {
     )
 
     @Test
-    fun testBindingWithTypeParameterInInlineModule() = codegen(
-        """ 
+    fun testBindingWithTypeParameterInInlineModule() =
+        codegen(
+            """ 
         @Module
         inline fun <T> module() {
             transient<T>()
         }
     """
-    )
+        )
 
 }

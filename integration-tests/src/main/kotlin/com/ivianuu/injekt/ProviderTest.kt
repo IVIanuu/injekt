@@ -1,6 +1,5 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Provider
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import org.junit.Test

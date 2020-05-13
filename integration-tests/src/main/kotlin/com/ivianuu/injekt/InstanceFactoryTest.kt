@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
 import org.junit.Test

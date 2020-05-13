@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
@@ -244,8 +244,9 @@ class InlineTest {
     )
 
     @Test
-    fun testCapturingMemberAndExtensionInLocalFunction() = codegen(
-        """
+    fun testCapturingMemberAndExtensionInLocalFunction() =
+        codegen(
+            """
         class MyClass {
             @Factory
             fun String.factory(): Pair<MyClass, String> { 
@@ -258,7 +259,7 @@ class InlineTest {
             }
         }
     """
-    )
+        )
 
     @Test
     fun testInlineModuleWithTypeParameters() = multiCodegen(

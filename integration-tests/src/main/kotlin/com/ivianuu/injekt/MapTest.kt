@@ -1,7 +1,5 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Lazy
-import com.ivianuu.injekt.Provider
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -32,7 +30,8 @@ class MapTest {
         fun invoke() = create().map
     """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class] is CommandA)
         assertTrue(map[CommandB::class] is CommandB)
@@ -62,7 +61,8 @@ class MapTest {
         fun invoke() = create().map
     """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, @Provider () -> Command>>()
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, @Provider () -> Command>>()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)
@@ -92,7 +92,8 @@ class MapTest {
         fun invoke() = create().map
     """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)
@@ -109,7 +110,8 @@ class MapTest {
         }
          """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(0, map.size)
     }
 
@@ -138,7 +140,8 @@ class MapTest {
         }
          """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(1, map.size)
         assertTrue(map[CommandA::class] is CommandA)
     }
@@ -195,7 +198,8 @@ class MapTest {
         fun invoke() = createParent().childFactory().map
     """
     ) {
-        val map = invokeSingleFile<Map<KClass<out Command>, Command>>()
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
         assertEquals(2, map.size)
         assertTrue(map[CommandA::class] is CommandA)
         assertTrue(map[CommandB::class] is CommandB)

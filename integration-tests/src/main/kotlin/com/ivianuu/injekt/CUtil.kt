@@ -1,6 +1,6 @@
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import io.github.classgraph.ClassGraph
@@ -22,7 +22,7 @@ fun source(
         if (injektImports) {
             appendln("import com.ivianuu.injekt.*")
             appendln("import com.ivianuu.injekt.internal.*")
-            appendln("import com.ivianuu.injekt.compiler.*")
+            appendln("import com.ivianuu.injekt.*")
             appendln("import kotlin.reflect.*")
             appendln()
         }
@@ -40,7 +40,9 @@ fun singleSource(
 fun codegen(
     @Language("kotlin") source: String,
     assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
-) = codegen(singleSource(source), assertions = assertions)
+) = codegen(
+    singleSource(source), assertions = assertions
+)
 
 fun codegen(
     vararg sources: SourceFile,
@@ -79,7 +81,9 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     block()
 }
 
-fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
+fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(
+    block
+).compile()
 
 fun KotlinCompilation.Result.assertOk() {
     assertEquals(KotlinCompilation.ExitCode.OK, exitCode)

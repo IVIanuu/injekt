@@ -1,8 +1,8 @@
-package com.ivianuu.injekt.compiler.frontend
+package com.ivianuu.injekt.frontend
 
-import com.ivianuu.injekt.compiler.assertCompileError
-import com.ivianuu.injekt.compiler.assertOk
-import com.ivianuu.injekt.compiler.codegen
+import com.ivianuu.injekt.assertCompileError
+import com.ivianuu.injekt.assertOk
+import com.ivianuu.injekt.codegen
 import org.junit.Test
 
 class FactoryDslTest {
@@ -86,26 +86,28 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryWithAbstractClassWithZeroArgsConstructor() = codegen(
-        """
+    fun testFactoryWithAbstractClassWithZeroArgsConstructor() =
+        codegen(
+            """
         abstract class Impl
         @Factory
         fun factory(): Impl = createImpl()
     """
-    ) {
-        assertOk()
-    }
+        ) {
+            assertOk()
+        }
 
     @Test
-    fun testFactoryWithAbstractClassWithConstructorParams() = codegen(
-        """
+    fun testFactoryWithAbstractClassWithConstructorParams() =
+        codegen(
+            """
         abstract class Impl(p0: String)
         @Factory
         fun factory(): Impl = createImpl()
     """
-    ) {
-        assertCompileError("empty")
-    }
+        ) {
+            assertCompileError("empty")
+        }
 
     @Test
     fun testFactoryWithInterface() = codegen(
@@ -130,15 +132,16 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryWithTypeParametersAndWithoutInline() = codegen(
-        """
+    fun testFactoryWithTypeParametersAndWithoutInline() =
+        codegen(
+            """
         interface Impl
         @Factory
         fun <T> factory(): Impl = createImpl()
     """
-    ) {
-        assertCompileError("inline")
-    }
+        ) {
+            assertCompileError("inline")
+        }
 
     @Test
     fun testMutablePropertiesNotAllowedInFactoryImpls() =
@@ -275,8 +278,9 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testCallingInlineFactoryWithTypeParametersNotAllowed() = codegen(
-        """ 
+    fun testCallingInlineFactoryWithTypeParametersNotAllowed() =
+        codegen(
+            """ 
         @Factory
         inline fun <T> factory(): TestComponent {
             return createImpl()
@@ -286,8 +290,8 @@ class FactoryDslTest {
             factory<T>()
         }
     """
-    ) {
-        assertCompileError("type param")
-    }
+        ) {
+            assertCompileError("type param")
+        }
 
 }
