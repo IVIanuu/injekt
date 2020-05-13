@@ -45,6 +45,11 @@ object Deps {
             const val extensions = "androidx.lifecycle:lifecycle-extensions:$version"
             const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
         }
+
+        object Test {
+            const val core = "androidx.test:core-ktx:1.2.0"
+            const val junit = "androidx.test.ext:junit:1.0.0"
+        }
     }
 
     const val bintrayGradlePlugin =
@@ -65,8 +70,6 @@ object Deps {
 
     const val guice = "com.google.inject:guice:4.2.2"
 
-    const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev147"
-
     const val junit = "junit:junit:4.12"
 
     const val katana = "org.rewedigital.katana:katana-core:1.13.1"
@@ -76,7 +79,7 @@ object Deps {
     const val koin = "org.koin:koin-core:2.1.5"
 
     object Kotlin {
-        private const val version = "1.4-SNAPSHOT"
+        private const val version = "1.4.255-SNAPSHOT"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
         const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -84,18 +87,13 @@ object Deps {
     }
 
     const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.2.7"
-    const val kotlinStatistics = "org.nield:kotlin-statistics:1.2.1"
-
-    object Magnet {
-        private const val version = "2.3"
-        const val magnet = "de.halfbit:magnet-kotlin:$version"
-        const val processor = "de.halfbit:magnet-processor:$version"
-    }
 
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:2.1"
 
     const val processingX = "com.ivianuu.processingx:processingx:0.0.1-dev4"
+
+    const val roboelectric = "org.robolectric:robolectric:4.3.1"
 
     const val spotlessGradlePlugin = "com.diffplug.spotless:spotless-plugin-gradle:3.26.1"
 
@@ -106,6 +104,4 @@ object Deps {
         const val compiler =
             "com.github.stephanenicolas.toothpick:toothpick-compiler:$version"
     }
-
-    const val winter = "io.jentz.winter:winter:0.7.0"
 }

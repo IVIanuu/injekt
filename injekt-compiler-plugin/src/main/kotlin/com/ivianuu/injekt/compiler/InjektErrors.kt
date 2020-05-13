@@ -1,19 +1,3 @@
-/*
- * Copyright 2020 Manuel Wrage
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -26,22 +10,147 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 interface InjektErrors {
     companion object {
         @JvmField
-        val ParamCannotBeNamed = error()
-        @JvmField
-        val OnlyOneInjektConstructor = error()
-        @JvmField
-        val OnlyOneScope = error()
-        @JvmField
-        val NeedsPrimaryConstructor = error()
-        @JvmField
-        val MustBeAModule = error()
-        @JvmField
-        val MustBeStatic = error()
+        val MAP = DiagnosticFactoryToRendererMap("Injekt")
+
+        private fun error(message: String) =
+            DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+                .also { MAP.put(it, message) }
 
         @JvmField
-        val NotAValidAnnotationType = error()
+        val FORBIDDEN_MODULE_INVOCATION = error(
+            "Only @Factory, @ChildFactory or @Module functions can invoke @Module functions"
+        )
 
-        private fun error() = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        @JvmField
+        val FORBIDDEN_DSL_FUNCTION_INVOCATION = error(
+            "Only @Factory, @ChildFactory or @Module functions can invoke this function"
+        )
+        @JvmField
+        val CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES = error(
+            "Conditional logic is not allowed inside @Factory, @ChildFactory and @Module functions"
+        )
+        @JvmField
+        val RETURN_TYPE_NOT_ALLOWED_FOR_MODULE = error(
+            "@Module functions cannot return anything"
+        )
+        @JvmField
+        val CREATE_IMPl_WITHOUT_FACTORY = error(
+            "createImpl can only be called from within a @Factory or @ChildFactory function"
+        )
+        @JvmField
+        val CREATE_INSTANCE_IN_CHILD_FACTORY = error(
+            "createInstance cannot be called in a @ChildFactory function"
+        )
+
+        @JvmField
+        val INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE = error(
+            "Inlined @Factory call cannot contain type parameters"
+        )
+        @JvmField
+        val UNSUPPORTED_MAP_KEY_TYPE = error(
+            "Unsupported map key type"
+        )
+        @JvmField
+        val MAP_KEY_MUST_BE_CONSTANT = error(
+            "Map key must be a compile time constant"
+        )
+        @JvmField
+        val NOT_A_SCOPE = error(
+            "Scopes must be itself annotated with @Scope"
+        )
+        @JvmField
+        val NOT_A_CHILD_FACTORY = error(
+            "Not a @ChildFactory"
+        )
+        @JvmField
+        val LAST_STATEMENT_MUST_BE_CREATE = error(
+            "A factories last statement must be either a createImpl() or a createInstance() call"
+        )
+        @JvmField
+        val FACTORY_IMPL_MUST_BE_ABSTRACT = error(
+            "createImpl result types must be a interface or a abstract class"
+        )
+        @JvmField
+        val FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE = error(
+            "@Factory or @ChildFactory functions with type parameters must be marked with inline"
+        )
+
+        @JvmField
+        val MODULE_PARAMETER_WITHOUT_INLINE = error(
+            "@Factory or @ChildFactory or @Module functions with @Module function parameters must be marked with inline"
+        )
+        @JvmField
+        val IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR = error(
+            "Implementation super class must have an empty constructor"
+        )
+        @JvmField
+        val IMPL_CANNOT_CONTAIN_VARS = error(
+            "createImpl result types cannot contain mutable properties"
+        )
+        @JvmField
+        val PROVISION_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
+            "Provision functions cannot have value parameters"
+        )
+        @JvmField
+        val PROVISION_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error(
+            "Provision functions cannot have type parameters"
+        )
+        @JvmField
+        val PROVISION_FUNCTION_CANNOT_BE_SUSPEND = error(
+            "Provision functions cannot be suspend"
+        )
+        @JvmField
+        val INJECT_MUST_BE_LATEINIT_VAR = error(
+            "@Inject property must be lateinit var"
+        )
+        @JvmField
+        val CANNOT_INVOKE_CHILD_FACTORIES = error(
+            "Cannot invoke @ChildFactory functions"
+        )
+        @JvmField
+        val MUST_HAVE_RUNTIME_RETENTION = error(
+            "Annotated class must have runtime retention"
+        )
+        @JvmField
+        val MISSING_QUALIFIER_TARGETS = error(
+            "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)"
+        )
+        @JvmField
+        val ANNOTATED_BINDING_CANNOT_BE_ABSTRACT = error(
+            "Annotated bindings cannot be an interface or abstract"
+        )
+        @JvmField
+        val EITHER_MODULE_OR_FACTORY = error(
+            "A function can only be annotated with one of @Factory, @ChildFactory or @Module"
+        )
+        @JvmField
+        val CANNOT_BE_SUSPEND = error(
+            "@Factory, @ChildFactory or @Module cannot be suspend"
+        )
+        @JvmField
+        val CLASS_OF_OUTSIDE_OF_MODULE = error(
+            "classOf() can only be called from inside @Factory, @ChildFactory or @Module functions"
+        )
+        @JvmField
+        val CLASS_OF_WITH_CONCRETE_TYPE = error(
+            "classOf() should be only called with generic types use class literals instead"
+        )
+        @JvmField
+        val CLASS_OF_CALLING_MODULE_MUST_BE_INLINE = error(
+            "classOf() calling functions be marked with inline"
+        )
+        @JvmField
+        val MODULE_CANNOT_USE_REIFIED = error(
+            "@Module functions cannot use reified"
+        )
+        @JvmField
+        val GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION = error(
+            "Binding functions with a generic type can only be used inside a inline module or with a definition"
+        )
+        @JvmField
+        val DEFINITION_PARAMETER_WITHOUT_INLINE = error(
+            "@Module functions with definition parameters must be marked with inline"
+        )
 
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
@@ -49,42 +158,10 @@ interface InjektErrors {
                 InjektDefaultErrorMessages
             )
         }
+
+        object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
+            override fun getMap() = MAP
+        }
+
     }
-}
-
-object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
-    private val map = DiagnosticFactoryToRendererMap("Injekt")
-    override fun getMap(): DiagnosticFactoryToRendererMap = map
-
-    init {
-        map.put(
-            InjektErrors.OnlyOneScope,
-            "Can only have one 1 scope annotation"
-        )
-        map.put(
-            InjektErrors.ParamCannotBeNamed,
-            "Parameters cannot be named"
-        )
-        map.put(
-            InjektErrors.OnlyOneInjektConstructor,
-            "Only one constructor can be annotated"
-        )
-        map.put(
-            InjektErrors.NeedsPrimaryConstructor,
-            "Class needs a primary constructor or the constructor must be annotated"
-        )
-        map.put(
-            InjektErrors.MustBeAModule,
-            "@ModuleMarker declaration must be of type Qualifier"
-        )
-        map.put(
-            InjektErrors.MustBeStatic,
-            "Must be a top-level declaration"
-        )
-        map.put(
-            InjektErrors.NotAValidAnnotationType,
-            "Not a valid annotation type"
-        )
-    }
-
 }

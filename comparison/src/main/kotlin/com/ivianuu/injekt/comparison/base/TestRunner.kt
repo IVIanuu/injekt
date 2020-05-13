@@ -26,7 +26,6 @@ import com.ivianuu.injekt.comparison.katana.KatanaTest
 import com.ivianuu.injekt.comparison.kodein.KodeinTest
 import com.ivianuu.injekt.comparison.koin.KoinTest
 import com.ivianuu.injekt.comparison.toothpick.ToothpickTest
-import org.nield.kotlinstatistics.median
 import kotlin.system.measureNanoTime
 
 val defaultConfig = Config(
@@ -65,9 +64,9 @@ fun runInjectionTests(vararg tests: InjectionTest, config: Config = defaultConfi
 }
 
 fun runInjectionTests(tests: List<InjectionTest>, config: Config = defaultConfig) {
-    Thread.sleep(1000)
+    repeat(5000) { tests.forEach { measure(it) } }
 
-    println("Running ${config.rounds} iterations. Please stand by...")
+    println("Running ${config.rounds} iterations...")
 
     val timingsPerTest = mutableMapOf<String, MutableList<Timings>>()
 
@@ -112,7 +111,6 @@ data class Result(
     val timings: List<Long>
 ) {
     val average = timings.average()
-    val median = timings.median()
     val min = timings.min()!!.toDouble()
     val max = timings.max()!!.toDouble()
 }
@@ -122,7 +120,16 @@ data class Results(
     val setup: Result,
     val firstInjection: Result,
     val secondInjection: Result
-)
+) {
+    val overall = Result(
+        "Overall",
+        setup.timings.indices.map {
+            setup.timings[it] +
+                    firstInjection.timings[it] +
+                    secondInjection.timings[it]
+        }
+    )
+}
 
 fun List<Timings>.results(): Results {
     return Results(
@@ -150,41 +157,29 @@ fun Result.print(name: String, config: Config) {
     println(
         "$name | " +
                 "${average.format(config)} | " +
-                "${median.format(config)} | " +
                 "${min.format(config)} | " +
                 "${max.format(config)}"
     )
 }
 
 fun Map<String, Results>.print(config: Config) {
-    println("Setup:")
-    println("Library | Average | Median | Min | Max")
-    toList()
-        .sortedBy { it.second.setup.average }
-        .forEach { (name, results) ->
-            results.setup.print(name, config)
-        }
+    fun printCategory(
+        categoryTitle: String,
+        pick: Results.() -> Result
+    ) {
+        println("$categoryTitle:")
+        println("Library | Average | Min | Max")
+        toList()
+            .sortedBy { it.second.pick().average }
+            .forEach { (name, results) ->
+                results.pick().print(name, config)
+            }
 
-    println()
+        println()
+    }
 
-    println("First injection")
-    println("Library | Average | Median | Min | Max")
-
-    toList()
-        .sortedBy { it.second.firstInjection.average }
-        .forEach { (name, results) ->
-            results.firstInjection.print(name, config)
-        }
-
-    println()
-
-    println("Second injection")
-    println("Library | Average | Median | Min | Max")
-    toList()
-        .sortedBy { it.second.secondInjection.average }
-        .forEach { (name, results) ->
-            results.secondInjection.print(name, config)
-        }
-
-    println()
+    printCategory("Setup") { setup }
+    printCategory("First injection") { firstInjection }
+    printCategory("Second injection") { secondInjection }
+    printCategory("Overall") { overall }
 }

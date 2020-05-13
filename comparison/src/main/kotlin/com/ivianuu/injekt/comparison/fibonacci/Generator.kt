@@ -9,7 +9,7 @@ fun main() {
                 if (index == 1 || index == 2) {
                     appendln(
                         """
-                        @Factory
+                        @Transient
                         class Fib$index @Inject constructor()
                         """.trimIndent()
                     )

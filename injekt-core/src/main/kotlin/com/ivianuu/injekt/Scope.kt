@@ -16,32 +16,5 @@
 
 package com.ivianuu.injekt
 
-/**
- * Scopes are used to name [Component]s
- * This allows annotation api [Binding]s to be associated with a specific [Component]
- *
- * A scope can be declared like this
- *
- * ´´´
- * @ScopeMarker
- * val ActivityScope = Scope()
- * ´´´
- *
- * The following code ensures that the view model will be only instantiated in the activity scoped [Component]
- *
- * ´´´
- * @ActivityScope
- * @Factory
- * class MyViewModel
- * ´´´
- *
- * @see ComponentBuilder.scopes
- */
-interface Scope : Behavior.Element, Qualifier.Element
-
-/**
- * Applies the [ModuleImpl] to every [ComponentBuilder]
- */
-annotation class AnyScope {
-    companion object : Scope
-}
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class Scope

@@ -15,7 +15,6 @@
  */
 plugins {
     id("com.android.library")
-    id("com.ivianuu.injekt")
     kotlin("android")
 }
 
@@ -26,10 +25,19 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
+android {
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
 dependencies {
-    api(project(":injekt-core"))
     api(project(":injekt-common"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.AndroidX.appCompat)
     api(Deps.AndroidX.Lifecycle.extensions)
     api(Deps.AndroidX.Lifecycle.runtime)
+    testImplementation(Deps.AndroidX.Test.core)
+    testImplementation(Deps.AndroidX.Test.junit)
+    testImplementation(Deps.roboelectric)
 }

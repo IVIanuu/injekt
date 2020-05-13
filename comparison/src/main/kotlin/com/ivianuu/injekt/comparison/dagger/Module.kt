@@ -19,7 +19,5 @@ package com.ivianuu.injekt.comparison.dagger
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import daggerone.Module
 
-@Module(
-    injects = [Fib8::class]
-)
+@Module(injects = [Fib8::class])
 class DaggerModule

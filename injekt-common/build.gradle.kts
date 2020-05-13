@@ -16,7 +16,6 @@
 
 plugins {
     kotlin("jvm")
-    id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -26,5 +25,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mv
 
 dependencies {
     api(project(":injekt-core"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     testImplementation(Deps.junit)
 }
