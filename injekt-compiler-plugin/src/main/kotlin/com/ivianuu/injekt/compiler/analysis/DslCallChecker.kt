@@ -26,6 +26,8 @@ class DslCallChecker(
         }
 
         if (enclosingInjektDslFunction != null &&
+            (resolvedCall.resultingDescriptor.name.asString() == "transient" ||
+                    resolvedCall.resultingDescriptor.name.asString() == "scoped") &&
             resolvedCall.resultingDescriptor.valueParameters.isEmpty() &&
             resolvedCall.typeArguments.values.single().isTypeParameter() &&
             !enclosingInjektDslFunction.isInline
