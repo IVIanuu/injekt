@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -13,7 +14,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.substitute
 
 abstract class AbstractFactory(
     val moduleClass: IrClass,
@@ -35,7 +35,7 @@ abstract class AbstractFactory(
         (classifierOrFail as? IrTypeParameterSymbol)?.let {
             this@AbstractFactory.typeParametersMap[it]?.let { return it }
         }
-        return substitute(typeParametersMap)
+        return substituteAndKeepQualifiers(typeParametersMap)
     }
 
     protected fun init(

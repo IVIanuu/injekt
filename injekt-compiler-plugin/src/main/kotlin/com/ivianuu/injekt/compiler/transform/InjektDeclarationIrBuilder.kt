@@ -226,7 +226,7 @@ class InjektDeclarationIrBuilder(
         return buildClass {
             kind = if (nonAssistedParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
             this.name = name
-            this.visibility = visibility
+            this.visibility = Visibilities.PUBLIC // todo visibility
         }.apply clazz@{
             (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
 
@@ -257,8 +257,10 @@ class InjektDeclarationIrBuilder(
                                 .nullableRemapTypeParameters(typeParametersContainer, this)
                         } else {
                             irBuiltIns.function(0)
-                                .typeWith(parameter.type)
-                                .nullableRemapTypeParameters(typeParametersContainer, this)
+                                .typeWith(
+                                    parameter.type
+                                        .nullableRemapTypeParameters(typeParametersContainer, this)
+                                )
                                 .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                         }
                     )

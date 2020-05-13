@@ -268,11 +268,19 @@ class InlineTest {
         class Context {
             fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")
         }
+        
+        object ContextCompat { 
+            fun <T : Any> getSystemService(context: Context, clazz: Class<T>): T = context.getSystemService(clazz)
+        }
+        
         @Module
         inline fun <T : Any> systemService() {
             val clazz = classOf<T>()
             transient<T> {
-                get<Context>().getSystemService(clazz.java)
+                ContextCompat.getSystemService(
+                    get<@TestQualifier1 Context>(),
+                    clazz.java
+                )
             }
         }
 
@@ -291,7 +299,7 @@ class InlineTest {
                 """
         @Factory
         fun create(): Bar {
-            transient { Context() }
+            @TestQualifier1 transient { Context() }
             systemServices()
             return createInstance()
         }
