@@ -260,4 +260,44 @@ class InlineTest {
     """
     )
 
+    @Test
+    fun testInlineModuleWithTypeParameters() = multiCodegen(
+        listOf(
+            source(
+                """
+        class Context {
+            fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")
+        }
+        @Module
+        inline fun <T : Any> systemService() {
+            val clazz = classOf<T>()
+            transient<T> {
+                get<Context>().getSystemService(clazz.java)
+            }
+        }
+
+        @Module
+        fun systemServices() {
+            systemService<Foo>()
+            systemService<Bar>()
+        }
+        
+        
+    """
+            )
+        ),
+        listOf(
+            source(
+                """
+        @Factory
+        fun create(): Bar {
+            transient { Context() }
+            systemServices()
+            return createInstance()
+        }
+    """
+            )
+        )
+    )
+
 }

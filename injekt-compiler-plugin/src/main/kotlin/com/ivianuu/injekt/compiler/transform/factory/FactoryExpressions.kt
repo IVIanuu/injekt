@@ -326,6 +326,10 @@ class FactoryExpressions(
                             )
                         }
 
+                        binding.typeArguments.forEachIndexed { index, type ->
+                            putTypeArgument(index, type)
+                        }
+
                         createFunction.valueParameters
                             .drop(if (moduleRequired) 1 else 0)
                             .forEach { valueParameter ->
@@ -416,6 +420,10 @@ class FactoryExpressions(
                 irCall(constructor).apply {
                     dependencyExpressions.forEachIndexed { index, dependency ->
                         putValueArgument(index, dependency(this@providerFieldExpression, context))
+                    }
+                }.apply {
+                    binding.typeArguments.forEachIndexed { index, type ->
+                        putTypeArgument(index, type)
                     }
                 }
             )
@@ -650,6 +658,10 @@ class FactoryExpressions(
                     irGetObject(provider.symbol)
                 } else {
                     irCall(provider.constructors.single()).apply {
+                        binding.typeArguments.forEachIndexed { index, type ->
+                            putTypeArgument(index, type)
+                        }
+
                         if (moduleRequired) {
                             putValueArgument(
                                 0,

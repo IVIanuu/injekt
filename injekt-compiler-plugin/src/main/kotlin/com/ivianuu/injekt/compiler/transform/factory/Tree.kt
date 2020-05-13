@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.FqNameEqualityChecker
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
@@ -71,7 +73,12 @@ class ModuleNode(
 ) : RequirementNode {
     override val prefix: String
         get() = "module"
-
+    val descriptor = module.declarations.single {
+        it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
+    } as IrClass
+    val descriptorTypeParametersMap = descriptor.typeParameters.associateWith {
+        typeParametersMap.values.toList()[it.index]
+    }.mapKeys { it.key.symbol }
     init {
         typeParametersMap.forEach {
             check(!it.value.toKotlinType().isTypeParameter()) {
@@ -133,7 +140,8 @@ class AssistedProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val provider: IrClass
+    val provider: IrClass,
+    val typeArguments: List<IrType>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class ChildFactoryBindingNode(
@@ -273,7 +281,8 @@ class ProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val provider: IrClass
+    val provider: IrClass,
+    val typeArguments: List<IrType>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class SetBindingNode(
@@ -292,6 +301,9 @@ fun IrType.asKey(): Key {
 class Key(val type: IrType) {
 
     init {
+        check(type !is IrErrorType) {
+            "Cannot be error type ${type.render()}"
+        }
         check(!type.toKotlinType().isTypeParameter()) {
             "Must be concrete type ${type.render()}"
         }

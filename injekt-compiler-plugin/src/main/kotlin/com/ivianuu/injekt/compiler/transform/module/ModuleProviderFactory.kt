@@ -3,6 +3,7 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -44,6 +45,7 @@ class ModuleProviderFactory(
         return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).factory(
             name = name,
             visibility = visibility,
+            typeParametersContainer = module.function,
             parameters = constructor?.valueParameters
                 ?.mapIndexed { index, valueParameter ->
                     InjektDeclarationIrBuilder.FactoryParameter(
@@ -82,6 +84,7 @@ class ModuleProviderFactory(
         val definitionFunction = definition.function
 
         val type = definition.function.returnType
+            .remapTypeParameters(definitionFunction, module.clazz)
 
         val assistedParameterCalls = mutableListOf<IrCall>()
         val dependencyCalls = mutableListOf<IrCall>()
@@ -117,7 +120,10 @@ class ModuleProviderFactory(
         if (capturedModuleValueParameters.isNotEmpty()) {
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
                 name = "module",
-                type = module.clazz.defaultType,
+                type = module.clazz.defaultType.remapTypeParameters(
+                    definitionFunction,
+                    module.clazz
+                ),
                 assisted = false,
                 requirement = true
             )
@@ -127,7 +133,7 @@ class ModuleProviderFactory(
         (assistedParameterCalls + dependencyCalls).forEachIndexed { i, call ->
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
                 name = "p$i",
-                type = call.type,
+                type = call.type.remapTypeParameters(definitionFunction, module.clazz),
                 assisted = call in assistedParameterCalls,
                 requirement = false
             ).also { parametersByCall[call] = it }
@@ -136,6 +142,7 @@ class ModuleProviderFactory(
         return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).factory(
             name = name,
             visibility = visibility,
+            typeParametersContainer = module.function,
             parameters = parameters,
             returnType = type,
             createBody = { createFunction ->

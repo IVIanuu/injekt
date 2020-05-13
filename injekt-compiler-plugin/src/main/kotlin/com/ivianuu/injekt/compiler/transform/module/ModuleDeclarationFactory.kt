@@ -16,6 +16,7 @@ import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.ir.IrStatement
@@ -121,6 +122,7 @@ class ModuleDeclarationFactory(
 
     private fun createDependencyDeclaration(call: IrCall): DependencyDeclaration {
         val dependencyType = call.getTypeArgument(0)!!
+            .remapTypeParameters(module.function, module.clazz)
 
         val property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
             .fieldBakedProperty(
@@ -246,6 +248,7 @@ class ModuleDeclarationFactory(
                             moduleClass,
                             Name.identifier("${includeName}\$p$index"),
                             valueParameter.type
+                                .remapTypeParameters(module.function, module.clazz)
                         )
                 }
             declarations += IncludedModuleDeclaration(
@@ -298,6 +301,7 @@ class ModuleDeclarationFactory(
     ) {
         val includedClass = declarationStore.getModuleClassForFunction(function)
         val includedType = includedClass.typeWith(typeArguments)
+            .remapTypeParameters(module.function, module.clazz)
         val includedDescriptor = includedClass
             .declarations.single {
                 it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
@@ -410,6 +414,7 @@ class ModuleDeclarationFactory(
                                         moduleClass,
                                         Name.identifier("${innerIncludeFunction.name}\$p$index"),
                                         valueParameter.type
+                                            .remapTypeParameters(module.function, module.clazz)
                                     )
                             }
 
@@ -475,10 +480,7 @@ class ModuleDeclarationFactory(
                                         .indexOfFirst { it.name.asString() == typeParameterName }
                                     typeArguments[index]
                                 }
-                                .withAnnotations(
-                                    pluginContext, moduleClass.symbol,
-                                    bindingFunction.returnType.toKotlinType().annotations.toList()
-                                )
+                                .withAnnotations(bindingFunction.returnType.annotations)
                         singleArgumentExpression = null
                     }
                     bindingFunction.hasAnnotation(InjektFqNames.AstValueParameterPath) -> {
@@ -493,10 +495,6 @@ class ModuleDeclarationFactory(
                                     valueArguments[index].second
                                 }()
                         bindingType = singleArgumentExpression.type.typeArguments.last()
-                            .withAnnotations(
-                                pluginContext, moduleClass.symbol,
-                                bindingFunction.returnType.toKotlinType().annotations.toList()
-                            )
                     }
                     else -> {
                         error("Unexpected inline binding ${bindingFunction.dump()}")
@@ -574,7 +572,7 @@ class ModuleDeclarationFactory(
                     .fieldBakedProperty(
                         moduleClass,
                         Name.identifier(nameProvider.allocate("instance")),
-                        bindingType
+                        bindingType.remapTypeParameters(module.function, module.clazz)
                     )
 
                 statement = {

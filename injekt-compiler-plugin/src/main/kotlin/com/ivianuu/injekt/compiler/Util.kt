@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -25,7 +24,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
@@ -110,24 +108,30 @@ fun IrType.withAnnotations(annotations: List<IrConstructorCall>): IrType {
     this as IrSimpleType
     return replace(
         newArguments = arguments,
-        newAnnotations = this.annotations + annotations
+        newAnnotations = this.annotations + annotations.map { it.deepCopyWithSymbols() }
     )
 }
 
-fun IrType.withAnnotations(
-    pluginContext: IrPluginContext,
-    symbol: IrSymbol,
-    annotations: List<AnnotationDescriptor>
-): IrType {
-    if (annotations.isEmpty()) return this
-    this as IrSimpleType
-    return replace(
-        newArguments = arguments,
-        newAnnotations = this.annotations + annotations
-            .map {
-                InjektDeclarationIrBuilder(pluginContext, symbol)
-                    .generateAnnotationConstructorCall(it)!!
-            }
+fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+    if (this !is IrSimpleType) return this
+
+    substitutionMap[classifier]?.let {
+        return it.withAnnotations(annotations.map { it.deepCopyWithSymbols() })
+    }
+
+    val newArguments = arguments.map {
+        if (it is IrTypeProjection) {
+            makeTypeProjection(it.type.substituteAndKeepQualifiers(substitutionMap), it.variance)
+        } else {
+            it
+        }
+    }
+
+    return IrSimpleTypeImpl(
+        classifier,
+        hasQuestionMark,
+        newArguments,
+        annotations.map { it.deepCopyWithSymbols() }
     )
 }
 
@@ -199,36 +203,6 @@ fun IrClass.findPropertyGetter(
         .singleOrNull { function ->
             function.name.asString() == "<get-$name>"
         } ?: error("Couldn't find property '$name' in ${dump()}")
-}
-
-fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
-    if (this !is IrSimpleType) return this
-
-    (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
-        substitutionMap.toList()
-            .firstOrNull { it.first.owner.name == typeParam.owner.name }
-            ?.let { return it.second.withAnnotations(annotations) }
-    }
-
-    substitutionMap[classifier]?.let {
-        return it.withAnnotations(annotations)
-    }
-
-    val newArguments = arguments.map {
-        if (it is IrTypeProjection) {
-            makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
-        } else {
-            it
-        }
-    }
-
-    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
-    return IrSimpleTypeImpl(
-        classifier,
-        hasQuestionMark,
-        newArguments,
-        newAnnotations
-    )
 }
 
 fun IrConstructorCall.toAnnotationDescriptor(): AnnotationDescriptor {

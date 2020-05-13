@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.findPropertyGetter
-import com.ivianuu.injekt.compiler.substituteByName
+import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.type
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
@@ -84,7 +83,6 @@ class Graph(
         implicitBindingResolvers += AnnotatedClassBindingResolver(
             context,
             declarationStore,
-            symbols,
             factory
         )
     }
@@ -168,7 +166,7 @@ class Graph(
                     .let { it as IrConst<String> }
                     .value
                 val dependencyType = function.returnType
-                    .substituteByName(moduleNode.typeParametersMap)
+                    .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                 addExplicitBindingResolver(
                     DependencyBindingResolver(
                         moduleNode = moduleNode,
@@ -191,7 +189,7 @@ class Graph(
                 addMap(
                     key = function
                         .returnType
-                        .substituteByName(moduleNode.typeParametersMap)
+                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                         .asKey(),
                     origin = module.fqNameForIrSerialization
                 )
@@ -259,11 +257,11 @@ class Graph(
                 }
                 putMapEntry(
                     mapKey = function.valueParameters[0].type
-                        .substituteByName(moduleNode.typeParametersMap)
+                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                         .asKey(),
                     entryKey = entryKey,
                     entryValue = function.valueParameters[1].type
-                        .substituteByName(moduleNode.typeParametersMap)
+                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                         .asKey(),
                     origin = module.fqNameForIrSerialization
                 )
@@ -274,7 +272,7 @@ class Graph(
             .forEach { function ->
                 addSet(
                     key = function.returnType
-                        .substituteByName(moduleNode.typeParametersMap)
+                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                         .asKey(),
                     origin = module.fqNameForIrSerialization
                 )
@@ -285,10 +283,10 @@ class Graph(
             .forEach { function ->
                 addSetElement(
                     setKey = function.valueParameters[0].type
-                        .substituteByName(moduleNode.typeParametersMap)
+                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                         .asKey(),
                     elementKey = function.valueParameters[1].type
-                        .substituteByName(moduleNode.typeParametersMap)
+                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                         .asKey(),
                     origin = module.fqNameForIrSerialization
                 )
@@ -298,9 +296,7 @@ class Graph(
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
             .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
             .map {
-                it to it.returnType
-                    .substituteByName(moduleNode.typeParametersMap)
-                    .classOrNull?.owner as IrClass
+                it to it.returnType.classOrNull?.owner as IrClass
             }
             .forEach { (function, includedModule) ->
                 val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
@@ -313,14 +309,12 @@ class Graph(
                 val typeParametersMap = includedModule.typeParameters
                     .map { it.symbol to (property.returnType as IrSimpleType).arguments[it.index].type }
                     .toMap()
-                    .mapValues { it.value.substituteByName(moduleNode.typeParametersMap) }
+                    .mapValues { it.value.substituteAndKeepQualifiers(moduleNode.typeParametersMap) }
 
                 addModule(
                     ModuleNode(
                         includedModule,
-                        includedModule.defaultType
-                            .substituteByName(moduleNode.typeParametersMap)
-                            .asKey(),
+                        property.returnType.asKey(),
                         moduleNode.initializerAccessor.child(property),
                         typeParametersMap
                     )
@@ -331,7 +325,6 @@ class Graph(
             ModuleBindingResolver(
                 moduleNode,
                 descriptor,
-                symbols,
                 factory
             )
         )

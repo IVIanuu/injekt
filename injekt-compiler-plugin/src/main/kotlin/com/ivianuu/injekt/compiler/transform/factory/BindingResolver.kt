@@ -7,7 +7,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getQualifierFqNames
-import com.ivianuu.injekt.compiler.substituteByName
+import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -274,6 +275,7 @@ class DependencyBindingResolver(
                 factory(
                     name = Name.identifier("${moduleNode.module.name}\$Factory${providersByDependency.size}"),
                     visibility = Visibilities.PRIVATE,
+                    typeParametersContainer = null,
                     parameters = listOf(
                         InjektDeclarationIrBuilder.FactoryParameter(
                             name = "dependency",
@@ -314,7 +316,6 @@ class DependencyBindingResolver(
 class ModuleBindingResolver(
     private val moduleNode: ModuleNode,
     descriptor: IrClass,
-    private val symbols: InjektSymbols,
     private val factory: AbstractFactory
 ) : BindingResolver {
 
@@ -331,7 +332,7 @@ class ModuleBindingResolver(
         .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
         .map { bindingFunction ->
             val bindingKey = bindingFunction.returnType
-                .substituteByName(moduleNode.typeParametersMap)
+                .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                 .asKey()
             val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
@@ -366,7 +367,7 @@ class ModuleBindingResolver(
                         key = bindingKey,
                         requirementNode = InstanceNode(
                             key = propertyGetter.returnType
-                                .substituteByName(moduleNode.typeParametersMap)
+                                .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
                                 .asKey(),
                             initializerAccessor = moduleNode.initializerAccessor.child(
                                 propertyGetter
@@ -377,6 +378,10 @@ class ModuleBindingResolver(
                     )
                 }
                 else -> {
+                    provider!!
+                    val providerTypeParametersMap = provider.typeParameters.associateWith {
+                        moduleNode.descriptorTypeParametersMap.values.toList()[it.index]
+                    }.mapKeys { it.key.symbol }
                     if (bindingFunction.valueParameters.any {
                             it.descriptor.annotations.hasAnnotation(
                                 InjektFqNames.AstAssisted
@@ -391,8 +396,11 @@ class ModuleBindingResolver(
                                     assistedValueParameters
                                         .map {
                                             it.type
-                                                .substituteByName(moduleNode.typeParametersMap)
+                                                .substituteAndKeepQualifiers(
+                                                    providerTypeParametersMap
+                                                )
                                         } + bindingKey.type
+                                        .substituteAndKeepQualifiers(providerTypeParametersMap)
                                 ).withNoArgQualifiers(
                                     factory.pluginContext,
                                     listOf(InjektFqNames.Provider)
@@ -402,7 +410,7 @@ class ModuleBindingResolver(
                             .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
                             .map {
                                 it.type
-                                    .substituteByName(moduleNode.typeParametersMap)
+                                    .substituteAndKeepQualifiers(providerTypeParametersMap)
                                     .asKey()
                             }
                             .map { BindingRequest(it, moduleRequestOrigin) }
@@ -413,15 +421,16 @@ class ModuleBindingResolver(
                             targetScope = null,
                             scoped = scoped,
                             module = moduleNode,
-                            provider = provider!!,
+                            provider = provider,
                             owner = factory,
-                            origin = moduleNode.module.fqNameForIrSerialization
+                            origin = moduleNode.module.fqNameForIrSerialization,
+                            typeArguments = providerTypeParametersMap.values.toList()
                         )
                     } else {
                         val dependencies = bindingFunction.valueParameters
                             .map {
                                 it.type
-                                    .substituteByName(moduleNode.typeParametersMap)
+                                    .substituteAndKeepQualifiers(providerTypeParametersMap)
                                     .asKey()
                             }
                             .map { BindingRequest(it, moduleRequestOrigin) }
@@ -432,9 +441,10 @@ class ModuleBindingResolver(
                             targetScope = null,
                             scoped = scoped,
                             module = moduleNode,
-                            provider = provider!!,
+                            provider = provider,
                             owner = factory,
-                            origin = moduleNode.module.fqNameForIrSerialization
+                            origin = moduleNode.module.fqNameForIrSerialization,
+                            typeArguments = providerTypeParametersMap.values.toList()
                         )
                     }
                 }
@@ -484,7 +494,6 @@ class MembersInjectorBindingResolver(
 class AnnotatedClassBindingResolver(
     private val pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
-    private val symbols: InjektSymbols,
     private val factory: AbstractFactory
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
@@ -513,7 +522,7 @@ class AnnotatedClassBindingResolver(
                 ?.map { providerValueParameter ->
                     BindingRequest(
                         providerValueParameter.type
-                            .substituteByName(typeParametersMap)
+                            .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
                         clazz.constructors.single().valueParameters
                             .single { it.name == providerValueParameter.name }
@@ -531,7 +540,8 @@ class AnnotatedClassBindingResolver(
                     module = null,
                     provider = provider,
                     owner = factory,
-                    origin = clazz.fqNameForIrSerialization
+                    origin = clazz.fqNameForIrSerialization,
+                    typeArguments = clazz.typeParameters.map { it.defaultType }
                 )
             )
         } else {
@@ -547,7 +557,7 @@ class AnnotatedClassBindingResolver(
 
             val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
 
-            val typeParametersMap = clazz.typeParameters
+            val typeParametersMap = provider.typeParameters
                 .map { it.symbol }
                 .associateWith { requestedKey.type.typeArguments[it.owner.index] }
 
@@ -557,7 +567,7 @@ class AnnotatedClassBindingResolver(
                 ?.map { providerValueParameter ->
                     BindingRequest(
                         providerValueParameter.type.typeArguments.single()
-                            .substituteByName(typeParametersMap)
+                            .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
                         clazz.constructors.single().valueParameters
                             .single { it.name == providerValueParameter.name }
@@ -575,7 +585,8 @@ class AnnotatedClassBindingResolver(
                     module = null,
                     provider = provider,
                     owner = factory,
-                    origin = clazz.fqNameForIrSerialization
+                    origin = clazz.fqNameForIrSerialization,
+                    typeArguments = clazz.typeParameters.map { it.defaultType }
                 )
             )
         }

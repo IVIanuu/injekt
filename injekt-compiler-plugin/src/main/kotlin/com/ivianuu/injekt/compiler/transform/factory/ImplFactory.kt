@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -37,7 +38,6 @@ import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -176,7 +176,7 @@ class ImplFactory(
                 fun reqisterRequest(type: IrType) {
                     dependencyRequests[declaration] = BindingRequest(
                         type
-                            .substitute(
+                            .substituteAndKeepQualifiers(
                                 typeParameters.map { it.symbol }.associateWith {
                                     typeArguments[it.owner.index]
                                 }

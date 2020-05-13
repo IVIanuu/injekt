@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -15,6 +16,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.name.Name
 
@@ -59,9 +61,10 @@ class ModuleDescriptor(
     private fun addScopeFunction(declaration: ScopeDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("scope"),
-            returnType = declaration.scopeType,
+            returnType = declaration.scopeType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(module.symbols.astScope)
         }
@@ -70,9 +73,11 @@ class ModuleDescriptor(
     private fun addDependencyFunction(declaration: DependencyDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("dependency"),
-            returnType = declaration.dependencyType,
+            returnType = declaration.dependencyType
+                .remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(module.symbols.astDependency)
             annotations += declaration.path
@@ -83,9 +88,11 @@ class ModuleDescriptor(
     private fun addChildFactoryFunction(declaration: ChildFactoryDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("childFactory"),
-            returnType = declaration.factoryRef.symbol.owner.returnType,
+            returnType = declaration.factoryRef.symbol.owner.returnType
+                .remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astChildFactory)
             if (declaration.factoryModuleClass != null) {
@@ -103,7 +110,7 @@ class ModuleDescriptor(
             declaration.factoryRef.symbol.owner.valueParameters.forEachIndexed { index, valueParameter ->
                 addValueParameter(
                     "p${index}",
-                    valueParameter.type
+                    valueParameter.type.remapTypeParameters(module.clazz, clazz)
                 )
             }
         }
@@ -112,14 +119,15 @@ class ModuleDescriptor(
     private fun addAliasFunction(declaration: AliasDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("alias"),
-            returnType = declaration.aliasType,
+            returnType = declaration.aliasType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astAlias)
             addValueParameter(
                 name = "original",
-                type = declaration.originalType
+                type = declaration.originalType.remapTypeParameters(module.function, clazz)
             )
         }
     }
@@ -127,9 +135,11 @@ class ModuleDescriptor(
     private fun addBindingFunction(declaration: BindingDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("binding"),
-            returnType = declaration.bindingType,
+            returnType = declaration.bindingType
+                .remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             val builder = InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
             annotations += builder.noArgSingleConstructorCall(symbols.astBinding)
             if (declaration.scoped) {
@@ -146,7 +156,7 @@ class ModuleDescriptor(
             declaration.parameters.forEach { parameter ->
                 addValueParameter(
                     name = parameter.name,
-                    type = parameter.type
+                    type = parameter.type.remapTypeParameters(module.function, clazz)
                 ).apply {
                     if (parameter.assisted) {
                         annotations += builder.noArgSingleConstructorCall(symbols.astAssisted)
@@ -159,9 +169,10 @@ class ModuleDescriptor(
     private fun addIncludedModuleFunction(declaration: IncludedModuleDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("module"),
-            returnType = declaration.includedType,
+            returnType = declaration.includedType.remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astModule)
             if (declaration.inline) {
@@ -176,7 +187,7 @@ class ModuleDescriptor(
             declaration.capturedValueArguments.forEachIndexed { index, parameter ->
                 addValueParameter(
                     "p$index",
-                    parameter.type
+                    parameter.type.remapTypeParameters(module.clazz, clazz)
                 ).apply {
                     annotations += parameter.path.asAnnotation(
                         DeclarationIrBuilder(pluginContext, symbol),
@@ -190,9 +201,10 @@ class ModuleDescriptor(
     private fun addMapFunction(declaration: MapDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("map"),
-            returnType = declaration.mapType,
+            returnType = declaration.mapType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astMap)
         }
@@ -204,15 +216,16 @@ class ModuleDescriptor(
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astMapEntry)
             addValueParameter(
                 name = "map",
-                type = declaration.mapType
+                type = declaration.mapType.remapTypeParameters(module.function, clazz)
             )
             addValueParameter(
                 name = "entry",
-                type = declaration.entryValueType
+                type = declaration.entryValueType.remapTypeParameters(module.function, clazz)
             ).apply {
                 annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                     .irMapKeyConstructorForKey(declaration.entryKey)
@@ -223,9 +236,10 @@ class ModuleDescriptor(
     private fun addSetFunction(declaration: SetDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocate("set"),
-            returnType = declaration.setType,
+            returnType = declaration.setType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astSet)
         }
@@ -237,6 +251,7 @@ class ModuleDescriptor(
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
             annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astSetElement)
             addValueParameter(

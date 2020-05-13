@@ -55,6 +55,7 @@ class ClassFactoryTransformer(
             factory(
                 name = InjektNameConventions.getFactoryNameForClass(clazz.name),
                 visibility = clazz.visibility,
+                typeParametersContainer = clazz,
                 parameters = constructor?.valueParameters
                     ?.map { valueParameter ->
                         InjektDeclarationIrBuilder.FactoryParameter(
