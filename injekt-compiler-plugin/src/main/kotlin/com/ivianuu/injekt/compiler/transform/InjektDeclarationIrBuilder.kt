@@ -258,8 +258,8 @@ class InjektDeclarationIrBuilder(
                         } else {
                             irBuiltIns.function(0)
                                 .typeWith(parameter.type)
-                                .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                                 .nullableRemapTypeParameters(typeParametersContainer, this)
+                                .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                         }
                     )
                 }
