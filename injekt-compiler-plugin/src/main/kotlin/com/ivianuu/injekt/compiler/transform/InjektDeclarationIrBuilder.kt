@@ -418,6 +418,7 @@ class InjektDeclarationIrBuilder(
             parent = clazz
         }
         addGetter {
+            this.name = Name.identifier("get$name") // todo remove once fixed
             returnType = type
         }.apply {
             dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)

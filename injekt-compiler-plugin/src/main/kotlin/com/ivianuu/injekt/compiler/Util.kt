@@ -269,7 +269,7 @@ fun IrClass.findPropertyGetter(
         .singleOrNull { it.name.asString() == name }
         ?.getter ?: functions
         .singleOrNull { function ->
-            function.name.asString() == "<get-$name>"
+            function.name.asString() == "get$name" // todo fix
         } ?: error("Couldn't find property '$name' in ${dump()}")
 }
 
