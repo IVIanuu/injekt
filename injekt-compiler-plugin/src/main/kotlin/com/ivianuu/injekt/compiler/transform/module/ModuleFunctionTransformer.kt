@@ -8,6 +8,8 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -134,8 +136,19 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         var hasUnresolvedClassOfCalls = false
 
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+            private val moduleStack = mutableListOf(function)
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.isModule(pluginContext.bindingContext))
+                    moduleStack.push(declaration)
+                return super.visitFunction(declaration)
+                    .also {
+                        if (declaration.isModule(pluginContext.bindingContext))
+                            moduleStack.pop()
+                    }
+            }
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (function.isLocal &&
+                    moduleStack.last() == function &&
                     expression.symbol.owner !in function.valueParameters &&
                     expression.type.classOrNull != symbols.providerDsl
                 ) {
@@ -185,8 +198,19 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
 
         transformedFunction.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
+            private val moduleStack = mutableListOf(transformedFunction)
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.isModule(pluginContext.bindingContext))
+                    moduleStack.push(declaration)
+                return super.visitFunction(declaration)
+                    .also {
+                        if (declaration.isModule(pluginContext.bindingContext))
+                            moduleStack.pop()
+                    }
+            }
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (transformedFunction.isLocal &&
+                    moduleStack.last() == transformedFunction &&
                     expression.symbol.owner !in transformedFunction.valueParameters &&
                     expression.type.classOrNull != symbols.providerDsl
                 ) {
@@ -197,10 +221,13 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
-                if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
-                    classOfCalls += expression
-                } else if (callee.hasAnnotation(InjektFqNames.AstTyped)) {
-                    typedModuleCalls += expression
+                try {
+                    if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
+                        classOfCalls += expression
+                    } else if (callee.hasAnnotation(InjektFqNames.AstTyped)) {
+                        typedModuleCalls += expression
+                    }
+                } catch (e: Exception) {
                 }
                 return super.visitCall(expression)
             }

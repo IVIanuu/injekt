@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTr
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.module.InlineModuleLambdaTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -55,6 +56,10 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // move the module block of a @Factory function to a seperate @Module function
         factoryModuleTransformer.lower(moduleFragment)
+
+        // transform inline @Module calls to pass data around
+        InlineModuleLambdaTransformer(pluginContext)
+            .lower(moduleFragment)
 
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)

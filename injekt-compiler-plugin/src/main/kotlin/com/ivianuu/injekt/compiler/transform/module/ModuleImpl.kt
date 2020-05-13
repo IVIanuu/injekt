@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -122,13 +123,6 @@ class ModuleImpl(
 
                         function.body!!.statements.forEach { moduleStatement ->
                             when (moduleStatement) {
-                                is IrCall -> {
-                                    declarations += declarationFactory.create(moduleStatement)
-                                        .onEach {
-                                            it.statement?.invoke(builder) { irGet(thisReceiver!!) }
-                                                ?.let { +it }
-                                        }
-                                }
                                 is IrVariable -> {
                                     val field = addField(
                                         moduleStatement.name.asString(),
@@ -150,6 +144,24 @@ class ModuleImpl(
                                             it,
                                             moduleStatement.value
                                         )
+                                    }
+                                }
+                                is IrCall -> {
+                                    declarations += declarationFactory.create(moduleStatement)
+                                        .onEach {
+                                            it.statement?.invoke(builder) { irGet(thisReceiver!!) }
+                                                ?.let { +it }
+                                        }
+                                }
+                                is IrBlock -> {
+                                    if (moduleStatement.origin == InlineModuleLambdaOrigin) {
+                                        declarations += declarationFactory.create(moduleStatement)
+                                            .onEach {
+                                                it.statement?.invoke(builder) { irGet(thisReceiver!!) }
+                                                    ?.let { +it }
+                                            }
+                                    } else {
+                                        +moduleStatement
                                     }
                                 }
                                 else -> +moduleStatement

@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -65,31 +66,51 @@ class ModuleDeclarationFactory(
 
     private val moduleClass get() = module.clazz
 
-    fun create(call: IrCall): List<ModuleDeclaration> {
-        val callee = call.symbol.descriptor
-
+    fun create(expression: IrExpression): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()
 
         when {
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.scope" ->
-                declarations += createScopeDeclaration(call)
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.dependency" ->
-                declarations += createDependencyDeclaration(call)
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.childFactory" ->
-                declarations += createChildFactoryDeclaration(call)
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.alias" ->
-                declarations += createAliasDeclaration(call)
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.transient" ||
-                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.scoped" ||
-                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.instance" ->
-                declarations += createBindingDeclaration(call)
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.map" ->
-                declarations += createMapDeclarations(call)
-            callee.fqNameSafe.asString() == "com.ivianuu.injekt.set" ->
-                declarations += createSetDeclarations(call)
-            call.symbol.owner.hasAnnotation(InjektFqNames.Module) ||
-                    call.isModuleLambdaInvoke() ->
-                declarations += createIncludedModuleDeclarations(call)
+            expression is IrCall -> {
+                val callee = expression.symbol.descriptor
+                when {
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.scope" ->
+                        declarations += createScopeDeclaration(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.dependency" ->
+                        declarations += createDependencyDeclaration(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.childFactory" ->
+                        declarations += createChildFactoryDeclaration(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.alias" ->
+                        declarations += createAliasDeclaration(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.transient" ||
+                            callee.fqNameSafe.asString() == "com.ivianuu.injekt.scoped" ||
+                            callee.fqNameSafe.asString() == "com.ivianuu.injekt.instance" ->
+                        declarations += createBindingDeclaration(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.map" ->
+                        declarations += createMapDeclarations(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.set" ->
+                        declarations += createSetDeclarations(expression)
+                    expression.symbol.owner.hasAnnotation(InjektFqNames.Module) ||
+                            expression.isModuleLambdaInvoke() ->
+                        declarations += createIncludedModuleDeclarations(expression, emptyMap())
+                }
+            }
+            expression is IrBlock && expression.origin == InlineModuleLambdaOrigin -> {
+                val call = expression.statements[0] as IrCall
+                val callee = call.symbol.owner
+
+                val lambdaCalls = callee
+                    .valueParameters
+                    .filter {
+                        it.type.isFunction() &&
+                                it.type.hasAnnotation(InjektFqNames.Module)
+                    }
+                    .mapIndexed { index, valueParameter ->
+                        valueParameter to expression.statements.drop(1)[index] as IrCall
+                    }
+                    .associateBy { it.first }
+                    .mapValues { it.value.second }
+                declarations += createIncludedModuleDeclarations(call, lambdaCalls)
+            }
         }
 
         return declarations
@@ -209,7 +230,10 @@ class ModuleDeclarationFactory(
                 dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Module) == true
     }
 
-    private fun createIncludedModuleDeclarations(call: IrCall): List<ModuleDeclaration> {
+    private fun createIncludedModuleDeclarations(
+        call: IrCall,
+        lambdaCalls: Map<IrValueParameter, IrCall>
+    ): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()
 
         if (call.isModuleLambdaInvoke()) {
@@ -258,6 +282,7 @@ class ModuleDeclarationFactory(
             call.symbol.owner,
             (0 until call.typeArgumentsCount).map { call.getTypeArgument(it)!! },
             call.getArgumentsWithIr().map { it.first to { it.second } },
+            lambdaCalls,
             declarations
         )
 
@@ -268,6 +293,7 @@ class ModuleDeclarationFactory(
         function: IrFunction,
         typeArguments: List<IrType>,
         valueArguments: List<Pair<IrValueParameter, () -> IrExpression>>,
+        lambdaCalls: Map<IrValueParameter, IrCall>,
         declarations: MutableList<ModuleDeclaration>
     ) {
         val includedClass = declarationStore.getModuleClassForFunction(function)
@@ -318,7 +344,7 @@ class ModuleDeclarationFactory(
             .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstModule) }
             .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstInline) }
             .forEach { innerIncludeFunction ->
-                val moduleExpression =
+                val (moduleExpression, lambdaCall) =
                     innerIncludeFunction.getAnnotation(InjektFqNames.AstValueParameterPath)!!
                         .getValueArgument(0)!!
                         .let { it as IrConst<String> }.value
@@ -326,38 +352,53 @@ class ModuleDeclarationFactory(
                             val index = function
                                 .allParameters
                                 .indexOfFirst { it.name.asString() == valueParameterName }
-                            valueArguments[index].second
-                        }()
+                            val (valueParameter, expression) = valueArguments[index]
+                            expression() to lambdaCalls[valueParameter]
+                        }
                 when (moduleExpression) {
                     is IrFunctionExpression -> {
-                        includeModuleFromFunction(
-                            moduleExpression.function,
-                            emptyList(),
-                            innerIncludeFunction.valueParameters
-                                .map { valueParameter ->
-                                    val innerProperty =
-                                        valueParameter.getAnnotation(InjektFqNames.AstPropertyPath)!!
-                                            .getValueArgument(0)!!
-                                            .let { it as IrConst<String> }.value
-                                            .let { propertyName ->
-                                                includedClass.properties
-                                                    .single { it.name.asString() == propertyName }
-                                            }
+                        val nonCaptureArguments = innerIncludeFunction.valueParameters
+                            .map { valueParameter ->
+                                val innerProperty =
+                                    valueParameter.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                                        .getValueArgument(0)!!
+                                        .let { it as IrConst<String> }.value
+                                        .let { propertyName ->
+                                            includedClass.properties
+                                                .single { it.name.asString() == propertyName }
+                                        }
 
-                                    valueParameter to {
-                                        DeclarationIrBuilder(
-                                            pluginContext,
-                                            property.symbol
-                                        ).run {
-                                            irCall(innerProperty.getter!!).apply {
-                                                dispatchReceiver = irCall(property.getter!!).apply {
-                                                    dispatchReceiver =
-                                                        irGet(module.clazz.thisReceiver!!)
-                                                }
+                                valueParameter to {
+                                    DeclarationIrBuilder(
+                                        pluginContext,
+                                        property.symbol
+                                    ).run {
+                                        irCall(innerProperty.getter!!).apply {
+                                            dispatchReceiver = irCall(property.getter!!).apply {
+                                                dispatchReceiver =
+                                                    irGet(module.clazz.thisReceiver!!)
                                             }
                                         }
                                     }
-                                },
+                                }
+                            }
+                            .toMutableList()
+
+                        val allArguments: List<Pair<IrValueParameter, () -> IrExpression>> =
+                            if (lambdaCall != null) {
+                                (0 until lambdaCall.valueArgumentsCount)
+                                    .map { index ->
+                                        lambdaCall.getValueArgument(index)?.let {
+                                            lambdaCall.symbol.owner.valueParameters[index] to { it }
+                                        } ?: nonCaptureArguments[index]
+                                    }
+                            } else nonCaptureArguments
+
+                        includeModuleFromFunction(
+                            moduleExpression.function,
+                            emptyList(),
+                            allArguments,
+                            emptyMap(),
                             declarations
                         )
                     }
@@ -383,7 +424,7 @@ class ModuleDeclarationFactory(
                                         property.getter!!.returnType
                                     )
                                 }
-                        ) { moduleExpression ->
+                        ) { thisModuleExpression ->
                             irBlock {
                                 innerIncludeFunction.valueParameters.forEachIndexed { index, innerValueParameter ->
                                     val innerProperty =
@@ -396,7 +437,7 @@ class ModuleDeclarationFactory(
                                             }
 
                                     +irSetField(
-                                        moduleExpression(),
+                                        thisModuleExpression(),
                                         innerProperties[index].backingField!!,
                                         DeclarationIrBuilder(
                                             pluginContext,
