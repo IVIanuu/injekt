@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -431,6 +432,9 @@ class ModuleBindingResolver(
                             .map {
                                 it.type
                                     .substituteAndKeepQualifiers(providerTypeParametersMap)
+                                    .also { r ->
+                                        println("mapped type ${it.type.render()} to ${r.render()}")
+                                    }
                                     .asKey()
                             }
                             .map { BindingRequest(it, moduleRequestOrigin) }

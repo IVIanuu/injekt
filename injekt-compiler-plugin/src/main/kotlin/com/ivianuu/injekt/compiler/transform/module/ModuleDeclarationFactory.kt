@@ -9,6 +9,7 @@ import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
 import com.ivianuu.injekt.compiler.ValueParameterPath
 import com.ivianuu.injekt.compiler.irTrace
+import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -16,7 +17,6 @@ import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
-import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.ir.IrStatement

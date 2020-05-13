@@ -17,6 +17,8 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -24,6 +26,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
@@ -68,10 +71,10 @@ import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
-import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
+import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 fun Annotated.hasAnnotatedAnnotations(
@@ -106,11 +109,66 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
 fun IrType.withAnnotations(annotations: List<IrConstructorCall>): IrType {
     if (annotations.isEmpty()) return this
     this as IrSimpleType
-    return replace(
-        newArguments = arguments,
-        newAnnotations = this.annotations + annotations.map { it.deepCopyWithSymbols() }
+    return copy(
+        arguments = arguments,
+        annotations = this.annotations + annotations.map { it.deepCopyWithSymbols() }
     )
 }
+
+fun IrType.remapTypeParameters(
+    source: IrTypeParametersContainer,
+    target: IrTypeParametersContainer,
+    srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
+): IrType =
+    when (this) {
+        is IrSimpleType -> {
+            val classifier = classifier.owner
+            when {
+                classifier is IrTypeParameter -> {
+                    val newClassifier =
+                        srcToDstParameterMap?.get(classifier) ?: if (classifier.parent == source)
+                            target.typeParameters[classifier.index]
+                        else
+                            classifier
+                    IrSimpleTypeImpl(
+                        makeKotlinType(
+                            newClassifier.symbol,
+                            arguments,
+                            hasQuestionMark,
+                            annotations
+                        ),
+                        newClassifier.symbol,
+                        hasQuestionMark,
+                        arguments,
+                        annotations
+                    )
+                }
+
+                classifier is IrClass -> {
+                    val arguments = arguments.map {
+                        when (it) {
+                            is IrTypeProjection -> makeTypeProjection(
+                                it.type.remapTypeParameters(source, target, srcToDstParameterMap),
+                                it.variance
+                            )
+                            else -> it
+                        }
+                    }
+                    IrSimpleTypeImpl(
+                        makeKotlinType(classifier.symbol, arguments, hasQuestionMark, annotations),
+                        classifier.symbol,
+                        hasQuestionMark,
+                        arguments,
+                        annotations
+                    )
+                }
+
+                else -> this
+            }
+        }
+        else -> this
+    }
+
 
 fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
@@ -128,6 +186,7 @@ fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbo
     }
 
     return IrSimpleTypeImpl(
+        makeKotlinType(classifier, newArguments, hasQuestionMark, annotations),
         classifier,
         hasQuestionMark,
         newArguments,
@@ -135,11 +194,33 @@ fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbo
     )
 }
 
+fun makeKotlinType(
+    classifier: IrClassifierSymbol,
+    arguments: List<IrTypeArgument>,
+    hasQuestionMark: Boolean,
+    annotations: List<IrConstructorCall>
+): SimpleType {
+    val kotlinTypeArguments = arguments.mapIndexed { index, it ->
+        when (it) {
+            is IrTypeProjection -> TypeProjectionImpl(it.variance, it.type.toKotlinType())
+            is IrStarProjection -> StarProjectionImpl((classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
+            else -> error(it)
+        }
+    }
+    return classifier.descriptor.defaultType
+        .replace(
+            newArguments = kotlinTypeArguments,
+            newAnnotations = if (annotations.isEmpty()) Annotations.EMPTY
+            else Annotations.create(annotations.map { it.toAnnotationDescriptor() })
+        )
+        .makeNullableAsSpecified(hasQuestionMark)
+}
+
 fun IrType.withNoArgQualifiers(pluginContext: IrPluginContext, qualifiers: List<FqName>): IrType {
     this as IrSimpleType
-    return replace(
-        newArguments = arguments,
-        newAnnotations = annotations + qualifiers
+    return copy(
+        arguments = arguments,
+        annotations = annotations + qualifiers
             .map { pluginContext.referenceClass(it)!! }
             .map {
                 DeclarationIrBuilder(pluginContext, it)
@@ -161,29 +242,16 @@ fun IrType.getQualifiers(): List<IrConstructorCall> {
 fun IrType.getQualifierFqNames(): List<FqName> =
     getQualifiers().map { it.type.getClass()!!.fqNameForIrSerialization }
 
-private fun IrType.replace(
-    newArguments: List<IrTypeArgument>,
-    newAnnotations: List<IrConstructorCall>
+private fun IrType.copy(
+    arguments: List<IrTypeArgument>,
+    annotations: List<IrConstructorCall>
 ): IrType {
-    val kotlinType = KotlinTypeFactory.simpleType(
-        toKotlinType() as SimpleType,
-        arguments = newArguments.mapIndexed { index, it ->
-            when (it) {
-                is IrTypeProjection -> TypeProjectionImpl(it.variance, it.type.toKotlinType())
-                is IrStarProjection -> StarProjectionImpl((classifierOrFail.descriptor as ClassDescriptor).typeConstructor.parameters[index])
-                else -> error(it)
-            }
-        },
-        annotations = Annotations.create(
-            newAnnotations.map { it.toAnnotationDescriptor() }
-        )
-    )
     return IrSimpleTypeImpl(
-        kotlinType,
+        makeKotlinType(classifierOrFail, arguments, isMarkedNullable(), annotations),
         classifierOrFail,
         isMarkedNullable(),
-        newArguments,
-        newAnnotations,
+        arguments,
+        annotations,
     )
 }
 

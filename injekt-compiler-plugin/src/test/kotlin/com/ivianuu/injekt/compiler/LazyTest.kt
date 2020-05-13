@@ -39,6 +39,9 @@ class LazyTest {
     @Test
     fun testQualifiedLazy() = codegen(
         """
+            @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class TestQualifier1
         @Factory
         fun invoke(): @Lazy () -> @TestQualifier1 Foo { 
             @TestQualifier1 transient { Foo() }

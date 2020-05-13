@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.toAnnotationDescriptor
+import com.ivianuu.injekt.compiler.makeKotlinType
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -10,9 +10,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -35,7 +33,6 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
@@ -58,15 +55,10 @@ import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinTypeFactory
-import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.StarProjectionImpl
-import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
@@ -442,36 +434,18 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             if (type !is IrSimpleType)
                 type
             else {
-                val kotlinType = type.toKotlinType()
+                val classifier = symbolRemapper.getReferencedClassifier(type.classifier)
+                val arguments = type.arguments.map { remapTypeArgument(it) }
+                val annotations =
+                    type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall }
+                val kotlinType =
+                    makeKotlinType(classifier, arguments, type.hasQuestionMark, annotations)
                 IrSimpleTypeImpl(
-                    if (kotlinType is SimpleType) {
-                        KotlinTypeFactory.simpleType(
-                            try {
-                                type.toKotlinType() as SimpleType
-                            } catch (e: Exception) {
-                                error("${type.render()} is not a SimpleType")
-                            },
-                            arguments = type.arguments.mapIndexed { index, it ->
-                                when (it) {
-                                    is IrTypeProjection -> TypeProjectionImpl(
-                                        it.variance,
-                                        it.type.toKotlinType()
-                                    )
-                                    is IrStarProjection -> StarProjectionImpl((type.classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
-                                    else -> error(it)
-                                }
-                            },
-                            annotations = Annotations.create(
-                                type.annotations.map { it.toAnnotationDescriptor() }
-                            )
-                        )
-                    } else {
-                        kotlinType
-                    },
-                    symbolRemapper.getReferencedClassifier(type.classifier),
+                    kotlinType,
+                    classifier,
                     type.hasQuestionMark,
-                    type.arguments.map { remapTypeArgument(it) },
-                    type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall },
+                    arguments,
+                    annotations,
                     type.abbreviation?.remapTypeAbbreviation()
                 )
             }

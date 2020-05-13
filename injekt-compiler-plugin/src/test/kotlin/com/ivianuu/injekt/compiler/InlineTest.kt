@@ -265,6 +265,9 @@ class InlineTest {
         listOf(
             source(
                 """
+                    @Qualifier
+                    @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+                    annotation class TestQualifier1
         class Context {
             fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")
         }
