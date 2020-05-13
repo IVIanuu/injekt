@@ -15,23 +15,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val declarationStore = InjektDeclarationStore(pluginContext)
 
-        // write qualifiers of expression to the irTrace
-        QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
-
-        // generate a members injector for each annotated class
-        MembersInjectorTransformer(pluginContext)
-            .also { declarationStore.membersInjectorTransformer = it }
-            .lower(moduleFragment)
-
-        // generate a provider for each annotated class
-        ClassFactoryTransformer(pluginContext)
-            .also { declarationStore.classFactoryTransformer = it }
-            .lower(moduleFragment)
-
-        // add @InstanceFactory or @ImplFactory annotations
-        FactoryFunctionAnnotationTransformer(pluginContext)
-            .lower(moduleFragment)
-
         val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext)
 
         val moduleClassTransformer = ModuleClassTransformer(
@@ -41,28 +24,45 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ).also { declarationStore.moduleClassTransformer = it }
 
         val factoryModuleTransformer = FactoryModuleTransformer(
-            pluginContext, moduleFunctionTransformer
-        )
-            .also { declarationStore.factoryModuleTransformer = it }
+            pluginContext,
+            moduleFunctionTransformer
+        ).also { declarationStore.factoryModuleTransformer = it }
         val factoryTransformer = RootFactoryTransformer(
             pluginContext,
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
+        // write qualifiers of expression to the irTrace
+        QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
+
+        // add @InstanceFactory or @ImplFactory annotations to @Factory functions
+        FactoryFunctionAnnotationTransformer(pluginContext)
+            .lower(moduleFragment)
+
+        // generate a members injector for each annotated class
+        MembersInjectorTransformer(pluginContext)
+            .also { declarationStore.membersInjectorTransformer = it }
+            .lower(moduleFragment)
+
+        // generate a factory for each annotated class
+        ClassFactoryTransformer(pluginContext)
+            .also { declarationStore.classFactoryTransformer = it }
+            .lower(moduleFragment)
+
         // add a local @Factory fun at each call side of a inline factory
         InlineFactoryTransformer(pluginContext, declarationStore)
             .lower(moduleFragment)
 
-        // transform typed modules
-        moduleFunctionTransformer.lower(moduleFragment)
-
-        // move the module block of @Factory createImpl { ... } to a @Module function
+        // move the module block of a @Factory function to a seperate @Module function
         factoryModuleTransformer.lower(moduleFragment)
 
-        // transform @Module functions to their ast representation
+        // transform @Module functions
+        moduleFunctionTransformer.lower(moduleFragment)
+
+        // generate a Module class for each @Module function
         moduleClassTransformer.lower(moduleFragment)
 
-        // create implementations for factories
+        // generate factory implementations
         factoryTransformer.lower(moduleFragment)
 
         // patch file metadata

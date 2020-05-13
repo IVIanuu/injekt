@@ -68,12 +68,10 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.referenceClassifier
-import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -95,6 +93,7 @@ import org.jetbrains.kotlin.resolve.constants.UByteValue
 import org.jetbrains.kotlin.resolve.constants.UIntValue
 import org.jetbrains.kotlin.resolve.constants.ULongValue
 import org.jetbrains.kotlin.resolve.constants.UShortValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.isError
@@ -112,17 +111,14 @@ class InjektDeclarationIrBuilder(
 
     val symbolTable = pluginContext.symbolTable
     val irBuiltIns = pluginContext.irBuiltIns
-    val builtIns = pluginContext.builtIns
     val typeTranslator = pluginContext.typeTranslator
     fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     fun irInjektIntrinsicUnit(): IrExpression {
         return builder.irCall(
-            symbolTable.referenceFunction(
-                symbols.internalPackage.memberScope
-                    .findSingleFunction(Name.identifier("injektIntrinsic"))
-            ),
-            irBuiltIns.unitType
+            pluginContext.referenceFunctions(
+                InjektFqNames.InternalPackage.child(Name.identifier("injektIntrinsic"))
+            ).single()
         )
     }
 
@@ -134,10 +130,7 @@ class InjektDeclarationIrBuilder(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
             irBuiltIns.unitType,
-            symbolTable.referenceConstructor(
-                builtIns.any
-                    .unsubstitutedPrimaryConstructor!!
-            )
+            irBuiltIns.anyClass.constructors.single()
         )
         +IrInstanceInitializerCallImpl(
             UNDEFINED_OFFSET,
@@ -450,7 +443,8 @@ class InjektDeclarationIrBuilder(
             ?: annotationClassDescriptor.constructors.singleOrNull()
             ?: throw AssertionError("No constructor for annotation class $annotationClassDescriptor")
         val primaryConstructorSymbol =
-            symbolTable.referenceConstructor(primaryConstructorDescriptor)
+            pluginContext.referenceConstructors(annotationClassDescriptor.fqNameSafe)
+                .single()
 
         val psi = annotationDescriptor.source.safeAs<PsiSourceElement>()?.psi
         val startOffset =

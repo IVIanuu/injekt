@@ -12,8 +12,6 @@ import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.pop
-import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
@@ -26,13 +24,13 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
-import org.jetbrains.kotlin.ir.expressions.IrBody
+import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -68,30 +66,27 @@ class FactoryModuleTransformer(
     }
 
     fun getModuleFunctionForFactoryFunction(factoryFunction: IrFunction): IrFunction {
-        moduleFunctionsByFactoryFunctions[factoryFunction]?.let { return it }
+        moduleFunctionsByFactoryFunctions[factoryFunction]?.let {
+            return moduleFunctionTransformer.getTransformedModule(it)
+        }
 
         val moduleFunction = DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
             val moduleFunction = moduleFunction(factoryFunction)
             moduleFunction.parent = factoryFunction.parent
-            var block: IrBlockBody? = null
-            factoryFunction.parent.accept(object : IrElementTransformerVoid() {
-                private val blockStack = mutableListOf<IrBlockBody>()
-                override fun visitBlockBody(body: IrBlockBody): IrBody {
-                    blockStack.push(body)
-                    return super.visitBlockBody(body)
-                        .also { blockStack.pop() }
-                }
-
-                override fun visitFunction(declaration: IrFunction): IrStatement {
-                    if (declaration == factoryFunction) {
-                        block = blockStack.lastOrNull()
+            var block: IrBlock? = null
+            if (factoryFunction.isLocal) {
+                factoryFunction.parent.accept(object : IrElementTransformerVoid() {
+                    override fun visitBlock(expression: IrBlock): IrExpression {
+                        if (expression.statements.any { it === factoryFunction }) {
+                            block = expression
+                        }
+                        return super.visitBlock(expression)
                     }
-                    return super.visitFunction(declaration)
-                }
-            }, null)
+                }, null)
+            }
             if (block != null) {
                 val index = block!!.statements.indexOf(factoryFunction)
-                block!!.statements.add(index + 1, moduleFunction)
+                block!!.statements.add(index, moduleFunction)
             } else {
                 factoryFunction.getNearestDeclarationContainer().addChild(moduleFunction)
             }
@@ -106,7 +101,7 @@ class FactoryModuleTransformer(
                 }
             )
             moduleFunction
-        }.let { moduleFunctionTransformer.getTransformedModule(it) }
+        }
 
         moduleFunctionsByFactoryFunctions[factoryFunction] = moduleFunction
         return moduleFunction

@@ -2,12 +2,10 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
-import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -62,7 +60,6 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
@@ -74,9 +71,13 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val decoys = mutableSetOf<IrFunction>()
 
-    fun getTransformedModule(function: IrFunction): IrFunction =
-        transformFunctionIfNeeded(function)
+    fun getTransformedModule(function: IrFunction): IrFunction {
+        return transformedFunctions[function] ?: function
+    }
+
+    fun isDecoy(function: IrFunction): Boolean = function in decoys
 
     override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
@@ -96,23 +97,20 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
 
     private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
-        for (function in originalFunctions) {
-            val transformed = transformedFunctions[function]
-            if (transformed != null && transformed.valueParameters.size != function.valueParameters.size) {
+        for (original in originalFunctions) {
+            val transformed = transformedFunctions[original]
+            if (transformed != null && transformed != original) {
                 declarations.add(
-                    function.deepCopyWithSymbolsWithPreservingQualifiers()
+                    original.deepCopyWithSymbolsWithPreservingQualifiers()
                         .also { decoy ->
-                            pluginContext.irTrace.record(
-                                InjektWritableSlices.DECOY_MARKER,
-                                decoy as IrSimpleFunction,
-                                Unit
-                            )
+                            decoys += decoy
                             InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
                                 if (transformed.valueParameters
                                         .any { it.name.asString().startsWith("class\$") }
                                 ) {
                                     decoy.annotations += noArgSingleConstructorCall(symbols.astTyped)
                                 }
+
                                 decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
                             }
                         }
@@ -125,22 +123,10 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) return function
-        if (function is IrSimpleFunction &&
-            pluginContext.irTrace[InjektWritableSlices.DECOY_MARKER, function] != null
-        ) return function
-        val typeAnnotationChecker = TypeAnnotationChecker()
-        val bindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "Injekt IR")
-        if (try {
-                !typeAnnotationChecker.hasTypeAnnotation(
-                    bindingTrace, function.descriptor,
-                    InjektFqNames.Module
-                )
-            } catch (e: Exception) {
-                false
-            }
-        ) return function
+        if (!function.isModule(pluginContext.bindingContext)) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
+        if (function in decoys) return function
 
         val originalCaptures = mutableListOf<IrGetValue>()
         val originalClassOfCalls = mutableListOf<IrCall>()
@@ -159,8 +145,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             }
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(
-                    expression.symbol
-                        .owner
+                    expression.symbol.owner
                 )
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     originalClassOfCalls += expression
@@ -201,8 +186,8 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         transformedFunction.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
-                if (function.isLocal &&
-                    expression.symbol.owner !in function.valueParameters &&
+                if (transformedFunction.isLocal &&
+                    expression.symbol.owner !in transformedFunction.valueParameters &&
                     expression.type.classOrNull != symbols.providerDsl
                 ) {
                     captures += expression
@@ -211,9 +196,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                val callee = transformFunctionIfNeeded(
-                    expression.symbol.owner
-                )
+                val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     classOfCalls += expression
                 } else if (callee.hasAnnotation(InjektFqNames.AstTyped)) {
@@ -244,11 +227,11 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 .forEach { typeParameter ->
                     valueParametersByUnresolvedType[typeParameter] =
                         transformedFunction.addValueParameter(
-                            name = InjektNameConventions.classParameterNameForTypeParameter(
+                            InjektNameConventions.classParameterNameForTypeParameter(
                                     typeParameter.owner
                                 )
                                 .asString(),
-                            type = irBuiltIns.kClassClass.typeWith(typeParameter.defaultType)
+                            irBuiltIns.kClassClass.typeWith(typeParameter.defaultType)
                         )
                 }
 
@@ -257,6 +240,13 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 classOfCalls,
                 typedModuleCalls,
                 valueParametersByUnresolvedType
+            )
+        } else {
+            rewriteTypedFunctionCalls(
+                transformedFunction,
+                classOfCalls,
+                typedModuleCalls,
+                emptyMap()
             )
         }
 
@@ -277,13 +267,13 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 }
             })
 
-            transformedFunction.file.transformChildrenVoid(object : IrElementTransformerVoid() {
+            function.file.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
                 override fun visitCall(expression: IrCall): IrExpression {
                     if (expression.symbol != function.symbol) {
                         return super.visitCall(expression)
                     }
-                    return DeclarationIrBuilder(pluginContext, transformedFunction.symbol).run {
-                        irCall(transformedFunction.symbol).apply {
+                    return DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                        irCall(transformedFunction).apply {
                             copyTypeAndValueArgumentsFrom(expression)
                             captures.forEach { capture ->
                                 val valueParameter = valueParameterByCapture.getValue(capture)
@@ -372,9 +362,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                                     }
                             }
                     }
-                    else -> {
-                        super.visitCall(expression)
-                    }
+                    else -> super.visitCall(expression)
                 }
             }
         })
