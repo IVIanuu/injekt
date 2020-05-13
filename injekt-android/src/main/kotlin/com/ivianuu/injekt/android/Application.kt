@@ -6,7 +6,6 @@ import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compositionFactoryOf
-import com.ivianuu.injekt.inject
 
 @Scope
 annotation class ApplicationScoped
@@ -29,8 +28,5 @@ fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
     return createImpl()
-}*/
-
-fun <T : Application> T.inject() {
-    inject(applicationComponent)
 }
+*/
