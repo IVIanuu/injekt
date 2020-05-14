@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
+import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
@@ -65,6 +66,10 @@ class InjektIrGenerationExtension(
         // generate a factory for each annotated class
         ClassFactoryTransformer(pluginContext)
             .also { declarationStore.classFactoryTransformer = it }
+            .lower(moduleFragment)
+
+        // add @Parents annotation to @CompositionFactory functions
+        CompositionFactoryParentTransformer(pluginContext)
             .lower(moduleFragment)
 
         val compositionAggregateGenerator = CompositionAggregateGenerator(pluginContext, project)
