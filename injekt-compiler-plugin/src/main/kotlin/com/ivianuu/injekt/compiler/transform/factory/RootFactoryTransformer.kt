@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RootFactoryTransformer(
     context: IrPluginContext,
@@ -67,6 +68,7 @@ class RootFactoryTransformer(
                     when {
                         function.hasAnnotation(InjektFqNames.AstImplFactory) -> {
                             val implFactory = ImplFactory(
+                                origin = function.descriptor.fqNameSafe,
                                 parent = null,
                                 irDeclarationParent = function.parent,
                                 name = InjektNameConventions.getImplNameForFactoryFunction(function),

@@ -38,7 +38,14 @@ class InstanceFactory(
     pluginContext: IrPluginContext,
     symbols: InjektSymbols,
     declarationStore: InjektDeclarationStore
-) : AbstractFactory(moduleClass, typeParameterMap, pluginContext, symbols, declarationStore) {
+) : AbstractFactory(
+    factoryFunction.descriptor.fqNameSafe,
+    moduleClass,
+    typeParameterMap,
+    pluginContext,
+    symbols,
+    declarationStore
+) {
 
     override val factoryMembers =
         FunctionFactoryMembers(pluginContext, factoryFunction.getNearestDeclarationContainer())

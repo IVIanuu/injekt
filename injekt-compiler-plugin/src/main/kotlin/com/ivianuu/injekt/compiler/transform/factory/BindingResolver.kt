@@ -133,6 +133,7 @@ class ChildFactoryBindingResolver(
 
         val childFactoryImplementation =
             ImplFactory(
+                origin = function.descriptor.fqNameSafe, // todo better origin
                 parent = implFactory,
                 typeParameterMap = emptyMap(),
                 irDeclarationParent = implFactory.clazz,

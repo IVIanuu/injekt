@@ -30,8 +30,10 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.name.FqName
 
 abstract class AbstractFactory(
+    val origin: FqName,
     val moduleClass: IrClass,
     val typeParametersMap: Map<IrTypeParameterSymbol, IrType>,
     val pluginContext: IrPluginContext,

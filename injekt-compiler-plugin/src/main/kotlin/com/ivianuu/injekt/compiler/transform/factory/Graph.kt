@@ -114,7 +114,7 @@ class Graph(
                     "\n"
                 ) {
                     "'${it.origin.orUnknown()}'"
-                }}"
+                }} in '${factory.origin}'"
             )
         }
 
@@ -127,7 +127,7 @@ class Graph(
                 if (parent == null) {
                     error(
                         "Scope mismatch binding '${binding.key}' " +
-                                "with scope '${binding.targetScope}' is not compatible with this component ${scopes.map { "'$it'" }}"
+                                "with scope '${binding.targetScope}' is not compatible with this component '${factory.origin}' scopes [$scopes]"
                     )
                 } else {
                     binding = null
@@ -148,12 +148,16 @@ class Graph(
             return binding
         }
 
-        error("No binding found for '${request.key}' required at '${request.requestOrigin.orUnknown()}'")
+        error(
+            "No binding found for '${request.key}' " +
+                    "required at '${request.requestOrigin.orUnknown()}' " +
+                    "in '${factory.origin}'"
+        )
     }
 
     fun validate(request: BindingRequest) {
         check(request.key !in chain) {
-            "Circular dependency ${request.key}"
+            "Circular dependency for '${request.key}' in '${factory.origin}'"
         }
         chain += request.key
         val binding = getBinding(request)

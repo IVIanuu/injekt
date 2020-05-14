@@ -16,15 +16,20 @@
 
 package com.ivianuu.injekt.sample
 
+import android.app.Application
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.android.ApplicationScoped
+import com.ivianuu.injekt.installIn
 import com.ivianuu.injekt.transient
 import java.io.File
 
 @Module
 fun dataModule() {
+    installIn<ApplicationComponent>()
     @DatabaseFile
-    transient { get<App>().cacheDir!! }
+    transient { get<Application>().cacheDir!! }
 }
 
 @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)

@@ -34,8 +34,7 @@ class App : Application() {
 
     override fun onCreate() {
         generateCompositions()
-        entryPointOf<AppInjector>(applicationComponent)
-            .injectApp(this)
+        entryPointOf<AppInjector>(applicationComponent).injectApp(this)
         super.onCreate()
         repo.refresh()
         println("injected app $repo")

@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.childFactory
 import com.ivianuu.injekt.createImpl
 import com.ivianuu.injekt.entryPoint
 import com.ivianuu.injekt.entryPointOf
@@ -56,6 +57,7 @@ interface MainActivityFactoryHolder {
 fun mainActivityFactoryHolderModule() {
     installIn<ApplicationComponent>()
     entryPoint<MainActivityFactoryHolder>()
+    childFactory(MainActivityComponent::create)
 }
 
 interface MainActivityComponent {

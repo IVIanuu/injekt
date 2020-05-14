@@ -54,10 +54,12 @@ import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ImplFactory(
+    origin: FqName,
     val name: Name,
     superType: IrType,
     val parent: ImplFactory?,
@@ -68,6 +70,7 @@ class ImplFactory(
     symbols: InjektSymbols,
     declarationStore: InjektDeclarationStore
 ) : AbstractFactory(
+    origin,
     moduleClass,
     typeParameterMap,
     pluginContext,

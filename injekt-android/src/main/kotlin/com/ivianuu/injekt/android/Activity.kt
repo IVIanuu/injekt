@@ -43,8 +43,7 @@ val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
         entryPointOf<ActivityComponentFactoryOwner>(
             retainedActivityComponent
-        )
-            .activityComponentFactory(this)
+        ).activityComponentFactory(this)
     }
 
 @CompositionFactory

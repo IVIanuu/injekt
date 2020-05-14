@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.ir.builders.at
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -107,8 +106,8 @@ class FactoryModuleTransformer(
             } else {
                 factoryFunction.getNearestDeclarationContainer().addChild(moduleFunction)
             }
-            factoryFunction.body = irExprBody(
-                irCall(moduleFunction).apply {
+            factoryFunction.body = irBlockBody {
+                +irCall(moduleFunction).apply {
                     factoryFunction.typeParameters.forEach {
                         putTypeArgument(it.index, it.defaultType)
                     }
@@ -116,7 +115,8 @@ class FactoryModuleTransformer(
                         putValueArgument(index, irGet(valueParameter))
                     }
                 }
-            )
+                +factoryFunction.body!!.statements.last()
+            }
             moduleFunction
         }
 

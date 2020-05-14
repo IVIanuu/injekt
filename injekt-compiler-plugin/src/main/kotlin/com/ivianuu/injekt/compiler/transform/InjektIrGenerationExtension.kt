@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
@@ -85,8 +84,6 @@ class InjektIrGenerationExtension(
         InlineFactoryTransformer(pluginContext, declarationStore)
             .lower(moduleFragment)
 
-        // todo generate composition factories
-
         // move the module block of a @Factory function to a seperate @Module function
         factoryModuleTransformer.lower(moduleFragment)
 
@@ -106,7 +103,7 @@ class InjektIrGenerationExtension(
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }
