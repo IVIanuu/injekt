@@ -21,14 +21,20 @@ import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.MembersInjector
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.android.ApplicationComponent
+import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.createImpl
+import com.ivianuu.injekt.entryPoint
+import com.ivianuu.injekt.entryPointOf
+import com.ivianuu.injekt.installIn
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 
 class MainActivity : AppCompatActivity() {
     val activityComponent by lazy {
-        (application as App).appComponent
+        entryPointOf<MainActivityFactoryHolder>(application.applicationComponent)
             .mainActivityComponentFactory(this)
     }
 
@@ -40,6 +46,16 @@ class MainActivity : AppCompatActivity() {
         activityComponent.injectMainActivity(this)
         println("Got view model $viewModel")
     }
+}
+
+interface MainActivityFactoryHolder {
+    val mainActivityComponentFactory: @ChildFactory (MainActivity) -> MainActivityComponent
+}
+
+@Module
+fun mainActivityFactoryHolderModule() {
+    installIn<ApplicationComponent>()
+    entryPoint<MainActivityFactoryHolder>()
 }
 
 interface MainActivityComponent {
@@ -60,4 +76,3 @@ annotation class ActivityScoped
 
 @ActivityScoped
 class MainViewModel(private val repo: Repo)
-

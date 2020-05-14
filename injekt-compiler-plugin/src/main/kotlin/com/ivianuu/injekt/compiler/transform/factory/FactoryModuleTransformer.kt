@@ -66,7 +66,8 @@ class FactoryModuleTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Factory) ||
-                    declaration.hasAnnotation(InjektFqNames.ChildFactory)
+                    declaration.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    declaration.hasAnnotation(InjektFqNames.CompositionFactory)
                 ) {
                     factoryFunctions += declaration
                 }

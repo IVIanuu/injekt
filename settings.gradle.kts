@@ -21,5 +21,6 @@ include(
     ":injekt-compiler-plugin",
     ":injekt-core",
     ":injekt-gradle-plugin",
+    ":integration-tests",
     ":sample"
 )

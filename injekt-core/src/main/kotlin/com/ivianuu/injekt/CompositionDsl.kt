@@ -18,8 +18,8 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-@Qualifier
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
-annotation class CompositionFactory
+fun <T> parent(): Unit = injektIntrinsic()
 
-fun <T> compositionFactoryOf(): T = injektIntrinsic()
+fun <T> entryPoint(): Unit = injektIntrinsic()
+
+fun <T> installIn(): Unit = injektIntrinsic()

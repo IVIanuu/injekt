@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
+import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
@@ -25,9 +28,12 @@ import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-class InjektIrGenerationExtension : IrGenerationExtension {
+class InjektIrGenerationExtension(
+    private val project: Project
+) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val declarationStore = InjektDeclarationStore(pluginContext)
@@ -52,10 +58,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // write qualifiers of expression to the irTrace
         QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
 
-        // add @InstanceFactory or @ImplFactory annotations to @Factory functions
-        FactoryFunctionAnnotationTransformer(pluginContext)
-            .lower(moduleFragment)
-
         // generate a members injector for each annotated class
         MembersInjectorTransformer(pluginContext)
             .also { declarationStore.membersInjectorTransformer = it }
@@ -66,9 +68,24 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .also { declarationStore.classFactoryTransformer = it }
             .lower(moduleFragment)
 
+        val compositionAggregateGenerator = CompositionAggregateGenerator(pluginContext, project)
+            .also { it.lower(moduleFragment) }
+
+        // generate composition factories
+        GenerateCompositionsTransformer(
+            pluginContext, declarationStore,
+            compositionAggregateGenerator
+        ).lower(moduleFragment)
+
+        // add @InstanceFactory or @ImplFactory annotations to @Factory functions
+        FactoryFunctionAnnotationTransformer(pluginContext)
+            .lower(moduleFragment)
+
         // add a local @Factory fun at each call side of a inline factory
         InlineFactoryTransformer(pluginContext, declarationStore)
             .lower(moduleFragment)
+
+        // todo generate composition factories
 
         // move the module block of a @Factory function to a seperate @Module function
         factoryModuleTransformer.lower(moduleFragment)
@@ -88,6 +105,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

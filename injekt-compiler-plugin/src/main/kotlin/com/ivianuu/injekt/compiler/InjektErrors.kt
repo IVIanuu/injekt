@@ -34,17 +34,17 @@ interface InjektErrors {
 
         @JvmField
         val FORBIDDEN_MODULE_INVOCATION = error(
-            "Only @Factory, @ChildFactory or @Module functions can invoke @Module functions"
+            "Only @Factory, @ChildFactory, @CompositionFactory or @Module functions can invoke @Module functions"
         )
 
         @JvmField
         val FORBIDDEN_DSL_FUNCTION_INVOCATION = error(
-            "Only @Factory, @ChildFactory or @Module functions can invoke this function"
+            "Only @Factory, @ChildFactory, @CompositionFactory or @Module functions can invoke this function"
         )
 
         @JvmField
         val CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES = error(
-            "Conditional logic is not allowed inside @Factory, @ChildFactory and @Module functions"
+            "Conditional logic is not allowed inside @Factory, @ChildFactory, @CompositionFactory and @Module functions"
         )
 
         @JvmField
@@ -54,12 +54,12 @@ interface InjektErrors {
 
         @JvmField
         val CREATE_IMPl_WITHOUT_FACTORY = error(
-            "createImpl can only be called from within a @Factory or @ChildFactory function"
+            "createImpl can only be called from within a @Factory, @ChildFactory or @CompositionFactory function"
         )
 
         @JvmField
-        val CREATE_INSTANCE_IN_CHILD_FACTORY = error(
-            "createInstance cannot be called in a @ChildFactory function"
+        val CREATE_INSTANCE_IN_CHILD_OR_COMPOSITION_FACTORY = error(
+            "createInstance cannot be called in a @ChildFactory or @CompositionFactory function"
         )
 
         @JvmField
@@ -99,7 +99,17 @@ interface InjektErrors {
 
         @JvmField
         val FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE = error(
-            "@Factory or @ChildFactory functions with type parameters must be marked with inline"
+            "@Factory functions with type parameters must be marked with inline"
+        )
+
+        @JvmField
+        val CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS = error(
+            "@ChildFactory or @CompositionFactory functions cannot have type parameters"
+        )
+
+        @JvmField
+        val CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE = error(
+            "@ChildFactory or @CompositionFactory cannot be marked with inline"
         )
 
         @JvmField
@@ -138,8 +148,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val CANNOT_INVOKE_CHILD_FACTORIES = error(
-            "Cannot invoke @ChildFactory functions"
+        val CANNOT_INVOKE_CHILD_OR_COMPOSITION_FACTORIES = error(
+            "Cannot invoke @ChildFactory or @CompositionFactory functions"
         )
 
         @JvmField
@@ -159,17 +169,17 @@ interface InjektErrors {
 
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error(
-            "A function can only be annotated with one of @Factory, @ChildFactory or @Module"
+            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory or @Module"
         )
 
         @JvmField
         val CANNOT_BE_SUSPEND = error(
-            "@Factory, @ChildFactory or @Module cannot be suspend"
+            "@Factory, @ChildFactory, @CompositionFactory or @Module cannot be suspend"
         )
 
         @JvmField
         val CLASS_OF_OUTSIDE_OF_MODULE = error(
-            "classOf() can only be called from inside @Factory, @ChildFactory or @Module functions"
+            "classOf() can only be called from inside @Factory, @ChildFactory, @CompositionFactory or @Module functions"
         )
 
         @JvmField

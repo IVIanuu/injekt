@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.name.Name
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InternalPackage = InjektPackage.child("internal")
+    val CompositionsPackage = InternalPackage.child("compositions")
 
     val InjektAst = InternalPackage.child("InjektAst")
     val AstAlias = InjektAst.child("Alias")
@@ -29,6 +30,7 @@ object InjektFqNames {
     val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
+    val AstEntryPoint = InjektAst.child("EntryPoint")
     val AstInline = InjektAst.child("Inline")
     val AstImplFactory = InjektAst.child("ImplFactory")
     val AstInstanceFactory = InjektAst.child("InstanceFactory")
@@ -55,6 +57,9 @@ object InjektFqNames {
     val AssistedParameters = InjektPackage.child("AssistedParameters")
 
     val ChildFactory = InjektPackage.child("ChildFactory")
+
+    val CompositionFactory = InjektPackage.child("CompositionFactory")
+    val CompositionFactories = InjektPackage.child("CompositionFactories")
 
     val DoubleCheck = InternalPackage.child("DoubleCheck")
 
@@ -90,7 +95,11 @@ object InjektFqNames {
 
     private fun FqName.child(name: String) = child(Name.identifier(name))
 
-    val DslNames = listOf(
+    val CompositionFactoryDslNames = listOf(
+        InjektPackage.child("parent")
+    )
+
+    val ModuleDslNames = listOf(
         InjektPackage.child("map"),
         InjektPackage.child("set"),
         InjektPackage.child("scope"),
@@ -101,4 +110,5 @@ object InjektFqNames {
         InjektPackage.child("scoped"),
         InjektPackage.child("instance")
     )
+
 }

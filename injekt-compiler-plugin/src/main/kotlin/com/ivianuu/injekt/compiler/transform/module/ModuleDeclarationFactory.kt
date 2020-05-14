@@ -102,6 +102,8 @@ class ModuleDeclarationFactory(
                             callee.fqNameSafe.asString() == "com.ivianuu.injekt.scoped" ||
                             callee.fqNameSafe.asString() == "com.ivianuu.injekt.instance" ->
                         declarations += createBindingDeclaration(expression)
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.entryPoint" ->
+                        declarations += createEntryPointDeclaration(expression)
                     callee.fqNameSafe.asString() == "com.ivianuu.injekt.map" ->
                         declarations += createMapDeclarations(expression)
                     callee.fqNameSafe.asString() == "com.ivianuu.injekt.set" ->
@@ -181,6 +183,9 @@ class ModuleDeclarationFactory(
             call.symbol.owner.name.asString() == "scoped"
         )
     }
+
+    private fun createEntryPointDeclaration(call: IrCall): EntryPointDeclaration =
+        EntryPointDeclaration(call.getTypeArgument(0)!!)
 
     private fun createMapDeclarations(call: IrCall): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()

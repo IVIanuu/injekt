@@ -104,6 +104,7 @@ import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.isAnnotationConstructor
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.Printer
@@ -766,22 +767,22 @@ private class IrSourcePrinterVisitor(
     }
 
     override fun visitGetObjectValue(expression: IrGetObjectValue) {
-        print(expression.symbol.owner.name)
+        print(expression.symbol.descriptor.fqNameSafe)
     }
 
     override fun visitGetValue(expression: IrGetValue) {
-        print(expression.symbol.owner.name)
+        print(expression.symbol.descriptor.fqNameSafe)
     }
 
     override fun visitGetEnumValue(expression: IrGetEnumValue) {
         val classifier = expression.type.classOrNull ?: return
-        print(classifier.owner.name)
+        print(classifier.descriptor.fqNameSafe)
         print(".")
-        print(expression.symbol.owner.name)
+        print(expression.symbol.descriptor.fqNameSafe)
     }
 
     override fun visitSetVariable(expression: IrSetVariable) {
-        print(expression.symbol.owner.name)
+        print(expression.symbol.descriptor.fqNameSafe)
         print(" = ")
         expression.value.print()
     }
@@ -1062,7 +1063,7 @@ private class IrSourcePrinterVisitor(
     }
 
     override fun visitFunctionReference(expression: IrFunctionReference) {
-        print("<<FUNCTIONREF>>")
+        print("::${expression.symbol.descriptor.fqNameSafe}")
     }
 
     override fun visitInstanceInitializerCall(expression: IrInstanceInitializerCall) {

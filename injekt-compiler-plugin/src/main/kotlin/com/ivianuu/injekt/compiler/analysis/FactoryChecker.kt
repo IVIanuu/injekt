@@ -54,7 +54,8 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         if (descriptor is FunctionDescriptor && (descriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory))
+                    descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory))
         ) {
             checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,
@@ -95,6 +96,23 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                                 .on(valueParameter.findPsi() ?: declaration)
                         )
                     }
+                }
+            }
+
+            if (descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
+                descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory)
+            ) {
+                if (descriptor.isInline) {
+                    context.trace.report(
+                        InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE
+                            .on(descriptor.findPsi() ?: declaration)
+                    )
+                }
+                if (descriptor.typeParameters.isNotEmpty()) {
+                    context.trace.report(
+                        InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS
+                            .on(descriptor.findPsi() ?: declaration)
+                    )
                 }
             }
         }
@@ -144,10 +162,15 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             //}
         }
 
-        if (resultingDescriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) &&
+        if ((resultingDescriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    resultingDescriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory)) &&
             !resolvedCall.call.isCallableReference()
         ) {
-            context.trace.report(InjektErrors.CANNOT_INVOKE_CHILD_FACTORIES.on(reportOn))
+            context.trace.report(
+                InjektErrors.CANNOT_INVOKE_CHILD_OR_COMPOSITION_FACTORIES.on(
+                    reportOn
+                )
+            )
         }
     }
 
@@ -181,9 +204,14 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         }
 
         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
-            descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory)
+            (descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory))
         ) {
-            context.trace.report(InjektErrors.CREATE_INSTANCE_IN_CHILD_FACTORY.on(element))
+            context.trace.report(
+                InjektErrors.CREATE_INSTANCE_IN_CHILD_OR_COMPOSITION_FACTORY.on(
+                    element
+                )
+            )
         }
 
         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
@@ -207,7 +235,8 @@ class FactoryChecker : CallChecker, DeclarationChecker {
 
         val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
             it.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    it.annotations.hasAnnotation(InjektFqNames.ChildFactory)
+                    it.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    it.annotations.hasAnnotation(InjektFqNames.CompositionFactory)
         }
 
         when {

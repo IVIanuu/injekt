@@ -16,4 +16,5 @@
 
 package com.ivianuu.injekt
 
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 annotation class InstallIn<T>

@@ -31,6 +31,8 @@ object InjektAst {
 
     annotation class Dependency
 
+    annotation class EntryPoint
+
     annotation class Binding
 
     annotation class ImplFactory

@@ -33,6 +33,7 @@ class FactoryFunctionAnnotationTransformer(pluginContext: IrPluginContext) :
 
     override fun visitFunction(declaration: IrFunction): IrStatement {
         if (!declaration.hasAnnotation(InjektFqNames.ChildFactory) &&
+            !declaration.hasAnnotation(InjektFqNames.CompositionFactory) &&
             !declaration.hasAnnotation(InjektFqNames.Factory)
         ) return super.visitFunction(declaration)
         val createCall = (declaration.body!!.statements.last() as IrReturn).value as IrCall

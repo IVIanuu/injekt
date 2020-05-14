@@ -28,17 +28,19 @@ import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 class DslCallChecker(
     private val typeAnnotationChecker: TypeAnnotationChecker
 ) : CallChecker {
+
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        if (resolvedCall.resultingDescriptor.fqNameSafe !in InjektFqNames.DslNames) return
+        if (resolvedCall.resultingDescriptor.fqNameSafe !in InjektFqNames.ModuleDslNames) return
         val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
             val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
             InjektFqNames.Module in typeAnnotations ||
                     InjektFqNames.Factory in typeAnnotations ||
-                    InjektFqNames.ChildFactory in typeAnnotations
+                    InjektFqNames.ChildFactory in typeAnnotations ||
+                    InjektFqNames.CompositionFactory in typeAnnotations
         }
 
         if (enclosingInjektDslFunction != null &&

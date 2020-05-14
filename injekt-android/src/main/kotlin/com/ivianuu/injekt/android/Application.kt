@@ -19,9 +19,12 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.CompositionFactory
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compositionFactoryOf
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.scope
 
 @Scope
 annotation class ApplicationScoped
@@ -34,15 +37,13 @@ interface ApplicationComponent
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        compositionFactoryOf<@CompositionFactory (Application) -> ApplicationComponent>()
+        compositionFactoryOf<ApplicationComponent,
+                @CompositionFactory (Application) -> ApplicationComponent>()
             .invoke(this)
     }
 
-/*
-@CompositionFactory
-fun createApplicationComponent(instance: Application): ApplicationComponent {
+@Module
+fun createApplicationComponentModule(instance: Application) {
     scope<ApplicationScoped>()
     instance(instance)
-    return createImpl()
 }
-*/

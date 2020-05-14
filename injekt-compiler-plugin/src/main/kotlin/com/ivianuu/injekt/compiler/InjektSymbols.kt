@@ -43,6 +43,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astBinding = injektAst.childClass(InjektFqNames.AstBinding.shortName())
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
+    val astEntryPoint = injektAst.childClass(InjektFqNames.AstEntryPoint.shortName())
     val astInline = injektAst.childClass(InjektFqNames.AstInline.shortName())
     val astImplFactory = injektAst.childClass(InjektFqNames.AstImplFactory.shortName())
     val astInstanceFactory = injektAst.childClass(InjektFqNames.AstInstanceFactory.shortName())
@@ -70,6 +71,10 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val assistedParameters = pluginContext.referenceClass(InjektFqNames.AssistedParameters)!!
 
     val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
+
+    val compositionFactory = pluginContext.referenceClass(InjektFqNames.CompositionFactory)!!
+    val compositionFactories = pluginContext.referenceClass(InjektFqNames.CompositionFactories)!!
+
     val doubleCheck = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
     val factory = pluginContext.referenceClass(InjektFqNames.Factory)!!
 

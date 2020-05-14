@@ -68,6 +68,8 @@ class IncludedModuleDeclaration(
     )
 }
 
+class EntryPointDeclaration(val entryPointType: IrType) : ModuleDeclaration(null)
+
 class MapDeclaration(
     val mapType: IrType
 ) : ModuleDeclaration(null)

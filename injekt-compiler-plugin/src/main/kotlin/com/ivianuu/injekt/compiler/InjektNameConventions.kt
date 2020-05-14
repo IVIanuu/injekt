@@ -21,7 +21,9 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.math.absoluteValue
 
 object InjektNameConventions {
@@ -39,6 +41,12 @@ object InjektNameConventions {
     fun getImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
         Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Factory")
 
+    fun getCompositionFactoryTypeNameForCall(file: IrFile, call: IrCall): Name =
+        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Type")
+
+    fun getCompositionFactoryImplNameForCall(file: IrFile, call: IrCall): Name =
+        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Factory")
+
     fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
         factoryFunction.nameOrUniqueName("FactoryModule")
 
@@ -47,6 +55,17 @@ object InjektNameConventions {
 
     fun typeParameterNameForClassParameterName(name: Name): Name =
         Name.identifier(name.asString().removePrefix("class\$"))
+
+    fun getCompositionElementNameForFunction(
+        compositionFqName: FqName,
+        moduleFunction: IrFunction
+    ): Name {
+        return Name.identifier(
+            compositionFqName.asString()
+                .replace(".", "_") + "__" + moduleFunction.descriptor.fqNameSafe.asString()
+                .replace(".", "_")
+        )
+    }
 
     private fun IrFunction.nameOrUniqueName(
         suffix: String

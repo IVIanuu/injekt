@@ -133,6 +133,27 @@ class InjektDeclarationIrBuilder(
     val typeTranslator = pluginContext.typeTranslator
     fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
+    fun emptyClass(name: Name): IrClass = buildClass {
+        this.name = name
+        visibility = Visibilities.PUBLIC
+    }.apply clazz@{
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
+        addConstructor {
+            this.returnType = defaultType
+            isPrimary = true
+            this.visibility = Visibilities.PUBLIC
+        }.apply {
+            body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                builder.irBlockBody {
+                    initializeClassWithAnySuperClass(this@clazz.symbol)
+                }
+            }
+        }
+    }
+
     fun irInjektIntrinsicUnit(): IrExpression {
         return builder.irCall(
             pluginContext.referenceFunctions(

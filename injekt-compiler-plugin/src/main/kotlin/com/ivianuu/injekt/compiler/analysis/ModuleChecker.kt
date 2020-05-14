@@ -113,7 +113,8 @@ class ModuleChecker(
             val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
             InjektFqNames.Module in typeAnnotations ||
                     InjektFqNames.Factory in typeAnnotations ||
-                    InjektFqNames.ChildFactory in typeAnnotations
+                    InjektFqNames.ChildFactory in typeAnnotations ||
+                    InjektFqNames.CompositionFactory in typeAnnotations
         }
 
         when {

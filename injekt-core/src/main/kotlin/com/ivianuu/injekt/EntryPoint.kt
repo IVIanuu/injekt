@@ -16,5 +16,14 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
+
 @Target(AnnotationTarget.CLASS)
-annotation class GenerateCompositions
+annotation class EntryPoint
+
+inline fun <reified T> entryPointOf(component: Any): T = component as T
+
+inline fun <reified T> injectEntryPoint(
+    instance: T,
+    component: Any
+): Unit = injektIntrinsic()

@@ -66,6 +66,7 @@ class ModuleDescriptor(
                 is AliasDeclaration -> addAliasFunction(declaration)
                 is BindingDeclaration -> addBindingFunction(declaration)
                 is IncludedModuleDeclaration -> addIncludedModuleFunction(declaration)
+                is EntryPointDeclaration -> addEntryPointFunction(declaration)
                 is MapDeclaration -> addMapFunction(declaration)
                 is MapEntryDeclaration -> addMapEntryFunction(declaration)
                 is SetDeclaration -> addSetFunction(declaration)
@@ -211,6 +212,18 @@ class ModuleDescriptor(
                     )
                 }
             }
+        }
+    }
+
+    private fun addEntryPointFunction(declaration: EntryPointDeclaration) {
+        clazz.addFunction(
+            name = nameProvider.allocate("entryPoint"),
+            returnType = declaration.entryPointType.remapTypeParameters(module.function, clazz),
+            modality = Modality.ABSTRACT
+        ).apply {
+            (this as IrFunctionImpl).metadata = MetadataSource.Function(descriptor)
+            annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
+                .noArgSingleConstructorCall(module.symbols.astEntryPoint)
         }
     }
 

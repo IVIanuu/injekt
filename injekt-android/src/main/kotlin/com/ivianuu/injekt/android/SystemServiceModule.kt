@@ -76,10 +76,12 @@ import android.view.accessibility.CaptioningManager
 import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
+import com.ivianuu.injekt.InstallIn
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.transient
 
+@InstallIn<ApplicationComponent>
 @Module
 fun systemServiceModule() {
     systemService<AccessibilityManager>()

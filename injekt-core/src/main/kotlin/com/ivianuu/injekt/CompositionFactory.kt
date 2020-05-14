@@ -16,7 +16,14 @@
 
 package com.ivianuu.injekt
 
-@Target(AnnotationTarget.CLASS)
-annotation class EntryPoint
+import com.ivianuu.injekt.internal.TypeAnnotation
+import com.ivianuu.injekt.internal.injektIntrinsic
 
-inline fun <reified T> entryPointOf(component: Any): T = component as T
+@TypeAnnotation
+@Qualifier
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+annotation class CompositionFactory
+
+inline fun <reified T, reified F> compositionFactoryOf(): F = CompositionFactories.get(T::class)
+
+fun generateCompositions(): Unit = injektIntrinsic()

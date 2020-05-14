@@ -73,7 +73,11 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                 factoryFunction.descriptor.fqNameSafe
                     .parent()
                     .child(InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction))
-            ).single().owner
+            ).singleOrNull()?.owner ?: error(
+                "Couldn't find factory function for ${InjektNameConventions.getModuleNameForFactoryFunction(
+                    factoryFunction
+                )}"
+            )
         }
     }
 
