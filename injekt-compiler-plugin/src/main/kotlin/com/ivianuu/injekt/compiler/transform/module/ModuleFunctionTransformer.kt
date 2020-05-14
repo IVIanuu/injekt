@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Manuel Wrage
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *  
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
@@ -138,6 +154,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                             moduleStack.pop()
                     }
             }
+
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (function.isLocal &&
                     moduleStack.last() == function &&
@@ -148,6 +165,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 }
                 return super.visitGetValue(expression)
             }
+
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(
                     expression.symbol.owner
@@ -200,6 +218,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                             moduleStack.pop()
                     }
             }
+
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (transformedFunction.isLocal &&
                     moduleStack.last() == transformedFunction &&
