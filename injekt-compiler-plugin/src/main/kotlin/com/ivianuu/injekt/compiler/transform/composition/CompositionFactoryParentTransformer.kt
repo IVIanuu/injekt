@@ -42,42 +42,44 @@ class CompositionFactoryParentTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     override fun visitFunction(declaration: IrFunction): IrStatement {
-        if (declaration.hasAnnotation(InjektFqNames.CompositionFactory)) {
-            val parents = mutableListOf<IrType>()
+        if (!declaration.hasAnnotation(InjektFqNames.CompositionFactory)) return super.visitFunction(
+            declaration
+        )
 
-            declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-                override fun visitCall(expression: IrCall): IrExpression {
-                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuuu.injekt.parent") {
-                        parents += expression.getTypeArgument(0)!!
-                    }
-                    return super.visitCall(expression)
-                }
-            })
+        val parents = mutableListOf<IrType>()
 
-            declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol).run {
-                irCall(symbols.astParents.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        IrVarargImpl(
-                            UNDEFINED_OFFSET,
-                            UNDEFINED_OFFSET,
-                            irBuiltIns.arrayClass.typeWith(irBuiltIns.kClassClass.starProjectedType),
-                            irBuiltIns.kClassClass.starProjectedType,
-                            parents
-                                .map {
-                                    IrClassReferenceImpl(
-                                        UNDEFINED_OFFSET,
-                                        UNDEFINED_OFFSET,
-                                        irBuiltIns.kClassClass.typeWith(it),
-                                        it.classifierOrFail,
-                                        it
-                                    )
-                                }
-                        )
-                    )
+        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.parent") {
+                    parents += expression.getTypeArgument(0)!!
                 }
+                return super.visitCall(expression)
             }
-        }
+        })
+
+        declaration.annotations += DeclarationIrBuilder(pluginContext, declaration.symbol)
+            .irCall(symbols.astParents.constructors.single()).apply {
+                putValueArgument(
+                    0,
+                    IrVarargImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        irBuiltIns.arrayClass.typeWith(irBuiltIns.kClassClass.starProjectedType),
+                        irBuiltIns.kClassClass.starProjectedType,
+                        parents
+                            .map {
+                                IrClassReferenceImpl(
+                                    UNDEFINED_OFFSET,
+                                    UNDEFINED_OFFSET,
+                                    irBuiltIns.kClassClass.typeWith(it),
+                                    it.classifierOrFail,
+                                    it
+                                )
+                            }
+                    )
+                )
+            }
+
         return super.visitFunction(declaration)
     }
 

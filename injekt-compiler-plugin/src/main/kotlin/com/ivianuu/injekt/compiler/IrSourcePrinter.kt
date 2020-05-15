@@ -314,7 +314,7 @@ private class IrSourcePrinterVisitor(
                 // no names for
                 "invoke", "get", "set" -> ""
                 "iterator", "hasNext", "next" -> name
-                else -> error("Unhandled operator $name")
+                else -> ""//error("Unhandled operator $name")
             }
 
             val printBinary = when (name) {
@@ -519,7 +519,7 @@ private class IrSourcePrinterVisitor(
             IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> {
                 expression.argument.print()
             }
-            else -> error("Unknown type operator: ${expression.operator}")
+            else -> expression.argument.print()//error("Unknown type operator: ${expression.operator}")
         }
     }
 

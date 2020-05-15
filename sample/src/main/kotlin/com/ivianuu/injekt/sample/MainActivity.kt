@@ -18,56 +18,24 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.MembersInjector
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Scope
-import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.childFactory
-import com.ivianuu.injekt.createImpl
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.android.RetainedActivityScoped
+import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.installIn
-import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.scope
 
 class MainActivity : AppCompatActivity() {
-    val activityComponent by lazy {
-        application.applicationComponent
-            .get<@ChildFactory (MainActivity) -> MainActivityComponent>()(this)
-    }
 
     private val viewModel: MainViewModel by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityComponent.injectMainActivity(this)
+        activityComponent.inject(this)
         println("Got view model $viewModel")
     }
 }
 
-@Module
-fun mainActivityFactoryModule() {
-    installIn<ApplicationComponent>()
-    childFactory(MainActivityComponent::create)
-}
-
-interface MainActivityComponent {
-    val injectMainActivity: @MembersInjector (MainActivity) -> Unit
-
-    companion object {
-        @ChildFactory
-        fun create(mainActivity: MainActivity): MainActivityComponent {
-            scope<ActivityScoped>()
-            instance(mainActivity)
-            return createImpl()
-        }
+@RetainedActivityScoped
+class MainViewModel(private val repo: Repo) {
+    init {
+        println("init ")
     }
 }
-
-@Scope
-annotation class ActivityScoped
-
-@ActivityScoped
-class MainViewModel(private val repo: Repo)

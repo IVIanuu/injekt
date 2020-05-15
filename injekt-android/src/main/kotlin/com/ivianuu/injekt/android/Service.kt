@@ -16,8 +16,16 @@
 
 package com.ivianuu.injekt.android
 
+import android.app.Service
+import com.ivianuu.injekt.ChildFactory
+import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.createImpl
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.parent
+import com.ivianuu.injekt.scope
 
 @Scope
 annotation class ServiceScoped
@@ -28,7 +36,6 @@ annotation class ForService
 
 interface ServiceComponent
 
-/*
 fun Service.serviceComponent(): Lazy<ServiceComponent> = lazy {
     application.applicationComponent
         .get<@ChildFactory (Service) -> ServiceComponent>()(this)
@@ -41,4 +48,3 @@ fun createServiceComponent(instance: Service): ServiceComponent {
     instance(instance)
     return createImpl()
 }
-*/

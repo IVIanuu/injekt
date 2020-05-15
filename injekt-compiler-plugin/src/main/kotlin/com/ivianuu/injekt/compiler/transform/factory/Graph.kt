@@ -354,7 +354,6 @@ class Graph(
                 ChildFactoryBindingResolver(
                     factory,
                     descriptor,
-                    symbols,
                     factoryMembers
                 )
             )

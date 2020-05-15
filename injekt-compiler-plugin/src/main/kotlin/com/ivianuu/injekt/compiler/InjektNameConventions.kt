@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -41,11 +42,25 @@ object InjektNameConventions {
     fun getImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "FactoryImpl")
 
-    fun getCompositionFactoryTypeNameForCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "Type")
+    fun getCompositionFactoryTypeNameForCall(
+        file: IrFile,
+        call: IrCall,
+        factoryFunction: IrFunctionSymbol
+    ): Name =
+        getNameAtSourcePositionWithSuffix(
+            file, call,
+            "${factoryFunction.descriptor.fqNameSafe.asString().replace(".", "_")}\$Type"
+        )
 
-    fun getCompositionFactoryImplNameForCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "Factory")
+    fun getCompositionFactoryImplNameForCall(
+        file: IrFile,
+        call: IrCall,
+        factoryFunction: IrFunctionSymbol
+    ): Name =
+        getNameAtSourcePositionWithSuffix(
+            file, call,
+            "${factoryFunction.descriptor.fqNameSafe.asString().replace(".", "_")}\$Factory"
+        )
 
     fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "Get")

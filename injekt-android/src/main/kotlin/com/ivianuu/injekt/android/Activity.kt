@@ -16,8 +16,16 @@
 
 package com.ivianuu.injekt.android
 
+import androidx.activity.ComponentActivity
+import com.ivianuu.injekt.ChildFactory
+import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.createImpl
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.parent
+import com.ivianuu.injekt.scope
 
 @Scope
 annotation class ActivityScoped
@@ -28,18 +36,16 @@ annotation class ForActivity
 
 interface ActivityComponent
 
-/*
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
         retainedActivityComponent
-            .get<@ChildFactory (Activity) -> ActivityComponent>()(this)
+            .get<@ChildFactory (ComponentActivity) -> ActivityComponent>()(this)
     }
 
 @CompositionFactory
-fun createActivityComponent(instance: Activity): ActivityComponent {
-    parent<ApplicationComponent>()
+fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
+    parent<RetainedActivityComponent>()
     scope<ActivityScoped>()
     instance(instance)
     return createImpl()
 }
-*/

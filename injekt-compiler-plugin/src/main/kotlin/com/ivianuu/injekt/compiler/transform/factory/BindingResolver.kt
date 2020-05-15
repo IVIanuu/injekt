@@ -78,7 +78,6 @@ typealias BindingResolver = (Key) -> List<BindingNode>
 class ChildFactoryBindingResolver(
     private val implFactory: ImplFactory,
     descriptor: IrClass,
-    private val symbols: InjektSymbols,
     private val members: FactoryMembers
 ) : BindingResolver {
 
@@ -131,7 +130,7 @@ class ChildFactoryBindingResolver(
                 ?.owner
         moduleClass!!
 
-        val childFactoryImplementation =
+        val childFactoryImpl =
             ImplFactory(
                 origin = function.descriptor.fqNameSafe, // todo better origin
                 parent = implFactory,
@@ -145,14 +144,14 @@ class ChildFactoryBindingResolver(
                 declarationStore = implFactory.declarationStore
             )
 
-        members.addClass(childFactoryImplementation.clazz)
+        members.addClass(childFactoryImpl.clazz)
 
         val childFactory = DeclarationIrBuilder(
             implFactory.pluginContext,
             implFactory.clazz.symbol
         ).childFactory(
             members.nameForGroup("childFactory"),
-            childFactoryImplementation,
+            childFactoryImpl,
             key.type
         )
 
@@ -162,7 +161,7 @@ class ChildFactoryBindingResolver(
             key,
             implFactory,
             moduleClass.fqNameForIrSerialization,
-            childFactoryImplementation,
+            childFactoryImpl,
             childFactory,
         )
     }

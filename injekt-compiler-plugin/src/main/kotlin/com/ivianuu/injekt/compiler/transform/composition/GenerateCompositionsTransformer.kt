@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -40,7 +41,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
@@ -81,14 +81,23 @@ class GenerateCompositionsTransformer(
             }
         })
 
+        if (generateCompositionsCalls.isEmpty()) return super.visitModuleFragment(declaration)
+
         val compositionsPackage =
             pluginContext.moduleDescriptor.getPackage(InjektFqNames.CompositionsPackage)
 
-        val compositions = mutableMapOf<IrClassSymbol, MutableList<IrFunctionSymbol>>()
+        val allModules = mutableMapOf<IrClassSymbol, MutableList<IrFunctionSymbol>>()
+        val allFactories = mutableMapOf<IrClassSymbol, MutableList<IrFunctionSymbol>>()
 
         compositionAggregateGenerator.compositionElements
             .forEach { (compositionType, elements) ->
-                compositions.getOrPut(compositionType) { mutableListOf() } += elements
+                elements.forEach {
+                    if (it.owner.hasAnnotation(InjektFqNames.CompositionFactory)) {
+                        allFactories.getOrPut(compositionType) { mutableListOf() } += it
+                    } else if (it.owner.hasAnnotation(InjektFqNames.Module)) {
+                        allModules.getOrPut(compositionType) { mutableListOf() } += it
+                    }
+                }
             }
 
         compositionsPackage
@@ -108,46 +117,83 @@ class GenerateCompositionsTransformer(
                 }
             }
             .forEach { (compositionType, elements) ->
-                compositions.getOrPut(compositionType) { mutableListOf() } += elements
+                elements.forEach {
+                    if (it.owner.hasAnnotation(InjektFqNames.CompositionFactory)) {
+                        allFactories.getOrPut(compositionType) { mutableListOf() } += it
+                    } else if (it.owner.hasAnnotation(InjektFqNames.Module)) {
+                        allModules.getOrPut(compositionType) { mutableListOf() } += it
+                    }
+                }
             }
 
-        val allFactories = mutableListOf<Pair<IrFunction, IrClassSymbol>>()
+        val graph = CompositionFactoryGraph(
+            symbolTable,
+            allFactories,
+            allModules
+        )
+
+        val factoryImpls = mutableMapOf<IrClassSymbol, IrFunctionSymbol>()
 
         generateCompositionsCalls.forEach { (call, file) ->
-            compositions.forEach { (compositionType, elements) ->
-                val factories =
-                    elements.filter { it.owner.hasAnnotation(InjektFqNames.CompositionFactory) }
-                val modules = elements.filter { it.owner.hasAnnotation(InjektFqNames.Module) }
+            val processedFactories = mutableSetOf<CompositionFactory>()
 
-                val entryPoints = modules
-                    .map { declarationStore.getModuleClassForFunction(it.owner) }
-                    .map {
-                        it.declarations
-                            .single { it is IrClass && it.name.asString() == "Descriptor" }
-                            .let { it as IrClass }
+            while (true) {
+                val factoriesToProcess = graph.compositionFactories
+                    .filter { it !in processedFactories }
+                    .filter { factory ->
+                        factory.children.all { it in processedFactories }
                     }
-                    .flatMap { it.functions.toList() }
-                    .filter { it.hasAnnotation(InjektFqNames.AstEntryPoint) }
-                    .map { it.returnType }
-                    .distinct()
 
-                val factoryType = compositionFactoryType(
-                    InjektNameConventions.getCompositionFactoryTypeNameForCall(file, call),
-                    compositionType.defaultType,
-                    entryPoints
-                )
-                file.addChild(factoryType)
-                factories.forEach { factory ->
-                    val factoryFunction = compositionFactoryImpl(
-                        InjektNameConventions.getCompositionFactoryImplNameForCall(file, call),
+                if (factoriesToProcess.isEmpty()) {
+                    break
+                }
+
+                factoriesToProcess.forEach { factory ->
+                    val modules = factory.modules
+
+                    val entryPoints = modules
+                        .map { declarationStore.getModuleClassForFunction(it.owner) }
+                        .map {
+                            it.declarations
+                                .single { it is IrClass && it.name.asString() == "Descriptor" }
+                                .let { it as IrClass }
+                        }
+                        .flatMap { it.functions.toList() }
+                        .filter { it.hasAnnotation(InjektFqNames.AstEntryPoint) }
+                        .map { it.returnType }
+                        .distinct()
+
+                    val factoryType = compositionFactoryType(
+                        InjektNameConventions.getCompositionFactoryTypeNameForCall(
+                            file,
+                            call,
+                            factory.factoryFunction
+                        ),
+                        factory.compositionType.defaultType,
+                        entryPoints
+                    )
+                    file.addChild(factoryType)
+
+                    val factoryFunctionImpl = compositionFactoryImpl(
+                        InjektNameConventions.getCompositionFactoryImplNameForCall(
+                            file,
+                            call,
+                            factory.factoryFunction
+                        ),
+                        factory.parents.isNotEmpty(),
                         factoryType.symbol,
-                        factory,
-                        modules
+                        factory.factoryFunction,
+                        factory.children.map {
+                            it.compositionType to factoryImpls.getValue(it.compositionType)
+                        },
+                        factory.modules
                     )
 
-                    file.addChild(factoryFunction)
+                    processedFactories += factory
 
-                    allFactories += factoryFunction to compositionType
+                    factoryImpls[factory.compositionType] = factoryFunctionImpl.symbol
+
+                    file.addChild(factoryFunctionImpl)
                 }
             }
         }
@@ -159,7 +205,8 @@ class GenerateCompositionsTransformer(
                 )
                 return DeclarationIrBuilder(pluginContext, expression.symbol).run {
                     irBlock {
-                        allFactories.forEach { (factoryFunction, compositionType) ->
+                        factoryImpls.forEach { (compositionType, factoryFunctionImpl) ->
+                            if (factoryFunctionImpl.owner.hasAnnotation(InjektFqNames.ChildFactory)) return@forEach
                             +irCall(
                                 symbols.compositionFactories
                                     .functions
@@ -183,12 +230,12 @@ class GenerateCompositionsTransformer(
                                     IrFunctionReferenceImpl(
                                         UNDEFINED_OFFSET,
                                         UNDEFINED_OFFSET,
-                                        irBuiltIns.function(factoryFunction.valueParameters.size)
+                                        irBuiltIns.function(factoryFunctionImpl.owner.valueParameters.size)
                                             .typeWith(
-                                                factoryFunction.valueParameters
-                                                    .map { it.type } + factoryFunction.returnType
+                                                factoryFunctionImpl.owner.valueParameters
+                                                    .map { it.type } + factoryFunctionImpl.owner.returnType
                                             ),
-                                        factoryFunction.symbol,
+                                        factoryFunctionImpl,
                                         0,
                                         null
                                     )
@@ -220,15 +267,19 @@ class GenerateCompositionsTransformer(
 
     private fun compositionFactoryImpl(
         name: Name,
+        childFactory: Boolean,
         factoryType: IrClassSymbol,
         factory: IrFunctionSymbol,
-        modules: List<IrFunctionSymbol>
+        childFactories: List<Pair<IrClassSymbol, IrFunctionSymbol>>,
+        modules: Set<IrFunctionSymbol>
     ) = buildFun {
         this.name = name
         returnType = factoryType.owner.defaultType
     }.apply {
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-            .noArgSingleConstructorCall(symbols.factory)
+            .noArgSingleConstructorCall(
+                if (childFactory) symbols.childFactory else symbols.factory
+            )
 
         metadata = MetadataSource.Function(descriptor)
 
@@ -246,6 +297,63 @@ class GenerateCompositionsTransformer(
                 +irCall(factoryModule).apply {
                     valueParameters.forEach {
                         putValueArgument(it.index, irGet(it))
+                    }
+                }
+
+                childFactories.forEach { (compositionType, childFactory) ->
+                    +irCall(
+                        pluginContext.referenceFunctions(
+                            InjektFqNames.InjektPackage
+                                .child(Name.identifier("childFactory"))
+                        ).single()
+                    ).apply {
+                        putValueArgument(
+                            0,
+                            IrFunctionReferenceImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                irBuiltIns.function(childFactory.owner.valueParameters.size)
+                                    .typeWith(
+                                        childFactory.owner.valueParameters
+                                            .map { it.type } + childFactory.owner.returnType
+                                    ),
+                                childFactory,
+                                0,
+                                null
+                            )
+                        )
+                    }
+
+                    +irCall(
+                        pluginContext.referenceFunctions(
+                            InjektFqNames.InjektPackage
+                                .child(Name.identifier("alias"))
+                        ).single()
+                    ).apply {
+                        val functionType = irBuiltIns.function(
+                            childFactory.owner
+                                .valueParameters
+                                .size
+                        ).typeWith(childFactory.owner
+                            .valueParameters
+                            .map { it.type } + childFactory.owner.returnType
+                        ).withNoArgQualifiers(
+                            pluginContext,
+                            listOf(InjektFqNames.ChildFactory)
+                        )
+                        val aliasFunctionType = irBuiltIns.function(
+                            childFactory.owner
+                                .valueParameters
+                                .size
+                        ).typeWith(childFactory.owner
+                            .valueParameters
+                            .map { it.type } + compositionType.defaultType
+                        ).withNoArgQualifiers(
+                            pluginContext,
+                            listOf(InjektFqNames.ChildFactory)
+                        )
+                        putTypeArgument(0, functionType)
+                        putTypeArgument(1, aliasFunctionType)
                     }
                 }
 
