@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addSetter
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
@@ -53,20 +52,16 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -77,8 +72,6 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableSetOf<IrClass>()
-
-        val getterMap = mutableMapOf<IrFunction, IrFunction>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitPropertyNew(declaration: IrProperty): IrStatement {
@@ -99,41 +92,38 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             initializer = irExprBody(irGetObject(symbols.uninitialized))
                         }
 
-                        val oldGetter = declaration.getter!!
+                        declaration.getter!!.body = DeclarationIrBuilder(
+                            pluginContext,
+                            declaration.getter!!.symbol
+                        ).irBlockBody {
+                            val tmp = irTemporaryVar(
+                                irGetField(
+                                    irGet(declaration.getter!!.dispatchReceiverParameter!!),
+                                    declaration.backingField!!
+                                )
+                            )
+                            +irIfThen(
+                                irEqeqeq(
+                                    irGet(tmp),
+                                    irGetObject(symbols.uninitialized)
+                                ),
+                                irCall(
+                                    pluginContext.referenceFunctions(FqName("kotlin.error"))
+                                        .single { it.owner.valueParameters.size == 1 }
+                                ).apply {
+                                    putValueArgument(
+                                        0, irString("Not injected")
+                                    )
+                                }
+                            )
 
-                        declaration.addGetter {
-                            name = Name.identifier("getInjected${declaration.name}")
-                            returnType = oldGetter.returnType
-                        }.apply {
-                            getterMap[oldGetter] = this
-                            dispatchReceiverParameter =
-                                oldGetter.dispatchReceiverParameter!!.copyTo(this)
-
-                            body = irBlockBody {
-                                val tmp = irTemporaryVar(
-                                    irGetField(
-                                        irGet(dispatchReceiverParameter!!),
-                                        declaration.backingField!!
+                            +DeclarationIrBuilder(pluginContext, declaration.getter!!.symbol)
+                                .irReturn(
+                                    irImplicitCast(
+                                        irGet(tmp),
+                                        declaration.getter!!.returnType
                                     )
                                 )
-                                +irIfThen(
-                                    irEqeqeq(
-                                        irGet(tmp),
-                                        irGetObject(symbols.uninitialized)
-                                    ),
-                                    irCall(
-                                        pluginContext.referenceFunctions(FqName("kotlin.error"))
-                                            .single { it.owner.valueParameters.size == 1 }
-                                    ).apply {
-                                        putValueArgument(
-                                            0, irString("Not injected")
-                                        )
-                                    }
-                                )
-
-                                +DeclarationIrBuilder(pluginContext, symbol)
-                                    .irReturn(irImplicitCast(irGet(tmp), returnType))
-                            }
                         }
 
                         declaration.addSetter {
@@ -158,17 +148,6 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }
 
                 return super.visitPropertyNew(declaration)
-            }
-        })
-
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                return getterMap[expression.symbol.owner]?.let {
-                    DeclarationIrBuilder(pluginContext, expression.symbol)
-                        .irCall(it).apply {
-                            dispatchReceiver = expression.dispatchReceiver
-                        }
-                } ?: super.visitCall(expression)
             }
         })
 
