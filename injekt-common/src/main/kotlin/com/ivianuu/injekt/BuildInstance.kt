@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,24 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.comparison.injekt
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.buildInstance
-import com.ivianuu.injekt.comparison.base.InjectionTest
-import com.ivianuu.injekt.comparison.fibonacci.Fib8
+@Factory
+inline fun <T> buildInstance(): T = createInstance()
 
-object InjektTest : InjectionTest {
-
-    override val name = "Injekt"
-
-    override fun setup() {
-    }
-
-    override fun inject() {
-        buildInstance<Fib8>()
-    }
-
-    override fun shutdown() {
-    }
-
+@Factory
+inline fun <T> buildInstance(block: @Module () -> Unit): T {
+    block()
+    return createInstance()
 }
