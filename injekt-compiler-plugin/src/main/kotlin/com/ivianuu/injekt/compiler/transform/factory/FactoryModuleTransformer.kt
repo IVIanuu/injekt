@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -133,6 +134,8 @@ class FactoryModuleTransformer(
         }.apply {
             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                 .noArgSingleConstructorCall(symbols.module)
+
+            metadata = MetadataSource.Function(descriptor)
 
             copyTypeParametersFrom(factoryFunction)
 

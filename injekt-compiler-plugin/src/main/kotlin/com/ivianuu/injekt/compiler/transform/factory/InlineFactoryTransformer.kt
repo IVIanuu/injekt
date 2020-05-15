@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.util.dump
@@ -70,6 +71,8 @@ class InlineFactoryTransformer(
                         visibility = Visibilities.LOCAL
                     }.apply {
                         parent = scope.getLocalDeclarationParent()
+
+                        metadata = MetadataSource.Function(descriptor)
 
                         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                             .noArgSingleConstructorCall(symbols.factory)

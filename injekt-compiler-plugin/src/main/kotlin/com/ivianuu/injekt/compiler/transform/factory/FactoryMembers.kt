@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -239,6 +240,8 @@ class FunctionFactoryMembers(
             returnType = key.type
             visibility = Visibilities.LOCAL
         }.apply {
+            metadata = MetadataSource.Function(descriptor)
+
             with(blockBuilder) {
                 +this@apply
                 parent = scope.getLocalDeclarationParent()

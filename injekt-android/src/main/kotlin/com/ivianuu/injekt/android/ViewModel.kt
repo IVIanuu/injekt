@@ -26,8 +26,7 @@ import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.transient
 
 /*
-@InstallIn<RetainedActivityComponent>
-@BindingAdapter
+@BindingAdapter(RetainedActivityComponent::class)
 annotation class BindViewModel {
     companion object {
         @Module

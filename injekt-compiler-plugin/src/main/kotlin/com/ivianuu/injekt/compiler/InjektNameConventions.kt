@@ -39,13 +39,22 @@ object InjektNameConventions {
         factoryFunction.nameOrUniqueName("FactoryImpl")
 
     fun getImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
-        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Factory")
+        getNameAtSourcePositionWithSuffix(file, call, "FactoryImpl")
 
     fun getCompositionFactoryTypeNameForCall(file: IrFile, call: IrCall): Name =
-        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Type")
+        getNameAtSourcePositionWithSuffix(file, call, "Type")
 
     fun getCompositionFactoryImplNameForCall(file: IrFile, call: IrCall): Name =
-        Name.identifier("${file.fqName.asString().hashCode() xor call.startOffset}\$Factory")
+        getNameAtSourcePositionWithSuffix(file, call, "Factory")
+
+    fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
+        getNameAtSourcePositionWithSuffix(file, call, "Get")
+
+    fun getObjectGraphInjectNameForCall(file: IrFile, call: IrCall): Name =
+        getNameAtSourcePositionWithSuffix(file, call, "Inject")
+
+    fun getEntryPointModuleNameForCall(file: IrFile, call: IrCall): Name =
+        getNameAtSourcePositionWithSuffix(file, call, "EntryPointModule")
 
     fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
         factoryFunction.nameOrUniqueName("FactoryModule")
@@ -70,23 +79,33 @@ object InjektNameConventions {
     private fun IrFunction.nameOrUniqueName(
         suffix: String
     ): Name {
-        return Name.identifier(
-            (if (name.isSpecial)
-                "Lambda\$${generateSignatureUniqueHash()}"
-            else "${name.asString()}\$${valueParametersHash()}") + "\$$suffix"
-        )
+        return if (name.isSpecial) getSignatureHashNameWithSuffix(this, suffix)
+        else Name.identifier("$name\$${getSignatureHashNameWithSuffix(this, suffix)}")
     }
 
-    private fun IrFunction.generateSignatureUniqueHash(): Int {
-        var result = startOffset.hashCode()
-        result = 31 * result + endOffset.hashCode()
-        result = 31 * result + valueParametersHash()
-        result = 31 * result + returnType.hashCode()
+    private fun getNameAtSourcePositionWithSuffix(
+        file: IrFile,
+        call: IrCall,
+        suffix: String
+    ) = Name.identifier("${sourceLocationHash(file.fqName, call.startOffset)}\$$suffix")
+
+    private fun getSignatureHashNameWithSuffix(
+        function: IrFunction,
+        suffix: String
+    ) = Name.identifier("${generateSignatureUniqueHash(function)}\$$suffix")
+
+    private fun sourceLocationHash(fqName: FqName, startOffset: Int) =
+        (fqName.asString().hashCode() + startOffset).hashCode().absoluteValue
+
+    private fun generateSignatureUniqueHash(function: IrFunction): Int {
+        var result = function.descriptor.fqNameSafe.hashCode()
+        result = 31 * result + valueParametersHash(function)
+        result = 31 * result + function.returnType.hashCode()
         return result.absoluteValue
     }
 
-    private fun IrFunction.valueParametersHash(): Int =
-        valueParameters.map { it.name.asString() + it.type.render() }.hashCode()
+    private fun valueParametersHash(function: IrFunction): Int =
+        function.valueParameters.map { it.name.asString() + it.type.render() }.hashCode()
             .absoluteValue
 
 }

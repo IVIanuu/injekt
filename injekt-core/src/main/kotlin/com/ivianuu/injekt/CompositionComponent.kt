@@ -18,4 +18,6 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-inline fun <reified T> entryPointOf(component: Any): T = injektIntrinsic()
+fun <T> Any.get(): T = injektIntrinsic()
+
+fun <T> Any.inject(instance: T): Unit = injektIntrinsic()

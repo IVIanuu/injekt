@@ -27,17 +27,13 @@ class CompositionTest {
                 """
                 @CompositionFactory 
                 fun factory(): TestComponent {
-                    return createImpl() 
+                    return createImpl()
                 }
                 
-                interface FooEntryPoint {
-                    val foo: Foo
-                }
-                
-                @Module 
-                fun fooEntryPointModule() {
-                    installIn<TestComponent>()
-                    entryPoint<FooEntryPoint>()
+                class FooEntryPointConsumer(testComponent: TestComponent) {
+                    init {
+                        testComponent.get<Foo>()
+                    }
                 }
                 """
             )
@@ -49,17 +45,18 @@ class CompositionTest {
                     val bar: Bar
                 }
                 
-                @Module 
-                fun barEntryPointModule() {
-                    installIn<TestComponent>()
-                    entryPoint<BarEntryPoint>()
-                }
-                
                 @Module
                 fun fooBarModule() {
                     installIn<TestComponent>()
                     transient<Foo>()
                     transient<Bar>()
+                }
+                
+                class BarEntryPointConsumer(testComponent: TestComponent) {
+                    @Inject private lateinit var bar: Bar
+                    init {
+                        testComponent.inject(this)
+                    }
                 }
                 
                 fun main() {

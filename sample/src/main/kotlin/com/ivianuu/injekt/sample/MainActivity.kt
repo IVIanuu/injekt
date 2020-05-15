@@ -27,16 +27,15 @@ import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.childFactory
 import com.ivianuu.injekt.createImpl
-import com.ivianuu.injekt.entryPoint
-import com.ivianuu.injekt.entryPointOf
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.installIn
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 
 class MainActivity : AppCompatActivity() {
     val activityComponent by lazy {
-        entryPointOf<MainActivityFactoryHolder>(application.applicationComponent)
-            .mainActivityComponentFactory(this)
+        application.applicationComponent
+            .get<@ChildFactory (MainActivity) -> MainActivityComponent>()(this)
     }
 
     @Inject
@@ -49,14 +48,9 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-interface MainActivityFactoryHolder {
-    val mainActivityComponentFactory: @ChildFactory (MainActivity) -> MainActivityComponent
-}
-
 @Module
-fun mainActivityFactoryHolderModule() {
+fun mainActivityFactoryModule() {
     installIn<ApplicationComponent>()
-    entryPoint<MainActivityFactoryHolder>()
     childFactory(MainActivityComponent::create)
 }
 

@@ -18,14 +18,9 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.MembersInjector
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.entryPoint
-import com.ivianuu.injekt.entryPointOf
 import com.ivianuu.injekt.generateCompositions
-import com.ivianuu.injekt.installIn
+import com.ivianuu.injekt.inject
 
 class App : Application() {
 
@@ -34,20 +29,10 @@ class App : Application() {
 
     override fun onCreate() {
         generateCompositions()
-        entryPointOf<AppInjector>(applicationComponent).injectApp(this)
+        applicationComponent.inject(this)
         super.onCreate()
         repo.refresh()
         println("injected app $repo")
     }
 
-}
-
-@Module
-fun appInjectorModule() {
-    installIn<ApplicationComponent>()
-    entryPoint<AppInjector>()
-}
-
-interface AppInjector {
-    val injectApp: @MembersInjector (App) -> Unit
 }

@@ -18,7 +18,9 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
+import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
+import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
@@ -68,12 +70,17 @@ class InjektIrGenerationExtension(
             .also { declarationStore.classFactoryTransformer = it }
             .lower(moduleFragment)
 
-        // add @Parents annotation to @CompositionFactory functions
-        CompositionFactoryParentTransformer(pluginContext)
-            .lower(moduleFragment)
+        ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
+
+        // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
+        EntryPointOfTransformer(pluginContext).lower(moduleFragment)
 
         val compositionAggregateGenerator = CompositionAggregateGenerator(pluginContext, project)
             .also { it.lower(moduleFragment) }
+
+        // add @Parents annotation to @CompositionFactory functions
+        CompositionFactoryParentTransformer(pluginContext)
+            .lower(moduleFragment)
 
         // generate composition factories
         GenerateCompositionsTransformer(

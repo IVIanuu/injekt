@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.compiler.transform.composition
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-annotation class InstallIn<T>
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+
+class CompositionComponentNode(
+    val compositionType: IrClassSymbol,
+    val factoryType: IrClassSymbol,
+    val modules: List<IrSimpleFunctionSymbol>
+) {
+    val children = mutableListOf<CompositionComponentNode>()
+}
