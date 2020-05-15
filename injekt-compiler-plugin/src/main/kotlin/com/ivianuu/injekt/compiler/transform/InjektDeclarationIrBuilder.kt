@@ -503,6 +503,7 @@ class InjektDeclarationIrBuilder(
         backingField = buildField {
             this.name = this@apply.name
             this.type = type
+            visibility = Visibilities.PRIVATE
         }.apply {
             parent = clazz
         }
