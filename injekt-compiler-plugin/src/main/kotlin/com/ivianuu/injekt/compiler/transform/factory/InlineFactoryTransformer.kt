@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -90,8 +91,8 @@ class InlineFactoryTransformer(
                             val factoryModule = declarationStore
                                 .getModuleFunctionForFactory(inlineFactoryCall.symbol.owner)
                             +irCall(factoryModule).apply {
-                                (0 until inlineFactoryCall.typeArgumentsCount).forEach {
-                                    putTypeArgument(it, inlineFactoryCall.getTypeArgument(it)!!)
+                                inlineFactoryCall.typeArguments.forEachIndexed { index, typeArgument ->
+                                    putTypeArgument(index, typeArgument)
                                 }
                                 inlineFactoryCall.getArgumentsWithIr()
                                     .forEachIndexed { index, (_, valueArgument) ->

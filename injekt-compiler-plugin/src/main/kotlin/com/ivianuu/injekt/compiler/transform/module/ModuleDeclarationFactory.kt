@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
 import com.ivianuu.injekt.compiler.ValueParameterPath
 import com.ivianuu.injekt.compiler.irTrace
+import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -70,7 +71,6 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ModuleDeclarationFactory(
     private val module: ModuleImpl,
@@ -304,7 +304,7 @@ class ModuleDeclarationFactory(
 
         includeModuleFromFunction(
             call.symbol.owner,
-            (0 until call.typeArgumentsCount).map { call.getTypeArgument(it)!! },
+            call.typeArguments,
             call.getArgumentsWithIr().map { it.first to { it.second } },
             lambdaCalls,
             declarations
@@ -566,7 +566,7 @@ class ModuleDeclarationFactory(
         }
 
         if (singleArgument == null) {
-            if (bindingType.toKotlinType().isTypeParameter()) {
+            if (bindingType.isTypeParameter()) {
                 bindingPath = TypeParameterPath(
                     module.function.typeParameters.single {
                         it.descriptor ==

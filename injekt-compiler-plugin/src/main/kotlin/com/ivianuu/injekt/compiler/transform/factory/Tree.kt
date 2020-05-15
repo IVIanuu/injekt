@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.getQualifiers
+import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.type
 import com.ivianuu.injekt.compiler.typeArguments
@@ -36,7 +37,6 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
 
@@ -98,7 +97,7 @@ class ModuleNode(
 
     init {
         typeParametersMap.forEach {
-            check(!it.value.toKotlinType().isTypeParameter()) {
+            check(!it.value.isTypeParameter()) {
                 "Must be concrete type ${it.key.owner.dump()} -> ${it.value.render()}"
             }
         }
@@ -321,7 +320,7 @@ class Key(val type: IrType) {
         check(type !is IrErrorType) {
             "Cannot be error type ${type.render()}"
         }
-        check(!type.toKotlinType().isTypeParameter()) {
+        check(!type.isTypeParameter()) {
             "Must be concrete type ${type.render()}"
         }
     }

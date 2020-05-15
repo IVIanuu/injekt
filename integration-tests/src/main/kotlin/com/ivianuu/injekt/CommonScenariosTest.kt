@@ -37,7 +37,7 @@ class CommonScenariosTest {
                     )
                     
                     class OtherMembersInjectorTarget {
-                        @Inject lateinit var foo: Foo
+                        val foo: Foo by inject()
                     }
                     
                     interface OtherChildComponent {
@@ -115,8 +115,8 @@ class CommonScenariosTest {
             return createImpl()
         }
         
-        class App {
-            @Inject private lateinit var workerFactory: WorkerFactory
+        class App { 
+            private val workerFactory: WorkerFactory by inject()
             
             init {
                 createAppComponent().injectApp(this)

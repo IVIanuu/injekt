@@ -18,15 +18,16 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.makeKotlinType
+import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -38,44 +39,23 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
-import org.jetbrains.kotlin.ir.types.IrTypeArgument
-import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
-import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
-import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.DeepCopyIrTreeWithSymbols
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
-import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
-import org.jetbrains.kotlin.ir.util.SymbolRemapper
-import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isLocal
-import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -111,7 +91,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             val transformed = transformedFunctions[original]
             if (transformed != null && transformed != original) {
                 declarations.add(
-                    original.deepCopyWithSymbolsWithPreservingQualifiers()
+                    original.deepCopyWithPreservingQualifiers()
                         .also { decoy ->
                             decoys += decoy
                             InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
@@ -172,15 +152,12 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 )
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     originalClassOfCalls += expression
-                    if (expression.getTypeArgument(0)!!.toKotlinType().isTypeParameter()) {
+                    if (expression.getTypeArgument(0)!!.isTypeParameter()) {
                         hasUnresolvedClassOfCalls = true
                     }
                 } else if (callee.hasAnnotation(InjektFqNames.AstTyped)) {
                     originalTypedModuleCalls += expression
-                    if ((0 until expression.typeArgumentsCount)
-                            .map { expression.getTypeArgument(it)!! }
-                            .any { it.toKotlinType().isTypeParameter() }
-                    ) {
+                    if (expression.typeArguments.any { it.isTypeParameter() }) {
                         hasUnresolvedClassOfCalls = true
                     }
                 }
@@ -199,7 +176,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             return function
         }
 
-        val transformedFunction = function.deepCopyWithSymbolsWithPreservingQualifiers()
+        val transformedFunction = function.deepCopyWithPreservingQualifiers()
         transformedFunctions[function] = transformedFunction
 
         val classOfCalls = mutableListOf<IrCall>()
@@ -253,13 +230,8 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 mutableMapOf<IrTypeParameterSymbol, IrValueParameter>()
 
             (classOfCalls
-                .map { it.getTypeArgument(0)!! } +
-                    typedModuleCalls
-                        .flatMap { call ->
-                            (0 until call.typeArgumentsCount)
-                                .map { call.getTypeArgument(it)!! }
-                        })
-                .filter { it.toKotlinType().isTypeParameter() }
+                .map { it.getTypeArgument(0)!! } + typedModuleCalls.flatMap { it.typeArguments })
+                .filter { it.isTypeParameter() }
                 .map { it.classifierOrFail as IrTypeParameterSymbol }
                 .distinct()
                 .forEach { typeParameter ->
@@ -337,7 +309,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 return when (expression) {
                     in classOfCalls -> {
                         val typeArgument = expression.getTypeArgument(0)!!
-                        if (typeArgument.toKotlinType().isTypeParameter()) {
+                        if (typeArgument.isTypeParameter()) {
                             val symbol = typeArgument.classifierOrFail as IrTypeParameterSymbol
                             DeclarationIrBuilder(pluginContext, expression.symbol)
                                 .irGet(valueParametersByUnresolvedType.getValue(symbol))
@@ -354,12 +326,13 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                     in typedModuleCalls -> {
                         val originalFunction = expression.symbol.owner
                         val transformedFunction = transformFunctionIfNeeded(expression.symbol.owner)
+                        if (originalFunction.symbol == transformedFunction.symbol) return expression
                         DeclarationIrBuilder(pluginContext, expression.symbol)
                             .irCall(transformedFunction).apply {
                                 dispatchReceiver = expression.dispatchReceiver
                                 extensionReceiver = expression.extensionReceiver
-                                (0 until expression.typeArgumentsCount).forEach {
-                                    putTypeArgument(it, expression.getTypeArgument(it))
+                                expression.typeArguments.forEachIndexed { index, typeArgument ->
+                                    putTypeArgument(index, typeArgument)
                                 }
                                 (0 until expression.valueArgumentsCount).forEach {
                                     putValueArgument(it, expression.getValueArgument(it))
@@ -375,7 +348,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                                         val typeArgument = getTypeArgument(typeParameter.index)!!
                                         putValueArgument(
                                             valueParameterIndex,
-                                            if (typeArgument.toKotlinType().isTypeParameter()) {
+                                            if (typeArgument.isTypeParameter()) {
                                                 val symbol =
                                                     typeArgument.classifierOrFail as IrTypeParameterSymbol
                                                 DeclarationIrBuilder(
@@ -404,84 +377,6 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 }
             }
         })
-    }
-
-    private fun IrFunction.deepCopyWithSymbolsWithPreservingQualifiers(): IrFunction {
-        val symbolRemapper = DeepCopySymbolRemapper(
-            object : DescriptorsRemapper {
-                override fun remapDeclaredSimpleFunction(descriptor: FunctionDescriptor): FunctionDescriptor =
-                    WrappedSimpleFunctionDescriptor(sourceElement = descriptor.source)
-            }
-        )
-        acceptVoid(symbolRemapper)
-        val typeRemapper = DeepCopyTypeRemapper(symbolRemapper)
-        return (transform(
-            DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper)
-                .also { typeRemapper.deepCopy = it }, null
-        )
-            .patchDeclarationParents(parent) as IrSimpleFunction)
-            .also {
-                it.accept(object : IrElementTransformerVoid() {
-                    override fun visitFunction(declaration: IrFunction): IrStatement {
-                        val descriptor = declaration.descriptor
-                        if (descriptor is WrappedSimpleFunctionDescriptor &&
-                            !descriptor.isBound()
-                        ) {
-                            descriptor.bind(declaration as IrSimpleFunction)
-                        }
-                        return super.visitFunction(declaration)
-                    }
-                }, null)
-            }
-    }
-
-    private class DeepCopyTypeRemapper(
-        private val symbolRemapper: SymbolRemapper
-    ) : TypeRemapper {
-
-        lateinit var deepCopy: DeepCopyIrTreeWithSymbols
-
-        override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
-            // TODO
-        }
-
-        override fun leaveScope() {
-            // TODO
-        }
-
-        override fun remapType(type: IrType): IrType =
-            if (type !is IrSimpleType)
-                type
-            else {
-                val classifier = symbolRemapper.getReferencedClassifier(type.classifier)
-                val arguments = type.arguments.map { remapTypeArgument(it) }
-                val annotations =
-                    type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall }
-                val kotlinType =
-                    makeKotlinType(classifier, arguments, type.hasQuestionMark, annotations)
-                IrSimpleTypeImpl(
-                    kotlinType,
-                    classifier,
-                    type.hasQuestionMark,
-                    arguments,
-                    annotations,
-                    type.abbreviation?.remapTypeAbbreviation()
-                )
-            }
-
-        private fun remapTypeArgument(typeArgument: IrTypeArgument): IrTypeArgument =
-            if (typeArgument is IrTypeProjection)
-                makeTypeProjection(this.remapType(typeArgument.type), typeArgument.variance)
-            else
-                typeArgument
-
-        private fun IrTypeAbbreviation.remapTypeAbbreviation() =
-            IrTypeAbbreviationImpl(
-                symbolRemapper.getReferencedTypeAlias(typeAlias),
-                hasQuestionMark,
-                arguments.map { remapTypeArgument(it) },
-                annotations
-            )
     }
 
 }

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGen
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
+import com.ivianuu.injekt.compiler.transform.composition.InlineObjectGraphCallTransformer
 import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
@@ -69,6 +70,8 @@ class InjektIrGenerationExtension(
         ClassFactoryTransformer(pluginContext)
             .also { declarationStore.classFactoryTransformer = it }
             .lower(moduleFragment)
+
+        InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
 
         ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
 

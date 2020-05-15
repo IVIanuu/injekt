@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -90,7 +91,8 @@ class CompositionAggregateGenerator(
 
         installInCalls.forEach { (function, calls) ->
             calls.forEach { call ->
-                val compositionType = call.getTypeArgument(0)!!.classOrNull!!
+                val compositionType = call.getTypeArgument(0)?.classOrNull
+                    ?: error("no class found in ${call.dump()}")
                 val elementClass = InjektDeclarationIrBuilder(pluginContext, function.symbol)
                     .emptyClass(
                         InjektNameConventions

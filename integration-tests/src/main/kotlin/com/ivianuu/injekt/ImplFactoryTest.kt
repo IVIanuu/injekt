@@ -269,8 +269,8 @@ class ImplFactoryTest {
             val inject: @MembersInjector (T) -> Unit
         }
         
-        class Injectable {
-            @Inject private lateinit var foo: Foo
+        class Injectable { 
+            private val foo: Foo by inject()
         }
         
         interface ImplComponent : BaseComponent<Injectable>
@@ -291,7 +291,7 @@ class ImplFactoryTest {
         }
         
         class Injectable {
-            @Inject private lateinit var foo: Foo
+            private val foo: Foo by inject()
         }
 
         @Factory

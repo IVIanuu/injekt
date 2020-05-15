@@ -56,11 +56,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if ((expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get" &&
-                            expression.dispatchReceiver == null) ||
-                    (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.inject" &&
-                            expression.symbol.descriptor.valueParameters.size == 1)
-                ) {
+                if (expression.symbol.owner.isObjectGraphGet || expression.symbol.owner.isObjectGraphInject) {
                     objectGraphCalls += expression to currentFile
                 }
                 return super.visitCall(expression)
@@ -70,8 +66,8 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         val newExpressionsByCall = mutableMapOf<IrCall, IrExpression>()
 
         objectGraphCalls.forEach { (call, file) ->
-            when (call.symbol.descriptor.fqNameSafe.asString()) {
-                "com.ivianuu.injekt.get" -> {
+            when {
+                call.symbol.owner.isObjectGraphGet -> {
                     val entryPoint = entryPointForGet(
                         InjektNameConventions.getObjectGraphGetNameForCall(file, call),
                         call.getTypeArgument(0)!!
@@ -93,7 +89,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             }
                         }
                 }
-                "com.ivianuu.injekt.inject" -> {
+                call.symbol.owner.isObjectGraphInject -> {
                     val entryPoint = entryPointForInject(
                         InjektNameConventions.getObjectGraphInjectNameForCall(file, call),
                         call.getValueArgument(0)!!.type

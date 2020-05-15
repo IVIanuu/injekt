@@ -42,6 +42,7 @@ object InjektFqNames {
     val AstMapLongKey = AstMap.child("LongKey")
     val AstMapStringKey = AstMap.child("StringKey")
     val AstModule = InjektAst.child("Module")
+    val AstObjectGraphFunction = InjektAst.child("ObjectGraphFunction")
     val AstPath = InjektAst.child("Path")
     val AstParents = InjektAst.child("Parents")
     val AstClassPath = AstPath.child("Class")

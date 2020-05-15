@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
+import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
@@ -91,6 +92,7 @@ import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 fun Annotated.hasAnnotatedAnnotations(
@@ -360,3 +362,9 @@ fun IrDeclaration.getNearestDeclarationContainer(
 
     error("Couldn't get declaration container for $this")
 }
+
+fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
+
+val IrMemberAccessExpression.typeArguments: List<IrType>
+    get() =
+        (0 until typeArgumentsCount).map { getTypeArgument(it)!! }

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
@@ -47,6 +48,8 @@ import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -57,6 +60,7 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -68,19 +72,23 @@ import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -116,7 +124,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.isError
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektDeclarationIrBuilder(
@@ -209,7 +216,7 @@ class InjektDeclarationIrBuilder(
     }
 
     private fun irClassKey(type: IrType): IrConstructorCall {
-        return if (type.toKotlinType().isTypeParameter()) {
+        return if (type.isTypeParameter()) {
             builder.irCall(symbols.astMapTypeParameterClassKey.constructors.single())
                 .apply {
                     putValueArgument(
@@ -233,6 +240,51 @@ class InjektDeclarationIrBuilder(
                         )
                     )
                 }
+        }
+    }
+
+    fun irLambda(
+        type: IrType,
+        startOffset: Int = UNDEFINED_OFFSET,
+        endOffset: Int = UNDEFINED_OFFSET,
+        body: IrBlockBodyBuilder.(IrFunction) -> Unit
+    ): IrExpression {
+        type as IrSimpleType
+        val returnType = type.arguments.last().typeOrNull!!
+
+        val lambda = buildFun {
+            origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+            name = Name.special("<anonymous>")
+            this.returnType = returnType
+            visibility = Visibilities.LOCAL
+        }.apply {
+            type.arguments.dropLast(1).forEachIndexed { index, typeArgument ->
+                addValueParameter(
+                    "p$index",
+                    typeArgument.typeOrNull!!
+                )
+            }
+            parent = builder.scope.getLocalDeclarationParent()
+            this.body =
+                DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
+        }
+
+        return builder.irBlock(
+            startOffset = startOffset,
+            endOffset = endOffset,
+            origin = IrStatementOrigin.LAMBDA,
+            resultType = type
+        ) {
+            +lambda
+            +IrFunctionReferenceImpl(
+                startOffset = startOffset,
+                endOffset = endOffset,
+                type = type,
+                symbol = lambda.symbol,
+                typeArgumentsCount = lambda.typeParameters.size,
+                reflectionTarget = null,
+                origin = IrStatementOrigin.LAMBDA
+            )
         }
     }
 
