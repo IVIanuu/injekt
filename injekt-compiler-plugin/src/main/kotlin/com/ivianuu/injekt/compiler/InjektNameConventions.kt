@@ -76,10 +76,22 @@ object InjektNameConventions {
         )
     }
 
+    fun nameWithoutIllegalChars(name: String): Name = Name.identifier(
+        name
+            .replace(".", "")
+            .replace("<", "")
+            .replace(">", "")
+            .replace(" ", "")
+            .replace("[", "")
+            .replace("]", "")
+            .replace("@", "")
+            .replace(",", "")
+    )
+
     private fun IrFunction.nameOrUniqueName(
         suffix: String
     ): Name {
-        return if (name.isSpecial || name.asString() == "AnonymousClass") getSignatureHashNameWithSuffix(
+        return if (name.isSpecial) getSignatureHashNameWithSuffix(
             this,
             suffix
         )

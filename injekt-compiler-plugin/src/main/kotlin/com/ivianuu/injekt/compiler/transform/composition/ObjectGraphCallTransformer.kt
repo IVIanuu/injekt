@@ -39,16 +39,15 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -148,9 +147,8 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
         addFunction {
-            this.name = Name.identifier(
-                "get\$${requestedType.classifierOrFail.descriptor.fqNameSafe.asString()
-                    .replace(".", "_")}"
+            this.name = InjektNameConventions.nameWithoutIllegalChars(
+                "get\$${requestedType.render()}"
             )
             returnType = requestedType
             modality = Modality.ABSTRACT
@@ -169,9 +167,8 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
         addFunction {
-            this.name = Name.identifier(
-                "inject\$${injectedType.classifierOrFail.descriptor.fqNameSafe.asString()
-                    .replace(".", "_")}"
+            this.name = InjektNameConventions.nameWithoutIllegalChars(
+                "inject\$${injectedType.render()}"
             )
             returnType = irBuiltIns.function(1)
                 .typeWith(injectedType, irBuiltIns.unitType)
