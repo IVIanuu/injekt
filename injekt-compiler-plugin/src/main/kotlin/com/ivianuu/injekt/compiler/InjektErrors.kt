@@ -143,11 +143,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val INJECTED_PROPERTY_MUST_VAL = error(
-            "by inject() properties cannot be mutable"
-        )
-
-        @JvmField
         val CANNOT_INVOKE_CHILD_OR_COMPOSITION_FACTORIES = error(
             "Cannot invoke @ChildFactory or @CompositionFactory functions"
         )
