@@ -79,7 +79,10 @@ object InjektNameConventions {
     private fun IrFunction.nameOrUniqueName(
         suffix: String
     ): Name {
-        return if (name.isSpecial) getSignatureHashNameWithSuffix(this, suffix)
+        return if (name.isSpecial || name.asString() == "AnonymousClass") getSignatureHashNameWithSuffix(
+            this,
+            suffix
+        )
         else Name.identifier("$name\$${getSignatureHashNameWithSuffix(this, suffix)}")
     }
 
