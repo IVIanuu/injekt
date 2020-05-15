@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -104,12 +103,13 @@ object InjektNameConventions {
     private fun generateSignatureUniqueHash(function: IrFunction): Int {
         var result = function.descriptor.fqNameSafe.hashCode()
         result = 31 * result + valueParametersHash(function)
-        result = 31 * result + function.returnType.hashCode()
+        // todo result = 31 * result + function.returnType.hashCode()
         return result.absoluteValue
     }
 
-    private fun valueParametersHash(function: IrFunction): Int =
-        function.valueParameters.map { it.name.asString() + it.type.render() }.hashCode()
-            .absoluteValue
+    private fun valueParametersHash(function: IrFunction): Int {
+        return function.valueParameters.map { 31 * it.name.asString().hashCode() }
+            .hashCode().absoluteValue
+    }
 
 }

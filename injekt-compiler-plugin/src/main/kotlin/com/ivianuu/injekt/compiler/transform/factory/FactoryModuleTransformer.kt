@@ -25,12 +25,12 @@ import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.at
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -50,7 +50,6 @@ import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.Name
 
 class FactoryModuleTransformer(
     context: IrPluginContext,
@@ -141,12 +140,10 @@ class FactoryModuleTransformer(
 
             val valueParametersMap = factoryFunction.allParameters
                 .associateWith {
-                    it.copyTo(
-                            this,
-                            index = valueParameters.size,
-                            name = Name.identifier("p${valueParameters.size}")
-                        )
-                        .also { valueParameters += it }
+                    addValueParameter(
+                        "p${valueParameters.size}",
+                        it.type
+                    )
                 }
 
             body = irBlockBody {
