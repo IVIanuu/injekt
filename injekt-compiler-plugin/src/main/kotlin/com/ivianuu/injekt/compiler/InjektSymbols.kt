@@ -79,6 +79,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val doubleCheck = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
     val factory = pluginContext.referenceClass(InjektFqNames.Factory)!!
 
+    val injectProperty = pluginContext.referenceClass(InjektFqNames.InjectProperty)!!
+
     val instanceProvider = pluginContext.referenceClass(InjektFqNames.InstanceProvider)!!
 
     val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
@@ -97,6 +99,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val setProvider = pluginContext.referenceClass(InjektFqNames.SetProvider)!!
 
     val transient = pluginContext.referenceClass(InjektFqNames.Transient)!!
+
+    val uninitialized = pluginContext.referenceClass(InjektFqNames.Uninitialized)!!
 
     fun getTypeAlias(fqName: FqName): IrTypeAliasSymbol =
         pluginContext.symbolTable.referenceTypeAlias(

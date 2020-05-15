@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.frontend
 
-import android.app.Application
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.generateCompositions
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.assertCompileError
+import com.ivianuu.injekt.codegen
+import org.junit.Test
 
-class App : Application() {
+class MembersInjectorDslTest {
 
-    private val repo: Repo by inject()
-
-    override fun onCreate() {
-        generateCompositions()
-        applicationComponent.inject(this)
-        super.onCreate()
-        repo.refresh()
-        println("injected app $repo")
+    @Test
+    fun testInjectPropertyCannotBeMutable() = codegen(
+        """
+        class MyClass {
+            private var property: Foo by inject()
+        }
+    """
+    ) {
+        assertCompileError("mutable")
     }
 
 }

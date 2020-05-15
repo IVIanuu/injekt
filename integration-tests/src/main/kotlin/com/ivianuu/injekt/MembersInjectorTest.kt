@@ -7,11 +7,11 @@ class MembersInjectorTest {
     @Test
     fun testMembersInjector() = codegen(
         """
-        abstract class SuperClass {
-            @Inject lateinit var foo: Foo
+        abstract class SuperClass { 
+            val foo: Foo by inject()
         }
-        class MyClass : SuperClass() {
-            @Inject lateinit var bar: Bar
+        class MyClass : SuperClass() { 
+            val bar: Bar by inject()
         }
         
         interface TestComponent { 

@@ -114,8 +114,6 @@ class InjektIrGenerationExtension(
 
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
-
-        //println(moduleFragment.dumpSrc())
     }
 
 }

@@ -50,7 +50,10 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
                     return super.visitCall(expression)
                 entryPointOfCalls += expression to currentFile
                 return DeclarationIrBuilder(pluginContext, expression.symbol)
-                    .irImplicitCast(expression, expression.getTypeArgument(0)!!)
+                    .irImplicitCast(
+                        expression.getValueArgument(0)!!,
+                        expression.getTypeArgument(0)!!
+                    )
             }
         })
 

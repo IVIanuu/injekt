@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -242,8 +241,6 @@ class GenerateCompositionsTransformer(
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {
-                println(factory.owner.dumpSrc())
-
                 val factoryModule = declarationStore.getModuleFunctionForFactory(factory.owner)
 
                 +irCall(factoryModule).apply {

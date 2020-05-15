@@ -16,9 +16,20 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
+
 @Qualifier
 @Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
 annotation class MembersInjector
 
-@Target(AnnotationTarget.PROPERTY)
-annotation class Inject
+fun <T> Any.inject(): InjectProperty<T> = injektIntrinsic()
+
+class InjectProperty<T> : ReadOnlyProperty<Any, T> {
+    init {
+        injektIntrinsic<Unit>()
+    }
+
+    override fun getValue(thisRef: Any, property: KProperty<*>): T = injektIntrinsic()
+}

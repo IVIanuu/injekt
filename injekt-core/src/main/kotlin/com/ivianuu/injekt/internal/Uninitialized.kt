@@ -14,23 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.internal
 
-import android.app.Application
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.generateCompositions
-import com.ivianuu.injekt.inject
-
-class App : Application() {
-
-    private val repo: Repo by inject()
-
-    override fun onCreate() {
-        generateCompositions()
-        applicationComponent.inject(this)
-        super.onCreate()
-        repo.refresh()
-        println("injected app $repo")
-    }
-
-}
+object Uninitialized

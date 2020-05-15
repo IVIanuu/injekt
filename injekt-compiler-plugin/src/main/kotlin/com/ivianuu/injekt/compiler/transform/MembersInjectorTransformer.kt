@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
@@ -34,15 +35,24 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
+import org.jetbrains.kotlin.ir.builders.declarations.addSetter
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irEqeqeq
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irImplicitCast
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irTemporaryVar
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
@@ -52,27 +62,93 @@ import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
     private val membersInjectorByClass = mutableMapOf<IrClass, IrClass>()
 
-    private val injectSettersByProperty = mutableMapOf<IrProperty, IrFunction>()
-
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableSetOf<IrClass>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitPropertyNew(declaration: IrProperty): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Inject)) {
+                val field = declaration.backingField
+                if (field != null && field.origin == IrDeclarationOrigin.PROPERTY_DELEGATE &&
+                    field.initializer?.expression?.type?.classOrNull == symbols.injectProperty
+                ) {
                     classes += currentClass?.irElement as? IrClass ?: return super.visitPropertyNew(
                         declaration
                     )
+
+                    DeclarationIrBuilder(pluginContext, declaration.symbol).run {
+                        declaration.backingField = buildField {
+                            name = Name.identifier("injected\$${declaration.name}")
+                            type = irBuiltIns.anyNType
+                        }.apply {
+                            initializer = irExprBody(irGetObject(symbols.uninitialized))
+                        }
+
+                        val oldGetter = declaration.getter!!
+
+                        declaration.getter = declaration.addGetter {
+                            name = oldGetter.name
+                            returnType = oldGetter.returnType
+                        }.apply {
+                            dispatchReceiverParameter =
+                                oldGetter.dispatchReceiverParameter!!.copyTo(this)
+
+                            body = irBlockBody {
+                                val tmp = irTemporaryVar(
+                                    irGetField(
+                                        irGet(dispatchReceiverParameter!!),
+                                        declaration.backingField!!
+                                    )
+                                )
+                                +irIfThen(
+                                    irEqeqeq(
+                                        irGet(tmp),
+                                        irGetObject(symbols.uninitialized)
+                                    ),
+                                    irCall(
+                                        pluginContext.referenceFunctions(FqName("kotlin.error"))
+                                            .single { it.owner.valueParameters.size == 1 }
+                                    ).apply {
+                                        putValueArgument(
+                                            0, irString("Not injected")
+                                        )
+                                    }
+                                )
+
+                                +DeclarationIrBuilder(pluginContext, symbol)
+                                    .irReturn(irImplicitCast(irGet(tmp), returnType))
+                            }
+                        }
+
+                        declaration.setter = declaration.addSetter {
+                            name = Name.identifier("inject\$${declaration.name}")
+                            returnType = irBuiltIns.unitType
+                        }.apply {
+                            dispatchReceiverParameter =
+                                declaration.getter!!.dispatchReceiverParameter!!.copyTo(this)
+
+                            val valueParameter =
+                                addValueParameter("value", declaration.getter!!.returnType)
+
+                            body = irExprBody(
+                                irSetField(
+                                    irGet(dispatchReceiverParameter!!),
+                                    declaration.backingField!!,
+                                    irGet(valueParameter)
+                                )
+                            )
+                        }
+                    }
                 }
+
                 return super.visitPropertyNew(declaration)
             }
         })
@@ -91,51 +167,14 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         return membersInjector
     }
 
-    private fun getInjectSetter(property: IrProperty): IrFunction {
-        return injectSettersByProperty.getOrPut(property) {
-            val clazz = property.parent as IrClass
-            fun IrClass.findInjectSetter(): IrFunction? {
-                functions.singleOrNull {
-                    it.name == Name.identifier("inject\$${property.name}")
-                }?.let { return it }
-                for (superType in superTypes) {
-                    superType.classOrNull?.owner?.findInjectSetter()
-                        ?.let { return it }
-                }
-                return null
-            }
-
-            clazz.findInjectSetter() ?: clazz.addFunction {
-                this.name = Name.identifier("inject\$${property.name}")
-                this.returnType = irBuiltIns.unitType
-                visibility = Visibilities.PUBLIC
-            }.apply func@{
-                dispatchReceiverParameter = clazz.thisReceiver?.copyTo(this)
-
-                val instanceValueParameter = addValueParameter(
-                    name = "instance",
-                    property.backingField!!.type
-                )
-
-                body = DeclarationIrBuilder(pluginContext, symbol).run {
-                    irExprBody(
-                        irSetField(
-                            irGet(dispatchReceiverParameter!!),
-                            property.backingField!!,
-                            irGet(instanceValueParameter)
-                        )
-                    )
-                }
-            }
-        }
-    }
-
     private fun IrBuilderWithScope.membersInjector(clazz: IrClass): IrClass {
         val injectProperties = mutableListOf<IrProperty>()
 
         fun IrClass.collectInjectorProperties() {
             injectProperties += properties
-                .filter { it.hasAnnotation(InjektFqNames.Inject) }
+                .filter {
+                    it.backingField?.name?.asString()?.startsWith("injected\$") == true
+                }
             superTypes
                 .forEach { it.classOrNull?.owner?.collectInjectorProperties() }
         }
@@ -159,7 +198,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 addField {
                     name = Name.identifier("p${fieldIndex++}")
                     type = irBuiltIns.function(0)
-                        .typeWith(property.backingField!!.type)
+                        .typeWith(property.getter!!.returnType)
                         .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                 }
             }
@@ -209,7 +248,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
                 body = irBlockBody {
                     fieldsByInjectProperty.forEach { (property, field) ->
-                        +irCall(getInjectSetter(property)).apply {
+                        +irCall(property.setter!!).apply {
                             dispatchReceiver = irGet(instanceValueParameter)
                             putValueArgument(
                                 0,

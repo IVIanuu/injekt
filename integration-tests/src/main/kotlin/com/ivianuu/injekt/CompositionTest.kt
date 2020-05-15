@@ -52,10 +52,11 @@ class CompositionTest {
                     transient<Bar>()
                 }
                 
-                class BarEntryPointConsumer(testComponent: TestComponent) {
-                    @Inject private lateinit var bar: Bar
-                    init {
+                class BarEntryPointConsumer(private val testComponent: TestComponent) { 
+                    private val bar: Bar by inject()
+                    fun doInject() {
                         testComponent.inject(this)
+                        println(bar)
                     }
                 }
                 

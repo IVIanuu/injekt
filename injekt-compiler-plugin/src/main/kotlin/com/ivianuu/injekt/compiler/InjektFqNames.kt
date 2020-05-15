@@ -66,7 +66,7 @@ object InjektFqNames {
 
     val Factory = InjektPackage.child("Factory")
 
-    val Inject = InjektPackage.child("Inject")
+    val InjectProperty = InjektPackage.child("InjectProperty")
 
     val InstanceProvider = InternalPackage.child("InstanceProvider")
 
@@ -93,6 +93,8 @@ object InjektFqNames {
     val Transient = InjektPackage.child("Transient")
 
     val TypeAnnotation = InternalPackage.child("TypeAnnotation")
+
+    val Uninitialized = InternalPackage.child("Uninitialized")
 
     private fun FqName.child(name: String) = child(Name.identifier(name))
 

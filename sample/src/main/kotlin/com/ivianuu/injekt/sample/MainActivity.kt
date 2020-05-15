@@ -19,7 +19,6 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.MembersInjector
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Scope
@@ -28,6 +27,7 @@ import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.childFactory
 import com.ivianuu.injekt.createImpl
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.installIn
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
@@ -38,8 +38,7 @@ class MainActivity : AppCompatActivity() {
             .get<@ChildFactory (MainActivity) -> MainActivityComponent>()(this)
     }
 
-    @Inject
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

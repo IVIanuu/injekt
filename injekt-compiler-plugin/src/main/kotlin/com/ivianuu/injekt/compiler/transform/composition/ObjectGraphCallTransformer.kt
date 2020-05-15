@@ -58,7 +58,8 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
             override fun visitCall(expression: IrCall): IrExpression {
                 if ((expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get" &&
                             expression.dispatchReceiver == null) ||
-                    expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.inject"
+                    (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.inject" &&
+                            expression.symbol.descriptor.valueParameters.size == 1)
                 ) {
                     objectGraphCalls += expression to currentFile
                 }
@@ -124,8 +125,6 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                 }
                 else -> error("Unexpected call ${call.dump()}")
             }
-
-
         }
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {

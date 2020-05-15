@@ -143,8 +143,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val INJECT_MUST_BE_LATEINIT_VAR = error(
-            "@Inject property must be lateinit var"
+        val INJECTED_PROPERTY_MUST_VAL = error(
+            "by inject() properties cannot be mutable"
         )
 
         @JvmField
