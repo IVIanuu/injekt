@@ -47,7 +47,7 @@ object InjektAst {
 
     annotation class Module
 
-    annotation class Parents(val value: Array<KClass<*>>)
+    annotation class Parents(val values: Array<KClass<*>>)
 
     annotation class Scope
 

@@ -68,4 +68,80 @@ class CompositionTest {
         )
     )
 
+    @Test
+    fun testParentChildComposition() = multiCodegen(
+        listOf(
+            source(
+                """
+                interface AppComponent
+                
+                @CompositionFactory 
+                fun appComponentFactory(): AppComponent {
+                    return createImpl()
+                }
+                
+                @Module
+                fun appModule() {
+                    installIn<AppComponent>()
+                    scoped { Foo() }
+                }
+
+                interface ActivityComponent
+
+                @CompositionFactory
+                fun activityComponentFactory(): ActivityComponent {
+                    parent<AppComponent>()
+                    scoped { Bar(get()) }
+                    return createImpl()
+                }
+                
+                class App { 
+                    val component = compositionFactoryOf<AppComponent, () -> AppComponent>()
+                    private val foo: Foo by inject()
+                    init {
+                        component.inject(this)
+                    }
+                }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                class Activity(private val app: App) {
+                    val component = app.component.get<@ChildFactory () -> ActivityComponent>() 
+                    private val foo: Foo by inject()
+                    private val bar: Bar by inject()
+                    init {
+                        component.inject(this)
+                    }
+                }
+                
+                interface FragmentComponent
+
+                @CompositionFactory
+                fun fragmentComponentFactory(): FragmentComponent {
+                    parent<ActivityComponent>()
+                    scoped { Baz(get(), get()) }
+                    return createImpl()
+                }
+                
+                class Fragment(private val activity: Activity) {
+                    private val component = activity.component.get<@ChildFactory () -> FragmentComponent>()
+                    private val foo: Foo by inject()
+                    private val bar: Bar by inject() 
+                    private val baz: Baz by inject()
+                    init {
+                        component.inject(this)
+                    }
+                }
+                
+                fun main() {
+                    generateCompositions()
+                }
+                """
+            )
+        )
+    )
+
 }

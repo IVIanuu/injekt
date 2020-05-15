@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -87,15 +88,18 @@ object InjektNameConventions {
         file: IrFile,
         call: IrCall,
         suffix: String
-    ) = Name.identifier("${sourceLocationHash(file.fqName, call.startOffset)}\$$suffix")
+    ) = Name.identifier("${sourceLocationHash(file, call.startOffset)}\$$suffix")
 
     private fun getSignatureHashNameWithSuffix(
         function: IrFunction,
         suffix: String
     ) = Name.identifier("${generateSignatureUniqueHash(function)}\$$suffix")
 
-    private fun sourceLocationHash(fqName: FqName, startOffset: Int) =
-        (fqName.asString().hashCode() + startOffset).hashCode().absoluteValue
+    private fun sourceLocationHash(file: IrFile, startOffset: Int): Int {
+        var result = (file.fqName.asString() + file.name).hashCode()
+        result = 31 * result + startOffset.hashCode()
+        return result.absoluteValue
+    }
 
     private fun generateSignatureUniqueHash(function: IrFunction): Int {
         var result = function.descriptor.fqNameSafe.hashCode()

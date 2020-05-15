@@ -118,7 +118,7 @@ class ChildFactoryBindingResolver(
             ?.getValueArgument(0)
             ?.let { it as IrClassReferenceImpl }
             ?.classType
-            ?.getClass()!!
+            ?.getClass()
             ?: function.descriptor.annotations.findAnnotation(InjektFqNames.AstClassPath)
                 ?.allValueArguments
                 ?.get(Name.identifier("clazz"))

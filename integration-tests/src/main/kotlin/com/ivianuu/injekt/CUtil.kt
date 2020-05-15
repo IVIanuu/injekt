@@ -147,6 +147,8 @@ class Foo
 
 class Bar(foo: Foo)
 
+class Baz(foo: Foo, bar: Bar)
+
 interface TestComponent
 
 @Scope
