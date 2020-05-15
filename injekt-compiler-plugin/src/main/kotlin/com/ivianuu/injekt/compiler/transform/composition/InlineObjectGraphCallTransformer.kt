@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -403,7 +404,10 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                     InjektDeclarationIrBuilder(pluginContext, symbol).run {
                                         irLambda(substitutedType) { lambda ->
                                             +irReturn(
-                                                irCall(
+                                                IrCallImpl(
+                                                    originalCall.startOffset,
+                                                    originalCall.endOffset,
+                                                    instanceType,
                                                     pluginContext.referenceFunctions(
                                                         FqName("com.ivianuu.injekt.get")
                                                     ).single()
@@ -441,7 +445,10 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                     InjektDeclarationIrBuilder(pluginContext, symbol).run {
                                         irLambda(substitutedType) { lambda ->
                                             +irReturn(
-                                                irCall(
+                                                IrCallImpl(
+                                                    originalCall.startOffset,
+                                                    originalCall.endOffset,
+                                                    irBuiltIns.unitType,
                                                     pluginContext.referenceFunctions(
                                                         FqName("com.ivianuu.injekt.inject")
                                                     ).single { it.owner.valueParameters.size == 1 }

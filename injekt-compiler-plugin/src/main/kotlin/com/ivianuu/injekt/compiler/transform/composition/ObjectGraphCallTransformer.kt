@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -78,7 +79,10 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     newExpressionsByCall[call] =
                         DeclarationIrBuilder(pluginContext, call.symbol).run {
                             irCall(entryPoint.functions.single()).apply {
-                                dispatchReceiver = irCall(
+                                dispatchReceiver = IrCallImpl(
+                                    call.startOffset,
+                                    call.endOffset,
+                                    entryPoint.defaultType,
                                     pluginContext.referenceFunctions(
                                         FqName("com.ivianuu.injekt.entryPointOf")
                                     ).single()
@@ -105,7 +109,10 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                     .owner
                             ).apply {
                                 dispatchReceiver = irCall(entryPoint.functions.single()).apply {
-                                    dispatchReceiver = irCall(
+                                    dispatchReceiver = IrCallImpl(
+                                        call.startOffset,
+                                        call.endOffset,
+                                        entryPoint.defaultType,
                                         pluginContext.referenceFunctions(
                                             FqName("com.ivianuu.injekt.entryPointOf")
                                         ).single()
