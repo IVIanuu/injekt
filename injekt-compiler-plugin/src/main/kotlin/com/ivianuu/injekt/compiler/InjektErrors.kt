@@ -263,6 +263,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val ENTRY_POINT_WITHOUT_MODULE = error(
+            "entryPoint<T>() can only be called from inside a @Module function"
+        )
+
+        @JvmField
         val PARENT_CALL_WITHOUT_COMPOSITION_FACTORY = error(
             "parent<T>() can only be called from inside a @CompositionFactory function"
         )

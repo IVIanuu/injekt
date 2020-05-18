@@ -31,7 +31,7 @@ object InjektAst {
 
     annotation class Dependency
 
-    annotation class EntryPoint
+    annotation class EntryPoints(val values: Array<KClass<*>>)
 
     annotation class Binding
 

@@ -31,7 +31,7 @@ object InjektFqNames {
     val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
-    val AstEntryPoint = InjektAst.child("EntryPoint")
+    val AstEntryPoints = InjektAst.child("EntryPoints")
     val AstInline = InjektAst.child("Inline")
     val AstMap = InjektAst.child("Map")
     val AstMapEntry = AstMap.child("Entry")

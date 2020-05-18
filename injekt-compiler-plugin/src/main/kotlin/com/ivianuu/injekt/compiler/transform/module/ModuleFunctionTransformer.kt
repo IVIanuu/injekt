@@ -118,7 +118,6 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                     .map { it.owner }
                     .single { other ->
                         other.name == function.name &&
-                                other.returnType == function.returnType &&
                                 other.valueParameters.any {
                                     "class\$" in it.name.asString()
                                 }
@@ -160,6 +159,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
+
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     originalClassOfCalls += expression
                     if (expression.getTypeArgument(0)!!.isTypeParameter()) {

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.CompositionSymbols
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -40,26 +41,32 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GenerateCompositionsTransformer(
@@ -155,16 +162,29 @@ class GenerateCompositionsTransformer(
                     val modules = factory.modules
 
                     val entryPoints = modules
-                        .map { declarationStore.getModuleClassForFunction(it.owner) }
-                        .map {
-                            it.declarations
-                                .single { it is IrClass && it.name.asString() == "Descriptor" }
-                                .let { it as IrClass }
+                        .flatMap {
+                            it.owner.getAnnotation(InjektFqNames.AstEntryPoints)
+                                ?.getValueArgument(0)
+                                ?.let { it as IrVarargImpl }
+                                ?.elements
+                                ?.map { it as IrClassReference }
+                                ?.map { it.classType.classOrNull!! }
+                                ?: it.owner.descriptor
+                                    .annotations
+                                    .findAnnotation(InjektFqNames.AstEntryPoints)
+                                    ?.allValueArguments
+                                    ?.values
+                                    ?.single()
+                                    ?.let { it as ArrayValue }
+                                    ?.value
+                                    ?.filterIsInstance<KClassValue>()
+                                    ?.map { it.getIrClass(pluginContext).symbol }
+                                    .let { it ?: emptyList() }
                         }
-                        .flatMap { it.functions.toList() }
-                        .filter { it.hasAnnotation(InjektFqNames.AstEntryPoint) }
-                        .map { it.returnType }
+                        .map { it.defaultType }
                         .distinct()
+
+                    println("entry points ${entryPoints.map { it.render() }}")
 
                     val factoryType = compositionFactoryType(
                         InjektNameConventions.getCompositionFactoryTypeNameForCall(

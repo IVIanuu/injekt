@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.compositionsEnabled
 import com.ivianuu.injekt.compiler.transform.composition.BindingAdapterTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
+import com.ivianuu.injekt.compiler.transform.composition.CompositionEntryPointsTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
@@ -78,6 +79,9 @@ class InjektIrGenerationExtension(
 
             // add @Parents annotation to @CompositionFactory functions
             CompositionFactoryParentTransformer(pluginContext)
+                .lower(moduleFragment)
+
+            CompositionEntryPointsTransformer(pluginContext)
                 .lower(moduleFragment)
 
             // generate composition factories
