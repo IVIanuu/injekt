@@ -17,8 +17,9 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.Module
+import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.composition.CompositionComponent
@@ -27,6 +28,8 @@ import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.transient
+import kotlinx.coroutines.CoroutineScope
 
 @Scope
 annotation class ApplicationScoped
@@ -49,11 +52,9 @@ val Application.applicationComponent: ApplicationComponent
 fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
+    @ForApplication
+    transient<CoroutineScope> { get<@ForApplication LifecycleOwner>().lifecycleScope }
+    @ForApplication
+    transient { ProcessLifecycleOwner.get() }
     return create()
-}
-
-@Module
-fun createApplicationComponentModule(instance: Application) {
-    scope<ApplicationScoped>()
-    instance(instance)
 }

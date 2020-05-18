@@ -17,9 +17,14 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
@@ -27,6 +32,8 @@ import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.transient
+import kotlinx.coroutines.CoroutineScope
 
 @Scope
 annotation class ActivityScoped
@@ -49,5 +56,10 @@ fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     parent<RetainedActivityComponent>()
     scope<ActivityScoped>()
     instance(instance)
+    @ForActivity
+    transient<CoroutineScope> { get<@ForActivity LifecycleOwner>().lifecycleScope }
+    alias<ComponentActivity, @ForActivity LifecycleOwner>()
+    alias<ComponentActivity, @ForActivity SavedStateRegistryOwner>()
+    alias<ComponentActivity, @ForActivity ViewModelStoreOwner>()
     return create()
 }
