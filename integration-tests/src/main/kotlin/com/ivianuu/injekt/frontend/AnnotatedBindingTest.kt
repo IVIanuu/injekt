@@ -63,4 +63,22 @@ class AnnotatedBindingTest {
         assertCompileError("abstract")
     }
 
+    @Test
+    fun testMultipleScopesFails() = codegen(
+        """
+        @TestScope @TestScope2 class Dep
+    """
+    ) {
+        assertCompileError("scope")
+    }
+
+    @Test
+    fun testTransientWithScopesFails() = codegen(
+        """
+        @Transient @TestScope2 class Dep
+    """
+    ) {
+        assertCompileError("transient")
+    }
+
 }

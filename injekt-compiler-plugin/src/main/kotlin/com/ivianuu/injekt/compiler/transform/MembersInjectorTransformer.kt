@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -60,11 +59,14 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
@@ -160,7 +162,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         membersInjectorByClass[clazz]?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
             .membersInjector(clazz)
-        clazz.getNearestDeclarationContainer(includeThis = false).addChild(membersInjector)
+        clazz.file.addChild(membersInjector)
         membersInjectorByClass[clazz] = membersInjector
         return membersInjector
     }
@@ -181,7 +183,9 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
         return buildClass {
             kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
-            name = InjektNameConventions.getMembersInjectorNameForClass(clazz.name)
+            name = InjektNameConventions.getMembersInjectorNameForClass(
+                clazz.getPackageFragment()!!.fqName, clazz.descriptor.fqNameSafe
+            )
             visibility = clazz.visibility
         }.apply clazz@{
             superTypes += irBuiltIns.function(1)

@@ -39,7 +39,8 @@ class ClassOfChecker(private val typeAnnotationChecker: TypeAnnotationChecker) :
             val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
             InjektFqNames.Module in typeAnnotations ||
                     InjektFqNames.Factory in typeAnnotations ||
-                    InjektFqNames.ChildFactory in typeAnnotations
+                    InjektFqNames.ChildFactory in typeAnnotations ||
+                    InjektFqNames.CompositionFactory in typeAnnotations
         }
         if (enclosingInjektDslFunction == null) {
             context.trace.report(

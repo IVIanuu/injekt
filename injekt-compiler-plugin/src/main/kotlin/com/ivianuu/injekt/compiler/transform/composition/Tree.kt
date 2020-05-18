@@ -17,22 +17,21 @@
 package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import com.ivianuu.injekt.compiler.getIrClass
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.util.ReferenceSymbolTable
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class CompositionFactoryGraph(
-    private val symbolTable: ReferenceSymbolTable,
+    private val pluginContext: IrPluginContext,
     private val allFactories: Map<IrClassSymbol, List<IrFunctionSymbol>>,
     private val allModules: Map<IrClassSymbol, List<IrFunctionSymbol>>
 ) {
@@ -67,7 +66,7 @@ class CompositionFactoryGraph(
 
         chain += factoryFunction
 
-        val factory = CompositionFactory(compositionType, factoryFunction, symbolTable)
+        val factory = CompositionFactory(compositionType, factoryFunction, pluginContext)
 
         factory.parentsCompositionTypes.forEach { parentCompositionType ->
             getFactoriesForCompositionType(parentCompositionType)
@@ -90,7 +89,7 @@ class CompositionFactoryGraph(
 class CompositionFactory(
     val compositionType: IrClassSymbol,
     val factoryFunction: IrFunctionSymbol,
-    symbolTable: ReferenceSymbolTable
+    pluginContext: IrPluginContext
 ) {
 
     val parentsCompositionTypes = factoryFunction.owner.getAnnotation(InjektFqNames.AstParents)
@@ -108,8 +107,7 @@ class CompositionFactory(
             ?.let { it as ArrayValue }
             ?.value
             ?.filterIsInstance<KClassValue>()
-            ?.map { it.getArgumentType(factoryFunction.descriptor.module) }
-            ?.map { symbolTable.referenceClass(it.constructor.declarationDescriptor as ClassDescriptor) }
+            ?.map { it.getIrClass(pluginContext).symbol }
             .let { it ?: emptyList() }
 
     val parents = mutableSetOf<CompositionFactory>()

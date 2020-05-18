@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -32,7 +33,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -52,7 +52,6 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -61,22 +60,23 @@ import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
 class ChildFactoryBindingResolver(
-    private val implFactory: ImplFactory,
+    private val parentFactory: ImplFactory,
     descriptor: IrClass,
     private val members: FactoryMembers
 ) : BindingResolver {
@@ -90,10 +90,10 @@ class ChildFactoryBindingResolver(
             .filter { it.hasAnnotation(InjektFqNames.AstChildFactory) }
             .forEach { function ->
                 val key =
-                    implFactory.pluginContext.irBuiltIns.function(function.valueParameters.size)
+                    parentFactory.pluginContext.irBuiltIns.function(function.valueParameters.size)
                         .typeWith(function.valueParameters.map { it.type } + function.returnType)
                         .withNoArgQualifiers(
-                            implFactory.pluginContext,
+                            parentFactory.pluginContext,
                             listOf(InjektFqNames.ChildFactory)
                         )
                         .asKey()
@@ -113,42 +113,31 @@ class ChildFactoryBindingResolver(
     ) = lazy {
         val superType = function.returnType
 
-        val moduleClass = function.getAnnotation(InjektFqNames.AstClassPath)
-            ?.getValueArgument(0)
-            ?.let { it as IrClassReferenceImpl }
-            ?.classType
-            ?.getClass()
-            ?: function.descriptor.annotations.findAnnotation(InjektFqNames.AstClassPath)
-                ?.allValueArguments
-                ?.get(Name.identifier("clazz"))
-                ?.let { it as KClassValue }
-                ?.getArgumentType(implFactory.pluginContext.moduleDescriptor)
-                ?.let {
-                    implFactory.pluginContext.symbolTable
-                        .referenceClass(it.constructor.declarationDescriptor as ClassDescriptor)
-                }
-                ?.owner
-        moduleClass!!
+        val moduleClass =
+            function.getClassFromSingleValueAnnotation(
+                InjektFqNames.AstClassPath,
+                parentFactory.pluginContext
+            )
 
         val childFactoryImpl =
             ImplFactory(
                 origin = function.descriptor.fqNameSafe, // todo better origin
-                parent = implFactory,
+                parent = parentFactory,
                 typeParameterMap = emptyMap(),
-                irDeclarationParent = implFactory.clazz,
+                irDeclarationParent = parentFactory.clazz,
                 name = members.nameForGroup("child"),
                 superType = superType,
                 moduleClass = moduleClass,
-                pluginContext = implFactory.pluginContext,
-                symbols = implFactory.symbols,
-                declarationStore = implFactory.declarationStore
+                pluginContext = parentFactory.pluginContext,
+                symbols = parentFactory.symbols,
+                declarationStore = parentFactory.declarationStore
             )
 
         members.addClass(childFactoryImpl.clazz)
 
         val childFactory = DeclarationIrBuilder(
-            implFactory.pluginContext,
-            implFactory.clazz.symbol
+            parentFactory.pluginContext,
+            parentFactory.clazz.symbol
         ).childFactory(
             members.nameForGroup("childFactory"),
             childFactoryImpl,
@@ -159,7 +148,7 @@ class ChildFactoryBindingResolver(
 
         return@lazy ChildFactoryBindingNode(
             key,
-            implFactory,
+            parentFactory,
             moduleClass.fqNameForIrSerialization,
             childFactoryImpl,
             childFactory,
@@ -174,14 +163,14 @@ class ChildFactoryBindingResolver(
         this.name = name
         visibility = Visibilities.PRIVATE
     }.apply clazz@{
-        parent = implFactory.clazz
+        parent = parentFactory.clazz
         createImplicitParameterDeclarationWithWrappedDescriptor()
         (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
         superTypes += superType
 
         val parentField = addField(
             "parent",
-            implFactory.clazz.defaultType
+            parentFactory.clazz.defaultType
         )
 
         addConstructor {
@@ -191,11 +180,11 @@ class ChildFactoryBindingResolver(
         }.apply {
             val parentValueParameter = addValueParameter(
                 name = "parent",
-                type = implFactory.clazz.defaultType
+                type = parentFactory.clazz.defaultType
             )
 
             body = irBlockBody {
-                with(InjektDeclarationIrBuilder(implFactory.pluginContext, symbol)) {
+                with(InjektDeclarationIrBuilder(parentFactory.pluginContext, symbol)) {
                     initializeClassWithAnySuperClass(this@clazz.symbol)
                 }
                 +irSetField(
@@ -352,26 +341,14 @@ class ModuleBindingResolver(
                 .asKey()
             val propertyName = bindingFunction.getAnnotation(InjektFqNames.AstPropertyPath)
                 ?.getValueArgument(0)?.let { it as IrConst<String> }?.value
-            val provider = bindingFunction.getAnnotation(InjektFqNames.AstClassPath)
-                ?.getValueArgument(0)
-                ?.let { it as IrClassReferenceImpl }
-                ?.classType
-                ?.getClass()
-                ?: bindingFunction.descriptor.annotations.findAnnotation(InjektFqNames.AstClassPath)
-                    ?.allValueArguments
-                    ?.values
-                    ?.single()
-                    ?.let { it as KClassValue }
-                    ?.let { it.value as KClassValue.Value.NormalClass }
-                    ?.classId
-                    ?.shortClassName
-                    ?.asString()
-                    ?.substringAfterLast("\$")
-                    ?.let { name ->
-                        moduleNode.module.declarations
-                            .filterIsInstance<IrClass>()
-                            .single { it.name.asString() == name }
-                    }
+            val provider = if (bindingFunction.hasAnnotation(InjektFqNames.AstClassPath)) {
+                bindingFunction.getClassFromSingleValueAnnotation(
+                    InjektFqNames.AstClassPath,
+                    factory.pluginContext
+                )
+            } else {
+                null
+            }
 
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
@@ -445,9 +422,19 @@ class ModuleBindingResolver(
                     } else {
                         val dependencies = bindingFunction.valueParameters
                             .map {
-                                it.type
-                                    .substituteAndKeepQualifiers(providerTypeParametersMap)
-                                    .asKey()
+                                try {
+                                    it.type
+                                        .substituteAndKeepQualifiers(providerTypeParametersMap)
+                                        .asKey()
+                                } catch (e: Exception) {
+                                    error("Could not get for ${it.dump()} in\n\n${bindingFunction.dump()} " +
+                                            "\n\n type params ${providerTypeParametersMap.map {
+                                                it.key.owner.render() to it.value.render()
+                                            }} \n\n ${moduleNode.descriptor.dump()}\n\n\n${moduleNode.descriptorTypeParametersMap.map {
+                                                it.key.owner.render() to it.value.render()
+                                            }}"
+                                    )
+                                }
                             }
                             .map { BindingRequest(it, moduleRequestOrigin) }
 
@@ -522,12 +509,13 @@ class AnnotatedClassBindingResolver(
                     InjektFqNames.Scope,
                     clazz.descriptor.module
                 )
-                .singleOrNull() ?: return emptyList()
+                .singleOrNull()
+
+            if (scopeAnnotation == null && !clazz.hasAnnotation(InjektFqNames.Transient)) return emptyList()
+
             val provider = declarationStore.getFactoryForClass(clazz)
 
-            val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
-
-            val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
+            val scoped = scopeAnnotation != null
 
             val typeParametersMap = clazz.typeParameters
                 .map { it.symbol }
@@ -551,7 +539,7 @@ class AnnotatedClassBindingResolver(
                 AssistedProvisionBindingNode(
                     key = requestedKey,
                     dependencies = dependencies,
-                    targetScope = targetScope,
+                    targetScope = scopeAnnotation?.fqName,
                     scoped = scoped,
                     module = null,
                     provider = provider,
@@ -566,12 +554,13 @@ class AnnotatedClassBindingResolver(
                     InjektFqNames.Scope,
                     clazz.descriptor.module
                 )
-                .singleOrNull() ?: return emptyList()
+                .singleOrNull()
+
+            if (scopeAnnotation == null && !clazz.hasAnnotation(InjektFqNames.Transient)) return emptyList()
+
             val provider = declarationStore.getFactoryForClass(clazz)
 
-            val targetScope = scopeAnnotation.fqName?.takeIf { it != InjektFqNames.Transient }
-
-            val scoped = scopeAnnotation.fqName != InjektFqNames.Transient
+            val scoped = scopeAnnotation != null
 
             val typeParametersMap = provider.typeParameters
                 .map { it.symbol }
@@ -596,7 +585,7 @@ class AnnotatedClassBindingResolver(
                 ProvisionBindingNode(
                     key = requestedKey,
                     dependencies = dependencies,
-                    targetScope = targetScope,
+                    targetScope = scopeAnnotation?.fqName,
                     scoped = scoped,
                     module = null,
                     provider = provider,

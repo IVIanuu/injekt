@@ -28,18 +28,21 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -69,7 +72,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
 
     fun isDecoy(function: IrFunction): Boolean = function in decoys
 
-    override fun visitFile(declaration: IrFile): IrFile {
+    /*override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
         val result = super.visitFile(declaration)
         result.patchWithDecoys(originalFunctions)
@@ -81,7 +84,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         val result = super.visitClass(declaration) as IrClass
         result.patchWithDecoys(originalFunctions)
         return result
-    }
+    }*/
 
     override fun visitFunction(declaration: IrFunction): IrStatement =
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
@@ -112,7 +115,17 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
-        ) return function
+        ) {
+            if (function.hasAnnotation(InjektFqNames.AstTyped)) {
+                val typedFunction = pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
+                    .map { it.owner }
+                    .single {
+                        it.returnType == function.returnType &&
+                                it.valueParameters.size > function.valueParameters.size
+                    }
+                return typedFunction
+            } else return function
+        }
         if (!function.isModule(pluginContext.bindingContext)) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
@@ -147,9 +160,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                val callee = transformFunctionIfNeeded(
-                    expression.symbol.owner
-                )
+                val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     originalClassOfCalls += expression
                     if (expression.getTypeArgument(0)!!.isTypeParameter()) {
@@ -225,6 +236,22 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             transformedFunction.annotations +=
                 InjektDeclarationIrBuilder(pluginContext, transformedFunction.symbol)
                     .noArgSingleConstructorCall(symbols.astTyped)
+
+            (transformedFunction as IrFunctionImpl).metadata = MetadataSource.Function(
+                function.descriptor.newCopyBuilder()
+                    .setAdditionalAnnotations(
+                        Annotations.create(
+                            listOf(
+                                AnnotationDescriptorImpl(
+                                    symbols.astTyped.descriptor.defaultType,
+                                    emptyMap(),
+                                    SourceElement.NO_SOURCE
+                                )
+                            )
+                        )
+                    )
+                    .build()!!
+            )
 
             val valueParametersByUnresolvedType =
                 mutableMapOf<IrTypeParameterSymbol, IrValueParameter>()

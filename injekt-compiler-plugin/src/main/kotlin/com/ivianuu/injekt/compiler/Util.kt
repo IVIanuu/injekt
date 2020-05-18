@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -50,6 +51,7 @@ import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
@@ -64,6 +66,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.parentAsClass
@@ -110,12 +113,14 @@ fun Annotated.getAnnotatedAnnotations(
 
 fun IrAnnotationContainer.hasAnnotatedAnnotations(
     annotation: FqName
-): Boolean = annotations.any { it.type.hasAnnotation(annotation) }
+): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
 
 fun IrAnnotationContainer.getAnnotatedAnnotations(
     annotation: FqName
 ): List<IrConstructorCall> =
-    annotations.filter { it.type.hasAnnotation(annotation) }
+    annotations.filter {
+        it.type.classOrNull!!.owner.hasAnnotation(annotation)
+    }
 
 fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
     val thisFqName = this.fqName ?: return false
@@ -368,3 +373,37 @@ fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
+
+fun <T> T.getClassFromSingleValueAnnotationOrNull(
+    fqName: FqName,
+    pluginContext: IrPluginContext
+): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
+    if (!hasAnnotation(fqName)) return null
+    return getClassFromSingleValueAnnotation(fqName, pluginContext)
+}
+
+fun <T> T.getClassFromSingleValueAnnotation(
+    fqName: FqName,
+    pluginContext: IrPluginContext
+): IrClass where T : IrDeclaration, T : IrAnnotationContainer {
+    return getAnnotation(fqName)
+        ?.getValueArgument(0)
+        ?.let { it as IrClassReferenceImpl }
+        ?.classType
+        ?.getClass()
+        ?: descriptor.annotations.findAnnotation(fqName)
+            ?.allValueArguments
+            ?.values
+            ?.single()
+            ?.let { it as KClassValue }
+            ?.getIrClass(pluginContext)
+        ?: error("Cannot get class value for $fqName for ${render()}")
+}
+
+fun KClassValue.getIrClass(
+    pluginContext: IrPluginContext
+): IrClass {
+    return (value as KClassValue.Value.NormalClass).classId.asSingleFqName()
+        .let { FqName(it.asString().replace("\$", ".")) }
+        .let { pluginContext.referenceClass(it)!!.owner }
+}

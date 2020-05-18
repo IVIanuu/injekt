@@ -18,7 +18,8 @@ package com.ivianuu.injekt.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.ivianuu.injekt.android.RetainedActivityScoped
+import androidx.lifecycle.ViewModel
+import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.inject
 
@@ -27,15 +28,20 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         activityComponent.inject(this)
+        super.onCreate(savedInstanceState)
         println("Got view model $viewModel")
     }
 }
 
-@RetainedActivityScoped
-class MainViewModel(private val repo: Repo) {
+@ActivityViewModel
+class MainViewModel(private val repo: Repo) : ViewModel() {
     init {
         println("init ")
+    }
+
+    override fun onCleared() {
+        println("on cleared")
+        super.onCleared()
     }
 }

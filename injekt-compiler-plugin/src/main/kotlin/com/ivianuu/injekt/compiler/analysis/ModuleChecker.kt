@@ -97,6 +97,34 @@ class ModuleChecker(
         context: CallCheckerContext
     ) {
         val resulting = resolvedCall.resultingDescriptor
+
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.installIn") {
+            val enclosingModule = findEnclosingModuleFunctionContext(context) {
+                val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
+                InjektFqNames.Module in typeAnnotations
+            }
+
+            if (enclosingModule == null) {
+                context.trace.report(
+                    InjektErrors.INSTALL_IN_CALL_WITHOUT_MODULE
+                        .on(reportOn)
+                )
+            } else {
+                if (enclosingModule.valueParameters.isNotEmpty()) {
+                    context.trace.report(
+                        InjektErrors.COMPOSITION_MODULE_CANNOT_HAVE_VALUE_PARAMETERS
+                            .on(reportOn)
+                    )
+                }
+                if (enclosingModule.typeParameters.isNotEmpty()) {
+                    context.trace.report(
+                        InjektErrors.COMPOSITION_MODULE_CANNOT_HAVE_TYPE_PARAMETERS
+                            .on(reportOn)
+                    )
+                }
+            }
+        }
+
         if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
                 context.trace, resulting, InjektFqNames.Module
             )

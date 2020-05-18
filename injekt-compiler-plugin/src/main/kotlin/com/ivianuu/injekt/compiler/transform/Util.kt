@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -51,8 +53,13 @@ fun IrFunction.deepCopyWithPreservingQualifiers(): IrFunction {
     acceptVoid(symbolRemapper)
     val typeRemapper = DeepCopyTypeRemapper(symbolRemapper)
     return (transform(
-        DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper)
-            .also { typeRemapper.deepCopy = it }, null
+        object : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper) {
+            override fun visitSimpleFunction(declaration: IrSimpleFunction): IrSimpleFunction {
+                return super.visitSimpleFunction(declaration).also {
+                    (it as IrFunctionImpl).metadata = MetadataSource.Function(it.descriptor)
+                }
+            }
+        }.also { typeRemapper.deepCopy = it }, null
     )
         .patchDeclarationParents(parent) as IrSimpleFunction)
         .also {

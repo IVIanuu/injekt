@@ -105,8 +105,8 @@ class GenerateCompositionsTransformer(
             .getContributedDescriptors()
             .filterIsInstance<ClassDescriptor>()
             .map {
-                val x = it.name.asString().split("__")
-                FqName(x[0].replace("_", ".")) to FqName(x[1].replace("_", "."))
+                val x = it.name.asString().split("___")
+                FqName(x[0].replace("__", ".")) to FqName(x[1].replace("__", "."))
             }
             .groupBy { it.first }
             .mapValues { it.value.map { it.second } }
@@ -127,7 +127,7 @@ class GenerateCompositionsTransformer(
             }
 
         val graph = CompositionFactoryGraph(
-            symbolTable,
+            pluginContext,
             allFactories,
             allModules
         )

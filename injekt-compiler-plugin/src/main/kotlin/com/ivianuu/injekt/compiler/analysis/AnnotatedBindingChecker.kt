@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -38,6 +39,23 @@ class AnnotatedBindingChecker : DeclarationChecker {
         if (!descriptor.annotations.hasAnnotation(InjektFqNames.Transient) &&
             !descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
         ) return
+
+        if (descriptor.annotations.hasAnnotation(InjektFqNames.Transient) &&
+            descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
+        ) {
+            context.trace.report(
+                InjektErrors.TRANSIENT_WITH_SCOPED
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.getAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module).size > 1) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_SCOPES
+                    .on(declaration)
+            )
+        }
+
         if ((descriptor.kind != ClassKind.CLASS && descriptor.kind != ClassKind.OBJECT) || descriptor.modality == Modality.ABSTRACT) {
             context.trace.report(InjektErrors.ANNOTATED_BINDING_CANNOT_BE_ABSTRACT.on(declaration))
         }

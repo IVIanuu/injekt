@@ -66,6 +66,7 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrBody
+import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -82,10 +83,12 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -172,6 +175,22 @@ class InjektDeclarationIrBuilder(
     fun noArgSingleConstructorCall(clazz: IrClassSymbol): IrConstructorCall =
         builder.irCall(clazz.constructors.single())
 
+    fun singleClassArgConstructorCall(
+        clazz: IrClassSymbol,
+        value: IrClassifierSymbol
+    ): IrConstructorCall =
+        builder.irCall(clazz.constructors.single()).apply {
+            putValueArgument(
+                0,
+                IrClassReferenceImpl(
+                    startOffset, endOffset,
+                    irBuiltIns.kClassClass.typeWith(value.defaultType),
+                    value,
+                    value.defaultType
+                )
+            )
+        }
+
     fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {
         +IrDelegatingConstructorCallImpl(
             UNDEFINED_OFFSET,
@@ -192,6 +211,9 @@ class InjektDeclarationIrBuilder(
             expression is IrClassReference -> irClassKey(expression.classType)
             expression is IrGetValue && expression.symbol.descriptor.name.asString()
                 .startsWith("class\$") -> {
+                irClassKey(expression.type.typeArguments.single())
+            }
+            expression is IrCall && expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf" -> {
                 irClassKey(expression.type.typeArguments.single())
             }
             expression is IrConst<*> -> {
@@ -228,18 +250,10 @@ class InjektDeclarationIrBuilder(
                     )
                 }
         } else {
-            builder.irCall(symbols.astMapClassKey.constructors.single())
-                .apply {
-                    putValueArgument(
-                        0,
-                        IrClassReferenceImpl(
-                            startOffset, endOffset,
-                            irBuiltIns.kClassClass.typeWith(type),
-                            type.classifierOrFail,
-                            type
-                        )
-                    )
-                }
+            singleClassArgConstructorCall(
+                symbols.astMapClassKey,
+                type.classifierOrFail
+            )
         }
     }
 

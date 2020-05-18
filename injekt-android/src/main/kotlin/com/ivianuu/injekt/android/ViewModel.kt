@@ -19,44 +19,34 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
+import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.transient
 
-/*
-@BindingAdapter(RetainedActivityComponent::class)
-annotation class BindViewModel {
+@BindingAdapter(ActivityComponent::class)
+annotation class ActivityViewModel {
     companion object {
         @Module
         inline fun <T : ViewModel> bind() {
-            viewModel<T>()
+            activityViewModel<T>()
         }
     }
-}*/
-
-/*
-@BindViewModel
-class MyViewModel : ViewModel() {
-    companion object {
-        @InstallIn<RetainedActivityScoped>
-        @Module
-        fun bindingModule() {
-            BindViewModel.bind<MyViewModel>()
-        }
-    }
-}*/
-
-@Qualifier
-private annotation class UnscopedViewModel
+}
 
 @Module
-inline fun <T : ViewModel> viewModel() {
+inline fun <T : ViewModel> activityViewModel() {
+    baseViewModel<T, @ForActivity ViewModelStoreOwner>()
+}
+
+@Module
+inline fun <T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     transient<@UnscopedViewModel T>()
     val clazz = classOf<T>()
     transient {
-        val viewModelStoreOwner = get<ViewModelStoreOwner>()
+        val viewModelStoreOwner = get<S>()
         val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
         ViewModelProvider(
             viewModelStoreOwner,
@@ -67,3 +57,6 @@ inline fun <T : ViewModel> viewModel() {
         ).get(clazz.java)
     }
 }
+
+@Qualifier
+private annotation class UnscopedViewModel

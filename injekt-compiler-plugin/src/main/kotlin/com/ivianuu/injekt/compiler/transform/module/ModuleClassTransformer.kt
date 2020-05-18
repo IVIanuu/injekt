@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.module
 
-import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -79,7 +78,7 @@ class ModuleClassTransformer(
                 symbols,
                 declarationStore
             )
-            finalFunction.getNearestDeclarationContainer().addChild(moduleImpl.clazz)
+            finalFunction.file.addChild(moduleImpl.clazz)
             finalFunction.body =
                 InjektDeclarationIrBuilder(pluginContext, finalFunction.symbol).run {
                     builder.irExprBody(irInjektIntrinsicUnit())

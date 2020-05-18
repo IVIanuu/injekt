@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -31,6 +30,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
@@ -71,7 +71,9 @@ class RootFactoryTransformer(
                                 origin = function.descriptor.fqNameSafe,
                                 parent = null,
                                 irDeclarationParent = function.parent,
-                                name = InjektNameConventions.getImplNameForFactoryFunction(function),
+                                name = InjektNameConventions.getClassImplNameForFactoryFunction(
+                                    function
+                                ),
                                 superType = function.returnType,
                                 moduleClass = moduleClass,
                                 typeParameterMap = emptyMap(),
@@ -80,8 +82,7 @@ class RootFactoryTransformer(
                                 declarationStore = declarationStore
                             )
 
-                            function.getNearestDeclarationContainer()
-                                .addChild(implFactory.clazz)
+                            function.file.addChild(implFactory.clazz)
 
                             implFactory.getInitExpression(moduleValueArguments)
                         }

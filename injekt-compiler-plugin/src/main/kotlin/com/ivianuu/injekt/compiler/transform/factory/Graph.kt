@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.findPropertyGetter
+import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.type
@@ -34,6 +35,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
@@ -226,12 +228,8 @@ class Graph(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
                                 !!.allValueArguments.values.single())
                                     .let { it as KClassValue }
-                                    .getArgumentType(factory.pluginContext.moduleDescriptor)
-                                    .let {
-                                        factory.pluginContext.typeTranslator.translateType(
-                                            it
-                                        )
-                                    }
+                                    .getIrClass(factory.pluginContext)
+                                    .defaultType
                             )
                         }
                         entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapTypeParameterClassKey) -> {

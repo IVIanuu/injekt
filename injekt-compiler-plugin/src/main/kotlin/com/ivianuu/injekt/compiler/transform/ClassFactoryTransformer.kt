@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -33,10 +32,13 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.module
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ClassFactoryTransformer(
     context: IrPluginContext
@@ -51,7 +53,7 @@ class ClassFactoryTransformer(
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.descriptor.hasAnnotatedAnnotations(
                         InjektFqNames.Scope, declaration.module
-                    )
+                    ) || declaration.hasAnnotation(InjektFqNames.Transient)
                 ) {
                     classes += declaration
                 }
@@ -69,7 +71,10 @@ class ClassFactoryTransformer(
         val constructor = clazz.constructors.singleOrNull()
         val factory = InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
             factory(
-                name = InjektNameConventions.getFactoryNameForClass(clazz.name),
+                name = InjektNameConventions.getFactoryNameForClass(
+                    clazz.getPackageFragment()!!.fqName,
+                    clazz.descriptor.fqNameSafe
+                ),
                 visibility = clazz.visibility,
                 typeParametersContainer = clazz,
                 parameters = constructor?.valueParameters
@@ -101,7 +106,7 @@ class ClassFactoryTransformer(
                 }
             )
         }
-        clazz.getNearestDeclarationContainer(includeThis = false).addChild(factory)
+        clazz.file.addChild(factory)
         factoriesByClass[clazz] = factory
         return factory
     }

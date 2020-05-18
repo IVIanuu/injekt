@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
@@ -48,7 +49,12 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
             pluginContext.referenceClass(
                 clazz.fqNameForIrSerialization
                     .parent()
-                    .child(InjektNameConventions.getFactoryNameForClass(clazz.name))
+                    .child(
+                        InjektNameConventions.getFactoryNameForClass(
+                            clazz.getPackageFragment()!!.fqName,
+                            clazz.descriptor.fqNameSafe
+                        )
+                    )
             )!!.owner
         }
     }
@@ -60,7 +66,12 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
             pluginContext.referenceClass(
                 clazz.fqNameForIrSerialization
                     .parent()
-                    .child(InjektNameConventions.getMembersInjectorNameForClass(clazz.name))
+                    .child(
+                        InjektNameConventions.getMembersInjectorNameForClass(
+                            clazz.getPackageFragment()!!.fqName,
+                            clazz.descriptor.fqNameSafe
+                        )
+                    )
             )!!.owner
         }
     }
@@ -83,7 +94,12 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
     fun getModuleClassForFunction(moduleFunction: IrFunction): IrClass {
         return getModuleClassForFunctionOrNull(moduleFunction)
-            ?: throw IllegalStateException("Couldn't find module for ${moduleFunction.dump()}")
+            ?: throw IllegalStateException(
+                "Couldn't find module for ${moduleFunction.dump()} lol ?${
+                moduleFunction.getPackageFragment()!!.fqName
+                    .child(InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction))
+                }"
+            )
     }
 
     fun getModuleClassForFunctionOrNull(moduleFunction: IrFunction): IrClass? {
@@ -91,10 +107,9 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
             moduleClassTransformer.getModuleClassForFunction(moduleFunction)
         } else {
             pluginContext.referenceClass(
-                moduleFunction.descriptor.fqNameSafe
-                    .parent()
+                moduleFunction.getPackageFragment()!!.fqName
                     .child(InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction))
-            )!!.owner
+            )?.owner
         }
     }
 

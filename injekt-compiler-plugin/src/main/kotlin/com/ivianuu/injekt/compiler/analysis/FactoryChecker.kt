@@ -46,7 +46,9 @@ import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
-class FactoryChecker : CallChecker, DeclarationChecker {
+class FactoryChecker(
+    private val typeAnnotationChecker: TypeAnnotationChecker
+) : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -124,6 +126,20 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         context: CallCheckerContext
     ) {
         val resultingDescriptor = resolvedCall.resultingDescriptor
+
+        if (resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.parent") {
+            val enclosingCompositionFactory = findEnclosingModuleFunctionContext(context) {
+                val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
+                InjektFqNames.CompositionFactory in typeAnnotations
+            }
+
+            if (enclosingCompositionFactory == null) {
+                context.trace.report(
+                    InjektErrors.PARENT_CALL_WITHOUT_COMPOSITION_FACTORY
+                        .on(reportOn)
+                )
+            }
+        }
 
         when (resultingDescriptor.fqNameSafe.asString()) {
             "com.ivianuu.injekt.childFactory" -> {

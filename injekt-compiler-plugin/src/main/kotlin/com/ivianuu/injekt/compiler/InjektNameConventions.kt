@@ -22,35 +22,65 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import kotlin.math.absoluteValue
 
 object InjektNameConventions {
-    fun getFactoryNameForClass(className: Name): Name = Name.identifier("${className}\$Factory")
+    fun getFactoryNameForClass(
+        packageFqName: FqName,
+        classFqName: FqName
+    ): Name {
+        return getJoinedName(
+            packageFqName,
+            classFqName.child(Name.identifier("Factory"))
+        )
+    }
 
-    fun getMembersInjectorNameForClass(className: Name): Name =
-        Name.identifier("${className}\$MembersInjector")
+    fun getMembersInjectorNameForClass(
+        packageFqName: FqName,
+        classFqName: FqName
+    ): Name {
+        return getJoinedName(
+            packageFqName,
+            classFqName.child(Name.identifier("MembersInjector"))
+        )
+    }
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        moduleFunction.nameOrUniqueName("ModuleImpl")
+        getUniqueNameForFunctionWithSuffix(moduleFunction, "ModuleImpl")
 
-    fun getImplNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        factoryFunction.nameOrUniqueName("FactoryImpl")
+    fun getClassImplNameForFactoryFunction(factoryFunction: IrFunction): Name =
+        getUniqueNameForFunctionWithSuffix(factoryFunction, "FactoryImpl")
 
-    fun getImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "FactoryImpl")
+    fun getFunctionImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
+        getNameAtSourcePositionWithSuffix(file, call, "FactoryFunctionImpl")
+
+    fun getBindingAdapterModuleName(
+        packageFqName: FqName,
+        classFqName: FqName
+    ): Name {
+        return getJoinedName(
+            packageFqName,
+            classFqName.child(Name.identifier("BindingAdapter"))
+        )
+    }
 
     fun getCompositionFactoryTypeNameForCall(
         file: IrFile,
         call: IrCall,
         factoryFunction: IrFunctionSymbol
-    ): Name =
-        getNameAtSourcePositionWithSuffix(
+    ): Name {
+        return getNameAtSourcePositionWithSuffix(
             file, call,
-            "${factoryFunction.descriptor.fqNameSafe.asString().replace(".", "_")}\$Type"
+            factoryFunction.descriptor.fqNameSafe
+                .pathSegments()
+                .map { it.asString() }
+                .let { it + "Type" }
+                .joinToString("_")
         )
+    }
 
     fun getCompositionFactoryImplNameForCall(
         file: IrFile,
@@ -59,7 +89,11 @@ object InjektNameConventions {
     ): Name =
         getNameAtSourcePositionWithSuffix(
             file, call,
-            "${factoryFunction.descriptor.fqNameSafe.asString().replace(".", "_")}\$Factory"
+            factoryFunction.descriptor.fqNameSafe
+                .pathSegments()
+                .map { it.asString() }
+                .let { it + "Factory" }
+                .joinToString("_")
         )
 
     fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
@@ -71,8 +105,14 @@ object InjektNameConventions {
     fun getEntryPointModuleNameForCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "EntryPointModule")
 
-    fun getModuleNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        factoryFunction.nameOrUniqueName("FactoryModule")
+    fun getModuleNameForFactoryFunction(
+        factoryFunction: IrFunction
+    ): Name {
+        return getUniqueNameForFunctionWithSuffix(
+            factoryFunction,
+            "FactoryModule"
+        )
+    }
 
     fun classParameterNameForTypeParameter(typeParameter: IrTypeParameter): Name =
         Name.identifier("class\$${typeParameter.descriptor.name}")
@@ -86,8 +126,8 @@ object InjektNameConventions {
     ): Name {
         return Name.identifier(
             compositionFqName.asString()
-                .replace(".", "_") + "__" + moduleFunction.descriptor.fqNameSafe.asString()
-                .replace(".", "_")
+                .replace(".", "__") + "___" + moduleFunction.descriptor.fqNameSafe.asString()
+                .replace(".", "__")
         )
     }
 
@@ -103,43 +143,48 @@ object InjektNameConventions {
             .replace(",", "")
     )
 
-    private fun IrFunction.nameOrUniqueName(
+    private fun getUniqueNameForFunctionWithSuffix(
+        function: IrFunction,
         suffix: String
     ): Name {
-        return if (name.isSpecial) getSignatureHashNameWithSuffix(
-            this,
-            suffix
-        )
-        else Name.identifier("$name\$${getSignatureHashNameWithSuffix(this, suffix)}")
+        return getJoinedName(
+            function.getPackageFragment()!!.fqName,
+            function.descriptor.fqNameSafe
+                //.child(Name.identifier(valueParametersHash(function).toString()))
+                .child(Name.identifier(suffix))
+        ).let { nameWithoutIllegalChars(it.asString()) }
     }
 
     private fun getNameAtSourcePositionWithSuffix(
         file: IrFile,
         call: IrCall,
         suffix: String
-    ) = Name.identifier("${sourceLocationHash(file, call.startOffset)}\$$suffix")
-
-    private fun getSignatureHashNameWithSuffix(
-        function: IrFunction,
-        suffix: String
-    ) = Name.identifier("${generateSignatureUniqueHash(function)}\$$suffix")
-
-    private fun sourceLocationHash(file: IrFile, startOffset: Int): Int {
-        var result = (file.fqName.asString() + file.name).hashCode()
-        result = 31 * result + startOffset.hashCode()
-        return result.absoluteValue
-    }
-
-    private fun generateSignatureUniqueHash(function: IrFunction): Int {
-        var result = function.descriptor.fqNameSafe.hashCode()
-        result = 31 * result + valueParametersHash(function)
-        // todo result = 31 * result + function.returnType.hashCode()
-        return result.absoluteValue
+    ): Name {
+        return getJoinedName(
+            file.fqName,
+            file.fqName
+                .child(Name.identifier(file.name.replace(".kt", "")))
+                .child(Name.identifier(call.startOffset.toString()))
+                .child(Name.identifier(suffix))
+        )
     }
 
     private fun valueParametersHash(function: IrFunction): Int {
-        return function.valueParameters.map { 31 * it.name.asString().hashCode() }
-            .hashCode().absoluteValue
+        return 0
+        /*return function.valueParameters.map {
+            31 * it.name.asString().hashCode()
+        }
+            .hashCode().absoluteValue*/
+    }
+
+    private fun getJoinedName(
+        packageFqName: FqName,
+        fqName: FqName
+    ): Name {
+        val joinedSegments = fqName.asString()
+            .removePrefix(packageFqName.asString() + ".")
+            .split(".")
+        return Name.identifier(joinedSegments.joinToString("_"))
     }
 
 }

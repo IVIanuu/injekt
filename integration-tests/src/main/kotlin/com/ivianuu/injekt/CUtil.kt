@@ -73,18 +73,19 @@ fun multiCodegen(
     vararg sources: List<SourceFile>,
     assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } }
 ) {
-    val results = sources.scan(null) { prevCompilation: KotlinCompilation.Result?, sourceFiles ->
+    val prevCompilations = mutableListOf<KotlinCompilation.Result>()
+    val results = sources.map { sourceFiles ->
         compile {
             this.sources = sourceFiles
-            if (prevCompilation != null) {
+            prevCompilations.forEach {
                 val classGraph = ClassGraph()
-                    .addClassLoader(prevCompilation.classLoader)
+                    .addClassLoader(it.classLoader)
                 val classpaths = classGraph.classpathFiles
                 val modules = classGraph.modules.mapNotNull { it.locationFile }
                 this.classpaths += (classpaths + modules).distinctBy(File::getAbsolutePath)
             }
-        }
-    }.filterNotNull()
+        }.also { prevCompilations += it }
+    }
     assertions(results)
 }
 

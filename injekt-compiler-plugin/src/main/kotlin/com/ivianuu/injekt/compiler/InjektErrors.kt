@@ -202,6 +202,71 @@ interface InjektErrors {
             "@Module functions with definition parameters must be marked with inline"
         )
 
+        @JvmField
+        val BINDING_ADAPTER_WITHOUT_COMPANION = error(
+            "@BindingAdapter annotated class needs a companion object."
+        )
+
+        @JvmField
+        val BINDING_ADAPTER_COMPANION_WITHOUT_MODULE = error(
+            "@BindingAdapter companion needs a single @Module function."
+        )
+
+        @JvmField
+        val BINDING_ADAPTER_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
+            "@BindingAdapter module cannot have value parameters."
+        )
+
+        @JvmField
+        val BINDING_ADAPTER_MODULE_NEEDS_1_TYPE_PARAMETER = error(
+            "@BindingAdapter module must have 1 type parameter."
+        )
+
+        @JvmField
+        val NOT_IN_BINDING_ADAPTER_BOUNDS = error(
+            "Annotated class is not in @BindingAdapter bounds."
+        )
+
+        @JvmField
+        val MULTIPLE_BINDING_ADAPTER = error(
+            "A class may be only annotated with 1 @BindingAdapter class"
+        )
+
+        @JvmField
+        val BINDING_ADAPTER_WITH_TRANSIENT_OR_SCOPED = error(
+            "@BindingAdapter cannot be combined with @Transient or @Scope annotations."
+        )
+
+        @JvmField
+        val TRANSIENT_WITH_SCOPED = error(
+            "@Transient cannot be combined with @Scope annotated annotations."
+        )
+
+        @JvmField
+        val MULTIPLE_SCOPES = error(
+            "A class may be only annotated with 1 @Scope class"
+        )
+
+        @JvmField
+        val COMPOSITION_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
+            "Composition @Module functions cannot have value parameters."
+        )
+
+        @JvmField
+        val COMPOSITION_MODULE_CANNOT_HAVE_TYPE_PARAMETERS = error(
+            "Composition @Module functions cannot have type parameters."
+        )
+
+        @JvmField
+        val INSTALL_IN_CALL_WITHOUT_MODULE = error(
+            "installIn<T>() can only be called from inside a @Module function"
+        )
+
+        @JvmField
+        val PARENT_CALL_WITHOUT_COMPOSITION_FACTORY = error(
+            "parent<T>() can only be called from inside a @CompositionFactory function"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

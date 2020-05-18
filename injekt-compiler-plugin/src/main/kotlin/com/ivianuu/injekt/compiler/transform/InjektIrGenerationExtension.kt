@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.transform.composition.BindingAdapterTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
@@ -74,6 +75,8 @@ class InjektIrGenerationExtension(
         InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
 
         ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
+
+        BindingAdapterTransformer(pluginContext).lower(moduleFragment)
 
         // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
         EntryPointOfTransformer(pluginContext).lower(moduleFragment)

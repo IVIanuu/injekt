@@ -24,18 +24,21 @@ import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -56,7 +59,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val decoys = mutableSetOf<IrFunction>()
 
-    override fun visitFile(declaration: IrFile): IrFile {
+    /*override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
         val result = super.visitFile(declaration)
         result.patchWithDecoys(originalFunctions)
@@ -68,7 +71,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         val result = super.visitClass(declaration) as IrClass
         result.patchWithDecoys(originalFunctions)
         return result
-    }
+    }*/
 
     override fun visitFunction(declaration: IrFunction): IrStatement =
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
@@ -157,6 +160,21 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         }
 
         val transformedFunction = function.deepCopyWithPreservingQualifiers()
+        (transformedFunction as IrFunctionImpl).metadata = MetadataSource.Function(
+            function.descriptor.newCopyBuilder()
+                .setAdditionalAnnotations(
+                    Annotations.create(
+                        listOf(
+                            AnnotationDescriptorImpl(
+                                symbols.astObjectGraphFunction.descriptor.defaultType,
+                                emptyMap(),
+                                SourceElement.NO_SOURCE
+                            )
+                        )
+                    )
+                )
+                .build()!!
+        )
         transformedFunctions[function] = transformedFunction
 
         val unresolvedGetCalls = mutableListOf<IrCall>()

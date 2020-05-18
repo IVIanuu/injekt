@@ -65,7 +65,7 @@ class InlineFactoryTransformer(
             DeclarationIrBuilder(pluginContext, inlineFactoryCall.symbol).run {
                 irBlock {
                     val inlinedFactory = buildFun {
-                        name = InjektNameConventions.getImplNameForFactoryCall(
+                        name = InjektNameConventions.getFunctionImplNameForFactoryCall(
                             declaration, inlineFactoryCall
                         )
                         returnType = inlineFactoryCall.type

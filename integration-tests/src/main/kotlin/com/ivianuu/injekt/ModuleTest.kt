@@ -134,4 +134,32 @@ class ModuleTest {
     """
         )
 
+    @Test
+    fun testMultipleCompileNestedModule() = multiCodegen(
+        listOf(
+            source(
+                """
+                class MyClass {
+                    companion object {
+                        @Module
+                        fun module() {
+                        
+                        }
+                    }
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Module 
+                    fun calling() {
+                        MyClass.Companion.module()
+                    } 
+                """
+            )
+        )
+    )
+
 }

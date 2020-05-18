@@ -31,7 +31,6 @@ fun <T> transient(): Unit = injektIntrinsic()
 
 inline fun <T> transient(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
 
-@Scope
 annotation class Transient
 
 fun <T> instance(instance: T): Unit = injektIntrinsic()
