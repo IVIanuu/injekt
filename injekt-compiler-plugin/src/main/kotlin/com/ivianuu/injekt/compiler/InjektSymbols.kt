@@ -75,6 +75,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
 
+    val compositionComposition = pluginContext.referenceClass(InjektFqNames.CompositionComponent)!!
     val compositionFactory = pluginContext.referenceClass(InjektFqNames.CompositionFactory)!!
     val compositionFactories = pluginContext.referenceClass(InjektFqNames.CompositionFactories)!!
 

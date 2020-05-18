@@ -60,6 +60,7 @@ object InjektFqNames {
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
+    val CompositionComponent = InjektPackage.child("CompositionComponent")
     val CompositionFactory = InjektPackage.child("CompositionFactory")
     val CompositionFactories = InjektPackage.child("CompositionFactories")
 

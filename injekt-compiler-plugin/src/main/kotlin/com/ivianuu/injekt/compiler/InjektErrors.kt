@@ -63,6 +63,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val NOT_A_COMPOSITION_FACTORY = error(
+            "Type must be annotated with @CompositionComponent"
+        )
+
+        @JvmField
         val UNSUPPORTED_MAP_KEY_TYPE = error(
             "Unsupported map key type"
         )

@@ -121,6 +121,16 @@ class FactoryChecker(
                     )
                 }
             }
+
+            if (descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory) &&
+                descriptor.returnType?.constructor?.declarationDescriptor?.annotations
+                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
+            ) {
+                context.trace.report(
+                    InjektErrors.NOT_A_COMPOSITION_FACTORY
+                        .on(declaration)
+                )
+            }
         }
     }
 
@@ -132,6 +142,16 @@ class FactoryChecker(
         val resultingDescriptor = resolvedCall.resultingDescriptor
 
         if (resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.parent") {
+            if (resolvedCall.typeArguments.values.single()
+                    .constructor.declarationDescriptor?.annotations
+                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
+            ) {
+                context.trace.report(
+                    InjektErrors.NOT_A_COMPOSITION_FACTORY
+                        .on(reportOn)
+                )
+            }
+
             val enclosingCompositionFactory = findEnclosingFunctionContext(context) {
                 val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
                 InjektFqNames.CompositionFactory in typeAnnotations

@@ -152,6 +152,9 @@ class Baz(foo: Foo, bar: Bar)
 
 interface TestComponent
 
+@CompositionComponent
+interface TestCompositionComponent
+
 @Scope
 annotation class TestScope
 
