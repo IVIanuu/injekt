@@ -99,6 +99,15 @@ class ModuleChecker(
         val resulting = resolvedCall.resultingDescriptor
 
         if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.installIn") {
+            if (resolvedCall.typeArguments.values.single()?.constructor?.declarationDescriptor?.annotations
+                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
+            ) {
+                context.trace.report(
+                    InjektErrors.NOT_A_COMPOSITION_FACTORY
+                        .on(reportOn)
+                )
+            }
+
             val enclosingModule = findEnclosingFunctionContext(context) {
                 val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
                 InjektFqNames.Module in typeAnnotations

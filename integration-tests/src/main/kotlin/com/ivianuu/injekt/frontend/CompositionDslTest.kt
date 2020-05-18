@@ -70,4 +70,78 @@ class CompositionDslTest {
         assertCompileError("compositionfactory")
     }
 
+    @Test
+    fun testCompositionFactoryWithoutCompositionComponent() = codegen(
+        """ 
+        @CompositionFactory
+        fun factory(): TestComponent {
+            return create()
+        }
+    """
+    ) {
+        assertCompileError("@CompositionComponent")
+    }
+
+    @Test
+    fun testParentWithCompositionComponent() = codegen(
+        """ 
+        @CompositionFactory
+        fun factory(): TestCompositionComponent {
+            parent<TestComponent>()
+            return create()
+        }
+    """
+    ) {
+        assertCompileError("@CompositionComponent")
+    }
+
+    @Test
+    fun testParentWithoutCompositionFactory() = codegen(
+        """ 
+        @Factory
+        fun factory(): TestCompositionComponent {
+            parent<TestComponent>()
+            return create()
+        }
+    """
+    ) {
+        assertCompileError("@CompositionFactory")
+    }
+
+    @Test
+    fun testInstallInWithoutCompositionFactory() = codegen(
+        """ 
+        @Module
+        fun module() {
+            installIn<TestComponent>()
+        }
+    """
+    ) {
+        assertCompileError("@CompositionComponent")
+    }
+
+    @Test
+    fun testObjectGraphGetWithoutCompositionComponent() = codegen(
+        """
+        val component = Any()
+        fun inject() {
+            component.get<String>()
+        }
+    """
+    ) {
+        assertCompileError("@CompositionComponent")
+    }
+
+    @Test
+    fun testObjectGraphInjectWithoutCompositionComponent() = codegen(
+        """
+        val component = Any()
+        fun inject() {
+            component.inject("")
+        }
+    """
+    ) {
+        assertCompileError("@CompositionComponent")
+    }
+
 }
