@@ -59,6 +59,9 @@ class InjektIrGenerationExtension(
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
+        // write qualifiers of expression to the irTrace
+        QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
+
         if (pluginContext.compositionsEnabled) {
             InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
 
@@ -83,9 +86,6 @@ class InjektIrGenerationExtension(
                 compositionAggregateGenerator
             ).lower(moduleFragment)
         }
-
-        // write qualifiers of expression to the irTrace
-        QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
 
         // generate a members injector for each annotated class
         MembersInjectorTransformer(pluginContext)
