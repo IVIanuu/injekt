@@ -30,10 +30,8 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -57,50 +55,9 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val decoys = mutableSetOf<IrFunction>()
-
-    /*override fun visitFile(declaration: IrFile): IrFile {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
-        val result = super.visitFile(declaration)
-        result.patchWithDecoys(originalFunctions)
-        return result
-    }
-
-    override fun visitClass(declaration: IrClass): IrStatement {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
-        val result = super.visitClass(declaration) as IrClass
-        result.patchWithDecoys(originalFunctions)
-        return result
-    }*/
 
     override fun visitFunction(declaration: IrFunction): IrStatement =
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
-
-    private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
-        for (original in originalFunctions) {
-            val transformed = transformedFunctions[original]
-            if (transformed != null && transformed != original) {
-                declarations.add(
-                    original.deepCopyWithPreservingQualifiers()
-                        .also { decoy ->
-                            decoys += decoy
-                            InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
-                                if (transformed.valueParameters
-                                        .any {
-                                            it.name.asString().startsWith("provider\$") ||
-                                                    it.name.asString().startsWith("injector\$")
-                                        }
-                                ) {
-                                    decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraphFunction)
-                                }
-
-                                decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
-                            }
-                        }
-                )
-            }
-        }
-    }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
@@ -108,7 +65,6 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         ) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
-        if (function in decoys) return function
 
         val originalUnresolvedGetCalls = mutableListOf<IrCall>()
         val originalUnresolvedInjectCalls = mutableListOf<IrCall>()

@@ -35,9 +35,7 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -64,72 +62,31 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val decoys = mutableSetOf<IrFunction>()
 
     fun getTransformedModule(function: IrFunction): IrFunction {
         return transformedFunctions[function] ?: function
     }
 
-    fun isDecoy(function: IrFunction): Boolean = function in decoys
-
-    /*override fun visitFile(declaration: IrFile): IrFile {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
-        val result = super.visitFile(declaration)
-        result.patchWithDecoys(originalFunctions)
-        return result
-    }
-
-    override fun visitClass(declaration: IrClass): IrStatement {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
-        val result = super.visitClass(declaration) as IrClass
-        result.patchWithDecoys(originalFunctions)
-        return result
-    }*/
-
     override fun visitFunction(declaration: IrFunction): IrStatement =
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
-
-    private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
-        for (original in originalFunctions) {
-            val transformed = transformedFunctions[original]
-            if (transformed != null && transformed != original) {
-                declarations.add(
-                    original.deepCopyWithPreservingQualifiers()
-                        .also { decoy ->
-                            decoys += decoy
-                            InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
-                                if (transformed.valueParameters
-                                        .any { it.name.asString().startsWith("class\$") }
-                                ) {
-                                    decoy.annotations += noArgSingleConstructorCall(symbols.astTyped)
-                                }
-
-                                decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
-                            }
-                        }
-                )
-            }
-        }
-    }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) {
-            if (function.hasAnnotation(InjektFqNames.AstTyped)) {
+            return if (function.hasAnnotation(InjektFqNames.AstTyped)) {
                 val typedFunction = pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
                     .map { it.owner }
                     .single {
                         it.returnType == function.returnType &&
                                 it.valueParameters.size > function.valueParameters.size
                     }
-                return typedFunction
-            } else return function
+                typedFunction
+            } else function
         }
         if (!function.isModule(pluginContext.bindingContext)) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
-        if (function in decoys) return function
 
         val originalCaptures = mutableListOf<IrGetValue>()
         val originalClassOfCalls = mutableListOf<IrCall>()
