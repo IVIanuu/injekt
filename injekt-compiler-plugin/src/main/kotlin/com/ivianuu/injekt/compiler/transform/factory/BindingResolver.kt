@@ -517,15 +517,19 @@ class AnnotatedClassBindingResolver(
 
             if (scopeAnnotation == null && !clazz.hasAnnotation(InjektFqNames.Transient)) return emptyList()
 
-            val provider = declarationStore.getFactoryForClass(clazz)
-
             val scoped = scopeAnnotation != null
 
-            val typeParametersMap = clazz.typeParameters
-                .map { it.symbol }
-                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
+            val provider = declarationStore.getFactoryForClass(clazz)
 
-            val dependencies = provider.constructors.singleOrNull()
+            val providerConstructor = provider.constructors.singleOrNull()
+
+            val typeParametersMap = providerConstructor
+                ?.typeParameters
+                ?.map { it.symbol }
+                ?.associateWith { requestedKey.type.typeArguments[it.owner.index] }
+                ?: emptyMap()
+
+            val dependencies = providerConstructor
                 ?.valueParameters
                 ?.map { providerValueParameter ->
                     BindingRequest(
@@ -562,16 +566,19 @@ class AnnotatedClassBindingResolver(
 
             if (scopeAnnotation == null && !clazz.hasAnnotation(InjektFqNames.Transient)) return emptyList()
 
-            val provider = declarationStore.getFactoryForClass(clazz)
-
             val scoped = scopeAnnotation != null
 
-            val typeParametersMap = provider.typeParameters
-                .map { it.symbol }
-                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
+            val provider = declarationStore.getFactoryForClass(clazz)
 
-            val dependencies = provider.constructors
-                .singleOrNull()
+            val providerConstructor = provider.constructors.singleOrNull()
+
+            val typeParametersMap = providerConstructor
+                ?.typeParameters
+                ?.map { it.symbol }
+                ?.associateWith { requestedKey.type.typeArguments[it.owner.index] }
+                ?: emptyMap()
+
+            val dependencies = providerConstructor
                 ?.valueParameters
                 ?.map { providerValueParameter ->
                     BindingRequest(
