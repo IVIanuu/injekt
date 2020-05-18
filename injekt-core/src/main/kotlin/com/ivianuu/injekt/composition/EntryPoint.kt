@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.internal.injektIntrinsic
 
-object CompositionFactories {
-
-    private val factories = mutableMapOf<KClass<*>, Any>()
-
-    fun register(component: KClass<*>, factory: Any) {
-        factories[component] = factory
-    }
-
-    fun <T> get(component: KClass<*>): T {
-        return factories[component] as? T
-            ?: error("Couldn't get factory for component ${component.java.name}")
-    }
-}
+fun <T> entryPointOf(component: Any): T = injektIntrinsic()

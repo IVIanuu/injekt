@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 val IrFunction.isObjectGraphGet: Boolean
-    get() = descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+    get() = descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.get"
 val IrFunction.isObjectGraphInject: Boolean
-    get() = descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.inject" &&
-            symbol.owner.valueParameters.size == 1
+    get() = descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.inject"

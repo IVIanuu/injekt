@@ -50,7 +50,7 @@ class CompositionFactoryParentTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.parent") {
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.parent") {
                     parents += expression.getTypeArgument(0)!!
                 }
                 return super.visitCall(expression)

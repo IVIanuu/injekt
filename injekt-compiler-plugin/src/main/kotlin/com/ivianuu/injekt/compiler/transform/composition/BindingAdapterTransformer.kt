@@ -99,7 +99,7 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
 
                 +irCall(
                     pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.installIn")
+                        FqName("com.ivianuu.injekt.composition.installIn")
                     ).single()
                 ).apply {
                     putTypeArgument(0, installIn.defaultType)

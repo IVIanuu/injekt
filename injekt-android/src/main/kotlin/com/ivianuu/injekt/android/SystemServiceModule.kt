@@ -78,7 +78,7 @@ import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.classOf
-import com.ivianuu.injekt.installIn
+import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.transient
 
 @Module

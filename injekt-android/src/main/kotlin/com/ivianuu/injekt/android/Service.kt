@@ -18,14 +18,14 @@ package com.ivianuu.injekt.android
 
 import android.app.Service
 import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.CompositionComponent
-import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.composition.CompositionComponent
+import com.ivianuu.injekt.composition.CompositionFactory
+import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.parent
 import com.ivianuu.injekt.scope
 
 @Scope

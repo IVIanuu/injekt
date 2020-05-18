@@ -34,9 +34,9 @@ class ObjectGraphFunctionChecker : CallChecker {
         context: CallCheckerContext
     ) {
         val resultingDescriptor = resolvedCall.resultingDescriptor as? FunctionDescriptor ?: return
-        if ((resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.inject" &&
+        if ((resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.inject" &&
                     resultingDescriptor.valueParameters.size == 1) ||
-            resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+            resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.get"
         ) {
             val receiver = resolvedCall.extensionReceiver!!.type
             if (receiver.constructor.declarationDescriptor?.annotations?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&

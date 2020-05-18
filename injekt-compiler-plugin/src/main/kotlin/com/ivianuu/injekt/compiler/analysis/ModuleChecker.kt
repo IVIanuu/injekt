@@ -98,7 +98,7 @@ class ModuleChecker(
     ) {
         val resulting = resolvedCall.resultingDescriptor
 
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.installIn") {
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.installIn") {
             if (resolvedCall.typeArguments.values.single()?.constructor?.declarationDescriptor?.annotations
                     ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
             ) {

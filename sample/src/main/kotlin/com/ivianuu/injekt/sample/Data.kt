@@ -21,7 +21,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.android.ApplicationComponent
 import com.ivianuu.injekt.android.ApplicationScoped
-import com.ivianuu.injekt.installIn
+import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.transient
 import java.io.File
 

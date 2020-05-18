@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
-import com.ivianuu.injekt.internal.injektIntrinsic
-
-fun <T> entryPointOf(component: Any): T = injektIntrinsic()
+@Target(AnnotationTarget.CLASS)
+annotation class CompositionComponent

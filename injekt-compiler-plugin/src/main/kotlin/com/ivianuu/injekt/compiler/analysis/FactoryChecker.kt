@@ -141,7 +141,7 @@ class FactoryChecker(
     ) {
         val resultingDescriptor = resolvedCall.resultingDescriptor
 
-        if (resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.parent") {
+        if (resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.parent") {
             if (resolvedCall.typeArguments.values.single()
                     .constructor.declarationDescriptor?.annotations
                     ?.hasAnnotation(InjektFqNames.CompositionComponent) != true

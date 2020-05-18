@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
-@Target(AnnotationTarget.CLASS)
-annotation class CompositionComponent
+import com.ivianuu.injekt.internal.injektIntrinsic
+
+fun <T> Any.get(): T = injektIntrinsic()
+
+fun <T> Any.inject(instance: T): Unit = injektIntrinsic()

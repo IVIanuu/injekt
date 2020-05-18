@@ -18,8 +18,8 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.generateCompositions
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.composition.generateCompositions
+import com.ivianuu.injekt.composition.inject
 
 class App : Application() {
 

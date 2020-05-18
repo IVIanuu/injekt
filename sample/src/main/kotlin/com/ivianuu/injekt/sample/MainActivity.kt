@@ -21,7 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.composition.inject
 
 class MainActivity : AppCompatActivity() {
 

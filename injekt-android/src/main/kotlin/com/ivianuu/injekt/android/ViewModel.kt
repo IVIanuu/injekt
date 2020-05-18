@@ -19,11 +19,11 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.BindingAdapter
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.classOf
+import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.transient
 
 @BindingAdapter(ActivityComponent::class)

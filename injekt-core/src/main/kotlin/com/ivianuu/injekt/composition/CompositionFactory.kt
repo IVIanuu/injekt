@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
+import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.internal.TypeAnnotation
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-fun <T> parent(): Unit = injektIntrinsic()
+@TypeAnnotation
+@Qualifier
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+annotation class CompositionFactory
 
-fun <T> entryPoint(): Unit = injektIntrinsic()
+inline fun <reified T, reified F> compositionFactoryOf(): F =
+    CompositionFactories.get(T::class)
 
-fun <T> installIn(): Unit = injektIntrinsic()
+fun generateCompositions(): Unit = injektIntrinsic()

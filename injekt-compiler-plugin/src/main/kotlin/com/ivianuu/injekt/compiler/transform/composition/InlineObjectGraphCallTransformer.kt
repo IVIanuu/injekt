@@ -383,7 +383,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                                     originalCall.endOffset,
                                                     instanceType,
                                                     pluginContext.referenceFunctions(
-                                                        FqName("com.ivianuu.injekt.get")
+                                                        FqName("com.ivianuu.injekt.composition.get")
                                                     ).single()
                                                 ).apply {
                                                     extensionReceiver =
@@ -424,8 +424,8 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                                     originalCall.endOffset,
                                                     irBuiltIns.unitType,
                                                     pluginContext.referenceFunctions(
-                                                        FqName("com.ivianuu.injekt.inject")
-                                                    ).single { it.owner.valueParameters.size == 1 }
+                                                        FqName("com.ivianuu.injekt.composition.inject")
+                                                    ).single()
                                                 ).apply {
                                                     extensionReceiver =
                                                         irGet(lambda.valueParameters[0])

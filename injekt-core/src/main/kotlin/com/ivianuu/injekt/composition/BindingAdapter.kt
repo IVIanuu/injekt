@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
-import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.reflect.KClass
 
-fun <T> Any.get(): T = injektIntrinsic()
-
-fun <T> Any.inject(instance: T): Unit = injektIntrinsic()
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class BindingAdapter(val installIn: KClass<*>)

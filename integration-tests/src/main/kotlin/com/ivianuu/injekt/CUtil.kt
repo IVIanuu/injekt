@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
+import com.ivianuu.injekt.composition.CompositionComponent
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import io.github.classgraph.ClassGraph
@@ -37,6 +38,7 @@ fun source(
     contents = buildString {
         if (injektImports) {
             appendln("import com.ivianuu.injekt.*")
+            appendln("import com.ivianuu.injekt.composition.*")
             appendln("import com.ivianuu.injekt.internal.*")
             appendln("import com.ivianuu.injekt.*")
             appendln("import kotlin.reflect.*")

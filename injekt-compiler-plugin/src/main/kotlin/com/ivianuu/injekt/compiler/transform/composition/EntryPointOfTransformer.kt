@@ -46,7 +46,9 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.entryPointOf")
+                if (expression.symbol.descriptor.fqNameSafe.asString() !=
+                    "com.ivianuu.injekt.composition.entryPointOf"
+                )
                     return super.visitCall(expression)
                 entryPointOfCalls += expression to currentFile
                 return DeclarationIrBuilder(pluginContext, expression.symbol)
@@ -87,7 +89,7 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
             irBlockBody {
                 +irCall(
                     pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.installIn")
+                        FqName("com.ivianuu.injekt.composition.installIn")
                     ).single()
                 ).apply {
                     putTypeArgument(0, compositionType)
@@ -95,7 +97,7 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
 
                 +irCall(
                     pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.entryPoint")
+                        FqName("com.ivianuu.injekt.composition.entryPoint")
                     ).single()
                 ).apply {
                     putTypeArgument(0, entryPoint)

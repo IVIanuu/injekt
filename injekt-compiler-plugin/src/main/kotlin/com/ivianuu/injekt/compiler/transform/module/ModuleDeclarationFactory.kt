@@ -102,7 +102,7 @@ class ModuleDeclarationFactory(
                             callee.fqNameSafe.asString() == "com.ivianuu.injekt.scoped" ||
                             callee.fqNameSafe.asString() == "com.ivianuu.injekt.instance" ->
                         declarations += createBindingDeclaration(expression)
-                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.entryPoint" ->
+                    callee.fqNameSafe.asString() == "com.ivianuu.injekt.composition.entryPoint" ->
                         declarations += createEntryPointDeclaration(expression)
                     callee.fqNameSafe.asString() == "com.ivianuu.injekt.map" ->
                         declarations += createMapDeclarations(expression)

@@ -83,7 +83,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                     call.endOffset,
                                     entryPoint.defaultType,
                                     pluginContext.referenceFunctions(
-                                        FqName("com.ivianuu.injekt.entryPointOf")
+                                        FqName("com.ivianuu.injekt.composition.entryPointOf")
                                     ).single()
                                 ).apply {
                                     putTypeArgument(0, entryPoint.defaultType)
@@ -113,7 +113,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                         call.endOffset,
                                         entryPoint.defaultType,
                                         pluginContext.referenceFunctions(
-                                            FqName("com.ivianuu.injekt.entryPointOf")
+                                            FqName("com.ivianuu.injekt.composition.entryPointOf")
                                         ).single()
                                     ).apply {
                                         putTypeArgument(0, entryPoint.defaultType)

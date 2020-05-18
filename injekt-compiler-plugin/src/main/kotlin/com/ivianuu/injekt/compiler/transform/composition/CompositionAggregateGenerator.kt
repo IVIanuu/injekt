@@ -58,7 +58,7 @@ class CompositionAggregateGenerator(
                         declaration.body?.transformChildrenVoid(object :
                             IrElementTransformerVoid() {
                             override fun visitCall(expression: IrCall): IrExpression {
-                                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.installIn") {
+                                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.installIn") {
                                     installInCalls.getOrPut(declaration) { mutableListOf() } += expression
                                 }
                                 return super.visitCall(expression)

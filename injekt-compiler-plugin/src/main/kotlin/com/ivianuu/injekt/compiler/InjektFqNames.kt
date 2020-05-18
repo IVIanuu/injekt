@@ -22,7 +22,8 @@ import org.jetbrains.kotlin.name.Name
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InternalPackage = InjektPackage.child("internal")
-    val CompositionsPackage = InternalPackage.child("compositions")
+    val CompositionPackage = InjektPackage.child("composition")
+    val CompositionsPackage = CompositionPackage.child("internal")
 
     val InjektAst = InternalPackage.child("InjektAst")
     val AstAlias = InjektAst.child("Alias")
@@ -56,13 +57,13 @@ object InjektFqNames {
     val Assisted = InjektPackage.child("Assisted")
     val AssistedParameters = InjektPackage.child("AssistedParameters")
 
-    val BindingAdapter = InjektPackage.child("BindingAdapter")
+    val BindingAdapter = CompositionPackage.child("BindingAdapter")
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
-    val CompositionComponent = InjektPackage.child("CompositionComponent")
-    val CompositionFactory = InjektPackage.child("CompositionFactory")
-    val CompositionFactories = InjektPackage.child("CompositionFactories")
+    val CompositionComponent = CompositionPackage.child("CompositionComponent")
+    val CompositionFactory = CompositionPackage.child("CompositionFactory")
+    val CompositionFactories = CompositionPackage.child("CompositionFactories")
 
     val DoubleCheck = InternalPackage.child("DoubleCheck")
 
@@ -79,8 +80,8 @@ object InjektFqNames {
     val Module = InjektPackage.child("Module")
 
     val Lazy = InjektPackage.child("Lazy")
-    val MembersInjector = InjektPackage.child("MembersInjector")
 
+    val MembersInjector = InjektPackage.child("MembersInjector")
     val NoOpMembersInjector = InternalPackage.child("NoOpMembersInjector")
 
     val Provider = InjektPackage.child("Provider")
@@ -102,10 +103,6 @@ object InjektFqNames {
     val Uninitialized = InternalPackage.child("Uninitialized")
 
     private fun FqName.child(name: String) = child(Name.identifier(name))
-
-    val CompositionFactoryDslNames = listOf(
-        InjektPackage.child("parent")
-    )
 
     val ModuleDslNames = listOf(
         InjektPackage.child("map"),
