@@ -407,3 +407,9 @@ fun KClassValue.getIrClass(
         .let { FqName(it.asString().replace("\$", ".")) }
         .let { pluginContext.referenceClass(it)!!.owner }
 }
+
+val IrPluginContext.compositionsEnabled: Boolean
+    get() =
+        moduleDescriptor.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektFqNames.CompositionFactory)
+        ) != null

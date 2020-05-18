@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":injekt-compiler-plugin"))
     implementation(project(":injekt-core"))
     implementation(project(":injekt-common"))
+    implementation(project(":injekt-composition"))
 
     implementation(Deps.junit)
 

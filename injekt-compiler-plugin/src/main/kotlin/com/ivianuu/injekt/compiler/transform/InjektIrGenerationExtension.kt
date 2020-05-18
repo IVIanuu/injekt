@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.compositionsEnabled
 import com.ivianuu.injekt.compiler.transform.composition.BindingAdapterTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
@@ -58,6 +59,31 @@ class InjektIrGenerationExtension(
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
+        if (pluginContext.compositionsEnabled) {
+            InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
+
+            ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
+
+            BindingAdapterTransformer(pluginContext).lower(moduleFragment)
+
+            // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
+            EntryPointOfTransformer(pluginContext).lower(moduleFragment)
+
+            val compositionAggregateGenerator =
+                CompositionAggregateGenerator(pluginContext, project)
+                    .also { it.lower(moduleFragment) }
+
+            // add @Parents annotation to @CompositionFactory functions
+            CompositionFactoryParentTransformer(pluginContext)
+                .lower(moduleFragment)
+
+            // generate composition factories
+            GenerateCompositionsTransformer(
+                pluginContext, declarationStore,
+                compositionAggregateGenerator
+            ).lower(moduleFragment)
+        }
+
         // write qualifiers of expression to the irTrace
         QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
 
@@ -70,28 +96,6 @@ class InjektIrGenerationExtension(
         ClassFactoryTransformer(pluginContext)
             .also { declarationStore.classFactoryTransformer = it }
             .lower(moduleFragment)
-
-        InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
-
-        ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
-
-        BindingAdapterTransformer(pluginContext).lower(moduleFragment)
-
-        // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
-        EntryPointOfTransformer(pluginContext).lower(moduleFragment)
-
-        val compositionAggregateGenerator = CompositionAggregateGenerator(pluginContext, project)
-            .also { it.lower(moduleFragment) }
-
-        // add @Parents annotation to @CompositionFactory functions
-        CompositionFactoryParentTransformer(pluginContext)
-            .lower(moduleFragment)
-
-        // generate composition factories
-        GenerateCompositionsTransformer(
-            pluginContext, declarationStore,
-            compositionAggregateGenerator
-        ).lower(moduleFragment)
 
         // add a local @Factory fun at each call side of a inline factory
         InlineFactoryTransformer(pluginContext, declarationStore)

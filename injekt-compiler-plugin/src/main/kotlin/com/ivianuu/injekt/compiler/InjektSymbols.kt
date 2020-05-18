@@ -71,13 +71,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val assisted = pluginContext.referenceClass(InjektFqNames.Assisted)!!
     val assistedParameters = pluginContext.referenceClass(InjektFqNames.AssistedParameters)!!
 
-    val bindingAdapter = pluginContext.referenceClass(InjektFqNames.BindingAdapter)!!
-
     val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
-
-    val compositionComposition = pluginContext.referenceClass(InjektFqNames.CompositionComponent)!!
-    val compositionFactory = pluginContext.referenceClass(InjektFqNames.CompositionFactory)!!
-    val compositionFactories = pluginContext.referenceClass(InjektFqNames.CompositionFactories)!!
 
     val doubleCheck = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
     val factory = pluginContext.referenceClass(InjektFqNames.Factory)!!

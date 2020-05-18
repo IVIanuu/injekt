@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.composition
 
+import com.ivianuu.injekt.compiler.CompositionSymbols
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
@@ -66,6 +67,8 @@ class GenerateCompositionsTransformer(
     private val declarationStore: InjektDeclarationStore,
     private val compositionAggregateGenerator: CompositionAggregateGenerator
 ) : AbstractInjektTransformer(pluginContext) {
+
+    private val compositionSymbols = CompositionSymbols(pluginContext)
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val generateCompositionsCalls = mutableListOf<Pair<IrCall, IrFile>>()
@@ -208,11 +211,12 @@ class GenerateCompositionsTransformer(
                         factoryImpls.forEach { (compositionType, factoryFunctionImpl) ->
                             if (factoryFunctionImpl.owner.hasAnnotation(InjektFqNames.ChildFactory)) return@forEach
                             +irCall(
-                                symbols.compositionFactories
+                                compositionSymbols.compositionFactories
                                     .functions
                                     .single { it.owner.name.asString() == "register" }
                             ).apply {
-                                dispatchReceiver = irGetObject(symbols.compositionFactories)
+                                dispatchReceiver =
+                                    irGetObject(compositionSymbols.compositionFactories)
 
                                 putValueArgument(
                                     0,
