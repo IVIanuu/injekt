@@ -54,6 +54,7 @@ dependencies {
     implementation(Deps.guice)
 
     implementation(project(":injekt-core"))
+    implementation(project(":injekt-common"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
     implementation(Deps.katana)
