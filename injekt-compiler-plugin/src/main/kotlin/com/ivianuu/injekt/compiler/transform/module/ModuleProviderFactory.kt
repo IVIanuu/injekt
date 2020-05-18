@@ -17,8 +17,11 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -147,9 +150,13 @@ class ModuleProviderFactory(
 
         val parametersByCall = mutableMapOf<IrCall, InjektDeclarationIrBuilder.FactoryParameter>()
         (assistedParameterCalls + dependencyCalls).forEachIndexed { i, call ->
+            val depQualifiers =
+                pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
                 name = "p$i",
-                type = call.type.remapTypeParameters(definitionFunction, module.clazz),
+                type = call.type
+                    .withAnnotations(depQualifiers)
+                    .remapTypeParameters(definitionFunction, module.clazz),
                 assisted = call in assistedParameterCalls,
                 requirement = false
             ).also { parametersByCall[call] = it }

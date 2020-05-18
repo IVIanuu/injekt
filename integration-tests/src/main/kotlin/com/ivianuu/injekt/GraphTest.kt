@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -131,6 +132,39 @@ class GraphTest {
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)
+    }
+
+    @Test
+    fun testQualifiedGet() = codegen(
+        """
+        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Qualifier 
+        annotation class TestQualifier1
+        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Qualifier 
+        annotation class TestQualifier2
+        interface TestComponent {
+            val a: @TestQualifier1 String
+            val b: @TestQualifier2 String
+            val pair: Pair<String, String>
+        }
+        
+        @Factory
+        fun factory(): TestComponent {
+            @TestQualifier1 transient { "a" }
+            @TestQualifier2 transient { "b" }
+            transient { Pair<String, String>(@TestQualifier1 get(), @TestQualifier2 get()) }
+            return create()
+        }
+
+        fun invoke(): Pair<Pair<String, String>, Pair<String, String>> { 
+            val component = factory()
+            return component.a to component.b to component.pair
+        }
+    """
+    ) {
+        val pairs = invokeSingleFile<Pair<Pair<String, String>, Pair<String, String>>>()
+        assertEquals(pairs.first, pairs.second)
     }
 
     @Test
