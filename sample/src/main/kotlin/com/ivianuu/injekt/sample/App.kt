@@ -20,6 +20,7 @@ import android.app.Application
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.composition.generateCompositions
 import com.ivianuu.injekt.composition.inject
+import com.ivianuu.injekt.inject
 
 class App : Application() {
 
