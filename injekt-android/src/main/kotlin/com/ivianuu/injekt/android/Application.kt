@@ -47,7 +47,7 @@ val Application.applicationComponent: ApplicationComponent
 fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
-    return createImpl()
+    return create()
 }
 
 @Module

@@ -25,10 +25,10 @@ class LazyTest {
     @Test
     fun testLazyOfTransient() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): @Lazy () -> Foo { 
             transient { Foo() }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -39,10 +39,10 @@ class LazyTest {
     @Test
     fun testLazyOfScoped() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): @Lazy () -> Foo { 
             scoped { Foo() }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -59,7 +59,7 @@ class LazyTest {
         @Factory
         fun invoke(): @Lazy () -> @TestQualifier1 Foo { 
             @TestQualifier1 transient { Foo() }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -74,12 +74,12 @@ class LazyTest {
         }
         
         @Factory
-        fun create(): TestComponent { 
+        fun createComponent(): TestComponent { 
             transient { Foo() }
-            return createImpl()
+            return create()
         }
         
-        val component = create()
+        val component = createComponent()
         fun invoke() = component.providerOfLazy
     """
     ) {

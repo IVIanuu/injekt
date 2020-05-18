@@ -45,8 +45,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
     val astEntryPoint = injektAst.childClass(InjektFqNames.AstEntryPoint.shortName())
     val astInline = injektAst.childClass(InjektFqNames.AstInline.shortName())
-    val astImplFactory = injektAst.childClass(InjektFqNames.AstImplFactory.shortName())
-    val astInstanceFactory = injektAst.childClass(InjektFqNames.AstInstanceFactory.shortName())
     val astMap = injektAst.childClass(InjektFqNames.AstMap.shortName())
     val astMapEntry = astMap.childClass(InjektFqNames.AstMapEntry.shortName())
     val astMapClassKey = astMap.childClass(InjektFqNames.AstMapClassKey.shortName())
@@ -85,6 +83,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val injectProperty = pluginContext.referenceClass(InjektFqNames.InjectProperty)!!
 
+    val instanceFactory = pluginContext.referenceClass(InjektFqNames.InstanceFactory)!!
     val instanceProvider = pluginContext.referenceClass(InjektFqNames.InstanceProvider)!!
 
     val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!

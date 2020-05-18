@@ -29,10 +29,10 @@ class AssistedTest {
             val foo: Foo
         )
         
-        @Factory
-        fun create(): @Provider (String) -> Dep {
+        @InstanceFactory
+        fun createDep(): @Provider (String) -> Dep {
             instance(Foo())
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -44,11 +44,11 @@ class AssistedTest {
         """
         class Dep(val assisted: String, val foo: Foo)
         
-        @Factory
-        fun create(): @Provider (String) -> Dep {
+        @InstanceFactory
+        fun createDep(): @Provider (String) -> Dep {
             transient { Foo() }
             transient { (assisted: String) -> Dep(assisted, get()) }
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -60,11 +60,11 @@ class AssistedTest {
         """
         class Dep(val assisted: String, val foo: Foo)
         
-        @Factory
-        fun create(): @Provider (String) -> Dep {
+        @InstanceFactory
+        fun createDep(): @Provider (String) -> Dep {
             transient { Foo() }
             transient { Dep(it.component1(), get()) }
-            return createInstance()
+            return create()
         }
     """
     ) {

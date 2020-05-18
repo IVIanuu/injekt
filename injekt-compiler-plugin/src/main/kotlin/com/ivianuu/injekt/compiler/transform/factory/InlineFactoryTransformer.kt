@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -51,7 +50,8 @@ class InlineFactoryTransformer(
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.owner.hasAnnotation(InjektFqNames.Factory) &&
+                if ((expression.symbol.owner.hasAnnotation(InjektFqNames.Factory) ||
+                            expression.symbol.owner.hasAnnotation(InjektFqNames.InstanceFactory)) &&
                     expression.symbol.owner.isInline
                 ) {
                     inlineFactoryCalls += expression
@@ -75,16 +75,12 @@ class InlineFactoryTransformer(
 
                         metadata = MetadataSource.Function(descriptor)
 
-                        annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-                            .noArgSingleConstructorCall(symbols.factory)
-
-                        // todo this should be transformed by the FactoryFunctionAnnotationTransformer
-                        if (factoryFunction.hasAnnotation(InjektFqNames.AstInstanceFactory)) {
+                        if (factoryFunction.hasAnnotation(InjektFqNames.Factory)) {
                             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-                                .noArgSingleConstructorCall(symbols.astInstanceFactory)
-                        } else if (factoryFunction.hasAnnotation(InjektFqNames.AstImplFactory)) {
+                                .noArgSingleConstructorCall(symbols.factory)
+                        } else if (factoryFunction.hasAnnotation(InjektFqNames.InstanceFactory)) {
                             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-                                .noArgSingleConstructorCall(symbols.astImplFactory)
+                                .noArgSingleConstructorCall(symbols.instanceFactory)
                         }
 
                         body = irBlockBody {
@@ -99,16 +95,11 @@ class InlineFactoryTransformer(
                                         putValueArgument(index, valueArgument)
                                     }
                             }
-                            val createFunctionName = when {
-                                factoryFunction.hasAnnotation(InjektFqNames.AstInstanceFactory) -> "createInstance"
-                                factoryFunction.hasAnnotation(InjektFqNames.AstImplFactory) -> "createImpl"
-                                else -> error("Unexpected factory function ${factoryFunction.dump()}")
-                            }
 
                             +irCall(
                                 pluginContext.referenceFunctions(
                                     InjektFqNames.InjektPackage
-                                        .child(Name.identifier(createFunctionName))
+                                        .child(Name.identifier("create"))
                                 ).single(),
                                 inlineFactoryCall.type
                             )

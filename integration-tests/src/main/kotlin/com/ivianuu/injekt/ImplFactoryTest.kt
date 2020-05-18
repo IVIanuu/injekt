@@ -32,12 +32,12 @@ class ImplFactoryTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             transient { Foo() }
-            return createImpl()
+            return create()
         }
         
-        fun invoke() = create().foo
+        fun invoke() = createComponent().foo
     """
     ) {
         assertNotSame(
@@ -54,13 +54,13 @@ class ImplFactoryTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             transient<Foo>()
             transient<Bar>()
-            return createImpl()
+            return create()
         }
         
-        fun invoke() = create().bar
+        fun invoke() = createComponent().bar
     """
     ) {
         assertNotSame(
@@ -77,12 +77,12 @@ class ImplFactoryTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             scoped { Foo() }
-            return createImpl()
+            return create()
         }
         
-        val component = create()
+        val component = createComponent()
         fun invoke() = component.foo
     """
     ) {
@@ -95,10 +95,10 @@ class ImplFactoryTest {
     @Test
     fun testInstance() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(foo: Foo): Foo {
             instance(foo)
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -114,10 +114,10 @@ class ImplFactoryTest {
             instance(foo)
         }
         
-        @Factory
+        @InstanceFactory
         fun invoke(foo: Foo): Foo {
             module(foo)
-            return createInstance()
+            return create()
         }
         """
     ) {
@@ -135,7 +135,7 @@ class ImplFactoryTest {
         @Factory
         fun createDep(): DependencyComponent {
             transient { Foo() }
-            return createImpl()
+            return create()
         }
         
         interface TestComponent {
@@ -146,7 +146,7 @@ class ImplFactoryTest {
         fun createChild(): TestComponent {
             dependency(createDep())
             transient { Bar(get()) }
-            return createImpl()
+            return create()
         }
         
         fun invoke() = createChild().bar
@@ -164,13 +164,13 @@ class ImplFactoryTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             scoped { Foo() }
             alias<Foo, Any>()
-            return createImpl()
+            return create()
         }
         
-        val component = create()
+        val component = createComponent()
         fun invoke() = component.foo to component.any
     """
     ) {
@@ -185,10 +185,8 @@ class ImplFactoryTest {
         }
         
         @Factory
-        fun create(): TestComponent = createImpl()
-        
-        fun invoke() = create()
-    """
+        fun invoke(): TestComponent = create()
+         """
     ) {
         invokeSingleFile()
     }
@@ -203,9 +201,9 @@ class ImplFactoryTest {
         @Transient class Dep(val testComponent: TestComponent)
         
         @Factory
-        fun create(): TestComponent = createImpl()
+        fun createComponent(): TestComponent = create()
         
-        fun invoke(): Pair<TestComponent, TestComponent> = create().let {
+        fun invoke(): Pair<TestComponent, TestComponent> = createComponent().let {
             it to it.dep.testComponent
         }
     """
@@ -225,10 +223,10 @@ class ImplFactoryTest {
         @Transient class Dep<T>(val value: T)
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             instance("hello world")
             instance(0)
-            return createImpl()
+            return create()
         }
     """
     )
@@ -247,10 +245,10 @@ class ImplFactoryTest {
         }
 
         @Factory
-        fun create(): TestComponent { 
+        fun createComponent(): TestComponent { 
             generic("hello world")
             generic(42)
-            return createImpl()
+            return create()
         }
     """
     ) {
@@ -266,12 +264,12 @@ class ImplFactoryTest {
             transient { get<T>() as S }
         }
 
-        @Factory
+        @InstanceFactory
         fun invoke(): Any {
             transient<Foo>()
             transient<Bar>()
             diyAlias<Bar, Any>()
-            return createInstance()
+            return create()
         }
          """
         ) {
@@ -294,7 +292,7 @@ class ImplFactoryTest {
         @Factory
         fun createImplComponent(): ImplComponent {
             transient { Foo() }
-            return createImpl()
+            return create()
         }
     """
     )
@@ -313,7 +311,7 @@ class ImplFactoryTest {
         @Factory
         fun createImplComponent(): TypedComponent<Injectable> {
             transient { Foo() }
-            return createImpl()
+            return create()
         }
     """
     )
@@ -333,7 +331,7 @@ class ImplFactoryTest {
             fun createComponent(userId: String): TestComponent {
                 transient<Foo>()
                 myModule()
-                return createImpl()
+                return create()
             }
             
             @Module
@@ -370,7 +368,7 @@ class ImplFactoryTest {
         fun MyClass.createComponent(userId: String): TestComponent { 
             transient<Foo>()
             myModule()
-            return createImpl()
+            return create()
         }
         
         @Module 
@@ -396,12 +394,12 @@ class ImplFactoryTest {
         interface TestComponent { 
             val bar: Bar 
         }
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             @Factory
             fun factory(): TestComponent {
                 transient<Foo>()
                 transient<Bar>()
-                return createImpl()
+                return create()
             }
             return factory()
         }
@@ -416,15 +414,15 @@ class ImplFactoryTest {
         }
         
         @Factory
-        inline fun <T> create(): TestComponent<T> {
+        inline fun <T> createComponent(): TestComponent<T> {
             transient<Foo>()
             transient<Bar>()
-            return createImpl()
+            return create()
         }
         
         fun invoke() {
-            create<Foo>()
-            create<Bar>()
+            createComponent<Foo>()
+            createComponent<Bar>()
         }
     """
     )
@@ -435,11 +433,11 @@ class ImplFactoryTest {
         interface TestComponent { 
             val bar: Bar 
         }
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             val factory = @Factory {
                 transient<Foo>()
                 transient<Bar>()
-                createImpl<TestComponent>()
+                create<TestComponent>()
             }
             return factory()
         }
@@ -456,7 +454,7 @@ class ImplFactoryTest {
             val childFactory: @ChildFactory () -> ChildComponent 
         }
         
-        fun create(): ChildComponent {
+        fun createComponent(): ChildComponent {
             @Factory
             fun parent(): ParentComponent {
                 transient<Foo>()
@@ -464,12 +462,12 @@ class ImplFactoryTest {
                 @ChildFactory
                 fun child(): ChildComponent {
                     transient<Bar>()
-                    return createImpl()
+                    return create()
                 }
                 
                 childFactory(::child)
                 
-                return createImpl()
+                return create()
             }
             return parent().childFactory()
         }
@@ -484,12 +482,12 @@ class ImplFactoryTest {
         }
         
         @Factory
-        fun create(string: String = "default"): TestComponent {
+        fun createComponent(string: String = "default"): TestComponent {
             instance(string)
-            return createImpl()
+            return create()
         }
         
-        fun invoke() = create().string to create("non_default").string
+        fun invoke() = createComponent().string to createComponent("non_default").string
     """
     ) {
         val pair = invokeSingleFile<Pair<String, String>>()

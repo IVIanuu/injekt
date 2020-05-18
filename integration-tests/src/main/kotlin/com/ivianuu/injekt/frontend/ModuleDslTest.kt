@@ -28,7 +28,7 @@ class ModuleDslTest {
         """
         @ChildFactory
         fun factory(): TestComponent {
-            return createImpl()
+            return create()
         }
         
         @Module
@@ -84,7 +84,7 @@ class ModuleDslTest {
             @Module fun module() {}
             @Factory fun factory(): TestComponent { 
                 module()
-                return createImpl() 
+                return create() 
             }
         """
         ) {
@@ -98,7 +98,7 @@ class ModuleDslTest {
             @Module fun module() {}
             @ChildFactory fun factory(): TestComponent { 
                 module()
-                return createImpl() 
+                return create() 
             }
         """
         ) {
@@ -242,7 +242,7 @@ class ModuleDslTest {
     fun testModuleCannotBeSuspend() = codegen(
         """
         @Module
-        suspend fun module(): TestComponent = createImpl()
+        suspend fun module(): TestComponent = create()
         """
     ) {
         assertCompileError("suspend")

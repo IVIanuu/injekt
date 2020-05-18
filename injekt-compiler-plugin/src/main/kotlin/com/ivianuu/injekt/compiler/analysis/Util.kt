@@ -32,7 +32,7 @@ val ALLOWED_SCOPE_KINDS = setOf(
     LexicalScopeKind.FUNCTION_INNER_SCOPE, LexicalScopeKind.FUNCTION_HEADER_FOR_DESTRUCTURING
 )
 
-fun findEnclosingModuleFunctionContext(
+fun findEnclosingFunctionContext(
     context: CallCheckerContext,
     predicate: (FunctionDescriptor) -> Boolean
 ): FunctionDescriptor? = context.scope

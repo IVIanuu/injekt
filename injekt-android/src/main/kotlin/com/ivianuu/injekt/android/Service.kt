@@ -46,5 +46,5 @@ fun createServiceComponent(instance: Service): ServiceComponent {
     parent<ApplicationComponent>()
     scope<ServiceScoped>()
     instance(instance)
-    return createImpl()
+    return create()
 }

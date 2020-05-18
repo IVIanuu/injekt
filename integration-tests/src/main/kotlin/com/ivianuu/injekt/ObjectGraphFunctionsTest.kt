@@ -27,7 +27,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> getInstance(component: C): T {
@@ -50,7 +50,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <T> getInstance(component: TestComponent): T {
@@ -73,7 +73,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any> getInstance(component: C): Foo {
@@ -96,7 +96,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> getInstance(component: C): T {
@@ -123,7 +123,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> getInstance(component: C): T {
@@ -150,7 +150,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> getInstance(component: C): T {
@@ -177,7 +177,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> injectInstance(component: C, instance: T) { 
@@ -206,7 +206,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <T> injectInstance(component: TestComponent, instance: T) {
@@ -235,7 +235,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any> injectInstance(component: C, instance: MyClass) {
@@ -264,7 +264,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> injectInstance(component: C, instance: T) { 
@@ -297,7 +297,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> injectInstance(component: C, instance: T) {
@@ -330,7 +330,7 @@ class ObjectGraphFunctionsTest {
         @CompositionFactory 
         fun factory(): TestComponent {
             transient { Foo() }
-            return createImpl() 
+            return create() 
         }
         
         fun <C : Any, T> injectInstance(component: C, instance: T) { 

@@ -363,7 +363,7 @@ class GenerateCompositionsTransformer(
                     irCall(
                         pluginContext.referenceFunctions(
                             InjektFqNames.InjektPackage
-                                .child(Name.identifier("createImpl"))
+                                .child(Name.identifier("create"))
                         ).single()
                     ).apply {
                         putTypeArgument(0, factoryType.defaultType)

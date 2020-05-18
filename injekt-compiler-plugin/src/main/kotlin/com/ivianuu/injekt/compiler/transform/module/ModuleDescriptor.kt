@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.ClassPath
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -33,7 +32,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.name.Name
 
 class ModuleDescriptor(
@@ -115,13 +113,6 @@ class ModuleDescriptor(
             if (declaration.factoryModuleClass != null) {
                 annotations += ClassPath(declaration.factoryModuleClass)
                     .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
-            }
-            if (declaration.factoryRef.symbol.owner.hasAnnotation(InjektFqNames.AstImplFactory)) {
-                annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
-                    .noArgSingleConstructorCall(symbols.astImplFactory)
-            } else {
-                annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
-                    .noArgSingleConstructorCall(symbols.astInstanceFactory)
             }
 
             declaration.factoryRef.symbol.owner.valueParameters.forEachIndexed { index, valueParameter ->

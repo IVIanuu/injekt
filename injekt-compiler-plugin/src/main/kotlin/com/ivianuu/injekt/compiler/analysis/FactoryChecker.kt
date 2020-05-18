@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtCallableReferenceExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -57,7 +58,8 @@ class FactoryChecker(
     ) {
         if (descriptor is FunctionDescriptor && (descriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory))
+                    descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    descriptor.annotations.hasAnnotation(InjektFqNames.InstanceFactory))
         ) {
             checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,
@@ -69,6 +71,8 @@ class FactoryChecker(
                 .filter {
                     it.fqName == InjektFqNames.ChildFactory ||
                             it.fqName == InjektFqNames.Factory ||
+                            it.fqName == InjektFqNames.CompositionFactory ||
+                            it.fqName == InjektFqNames.InstanceFactory ||
                             it.fqName == InjektFqNames.Module
                 }
                 .size
@@ -128,7 +132,7 @@ class FactoryChecker(
         val resultingDescriptor = resolvedCall.resultingDescriptor
 
         if (resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.parent") {
-            val enclosingCompositionFactory = findEnclosingModuleFunctionContext(context) {
+            val enclosingCompositionFactory = findEnclosingFunctionContext(context) {
                 val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
                 InjektFqNames.CompositionFactory in typeAnnotations
             }
@@ -157,13 +161,27 @@ class FactoryChecker(
                     context.trace.report(InjektErrors.NOT_A_CHILD_FACTORY.on(reportOn))
                 }
             }
-            "com.ivianuu.injekt.createImpl" -> {
-                checkCreateImplInvocation(resolvedCall, reportOn, context)
+            "com.ivianuu.injekt.create" -> {
+                checkCreateInvocation(resolvedCall, reportOn, context)
+                val enclosingFactory = findEnclosingFunctionContext(context) {
+                    val typeAnnotations =
+                        typeAnnotationChecker.getTypeAnnotations(context.trace, it)
+                    InjektFqNames.Factory in typeAnnotations
+                }
+                if (enclosingFactory != null) {
+                    val type =
+                        resolvedCall.typeArguments.values.singleOrNull()
+
+                    type?.constructor?.declarationDescriptor?.let {
+                        if (it is ClassDescriptor) checkImplType(it, context, reportOn)
+                    }
+                }
             }
         }
 
         if (resultingDescriptor is FunctionDescriptor &&
-            resultingDescriptor.annotations.hasAnnotation(InjektFqNames.Factory) &&
+            (resultingDescriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
+                    resultingDescriptor.annotations.hasAnnotation(InjektFqNames.InstanceFactory)) &&
             resultingDescriptor.isInline
         ) {
             if (resolvedCall.typeArguments.any { it.value.isTypeParameter() }) {
@@ -172,10 +190,15 @@ class FactoryChecker(
                         .on(reportOn)
                 )
             }
-            // todo we need to detect whether this factory is a @ImplFactory
-            //resolvedCall.getReturnType().constructor.declarationDescriptor?.let {
-            //    if (it is ClassDescriptor) checkImplType(it, context, reportOn)
-            //}
+        }
+
+        if (resultingDescriptor is FunctionDescriptor &&
+            resultingDescriptor.annotations.hasAnnotation(InjektFqNames.Factory) &&
+            resultingDescriptor.isInline
+        ) {
+            resolvedCall.getReturnType().constructor.declarationDescriptor?.let {
+                if (it is ClassDescriptor) checkImplType(it, context, reportOn)
+            }
         }
 
         if ((resultingDescriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
@@ -219,40 +242,21 @@ class FactoryChecker(
             return
         }
 
-        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
-            (descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory))
-        ) {
-            context.trace.report(
-                InjektErrors.CREATE_INSTANCE_IN_CHILD_OR_COMPOSITION_FACTORY.on(
-                    element
-                )
-            )
-        }
-
-        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createImpl" &&
-            resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.createInstance"
-        ) {
+        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.create") {
             reportLastStatementMustBeCreate()
         }
     }
 
-    private fun checkCreateImplInvocation(
+    private fun checkCreateInvocation(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val type =
-            resolvedCall.typeArguments.values.singleOrNull()
-
-        type?.constructor?.declarationDescriptor?.let {
-            if (it is ClassDescriptor) checkImplType(it, context, reportOn)
-        }
-
-        val enclosingModuleFunction = findEnclosingModuleFunctionContext(context) {
+        val enclosingModuleFunction = findEnclosingFunctionContext(context) {
             it.annotations.hasAnnotation(InjektFqNames.Factory) ||
                     it.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    it.annotations.hasAnnotation(InjektFqNames.CompositionFactory)
+                    it.annotations.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    it.annotations.hasAnnotation(InjektFqNames.InstanceFactory)
         }
 
         when {
@@ -275,7 +279,7 @@ class FactoryChecker(
             }
             else -> {
                 context.trace.report(
-                    InjektErrors.CREATE_IMPl_WITHOUT_FACTORY.on(reportOn)
+                    InjektErrors.CREATE_WITHOUT_FACTORY.on(reportOn)
                 )
             }
         }
@@ -288,7 +292,7 @@ class FactoryChecker(
     ) {
         if (clazz.modality != Modality.ABSTRACT) {
             context.trace.report(
-                InjektErrors.FACTORY_IMPL_MUST_BE_ABSTRACT
+                InjektErrors.FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT
                     .on(reportOn)
             )
         }
@@ -325,7 +329,7 @@ class FactoryChecker(
                 is PropertyDescriptor -> {
                     if (declaration.isVar) {
                         context.trace.report(
-                            InjektErrors.IMPL_CANNOT_CONTAIN_VARS
+                            InjektErrors.PROVISION_PROPERTY_CANNOT_BE_VAR
                                 .on(reportOn)
                         )
                     }

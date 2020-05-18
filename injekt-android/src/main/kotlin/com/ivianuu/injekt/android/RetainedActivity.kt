@@ -51,7 +51,7 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
 fun createRetainedActivityComponent(): RetainedActivityComponent {
     parent<ApplicationComponent>()
     scope<RetainedActivityScoped>()
-    return createImpl()
+    return create()
 }
 
 private class RetainedActivityComponentHolder : ViewModel() {

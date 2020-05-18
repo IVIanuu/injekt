@@ -24,11 +24,11 @@ class InstanceFactoryTest {
     @Test
     fun testCreateInstance() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun createBar(): Bar { 
             transient<Foo>()
             transient<Bar>()
-            return createInstance()
+            return create()
         }
         
         fun invoke() = createBar()
@@ -42,12 +42,12 @@ class InstanceFactoryTest {
         """
         @TestScope 
         class MyClass(foo: Foo, bar: Bar)
-        @Factory
+        @InstanceFactory
         fun createBar(): MyClass {
             scope<TestScope>()
             scoped<Foo>()
             transient<Bar>()
-            return createInstance()
+            return create()
         }
         
         fun invoke() = createBar()
@@ -63,10 +63,10 @@ class InstanceFactoryTest {
             val foo: Foo
         }
         
-        @Factory
+        @InstanceFactory
         fun createFoo(fooOwner: FooOwner): Foo {
             dependency(fooOwner)
-            return createInstance()
+            return create()
         }
     """
     )
@@ -74,12 +74,12 @@ class InstanceFactoryTest {
     @Test
     fun testLocalFunctionInstanceFactory() = codegen(
         """
-        fun create(): Bar {
-            @Factory
+        fun createInstance(): Bar {
+            @InstanceFactory
             fun factory(): Bar {
                 transient<Foo>()
                 transient<Bar>()
-                return createInstance()
+                return create()
             }
             return factory()
         }
@@ -89,11 +89,11 @@ class InstanceFactoryTest {
     @Test
     fun testInstanceFactoryLambda() = codegen(
         """
-        fun create(): Bar {
-            val factory = @Factory {
+        fun createInstance(): Bar {
+            val factory = @InstanceFactory {
                 transient<Foo>()
                 transient<Bar>()
-                createInstance<Bar>()
+                create<Bar>()
             }
             return factory()
         }
@@ -103,16 +103,16 @@ class InstanceFactoryTest {
     @Test
     fun testFactoryWithTypeParameters() = codegen(
         """
-        @Factory
-        inline fun <T> create(): T {
+        @InstanceFactory
+        inline fun <T> createInstance(): T {
             transient<Foo>()
             transient<Bar>()
-            return createInstance()
+            return create()
         }
         
         fun invoke() {
-            create<Foo>()
-            create<Bar>()
+            createInstance<Foo>()
+            createInstance<Bar>()
         }
     """
     )
@@ -124,11 +124,11 @@ class InstanceFactoryTest {
             val outerField = ""
             
             @Transient class Dep(myClass: MyClass, foo: Foo)
-            @Factory
+            @InstanceFactory
             fun createComponent(userId: String): Dep {
                 transient<Foo>()
                 myModule()
-                return createInstance()
+                return create()
             }
             
             @Module
@@ -157,11 +157,11 @@ class InstanceFactoryTest {
             @Transient class Dep(myClass: MyClass, foo: Foo)
         }
         
-        @Factory 
+        @InstanceFactory 
         fun MyClass.createComponent(userId: String): MyClass.Dep { 
             transient<Foo>()
             myModule()
-            return createInstance() 
+            return create() 
         }
         
         @Module 
@@ -184,13 +184,13 @@ class InstanceFactoryTest {
     @Test
     fun testFactoryWithDefaultParameters() = codegen(
         """
-        @Factory
-        fun create(string: String = "default"): String {
+        @InstanceFactory
+        fun createInstance(string: String = "default"): String {
             instance(string)
-            return createInstance()
+            return create()
         }
         
-        fun invoke() = create() to create("non_default")
+        fun invoke() = createInstance() to createInstance("non_default")
     """
     ) {
         val pair = invokeSingleFile<Pair<String, String>>()

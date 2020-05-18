@@ -30,12 +30,12 @@ class ProviderTest {
         }
         
         @Factory
-        fun create(): TestComponent { 
+        fun createComponent(): TestComponent { 
             transient { Foo() }
-            return createImpl()
+            return create()
         }
         
-        fun invoke() = create().provider
+        fun invoke() = createComponent().provider
     """
     ) {
         val provider = invokeSingleFile<@Provider () -> Foo>()
@@ -50,12 +50,12 @@ class ProviderTest {
         }
         
         @Factory
-        fun create(): TestComponent { 
+        fun createComponent(): TestComponent { 
             scoped { Foo() }
-            return createImpl()
+            return create()
         }
         
-        fun invoke() = create().provider
+        fun invoke() = createComponent().provider
     """
     ) {
         val provider = invokeSingleFile<@Provider () -> Foo>()
@@ -71,7 +71,7 @@ class ProviderTest {
         @Factory
         fun invoke(): @Provider () -> @TestQualifier1 Foo { 
             @TestQualifier1 transient { Foo() }
-            return createInstance()
+            return create()
         }
          """
     ) {

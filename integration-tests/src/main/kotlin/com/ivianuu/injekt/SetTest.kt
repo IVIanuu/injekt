@@ -25,7 +25,7 @@ class SetTest {
     @Test
     fun testSet() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Set<Command> {
             transient { CommandA() }
             transient { CommandB() }
@@ -35,7 +35,7 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -49,7 +49,7 @@ class SetTest {
     @Test
     fun testSetOfProvider() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Set<@Provider () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
@@ -59,7 +59,7 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -74,7 +74,7 @@ class SetTest {
     @Test
     fun testSetOfLazy() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Set<@Lazy () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
@@ -84,7 +84,7 @@ class SetTest {
                 add<CommandB>()
                 add<CommandC>()
             }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -99,10 +99,10 @@ class SetTest {
     @Test
     fun testEmptySet() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Set<Command> {
             set<Command>()
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -113,9 +113,9 @@ class SetTest {
     @Test
     fun testUndeclaredSet() = codegen(
         """
-        @Factory
-        fun create(): Set<Command> {
-            return createInstance()
+        @InstanceFactory
+        fun createInstance(): Set<Command> {
+            return create()
         }
         """
     ) {
@@ -125,13 +125,13 @@ class SetTest {
     @Test
     fun testSingleElementSet() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Set<Command> {
             transient { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -142,15 +142,15 @@ class SetTest {
     @Test
     fun testSetOverridesFails() = codegen(
         """
-        @Factory
-        fun create(): Set<Command> {
+        @InstanceFactory
+        fun createInstance(): Set<Command> {
             transient { CommandA() }
             transient { CommandB() }
             set<Command> {
                 add<CommandA>()
                 add<CommandA>()
             }
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -176,7 +176,7 @@ class SetTest {
                 add<CommandA>()
             }
             childFactory(::createChild)
-            return createImpl()
+            return create()
         }
         
         @ChildFactory
@@ -185,7 +185,7 @@ class SetTest {
             set<Command> {
                 add<CommandB>()
             }
-            return createImpl()
+            return create()
         }
         
         fun invoke() = createParent().childFactory().set
@@ -216,7 +216,7 @@ class SetTest {
                 add<CommandA>()
             }
             childFactory(::createChild)
-            return createImpl()
+            return create()
         }
         
         @ChildFactory
@@ -225,7 +225,7 @@ class SetTest {
             set<Command> {
                 add<CommandA>()
             }
-            return createImpl()
+            return create()
         }
          """
     ) {

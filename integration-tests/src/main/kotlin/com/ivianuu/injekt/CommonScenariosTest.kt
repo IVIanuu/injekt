@@ -40,7 +40,7 @@ class CommonScenariosTest {
                     
                     @ChildFactory
                     fun otherChildFactory(): OtherChildComponent {
-                        return createImpl()
+                        return create()
                     }
                     
                     @Transient
@@ -81,7 +81,7 @@ class CommonScenariosTest {
                     fun thisFactory(instance: String): ThisComponent {
                         thisModule()
                         otherModule(instance)
-                        return createImpl()
+                        return create()
                     }
                     
                     interface ThisComponent {
@@ -128,7 +128,7 @@ class CommonScenariosTest {
             transient { Foo() }
             bindWorkerIntoMap<WorkerA>()
             bindWorkerIntoMap<WorkerB>()
-            return createImpl()
+            return create()
         }
         
         class App { 
@@ -153,7 +153,7 @@ class CommonScenariosTest {
                 @Factory
                 inline fun <T> newInstance(block: @Module () -> Unit): T { 
                     block()
-                    return createInstance()
+                    return create()
                 }
             """
             )
@@ -205,12 +205,12 @@ class CommonScenariosTest {
         }
         
         @Factory
-        fun create(): ViewModelComponent {
+        fun createComponent(): ViewModelComponent {
             viewModel<MyViewModel>()
-            return createImpl()
+            return create()
         }
         
-        fun invoke() = create().myViewModel
+        fun invoke() = createComponent().myViewModel
     """
     ) {
         invokeSingleFile()

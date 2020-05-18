@@ -47,5 +47,5 @@ fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     parent<RetainedActivityComponent>()
     scope<ActivityScoped>()
     instance(instance)
-    return createImpl()
+    return create()
 }

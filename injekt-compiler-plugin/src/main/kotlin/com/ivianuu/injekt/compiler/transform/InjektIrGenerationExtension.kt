@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.composition.InlineObjectGraphCallTransformer
 import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
-import com.ivianuu.injekt.compiler.transform.factory.FactoryFunctionAnnotationTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
@@ -93,10 +92,6 @@ class InjektIrGenerationExtension(
             pluginContext, declarationStore,
             compositionAggregateGenerator
         ).lower(moduleFragment)
-
-        // add @InstanceFactory or @ImplFactory annotations to @Factory functions
-        FactoryFunctionAnnotationTransformer(pluginContext)
-            .lower(moduleFragment)
 
         // add a local @Factory fun at each call side of a inline factory
         InlineFactoryTransformer(pluginContext, declarationStore)

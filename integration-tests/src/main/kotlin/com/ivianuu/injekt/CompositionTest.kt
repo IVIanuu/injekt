@@ -27,7 +27,7 @@ class CompositionTest {
                 """
                 @CompositionFactory 
                 fun factory(): TestComponent {
-                    return createImpl()
+                    return create()
                 }
                 
                 class FooEntryPointConsumer(testComponent: TestComponent) {
@@ -75,7 +75,7 @@ class CompositionTest {
                 
                 @CompositionFactory 
                 fun appComponentFactory(): AppComponent {
-                    return createImpl()
+                    return create()
                 }
                 
                 @Module
@@ -99,7 +99,7 @@ class CompositionTest {
                 fun activityComponentFactory(): ActivityComponent {
                     parent<AppComponent>()
                     scoped { Bar(get()) }
-                    return createImpl()
+                    return create()
                 }
                 
                 class Activity(private val app: App) {
@@ -118,7 +118,7 @@ class CompositionTest {
                 fun fragmentComponentFactory(): FragmentComponent {
                     parent<ActivityComponent>()
                     scoped { Baz(get(), get()) }
-                    return createImpl()
+                    return create()
                 }
                 
                 class Fragment(private val activity: Activity) {
@@ -149,7 +149,7 @@ class CompositionTest {
                 
                 @CompositionFactory 
                 fun appComponentFactory(): AppComponent {
-                    return createImpl()
+                    return create()
                 }
                 
                 @Module
@@ -164,7 +164,7 @@ class CompositionTest {
                 fun activityComponentFactory(): ActivityComponent {
                     parent<AppComponent>()
                     scoped { Bar(get()) }
-                    return createImpl()
+                    return create()
                 }
                 
                 class App { 
@@ -195,7 +195,7 @@ class CompositionTest {
                 fun fragmentComponentFactory(): FragmentComponent {
                     parent<ActivityComponent>()
                     scoped { Baz(get(), get()) }
-                    return createImpl()
+                    return create()
                 }
                 
                 class Fragment(private val activity: Activity) {

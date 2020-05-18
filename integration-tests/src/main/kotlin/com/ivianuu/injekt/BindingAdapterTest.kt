@@ -25,7 +25,7 @@ class BindingAdapterTest {
         """
         @CompositionFactory 
         fun factory(): TestComponent { 
-            return createImpl() 
+            return create() 
         }
 
         interface AppService
@@ -67,7 +67,7 @@ class BindingAdapterTest {
                 """
                 @CompositionFactory 
                 fun factory(): TestComponent { 
-                    return createImpl() 
+                    return create() 
                 }
 
                 interface AppService

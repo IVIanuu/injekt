@@ -35,12 +35,13 @@ class ClassOfChecker(private val typeAnnotationChecker: TypeAnnotationChecker) :
     ) {
         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() != "com.ivianuu.injekt.classOf") return
 
-        val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
+        val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
             val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
             InjektFqNames.Module in typeAnnotations ||
                     InjektFqNames.Factory in typeAnnotations ||
                     InjektFqNames.ChildFactory in typeAnnotations ||
-                    InjektFqNames.CompositionFactory in typeAnnotations
+                    InjektFqNames.CompositionFactory in typeAnnotations ||
+                    InjektFqNames.InstanceFactory in typeAnnotations
         }
         if (enclosingInjektDslFunction == null) {
             context.trace.report(

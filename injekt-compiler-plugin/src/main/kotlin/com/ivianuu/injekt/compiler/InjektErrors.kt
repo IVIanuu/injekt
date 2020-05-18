@@ -53,13 +53,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val CREATE_IMPl_WITHOUT_FACTORY = error(
-            "createImpl can only be called from within a @Factory, @ChildFactory or @CompositionFactory function"
-        )
-
-        @JvmField
-        val CREATE_INSTANCE_IN_CHILD_OR_COMPOSITION_FACTORY = error(
-            "createInstance cannot be called in a @ChildFactory or @CompositionFactory function"
+        val CREATE_WITHOUT_FACTORY = error(
+            "create can only be called from within a @Factory, @ChildFactory, @CompositionFactory or @InstanceFactory function"
         )
 
         @JvmField
@@ -89,12 +84,12 @@ interface InjektErrors {
 
         @JvmField
         val LAST_STATEMENT_MUST_BE_CREATE = error(
-            "A factories last statement must be either a createImpl() or a createInstance() call"
+            "A factories last statement must be either a create() call"
         )
 
         @JvmField
-        val FACTORY_IMPL_MUST_BE_ABSTRACT = error(
-            "createImpl result types must be a interface or a abstract class"
+        val FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT = error(
+            "@Factory return types must be a interface or a abstract class"
         )
 
         @JvmField
@@ -123,8 +118,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val IMPL_CANNOT_CONTAIN_VARS = error(
-            "createImpl result types cannot contain mutable properties"
+        val PROVISION_PROPERTY_CANNOT_BE_VAR = error(
+            "Provision property cannot be mutable properties"
         )
 
         @JvmField

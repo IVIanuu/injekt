@@ -61,20 +61,20 @@ class ChildTest {
         fun createParent(parent: Parent): ParentComponent {
             instance(parent)
             childFactory(::createChild)
-            return createImpl()
+            return create()
         }
         
         @ChildFactory
         fun createChild(child: Child): ChildComponent {
             instance(child)
             childFactory(::createBaby)
-            return createImpl()
+            return create()
         }
         
         @ChildFactory
         fun createBaby(baby: Baby): BabyComponent {
             instance(baby)
-            return createImpl()
+            return create()
         }
         
         fun invoke() = Parent()

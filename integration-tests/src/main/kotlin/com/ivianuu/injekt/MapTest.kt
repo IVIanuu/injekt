@@ -26,12 +26,8 @@ class MapTest {
     @Test
     fun testMap() = codegen(
         """
-        interface TestComponent {
-            val map: Map<KClass<out Command>, Command>
-        }
-        
-        @Factory
-        fun create(): TestComponent {
+        @InstanceFactory
+        fun invoke(): Map<KClass<out Command>, Command> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -40,11 +36,9 @@ class MapTest {
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
             }
-            return createImpl()
+            return create()
         }
-        
-        fun invoke() = create().map
-    """
+        """
     ) {
         val map =
             invokeSingleFile<Map<KClass<out Command>, Command>>()
@@ -57,12 +51,8 @@ class MapTest {
     @Test
     fun testMapOfProvider() = codegen(
         """
-        interface TestComponent {
-            val map: Map<KClass<out Command>, @Provider () -> Command>
-        }
-        
-        @Factory
-        fun create(): TestComponent {
+        @InstanceFactory
+        fun invoke(): Map<KClass<out Command>, @Provider () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -71,10 +61,8 @@ class MapTest {
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
             }
-            return createImpl()
+            return create()
         }
-        
-        fun invoke() = create().map
     """
     ) {
         val map =
@@ -88,12 +76,8 @@ class MapTest {
     @Test
     fun testMapOfLazy() = codegen(
         """
-        interface TestComponent2 {
-            val map: Map<KClass<out Command>, @Lazy () -> Command>
-        }
-        
-        @Factory
-        fun create(): TestComponent2 {
+        @InstanceFactory
+        fun invoke(): Map<KClass<out Command>, @Lazy () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -102,11 +86,9 @@ class MapTest {
                 put<CommandB>(CommandB::class)
                 put<CommandC>(CommandC::class)
             }
-            return createImpl()
+            return create()
         }
-        
-        fun invoke() = create().map
-    """
+         """
     ) {
         val map =
             invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
@@ -119,10 +101,10 @@ class MapTest {
     @Test
     fun testEmptyMap() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Map<KClass<out Command>, Command> {
             map<KClass<out Command>, Command>()
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -134,9 +116,9 @@ class MapTest {
     @Test
     fun testUndeclaredMap() = codegen(
         """
-        @Factory
-        fun create(): Map<String, Command> {
-            return createInstance()
+        @InstanceFactory
+        fun createComponent(): Map<String, Command> {
+            return create()
         }
         """
     ) {
@@ -146,13 +128,13 @@ class MapTest {
     @Test
     fun testSingleEntryMap() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Map<KClass<out Command>, Command> {
             transient { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
-            return createInstance()
+            return create()
         }
          """
     ) {
@@ -165,15 +147,15 @@ class MapTest {
     @Test
     fun testMapOverrideFails() = codegen(
         """
-        @Factory
-        fun create(): Map<String, Command> {
+        @InstanceFactory
+        fun createComponent(): Map<String, Command> {
             transient { CommandA() }
             transient { CommandB() }
             map<String, Command> {
                 put<CommandA>("a")
                 put<CommandB>("a")
             }
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -199,7 +181,7 @@ class MapTest {
                 put<CommandA>(CommandA::class)
             }
             childFactory(::createChild)
-            return createImpl()
+            return create()
         }
         
         @ChildFactory
@@ -208,7 +190,7 @@ class MapTest {
             map<KClass<out Command>, Command> {
                 put<CommandB>(CommandB::class)
             }
-            return createImpl()
+            return create()
         }
         
         fun invoke() = createParent().childFactory().map
@@ -240,7 +222,7 @@ class MapTest {
                 put<CommandA>(CommandA::class)
             }
             childFactory(::createChild)
-            return createImpl()
+            return create()
         }
         
         @ChildFactory
@@ -249,7 +231,7 @@ class MapTest {
             map<KClass<out Command>, Command> {
                 put<CommandB>(CommandA::class)
             }
-            return createImpl()
+            return create()
         }
          """
     ) {

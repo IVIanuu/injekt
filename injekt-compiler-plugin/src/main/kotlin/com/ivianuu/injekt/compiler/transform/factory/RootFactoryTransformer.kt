@@ -47,7 +47,9 @@ class RootFactoryTransformer(
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Factory) && !declaration.isInline) {
+                if ((declaration.hasAnnotation(InjektFqNames.Factory) ||
+                            declaration.hasAnnotation(InjektFqNames.InstanceFactory)) && !declaration.isInline
+                ) {
                     factoryFunctions += declaration
                 }
                 return super.visitFunctionNew(declaration)
@@ -66,7 +68,7 @@ class RootFactoryTransformer(
                 )
                 function.body = irExprBody(
                     when {
-                        function.hasAnnotation(InjektFqNames.AstImplFactory) -> {
+                        function.hasAnnotation(InjektFqNames.Factory) -> {
                             val implFactory = ImplFactory(
                                 origin = function.descriptor.fqNameSafe,
                                 parent = null,
@@ -86,7 +88,7 @@ class RootFactoryTransformer(
 
                             implFactory.getInitExpression(moduleValueArguments)
                         }
-                        function.hasAnnotation(InjektFqNames.AstInstanceFactory) -> {
+                        function.hasAnnotation(InjektFqNames.InstanceFactory) -> {
                             val instanceFactory = InstanceFactory(
                                 factoryFunction = function,
                                 typeParameterMap = emptyMap(),

@@ -35,10 +35,6 @@ object InjektAst {
 
     annotation class Binding
 
-    annotation class ImplFactory
-
-    annotation class InstanceFactory
-
     annotation class Alias
 
     annotation class Inline

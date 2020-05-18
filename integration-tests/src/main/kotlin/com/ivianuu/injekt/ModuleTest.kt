@@ -28,10 +28,10 @@ class ModuleTest {
             transient { capture }
         }
         
-        @Factory
-        fun create(): String {
+        @InstanceFactory
+        fun createInstance(): String {
             capturingModule("hello world")
-            return createInstance()
+            return create()
         }
     """
     )
@@ -47,11 +47,11 @@ class ModuleTest {
             transient<@TestQualifier1 T> { get<T>() }
         }
         
-        @Factory
-        fun create(): @TestQualifier1 String {
+        @InstanceFactory
+        fun createInstance(): @TestQualifier1 String {
             transient { "hello world" }
             capturingModule<String>()
-            return createInstance()
+            return create()
         }
     """
     )
@@ -65,10 +65,10 @@ class ModuleTest {
             transient { local }
         }
 
-        @Factory
-        fun create(): String {
+        @InstanceFactory
+        fun createInstance(): String {
             capturingModule("hello")
-            return createInstance()
+            return create()
         }
     """
     )

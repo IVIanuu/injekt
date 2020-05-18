@@ -27,7 +27,7 @@ class GraphTest {
     fun testMissingBindingFails() = codegen(
         """
         @Transient class Dep(bar: Bar)
-        @Factory fun create(): Dep = createInstance()
+        @InstanceFactory fun createDep(): Dep = create()
         """
     ) {
         assertInternalError("no binding")
@@ -36,11 +36,11 @@ class GraphTest {
     @Test
     fun testDuplicatedBindingFails() = codegen(
         """
-        @Factory
-        fun create(): Foo {
+        @InstanceFactory
+        fun createFoo(): Foo {
             transient { Foo() }
             transient { Foo() }
-            return createInstance()
+            return create()
         }
         """
     ) {
@@ -52,7 +52,7 @@ class GraphTest {
         """
         @Transient class A(b: B)
         @Transient class B(a: A)
-        @Factory fun create(): A = createInstance()
+        @InstanceFactory fun createA(): A = create()
     """
     ) {
         assertInternalError("circular")
@@ -63,10 +63,10 @@ class GraphTest {
         """
         @TestScope2 class Dep
 
-        @Factory
-        fun create(): Dep {
+        @InstanceFactory
+        fun createDep(): Dep {
             scope<TestScope>()
-            return createInstance()
+            return create()
         }
         """
     ) {
@@ -88,14 +88,14 @@ class GraphTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             @TestQualifier1 scoped { Foo() }
             @TestQualifier2 scoped { Foo() }
-            return createImpl()
+            return create()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
-            val component = create()
+            val component = createComponent()
             return component.foo1 to component.foo2
         }
     """
@@ -117,14 +117,14 @@ class GraphTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             @QualifierWithValue("A") scoped { Foo() }
             @QualifierWithValue("B") scoped { Foo() }
-            return createImpl()
+            return create()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
-            val component = create()
+            val component = createComponent()
             return component.foo1 to component.foo2
         }
     """
@@ -136,11 +136,11 @@ class GraphTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-        @Factory
-        fun create(): Foo {
+        @InstanceFactory
+        fun createFoo(): Foo {
             transient<Foo> { Foo() }
             transient<Foo?> { null }
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -150,10 +150,10 @@ class GraphTest {
     @Test
     fun testReturnsInstanceForNullableBinidng() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Foo? {
             transient<Foo?>()
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -163,9 +163,9 @@ class GraphTest {
     @Test
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
-        @Factory
+        @InstanceFactory
         fun invoke(): Foo? {
-            return createInstance()
+            return create()
         }
         """
     ) {

@@ -36,14 +36,14 @@ class MembersInjectorTest {
         }
         
         @Factory
-        fun create(): TestComponent {
+        fun createComponent(): TestComponent {
             transient { Foo() }
             scoped { Bar(get()) }
-            return createImpl()
+            return create()
         }
         
         fun invoke() { 
-            val testComponent = create()
+            val testComponent = createComponent()
             val myClass = MyClass()
             testComponent.injectMyClass(myClass)
             check(myClass.bar === testComponent.bar)

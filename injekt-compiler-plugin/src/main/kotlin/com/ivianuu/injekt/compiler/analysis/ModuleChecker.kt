@@ -99,7 +99,7 @@ class ModuleChecker(
         val resulting = resolvedCall.resultingDescriptor
 
         if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.installIn") {
-            val enclosingModule = findEnclosingModuleFunctionContext(context) {
+            val enclosingModule = findEnclosingFunctionContext(context) {
                 val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
                 InjektFqNames.Module in typeAnnotations
             }
@@ -137,12 +137,13 @@ class ModuleChecker(
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingInjektDslFunction = findEnclosingModuleFunctionContext(context) {
+        val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
             val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
             InjektFqNames.Module in typeAnnotations ||
                     InjektFqNames.Factory in typeAnnotations ||
                     InjektFqNames.ChildFactory in typeAnnotations ||
-                    InjektFqNames.CompositionFactory in typeAnnotations
+                    InjektFqNames.CompositionFactory in typeAnnotations ||
+                    InjektFqNames.InstanceFactory in typeAnnotations
         }
 
         when {

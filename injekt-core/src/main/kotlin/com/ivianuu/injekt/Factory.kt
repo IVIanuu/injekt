@@ -27,3 +27,8 @@ annotation class Factory
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
 @Qualifier
 annotation class ChildFactory
+
+@TypeAnnotation
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Qualifier
+annotation class InstanceFactory

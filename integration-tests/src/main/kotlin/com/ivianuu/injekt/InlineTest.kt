@@ -25,10 +25,10 @@ class InlineTest {
     @Test
     fun testInlineModuleLambda() = codegen(
         """
-        @Factory
+        @InstanceFactory
         inline fun <T> buildInstance(block: @Module () -> Unit): T { 
             block()
-            return createInstance() 
+            return create() 
         }
         
         fun invoke() = buildInstance<Foo> { transient<Foo>() }
@@ -40,10 +40,10 @@ class InlineTest {
     @Test
     fun testNestedInlineModuleLambda() = codegen(
         """
-        @Factory
+        @InstanceFactory
         inline fun <T> buildInstance(block: @Module () -> Unit): T {
             nested(block)
-            return createInstance() 
+            return create() 
         }
         
         @Module
@@ -70,10 +70,10 @@ class InlineTest {
             block("hello world")
         }
         
-        @Factory
+        @InstanceFactory
         fun invoke(): String {
             calling()
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -98,10 +98,10 @@ class InlineTest {
             block("hello world")
         }
         
-        @Factory
+        @InstanceFactory
         fun invoke(): String {
             calling()
-            return createInstance()
+            return create()
         }
     """
     ) {
@@ -111,10 +111,10 @@ class InlineTest {
     @Test
     fun testFactoryWithModuleParam() = codegen(
         """
-        @Factory
+        @InstanceFactory
         inline fun factory(block: @Module () -> Unit): Foo {
             block()
-            return createInstance()
+            return create()
         }
         
         fun invoke() = factory { 
@@ -129,10 +129,10 @@ class InlineTest {
     fun testFactoryWithModuleParamInClass() = codegen(
         """
         class Lol {
-            @Factory
+            @InstanceFactory
             inline fun factory(block: @Module () -> Unit): Foo {
                 block()
-                return createInstance()
+                return create()
             }
         }
         
@@ -153,7 +153,7 @@ class InlineTest {
         @Factory
         inline fun <T> createComponent(block: @Module () -> Unit): TestComponent<T> {
             block()
-            return createImpl()
+            return create()
         }
         
         class MyClass {
@@ -175,10 +175,10 @@ class InlineTest {
                 fun localModule() {
                     instance(this)
                 }
-                @Factory
-                fun create(): MyClass {
+                @InstanceFactory
+                fun createComponent(): MyClass {
                     localModule()
-                    return createInstance()
+                    return create()
                 }
             }
         }
@@ -201,9 +201,9 @@ class InlineTest {
                         transient { this@InnerClass }
                     } 
                     @Factory 
-                    fun create(): TestComponent { 
+                    fun createComponent(): TestComponent { 
                         localModule()
-                        return createImpl() 
+                        return create() 
                     } 
                 }   
             }
@@ -225,10 +225,10 @@ class InlineTest {
             transient(definition)
         }
         
-        @Factory
+        @InstanceFactory
         fun factory(): Bar { 
             inlinedModule<Foo, Bar> { Bar(get()) }
-            return createInstance()
+            return create()
         }
     """
     )
@@ -237,10 +237,10 @@ class InlineTest {
     fun testCapturingMemberFunction() = codegen(
         """
         class MyClass {
-            @Factory
+            @InstanceFactory
             fun factory(): MyClass { 
                 transient { this@MyClass }
-                return createInstance()
+                return create()
             }
         }
     """
@@ -250,10 +250,10 @@ class InlineTest {
     fun testCapturingMemberAndExtensionFunction() = codegen(
         """
         class MyClass {
-            @Factory
+            @InstanceFactory
             fun String.factory(): Pair<MyClass, String> { 
                 transient { this@MyClass to this@factory }
-                return createInstance()
+                return create()
             }
         }
     """
@@ -264,14 +264,14 @@ class InlineTest {
         codegen(
             """
         class MyClass {
-            @Factory
+            @InstanceFactory
             fun String.factory(): Pair<MyClass, String> { 
                 @Module
                 fun local() {
                     transient { this@MyClass to this@factory }
                 }
                 local()
-                return createInstance()
+                return create()
             }
         }
     """
@@ -317,11 +317,11 @@ class InlineTest {
         listOf(
             source(
                 """
-        @Factory
-        fun create(): Bar {
+        @InstanceFactory
+        fun createComponent(): Bar {
             @TestQualifier1 transient { Context() }
             systemServices()
-            return createInstance()
+            return create()
         }
     """
             )
