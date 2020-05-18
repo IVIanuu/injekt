@@ -24,18 +24,13 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.BindingAdapter
+import com.ivianuu.injekt.composition.BindingAdapterFunction
 import com.ivianuu.injekt.transient
 
 @BindingAdapter(ActivityComponent::class)
-annotation class ActivityViewModel {
-    companion object {
-        @Module
-        inline fun <T : ViewModel> bind() {
-            activityViewModel<T>()
-        }
-    }
-}
+annotation class ActivityViewModel
 
+@BindingAdapterFunction(ActivityViewModel::class)
 @Module
 inline fun <T : ViewModel> activityViewModel() {
     baseViewModel<T, @ForActivity ViewModelStoreOwner>()

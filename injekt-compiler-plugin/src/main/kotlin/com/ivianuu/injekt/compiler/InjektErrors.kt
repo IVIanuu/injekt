@@ -63,7 +63,7 @@ interface InjektErrors {
         )
 
         @JvmField
-        val NOT_A_COMPOSITION_FACTORY = error(
+        val NOT_A_COMPOSITION_COMPONENT = error(
             "Type must be annotated with @CompositionComponent"
         )
 

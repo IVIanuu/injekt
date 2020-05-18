@@ -127,7 +127,7 @@ class FactoryChecker(
                     ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
             ) {
                 context.trace.report(
-                    InjektErrors.NOT_A_COMPOSITION_FACTORY
+                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
                         .on(declaration)
                 )
             }
@@ -147,7 +147,7 @@ class FactoryChecker(
                     ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
             ) {
                 context.trace.report(
-                    InjektErrors.NOT_A_COMPOSITION_FACTORY
+                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
                         .on(reportOn)
                 )
             }

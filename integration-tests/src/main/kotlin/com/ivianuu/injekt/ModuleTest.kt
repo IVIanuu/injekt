@@ -124,6 +124,41 @@ class ModuleTest {
     )
 
     @Test
+    fun testMultiCompilationClassOfModule() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Module 
+                inline fun <S : Any> classOfA() { 
+                    val classOf = classOf<S>()
+                }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @Module 
+                inline fun <T : Any, V : Any> classOfB() { 
+                    val classOf = classOf<T>()
+                    classOfA<V>() 
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+               @Module 
+                fun callingModule() { 
+                    classOfB<String, Int>() 
+                } 
+            """
+            )
+        )
+    )
+
+    @Test
     fun testBindingWithTypeParameterInInlineModule() =
         codegen(
             """ 

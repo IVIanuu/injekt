@@ -46,7 +46,9 @@ class ModuleClassTransformer(
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.isModule(pluginContext.bindingContext)) {
+                if (declaration.isModule(pluginContext.bindingContext) &&
+                    !moduleFunctionTransformer.isDecoy(declaration)
+                ) {
                     moduleFunctions += declaration
                 }
 

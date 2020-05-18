@@ -357,4 +357,81 @@ class ObjectGraphFunctionsTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testMultiCompileObjectGraphGet() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent { 
+                    transient { Foo() }
+                    return create() 
+                }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun <C : Any, T> getInstance(component: C): T { 
+                    return component.get<T>() 
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Foo { 
+                    generateCompositions() 
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return getInstance<TestCompositionComponent, Foo>(component)
+                } 
+            """
+            )
+        )
+    )
+
+    @Test
+    fun testMultiCompileObjectGraphInject() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent { 
+                    transient { Foo() }
+                    return create() 
+                }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun <C : Any, T> injectInstance(component: C, instance: T) {
+                    component.inject(instance)
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                class MyClass { 
+                    val foo: Foo by inject()
+                }
+                
+                fun invoke(): Foo { 
+                    generateCompositions() 
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()() 
+                    val myClass = MyClass()
+                    injectInstance(component, myClass)
+                    return myClass.foo
+                }
+            """
+            )
+        )
+    )
+
 }
+

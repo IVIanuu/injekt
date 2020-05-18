@@ -58,6 +58,7 @@ object InjektFqNames {
     val AssistedParameters = InjektPackage.child("AssistedParameters")
 
     val BindingAdapter = CompositionPackage.child("BindingAdapter")
+    val BindingAdapterFunction = CompositionPackage.child("BindingAdapterFunction")
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 

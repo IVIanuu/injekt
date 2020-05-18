@@ -28,19 +28,18 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -62,31 +61,74 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val decoys = mutableSetOf<IrFunction>()
 
     fun getTransformedModule(function: IrFunction): IrFunction {
         return transformedFunctions[function] ?: function
     }
 
+    fun isDecoy(function: IrFunction): Boolean = function in decoys
+
+    override fun visitFile(declaration: IrFile): IrFile {
+        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
+        val result = super.visitFile(declaration)
+        result.patchWithDecoys(originalFunctions)
+        return result
+    }
+
+    override fun visitClass(declaration: IrClass): IrStatement {
+        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
+        val result = super.visitClass(declaration) as IrClass
+        result.patchWithDecoys(originalFunctions)
+        return result
+    }
+
     override fun visitFunction(declaration: IrFunction): IrStatement =
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
+
+    private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
+        for (original in originalFunctions) {
+            val transformed = transformedFunctions[original]
+            if (transformed != null && transformed != original) {
+                declarations.add(
+                    original.deepCopyWithPreservingQualifiers()
+                        .also { decoy ->
+                            decoys += decoy
+                            InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
+                                if (transformed.valueParameters
+                                        .any { it.name.asString().startsWith("class\$") }
+                                ) {
+                                    decoy.annotations += noArgSingleConstructorCall(symbols.astTyped)
+                                }
+
+                                decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
+                            }
+                        }
+                )
+            }
+        }
+    }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) {
             return if (function.hasAnnotation(InjektFqNames.AstTyped)) {
-                val typedFunction = pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
+                pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
                     .map { it.owner }
-                    .single {
-                        it.returnType == function.returnType &&
-                                it.valueParameters.size > function.valueParameters.size
+                    .single { other ->
+                        other.name == function.name &&
+                                other.returnType == function.returnType &&
+                                other.valueParameters.any {
+                                    "class\$" in it.name.asString()
+                                }
                     }
-                typedFunction
             } else function
         }
         if (!function.isModule(pluginContext.bindingContext)) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
+        if (function in decoys) return function
 
         val originalCaptures = mutableListOf<IrGetValue>()
         val originalClassOfCalls = mutableListOf<IrCall>()
@@ -194,22 +236,6 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                 InjektDeclarationIrBuilder(pluginContext, transformedFunction.symbol)
                     .noArgSingleConstructorCall(symbols.astTyped)
 
-            (transformedFunction as IrFunctionImpl).metadata = MetadataSource.Function(
-                function.descriptor.newCopyBuilder()
-                    .setAdditionalAnnotations(
-                        Annotations.create(
-                            listOf(
-                                AnnotationDescriptorImpl(
-                                    symbols.astTyped.descriptor.defaultType,
-                                    emptyMap(),
-                                    SourceElement.NO_SOURCE
-                                )
-                            )
-                        )
-                    )
-                    .build()!!
-            )
-
             val valueParametersByUnresolvedType =
                 mutableMapOf<IrTypeParameterSymbol, IrValueParameter>()
 
@@ -308,53 +334,54 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                         }
                     }
                     in typedModuleCalls -> {
-                        val originalFunction = expression.symbol.owner
                         val transformedFunction = transformFunctionIfNeeded(expression.symbol.owner)
-                        if (originalFunction.symbol == transformedFunction.symbol) return expression
                         DeclarationIrBuilder(pluginContext, expression.symbol)
                             .irCall(transformedFunction).apply {
-                                dispatchReceiver = expression.dispatchReceiver
-                                extensionReceiver = expression.extensionReceiver
                                 expression.typeArguments.forEachIndexed { index, typeArgument ->
                                     putTypeArgument(index, typeArgument)
                                 }
-                                (0 until expression.valueArgumentsCount).forEach {
-                                    putValueArgument(it, expression.getValueArgument(it))
-                                }
-                                (originalFunction.valueParameters.size until transformedFunction.valueParameters.size)
-                                    .forEach { valueParameterIndex ->
-                                        val valueParameter =
-                                            transformedFunction.valueParameters[valueParameterIndex]
+
+                                dispatchReceiver = expression.dispatchReceiver
+                                extensionReceiver = expression.extensionReceiver
+
+                                transformedFunction.valueParameters.forEach { valueParameter ->
+                                    var valueArgument = try {
+                                        expression.getValueArgument(valueParameter.index)
+                                    } catch (e: Throwable) {
+                                        null
+                                    }
+
+                                    if (valueArgument == null) {
                                         val typeParameterName = InjektNameConventions
                                             .typeParameterNameForClassParameterName(valueParameter.name)
                                         val typeParameter = transformedFunction.typeParameters
                                             .single { it.name == typeParameterName }
                                         val typeArgument = getTypeArgument(typeParameter.index)!!
-                                        putValueArgument(
-                                            valueParameterIndex,
-                                            if (typeArgument.isTypeParameter()) {
-                                                val symbol =
-                                                    typeArgument.classifierOrFail as IrTypeParameterSymbol
-                                                DeclarationIrBuilder(
-                                                    pluginContext,
-                                                    expression.symbol
-                                                )
-                                                    .irGet(
-                                                        valueParametersByUnresolvedType.getValue(
-                                                            symbol
-                                                        )
+                                        valueArgument = if (typeArgument.isTypeParameter()) {
+                                            val symbol =
+                                                typeArgument.classifierOrFail as IrTypeParameterSymbol
+                                            DeclarationIrBuilder(pluginContext, expression.symbol)
+                                                .irGet(
+                                                    valueParametersByUnresolvedType.getValue(
+                                                        symbol
                                                     )
-                                            } else {
-                                                IrClassReferenceImpl(
-                                                    UNDEFINED_OFFSET,
-                                                    UNDEFINED_OFFSET,
-                                                    irBuiltIns.kClassClass.typeWith(typeArgument),
-                                                    typeArgument.classifierOrFail,
-                                                    typeArgument
                                                 )
-                                            }
-                                        )
+                                        } else {
+                                            IrClassReferenceImpl(
+                                                UNDEFINED_OFFSET,
+                                                UNDEFINED_OFFSET,
+                                                irBuiltIns.kClassClass.typeWith(typeArgument),
+                                                typeArgument.classifierOrFail,
+                                                typeArgument
+                                            )
+                                        }
                                     }
+
+                                    putValueArgument(
+                                        valueParameter.index,
+                                        valueArgument
+                                    )
+                                }
                             }
                     }
                     else -> super.visitCall(expression)

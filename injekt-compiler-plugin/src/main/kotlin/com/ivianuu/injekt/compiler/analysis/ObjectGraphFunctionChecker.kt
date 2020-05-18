@@ -43,7 +43,7 @@ class ObjectGraphFunctionChecker : CallChecker {
                 !receiver.isTypeParameter()
             ) {
                 context.trace.report(
-                    InjektErrors.NOT_A_COMPOSITION_FACTORY
+                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
                         .on(reportOn)
                 )
             }

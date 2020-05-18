@@ -26,25 +26,25 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class BindingAdapterTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -105,7 +105,32 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
                     putTypeArgument(0, installIn.defaultType)
                 }
 
-                val bindingAdapterCompanion = bindingAdapterClass
+                val adapterModule =
+                    (bindingAdapterClass.descriptor.containingDeclaration as PackageFragmentDescriptor)
+                        .getMemberScope()
+                        .getContributedDescriptors()
+                        .filterIsInstance<FunctionDescriptor>()
+                        .filter {
+                            it.annotations.hasAnnotation(InjektFqNames.BindingAdapterFunction)
+                        }
+                        .singleOrNull {
+                            val annotation =
+                                it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)!!
+                            val value = annotation.allValueArguments.values.single() as KClassValue
+                            val type = value.getArgumentType(bindingAdapterClass.descriptor.module)
+                            type == bindingAdapterClass.descriptor.defaultType
+                        }
+                        ?.let { functionDescriptor ->
+                            pluginContext.referenceFunctions(functionDescriptor.fqNameSafe)
+                                .single { it.descriptor == functionDescriptor }
+                        }
+                        ?: error("Corrupt binding adapter")
+
+                +irCall(adapterModule).apply {
+                    putTypeArgument(0, clazz.defaultType)
+                }
+
+                /*val bindingAdapterCompanion = bindingAdapterClass
                     .companionObject() as IrClass
 
                 val adapterModule = bindingAdapterCompanion
@@ -115,7 +140,7 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
                 +irCall(adapterModule).apply {
                     dispatchReceiver = irGetObject(bindingAdapterCompanion.symbol)
                     putTypeArgument(0, clazz.defaultType)
-                }
+                }*/
             }
         }
     }

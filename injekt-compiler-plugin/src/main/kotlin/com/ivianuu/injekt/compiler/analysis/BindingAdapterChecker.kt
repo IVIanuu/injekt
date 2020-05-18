@@ -23,9 +23,11 @@ import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
@@ -39,21 +41,37 @@ class BindingAdapterChecker : DeclarationChecker {
         if (descriptor !is ClassDescriptor) return
 
         if (descriptor.annotations.hasAnnotation(InjektFqNames.BindingAdapter)) {
-            val companion = descriptor.companionObjectDescriptor
+            /*val companion = descriptor.companionObjectDescriptor
             if (companion == null) {
                 context.trace.report(
                     InjektErrors.BINDING_ADAPTER_WITHOUT_COMPANION
                         .on(declaration)
                 )
                 return
-            }
+            }*/
 
+            val moduleFunction = (descriptor.containingDeclaration as PackageFragmentDescriptor)
+                .getMemberScope()
+                .getContributedDescriptors()
+                .filterIsInstance<FunctionDescriptor>()
+                .filter {
+                    it.annotations.hasAnnotation(InjektFqNames.BindingAdapterFunction)
+                }
+                .singleOrNull {
+                    val annotation =
+                        it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)!!
+                    val value = annotation.allValueArguments.values.single() as KClassValue
+                    val type = value.getArgumentType(descriptor.module)
+                    type == descriptor.defaultType
+                } ?: error("Corrupt binding adapter")
+
+            /*
             val moduleFunction = companion.unsubstitutedMemberScope
                 .getContributedDescriptors()
                 .filterIsInstance<FunctionDescriptor>()
                 .singleOrNull {
                     it.annotations.hasAnnotation(InjektFqNames.Module)
-                }
+                }*/
 
             if (moduleFunction == null) {
                 context.trace.report(
@@ -77,6 +95,24 @@ class BindingAdapterChecker : DeclarationChecker {
                         .on(declaration)
                 )
                 return
+            }
+
+            val installInComponent = descriptor.annotations
+                .findAnnotation(InjektFqNames.BindingAdapter)!!
+                .allValueArguments
+                .values
+                .single()
+                .let { it as KClassValue }
+                .getArgumentType(descriptor.module)
+                .constructor.declarationDescriptor
+
+            if (installInComponent?.annotations
+                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
+            ) {
+                context.trace.report(
+                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
+                        .on(declaration)
+                )
             }
         }
 

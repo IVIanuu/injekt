@@ -31,15 +31,14 @@ class BindingAdapterTest {
         interface AppService
         
         @BindingAdapter(TestCompositionComponent::class) 
-        annotation class BindAppService { 
-            companion object { 
-                @Module
-                inline fun <T : AppService> bind() { 
-                    scoped<T>()
-                    map<KClass<out AppService>, AppService> { 
-                        put<T>(classOf<T>())
-                    }
-                } 
+        annotation class BindAppService
+        
+        @BindingAdapterFunction(BindAppService::class)
+        @Module 
+        inline fun <T : AppService> bindAppService() { 
+            scoped<T>()
+            map<KClass<out AppService>, AppService> { 
+                put<T>(classOf<T>())
             }
         }
 
@@ -73,17 +72,16 @@ class BindingAdapterTest {
                 interface AppService
         
                 @BindingAdapter(TestCompositionComponent::class) 
-                annotation class BindAppService { 
-                companion object { 
-                    @Module
-                    inline fun <T : AppService> bind() { 
-                        scoped<T>()
-                        map<KClass<out AppService>, AppService> { 
-                            put<T>(classOf<T>())
-                        }
-                    } 
-                }
-            }
+                annotation class BindAppService
+                
+                @BindingAdapterFunction(BindAppService::class)
+                @Module 
+                inline fun <T : AppService> bindAppService() { 
+                    scoped<T>()
+                    map<KClass<out AppService>, AppService> { 
+                        put<T>(classOf<T>()) 
+                    }
+                } 
         """
             ),
             source(
@@ -129,6 +127,7 @@ class BindingAdapterTest {
         listOf(
             source(
                 """
+                @CompositionComponent
                 interface ActivityComponent
                 
                 @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
@@ -136,15 +135,9 @@ class BindingAdapterTest {
                 annotation class ForActivity
                 
                 @BindingAdapter(ActivityComponent::class)
-                annotation class ActivityViewModel { 
-                    companion object { 
-                        @Module
-                        inline fun <T : ViewModel> bind() { 
-                            activityViewModel<T>() 
-                        } 
-                    }
-                }
+                annotation class ActivityViewModel
                 
+                @BindingAdapterFunction(ActivityViewModel::class)
                 @Module
                 inline fun <T : ViewModel> activityViewModel() { 
                     baseViewModel<T, @ForActivity ViewModelStoreOwner>()

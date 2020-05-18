@@ -23,6 +23,21 @@ import org.junit.Test
 class BindingAdapterTest {
 
     @Test
+    fun testBindingAdapterWithInvalidComponent() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module
+        fun <T> func() {
+        }
+    """
+    ) {
+        assertCompileError("@CompositionComponent")
+    }
+
+    /*@Test
     fun testCorrectBindingAdapter() = codegen(
         """
         @BindingAdapter(TestComponent::class)
@@ -149,6 +164,6 @@ class BindingAdapterTest {
     """
     ) {
         assertCompileError("bound")
-    }
+    }*/
 
 }
