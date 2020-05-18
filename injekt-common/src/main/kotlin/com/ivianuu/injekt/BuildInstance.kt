@@ -16,10 +16,10 @@
 
 package com.ivianuu.injekt
 
-@Factory
+@InstanceFactory
 inline fun <T> buildInstance(): T = create()
 
-@Factory
+@InstanceFactory
 inline fun <T> buildInstance(block: @Module () -> Unit): T {
     block()
     return create()

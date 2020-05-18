@@ -23,7 +23,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compositionFactoryOf
-import com.ivianuu.injekt.createImpl
+import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 
