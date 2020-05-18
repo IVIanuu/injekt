@@ -20,14 +20,15 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -37,6 +38,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -44,7 +46,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class BindingAdapterTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -106,25 +107,24 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
                 }
 
                 val adapterModule =
-                    (bindingAdapterClass.descriptor.containingDeclaration as PackageFragmentDescriptor)
+                    bindingAdapterClass.descriptor.findPackage()
                         .getMemberScope()
                         .getContributedDescriptors()
                         .filterIsInstance<FunctionDescriptor>()
                         .filter {
                             it.annotations.hasAnnotation(InjektFqNames.BindingAdapterFunction)
                         }
-                        .singleOrNull {
+                        .firstOrNull {
                             val annotation =
                                 it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)!!
                             val value = annotation.allValueArguments.values.single() as KClassValue
-                            val type = value.getArgumentType(bindingAdapterClass.descriptor.module)
-                            type == bindingAdapterClass.descriptor.defaultType
+                            value.getIrClass(pluginContext) == bindingAdapterClass
                         }
                         ?.let { functionDescriptor ->
                             pluginContext.referenceFunctions(functionDescriptor.fqNameSafe)
                                 .single { it.descriptor == functionDescriptor }
                         }
-                        ?: error("Corrupt binding adapter")
+                        ?: error("Corrupt binding adapter ${bindingAdapterClass.dump()}")
 
                 +irCall(adapterModule).apply {
                     putTypeArgument(0, clazz.defaultType)
