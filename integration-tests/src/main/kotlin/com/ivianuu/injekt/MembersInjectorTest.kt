@@ -53,4 +53,18 @@ class MembersInjectorTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testCanInjectMembersInjectorForAnyType() = codegen(
+        """
+        interface TestComponent { 
+            val injectAny: @MembersInjector (Any) -> Unit
+        }
+        
+        @Factory
+        fun createComponent(): TestComponent {
+            return create()
+        }
+    """
+    )
+
 }

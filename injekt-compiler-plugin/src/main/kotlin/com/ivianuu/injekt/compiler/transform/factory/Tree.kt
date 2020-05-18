@@ -252,9 +252,10 @@ class MembersInjectorBindingNode(
     val membersInjector: IrClass
 ) : BindingNode(
     key,
-    membersInjector.constructors.single()
-        .valueParameters
-        .map { BindingRequest(it.type.asKey(), null) },
+    membersInjector.constructors.singleOrNull()
+        ?.valueParameters
+        ?.map { BindingRequest(it.type.asKey(), null) }
+        ?: emptyList(),
     null,
     false,
     null,

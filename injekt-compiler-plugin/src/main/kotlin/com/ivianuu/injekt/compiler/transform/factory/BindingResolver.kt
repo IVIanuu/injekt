@@ -482,7 +482,8 @@ class MembersInjectorBindingResolver(
         if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifierFqNames()) return emptyList()
         if (requestedKey.type.classOrNull != factoryImpl.pluginContext.irBuiltIns.function(1)) return emptyList()
         val target = requestedKey.type.typeArguments.first().getClass()!!
-        val membersInjector = declarationStore.getMembersInjectorForClass(target)
+        val membersInjector = declarationStore.getMembersInjectorForClassOrNull(target)
+            ?: symbols.noOpMembersInjector.owner
         return listOf(
             MembersInjectorBindingNode(
                 key = requestedKey,

@@ -620,17 +620,21 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
-        val constructor = binding.membersInjector.constructors.single()
-
         val dependencyExpressions = binding.dependencies
             .map { getBindingExpression(it) }
-
         return providerFieldExpression(binding.key) { context ->
             instanceProvider(
-                irCall(constructor).apply {
-                    dependencyExpressions.forEachIndexed { index, dependency ->
-                        putValueArgument(index, dependency(this@providerFieldExpression, context))
+                if (dependencyExpressions.isNotEmpty()) {
+                    irCall(binding.membersInjector.constructors.single()).apply {
+                        dependencyExpressions.forEachIndexed { index, dependency ->
+                            putValueArgument(
+                                index,
+                                dependency(this@providerFieldExpression, context)
+                            )
+                        }
                     }
+                } else {
+                    irGetObject(binding.membersInjector.symbol)
                 }
             )
         }

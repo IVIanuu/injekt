@@ -59,7 +59,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         }
     }
 
-    fun getMembersInjectorForClass(clazz: IrClass): IrClass {
+    fun getMembersInjectorForClassOrNull(clazz: IrClass): IrClass? {
         return if (!clazz.isExternalDeclaration()) {
             membersInjectorTransformer.getMembersInjectorForClass(clazz)
         } else {
@@ -72,7 +72,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                             clazz.descriptor.fqNameSafe
                         )
                     )
-            )!!.owner
+            )?.owner
         }
     }
 
