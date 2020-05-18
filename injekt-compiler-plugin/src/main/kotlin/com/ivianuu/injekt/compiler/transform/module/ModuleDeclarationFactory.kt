@@ -547,13 +547,24 @@ class ModuleDeclarationFactory(
             val assisted = provider.functions
                 .single { it.name.asString() == "invoke" }
                 .valueParameters
-                .map { it.type }
+                .map {
+                    it.type.remapTypeParameters(provider, module.function)
+                }
 
-            val nonAssisted = provider.constructors
-                .single()
+            val constructor = provider.constructors.single()
+
+            val nonAssisted = constructor
                 .valueParameters
                 .filter { it.name.asString() != "module" }
-                .map { it.type.typeArguments.single() }
+                .map {
+                    it.type.typeArguments.single()
+                        .remapTypeParameters(
+                            constructor,
+                            module.function,
+                            constructor.typeParameters.zip(module.function.typeParameters)
+                                .toMap() // todo
+                        )
+                }
 
             parameters += (assisted + nonAssisted).mapIndexed { index, type ->
                 InjektDeclarationIrBuilder.FactoryParameter(

@@ -130,6 +130,13 @@ class BindingAdapterTest {
                 @CompositionComponent
                 interface ActivityComponent
                 
+                @CompositionFactory
+                fun createActivityComponent(): ActivityComponent { 
+                    @ForActivity
+                    transient { Any() as ViewModelStoreOwner }
+                    return create()
+                }
+                
                 @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
                 @Qualifier
                 annotation class ForActivity
@@ -155,7 +162,7 @@ class BindingAdapterTest {
                             object : ViewModelProvider.Factory {
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                     viewModelProvider() as T
-                                    }
+                            }
                         ).get(clazz.java) 
                     } 
                 }
@@ -170,6 +177,12 @@ class BindingAdapterTest {
                 """
                 @ActivityViewModel 
                 class MainViewModel : ViewModel()
+                
+                fun run() {
+                    generateCompositions()
+                    val component = compositionFactoryOf<ActivityComponent, () -> ActivityComponent>()()
+                    component.get<MainViewModel>()
+                }
             """
             )
         )

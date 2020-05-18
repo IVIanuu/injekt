@@ -372,9 +372,6 @@ class ModuleBindingResolver(
                 }
                 else -> {
                     provider!!
-                    val providerTypeParametersMap = provider.typeParameters.associateWith {
-                        moduleNode.descriptorTypeParametersMap.values.toList()[it.index]
-                    }.mapKeys { it.key.symbol }
                     if (bindingFunction.valueParameters.any {
                             it.descriptor.annotations.hasAnnotation(
                                 InjektFqNames.AstAssisted
@@ -390,10 +387,12 @@ class ModuleBindingResolver(
                                         .map {
                                             it.type
                                                 .substituteAndKeepQualifiers(
-                                                    providerTypeParametersMap
+                                                    moduleNode.descriptorTypeParametersMap
                                                 )
                                         } + bindingKey.type
-                                        .substituteAndKeepQualifiers(providerTypeParametersMap)
+                                        .substituteAndKeepQualifiers(
+                                            moduleNode.descriptorTypeParametersMap
+                                        )
                                 ).withNoArgQualifiers(
                                     factory.pluginContext,
                                     listOf(InjektFqNames.Provider)
@@ -403,7 +402,7 @@ class ModuleBindingResolver(
                             .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
                             .map {
                                 it.type
-                                    .substituteAndKeepQualifiers(providerTypeParametersMap)
+                                    .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                                     .asKey()
                             }
                             .map { BindingRequest(it, moduleRequestOrigin) }
@@ -417,18 +416,22 @@ class ModuleBindingResolver(
                             provider = provider,
                             owner = factory,
                             origin = moduleNode.module.fqNameForIrSerialization,
-                            typeArguments = providerTypeParametersMap.values.toList()
+                            typeArguments = moduleNode.descriptorTypeParametersMap.values
+                                .toList()
                         )
                     } else {
                         val dependencies = bindingFunction.valueParameters
                             .map {
                                 try {
                                     it.type
-                                        .substituteAndKeepQualifiers(providerTypeParametersMap)
+                                        .substituteAndKeepQualifiers(
+                                            moduleNode.descriptorTypeParametersMap
+                                        )
                                         .asKey()
                                 } catch (e: Exception) {
+                                    e.printStackTrace()
                                     error("Could not get for ${it.dump()} in\n\n${bindingFunction.dump()} " +
-                                            "\n\n type params ${providerTypeParametersMap.map {
+                                            "\n\n type params ${moduleNode.descriptorTypeParametersMap.map {
                                                 it.key.owner.render() to it.value.render()
                                             }} \n\n ${moduleNode.descriptor.dump()}\n\n\n${moduleNode.descriptorTypeParametersMap.map {
                                                 it.key.owner.render() to it.value.render()
@@ -447,7 +450,7 @@ class ModuleBindingResolver(
                             provider = provider,
                             owner = factory,
                             origin = moduleNode.module.fqNameForIrSerialization,
-                            typeArguments = providerTypeParametersMap.values.toList()
+                            typeArguments = moduleNode.descriptorTypeParametersMap.values.toList()
                         )
                     }
                 }

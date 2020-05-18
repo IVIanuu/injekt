@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
@@ -27,7 +26,6 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import kotlin.math.absoluteValue
 
 object InjektNameConventions {
     fun getFactoryNameForClass(
@@ -172,10 +170,8 @@ object InjektNameConventions {
     }
 
     private fun valueParametersHash(function: IrFunction): Int {
-        return function.allParameters.map {
-            31 * it.name.asString().hashCode()
-        }
-            .hashCode().absoluteValue
+        return 0/*function.allParameters.map { 31 * it.name.asString().hashCode() }
+            .hashCode().absoluteValue*/
     }
 
     private fun getJoinedName(

@@ -374,10 +374,14 @@ class InjektDeclarationIrBuilder(
                 isPrimary = true
                 this.visibility = Visibilities.PUBLIC
             }.apply {
+                if (typeParametersContainer != null) {
+                    copyTypeParametersFrom(typeParametersContainer)
+                }
+
                 fieldsByNonAssistedParameter.forEach { (_, field) ->
                     addValueParameter(
                         field.name.asString(),
-                        field.type
+                        field.type.remapTypeParameters(this@clazz, this)
                     )
                 }
 
