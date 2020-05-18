@@ -25,7 +25,7 @@ class ObjectGraphFunctionsTest {
     fun testInlineGetWithGenericComponentAndGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -36,8 +36,8 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
-            return getInstance<TestComponent, Foo>(component)
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return getInstance<TestCompositionComponent, Foo>(component)
         }
     """
     ) {
@@ -48,18 +48,18 @@ class ObjectGraphFunctionsTest {
     fun testInlineGetWithGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
         
-        fun <T> getInstance(component: TestComponent): T {
+        fun <T> getInstance(component: TestCompositionComponent): T {
             return component.get<T>()
         }
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance<Foo>(component)
         }
     """
@@ -71,7 +71,7 @@ class ObjectGraphFunctionsTest {
     fun testInlineGetWithGenericComponent() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -82,7 +82,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance(component)
         }
     """
@@ -94,7 +94,7 @@ class ObjectGraphFunctionsTest {
     fun testNestedInlineGetWithGenericComponentAndGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -109,8 +109,8 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
-            return nestedGetInstance<TestComponent, Foo>(component)
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return nestedGetInstance<TestCompositionComponent, Foo>(component)
         }
     """
     ) {
@@ -121,7 +121,7 @@ class ObjectGraphFunctionsTest {
     fun testNestedInlineGetWithGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -130,13 +130,13 @@ class ObjectGraphFunctionsTest {
             return component.get<T>()
         }
         
-        fun <T> nestedGetInstance(component: TestComponent): T {
-            return getInstance<TestComponent, T>(component)
+        fun <T> nestedGetInstance(component: TestCompositionComponent): T {
+            return getInstance<TestCompositionComponent, T>(component)
         }
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return nestedGetInstance<Foo>(component)
         }
     """
@@ -148,7 +148,7 @@ class ObjectGraphFunctionsTest {
     fun testNestedInlineGetWithGenericComponent() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -163,7 +163,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance(component)
         }
     """
@@ -175,7 +175,7 @@ class ObjectGraphFunctionsTest {
     fun testInlineInjectWithGenericComponentAndGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -190,7 +190,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
             return myClass.foo
@@ -204,12 +204,12 @@ class ObjectGraphFunctionsTest {
     fun testInlineInjectWithGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
         
-        fun <T> injectInstance(component: TestComponent, instance: T) {
+        fun <T> injectInstance(component: TestCompositionComponent, instance: T) {
             component.inject(instance)
         }
         
@@ -219,7 +219,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
             return myClass.foo
@@ -233,7 +233,7 @@ class ObjectGraphFunctionsTest {
     fun testInlineInjectWithGenericComponent() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -248,7 +248,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
             return myClass.foo
@@ -262,7 +262,7 @@ class ObjectGraphFunctionsTest {
     fun testNestedInlineInjectWithGenericComponentAndGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -281,7 +281,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
             return myClass.foo
@@ -295,7 +295,7 @@ class ObjectGraphFunctionsTest {
     fun testNestedInlineInjectWithGenericInstance() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -304,7 +304,7 @@ class ObjectGraphFunctionsTest {
             component.inject(instance)
         }
         
-        fun <T> nestedInjectInstance(component: TestComponent, instance: T) {
+        fun <T> nestedInjectInstance(component: TestCompositionComponent, instance: T) {
             injectInstance(component, instance)
         }
         
@@ -314,7 +314,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
             return myClass.foo
@@ -328,7 +328,7 @@ class ObjectGraphFunctionsTest {
     fun testNestedInlineInjectWithGenericComponent() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent {
+        fun factory(): TestCompositionComponent {
             transient { Foo() }
             return create() 
         }
@@ -347,7 +347,7 @@ class ObjectGraphFunctionsTest {
         
         fun invoke(): Foo { 
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
             return myClass.foo

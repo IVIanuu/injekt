@@ -24,13 +24,13 @@ class BindingAdapterTest {
     fun testSimpleBindingAdapter() = codegen(
         """
         @CompositionFactory 
-        fun factory(): TestComponent { 
+        fun factory(): TestCompositionComponent { 
             return create() 
         }
 
         interface AppService
         
-        @BindingAdapter(TestComponent::class) 
+        @BindingAdapter(TestCompositionComponent::class) 
         annotation class BindAppService { 
             companion object { 
                 @Module
@@ -51,7 +51,7 @@ class BindingAdapterTest {
 
         fun invoke() {
             generateCompositions()
-            val component = compositionFactoryOf<TestComponent, () -> TestComponent>()()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val appServices = component.get<Map<KClass<AppService>, AppService>>()
             println("app services " + appServices)
         }
@@ -66,13 +66,13 @@ class BindingAdapterTest {
             source(
                 """
                 @CompositionFactory 
-                fun factory(): TestComponent { 
+                fun factory(): TestCompositionComponent { 
                     return create() 
                 }
 
                 interface AppService
         
-                @BindingAdapter(TestComponent::class) 
+                @BindingAdapter(TestCompositionComponent::class) 
                 annotation class BindAppService { 
                 companion object { 
                     @Module
@@ -96,7 +96,7 @@ class BindingAdapterTest {
                 
                 fun invoke() { 
                     generateCompositions() 
-                    val component = compositionFactoryOf<TestComponent, () -> TestComponent>()() 
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()() 
                     val appServices = component.get<Map<KClass<AppService>, AppService>>()
                     println("app services " + appServices) 
                 }

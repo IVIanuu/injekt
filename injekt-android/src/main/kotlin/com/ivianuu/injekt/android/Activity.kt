@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.ChildFactory
+import com.ivianuu.injekt.CompositionComponent
 import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
@@ -34,6 +35,7 @@ annotation class ActivityScoped
 @Qualifier
 annotation class ForActivity
 
+@CompositionComponent
 interface ActivityComponent
 
 val ComponentActivity.activityComponent: ActivityComponent

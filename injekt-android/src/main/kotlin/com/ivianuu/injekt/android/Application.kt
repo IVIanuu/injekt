@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.ivianuu.injekt.CompositionComponent
 import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
@@ -34,6 +35,7 @@ annotation class ApplicationScoped
 @Qualifier
 annotation class ForApplication
 
+@CompositionComponent
 interface ApplicationComponent
 
 val Application.applicationComponent: ApplicationComponent

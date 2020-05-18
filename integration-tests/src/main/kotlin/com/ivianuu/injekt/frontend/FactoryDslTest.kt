@@ -47,7 +47,7 @@ class FactoryDslTest {
     fun testCreateInACompositionFactory() =
         codegen(
             """
-        @CompositionFactory fun factory() = create<TestComponent>()
+        @CompositionFactory fun factory() = create<TestCompositionComponent>()
     """
         ) {
             assertOk()
@@ -251,7 +251,7 @@ class FactoryDslTest {
     fun testCanReferenceCompositonFactories() = codegen(
         """
             @CompositionFactory
-            fun factory(): TestComponent = create()
+            fun factory(): TestCompositionComponent = create()
             
             fun invoke() = ::factory
     """

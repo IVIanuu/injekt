@@ -20,6 +20,7 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ivianuu.injekt.ChildFactory
+import com.ivianuu.injekt.CompositionComponent
 import com.ivianuu.injekt.CompositionFactory
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.create
@@ -30,6 +31,7 @@ import com.ivianuu.injekt.scope
 @Scope
 annotation class RetainedActivityScoped
 
+@CompositionComponent
 interface RetainedActivityComponent
 
 val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
