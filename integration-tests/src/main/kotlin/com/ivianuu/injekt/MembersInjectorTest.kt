@@ -56,15 +56,37 @@ class MembersInjectorTest {
     @Test
     fun testCanInjectMembersInjectorForAnyType() = codegen(
         """
-        interface TestComponent { 
-            val injectAny: @MembersInjector (Any) -> Unit
-        }
-        
-        @Factory
-        fun createComponent(): TestComponent {
+        @InstanceFactory
+        fun createComponent(): @MembersInjector (Any) -> Unit {
             return create()
         }
     """
     )
+
+    @Test
+    fun testInjectsMembersOnConstructorInjection() = codegen(
+        """
+        @Transient
+        class ConstructorAndMembersDep(
+            private val foo: Foo
+        ) { 
+            val bar: Bar by inject()
+        }
+
+        @InstanceFactory
+        fun createDep(): ConstructorAndMembersDep {
+            transient<Foo>()
+            transient<Bar>()
+            return create()
+        }
+        
+        fun invoke() {
+            val dep = createDep()
+            dep.bar
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
 
 }

@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -28,8 +29,8 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.at
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
@@ -46,11 +47,13 @@ import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 
 class ModuleProviderFactory(
+    private val declarationStore: InjektDeclarationStore,
     private val module: ModuleImpl,
     private val pluginContext: IrPluginContext
 ) {
@@ -74,22 +77,23 @@ class ModuleProviderFactory(
                         requirement = false
                     )
                 } ?: emptyList(),
+            membersInjector = declarationStore.getMembersInjectorForClassOrNull(clazz),
             returnType = clazz.defaultType,
-            createBody = { createFunction ->
-                irExprBody(
-                    if (clazz.kind == ClassKind.OBJECT) {
-                        irGetObject(clazz.symbol)
-                    } else {
-                        irCall(constructor!!).apply {
-                            createFunction.valueParameters.forEach { valueParameter ->
+            createExpr = { createFunction ->
+                if (clazz.kind == ClassKind.OBJECT) {
+                    irGetObject(clazz.symbol)
+                } else {
+                    irCall(constructor!!).apply {
+                        (0 until constructor.valueParameters.size)
+                            .map { createFunction.valueParameters[it] }
+                            .forEach {
                                 putValueArgument(
-                                    valueParameter.index,
-                                    irGet(valueParameter)
+                                    it.index,
+                                    irGet(it)
                                 )
                             }
-                        }
                     }
-                )
+                }
             }
         )
     }
@@ -167,8 +171,9 @@ class ModuleProviderFactory(
             visibility = visibility,
             typeParametersContainer = module.function,
             parameters = parameters,
+            membersInjector = null,
             returnType = type,
-            createBody = { createFunction ->
+            createExpr = { createFunction ->
                 val body = definitionFunction.body!!
                 body.transformChildrenVoid(object : IrElementTransformerVoid() {
                     override fun visitReturn(expression: IrReturn): IrExpression {
@@ -215,7 +220,11 @@ class ModuleProviderFactory(
 
                 })
 
-                body
+                irBlock {
+                    body.statements.forEach {
+                        +it
+                    }
+                }
             }
         )
     }

@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irReturn
@@ -67,6 +66,7 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -289,14 +289,12 @@ class DependencyBindingResolver(
                             requirement = true
                         )
                     ),
+                    membersInjector = null,
                     returnType = dependencyFunction.returnType,
-                    createBody = { createFunction ->
-                        builder.irExprBody(
-                            irCall(dependencyFunction).apply {
-                                dispatchReceiver =
-                                    irGet(createFunction.valueParameters.single())
-                            }
-                        )
+                    createExpr = { createFunction ->
+                        irCall(dependencyFunction).apply {
+                            dispatchReceiver = irGet(createFunction.valueParameters.single())
+                        }
                     }
                 ).also { members.addClass(it) }
             }
@@ -586,9 +584,11 @@ class AnnotatedClassBindingResolver(
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
                         clazz.constructors.single().valueParameters
+                            .singleOrNull { it.name == providerValueParameter.name }
+                            ?.descriptor
+                            ?.fqNameSafe ?: clazz.properties
                             .single { it.name == providerValueParameter.name }
-                            .descriptor
-                            .fqNameSafe
+                            .descriptor.fqNameSafe
                     )
                 } ?: emptyList()
 

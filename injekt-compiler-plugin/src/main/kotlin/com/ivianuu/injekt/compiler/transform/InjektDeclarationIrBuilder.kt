@@ -59,13 +59,13 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -93,6 +93,7 @@ import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -323,11 +324,22 @@ class InjektDeclarationIrBuilder(
         visibility: Visibility,
         typeParametersContainer: IrTypeParametersContainer?,
         parameters: List<FactoryParameter>,
+        membersInjector: IrClass?,
         returnType: IrType,
-        createBody: IrBuilderWithScope.(IrFunction) -> IrBody
+        createExpr: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrClass {
         val (assistedParameters, nonAssistedParameters) = parameters
             .partition { it.assisted }
+        val membersInjectorParameters =
+            membersInjector?.constructors?.singleOrNull()?.valueParameters
+                ?.map {
+                    FactoryParameter(
+                        name = it.name.asString(),
+                        type = it.type.typeArguments.single(),
+                        assisted = false,
+                        requirement = false
+                    )
+                } ?: emptyList()
         return buildClass {
             kind = if (nonAssistedParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
             this.name = name
@@ -352,8 +364,7 @@ class InjektDeclarationIrBuilder(
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val fieldsByNonAssistedParameter = nonAssistedParameters
-                .toList()
+            val fieldsByNonAssistedParameter = (nonAssistedParameters + membersInjectorParameters)
                 .associateWith { parameter ->
                     addField(
                         parameter.name,
@@ -404,8 +415,10 @@ class InjektDeclarationIrBuilder(
                 providerCompanion(
                     typeParametersContainer,
                     parameters,
+                    membersInjector,
+                    membersInjectorParameters,
                     returnType,
-                    createBody
+                    createExpr
                 ).also { addChild(it) }
             } else null
 
@@ -413,9 +426,11 @@ class InjektDeclarationIrBuilder(
                 factoryCreateFunction(
                     typeParametersContainer,
                     parameters,
+                    membersInjector,
+                    membersInjectorParameters,
                     returnType,
                     this,
-                    createBody
+                    createExpr
                 )
             } else {
                 null
@@ -447,7 +462,7 @@ class InjektDeclarationIrBuilder(
                                 dispatchReceiverParameter!!
                             )
 
-                        parameters.forEachIndexed { index, parameter ->
+                        (parameters + membersInjectorParameters).forEachIndexed { index, parameter ->
                             putValueArgument(
                                 index,
                                 if (parameter in assistedParameters) {
@@ -493,8 +508,10 @@ class InjektDeclarationIrBuilder(
     private fun providerCompanion(
         typeParametersContainer: IrTypeParametersContainer?,
         parameters: List<FactoryParameter>,
+        membersInjector: IrClass?,
+        membersInjectorParameters: List<FactoryParameter>,
         returnType: IrType,
-        createBody: IrBuilderWithScope.(IrFunction) -> IrBody
+        createExpr: IrBuilderWithScope.(IrFunction) -> IrExpression
     ) = buildClass {
         kind = ClassKind.OBJECT
         name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
@@ -515,7 +532,88 @@ class InjektDeclarationIrBuilder(
             }
         }
 
-        factoryCreateFunction(typeParametersContainer, parameters, returnType, this, createBody)
+        factoryCreateFunction(
+            typeParametersContainer,
+            parameters,
+            membersInjector,
+            membersInjectorParameters,
+            returnType,
+            this,
+            createExpr
+        )
+    }
+
+    private fun factoryCreateFunction(
+        typeParametersContainer: IrTypeParametersContainer?,
+        parameters: List<FactoryParameter>,
+        membersInjector: IrClass?,
+        membersInjectorParameters: List<FactoryParameter>,
+        returnType: IrType,
+        owner: IrClass,
+        createExpr: IrBuilderWithScope.(IrFunction) -> IrExpression
+    ): IrFunction {
+        return owner.addFunction {
+            name = Name.identifier("create")
+            visibility = Visibilities.PUBLIC
+            isInline = true
+        }.apply {
+            metadata = MetadataSource.Function(descriptor)
+            dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
+
+            if (typeParametersContainer != null) copyTypeParametersFrom(typeParametersContainer)
+            this.returnType = returnType.nullableRemapTypeParameters(typeParametersContainer, this)
+
+            parameters
+                .forEach { (name, type) ->
+                    addValueParameter(
+                        name,
+                        type.nullableRemapTypeParameters(typeParametersContainer, this)
+                    )
+                }
+
+            val membersInjectorValueParametersByParameter = membersInjectorParameters
+                .associateWith {
+                    addValueParameter(
+                        it.name,
+                        it.type
+                    )
+                }
+
+            body = DeclarationIrBuilder(pluginContext, symbol).run {
+                if (membersInjector == null) {
+                    builder.irExprBody(createExpr(this, this@apply))
+                } else {
+                    builder.irBlockBody {
+                        val instance = irTemporary(createExpr(this, this@apply))
+
+                        membersInjectorParameters.forEach { parameter ->
+                            val injectFunction = membersInjector
+                                .companionObject().let { it as IrClass }
+                                .functions
+                                .single {
+                                    it.name.asString().startsWith("inject\$${parameter.name}")
+                                }
+
+                            +irCall(injectFunction).apply {
+                                dispatchReceiver =
+                                    irGetObject((membersInjector.companionObject() as IrClass).symbol)
+                                putValueArgument(0, irGet(instance))
+                                putValueArgument(
+                                    1,
+                                    builder.irGet(
+                                        membersInjectorValueParametersByParameter
+                                            .getValue(parameter)
+                                    )
+                                )
+                            }
+                        }
+
+                        +DeclarationIrBuilder(pluginContext, symbol)
+                            .irReturn(irGet(instance))
+                    }
+                }
+            }
+        }
     }
 
     fun fieldBakedProperty(
@@ -549,36 +647,6 @@ class InjektDeclarationIrBuilder(
                     )
                 )
             }
-        }
-    }
-
-    private fun factoryCreateFunction(
-        typeParametersContainer: IrTypeParametersContainer?,
-        parameters: List<FactoryParameter>,
-        returnType: IrType,
-        owner: IrClass,
-        createBody: IrBuilderWithScope.(IrFunction) -> IrBody
-    ): IrFunction {
-        return owner.addFunction {
-            name = Name.identifier("create")
-            visibility = Visibilities.PUBLIC
-            isInline = true
-        }.apply {
-            metadata = MetadataSource.Function(descriptor)
-            dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
-
-            if (typeParametersContainer != null) copyTypeParametersFrom(typeParametersContainer)
-            this.returnType = returnType.nullableRemapTypeParameters(typeParametersContainer, this)
-
-            parameters
-                .forEach { (name, type) ->
-                    addValueParameter(
-                        name,
-                        type.nullableRemapTypeParameters(typeParametersContainer, this)
-                    )
-                }
-
-            body = createBody(DeclarationIrBuilder(pluginContext, symbol), this)
         }
     }
 

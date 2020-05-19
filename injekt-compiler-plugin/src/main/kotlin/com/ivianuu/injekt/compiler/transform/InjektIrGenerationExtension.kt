@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.transform.annotatedclass.ClassFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.annotatedclass.MembersInjectorTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingAdapterTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.CompositionEntryPointsTransformer
@@ -92,12 +94,14 @@ class InjektIrGenerationExtension(
         }
 
         // generate a members injector for each annotated class
-        MembersInjectorTransformer(pluginContext)
+        MembersInjectorTransformer(
+            pluginContext
+        )
             .also { declarationStore.membersInjectorTransformer = it }
             .lower(moduleFragment)
 
         // generate a factory for each annotated class
-        ClassFactoryTransformer(pluginContext)
+        ClassFactoryTransformer(pluginContext, declarationStore)
             .also { declarationStore.classFactoryTransformer = it }
             .lower(moduleFragment)
 

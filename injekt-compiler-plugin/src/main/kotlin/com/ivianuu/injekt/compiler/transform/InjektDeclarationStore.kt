@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.transform.annotatedclass.ClassFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.annotatedclass.MembersInjectorTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer

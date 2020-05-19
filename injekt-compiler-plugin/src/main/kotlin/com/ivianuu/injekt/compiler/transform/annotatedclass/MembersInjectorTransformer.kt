@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.annotatedclass
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -68,6 +70,7 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
@@ -160,16 +163,16 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         return super.visitModuleFragment(declaration)
     }
 
-    fun getMembersInjectorForClass(clazz: IrClass): IrClass {
+    fun getMembersInjectorForClass(clazz: IrClass): IrClass? {
         membersInjectorByClass[clazz]?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
-            .membersInjector(clazz)
+            .membersInjector(clazz) ?: return null
         clazz.file.addChild(membersInjector)
         membersInjectorByClass[clazz] = membersInjector
         return membersInjector
     }
 
-    private fun IrBuilderWithScope.membersInjector(clazz: IrClass): IrClass {
+    private fun IrBuilderWithScope.membersInjector(clazz: IrClass): IrClass? {
         val injectProperties = mutableListOf<IrProperty>()
 
         fun IrClass.collectInjectorProperties() {
@@ -182,6 +185,8 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         }
 
         clazz.collectInjectorProperties()
+
+        if (injectProperties.isEmpty()) return null
 
         return buildClass {
             kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
@@ -197,10 +202,9 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
             (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
 
-            var fieldIndex = 0
             val fieldsByInjectProperty = injectProperties.associateWith { property ->
                 addField {
-                    name = Name.identifier("p${fieldIndex++}")
+                    name = property.name
                     type = irBuiltIns.function(0)
                         .typeWith(property.getter!!.returnType)
                         .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
@@ -220,7 +224,12 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }
 
                 body = irBlockBody {
-                    with(InjektDeclarationIrBuilder(pluginContext, symbol)) {
+                    with(
+                        InjektDeclarationIrBuilder(
+                            pluginContext,
+                            symbol
+                        )
+                    ) {
                         initializeClassWithAnySuperClass(this@clazz.symbol)
                     }
                     valueParametersByField.forEach { (field, valueParameter) ->
@@ -229,6 +238,55 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             field,
                             irGet(valueParameter)
                         )
+                    }
+                }
+            }
+
+            val companion = buildClass {
+                kind = ClassKind.OBJECT
+                name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
+                isCompanion = true
+                this.visibility = Visibilities.PUBLIC
+            }.apply clazz@{
+                createImplicitParameterDeclarationWithWrappedDescriptor()
+
+                (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+
+                addConstructor {
+                    this.returnType = defaultType
+                    isPrimary = true
+                    this.visibility = Visibilities.PUBLIC
+                }.apply {
+                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                            initializeClassWithAnySuperClass(this@clazz.symbol)
+                        }
+                    }
+                }
+            }.also { addChild(it) }
+
+            val companionInjectFunctionsByProperty = injectProperties.associateWith { property ->
+                companion.addFunction {
+                    name = Name.identifier("inject\$${property.name}")
+                    returnType = irBuiltIns.unitType
+                }.apply {
+                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+
+                    metadata = MetadataSource.Function(descriptor)
+                    val instanceValueParameter = addValueParameter(
+                        "instance",
+                        clazz.defaultType
+                    )
+                    val valueValueParameter = addValueParameter(
+                        property.name.asString(),
+                        property.getter!!.returnType
+                    )
+
+                    body = irBlockBody {
+                        +irCall(property.setter!!).apply {
+                            dispatchReceiver = irGet(instanceValueParameter)
+                            putValueArgument(0, irGet(valueValueParameter))
+                        }
                     }
                 }
             }
@@ -252,10 +310,11 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
                 body = irBlockBody {
                     fieldsByInjectProperty.forEach { (property, field) ->
-                        +irCall(property.setter!!).apply {
-                            dispatchReceiver = irGet(instanceValueParameter)
+                        +irCall(companionInjectFunctionsByProperty.getValue(property)).apply {
+                            dispatchReceiver = irGetObject(companion.symbol)
+                            putValueArgument(0, irGet(instanceValueParameter))
                             putValueArgument(
-                                0,
+                                1,
                                 if (property.backingField!!.type.isFunction() &&
                                     property.backingField!!.type.hasAnnotation(InjektFqNames.Provider)
                                 ) {
@@ -277,4 +336,5 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             }
         }
     }
+
 }

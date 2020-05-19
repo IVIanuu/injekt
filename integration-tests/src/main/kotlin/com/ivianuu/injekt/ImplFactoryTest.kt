@@ -37,7 +37,8 @@ class ImplFactoryTest {
             return create()
         }
         
-        fun invoke() = createComponent().foo
+        val component = createComponent()
+        fun invoke() = component.foo
     """
     ) {
         assertNotSame(
@@ -60,7 +61,8 @@ class ImplFactoryTest {
             return create()
         }
         
-        fun invoke() = createComponent().bar
+        val component = createComponent()
+        fun invoke() = component.bar
     """
     ) {
         assertNotSame(

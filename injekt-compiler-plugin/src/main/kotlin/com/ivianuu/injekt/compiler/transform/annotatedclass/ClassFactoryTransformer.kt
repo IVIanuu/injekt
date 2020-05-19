@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.annotatedclass
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -40,7 +42,8 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ClassFactoryTransformer(
-    context: IrPluginContext
+    context: IrPluginContext,
+    private val declarationStore: InjektDeclarationStore
 ) : AbstractInjektTransformer(context) {
 
     private val factoriesByClass = mutableMapOf<IrClass, IrClass>()
@@ -85,23 +88,24 @@ class ClassFactoryTransformer(
                             requirement = false
                         )
                     } ?: emptyList(),
+                membersInjector = declarationStore.getMembersInjectorForClassOrNull(clazz),
                 returnType = clazz.defaultType,
-                createBody = { createFunction ->
-                    builder.irExprBody(
-                        if (clazz.kind == ClassKind.OBJECT) {
-                            builder.irGetObject(clazz.symbol)
-                        } else {
-                            builder.irCall(constructor!!)
-                                .apply {
-                                    createFunction.valueParameters.forEach { valueParameter ->
+                createExpr = { createFunction ->
+                    if (clazz.kind == ClassKind.OBJECT) {
+                        builder.irGetObject(clazz.symbol)
+                    } else {
+                        builder.irCall(constructor!!)
+                            .apply {
+                                (0 until constructor.valueParameters.size)
+                                    .map { createFunction.valueParameters[it] }
+                                    .forEach {
                                         putValueArgument(
-                                            valueParameter.index,
-                                            irGet(valueParameter)
+                                            it.index,
+                                            irGet(it)
                                         )
                                     }
-                                }
-                        }
-                    )
+                            }
+                    }
                 }
             )
         }

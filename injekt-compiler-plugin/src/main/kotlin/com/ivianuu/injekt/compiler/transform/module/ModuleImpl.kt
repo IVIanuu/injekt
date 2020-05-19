@@ -66,7 +66,7 @@ class ModuleImpl(
 
     val nameProvider = NameProvider()
 
-    private val providerFactory = ModuleProviderFactory(this, pluginContext)
+    private val providerFactory = ModuleProviderFactory(declarationStore, this, pluginContext)
     private val declarationFactory = ModuleDeclarationFactory(
         this, pluginContext,
         symbols, nameProvider, declarationStore, providerFactory
