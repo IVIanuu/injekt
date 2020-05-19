@@ -144,7 +144,7 @@ fun systemServiceModule() {
 }
 
 @Module
-private inline fun <T : Any> systemService() {
+inline fun <T : Any> systemService() {
     val clazz = classOf<T>()
     transient<T> {
         ContextCompat.getSystemService(
