@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 object InjektNameConventions {
+
     fun getFactoryNameForClass(
         packageFqName: FqName,
         classFqName: FqName
@@ -153,6 +154,14 @@ object InjektNameConventions {
                 .child(Name.identifier(valueParametersHash(function).toString()))
                 .child(Name.identifier(suffix))
         ).let { nameWithoutIllegalChars(it.asString()) }
+    }
+
+    fun getChildFactoryImplName(
+        fqName: String
+    ): Name {
+        return Name.identifier(
+            fqName.replace(".", "_") + "_FactoryImpl"
+        )
     }
 
     private fun getNameAtSourcePositionWithSuffix(

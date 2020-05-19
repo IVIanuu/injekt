@@ -29,10 +29,14 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleDescriptor(
     private val module: ModuleImpl,
@@ -112,6 +116,14 @@ class ModuleDescriptor(
             if (declaration.factoryModuleClass != null) {
                 annotations += ClassPath(declaration.factoryModuleClass)
                     .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
+            }
+            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                irCall(symbols.astName.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irString(declaration.factoryRef.symbol.descriptor.fqNameSafe.asString())
+                    )
+                }
             }
 
             declaration.factoryRef.symbol.owner.valueParameters.forEach { valueParameter ->

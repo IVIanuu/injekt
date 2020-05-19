@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.buildClass
@@ -119,13 +120,18 @@ class ChildFactoryBindingResolver(
                 parentFactory.pluginContext
             )
 
+        val fqName = function.getAnnotation(InjektFqNames.AstName)!!
+            .getValueArgument(0)
+            .let { it as IrConst<String> }
+            .value
+
         val childFactoryImpl =
             ImplFactory(
-                origin = function.descriptor.fqNameSafe, // todo better origin
+                origin = FqName(fqName),
                 parent = parentFactory,
                 typeParameterMap = emptyMap(),
                 irDeclarationParent = parentFactory.clazz,
-                name = members.nameForGroup("child"),
+                name = InjektNameConventions.getChildFactoryImplName(fqName),
                 superType = superType,
                 moduleClass = moduleClass,
                 pluginContext = parentFactory.pluginContext,
