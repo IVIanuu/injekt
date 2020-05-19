@@ -17,11 +17,13 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.compositionFactoryOf
@@ -52,6 +54,9 @@ val Application.applicationComponent: ApplicationComponent
 fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
+
+    alias<Application, @ForApplication Context>()
+
     @ForApplication
     transient<CoroutineScope> { get<@ForApplication LifecycleOwner>().lifecycleScope }
     @ForApplication

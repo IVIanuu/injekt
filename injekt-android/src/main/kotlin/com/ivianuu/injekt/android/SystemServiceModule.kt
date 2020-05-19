@@ -33,7 +33,6 @@ import android.app.usage.UsageStatsManager
 import android.appwidget.AppWidgetManager
 import android.bluetooth.BluetoothManager
 import android.content.ClipboardManager
-import android.content.Context
 import android.content.RestrictionsManager
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutManager
@@ -149,7 +148,7 @@ private inline fun <T : Any> systemService() {
     val clazz = classOf<T>()
     transient<T> {
         ContextCompat.getSystemService(
-            get<@ForApplication Context>(),
+            @ForApplication get(),
             clazz.java
         )!!
     }
