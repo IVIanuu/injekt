@@ -79,12 +79,13 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val injectProperty = pluginContext.referenceClass(InjektFqNames.InjectProperty)!!
 
     val instanceFactory = pluginContext.referenceClass(InjektFqNames.InstanceFactory)!!
-    val instanceProvider = pluginContext.referenceClass(InjektFqNames.InstanceProvider)!!
 
     val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
 
     val mapDsl = pluginContext.referenceClass(InjektFqNames.MapDsl)!!
-    val mapProvider = pluginContext.referenceClass(InjektFqNames.MapProvider)!!
+    val mapOfValueFactory = pluginContext.referenceClass(InjektFqNames.MapOfValueFactory)!!
+    val mapOfProviderFactory = pluginContext.referenceClass(InjektFqNames.MapOfProviderFactory)!!
+    val mapOfLazyFactory = pluginContext.referenceClass(InjektFqNames.MapOfLazyFactory)!!
 
     val module = pluginContext.referenceClass(InjektFqNames.Module)!!
 
@@ -96,7 +97,11 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 
     val setDsl = pluginContext.referenceClass(InjektFqNames.SetDsl)!!
-    val setProvider = pluginContext.referenceClass(InjektFqNames.SetProvider)!!
+    val setOfValueFactory = pluginContext.referenceClass(InjektFqNames.SetOfValueFactory)!!
+    val setOfProviderFactory = pluginContext.referenceClass(InjektFqNames.SetOfProviderFactory)!!
+    val setOfLazyFactory = pluginContext.referenceClass(InjektFqNames.SetOfLazyFactory)!!
+
+    val singleInstanceFactory = pluginContext.referenceClass(InjektFqNames.SingleInstanceFactory)!!
 
     val transient = pluginContext.referenceClass(InjektFqNames.Transient)!!
 

@@ -307,8 +307,8 @@ class SetBindingNode(
     key: Key,
     owner: AbstractFactory,
     origin: FqName?,
-    val elements: List<BindingRequest>
-) : BindingNode(key, elements, null, false, null, owner, origin) {
+    val elements: Set<BindingRequest>
+) : BindingNode(key, elements.toList(), null, false, null, owner, origin) {
     val elementKey = key.type.typeArguments.single().asKey()
 }
 

@@ -699,15 +699,6 @@ class MapBindingResolver(
         factory,
         map.origin,
         map.entries
-            .mapValues {
-                BindingRequest(
-                    key = pluginContext.irBuiltIns.function(0)
-                        .typeWith(it.value.key.type)
-                        .withNoArgQualifiers(pluginContext, listOf(qualifier))
-                        .asKey(),
-                    requestOrigin = it.value.requestOrigin
-                )
-            }
     )
 }
 
@@ -756,7 +747,7 @@ class SetBindingResolver(
                         setKey,
                         factoryImplementation,
                         set.origin,
-                        set.elements.toList()
+                        set.elements
                     ),
                     frameworkBinding(InjektFqNames.Lazy, setKey, set),
                     frameworkBinding(InjektFqNames.Provider, setKey, set)
@@ -796,15 +787,6 @@ class SetBindingResolver(
         factoryImplementation,
         set.origin,
         set.elements
-            .map {
-                BindingRequest(
-                    key = pluginContext.irBuiltIns.function(0).typeWith(
-                            it.key.type
-                        ).withNoArgQualifiers(pluginContext, listOf(qualifier))
-                        .asKey(),
-                    requestOrigin = it.requestOrigin
-                )
-            }
     )
 }
 

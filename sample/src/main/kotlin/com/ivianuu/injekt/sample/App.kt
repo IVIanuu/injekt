@@ -24,6 +24,7 @@ import com.ivianuu.injekt.inject
 
 class App : Application() {
 
+    private val appServiceRunner: AppServiceRunner by inject()
     private val repo: Repo by inject()
 
     override fun onCreate() {

@@ -18,20 +18,16 @@ package com.ivianuu.injekt.internal
 
 import com.ivianuu.injekt.Provider
 
-class SetProvider<E>(private val providers: Set<@Provider () -> E>) : () -> Set<E> {
-    override fun invoke(): Set<E> =
-        providers.mapTo(LinkedHashSet(providers.size)) { it() }
+class SingleInstanceFactory<T>(private val instance: T) : @Provider () -> T {
+
+    override fun invoke() = instance
 
     companion object {
-        private val EMPTY = SetProvider<Any?>(emptySet())
+        private val NullProvider = SingleInstanceFactory<Any?>(null)
 
-        fun <E> create(element: @Provider () -> E): SetProvider<E> =
-            SetProvider(setOf(element))
-
-        fun <E> create(vararg elements: @Provider () -> E): SetProvider<E> =
-            SetProvider(setOf(*elements))
-
-        fun <E> empty(): SetProvider<E> = EMPTY as SetProvider<E>
-
+        fun <T> create(instance: T): SingleInstanceFactory<T> {
+            return if (instance == null) NullProvider as SingleInstanceFactory<T>
+            else SingleInstanceFactory(instance)
+        }
     }
 }

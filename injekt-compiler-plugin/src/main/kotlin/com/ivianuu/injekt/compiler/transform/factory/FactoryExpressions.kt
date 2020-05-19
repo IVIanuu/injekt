@@ -37,6 +37,8 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
@@ -192,7 +194,24 @@ class FactoryExpressions(
     private fun instanceExpressionForMap(binding: MapBindingNode): FactoryExpression {
         val entryExpressions = binding.entries
             .map { (key, entryValue) ->
-                val entryValueExpression = getBindingExpression(entryValue)
+                val entryValueExpression = getBindingExpression(
+                    when {
+                        binding.valueKey.type.isFunction() &&
+                                binding.valueKey.type.hasAnnotation(InjektFqNames.Provider) ->
+                            entryValue.copy(requestType = RequestType.Provider)
+                        binding.valueKey.type.isFunction() &&
+                                binding.valueKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                            BindingRequest(
+                                pluginContext.irBuiltIns.function(0)
+                                    .typeWith(entryValue.key.type)
+                                    .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Lazy))
+                                    .asKey(),
+                                entryValue.requestOrigin
+                            )
+                        }
+                        else -> entryValue
+                    }
+                )
                 val pairExpression: FactoryExpression = pairExpression@{
                     irCall(pair.constructors.single()).apply {
                         putTypeArgument(0, binding.keyKey.type)
@@ -368,7 +387,26 @@ class FactoryExpressions(
 
     private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
         val elementExpressions = binding.dependencies
-            .map { getBindingExpression(it) }
+            .map { element ->
+                getBindingExpression(
+                    when {
+                        binding.elementKey.type.isFunction() &&
+                                binding.elementKey.type.hasAnnotation(InjektFqNames.Provider) ->
+                            element.copy(requestType = RequestType.Provider)
+                        binding.elementKey.type.isFunction() &&
+                                binding.elementKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                            BindingRequest(
+                                pluginContext.irBuiltIns.function(0)
+                                    .typeWith(element.key.type)
+                                    .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Lazy))
+                                    .asKey(),
+                                element.requestOrigin
+                            )
+                        }
+                        else -> element
+                    }
+                )
+            }
 
         val expression: FactoryExpression = bindingExpression@{ context ->
             when (elementExpressions.size) {
@@ -547,29 +585,38 @@ class FactoryExpressions(
             }
 
         return providerFieldExpression(binding.key) providerFieldExpression@{ context ->
-            val mapProviderCompanion = symbols.mapProvider.owner
-                .companionObject() as IrClass
+            val mapFactoryCompanion = when {
+                binding.valueKey.type.isFunction() &&
+                        binding.valueKey.type.hasAnnotation(InjektFqNames.Provider) -> {
+                    symbols.mapOfProviderFactory.owner.companionObject() as IrClass
+                }
+                binding.valueKey.type.isFunction() &&
+                        binding.valueKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                    symbols.mapOfLazyFactory.owner.companionObject() as IrClass
+                }
+                else -> symbols.mapOfValueFactory.owner.companionObject() as IrClass
+            }
 
             if (entryExpressions.isEmpty()) {
                 irCall(
-                    mapProviderCompanion.functions
+                    mapFactoryCompanion.functions
                         .single { it.name.asString() == "empty" }
                 ).apply {
-                    dispatchReceiver = irGetObject(mapProviderCompanion.symbol)
+                    dispatchReceiver = irGetObject(mapFactoryCompanion.symbol)
                     putTypeArgument(0, binding.keyKey.type)
                     putTypeArgument(1, binding.valueKey.type)
                 }
             } else {
                 when (entryExpressions.size) {
                     1 -> {
-                        val create = mapProviderCompanion.functions
+                        val create = mapFactoryCompanion.functions
                             .single {
                                 it.name.asString() == "create" &&
                                         !it.valueParameters.single().isVararg
                             }
 
                         irCall(create).apply {
-                            dispatchReceiver = irGetObject(mapProviderCompanion.symbol)
+                            dispatchReceiver = irGetObject(mapFactoryCompanion.symbol)
                             putTypeArgument(0, binding.keyKey.type)
                             putTypeArgument(1, binding.valueKey.type)
                             putValueArgument(
@@ -579,14 +626,14 @@ class FactoryExpressions(
                         }
                     }
                     else -> {
-                        val create = mapProviderCompanion.functions
+                        val create = mapFactoryCompanion.functions
                             .single {
                                 it.name.asString() == "create" &&
                                         it.valueParameters.single().isVararg
                             }
 
                         irCall(create).apply {
-                            dispatchReceiver = irGetObject(mapProviderCompanion.symbol)
+                            dispatchReceiver = irGetObject(mapFactoryCompanion.symbol)
                             putTypeArgument(0, binding.keyKey.type)
                             putTypeArgument(1, binding.valueKey.type)
                             putValueArgument(
@@ -722,28 +769,37 @@ class FactoryExpressions(
             }
 
         return providerFieldExpression(binding.key) providerFieldExpression@{ context ->
-            val setProviderCompanion = symbols.setProvider.owner
-                .companionObject() as IrClass
+            val setFactoryCompanion = when {
+                binding.elementKey.type.isFunction() &&
+                        binding.elementKey.type.hasAnnotation(InjektFqNames.Provider) -> {
+                    symbols.setOfProviderFactory.owner.companionObject() as IrClass
+                }
+                binding.elementKey.type.isFunction() &&
+                        binding.elementKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                    symbols.setOfLazyFactory.owner.companionObject() as IrClass
+                }
+                else -> symbols.setOfValueFactory.owner.companionObject() as IrClass
+            }
 
             if (elementExpressions.isEmpty()) {
                 irCall(
-                    setProviderCompanion.functions
+                    setFactoryCompanion.functions
                         .single { it.name.asString() == "empty" }
                 ).apply {
-                    dispatchReceiver = irGetObject(setProviderCompanion.symbol)
+                    dispatchReceiver = irGetObject(setFactoryCompanion.symbol)
                     putTypeArgument(0, binding.elementKey.type)
                 }
             } else {
                 when (elementExpressions.size) {
                     1 -> {
-                        val create = setProviderCompanion.functions
+                        val create = setFactoryCompanion.functions
                             .single {
                                 it.name.asString() == "create" &&
                                         !it.valueParameters.single().isVararg
                             }
 
                         irCall(create).apply {
-                            dispatchReceiver = irGetObject(setProviderCompanion.symbol)
+                            dispatchReceiver = irGetObject(setFactoryCompanion.symbol)
                             putTypeArgument(0, binding.elementKey.type)
                             putValueArgument(
                                 0,
@@ -752,14 +808,14 @@ class FactoryExpressions(
                         }
                     }
                     else -> {
-                        val create = setProviderCompanion.functions
+                        val create = setFactoryCompanion.functions
                             .single {
                                 it.name.asString() == "create" &&
                                         it.valueParameters.single().isVararg
                             }
 
                         irCall(create).apply {
-                            dispatchReceiver = irGetObject(setProviderCompanion.symbol)
+                            dispatchReceiver = irGetObject(setFactoryCompanion.symbol)
                             putTypeArgument(0, binding.elementKey.type)
                             putValueArgument(
                                 0,
@@ -799,7 +855,7 @@ class FactoryExpressions(
     }
 
     private fun IrBuilderWithScope.instanceProvider(instance: IrExpression): IrExpression {
-        val instanceProviderCompanion = symbols.instanceProvider.owner
+        val instanceProviderCompanion = symbols.singleInstanceFactory.owner
             .companionObject() as IrClass
         return irCall(
             instanceProviderCompanion

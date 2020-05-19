@@ -23,7 +23,7 @@ import org.junit.Test
 class SetTest {
 
     @Test
-    fun testSet() = codegen(
+    fun testSetOfValueInstance() = codegen(
         """
         @InstanceFactory
         fun invoke(): Set<Command> {
@@ -47,7 +47,31 @@ class SetTest {
     }
 
     @Test
-    fun testSetOfProvider() = codegen(
+    fun testSetOfValueProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Set<Command> {
+            transient { CommandA() }
+            transient { CommandB() }
+            transient { CommandC() }
+            set<Command> {
+                add<CommandA>()
+                add<CommandB>()
+                add<CommandC>()
+            }
+            return create()
+        }
+         """
+    ) {
+        val set = invokeSingleFile<@Provider () -> Set<Command>>()().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0] is CommandA)
+        assertTrue(set[1] is CommandB)
+        assertTrue(set[2] is CommandC)
+    }
+
+    @Test
+    fun testSetOfProviderInstance() = codegen(
         """
         @InstanceFactory
         fun invoke(): Set<@Provider () -> Command> {
@@ -72,7 +96,32 @@ class SetTest {
     }
 
     @Test
-    fun testSetOfLazy() = codegen(
+    fun testSetOfProviderProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Set<@Provider () -> Command> {
+            transient { CommandA() }
+            transient { CommandB() }
+            transient { CommandC() }
+            set<Command> {
+                add<CommandA>()
+                add<CommandB>()
+                add<CommandC>()
+            }
+            return create()
+        }
+         """
+    ) {
+        val set =
+            invokeSingleFile<@Provider () -> Set<@Provider () -> Command>>()().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0]() is CommandA)
+        assertTrue(set[1]() is CommandB)
+        assertTrue(set[2]() is CommandC)
+    }
+
+    @Test
+    fun testSetOfLazyInstance() = codegen(
         """
         @InstanceFactory
         fun invoke(): Set<@Lazy () -> Command> {
@@ -90,6 +139,31 @@ class SetTest {
     ) {
         val set =
             invokeSingleFile<Set<@Lazy () -> Command>>().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0]() is CommandA)
+        assertTrue(set[1]() is CommandB)
+        assertTrue(set[2]() is CommandC)
+    }
+
+    @Test
+    fun testSetOfLazyProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Set<@Lazy () -> Command> {
+            transient { CommandA() }
+            transient { CommandB() }
+            transient { CommandC() }
+            set<Command> {
+                add<CommandA>()
+                add<CommandB>()
+                add<CommandC>()
+            }
+            return create()
+        }
+         """
+    ) {
+        val set =
+            invokeSingleFile<@Provider () -> Set<@Lazy () -> Command>>()().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)

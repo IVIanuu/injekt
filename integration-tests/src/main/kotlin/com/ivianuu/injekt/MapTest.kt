@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 class MapTest {
 
     @Test
-    fun testMap() = codegen(
+    fun testMapOfValueInstance() = codegen(
         """
         @InstanceFactory
         fun invoke(): Map<KClass<out Command>, Command> {
@@ -49,7 +49,32 @@ class MapTest {
     }
 
     @Test
-    fun testMapOfProvider() = codegen(
+    fun testMapOfValueProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Map<KClass<out Command>, Command> {
+            transient { CommandA() }
+            transient { CommandB() }
+            transient { CommandC() }
+            map<KClass<out Command>, Command> {
+                put<CommandA>(CommandA::class)
+                put<CommandB>(CommandB::class)
+                put<CommandC>(CommandC::class)
+            }
+            return create()
+        }
+        """
+    ) {
+        val map =
+            invokeSingleFile<@Provider () -> Map<KClass<out Command>, Command>>()()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class] is CommandA)
+        assertTrue(map[CommandB::class] is CommandB)
+        assertTrue(map[CommandC::class] is CommandC)
+    }
+
+    @Test
+    fun testMapOfProviderInstance() = codegen(
         """
         @InstanceFactory
         fun invoke(): Map<KClass<out Command>, @Provider () -> Command> {
@@ -74,7 +99,32 @@ class MapTest {
     }
 
     @Test
-    fun testMapOfLazy() = codegen(
+    fun testMapOfProviderProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Map<KClass<out Command>, @Provider () -> Command> {
+            transient { CommandA() }
+            transient { CommandB() }
+            transient { CommandC() }
+            map<KClass<out Command>, Command> {
+                put<CommandA>(CommandA::class)
+                put<CommandB>(CommandB::class)
+                put<CommandC>(CommandC::class)
+            }
+            return create()
+        }
+    """
+    ) {
+        val map =
+            invokeSingleFile<@Provider () -> Map<KClass<out Command>, @Provider () -> Command>>()()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class]!!() is CommandA)
+        assertTrue(map[CommandB::class]!!() is CommandB)
+        assertTrue(map[CommandC::class]!!() is CommandC)
+    }
+
+    @Test
+    fun testMapOfLazyInstance() = codegen(
         """
         @InstanceFactory
         fun invoke(): Map<KClass<out Command>, @Lazy () -> Command> {
@@ -92,6 +142,32 @@ class MapTest {
     ) {
         val map =
             invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class]!!() is CommandA)
+        assertTrue(map[CommandB::class]!!() is CommandB)
+        assertTrue(map[CommandC::class]!!() is CommandC)
+    }
+
+    @Test
+    fun testMapOfLazyProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Map<KClass<out Command>, @Lazy () -> Command> {
+            transient { CommandA() }
+            transient { CommandB() }
+            transient { CommandC() }
+            map<KClass<out Command>, Command> {
+                put<CommandA>(CommandA::class)
+                put<CommandB>(CommandB::class)
+                put<CommandC>(CommandC::class)
+            }
+            return create()
+        }
+         """
+    ) {
+        val map =
+            invokeSingleFile<@Provider () -> Map<KClass<out Command>, @Lazy () -> Command>>()()
+        println("map ${map[CommandB::class]!!.invoke()}")
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)

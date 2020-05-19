@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt.sample
 
-class InstanceProvider<T>(private val instance: T) : () -> T {
-
-    override fun invoke() = instance
-
-    companion object {
-        private val NullProvider = InstanceProvider<Any?>(null)
-
-        fun <T> create(instance: T): InstanceProvider<T> {
-            return if (instance == null) NullProvider as InstanceProvider<T>
-            else InstanceProvider(instance)
-        }
-    }
-}
+@BindAppService
+class UserAppService
