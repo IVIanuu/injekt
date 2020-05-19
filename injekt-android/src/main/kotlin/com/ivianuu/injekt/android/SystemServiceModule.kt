@@ -75,6 +75,8 @@ import android.view.accessibility.CaptioningManager
 import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
+import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.installIn

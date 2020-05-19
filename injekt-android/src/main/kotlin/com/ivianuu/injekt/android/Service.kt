@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
+import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope

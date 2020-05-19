@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -35,8 +36,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     private fun IrClassSymbol.childClass(name: Name) = owner.declarations
         .filterIsInstance<IrClass>()
-        .single { it.name == name }
-        .symbol
+        .singleOrNull { it.name == name }
+        ?.symbol ?: error("Couldn't find $name in ${owner.dump()}")
 
     val astAlias = injektAst.childClass(InjektFqNames.AstAlias.shortName())
     val astAssisted = pluginContext.referenceClass(InjektFqNames.AstAssisted)!!

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.composition.CompositionComponent
