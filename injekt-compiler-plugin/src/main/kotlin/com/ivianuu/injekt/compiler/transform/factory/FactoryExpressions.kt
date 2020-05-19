@@ -619,7 +619,11 @@ class FactoryExpressions(
 
     private fun providerExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
         val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(it) }
+            .map {
+                getBindingExpression(
+                    it.copy(requestType = RequestType.Provider)
+                )
+            }
         return providerFieldExpression(binding.key) { context ->
             instanceProvider(
                 if (dependencyExpressions.isNotEmpty()) {
