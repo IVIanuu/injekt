@@ -16,10 +16,10 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.android.ApplicationScoped
 import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.composition.BindingAdapterFunction

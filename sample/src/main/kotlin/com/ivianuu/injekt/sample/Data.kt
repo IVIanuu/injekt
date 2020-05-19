@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.android.ApplicationComponent
-import com.ivianuu.injekt.android.ApplicationScoped
 import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.transient
 import java.io.File
