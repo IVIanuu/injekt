@@ -17,7 +17,7 @@
 package com.ivianuu.injekt
 
 @InstanceFactory
-inline fun <T> buildInstance(): T = create()
+inline fun <T> createInstance(): T = create()
 
 @InstanceFactory
 inline fun <T> buildInstance(block: @Module () -> Unit): T {

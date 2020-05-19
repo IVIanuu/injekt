@@ -42,15 +42,13 @@ import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.name.FqName
 
 class FactoryExpressions(
+    private val graph: Graph,
     private val pluginContext: IrPluginContext,
     private val symbols: InjektSymbols,
     private val members: FactoryMembers,
     private val parent: FactoryExpressions?,
     private val factory: AbstractFactory
 ) {
-
-    // todo remove this circular dep
-    lateinit var graph: Graph
 
     private val bindingExpressions = mutableMapOf<BindingRequest, FactoryExpression>()
 

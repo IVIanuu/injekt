@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
@@ -84,11 +85,13 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                 factoryFunction.descriptor.fqNameSafe
                     .parent()
                     .child(InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction))
-            ).singleOrNull()?.owner ?: error(
-                "Couldn't find factory function for ${InjektNameConventions.getModuleNameForFactoryFunction(
-                    factoryFunction
-                )}"
-            )
+            ).let {
+                it.singleOrNull()?.owner ?: error(
+                    "Couldn't find factory function for ${InjektNameConventions.getModuleNameForFactoryFunction(
+                        factoryFunction
+                    )} all ${it.map { it.owner.render() }}"
+                )
+            }
         }
     }
 

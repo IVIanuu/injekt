@@ -97,6 +97,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
@@ -456,6 +458,13 @@ class InjektDeclarationIrBuilder(
                                     )
                                 } else {
                                     if (parameter.requirement) {
+                                        builder.irGetField(
+                                            builder.irGet(dispatchReceiverParameter!!),
+                                            fieldsByNonAssistedParameter.getValue(parameter)
+                                        )
+                                    } else if (parameter.type.isFunction() &&
+                                        parameter.type.hasAnnotation(InjektFqNames.Provider)
+                                    ) {
                                         builder.irGetField(
                                             builder.irGet(dispatchReceiverParameter!!),
                                             fieldsByNonAssistedParameter.getValue(parameter)

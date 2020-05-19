@@ -254,7 +254,8 @@ class MembersInjectorBindingNode(
     key,
     membersInjector.constructors.singleOrNull()
         ?.valueParameters
-        ?.map { BindingRequest(it.type.asKey(), null) }
+        ?.map { it.type.typeArguments.single() }
+        ?.map { BindingRequest(it.asKey(), null) }
         ?: emptyList(),
     null,
     false,

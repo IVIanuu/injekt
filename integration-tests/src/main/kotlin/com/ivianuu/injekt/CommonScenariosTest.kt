@@ -168,49 +168,30 @@ class CommonScenariosTest {
     )
 
     @Test
-    fun viewModelFeature() = codegen(
+    fun testInjectionSiteProviderUsage() = codegen(
         """
-        abstract class ViewModel
-        
-        @Transient
-        class ViewModelStore {
-            fun <T : ViewModel> getOrCreate(clazz: Class<T>, factory: ViewModelFactory): T = factory.create(clazz)
-            abstract class ViewModelFactory {
-                abstract fun <T : ViewModel> create(clazz: Class<T>): T
-            }
+        interface TestComponent {
+            val injector: @MembersInjector (InjectClass) -> Unit 
         }
-        
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
-        @Qualifier
-        annotation class UnscopedViewModel
-        
-        @Module
-        inline fun <T : ViewModel> viewModel() {
-            val clazz = classOf<T>()
-            transient<@UnscopedViewModel T>()
-            transient {
-                val viewModelStore = get<ViewModelStore>()
-                val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
-                viewModelStore.getOrCreate<T>(clazz.java, object : ViewModelStore.ViewModelFactory() {
-                    override fun <T : ViewModel> create(clazz: Class<T>): T =
-                        viewModelProvider() as T
-                })
-            }
-        }
-        
-        class MyViewModel : ViewModel()
-
-        interface ViewModelComponent { 
-            val myViewModel: MyViewModel
+         
+        class InjectClass {
+            private val bar: Bar by inject()
         }
         
         @Factory
-        fun createComponent(): ViewModelComponent {
-            viewModel<MyViewModel>()
+        fun factory(): TestComponent {
+            transient { Foo() }
+            transient {
+                val fooProvider = get<@Provider () -> Foo>()
+                Bar(fooProvider())
+            }
             return create()
         }
         
-        fun invoke() = createComponent().myViewModel
+        fun invoke() {
+            val component = factory()
+            component.injector(InjectClass())
+        }
     """
     ) {
         invokeSingleFile()

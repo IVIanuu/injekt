@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -92,7 +91,7 @@ class ClassFactoryTransformer(
                         if (clazz.kind == ClassKind.OBJECT) {
                             builder.irGetObject(clazz.symbol)
                         } else {
-                            builder.irCall(constructor ?: error("Wtf ${clazz.dump()}"))
+                            builder.irCall(constructor!!)
                                 .apply {
                                     createFunction.valueParameters.forEach { valueParameter ->
                                         putValueArgument(

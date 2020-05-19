@@ -61,13 +61,6 @@ abstract class AbstractFactory(
         dependencyRequests: List<BindingRequest>,
         moduleAccessor: InitializerAccessor
     ) {
-        factoryExpressions = FactoryExpressions(
-            pluginContext = pluginContext,
-            symbols = symbols,
-            members = factoryMembers,
-            parent = parent?.factoryExpressions,
-            factory = this
-        )
         graph = Graph(
             parent = parent?.graph,
             factory = this,
@@ -83,7 +76,16 @@ abstract class AbstractFactory(
             declarationStore = declarationStore,
             symbols = symbols,
             factoryMembers = factoryMembers
-        ).also { factoryExpressions.graph = it }
+        )
+
+        factoryExpressions = FactoryExpressions(
+            graph = graph,
+            pluginContext = pluginContext,
+            symbols = symbols,
+            members = factoryMembers,
+            parent = parent?.factoryExpressions,
+            factory = this
+        )
 
         dependencyRequests.forEach { graph.validate(it) }
     }

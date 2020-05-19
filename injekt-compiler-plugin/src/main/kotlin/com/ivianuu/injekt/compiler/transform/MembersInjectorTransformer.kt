@@ -62,6 +62,8 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -254,13 +256,19 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             dispatchReceiver = irGet(instanceValueParameter)
                             putValueArgument(
                                 0,
-                                irCall(
-                                    irBuiltIns.function(0)
-                                        .functions
-                                        .single { it.owner.name.asString() == "invoke" }
-                                ).apply {
-                                    dispatchReceiver =
-                                        irGetField(irGet(dispatchReceiverParameter!!), field)
+                                if (property.backingField!!.type.isFunction() &&
+                                    property.backingField!!.type.hasAnnotation(InjektFqNames.Provider)
+                                ) {
+                                    irGetField(irGet(dispatchReceiverParameter!!), field)
+                                } else {
+                                    irCall(
+                                        irBuiltIns.function(0)
+                                            .functions
+                                            .single { it.owner.name.asString() == "invoke" }
+                                    ).apply {
+                                        dispatchReceiver =
+                                            irGetField(irGet(dispatchReceiverParameter!!), field)
+                                    }
                                 }
                             )
                         }
