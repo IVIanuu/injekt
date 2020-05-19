@@ -39,9 +39,10 @@ class ModuleTest {
     @Test
     fun testTypeParameterCapturingModule() = codegen(
         """
-            @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class TestQualifier1
+        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Qualifier 
+        annotation class TestQualifier1
+        
         @Module
         fun <T> capturingModule() {
             transient<@TestQualifier1 T> { get<T>() }
@@ -156,6 +157,24 @@ class ModuleTest {
             """
             )
         )
+    )
+
+    @Test
+    fun testClassOfModuleWithDefaultParameters() = codegen(
+        """
+        @Module
+        inline fun <S : Any> classOfModule(
+            p0: String = "",
+            p1: Int = 0
+        ) {
+            val classOf = classOf<S>()
+        }
+        
+        @Module
+        fun callingModule() {
+            classOfModule<Foo>(p1 = 1)
+        }
+    """
     )
 
     @Test

@@ -351,7 +351,9 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                                         null
                                     }
 
-                                    if (valueArgument == null) {
+                                    if (valueArgument == null &&
+                                        valueParameter.name.asString().startsWith("class\$")
+                                    ) {
                                         val typeParameterName = InjektNameConventions
                                             .typeParameterNameForClassParameterName(valueParameter.name)
                                         val typeParameter = transformedFunction.typeParameters

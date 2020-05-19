@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.getParameterName
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -50,6 +51,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
@@ -100,24 +102,24 @@ class ModuleImpl(
                 isPrimary = true
                 visibility = Visibilities.PUBLIC
             }.apply {
-                copyTypeParametersFrom(this@clazz)
-
                 function.allParameters
                     .filter {
                         !it.type.isFunction() ||
                                 (it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl &&
                                         !it.type.hasAnnotation(InjektFqNames.Module))
                     }
-                    .forEachIndexed { index, p ->
+                    .forEach { valueParameter ->
                         val newValueParameter = addValueParameter(
-                            "p$index",
-                            p.type
-                        )
+                            valueParameter.getParameterName(),
+                            valueParameter.type
+                        ).apply {
+                            defaultValue = valueParameter.defaultValue?.deepCopyWithSymbols()
+                        }
                         addField(
                             newValueParameter.name,
-                            p.type
+                            valueParameter.type
                         ).also {
-                            fieldsByParameters[p] = it
+                            fieldsByParameters[valueParameter] = it
                             fieldsByParameters[newValueParameter] = it
                         }
                     }

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -30,7 +31,6 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 
@@ -49,7 +49,7 @@ class InlineModuleLambdaTransformer(pluginContext: IrPluginContext) :
         val callee = expression.symbol.owner
         if (!callee.isModule(pluginContext.bindingContext)) return super.visitCall(expression)
 
-        val moduleLambdasByParameter = expression.getArgumentsWithIr()
+        val moduleLambdasByParameter = expression.getArgumentsWithIrIncludingNulls()
             .filter { it.first.type.isFunction() && it.first.type.hasAnnotation(InjektFqNames.Module) }
             .filter { it.second is IrFunctionExpression }
             .map { it.second as IrFunctionExpression }

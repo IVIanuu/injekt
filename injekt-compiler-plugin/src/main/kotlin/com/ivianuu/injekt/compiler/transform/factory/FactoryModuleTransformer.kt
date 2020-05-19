@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.getNearestDeclarationContainer
+import com.ivianuu.injekt.compiler.getParameterName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
@@ -142,7 +143,7 @@ class FactoryModuleTransformer(
             val valueParametersMap = factoryFunction.allParameters
                 .associateWith {
                     addValueParameter(
-                        "p${valueParameters.size}",
+                        it.getParameterName(),
                         it.type
                     )
                 }

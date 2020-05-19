@@ -69,9 +69,9 @@ class ModuleProviderFactory(
             visibility = visibility,
             typeParametersContainer = module.function,
             parameters = constructor?.valueParameters
-                ?.mapIndexed { index, valueParameter ->
+                ?.map { valueParameter ->
                     InjektDeclarationIrBuilder.FactoryParameter(
-                        name = "p$index",
+                        name = valueParameter.name.asString(),
                         type = valueParameter.type,
                         assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted),
                         requirement = false

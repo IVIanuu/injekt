@@ -51,7 +51,7 @@ class InstanceFactory(
         FunctionFactoryMembers(pluginContext, factoryFunction.getNearestDeclarationContainer())
 
     fun getInstanceExpression(
-        valueArguments: List<IrExpression>
+        valueArguments: List<IrExpression?>
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
             irBlock {

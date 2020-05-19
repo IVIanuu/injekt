@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -34,6 +33,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -91,8 +90,6 @@ class ImplFactory(
         returnType = clazz.defaultType
         isPrimary = true
         visibility = Visibilities.PUBLIC
-    }.apply {
-        copyTypeParametersFrom(clazz)
     }
     val factoryImplementationNode =
         FactoryImplementationNode(
@@ -148,7 +145,7 @@ class ImplFactory(
     }
 
     fun getInitExpression(
-        moduleValueArguments: List<IrExpression>
+        moduleValueArguments: List<IrExpression?>
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irCall(constructor).apply {
@@ -236,14 +233,10 @@ class ImplFactory(
     private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
         val superType = clazz.superTypes.single().getClass()!!
         body = irBlockBody {
-            +IrDelegatingConstructorCallImpl(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                context.irBuiltIns.unitType,
+            +irDelegatingConstructorCall(
                 if (superType.kind == ClassKind.CLASS)
                     superType.constructors.single { it.valueParameters.isEmpty() }
-                        .symbol
-                else context.irBuiltIns.anyClass.constructors.single()
+                else context.irBuiltIns.anyClass.constructors.single().owner
             )
             +IrInstanceInitializerCallImpl(
                 UNDEFINED_OFFSET,

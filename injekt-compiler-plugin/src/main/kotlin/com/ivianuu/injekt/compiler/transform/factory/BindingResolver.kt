@@ -141,7 +141,8 @@ class ChildFactoryBindingResolver(
         ).childFactory(
             members.nameForGroup("childFactory"),
             childFactoryImpl,
-            key.type
+            key.type,
+            function
         )
 
         members.addClass(childFactory)
@@ -158,7 +159,8 @@ class ChildFactoryBindingResolver(
     private fun IrBuilderWithScope.childFactory(
         name: Name,
         childImplFactory: ImplFactory,
-        superType: IrType
+        superType: IrType,
+        function: IrFunction
     ) = buildClass {
         this.name = name
         visibility = Visibilities.PRIVATE
@@ -207,10 +209,10 @@ class ChildFactoryBindingResolver(
                 .single { it.name.asString() == "invoke" }
                 .symbol
 
-            superType.typeArguments.dropLast(1).forEachIndexed { index, type ->
+            function.valueParameters.forEach { valueParameter ->
                 addValueParameter(
-                    "p$index",
-                    type
+                    valueParameter.name.asString(),
+                    valueParameter.type
                 )
             }
 
@@ -521,11 +523,10 @@ class AnnotatedClassBindingResolver(
 
             val providerConstructor = provider.constructors.singleOrNull()
 
-            val typeParametersMap = providerConstructor
-                ?.typeParameters
-                ?.map { it.symbol }
-                ?.associateWith { requestedKey.type.typeArguments[it.owner.index] }
-                ?: emptyMap()
+            val typeParametersMap = provider
+                .typeParameters
+                .map { it.symbol }
+                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
 
             val dependencies = providerConstructor
                 ?.valueParameters
@@ -570,11 +571,10 @@ class AnnotatedClassBindingResolver(
 
             val providerConstructor = provider.constructors.singleOrNull()
 
-            val typeParametersMap = providerConstructor
-                ?.typeParameters
-                ?.map { it.symbol }
-                ?.associateWith { requestedKey.type.typeArguments[it.owner.index] }
-                ?: emptyMap()
+            val typeParametersMap = provider
+                .typeParameters
+                .map { it.symbol }
+                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
 
             val dependencies = providerConstructor
                 ?.valueParameters

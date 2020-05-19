@@ -114,9 +114,9 @@ class ModuleDescriptor(
                     .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
             }
 
-            declaration.factoryRef.symbol.owner.valueParameters.forEachIndexed { index, valueParameter ->
+            declaration.factoryRef.symbol.owner.valueParameters.forEach { valueParameter ->
                 addValueParameter(
-                    "p${index}",
+                    valueParameter.name.asString(),
                     valueParameter.type.remapTypeParameters(module.clazz, clazz)
                 )
             }
@@ -193,7 +193,7 @@ class ModuleDescriptor(
 
             declaration.capturedValueArguments.forEachIndexed { index, parameter ->
                 addValueParameter(
-                    "p$index",
+                    "capture_$index",
                     parameter.type.remapTypeParameters(module.clazz, clazz)
                 ).apply {
                     annotations += parameter.path.asAnnotation(

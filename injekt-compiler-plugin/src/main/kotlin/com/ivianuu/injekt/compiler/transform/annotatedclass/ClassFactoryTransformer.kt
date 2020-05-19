@@ -96,7 +96,7 @@ class ClassFactoryTransformer(
                     } else {
                         builder.irCall(constructor!!)
                             .apply {
-                                (0 until constructor.valueParameters.size)
+                                constructor.valueParameters.indices
                                     .map { createFunction.valueParameters[it] }
                                     .forEach {
                                         putValueArgument(

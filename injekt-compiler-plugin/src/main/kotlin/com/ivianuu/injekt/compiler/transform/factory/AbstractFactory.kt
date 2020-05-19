@@ -91,7 +91,7 @@ abstract class AbstractFactory(
     }
 
     protected fun getModuleInitExpression(
-        valueArguments: List<IrExpression>
+        valueArguments: List<IrExpression?>
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, moduleClass.symbol)
             .irCall(moduleClass.constructors.single()).apply {

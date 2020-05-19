@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
 import com.ivianuu.injekt.compiler.ValueParameterPath
+import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -62,7 +63,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.nameForIrSerialization
@@ -256,7 +256,7 @@ class ModuleDeclarationFactory(
 
         if (call.isModuleLambdaInvoke()) {
             val includeName = nameProvider.allocate("include")
-            val arguments = call.getArgumentsWithIr().drop(1)
+            val arguments = call.getArgumentsWithIrIncludingNulls().drop(1)
             val moduleValueParameterProperties = arguments
                 .mapIndexed { index, (valueParameter, _) ->
                     InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
@@ -285,11 +285,13 @@ class ModuleDeclarationFactory(
                 irBlock {
                     arguments
                         .forEachIndexed { index, (_, expression) ->
-                            +irSetField(
-                                moduleExpression(),
-                                moduleValueParameterProperties[index].backingField!!,
-                                expression
-                            )
+                            if (expression != null) {
+                                +irSetField(
+                                    moduleExpression(),
+                                    moduleValueParameterProperties[index].backingField!!,
+                                    expression
+                                )
+                            }
                         }
                 }
             }
@@ -300,7 +302,7 @@ class ModuleDeclarationFactory(
         includeModuleFromFunction(
             call.symbol.owner,
             call.typeArguments,
-            call.getArgumentsWithIr().map { it.first to { it.second } },
+            call.getArgumentsWithIrIncludingNulls().map { it.first to { it.second } },
             lambdaCalls,
             declarations
         )
@@ -311,7 +313,7 @@ class ModuleDeclarationFactory(
     private fun includeModuleFromFunction(
         function: IrFunction,
         typeArguments: List<IrType>,
-        valueArguments: List<Pair<IrValueParameter, () -> IrExpression>>,
+        valueArguments: List<Pair<IrValueParameter, () -> IrExpression?>>,
         lambdaCalls: Map<IrValueParameter, IrCall>,
         declarations: MutableList<ModuleDeclaration>
     ) {
@@ -319,10 +321,12 @@ class ModuleDeclarationFactory(
         val includedType = includedClass.typeWith(typeArguments)
             .remapTypeParameters(module.function, module.clazz)
         val includedDescriptor = includedClass
-            .declarations.single {
+            .declarations
+            .single {
                 it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
             }
             .let { it as IrClass }
+
         val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
             .fieldBakedProperty(
                 moduleClass,
@@ -510,7 +514,7 @@ class ModuleDeclarationFactory(
                                         .indexOfFirst { it.name.asString() == valueParameterName }
                                     valueArguments[index].second
                                 }()
-                        bindingType = singleArgumentExpression.type.typeArguments.last()
+                        bindingType = singleArgumentExpression!!.type.typeArguments.last()
                     }
                     else -> {
                         error("Unexpected inline binding ${bindingFunction.dump()}")
@@ -543,7 +547,8 @@ class ModuleDeclarationFactory(
                 .single { it.name.asString() == "invoke" }
                 .valueParameters
                 .map {
-                    it.type.remapTypeParameters(provider, module.function)
+                    it.name.asString() to
+                            it.type.remapTypeParameters(provider, module.function)
                 }
 
             val constructor = provider.constructors.single()
@@ -552,20 +557,20 @@ class ModuleDeclarationFactory(
                 .valueParameters
                 .filter { it.name.asString() != "module" }
                 .map {
-                    it.type.typeArguments.single()
+                    it.name.asString() to it.type.typeArguments.single()
                         .remapTypeParameters(
                             constructor,
                             module.function,
-                            constructor.typeParameters.zip(module.function.typeParameters)
+                            provider.typeParameters.zip(module.function.typeParameters)
                                 .toMap() // todo
                         )
                 }
 
-            parameters += (assisted + nonAssisted).mapIndexed { index, type ->
+            parameters += (assisted + nonAssisted).map { (name, type) ->
                 InjektDeclarationIrBuilder.FactoryParameter(
-                    name = "p$index",
+                    name = name,
                     type = type,
-                    assisted = type in assisted,
+                    assisted = assisted.any { it.first == name },
                     requirement = false
                 )
             }

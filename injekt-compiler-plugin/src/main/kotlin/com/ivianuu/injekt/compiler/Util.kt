@@ -35,12 +35,17 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
+import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -413,3 +418,39 @@ val IrPluginContext.compositionsEnabled: Boolean
         moduleDescriptor.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektFqNames.CompositionFactory)
         ) != null
+
+fun IrMemberAccessExpression.getArgumentsWithIrIncludingNulls(): List<Pair<IrValueParameter, IrExpression?>> {
+    val res = mutableListOf<Pair<IrValueParameter, IrExpression?>>()
+    val irFunction = when (this) {
+        is IrFunctionAccessExpression -> this.symbol.owner
+        is IrFunctionReference -> this.symbol.owner
+        is IrPropertyReference -> {
+            assert(this.field == null) { "Field should be null to use `getArgumentsWithIr` on IrPropertyReference: ${this.dump()}}" }
+            this.getter!!.owner
+        }
+        else -> error(this)
+    }
+
+    dispatchReceiver?.let {
+        res += (irFunction.dispatchReceiverParameter!! to it)
+    }
+
+    extensionReceiver?.let {
+        res += (irFunction.extensionReceiverParameter!! to it)
+    }
+
+    irFunction.valueParameters.forEachIndexed { index, it ->
+        res += it to getValueArgument(index)
+    }
+
+    return res
+}
+
+fun IrValueParameter.getParameterName(): String {
+    val function = (parent as IrFunction)
+    return when (this) {
+        function.dispatchReceiverParameter -> "\$this"
+        function.extensionReceiverParameter -> "\$receiver"
+        else -> name.asString()
+    }
+}

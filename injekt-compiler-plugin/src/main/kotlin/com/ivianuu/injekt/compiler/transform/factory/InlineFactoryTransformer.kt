@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -33,7 +34,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -90,7 +90,7 @@ class InlineFactoryTransformer(
                                 inlineFactoryCall.typeArguments.forEachIndexed { index, typeArgument ->
                                     putTypeArgument(index, typeArgument)
                                 }
-                                inlineFactoryCall.getArgumentsWithIr()
+                                inlineFactoryCall.getArgumentsWithIrIncludingNulls()
                                     .forEachIndexed { index, (_, valueArgument) ->
                                         putValueArgument(index, valueArgument)
                                     }

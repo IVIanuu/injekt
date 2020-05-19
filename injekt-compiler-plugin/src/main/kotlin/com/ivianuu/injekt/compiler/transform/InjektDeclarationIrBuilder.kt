@@ -52,6 +52,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
@@ -77,7 +78,6 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -195,12 +195,7 @@ class InjektDeclarationIrBuilder(
         }
 
     fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {
-        +IrDelegatingConstructorCallImpl(
-            UNDEFINED_OFFSET,
-            UNDEFINED_OFFSET,
-            irBuiltIns.unitType,
-            irBuiltIns.anyClass.constructors.single()
-        )
+        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.owner.constructors.single())
         +IrInstanceInitializerCallImpl(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
@@ -387,14 +382,10 @@ class InjektDeclarationIrBuilder(
                 isPrimary = true
                 this.visibility = Visibilities.PUBLIC
             }.apply {
-                if (typeParametersContainer != null) {
-                    copyTypeParametersFrom(typeParametersContainer)
-                }
-
                 fieldsByNonAssistedParameter.forEach { (_, field) ->
                     addValueParameter(
                         field.name.asString(),
-                        field.type.remapTypeParameters(this@clazz, this)
+                        field.type
                     )
                 }
 

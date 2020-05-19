@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -31,7 +32,6 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -61,7 +61,7 @@ class RootFactoryTransformer(
                 val moduleValueArguments = function.body!!.statements
                     .first()
                     .let { it as IrCall }
-                    .getArgumentsWithIr()
+                    .getArgumentsWithIrIncludingNulls()
                     .map { it.second }
                 val moduleClass = declarationStore.getModuleClassForFunction(
                     declarationStore.getModuleFunctionForFactory(function)
