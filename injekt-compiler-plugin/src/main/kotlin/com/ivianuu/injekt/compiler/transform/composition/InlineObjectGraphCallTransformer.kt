@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -101,6 +102,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
+        if (function.visibility == Visibilities.LOCAL) return function
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) {

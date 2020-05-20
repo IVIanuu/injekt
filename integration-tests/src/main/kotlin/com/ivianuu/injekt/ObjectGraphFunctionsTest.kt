@@ -433,5 +433,57 @@ class ObjectGraphFunctionsTest {
         )
     )
 
+    @Test
+    fun testGetWithLambda() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        fun <T> inject(): T {
+            val component = getComponent()
+            return memo { component.get<T>() }
+        }
+        
+        fun <T> memo(init: () -> T): T = init()
+    """
+    )
+
+    @Test
+    fun testGetWithInlineLambda() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        fun <T> inject(): T {
+            val component = getComponent()
+            return memo { component.get<T>() }
+        }
+        
+        inline fun <T> memo(init: () -> T): T = init()
+    """
+    )
+
+    @Test
+    fun testInjectWithLambda() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        fun <T> inject(instance: T) {
+            val component = getComponent()
+            memo { component.inject(instance) }
+        }
+        
+        fun <T> memo(init: () -> T): T = init()
+    """
+    )
+
+    @Test
+    fun testInjectWithInlineLambda() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        fun <T> inject(instance: T) {
+            val component = getComponent()
+            memo { component.inject(instance) }
+        }
+        
+        inline fun <T> memo(init: () -> T): T = init()
+    """
+    )
+
 }
 
