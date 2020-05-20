@@ -325,7 +325,7 @@ interface InjektErrors {
 
         @JvmField
         val UNSUPPORTED_ANDROID_ENTRY_POINT = error(
-            "@AndroidEntryPoint only supports Applications, Activities, BroadcastReceivers and Services."
+            "@AndroidEntryPoint only supports Applications, Activities, Fragments, BroadcastReceivers and Services."
         )
 
         init {
