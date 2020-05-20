@@ -57,7 +57,6 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.owner.isObjectGraphGet || expression.symbol.owner.isObjectGraphInject) {
-                    println("found object graph call ${expression.dump()}")
                     objectGraphCalls += expression to currentFile
                 }
                 return super.visitCall(expression)

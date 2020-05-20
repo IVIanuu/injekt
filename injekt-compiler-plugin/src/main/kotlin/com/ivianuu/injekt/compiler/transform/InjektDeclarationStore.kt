@@ -89,9 +89,9 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                     .child(InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction))
             ).let {
                 it.singleOrNull()?.owner ?: error(
-                    "Couldn't find factory function for ${InjektNameConventions.getModuleNameForFactoryFunction(
+                    "Couldn't find factory function for\n${InjektNameConventions.getModuleNameForFactoryFunction(
                         factoryFunction
-                    )} all ${it.map { it.owner.render() }}"
+                    )} all ${it.map { it.owner.render() }}\nfactory ${factoryFunction.render()}"
                 )
             }
         }

@@ -24,7 +24,10 @@ class AndroidSymbols(val pluginContext: IrPluginContext) {
     val application = pluginContext.referenceClass(FqName("android.app.Application"))!!
     val broadcastReceiver =
         pluginContext.referenceClass(FqName("android.content.BroadcastReceiver"))!!
+    val bundle = pluginContext.referenceClass(FqName("android.os.Bundle"))!!
     val componentActivity =
-        pluginContext.referenceClass(FqName("androidx.activity.ComponentActivity"))
-    val service = pluginContext.referenceClass(FqName("android.app.Service"))
+        pluginContext.referenceClass(FqName("androidx.activity.ComponentActivity"))!!
+    val fragment =
+        pluginContext.referenceClass(FqName("androidx.fragment.app.Fragment"))!!
+    val service = pluginContext.referenceClass(FqName("android.app.Service"))!!
 }

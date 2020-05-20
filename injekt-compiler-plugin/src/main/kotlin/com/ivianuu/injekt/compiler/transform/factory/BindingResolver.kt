@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.buildClass
@@ -131,7 +130,7 @@ class ChildFactoryBindingResolver(
                 parent = parentFactory,
                 typeParameterMap = emptyMap(),
                 irDeclarationParent = parentFactory.clazz,
-                name = InjektNameConventions.getChildFactoryImplName(fqName),
+                name = members.nameForGroup("child"),//InjektNameConventions.getChildFactoryImplName(fqName),
                 superType = superType,
                 moduleClass = moduleClass,
                 pluginContext = parentFactory.pluginContext,

@@ -20,16 +20,15 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import com.ivianuu.injekt.android.ActivityViewModel
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.composition.inject
+import com.ivianuu.injekt.android.AndroidEntryPoint
 import com.ivianuu.injekt.inject
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        activityComponent.inject(this)
         super.onCreate(savedInstanceState)
         println("Got view model $viewModel")
     }

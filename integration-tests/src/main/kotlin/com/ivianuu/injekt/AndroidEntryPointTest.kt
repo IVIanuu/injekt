@@ -41,6 +41,12 @@ class AndroidEntryPointTest {
             app.onCreate()
             println("foo " + app.foo)
         }
+        
+        @Module
+        fun fooModule() {
+            installIn<ApplicationComponent>()
+            transient<Foo>()
+        }
     """
     ) {
         invokeSingleFile()

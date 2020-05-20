@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
@@ -156,11 +157,11 @@ object InjektNameConventions {
         ).let { nameWithoutIllegalChars(it.asString()) }
     }
 
-    fun getChildFactoryImplName(
-        fqName: String
-    ): Name {
+    fun getChildFactoryImplName(fqName: String): Name {
         return Name.identifier(
-            fqName.replace(".", "_") + "_FactoryImpl"
+            fqName
+                .split(".")
+                .last() + "_FactoryImpl"
         )
     }
 
@@ -179,8 +180,9 @@ object InjektNameConventions {
     }
 
     private fun valueParametersHash(function: IrFunction): Int {
-        return 0/*function.allParameters.map { 31 * it.name.asString().hashCode() }
-            .hashCode().absoluteValue*/
+        return function.allParameters
+            .map { it.getParameterName() }
+            .hashCode()
     }
 
     private fun getJoinedName(

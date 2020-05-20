@@ -52,7 +52,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -143,8 +142,6 @@ class ImplFactory(
             implementDependencyRequests()
             writeConstructor()
         }
-
-        println("component ${clazz.dump()}")
     }
 
     fun getInitExpression(
