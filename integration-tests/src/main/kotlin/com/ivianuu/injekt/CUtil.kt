@@ -57,22 +57,28 @@ fun singleSource(
 
 fun codegen(
     @Language("kotlin") source: String,
+    config: KotlinCompilation.() -> Unit = {},
     assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
 ) = codegen(
-    singleSource(source), assertions = assertions
+    singleSource(source), config = config, assertions = assertions
 )
 
 fun codegen(
     vararg sources: SourceFile,
+    config: KotlinCompilation.() -> Unit = {},
     assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
 ) {
-    val result = compile { this.sources = sources.toList() }
+    val result = compile {
+        this.sources = sources.toList()
+        config()
+    }
     println("Result: ${result.exitCode} m: ${result.messages}")
     assertions(result)
 }
 
 fun multiCodegen(
     vararg sources: List<SourceFile>,
+    config: KotlinCompilation.() -> Unit = {},
     assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } }
 ) {
     val prevCompilations = mutableListOf<KotlinCompilation.Result>()
@@ -86,6 +92,7 @@ fun multiCodegen(
                 val modules = classGraph.modules.mapNotNull { it.locationFile }
                 this.classpaths += (classpaths + modules).distinctBy(File::getAbsolutePath)
             }
+            config()
         }.also { prevCompilations += it }
     }
     assertions(results)

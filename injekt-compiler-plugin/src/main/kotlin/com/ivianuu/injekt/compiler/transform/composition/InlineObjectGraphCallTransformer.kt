@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -40,10 +41,15 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.substitute
@@ -56,7 +62,8 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val decoys = mutableSetOf<IrFunction>()
+    private val decoys = mutableMapOf<IrFunction, IrFunction>()
+    private val transformingFunctions = mutableSetOf<IrFunction>()
 
     override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
@@ -79,7 +86,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                 declarations.add(
                     original.deepCopyWithPreservingQualifiers()
                         .also { decoy ->
-                            decoys += decoy
+                            decoys[original] = decoy
                             InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
                                 if (transformed.valueParameters
                                         .any {
@@ -102,7 +109,9 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
-        if (function.visibility == Visibilities.LOCAL) return function
+        if (function.visibility == Visibilities.LOCAL &&
+            function.origin == IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+        ) return function
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) {
@@ -120,7 +129,9 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         }
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
-        if (function in decoys) return function
+        decoys[function]?.let { return it }
+        if (function in transformingFunctions) return function
+        transformingFunctions += function
 
         val originalUnresolvedGetCalls = mutableListOf<IrCall>()
         val originalUnresolvedInjectCalls = mutableListOf<IrCall>()
@@ -160,6 +171,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
 
         if (!hasUnresolvedCalls) {
             transformedFunctions[function] = function
+            transformingFunctions -= function
             rewriteObjectGraphCalls(
                 function,
                 emptyList(),
@@ -173,6 +185,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
 
         val transformedFunction = function.deepCopyWithPreservingQualifiers()
         transformedFunctions[function] = transformedFunction
+        transformingFunctions -= function
 
         val unresolvedGetCalls = mutableListOf<IrCall>()
         val unresolvedInjectCalls = mutableListOf<IrCall>()
@@ -365,13 +378,10 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                         }
                     }
                     in objectGraphFunctionCalls -> {
-                        val originalFunction = expression.symbol.owner
                         val transformedFunction = transformFunctionIfNeeded(expression.symbol.owner)
-                        if (originalFunction.symbol == transformedFunction.symbol) return expression
                         rewriteObjectGraphFunctionCall(
                             expression,
                             transformedFunction,
-                            originalFunction,
                             valueParametersByUnresolvedProviderType,
                             valueParametersByUnresolvedInjectorType
                         )
@@ -385,30 +395,34 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     private fun rewriteObjectGraphFunctionCall(
         originalCall: IrCall,
         transformedFunction: IrFunction,
-        originalFunction: IrFunction,
         valueParametersByUnresolvedProviderType: Map<IrType, IrValueParameter>,
         valueParametersByUnresolvedInjectorType: Map<IrType, IrValueParameter>
     ): IrExpression =
-        DeclarationIrBuilder(pluginContext, originalCall.symbol).irCall(transformedFunction).apply {
+        DeclarationIrBuilder(pluginContext, transformedFunction.symbol).irCall(transformedFunction)
+            .apply {
+                dispatchReceiver = originalCall.dispatchReceiver
             extensionReceiver = originalCall.extensionReceiver
+
             originalCall.typeArguments.forEachIndexed { index, it ->
                 putTypeArgument(index, it)
             }
-            (0 until originalCall.valueArgumentsCount).forEach {
-                putValueArgument(it, originalCall.getValueArgument(it))
-            }
 
-            (originalFunction.valueParameters.size until transformedFunction.valueParameters.size)
-                .forEach { valueParameterIndex ->
-                    val valueParameter =
-                        transformedFunction.valueParameters[valueParameterIndex]
+                transformedFunction.valueParameters.forEach { valueParameter ->
+                    var valueArgument = try {
+                        originalCall.getValueArgument(valueParameter.index)
+                    } catch (e: Throwable) {
+                        null
+                    }
 
-                    val valueArgument = when {
+                    if (valueArgument == null) {
+                        valueArgument = when {
                         valueParameter.name.asString().startsWith("provider\$") -> {
                             val substitutedType = valueParameter.type
-                                .substitute(
-                                    transformedFunction.typeParameters,
-                                    typeArguments
+                                .substituteByName(
+                                    transformedFunction.typeParameters
+                                        .map { it.symbol }
+                                        .zip(typeArguments)
+                                        .toMap()
                                 )
 
                             val componentType = substitutedType.typeArguments[0]
@@ -447,9 +461,11 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                         }
                         valueParameter.name.asString().startsWith("injector\$") -> {
                             val substitutedType = valueParameter.type
-                                .substitute(
-                                    transformedFunction.typeParameters,
-                                    typeArguments
+                                .substituteByName(
+                                    transformedFunction.typeParameters
+                                        .map { it.symbol }
+                                        .zip(typeArguments)
+                                        .toMap()
                                 )
 
                             val componentType = substitutedType.typeArguments[0]
@@ -490,13 +506,42 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                 }
                             }
                         }
-                        else -> {
-                            error("Unexpected additional value parameter ${valueParameter.dump()}")
+                            else -> null
                         }
                     }
 
-                    putValueArgument(valueParameterIndex, valueArgument)
+                    putValueArgument(valueParameter.index, valueArgument)
                 }
         }
 
+    // todo remove once compose fixed it's stuff
+    private fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+        if (this !is IrSimpleType) return this
+
+        (classifier as? IrTypeParameterSymbol)?.let { typeParam ->
+            substitutionMap.toList()
+                .firstOrNull { it.first.owner.name == typeParam.owner.name }
+                ?.let { return it.second.withAnnotations(annotations) }
+        }
+
+        substitutionMap[classifier]?.let {
+            return it.withAnnotations(annotations)
+        }
+
+        val newArguments = arguments.map {
+            if (it is IrTypeProjection) {
+                makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
+            } else {
+                it
+            }
+        }
+
+        val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+        return IrSimpleTypeImpl(
+            classifier,
+            hasQuestionMark,
+            newArguments,
+            newAnnotations
+        )
+    }
 }

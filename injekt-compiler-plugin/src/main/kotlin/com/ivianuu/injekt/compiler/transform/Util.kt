@@ -44,10 +44,15 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 
 fun IrFunction.deepCopyWithPreservingQualifiers(): IrFunction {
+    val mappedDescriptors = mutableSetOf<WrappedSimpleFunctionDescriptor>()
     val symbolRemapper = DeepCopySymbolRemapper(
         object : DescriptorsRemapper {
-            override fun remapDeclaredSimpleFunction(descriptor: FunctionDescriptor): FunctionDescriptor =
-                WrappedSimpleFunctionDescriptor(sourceElement = descriptor.source)
+            override fun remapDeclaredSimpleFunction(descriptor: FunctionDescriptor): FunctionDescriptor {
+                return if (descriptor == this@deepCopyWithPreservingQualifiers.descriptor) {
+                    WrappedSimpleFunctionDescriptor(sourceElement = descriptor.source)
+                        .also { mappedDescriptors += it }
+                } else descriptor
+            }
         }
     )
     acceptVoid(symbolRemapper)
@@ -56,7 +61,9 @@ fun IrFunction.deepCopyWithPreservingQualifiers(): IrFunction {
         object : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper) {
             override fun visitSimpleFunction(declaration: IrSimpleFunction): IrSimpleFunction {
                 return super.visitSimpleFunction(declaration).also {
-                    (it as IrFunctionImpl).metadata = MetadataSource.Function(it.descriptor)
+                    if (it.descriptor in mappedDescriptors) {
+                        (it as IrFunctionImpl).metadata = MetadataSource.Function(it.descriptor)
+                    }
                 }
             }
         }.also { typeRemapper.deepCopy = it }, null

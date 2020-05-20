@@ -32,13 +32,20 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev153"
+    const val version = "${Build.versionName}-dev156"
 }
 
 object Deps {
     const val androidGradlePlugin = "com.android.tools.build:gradle:3.6.0"
+
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
+
+        object Compose {
+            private const val version = "0.0.1-dev121"
+            const val compiler = "androidx.compose:compose-compiler:$version"
+            const val runtime = "androidx.compose:compose-runtime-desktop:$version"
+        }
 
         object Lifecycle {
             private const val version = "2.2.0"

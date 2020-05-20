@@ -32,6 +32,9 @@ dependencies {
     implementation(project(":injekt-common"))
     implementation(project(":injekt-composition"))
 
+    implementation(Deps.AndroidX.Compose.runtime)
+    implementation(Deps.AndroidX.Compose.compiler)
+
     implementation(Deps.junit)
 
     // todo remove compile testing deps

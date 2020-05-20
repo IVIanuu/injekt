@@ -127,6 +127,8 @@ class InjektIrGenerationExtension(
 
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
+
+        //error("lol")
     }
 
 }

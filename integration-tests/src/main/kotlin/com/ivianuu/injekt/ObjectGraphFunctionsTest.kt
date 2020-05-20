@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -443,6 +444,28 @@ class ObjectGraphFunctionsTest {
         }
         
         fun <T> memo(init: () -> T): T = init()
+        
+        fun invoke() {
+            inject<String>()
+        }
+    """
+    )
+
+    @Test
+    fun testGetWithLocalFunction() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        fun <T> inject(): T {
+            val component = getComponent()
+            
+            fun <S> localGet(): S = component.get<S>()
+            
+            return localGet<T>()
+        }
+        
+        fun invoke() {
+            inject<String>()
+        }
     """
     )
 
@@ -456,6 +479,10 @@ class ObjectGraphFunctionsTest {
         }
         
         inline fun <T> memo(init: () -> T): T = init()
+        
+        fun invoke() {
+            inject<String>()
+        }
     """
     )
 
@@ -469,6 +496,10 @@ class ObjectGraphFunctionsTest {
         }
         
         fun <T> memo(init: () -> T): T = init()
+        
+        fun invoke() {
+            inject("hello")
+        }
     """
     )
 
@@ -482,8 +513,55 @@ class ObjectGraphFunctionsTest {
         }
         
         inline fun <T> memo(init: () -> T): T = init()
+        
+        fun invoke() {
+            inject("hello")
+        }
     """
     )
 
-}
+    private val composeSource = """
+            val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
+            
+            @Module
+            fun module() {
+                installIn<TestCompositionComponent>()
+                transient<Foo>()
+            }
+            
+            @androidx.compose.Composable
+            fun <T> inject(): T { 
+                val component = ComponentAmbient.current
+                return androidx.compose.remember(component) { component.get() }
+            }
+            
+            @androidx.compose.Composable
+            fun caller() {
+                generateCompositions()
+                val foo = inject<Foo>()
+            }
+        """
 
+    @Test
+    fun testGetInComposableWithCompilingAfterCompose() = codegen(
+        composeSource,
+        config = {
+            val other = compilerPlugins.toList()
+            compilerPlugins = listOf(ComposeComponentRegistrar()) + other
+        }
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testGetInComposableWithCompilingBeforeCompose() = codegen(
+        composeSource,
+        config = {
+            val other = compilerPlugins.toList()
+            compilerPlugins = other + listOf(ComposeComponentRegistrar())
+        }
+    ) {
+        assertOk()
+    }
+
+}
