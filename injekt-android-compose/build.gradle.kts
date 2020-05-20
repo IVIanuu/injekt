@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
     id("com.android.library")
     kotlin("android")
-    kotlin("kapt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
@@ -25,26 +23,22 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/ja
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
 android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
-    defaultConfig {
-        javaCompileOptions {
-            annotationProcessorOptions {
-                includeCompileClasspath = true
-            }
-        }
-    }
 }
 
 dependencies {
-    implementation(Deps.AndroidX.Compose.runtimeDesktop)
-    implementation(Deps.AndroidX.Compose.compiler)
+    api(project(":injekt-android"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
-    implementation(project(":injekt-android"))
+    api(Deps.AndroidX.Ui.core)
+    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
 
-    implementation(project(":test-util"))
-    kapt(project(":test-util"))
+    testImplementation(Deps.AndroidX.Test.core)
+    testImplementation(Deps.AndroidX.Test.junit)
+    testImplementation(Deps.roboelectric)
 }

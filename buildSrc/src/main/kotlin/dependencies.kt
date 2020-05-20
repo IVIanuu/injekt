@@ -41,10 +41,12 @@ object Deps {
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
+        private const val composeVersion = "0.0.1-dev121"
+
         object Compose {
-            private const val version = "0.0.1-dev121"
+            private const val version = composeVersion
             const val compiler = "androidx.compose:compose-compiler:$version"
-            const val runtime = "androidx.compose:compose-runtime-desktop:$version"
+            const val runtimeDesktop = "androidx.compose:compose-runtime-desktop:$version"
         }
 
         object Lifecycle {
@@ -56,6 +58,11 @@ object Deps {
         object Test {
             const val core = "androidx.test:core-ktx:1.2.0"
             const val junit = "androidx.test.ext:junit:1.0.0"
+        }
+
+        object Ui {
+            private const val version = composeVersion
+            const val core = "androidx.ui:ui-core:$version"
         }
 
         const val work = "androidx.work:work-runtime-ktx:2.1.0"
