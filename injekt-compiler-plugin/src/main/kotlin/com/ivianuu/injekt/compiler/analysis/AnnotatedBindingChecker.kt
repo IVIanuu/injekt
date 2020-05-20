@@ -36,6 +36,56 @@ class AnnotatedBindingChecker : DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         if (descriptor !is ClassDescriptor) return
+
+        val classHasAnnotation = descriptor.annotations.hasAnnotation(InjektFqNames.Transient) ||
+                descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
+
+        val annotatedConstructors = descriptor.constructors
+            .filter {
+                it.annotations.hasAnnotation(InjektFqNames.Transient) ||
+                        it.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
+            }
+
+        if (!classHasAnnotation && annotatedConstructors.isEmpty()) return
+
+        checkAnnotations(declaration, descriptor, context)
+        descriptor.constructors.forEach { checkAnnotations(declaration, it, context) }
+
+        if (classHasAnnotation && descriptor.constructors.size > 1 &&
+            annotatedConstructors.isEmpty()
+        ) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_CONSTRUCTORS
+                    .on(declaration)
+            )
+        }
+
+        if (classHasAnnotation && annotatedConstructors.isNotEmpty()) {
+            context.trace.report(
+                InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR
+                    .on(declaration)
+            )
+        }
+
+        if (annotatedConstructors.size > 1) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_CONSTRUCTORS_ANNOTATED
+                    .on(declaration)
+            )
+        }
+
+        if ((descriptor.kind != ClassKind.CLASS && descriptor.kind != ClassKind.OBJECT) ||
+            descriptor.modality == Modality.ABSTRACT
+        ) {
+            context.trace.report(InjektErrors.ANNOTATED_BINDING_CANNOT_BE_ABSTRACT.on(declaration))
+        }
+    }
+
+    private fun checkAnnotations(
+        declaration: KtDeclaration,
+        descriptor: DeclarationDescriptor,
+        context: DeclarationCheckerContext
+    ) {
         if (!descriptor.annotations.hasAnnotation(InjektFqNames.Transient) &&
             !descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
         ) return
@@ -55,9 +105,6 @@ class AnnotatedBindingChecker : DeclarationChecker {
                     .on(declaration)
             )
         }
-
-        if ((descriptor.kind != ClassKind.CLASS && descriptor.kind != ClassKind.OBJECT) || descriptor.modality == Modality.ABSTRACT) {
-            context.trace.report(InjektErrors.ANNOTATED_BINDING_CANNOT_BE_ABSTRACT.on(declaration))
-        }
     }
+
 }

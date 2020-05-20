@@ -81,4 +81,38 @@ class AnnotatedBindingTest {
         assertCompileError("transient")
     }
 
+    @Test
+    fun testClassAndConstructorAnnotationFails() = codegen(
+        """
+         @Transient class Dep @Transient constructor()  
+        """
+    ) {
+        assertCompileError("either")
+    }
+
+    @Test
+    fun testMultipleConstructorsWithAnnotationsFails() = codegen(
+        """
+            class Dep {
+                @Transient constructor(foo: Foo)
+                @Transient constructor(bar: Bar)
+            }
+        """
+    ) {
+        assertCompileError("1")
+    }
+
+    @Test
+    fun testMultipleConstructorsWithoutAnnotationsFails() = codegen(
+        """
+            @Transient
+            class Dep { 
+                constructor(foo: Foo)
+                constructor(bar: Bar)
+            }
+        """
+    ) {
+        assertCompileError("choose")
+    }
+
 }

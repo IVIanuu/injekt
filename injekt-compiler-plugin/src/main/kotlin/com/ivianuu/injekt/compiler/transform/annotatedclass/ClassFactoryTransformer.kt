@@ -55,7 +55,13 @@ class ClassFactoryTransformer(
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.descriptor.hasAnnotatedAnnotations(
                         InjektFqNames.Scope, declaration.module
-                    ) || declaration.hasAnnotation(InjektFqNames.Transient)
+                    ) || declaration.hasAnnotation(InjektFqNames.Transient) ||
+                    declaration.constructors
+                        .any {
+                            it.descriptor.hasAnnotatedAnnotations(
+                                InjektFqNames.Scope, declaration.module
+                            ) || it.hasAnnotation(InjektFqNames.Transient)
+                        }
                 ) {
                     classes += declaration
                 }
@@ -70,7 +76,12 @@ class ClassFactoryTransformer(
 
     fun getFactoryForClass(clazz: IrClass): IrClass {
         factoriesByClass[clazz]?.let { return it }
-        val constructor = clazz.constructors.singleOrNull()
+        val constructor = clazz.constructors
+            .singleOrNull {
+                it.descriptor.hasAnnotatedAnnotations(
+                    InjektFqNames.Scope, clazz.module
+                ) || it.hasAnnotation(InjektFqNames.Transient)
+            } ?: clazz.constructors.singleOrNull()
         val factory = InjektDeclarationIrBuilder(pluginContext, clazz.symbol).run {
             factory(
                 name = InjektNameConventions.getFactoryNameForClass(

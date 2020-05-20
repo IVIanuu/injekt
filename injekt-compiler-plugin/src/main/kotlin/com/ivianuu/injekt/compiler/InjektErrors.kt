@@ -248,6 +248,21 @@ interface InjektErrors {
         )
 
         @JvmField
+        val EITHER_CLASS_OR_CONSTRUCTOR = error(
+            "Either the class or a constructor may be annotated"
+        )
+
+        @JvmField
+        val MULTIPLE_CONSTRUCTORS_ANNOTATED = error(
+            "Only 1 one constructor may be annotated"
+        )
+
+        @JvmField
+        val MULTIPLE_CONSTRUCTORS = error(
+            "Can't choose a constructor. Annotate the right one"
+        )
+
+        @JvmField
         val COMPOSITION_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
             "Composition @Module functions cannot have value parameters."
         )
